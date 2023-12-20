@@ -14,9 +14,9 @@ app.post("/xcpd/v1", async (req, res) => {
     const xcpd = await generateXCPD(req.body);
     res.set("Content-Type", "application/soap+xml; charset=utf-8");
     res.send(xcpd);
-  } catch (err) {
-    console.log("error", err);
-    res.status(404).send("Invalid XML");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    res.status(400).send(err.message);
   }
 });
 
@@ -25,9 +25,9 @@ app.post("/iti38/v1", async (req, res) => {
     const iti38 = await generateITI38(req.body);
     res.set("Content-Type", "application/soap+xml; charset=utf-8");
     res.send(iti38);
-  } catch (err) {
-    console.log("error", err);
-    res.status(404).send("No patient matching");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    res.status(400).send(err.message);
   }
 });
 
@@ -36,9 +36,9 @@ app.post("/iti39/v1", async (req, res) => {
     const iti39 = await generateITI39(req.body);
     res.set("Content-Type", "application/soap+xml; charset=utf-8");
     res.send(iti39);
-  } catch (err) {
-    console.log("error", err);
-    res.status(404).send("No patient matching");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    res.status(400).send(err.message);
   }
 });
 

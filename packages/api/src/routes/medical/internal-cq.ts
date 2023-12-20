@@ -17,6 +17,10 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import {
+  handleIHEResponse,
+  IHEResultType,
+} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -108,15 +112,47 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery/response
+ * POST /internal/carequality/patient-discovery/response/response
  *
- * Receives a Patient Discovery request from the IHE Gateway
+ * Receives a Patient Discovery response from the IHE Gateway
  */
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
     const pdResponse = patientDiscoveryResponseSchema.parse(req.body);
     await createPatientDiscoveryResult(pdResponse);
+    await handleIHEResponse({
+      type: IHEResultType.PATIENT_DISCOVERY,
+      response: req.body,
+    });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/response
+ *
+ * Receives a Document Query response from the IHE Gateway
+ */
+router.post(
+  "/document-query/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/response
+ *
+ * Receives a Document Retrieval response from the IHE Gateway
+ */
+router.post(
+  "/document-retrieval/response",
+  asyncHandler(async (req: Request, res: Response) => {
+    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
 
     return res.sendStatus(httpStatus.OK);
   })

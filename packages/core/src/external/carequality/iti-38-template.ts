@@ -1,8 +1,7 @@
 export function generateITI38Template(status: string): string {
   let registryObjectList = "";
   if (status === "Success") {
-    registryObjectList = `
-    <RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
+    registryObjectList = `<RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
         <ExtrinsicObject home="urn:oid:{systemId}" id="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" isOpaque="false" lid="urn:uuid:bb16ef7a-8b31-4c4c-a2f9-eaa2df34b907" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
           <Slot name="languageCode">
             <ValueList>

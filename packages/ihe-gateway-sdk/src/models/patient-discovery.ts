@@ -1,5 +1,5 @@
 import { Patient } from "@medplum/fhirtypes";
-import { NPIStringArray, oidStringSchema, SamlAttributes, baseResponseSchema } from "./shared";
+import { baseResponseSchema, NPIStringArray, oidStringSchema, SamlAttributes } from "./shared";
 import { z } from "zod";
 
 export const xcpdGatewaysSchema = z.array(
