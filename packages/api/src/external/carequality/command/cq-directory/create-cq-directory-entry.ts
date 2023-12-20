@@ -1,6 +1,6 @@
 import { QueryTypes, Sequelize } from "sequelize";
-import { CQDirectoryEntryData } from "../../../domain/medical/cq-directory";
-import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
+import { CQDirectoryEntryData } from "../../domain/cq-directory";
+import { CQDirectoryEntryModel } from "../../../../models/medical/cq-directory";
 import { cqDirectoryEntryTemp } from "./shared";
 
 const keys = createKeys();

@@ -1,6 +1,6 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { CQDirectoryEntry } from "../../../domain/medical/cq-directory";
-import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
+import { CQDirectoryEntry } from "../../domain/cq-directory";
+import { CQDirectoryEntryModel } from "../../../../models/medical/cq-directory";
 
 export const getCQDirectoryEntry = async (
   id: Pick<CQDirectoryEntry, "id">

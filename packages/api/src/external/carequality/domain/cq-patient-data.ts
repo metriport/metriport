@@ -1,4 +1,4 @@
-import { BaseDomain, BaseDomainCreate } from "../base-domain";
+import { BaseDomain, BaseDomainCreate } from "../../../domain/base-domain";
 
 export type CQExternalPatient = {
   patientId: string;
@@ -17,9 +17,9 @@ export type CQData = {
   links: CQLink[];
 };
 
-export interface PatientCQDataCreate extends BaseDomainCreate {
+export interface CQPatientDataCreate extends BaseDomainCreate {
   cxId: string;
   data: CQData;
 }
 
-export interface PatientCQData extends BaseDomain, PatientCQDataCreate {}
+export interface CQPatientData extends BaseDomain, CQPatientDataCreate {}

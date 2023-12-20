@@ -3,7 +3,7 @@ import {
   PatientDiscoveryRequest,
   patientDiscoveryResponseSchema,
 } from "@metriport/ihe-gateway-sdk";
-import { createPatientDiscoveryResult } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
+import { createPatientDiscoveryResult } from "./command/patient-discovery-result/create-patient-discovery-result";
 import { PATIENT_DISCOVERY_TIMEOUT } from "./patient";
 
 export async function mockLongExecution(patientDiscoveryRequest: PatientDiscoveryRequest) {

@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { PatientDiscoveryResult } from "../../domain/medical/patient-discovery-result";
+import { PatientDiscoveryResult } from "../../external/carequality/domain/patient-discovery-result";
 import { ModelSetup } from "../_default";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

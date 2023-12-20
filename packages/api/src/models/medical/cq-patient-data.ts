@@ -1,15 +1,15 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CQData, PatientCQData } from "../../domain/medical/cq-patient-data";
+import { CQData, CQPatientData } from "../../external/carequality/domain/cq-patient-data";
 import { BaseModel, ModelSetup } from "../_default";
 
-export class PatientCQDataModel extends BaseModel<PatientCQDataModel> implements PatientCQData {
-  static NAME = "patient_cq_data";
+export class CQPatientDataModel extends BaseModel<CQPatientDataModel> implements CQPatientData {
+  static NAME = "cq_patient_data";
   declare id: string;
   declare cxId: string;
   declare data: CQData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientCQDataModel.init(
+    CQPatientDataModel.init(
       {
         ...BaseModel.attributes(),
         cxId: {
@@ -23,7 +23,7 @@ export class PatientCQDataModel extends BaseModel<PatientCQDataModel> implements
       },
       {
         ...BaseModel.modelOptions(sequelize),
-        tableName: PatientCQDataModel.NAME,
+        tableName: CQPatientDataModel.NAME,
       }
     );
   };

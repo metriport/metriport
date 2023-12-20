@@ -1,17 +1,17 @@
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { searchNearbyCQOrganizations } from "../../command/medical/cq-directory/search-cq-directory";
-import { createOrUpdatePatientCQData } from "../../command/medical/cq-patient-data/create-cq-data";
-import { deletePatientCQData } from "../../command/medical/cq-patient-data/delete-cq-data";
+import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
+import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
+import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getPatientDiscoveryResultCount,
   getPatientDiscoveryResults,
-} from "../../command/medical/patient-discovery-result/get-patient-discovery-result";
-import { CQLink } from "../../domain/medical/cq-patient-data";
+} from "./command/patient-discovery-result/get-patient-discovery-result";
+import { CQLink } from "./domain/cq-patient-data";
 import { Patient } from "../../domain/medical/patient";
-import { PatientDiscoveryResult } from "../../domain/medical/patient-discovery-result";
+import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
@@ -105,7 +105,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
 
 export async function remove(patient: Patient): Promise<void> {
   console.log(`Deleting CQ data - M patientId ${patient.id}`);
-  await deletePatientCQData({ id: patient.id, cxId: patient.cxId });
+  await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
 
 export async function handlePatientDiscoveryResults(
@@ -114,7 +114,7 @@ export async function handlePatientDiscoveryResults(
 ): Promise<void> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
-  if (cqLinks.length) await createOrUpdatePatientCQData({ id, cxId, cqLinks });
+  if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 }
 
 export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {

@@ -6,13 +6,13 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
+import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
+import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
-} from "../../command/medical/cq-directory/search-cq-directory";
-import { createPatientDiscoveryResult } from "../../command/medical/patient-discovery-result/create-patient-discovery-result";
+} from "../../external/carequality/command/cq-directory/search-cq-directory";
+import { createPatientDiscoveryResult } from "../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
