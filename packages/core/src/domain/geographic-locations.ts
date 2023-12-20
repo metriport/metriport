@@ -55,11 +55,7 @@ export enum USState {
   // "Puerto Rico", "PR"
 }
 
-// TODO bad to have casting here. Issue is that we are using Medplum FHIR type for address
-// which uses a string type for state, and its optional.
-export function getStateEnum(state: string): USState {
+export function getStateEnum(state: string): USState | undefined {
   const upperCaseState = state.toUpperCase();
-  return Object.values(USState).includes(upperCaseState as USState)
-    ? (upperCaseState as USState)
-    : USState.CA;
+  return upperCaseState in USState ? (upperCaseState as USState) : undefined;
 }

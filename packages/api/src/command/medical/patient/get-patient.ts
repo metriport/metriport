@@ -68,6 +68,13 @@ export const getPatientIds = async ({
   return patients.map(p => p.id);
 };
 
+/**
+ * Retrieves a patient based on their demographic information.
+ * @param facilityId - The ID of the facility where the patient is associated.
+ * @param cxId - The ID of the patient in the external system.
+ * @param demo - The demographic information of the patient.
+ * @returns The matched patient object if found, otherwise undefined.
+ */
 export const getPatientByDemo = async ({
   facilityId,
   cxId,
@@ -77,14 +84,15 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | undefined> => {
-  // TODO this normalization should not be rollled out until we do a migration to normalize all existing patients.
-  // A null normalizaed patient means that the patient demographics included default values.
+  // Normalize the patient demographic data
   const normalizedPatientDemo = normalizePatientDataMPI(convertPatientDataToPatientDataMPI(demo));
-  if (!normalizedPatientDemo) return undefined;
+  if (!normalizedPatientDemo) {
+    return undefined;
+  }
 
-  // TODO this might be bad form to use PatientCreate for this. Also because
+  // Block patients based on the criteria of matching dob and genderAtBirth
   const blockedPatients = await blockPatients({
-    cxId: cxId,
+    cxId,
     facilityIds: [facilityId],
     data: {
       dob: normalizedPatientDemo.dob,
@@ -92,25 +100,29 @@ export const getPatientByDemo = async ({
     },
   });
 
-  // convert patients to proper datatype
+  // Convert patients to proper datatype
   const blockedPatientsData = blockedPatients.map(p => convertPatientModelToPatientData(p));
-  console.log("blockedPatients", blockedPatientsData);
 
+  // Match the blocked patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
     blockedPatientsData,
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );
-  console.log("matchingPatients", matchingPatients);
+
+  // Merge the matching patients
   const mpiPatient = await mergePatients(
     mergeWithFirstPatient,
     matchingPatients,
     normalizedPatientDemo,
     cxId
   );
-  console.log("mpiPatient", mpiPatient);
-  if (!mpiPatient) return undefined;
+
+  if (!mpiPatient) {
+    return undefined;
+  }
+
   return getPatientOrFail({ id: mpiPatient.id, cxId });
 };
 

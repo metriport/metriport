@@ -10,6 +10,7 @@ import {
   Address,
   Contact,
   PersonalIdentifier,
+  isContactType,
 } from "../../mpi/patient-incoming-schema";
 
 export class PatientAddressRequestedError extends Error {
@@ -46,7 +47,9 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData
   if (!birthDate) {
     throw new InternalError("Birth date is not defined");
   }
-  const genderAtBirth = patient.gender;
+
+  const genderAtBirth =
+    patient.gender === "male" ? "M" : patient.gender === "female" ? "F" : undefined;
   if (!genderAtBirth) {
     throw new LivingSubjectAdministrativeGenderRequestedError("Gender at Birth is not defined");
   }
@@ -54,7 +57,7 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData
   const addresses = (patient.address ?? []).map((addr: FHIRAddress) => {
     const addressLine1 = addr.line ? addr.line.join(" ") : "";
     const city = addr.city || "";
-    const state = addr.state ? getStateEnum(addr.state) : USState.CA;
+    const state = addr.state ? getStateEnum(addr.state) : undefined;
     const zip = addr.postalCode || "";
     const country = addr.country || "USA";
 
@@ -83,7 +86,7 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData
 
   const contacts = (patient.telecom ?? []).map((tel: ContactPoint) => {
     const contact: Contact = {};
-    if (tel.system) {
+    if (tel.system && isContactType(tel.system)) {
       contact[tel.system] = tel.value;
     }
     return contact;
@@ -113,7 +116,7 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData
     firstName: firstName,
     lastName: lastName,
     dob: birthDate,
-    genderAtBirth: patient.gender === "male" ? "M" : "F",
+    genderAtBirth: genderAtBirth,
     address: addresses,
     contact: contacts,
     personalIdentifiers: personalIdentifiers,

@@ -10,7 +10,11 @@ import {
   PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
 } from "./validating-iti55";
-import { matchPatients, jaroWinklerSimilarity } from "../../mpi/match-patients";
+import {
+  matchPatients,
+  jaroWinklerSimilarity,
+  matchingPersonalIdentifiersRule,
+} from "../../mpi/match-patients";
 import { normalizePatientDataMPI } from "../../mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "../../mpi/merge-patients";
 import { capture } from "../../../util/notifications";
@@ -32,14 +36,13 @@ function constructErrorResponse(
   payload: PatientDiscoveryRequestIncoming,
   codingSystem: string,
   code: string,
-  error: string,
-  patientMatch: boolean | null = null
+  error: string
 ): PatientDiscoveryResponseOutgoing {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
-    patientMatch: patientMatch,
+    patientMatch: null,
     xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
     operationOutcome: {
       resourceType: "OperationOutcome",
@@ -92,95 +95,89 @@ export async function processIncomingRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
   const apiClient = apiClientMPIBlockEndpoint();
-  console.log("payload", payload);
 
-  let patient: PatientDataMPI;
   try {
-    patient = validateFHIRAndExtractPatient(payload.patientResource);
-    console.log("patient", patient);
-  } catch (error) {
-    if (error instanceof InternalError) {
-      return constructErrorResponse(
-        payload,
-        "1.3.6.1.4.1.19376.1.2.27.3",
-        "InternalError",
-        error.message,
-        null
-      );
-    } else if (error instanceof PatientAddressRequestedError) {
-      return constructErrorResponse(
-        payload,
-        "1.3.6.1.4.1.19376.1.2.27.1",
-        "PatientAddressRequested",
-        error.message
-      );
-    } else if (error instanceof LivingSubjectAdministrativeGenderRequestedError) {
-      return constructErrorResponse(
-        payload,
-        "1.3.6.1.4.1.19376.1.2.27.1",
-        "LivingSubjectAdministrativeGenderRequested",
-        error.message
-      );
-    } else {
+    const patient = validateFHIRAndExtractPatient(payload.patientResource);
+    const normalizedPatientDemo = normalizePatientDataMPI(patient);
+
+    if (!normalizedPatientDemo) {
       return constructErrorResponse(
         payload,
         "1.3.6.1.4.1.19376.1.2.27.3",
         "Internal Server Error",
-        ""
+        "Invalid Patient Data"
       );
     }
-  }
 
-  const normalizedPatientDemo = normalizePatientDataMPI(patient);
-  if (!normalizedPatientDemo) {
-    return constructErrorResponse(
-      payload,
-      "1.3.6.1.4.1.19376.1.2.27.3",
-      "Internal Server Error",
-      "Invalid Patient Data"
+    const response = await apiClient.callInternalEndpoint({
+      dob: normalizedPatientDemo.dob,
+      genderAtBirth: normalizedPatientDemo.genderAtBirth,
+    });
+    const blockedPatients: PatientDataMPI[] = response.data;
+
+    const matchingPatients = matchPatients(
+      jaroWinklerSimilarity,
+      [matchingPersonalIdentifiersRule],
+      blockedPatients,
+      normalizedPatientDemo,
+      SIMILARITY_THRESHOLD
     );
+
+    const mpiPatient = await mergePatients(
+      mergeWithFirstPatient,
+      matchingPatients,
+      normalizedPatientDemo
+    );
+
+    if (!mpiPatient) {
+      return constructNoMatchResponse(payload);
+    }
+    return constructMatchResponse(payload, mpiPatient);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    switch (error.constructor) {
+      case InternalError:
+        return constructErrorResponse(
+          payload,
+          "1.3.6.1.4.1.19376.1.2.27.3",
+          "InternalError",
+          error.message
+        );
+      case PatientAddressRequestedError:
+        return constructErrorResponse(
+          payload,
+          "1.3.6.1.4.1.19376.1.2.27.1",
+          "PatientAddressRequested",
+          error.message
+        );
+      case LivingSubjectAdministrativeGenderRequestedError:
+        return constructErrorResponse(
+          payload,
+          "1.3.6.1.4.1.19376.1.2.27.1",
+          "LivingSubjectAdministrativeGenderRequested",
+          error.message
+        );
+      default:
+        return constructErrorResponse(
+          payload,
+          "1.3.6.1.4.1.19376.1.2.27.3",
+          "Internal Server Error",
+          "Unknown Error: Contact Metriport Support for assistance"
+        );
+    }
   }
-  console.log("normalizedPatientDemo", normalizedPatientDemo);
-
-  const response = await apiClient.callInternalEndpoint({
-    dob: normalizedPatientDemo.dob,
-    genderAtBirth: normalizedPatientDemo.genderAtBirth,
-  });
-  const blockedPatients: PatientDataMPI[] = response.data;
-  console.log("blockedPatients", blockedPatients);
-
-  const matchingPatients = matchPatients(
-    jaroWinklerSimilarity,
-    blockedPatients,
-    normalizedPatientDemo,
-    SIMILARITY_THRESHOLD
-  );
-  console.log("matchingPatients", matchingPatients);
-
-  const mpiPatient = await mergePatients(
-    mergeWithFirstPatient,
-    matchingPatients,
-    normalizedPatientDemo
-  );
-  console.log("mpiPatient", mpiPatient);
-
-  if (!mpiPatient) {
-    return constructNoMatchResponse(payload);
-  }
-  return constructMatchResponse(payload, mpiPatient);
 }
 
 export function apiClientMPIBlockEndpoint() {
   const apiURL = getEnvVarOrFail("API_URL");
   const postEndpointUrl = `${apiURL}/internal/patient/mpi/block`;
-  console.log("postEndpointUrl", postEndpointUrl);
 
   return {
     callInternalEndpoint: async function (
       params: MPIBlockParams
     ): Promise<AxiosResponse<PatientDataMPI[]>> {
       try {
-        return await ossApi.post(postEndpointUrl, params, {
+        return await ossApi.post(postEndpointUrl, null, {
           params: {
             dob: params.dob,
             genderAtBirth: params.genderAtBirth,

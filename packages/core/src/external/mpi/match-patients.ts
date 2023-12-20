@@ -10,31 +10,35 @@ type SimilarityFunction = (
   threshold: number
 ) => boolean;
 
+type MatchingRule = (patient1: PatientDataMPI, patient2: PatientDataMPI) => boolean;
+
 /**
- * `matchPatients` filters patients based on a similarity function and a threshold.
- * @param {SimilarityFunction} similarityFunction - Determines if a patient is a match.
- * @param {Patient[]} patients - Array of patients.
- * @param {Patient} demo - Patient data to find matches for.
- * @param {number} threshold - Minimum similarity score for a match.
- * @param {boolean} greedy - If true, returns the first match. If false, returns all matches.
+ * `matchPatients` filters patients based on a similarity function, rules, and a threshold.
+ * @param similarityFunction - Determines if a patient is a match.
+ * @param matchingRules - Rules that determines if a patient is a match.
+ * @param patients - Array of patients.
+ * @param demo - Patient data to find matches for.
+ * @param threshold - Minimum similarity score for a match.
+ * @param greedy - If true, returns the first match. If false, returns all matches.
  * @returns matched patients.
  */
 export const matchPatients = (
   similarityFunction: SimilarityFunction,
+  matchingRules: MatchingRule[],
   patients: PatientDataMPI[],
   demo: PatientDataMPI,
   threshold: number,
-  greedy = false
+  greedy = true
 ): PatientDataMPI[] => {
-  console.log("patients", patients);
-  console.log("demo", demo);
   const matchFunction = (patient: PatientDataMPI) => {
     const PatientDataMPI = normalizePatientDataMPI(patient);
     if (!PatientDataMPI) {
       return false;
     }
-    if (matchingPersonalIdentifiersRule(demo, PatientDataMPI)) {
-      return true;
+    for (const rule of matchingRules) {
+      if (rule(demo, PatientDataMPI)) {
+        return true;
+      }
     }
     return similarityFunction(PatientDataMPI, demo, threshold);
   };
@@ -57,14 +61,10 @@ export const matchingPersonalIdentifiersRule = (
   demo: PatientDataMPI,
   patient: PatientDataMPI
 ): boolean => {
-  if (
-    demo.personalIdentifiers &&
-    demo.personalIdentifiers.length > 0 &&
-    intersectionWith(patient.personalIdentifiers, demo.personalIdentifiers, isEqual).length > 0
-  ) {
-    return true;
-  }
-  return false;
+  return Boolean(
+    intersectionWith(patient.personalIdentifiers || [], demo.personalIdentifiers || [], isEqual)
+      .length > 0
+  );
 };
 
 /**
@@ -79,23 +79,13 @@ export const matchingContactDetailsRule = (
   demo: PatientDataMPI,
   patient: PatientDataMPI
 ): boolean => {
-  // Check for matching phone numbers
-  if (
-    demo.contact &&
-    demo.contact.length > 0 &&
-    intersectionWith(patient.contact, demo.contact, (a, b) => a.phone === b.phone).length > 0
-  ) {
-    return true;
-  }
-  // Check for matching emails
-  if (
-    demo.contact &&
-    demo.contact.length > 0 &&
-    intersectionWith(patient.contact, demo.contact, (a, b) => a.email === b.email).length > 0
-  ) {
-    return true;
-  }
-  return false;
+  // Boolean so if undefined || undefined, result will be false and not just falsy
+  return Boolean(
+    intersectionWith(patient.contact || [], demo.contact || [], (a, b) => a?.phone === b?.phone)
+      .length > 0 ||
+      intersectionWith(patient.contact || [], demo.contact || [], (a, b) => a?.email === b?.email)
+        .length > 0
+  );
 };
 
 /**
@@ -127,39 +117,25 @@ export const jaroWinklerSimilarity = (
   addScore("Last Name", patient1.lastName, patient2.lastName);
 
   // Calculate similarity for addresses
-  const address1 = patient1.address && patient1.address.length > 0 ? patient1.address[0] : null;
-  const address2 = patient2.address && patient2.address.length > 0 ? patient2.address[0] : null;
-
+  const address1 = patient1.address?.[0];
+  const address2 = patient2.address?.[0];
   if (address1 && address2) {
-    if (address1.addressLine1 && address2.addressLine1) {
-      addScore("Address Line 1", address1.addressLine1, address2.addressLine1);
-    }
-
+    addScore("Address Line 1", address1.addressLine1, address2.addressLine1);
     if (address1.addressLine2 && address2.addressLine2) {
       addScore("Address Line 2", address1.addressLine2, address2.addressLine2);
     }
-
-    if (address1.city && address2.city) {
-      addScore("City", address1.city, address2.city);
-    }
-
-    if (address1.state && address2.state) {
-      addScore("State", address1.state, address2.state);
-    }
-
-    addScore("Country", address1.country || "", address2.country || "");
+    addScore("City", address1.city, address2.city);
+    addScore("State", address1.state, address2.state);
     addScore("Zipcode", address1.zip, address2.zip);
   }
 
   // Calculate similarity for contact details
-  const contact1 = patient1.contact && patient1.contact.length > 0 ? patient1.contact[0] : null;
-  const contact2 = patient2.contact && patient2.contact.length > 0 ? patient2.contact[0] : null;
-
+  const contact1 = patient1.contact?.[0];
+  const contact2 = patient2.contact?.[0];
   if (contact1 && contact2) {
     if (contact1.phone && contact2.phone) {
       addScore("Phone", contact1.phone, contact2.phone);
     }
-
     if (contact1.email && contact2.email) {
       addScore("Email", contact1.email, contact2.email);
     }

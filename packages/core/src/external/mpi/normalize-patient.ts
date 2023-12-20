@@ -1,10 +1,18 @@
 import { PatientDataMPI, Address } from "./patient-incoming-schema";
 
+// Define default values for each field
+const defaultValues = {
+  firstName: "john",
+  lastName: "doe",
+  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
+  contact: [{ email: "example@example.com", phone: "0000000000" }],
+};
+
 /**
  * The function checks if a patient's address or name matches the default values and returns null if
  * they do, otherwise it updates the patient's contact information and returns the modified patient
  * object.
- * @param {Patient} patient - The `patient` parameter is an object of type `Patient`. It
+ * @param patient - The `patient` parameter is an object of type `Patient`. It
  * represents the data of a patient, including their address, name, and contact information.
  * @returns either a modified `Patient` object or `null`.
  */
@@ -18,15 +26,14 @@ function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
   );
 
   const isDefaultName =
-    patient.firstName === defaultValues["firstName"] &&
-    patient.lastName === defaultValues["lastName"];
+    patient.firstName === defaultValues.firstName && patient.lastName === defaultValues.lastName;
 
   if (isDefaultAddress || isDefaultName) {
     return null;
   }
 
   patient.contact = (patient.contact ?? []).map(contact => {
-    const defaultContact = defaultValues["contact"]?.[0];
+    const defaultContact = defaultValues.contact?.[0];
     if (!defaultContact) {
       return contact;
     }
@@ -42,7 +49,7 @@ function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
 /**
  * The function `normalizePatient` takes in patient data and normalizes it by splitting the first
  * and last names, normalizing email and phone numbers, and formatting the address.
- * @param {Patient} patient - The `patient` parameter is an object that represents patient data. It
+ * @param patient - The `patient` parameter is an object that represents patient data. It
  * has the following properties:
  * @returns a normalized version of the patient data. If the patient data is valid, it will return the
  * normalized patient data as an object of type `Patient`. If the patient data is null, it will
@@ -111,6 +118,7 @@ function normalizePhoneNumber(phoneNumber: string): string {
   const normalizedNumber = phoneNumber.replace(/\D/g, "");
 
   if (normalizedNumber.startsWith("1") && normalizedNumber.length === 11) {
+    // applies to US and Canada numbers only
     return normalizedNumber.substring(1);
   }
 
@@ -142,26 +150,15 @@ function normalizeAddress(address: string): string {
   address = address.trim().toLowerCase().replace(/['-.]/g, "");
   const words: string[] = address.split(" ");
 
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
-    if (word) {
-      const suffix = suffixes[word];
-      if (suffix) {
-        words[i] = suffix;
-      }
-    }
-  }
-  return words.join(" ");
+  const transformedWords = words.map(word => {
+    const suffix = suffixes[word];
+    return suffix ? suffix : word;
+  });
+
+  return transformedWords.join(" ");
 }
 
 export function splitName(name: string): string[] {
   // splits by comma delimiter and filters out empty strings
   return name.split(/[\s,]+/).filter(str => str);
 }
-// Define default values for each field
-const defaultValues = {
-  firstName: "john",
-  lastName: "doe",
-  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
-  contact: [{ email: "example@example.com", phone: "0000000000" }],
-};

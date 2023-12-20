@@ -41,7 +41,6 @@ import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail }
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { GenderAtBirth } from "../../domain/medical/patient";
 
 dayjs.extend(duration);
 
@@ -493,11 +492,10 @@ router.post(
   "/mpi/block",
   asyncHandler(async (req: Request, res: Response) => {
     const dob = getFrom("query").orFail("dob", req);
-    const genderAtBirthRaw = getFrom("query").orFail("genderAtBirth", req);
-    if (genderAtBirthRaw !== "F" && genderAtBirthRaw !== "M") {
+    const genderAtBirth = getFrom("query").orFail("genderAtBirth", req);
+    if (genderAtBirth !== "F" && genderAtBirth !== "M") {
       throw new Error("Invalid genderAtBirth value");
     }
-    const genderAtBirth = genderAtBirthRaw as GenderAtBirth;
     const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
     const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
 
@@ -509,8 +507,6 @@ router.post(
         lastNameInitial,
       },
     });
-
-    console.log("blockedPatients", blockedPatients);
 
     return res.status(status.OK).json(blockedPatients.map(convertPatientModelToPatientData));
   })

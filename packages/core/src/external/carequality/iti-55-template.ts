@@ -1,3 +1,4 @@
+// TODO SLATE TO BE DEPRECATED.
 export function generateXcpdTemplate(code: string) {
   let registrationEvent = "";
   let queryByParameter = "";

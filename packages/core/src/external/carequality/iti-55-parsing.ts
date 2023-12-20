@@ -1,3 +1,4 @@
+// TODO SLATE TO BE DEPRECATED.
 import * as xml2js from "xml2js";
 import {
   PatientDataMPI,

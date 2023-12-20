@@ -1,3 +1,4 @@
+// TODO SLATE TO BE DEPRECATED.
 import { generateTimeStrings, cleanXml } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI38Template } from "./iti-38-template";
