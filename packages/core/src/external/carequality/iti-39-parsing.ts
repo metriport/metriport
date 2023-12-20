@@ -1,5 +1,5 @@
 import { generatePatientDoc } from "./docs";
-import { generateTimeStrings, cleanXml } from "./utils";
+import { generateTimeStrings, cleanXml, parseMtomResponseRegex } from "./utils";
 import * as xml2js from "xml2js";
 import { generateITI39Template } from "./iti-39-template";
 
@@ -16,7 +16,7 @@ const documentData: { [key: string]: string } = {
  * @returns A promise that resolves to an array containing the signature, documentId, and homeCommunityID extracted from the XML.
  */
 async function parseXmlString(xml: string): Promise<[string, string, string]> {
-  xml = cleanXml(xml);
+  const cleanedXml = cleanXml(parseMtomResponseRegex(xml));
 
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
@@ -24,7 +24,7 @@ async function parseXmlString(xml: string): Promise<[string, string, string]> {
 
   let result;
   try {
-    result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(cleanedXml);
   } catch (err) {
     throw new Error("XML parsing failed: Invalid XML");
   }
@@ -39,8 +39,6 @@ async function parseXmlString(xml: string): Promise<[string, string, string]> {
       result["Envelope"]["Body"][0]["RetrieveDocumentSetRequest"][0]["DocumentRequest"][0][
         "HomeCommunityId"
       ][0];
-    console.log("homeCommunity", homeCommunityId);
-    console.log("documentId", documentId);
     return [signature, documentId, homeCommunityId];
   } catch (err) {
     console.log("error", err);
