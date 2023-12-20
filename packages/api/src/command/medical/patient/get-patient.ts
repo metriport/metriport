@@ -13,7 +13,12 @@ import {
   convertPatientModelToPatientData,
   convertPatientDataToPatientDataMPI,
 } from "./mpi/convert-patients";
-import { matchPatients, jaroWinklerSimilarity } from "@metriport/core/external/mpi/match-patients";
+import {
+  matchPatients,
+  jaroWinklerSimilarity,
+  matchingPersonalIdentifiersRule,
+  matchingContactDetailsRule,
+} from "@metriport/core/external/mpi/match-patients";
 import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "@metriport/core/external/mpi/merge-patients";
 
@@ -106,6 +111,7 @@ export const getPatientByDemo = async ({
   // Match the blocked patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
+    [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
     blockedPatientsData,
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
