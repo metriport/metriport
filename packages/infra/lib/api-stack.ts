@@ -32,7 +32,7 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { createIHEStack } from "./ihe-stack";
+//import { createIHEStack } from "./ihe-stack";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -697,15 +697,15 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // IHE API Gateway
     //-------------------------------------------
-    if (props.config.iheGateway) {
-      createIHEStack(this, {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-        publicZone,
-      });
-    }
+    // if (props.config.iheGateway) {
+    //   createIHEStack(this, {
+    //     config: props.config,
+    //     vpc: this.vpc,
+    //     alarmAction: slackNotification?.alarmAction,
+    //     lambdaLayers,
+    //     publicZone,
+    //   });
+    // }
 
     createScheduledAPIQuotaChecker({
       stack: this,
