@@ -48,7 +48,7 @@ async function deploy(config: EnvConfig) {
   // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
   if (config.iheGateway) {
-    new IHEStack(app, config.iheGateway.stackName, {
+    new IHEStack(app, "IHEStack", {
       env,
       config: config,
       vpc: apiStack.vpc,

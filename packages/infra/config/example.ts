@@ -42,7 +42,6 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
   iheGateway: {
-    stackName: "<your_stack_name>",
     certArn: "<your_cert_arn>",
     subdomain: "ihe",
   },
