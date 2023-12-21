@@ -48,7 +48,6 @@ interface APIStackProps extends StackProps {
 
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
-  public readonly sharedLambdaLayers: LambdaLayers;
   public readonly alarmAction: SnsAction | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
@@ -241,7 +240,6 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
-    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains
