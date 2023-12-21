@@ -45,7 +45,7 @@ export type Details = { coding: Code[] } | { text: string };
 export type Issue = {
   severity: string;
   code: string;
-  details: Details;
+  details: { text: string };
 };
 
 export type OperationOutcome = {
@@ -80,9 +80,10 @@ export type DocumentReference = {
   repositoryUniqueId: string;
   newRepositoryUniqueId?: string;
   newDocumentUniqueId?: string;
-  contentType?: string;
-  url?: string; // signed urls that mirth will use to download actually b64 bytes
-  uri?: string;
-  creation?: string;
-  title?: string;
+  contentType?: string | null;
+  language?: string | null;
+  uri?: string | null;
+  url?: string | null;
+  creation?: string | null;
+  title?: string | null;
 };

@@ -1,4 +1,5 @@
-import { BaseResultDomain, BaseResponse, DocumentReference } from "./ihe-result";
+import { BaseResultDomain } from "./ihe-result";
+import { BaseResponse, DocumentReference } from "@metriport/ihe-gateway-sdk";
 
 export interface DocumentRetrievalResult extends BaseResultDomain {
   data: DocumentRetrievalResponse;

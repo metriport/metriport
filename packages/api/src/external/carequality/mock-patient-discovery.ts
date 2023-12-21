@@ -1,12 +1,9 @@
 // TODO: #1350 - Write integration tests for patient discovery on CQ go live
-import {
-  PatientDiscoveryRequest,
-  patientDiscoveryResponseSchema,
-} from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
 import { createPatientDiscoveryResult } from "./command/patient-discovery-result/create-patient-discovery-result";
 import { PATIENT_DISCOVERY_TIMEOUT } from "./patient";
 
-export async function mockLongExecution(patientDiscoveryRequest: PatientDiscoveryRequest) {
+export async function mockLongExecution(patientDiscoveryRequest: PatientDiscoveryRequestOutgoing) {
   await mockResult(
     patientDiscoveryRequest.id,
     patientDiscoveryRequest.cxId,
@@ -61,6 +58,5 @@ export async function mockResult(id: string, cxId: string, patientId: string) {
       ],
     },
   };
-  const patientDiscovery = patientDiscoveryResponseSchema.parse(body);
-  await createPatientDiscoveryResult(patientDiscovery);
+  await createPatientDiscoveryResult(body);
 }
