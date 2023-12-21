@@ -359,8 +359,6 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
-  // MAKE SURE TO FOLLOW THIS ALL THE WAY THROUGH WITH NEW FLOW
-  // TO MAKE SURE IT MAKES SENSE
   return appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
