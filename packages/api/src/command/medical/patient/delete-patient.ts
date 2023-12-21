@@ -36,7 +36,7 @@ export const deletePatient = async (
     try {
       // TODO: #393 move to declarative, event-based integration
       // Synchronous bc it needs to run after the Patient is deleted (it needs patient data from the DB)
-      await Promise.allSettled([
+      await Promise.all([
         cwCommands.patient.remove(patient, facilityId).catch(err => {
           if (err.response?.status !== 404) throw err;
           console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
