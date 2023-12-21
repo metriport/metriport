@@ -9,7 +9,7 @@ export type Coordinates = {
   lon: number;
 };
 
-export type AddressSuggestion = {
+export type GeocodingResult = {
   coordinates: Coordinates;
   relevance: number;
   suggestedLabel: string;
@@ -35,7 +35,7 @@ export function getLocationResultPayload({
 
 export function parseSuggestedAddress(
   suggestedAddress: AWS.Location.SearchForTextResult
-): AddressSuggestion {
+): GeocodingResult {
   const point = suggestedAddress.Place?.Geometry?.Point;
   const relevance = suggestedAddress.Relevance;
   const label = suggestedAddress.Place.Label;

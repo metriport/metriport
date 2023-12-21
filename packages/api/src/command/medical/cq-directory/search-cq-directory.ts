@@ -1,6 +1,6 @@
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
-import { uniq } from "lodash";
+import { uniqBy } from "lodash";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
 import { getPatientOrFail } from "../patient/get-patient";
@@ -25,24 +25,30 @@ export type CQOrgBasicDetails = {
  * @param cxId The ID of the customer organization.
  * @param patientId The ID of the patient.
  * @param radiusInMiles Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
+ * @param updatePatientAddresses Optional, whether to update the patient's addresses with coordinates if they don't already exist. Defaults to false.
+ * @param reportRelevance Optional, whether to report low relevance addresses to the cx. Defaults to false.
  *
  * @returns Returns the details of organizations within the specified radius of the patient's addresses.
  */
-export async function searchNearbyCQOrganizations({
+export async function addPatientCoordinatesAndSearchNearbyCQOrganizations({
   cxId,
   patientId,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
+  updatePatientAddresses = false,
+  reportRelevance = false,
 }: {
   cxId: string;
   patientId: string;
   radiusInMiles?: number;
+  updatePatientAddresses?: boolean;
+  reportRelevance?: boolean;
 }): Promise<CQOrgBasicDetails[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const addresses = await upsertGeographicCoordinates({
     patient,
-    reportRelevance: true,
-    updatePatientAddresses: true,
+    reportRelevance,
+    updatePatientAddresses,
   });
 
   const coordinates = addresses.flatMap(address => address.coordinates ?? []);
@@ -53,7 +59,7 @@ export async function searchNearbyCQOrganizations({
     radiusInMeters,
   });
 
-  return uniq(orgs.map(toBasicOrgAttributes));
+  return uniqBy(orgs.map(toBasicOrgAttributes), "id");
 }
 
 /**

@@ -9,7 +9,7 @@ import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/pars
 import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
-  searchNearbyCQOrganizations,
+  addPatientCoordinatesAndSearchNearbyCQOrganizations,
 } from "../../command/medical/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
@@ -17,7 +17,6 @@ import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
 
 dayjs.extend(duration);
-
 const router = Router();
 
 /**
@@ -81,7 +80,6 @@ router.post(
 
 /**
  * GET /internal/carequality/directory/nearby-organizations
- 
  *
  * Retrieves the organizations within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
@@ -98,7 +96,11 @@ router.get(
     const radiusQuery = getFrom("query").optional("radius", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
-    const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
+    const orgs = await addPatientCoordinatesAndSearchNearbyCQOrganizations({
+      cxId,
+      patientId,
+      radiusInMiles: radius,
+    });
 
     return res.status(httpStatus.OK).json(orgs);
   })

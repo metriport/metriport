@@ -1,5 +1,5 @@
 import {
-  AddressSuggestion,
+  GeocodingResult,
   parseSuggestedAddress,
   getLocationResultPayload,
   makeLocationClient,
@@ -8,7 +8,7 @@ import * as AWS from "aws-sdk";
 import { Address } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
 
-export type AddressAndSuggestedLabel = {
+export type AddressGeocodingResult = {
   address: Address;
   relevance: number;
   suggestedLabel: string;
@@ -23,14 +23,14 @@ export function buildAddressText(address: Address): string {
 }
 
 /**
- * Adds coordinates to addresses that don't already have them.
+ * Generates geo coordinates for addresses that don't already have them. Returns these addresses along with their relevance score from geocoding.
  *
  * @param addressList a list of Address objects.
  * @returns a list of updated Address objects and their relevance score from geocoding.
  */
-export async function addGeographicCoordinates(
+export async function generateGeocodedAddresses(
   addressList: Address[]
-): Promise<AddressAndSuggestedLabel[]> {
+): Promise<AddressGeocodingResult[]> {
   const geocodingUpdates = await Promise.allSettled(
     addressList.map(async address => {
       if (address.coordinates) {
@@ -38,11 +38,12 @@ export async function addGeographicCoordinates(
       }
       const suggested = await geocodeAddress(address);
       if (suggested) {
-        address.coordinates = suggested.coordinates;
-        const relevance = suggested.relevance;
         return {
-          address,
-          relevance,
+          address: {
+            ...address,
+            coordinates: suggested.coordinates,
+          },
+          relevance: suggested.relevance,
           suggestedLabel: suggested.suggestedLabel,
         };
       }
@@ -60,7 +61,7 @@ export async function addGeographicCoordinates(
  * @param address an Address object
  * @returns a Coordinate pair
  */
-export async function geocodeAddress(address: Address): Promise<AddressSuggestion | undefined> {
+export async function geocodeAddress(address: Address): Promise<GeocodingResult | undefined> {
   const addressText = buildAddressText(address);
   const countryFilter = address.country ?? "USA";
 

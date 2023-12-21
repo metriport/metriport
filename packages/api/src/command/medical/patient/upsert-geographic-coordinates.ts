@@ -1,7 +1,8 @@
+import { uniqBy } from "lodash";
 import { Address } from "../../../domain/medical/address";
 import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
-import { AddressAndSuggestedLabel, addGeographicCoordinates } from "../../../external/aws/address";
+import { AddressGeocodingResult, generateGeocodedAddresses } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
 import { capture } from "../../../shared/notifications";
 import { PatientUpdateCmd, updatePatient } from "./update-patient";
@@ -28,23 +29,24 @@ export const upsertGeographicCoordinates = async ({
   updatePatientAddresses?: boolean;
 }): Promise<Address[]> => {
   const addresses = patient.data.address;
-  const addressAndLabel = await addGeographicCoordinates(addresses);
-  const updatedAddresses = addressAndLabel.map(p => p.address);
+  const geocodedAddressResults = await generateGeocodedAddresses(addresses);
+  const updatedAddresses = geocodedAddressResults.map(p => p.address);
   if (!updatedAddresses.length) return addresses;
+  const addressesWithCoordinates = uniqBy([...updatedAddresses, ...addresses], "addressLine1");
 
-  if (reportRelevance) reportLowRelevance(addressAndLabel, patient);
+  if (reportRelevance) reportLowRelevance(geocodedAddressResults, patient);
   if (updatePatientAddresses) {
     const { id, cxId, eTag } = patient;
     const patientUpdatedData: PatientUpdateCmd = {
       ...patient.data,
-      address: addresses,
+      address: addressesWithCoordinates,
       id,
       cxId,
       eTag,
     };
     await updatePatient(patientUpdatedData);
   }
-  return addresses;
+  return addressesWithCoordinates;
 };
 
 /**
@@ -63,19 +65,18 @@ export async function addCoordinatesToAddresses({
   patient: Partial<Patient>;
   reportRelevance?: boolean;
 }): Promise<Address[]> {
-  const addressAndLabel = await addGeographicCoordinates(addresses);
-  if (reportRelevance) await reportLowRelevance(addressAndLabel, patient);
+  const updatedAddresses = await generateGeocodedAddresses(addresses);
+  if (reportRelevance) await reportLowRelevance(updatedAddresses, patient);
   return addresses;
 }
 
 export async function reportLowRelevance(
-  addresses: AddressAndSuggestedLabel[],
+  addresses: AddressGeocodingResult[],
   patient: Partial<Patient>
 ): Promise<void> {
   for (const a of addresses) {
-    let aboveThreshold = true;
-    if (a.relevance < ADDRESS_MATCH_RELEVANCE_THRESHOLD) {
-      aboveThreshold = false;
+    const aboveThreshold = a.relevance > ADDRESS_MATCH_RELEVANCE_THRESHOLD;
+    if (!aboveThreshold) {
       const msg = `Low address match coefficient`;
       console.log(`${msg}. Address: ${a.address}, Relevance: ${a.relevance}`);
       capture.message(msg, {
