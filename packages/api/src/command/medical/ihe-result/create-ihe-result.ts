@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { OperationOutcome } from "../../../domain/medical/ihe-result";
 import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
 import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
+import { getIheResultStatus } from "../../../domain/medical/ihe-result";
 import { createPatientDiscoveryResult } from "../../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
 import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
 import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
@@ -26,8 +26,6 @@ type IHEResult =
       type: IHEResultType.DOCUMENT_RETRIEVAL;
       response: DocumentRetrievalResponse;
     };
-
-type IHEResultStatus = "success" | "failure";
 
 export async function handleIHEResponse({ type, response }: IHEResult): Promise<void> {
   const { id, patientId, operationOutcome } = response;
@@ -66,18 +64,4 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
       return;
     }
   }
-}
-
-export function getIheResultStatus({
-  operationOutcome,
-  patientMatch,
-  docRefLength,
-}: {
-  operationOutcome?: OperationOutcome | undefined | null;
-  patientMatch?: boolean;
-  docRefLength?: number;
-}): IHEResultStatus {
-  // explicitly checking for a boolean value for patientMatch because it can be undefined
-  if (operationOutcome?.issue || patientMatch === false || docRefLength === 0) return "failure";
-  return "success";
 }
