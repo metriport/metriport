@@ -60,7 +60,7 @@ export class IHEStack extends Stack {
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
-    const lambdaLayers = setupLambdasLayers(this);
+    const lambdaLayers = setupLambdasLayers(this, true);
 
     const iheLambda = createLambda({
       stack: this,
