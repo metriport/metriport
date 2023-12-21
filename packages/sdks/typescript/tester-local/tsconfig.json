@@ -1,11 +1,19 @@
 {
-    "extends": "@tsconfig/node18/tsconfig.json",
-    "compilerOptions": {
-      // Using community best practices with 'extends'
-      "outDir": "./dist",
-      "typeRoots": ["./node_modules/@types"]
-    },
-    "include": ["./src"],
-    "exclude": ["dist", "node_modules"]
-  }
-  
+  "compilerOptions": {
+      "extendedDiagnostics": true,
+      "strict": true,
+      "target": "ES6",
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "declaration": true,
+      "noUnusedParameters": true,
+      "outDir": "dist",
+  },
+  "include": [
+      "src",
+      "__test__"
+  ],
+  "exclude": []
+}
