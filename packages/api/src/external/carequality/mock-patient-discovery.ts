@@ -35,10 +35,10 @@ export async function mockResult(id: string, cxId: string, patientId: string) {
     responseTimestamp: "2023-11-29T08:41:47.047-0800",
     patientId,
     patientMatch: true,
-    xcpdHomeCommunityId: "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000",
+    xcpdHomeCommunityId: "2.16.840.1.113883.3.9621",
     xcpdPatientId: {
       id: "EV12ZGR7J6K4MF8",
-      system: "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000",
+      system: "2.16.840.1.113883.3.9621",
     },
     gateway: {
       oid: `2.16.840.1.113883.3.564.${randInt}`,
