@@ -41,7 +41,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
       await PatientDiscoveryResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: !hasError ? "success" : "failure",
         data: response,
       });
       return;
@@ -51,7 +51,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
       await DocumentQueryResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: !hasError ? "success" : "failure",
         data: response,
       });
       return;
@@ -61,7 +61,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
       await DocumentRetrievalResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: !hasError ? "success" : "failure",
         data: response,
       });
       return;

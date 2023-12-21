@@ -9,6 +9,8 @@ import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
 
+// TODO NEED TO UPDATE THESE TESTS ONCE FLOW IS APPROVED
+
 let documentQueryProgress: DocumentQueryProgress;
 let patient: Patient;
 let patientModel: PatientModel;

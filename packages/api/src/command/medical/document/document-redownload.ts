@@ -31,6 +31,7 @@ import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
+import { MedicalDataSource } from "../../../external";
 import { areDocumentsProcessing } from "./document-status";
 
 export const options = [
@@ -150,6 +151,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
         reset: true,
+        source: MedicalDataSource.COMMONWELL,
       });
       await queryAndProcessDocuments({
         patient,
@@ -213,6 +215,7 @@ async function processDocuments({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
       reset: true,
+      source: MedicalDataSource.COMMONWELL,
     });
 
     await downloadDocsAndUpsertFHIR({
@@ -232,6 +235,7 @@ async function processDocuments({
     await appendDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "completed" },
+      source: MedicalDataSource.COMMONWELL,
     });
   }
   log(`Done for patient ${patientId}`);

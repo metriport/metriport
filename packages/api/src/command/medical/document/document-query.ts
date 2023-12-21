@@ -17,6 +17,7 @@ import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-d
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
+import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -78,6 +79,11 @@ export async function queryDocumentsAcrossHIEs({
     facilityId,
     forceDownload: override,
     forceQuery,
+    requestId,
+  }).catch(emptyFunction);
+
+  getDocumentsFromCQ({
+    patient,
     requestId,
   }).catch(emptyFunction);
 

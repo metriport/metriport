@@ -15,6 +15,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { getFileExtension, sandboxSleepTime } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
 import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
+import { MedicalDataSource } from "../../../external";
 
 const randomDates = [
   "2023-06-15",
@@ -53,6 +54,7 @@ export async function sandboxGetDocRefsAndUpsert({
       },
       reset: true,
       requestId,
+      source: MedicalDataSource.COMMONWELL,
     });
     processPatientDocumentRequest(
       organization.cxId,
@@ -95,6 +97,7 @@ export async function sandboxGetDocRefsAndUpsert({
         }
       : undefined),
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
 
   let docsToConvert: number = convertibleDocCount;
@@ -168,6 +171,7 @@ export async function sandboxGetDocRefsAndUpsert({
             status: "processing",
           },
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
 
   const result = entries.map(d => d.docRef);

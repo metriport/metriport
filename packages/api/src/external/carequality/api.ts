@@ -1,5 +1,6 @@
-import { Config } from "../../shared/config";
 import { Carequality } from "@metriport/carequality-sdk";
+import { IHEGateway, APIMode } from "@metriport/ihe-gateway-sdk";
+import { Config } from "../../shared/config";
 
 /**
  * Creates a new instance of the Carequality API client.
@@ -10,4 +11,18 @@ export function makeCarequalityAPI(apiKey?: string): Carequality | undefined {
   if (Config.isSandbox()) return;
   const cqApiKey = apiKey ?? Config.getCQApiKey();
   return new Carequality(cqApiKey);
+}
+
+/**
+ * Creates a new instance of the IHE Gateway client.
+ * @returns IHE Gateway client.
+ */
+export function makeIheGatewayAPI(): IHEGateway | undefined {
+  if (Config.isProdEnv() || Config.isSandbox()) {
+    return;
+  } else if (Config.isStaging()) {
+    return new IHEGateway(APIMode.integration);
+  }
+
+  return new IHEGateway(APIMode.dev);
 }

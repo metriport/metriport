@@ -8,11 +8,16 @@ export type Progress = {
   errors?: number;
 };
 
+export type ProgressIntKeys = keyof Omit<Progress, "status">;
+
 export type DocumentQueryProgress = {
   download?: Progress;
   convert?: Progress;
   requestId?: string;
 };
+
+export type ProgressType = keyof Pick<DocumentQueryProgress, "convert" | "download">;
+export const progressTypes = ["convert", "download"] as const;
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];

@@ -5,7 +5,7 @@ import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
 import {
-  DocumentQueryProgress,
+  ProgressType,
   DocumentQueryStatus,
   Progress,
 } from "../../../domain/medical/document-query";
@@ -209,10 +209,9 @@ function getQuery(patientIds: string[] = []): string {
   const successful: keyof Pick<Progress, "successful"> = "successful";
   const errors: keyof Pick<Progress, "errors"> = "errors";
   const processing: DocumentQueryStatus = "processing";
-  type PropName = keyof Pick<DocumentQueryProgress, "convert" | "download">;
   // END
 
-  const property = (propertyName: PropName) =>
+  const property = (propertyName: ProgressType) =>
     `${data}->'${documentQueryProgress}'->'${propertyName}'`;
   const convert = property("convert");
   const download = property("download");

@@ -157,6 +157,7 @@ export async function queryAndProcessDocuments({
         forceDownload === undefined &&
         ignoreDocRefOnFHIRServer === undefined
       ) {
+        // THIS WILL NEED TO BE MOVED TO A DIFFERENT PLACE WHEN WE SUPPORT MULTIPLE HIEs
         reportDocQueryUsage(patient);
       }
 
@@ -176,6 +177,7 @@ export async function queryAndProcessDocuments({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
+      source: MedicalDataSource.COMMONWELL,
     });
     capture.message(msg, {
       extra: {
@@ -350,6 +352,8 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
+  // MAKE SURE TO FOLLOW THIS ALL THE WAY THROUGH WITH NEW FLOW
+  // TO MAKE SURE IT MAKES SENSE
   return appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
@@ -361,6 +365,7 @@ async function initPatientDocQuery(
       total: convertibleDocs,
     },
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
 }
 
@@ -672,6 +677,7 @@ export async function downloadDocsAndUpsertFHIR({
                 errors: errorCount,
               },
               requestId,
+              source: MedicalDataSource.COMMONWELL,
             });
           } catch (error) {
             const msg = `Failed to append doc query progress`;
@@ -708,6 +714,7 @@ export async function downloadDocsAndUpsertFHIR({
     convertibleDownloadErrors: errorCountConvertible,
     increaseCountConvertible,
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
   // send webhook to CXs when docs are done downloading
   processPatientDocumentRequest(

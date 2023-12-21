@@ -11,13 +11,15 @@ export type DateRange = {
 };
 
 export type DocumentQueryRequest = BaseRequest & {
-  xcaHomeCommunityId: string;
   xcpdPatientId: {
     id: string;
     system: string;
   };
-  patientId?: string;
-  xcaGateway: string;
+  patientResourceId?: string;
+  gateway: {
+    homeCommunityId: string;
+    url: string;
+  };
   classCode?: Code[];
   practiceSettingCode?: Code[];
   facilityTypeCode?: Code[];

@@ -18,11 +18,11 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "https://localhost:8082";
+  static devUrl = "http://host.docker.internal:8083";
 
-  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd";
-  static DOCUMENT_QUERY_ENDPOINT = "/xcadq";
-  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr";
+  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
+  static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
+  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
   constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
@@ -55,7 +55,7 @@ export class IHEGateway {
    * @param documentQueryRequest An array of document query transaction requests.
    *
    */
-  async startDocumentsQuery(documentQueryRequest: DocumentQueryRequest): Promise<void> {
+  async startDocumentsQuery(documentQueryRequest: DocumentQueryRequest[]): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequest);
   }
 
@@ -66,7 +66,7 @@ export class IHEGateway {
    * @param documentRetrieval An array of document retrieval transaction requests.
    *
    */
-  async startDocumentsRetrieval(documentRetrieval: DocumentRetrievalRequest): Promise<void> {
+  async startDocumentsRetrieval(documentRetrieval: DocumentRetrievalRequest[]): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
   }
 }
