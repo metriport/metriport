@@ -51,7 +51,7 @@ export const upsertGeographicCoordinates = async ({
 };
 
 /**
- * Updates the addresses with geographic coordinates.
+ * Updates the addresses with geographic coordinates and optionally reports low reevance score addresses to the cx.
  *
  * @param addresses - a list of Address objects.
  * @param reportRelevance - optional, boolean to indicate whether to report a bad address to the cx. Defaults to false.
@@ -66,9 +66,12 @@ export async function addCoordinatesToAddresses({
   patient: Partial<Patient>;
   reportRelevance?: boolean;
 }): Promise<Address[]> {
-  const updatedAddresses = await generateGeocodedAddresses(addresses);
-  if (reportRelevance) await reportLowRelevance(updatedAddresses, patient);
-  return addresses;
+  const geocodedAddressResults = await generateGeocodedAddresses(addresses);
+  if (reportRelevance) await reportLowRelevance(geocodedAddressResults, patient);
+
+  const updatedAddresses = geocodedAddressResults.map(p => p.address);
+  const addressesWithCoordinates = uniqBy([...updatedAddresses, ...addresses], "addressLine1");
+  return addressesWithCoordinates;
 }
 
 export async function reportLowRelevance(
