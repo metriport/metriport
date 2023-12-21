@@ -8,7 +8,7 @@ export type XCPDGateway = {
 };
 export type XCPDGateways = XCPDGateway[];
 
-// The following are for us crating a patient discovery request
+// The following are for us creating a patient discovery request
 export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   cxId: string;
   gateways: XCPDGateways;
