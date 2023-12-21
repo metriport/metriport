@@ -1,5 +1,5 @@
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
-import { DocumentQueryResult } from "../../../domain/medical/document-query-result";
+import { DocumentQueryResultModel } from "../../../../models/medical/document-query-result";
+import { DocumentQueryResult } from "../../domain/document-query-result";
 
 export const getDocumentQueryResult = async ({
   requestId,

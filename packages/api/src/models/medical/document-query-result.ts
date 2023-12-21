@@ -2,7 +2,7 @@ import { Sequelize } from "sequelize";
 import {
   DocumentQueryResult,
   DocumentQueryResponse,
-} from "../../domain/medical/document-query-result";
+} from "../../external/carequality/domain/document-query-result";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
 

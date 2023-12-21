@@ -1,11 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
-import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
-import { getIheResultStatus } from "../../../domain/medical/ihe-result";
-import { createPatientDiscoveryResult } from "../../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
-import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
+import { DocumentQueryResponse } from "../../domain/document-query-result";
+import { DocumentRetrievalResponse } from "../../domain/document-retrieval-result";
+import { getIheResultStatus } from "../../domain/ihe-result";
+import { createPatientDiscoveryResult } from "../patient-discovery-result/create-patient-discovery-result";
+import { DocumentQueryResultModel } from "../../../../models/medical/document-query-result";
+import { DocumentRetrievalResultModel } from "../../../../models/medical/document-retrieval-result";
 
 export enum IHEResultType {
   PATIENT_DISCOVERY = "patient-discovery",
