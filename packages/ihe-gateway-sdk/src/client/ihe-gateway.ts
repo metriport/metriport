@@ -18,11 +18,11 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "https://localhost:8082";
+  static devUrl = "http://localhost:8082";
 
-  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd";
-  static DOCUMENT_QUERY_ENDPOINT = "/xcadq";
-  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr";
+  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
+  static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
+  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
   constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
