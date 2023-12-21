@@ -18,6 +18,9 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { makeIheGatewayAPI } from "../api";
 import { capture } from "../../../shared/notifications";
 import { MedicalDataSource } from "../../../external";
+import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { MAPIWebhookStatus } from "../../../command/medical/document/document-webhook";
+import { processPatientDocumentRequest } from "../../../command/medical/document/document-webhook";
 // import { downloadDocs } from "./download-documents";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -39,32 +42,18 @@ export async function getDocumentsFromCQ({
 
   try {
     const organization = await getOrganizationOrFail({ cxId: patient.cxId });
-
-    // TODO: RAMILS PR HAS THE CHANGES FOR THE TABLE AND MIGRATION
-    const dummyCQLinks: {
-      patientId: string;
-      systemId: string;
-      oid: string;
-      url: string;
-    }[] = [
-      {
-        patientId: "1828885012501940",
-        systemId: "1.3.6.1.4.1.21367.13.70.187",
-        oid: "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000",
-        url: "https://hctest.athenahealth.com:4439/urn:oid:1.3.6.1.4.1.21367.13.70.187",
-      },
-    ];
+    const cqPatientData = await getCQPatientData({ id: patient.id, cxId: patient.cxId });
 
     const docQueryRequest = createCQDocumentQueryRequest({
       requestId,
       cxId: patient.cxId,
       organization,
-      cqLinks: dummyCQLinks,
+      cqLinks: cqPatientData?.data.links ?? [],
     });
 
     await iheGateway.startDocumentsQuery(docQueryRequest);
 
-    // TODO: CHANGE THIS TO THE STRATEGY RAMIL USED
+    // TODO: CHANGE THIS TO THE STRATEGY RAMIL USED: RACE CONTROL
     const results = await pTimeout(
       getDocumentQueryResult({ requestId }),
       DOCUMENT_QUERY_TIMEOUT.asMilliseconds(),
@@ -76,20 +65,25 @@ export async function getDocumentsFromCQ({
     const msg = `Failed to query and process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    // TODO: HOW TO SEND WEBHOOKS WHEN THINGS FAIL?
-
-    // processPatientDocumentRequest(
-    //   patientParam.cxId,
-    //   patientParam.id,
-    //   "medical.document-download",
-    //   MAPIWebhookStatus.failed
-    // );
-    await appendDocQueryProgress({
+    const updatedPatient = await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
+
+    const downloadProgressHasFailed =
+      updatedPatient.data.documentQueryProgress?.download?.status === "failed";
+
+    if (downloadProgressHasFailed) {
+      processPatientDocumentRequest(
+        patient.cxId,
+        patient.id,
+        "medical.document-download",
+        MAPIWebhookStatus.failed
+      );
+    }
+
     capture.message(msg, {
       extra: {
         context: `cq.queryAndProcessDocuments`,

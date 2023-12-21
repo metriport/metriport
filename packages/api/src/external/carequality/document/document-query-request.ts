@@ -2,6 +2,7 @@ import { PurposeOfUse } from "@metriport/shared";
 import { DocumentQueryRequest } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "../../../domain/medical/organization";
+import { CQLink } from "../domain/cq-patient-data";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -15,13 +16,7 @@ export function createCQDocumentQueryRequest({
   requestId: string;
   cxId: string;
   organization: Organization;
-  // WILL REPLACE WITH RAMILS TYPES
-  cqLinks: {
-    patientId: string;
-    systemId: string;
-    oid: string;
-    url: string;
-  }[];
+  cqLinks: CQLink[];
 }): DocumentQueryRequest[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
@@ -44,7 +39,6 @@ export function createCQDocumentQueryRequest({
         organization: orgName,
         organizationId: orgOid,
         homeCommunityId: orgOid,
-        // TODO: UPDATE
         purposeOfUse: PurposeOfUse.TREATMENT,
       },
       gateway: {
