@@ -8,12 +8,11 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { setupLambdasLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  lambdaLayers: LambdaLayers;
   alarmAction: SnsAction | undefined;
 }
 
