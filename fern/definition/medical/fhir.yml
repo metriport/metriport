@@ -138,7 +138,7 @@ types:
 
   GetConsolidatedQueryStatusResponse:
     properties:
-      status: PatientConsolidatedDataStatus
+      status: optional<PatientConsolidatedDataStatus>
       message: optional<string>
     examples:
       - name: Example0
