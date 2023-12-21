@@ -58,7 +58,7 @@ groups:
         version: 0.9.0
         output:
           location: local-file-system
-          path: ../packages/sdks/typescript/tester-node/generated
+          path: ../packages/sdks/typescript/tester-local/generated
         config:
           namespaceExport: Metriport
           outputSourceFiles: true
