@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import pTimeout from "p-timeout";
 import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
-// import { errorToString } from "@metriport/core/util/error";
+import { errorToString } from "@metriport/core/util/error";
 import { DocumentQueryResult } from "../../../domain/medical/document-query-result";
 import { DocumentReference } from "../../../domain/medical/ihe-result";
 import { Patient } from "../../../domain/medical/patient";
@@ -74,7 +74,7 @@ export async function getDocumentsFromCQ({
     await handleDocQueryResults(requestId, patient.id, patient.cxId, results, log);
   } catch (error) {
     const msg = `Failed to query and process documents in Carequality.`;
-    // console.log(`${msg}. Error: ${errorToString(error)}`);
+    console.log(`${msg}. Error: ${errorToString(error)}`);
 
     // TODO: HOW TO SEND WEBHOOKS WHEN THINGS FAIL?
 
@@ -84,11 +84,12 @@ export async function getDocumentsFromCQ({
     //   "medical.document-download",
     //   MAPIWebhookStatus.failed
     // );
-    // await appendDocQueryProgress({
-    //   patient: { id: patientParam.id, cxId: patientParam.cxId },
-    //   downloadProgress: { status: "failed" },
-    //   requestId,
-    // });
+    await appendDocQueryProgress({
+      patient: { id: patient.id, cxId: patient.cxId },
+      downloadProgress: { status: "failed" },
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+    });
     capture.message(msg, {
       extra: {
         context: `cq.queryAndProcessDocuments`,

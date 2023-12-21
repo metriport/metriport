@@ -34,6 +34,7 @@ import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url";
+import { MedicalDataSource } from "../../external";
 
 import {
   DocumentBulkSignerLambdaResponse,
@@ -179,6 +180,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
+    const source = getFrom("query").orFail("source", req);
     const docQueryProgressRaw = req.body;
     const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
     const downloadProgress = docQueryProgress.download;
@@ -192,6 +194,8 @@ router.post(
       downloadProgress,
       convertProgress,
       requestId: patient.data.documentQueryProgress?.requestId,
+      source:
+        source === "commonwell" ? MedicalDataSource.COMMONWELL : MedicalDataSource.CAREQUALITY,
     });
 
     return res.json(updatedPatient.data.documentQueryProgress);

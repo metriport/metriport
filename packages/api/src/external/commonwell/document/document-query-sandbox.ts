@@ -47,7 +47,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
-    await appendDocQueryProgress({
+    const updatedPatient = await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: {
         status: "completed",
@@ -56,13 +56,20 @@ export async function sandboxGetDocRefsAndUpsert({
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
-    processPatientDocumentRequest(
-      organization.cxId,
-      patient.id,
-      "medical.document-download",
-      MAPIWebhookStatus.completed,
-      []
-    );
+
+    const downloadProgressIsCompleted =
+      updatedPatient.data.documentQueryProgress?.download?.status === "completed";
+
+    if (downloadProgressIsCompleted) {
+      processPatientDocumentRequest(
+        organization.cxId,
+        patient.id,
+        "medical.document-download",
+        MAPIWebhookStatus.completed,
+        []
+      );
+    }
+
     return [];
   }
 
@@ -153,7 +160,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   // update download progress to completed, convert progress will be updated async
   // by the FHIR converter
-  await appendDocQueryProgress({
+  const updatedPatient = await appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       total: entries.length,
@@ -176,13 +183,18 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const result = entries.map(d => d.docRef);
 
-  processPatientDocumentRequest(
-    organization.cxId,
-    patient.id,
-    "medical.document-download",
-    MAPIWebhookStatus.completed,
-    toDTO(result)
-  );
+  const downloadProgressIsCompleted =
+    updatedPatient.data.documentQueryProgress?.download?.status === "completed";
+
+  if (downloadProgressIsCompleted) {
+    processPatientDocumentRequest(
+      organization.cxId,
+      patient.id,
+      "medical.document-download",
+      MAPIWebhookStatus.completed,
+      toDTO(result)
+    );
+  }
 
   return result;
 }

@@ -167,18 +167,25 @@ export async function queryAndProcessDocuments({
   } catch (error) {
     const msg = `Failed to query and process documents`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
-    processPatientDocumentRequest(
-      patientParam.cxId,
-      patientParam.id,
-      "medical.document-download",
-      MAPIWebhookStatus.failed
-    );
-    await appendDocQueryProgress({
+    const updatedPatient = await appendDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
+
+    const downloadProgressHasFailed =
+      updatedPatient.data.documentQueryProgress?.download?.status === "failed";
+
+    if (downloadProgressHasFailed) {
+      processPatientDocumentRequest(
+        patientParam.cxId,
+        patientParam.id,
+        "medical.document-download",
+        MAPIWebhookStatus.failed
+      );
+    }
+
     capture.message(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
@@ -716,14 +723,21 @@ export async function downloadDocsAndUpsertFHIR({
     requestId,
     source: MedicalDataSource.COMMONWELL,
   });
-  // send webhook to CXs when docs are done downloading
-  processPatientDocumentRequest(
-    cxId,
-    patient.id,
-    "medical.document-download",
-    MAPIWebhookStatus.completed,
-    toDTO(docsNewLocation)
-  );
+
+  const downloadProgressIsCompleted =
+    updatedPatient.data.documentQueryProgress?.download?.status === "completed";
+
+  if (downloadProgressIsCompleted) {
+    // send webhook to CXs when docs are done downloading
+    processPatientDocumentRequest(
+      cxId,
+      patient.id,
+      "medical.document-download",
+      MAPIWebhookStatus.completed,
+      toDTO(docsNewLocation)
+    );
+  }
+
   // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
   const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });
   const conversionStatusFromDB = patientFromDB.data.documentQueryProgress?.convert?.status;

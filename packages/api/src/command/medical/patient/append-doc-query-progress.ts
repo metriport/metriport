@@ -66,6 +66,7 @@ export async function appendDocQueryProgress({
 
     // Set the doc query progress for the given hie
     const externalData = setExternalData(
+      reset,
       existingPatient,
       source,
       downloadProgress,
@@ -94,6 +95,7 @@ export async function appendDocQueryProgress({
 }
 
 function setExternalData(
+  reset: boolean | undefined,
   patient: PatientModel,
   source: MedicalDataSource,
   downloadProgress: Progress | undefined | null,
@@ -103,6 +105,16 @@ function setExternalData(
 ): PatientExternalData {
   const externalData = patient.data.externalData ?? {};
   const sourceData = externalData[source] as PatientDataCarequality | PatientDataCommonwell;
+
+  if (reset) {
+    return {
+      ...externalData,
+      [source]: {
+        ...sourceData,
+        documentQueryProgress: {},
+      },
+    };
+  }
 
   externalData[source] = {
     ...externalData[source],
