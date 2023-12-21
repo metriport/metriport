@@ -7,5 +7,6 @@ export function convertPatientDataToPatientDataMPI(sourcePatientData: PatientDat
 }
 
 export function convertPatientModelToPatientData(sourcePatientData: PatientModel): PatientDataMPI {
-  return Object.assign({}, sourcePatientData.data, { id: sourcePatientData.id });
+  const sourcePatientId = btoa(`${sourcePatientData.cxId}/${sourcePatientData.id}`);
+  return Object.assign({}, sourcePatientData.data, { id: sourcePatientId });
 }

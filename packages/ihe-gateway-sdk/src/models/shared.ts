@@ -75,8 +75,8 @@ export type XCAGateway = {
 
 export type DocumentReference = {
   homeCommunityId: string;
-  docUniqueId: string;
-  urn: string;
+  uniqueId: string;
+  urn?: string;
   repositoryUniqueId: string;
   newRepositoryUniqueId?: string;
   newDocumentUniqueId?: string;
