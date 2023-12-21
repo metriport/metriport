@@ -16,6 +16,10 @@ on:
         required: false
         type: string
         description: "the name of the Location Services CDK stack we're deploying"
+      ihe_cdk_stack:
+        required: false
+        type: string
+        description: "the name of the IHE CDK stack we're deploying"
       cdk_stack:
         required: true
         type: string
@@ -187,6 +191,37 @@ jobs:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.87.0"
           cdk_stack: "${{ inputs.location_services_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+          METRIPORT_VERSION: ${{ github.sha }}
+
+      # IHE Stack CDK DIFF
+      - name: Diff IHE CDK stack
+        uses: metriport/deploy-with-cdk@master
+        if: inputs.ihe_cdk_stack != null
+        with:
+          cdk_action: "diff"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.ihe_cdk_stack }}"
+          cdk_env: "${{ inputs.deploy_env }}"
+        env:
+          INPUT_PATH: "metriport/packages/infra"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
+
+      # IHE Stack DEPLOY
+      - name: Deploy IHE CDK stack
+        uses: metriport/deploy-with-cdk@master
+        if: inputs.ihe_cdk_stack != null
+        with:
+          cdk_action: "deploy --verbose --require-approval never"
+          cdk_version: "2.87.0"
+          cdk_stack: "${{ inputs.ihe_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
           INPUT_PATH: "metriport/packages/infra"

@@ -1,5 +1,4 @@
-import { BaseRequest, baseResponseSchema, documentReference } from "./shared";
-import { z } from "zod";
+import { BaseRequest } from "./shared";
 
 export type Code = {
   system: string;
@@ -25,10 +24,3 @@ export type DocumentQueryRequest = BaseRequest & {
   documentCreationDate?: DateRange;
   serviceDate?: DateRange;
 };
-
-export const documentQueryResponseSchema = baseResponseSchema.extend({
-  documentReference: z.array(documentReference).nullable(),
-  xcaHomeCommunityId: z.string(),
-});
-
-export type DocumentQueryResponse = z.infer<typeof documentQueryResponseSchema>;

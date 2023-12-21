@@ -2,10 +2,11 @@ import { uniqBy } from "lodash";
 import { Address } from "../../../domain/medical/address";
 import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
-import { AddressGeocodingResult, generateGeocodedAddresses } from "../../../external/aws/address";
+import { AddressGeocodingResult } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
 import { capture } from "../../../shared/notifications";
 import { PatientUpdateCmd, updatePatient } from "./update-patient";
+import { generateGeocodedAddresses } from "../address/generate-geocoded-addresses";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
 

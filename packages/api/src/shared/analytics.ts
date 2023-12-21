@@ -37,6 +37,7 @@ export enum EventTypes {
   webhook = "webhook",
   error = "error",
   addressRelevance = "addressRelevance",
+  patientDiscovery = "patientDiscovery",
 }
 
 export enum EventErrMessage {

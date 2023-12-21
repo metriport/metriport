@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Command, Option } from "commander";
-import { makeJwt, PurposeOfUse } from "@metriport/commonwell-sdk";
+import { makeJwt } from "@metriport/commonwell-sdk";
+import { PurposeOfUse } from "@metriport/shared";
 import * as fs from "fs";
 
 const rsaKeyOpt = "rsa-key";
@@ -53,14 +54,14 @@ program
             ,▄,
           ▄▓███▌
       ▄▀╙   ▀▓▀    ²▄
-    ▄└               ╙▌     
-  ,▀                   ╨▄   
-  ▌                     ║   
-                         ▌  
-                         ▌  
-,▓██▄                 ╔███▄ 
-╙███▌                 ▀███▀ 
-    ▀▄                      
+    ▄└               ╙▌
+  ,▀                   ╨▄
+  ▌                     ║
+                         ▌
+                         ▌
+,▓██▄                 ╔███▄
+╙███▌                 ▀███▀
+    ▀▄
       ▀╗▄         ,▄
          '╙▀▀▀▀▀╙''
 

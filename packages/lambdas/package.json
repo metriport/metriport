@@ -22,8 +22,8 @@
   "license": "ISC",
   "dependencies": {
     "@aws-lambda-powertools/parameters": "^1.8.0-beta",
-    "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@aws-sdk/client-s3": "^3.435.0",
+    "@aws-sdk/client-secrets-manager": "^3.348.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
@@ -36,6 +36,7 @@
     "axios": "^1.4.0",
     "dayjs": "^1.11.10",
     "http-status": "^1.7.0",
+    "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",
     "lodash": "^4.17.21",
     "nanoid": "^3.3.6",
@@ -43,12 +44,16 @@
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
     "uuid": "^9.0.0",
-    "xmldom": "^0.6.0"
+    "xml2js": "^0.6.2",
+    "xmldom": "^0.6.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@metriport/core": "file:packages/core",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
+    "@types/aws-serverless-express": "^3.3.9",
+    "@types/express": "^4.17.21",
     "@types/jest": "^29.5.5",
     "@types/node-fetch": "^2.6.4",
     "@types/uuid": "^9.0.2",

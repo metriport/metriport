@@ -2,6 +2,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Patient, PatientCreate, PatientData } from "../../../domain/medical/patient";
 import { processAsyncError } from "../../../errors";
 import cwCommands from "../../../external/commonwell";
+import cqCommands from "../../../external/carequality";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
@@ -28,7 +29,7 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  await getFacilityOrFail({ cxId, id: facilityId });
+  const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
   const patientCreate: PatientCreate = {
     id: uuidv7(),
@@ -47,6 +48,11 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   // TODO: #393 declarative, event-based integration
   // Intentionally asynchronous - it takes too long to perform
   cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
+
+  // Intentionally asynchronous - it takes too long to perform
+  cqCommands.patient
+    .discover(newPatient, facility.data.npi)
+    .catch(processAsyncError(`cq.patient.discover`));
 
   return newPatient;
 };

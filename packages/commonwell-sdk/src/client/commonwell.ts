@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosResponse } from "axios";
 import httpStatus from "http-status";
 import { Agent } from "https";
 import * as stream from "stream";
+import { PurposeOfUse } from "@metriport/shared";
 import { CommonWellAPI } from "..";
 import { makeJwt } from "../common/make-jwt";
 import MetriportError from "../common/metriport-error";
@@ -35,7 +36,6 @@ import {
   PersonSearchResp,
   personSearchRespSchema,
 } from "../models/person";
-import { PurposeOfUse } from "../models/purpose-of-use";
 import * as document from "./document";
 
 const DEFAULT_AXIOS_TIMEOUT_SECONDS = 120;

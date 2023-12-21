@@ -6,9 +6,9 @@ import {
   CommonWell,
   Document,
   OperationOutcome,
-  PurposeOfUse,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { PurposeOfUse } from "@metriport/shared";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as fs from "fs";
 import * as mime from "mime-types";

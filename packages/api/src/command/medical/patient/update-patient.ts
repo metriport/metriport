@@ -1,4 +1,5 @@
 import { Patient, PatientData } from "../../../domain/medical/patient";
+import { patientEvents } from "../../../event/medical/patient-event";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
@@ -20,7 +21,7 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
   const sanitized = sanitize(patientUpdate);
   validate(sanitized);
 
-  return executeOnDBTx(PatientModel.prototype, async transaction => {
+  const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       id,
       cxId,
@@ -52,4 +53,8 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
       { transaction }
     );
   });
+
+  patientEvents().emitUpdated(result);
+
+  return result;
 };
