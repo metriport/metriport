@@ -32,7 +32,6 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { createIHEStack } from "./ihe-stack";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -48,7 +47,9 @@ interface APIStackProps extends StackProps {
 }
 
 export class APIStack extends Stack {
-  readonly vpc: ec2.IVpc;
+  public readonly vpc: ec2.IVpc;
+  public readonly sharedLambdaLayers: LambdaLayers;
+  public readonly alarmAction: SnsAction | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -62,6 +63,7 @@ export class APIStack extends Stack {
     const secrets = getSecrets(this, props.config);
 
     const slackNotification = setupSlackNotifSnsTopic(this, props.config);
+    this.alarmAction = slackNotification?.alarmAction;
 
     //-------------------------------------------
     // VPC + NAT Gateway
@@ -239,6 +241,7 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
+    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -693,19 +696,6 @@ export class APIStack extends Stack {
         period: apig.Period.DAY,
       },
     });
-
-    //-------------------------------------------
-    // IHE API Gateway
-    //-------------------------------------------
-    if (props.config.iheGateway) {
-      createIHEStack(this, {
-        config: props.config,
-        vpc: this.vpc,
-        alarmAction: slackNotification?.alarmAction,
-        lambdaLayers,
-        publicZone,
-      });
-    }
 
     createScheduledAPIQuotaChecker({
       stack: this,
@@ -1433,7 +1423,7 @@ export class APIStack extends Stack {
     const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
     const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
       // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraMonitoring.Metrics.html
-      threshold: 166, // BILLED IOPS, that's ~50_000 regular IOPS
+      threshold: 300_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
@@ -1442,12 +1432,19 @@ export class APIStack extends Stack {
 
     const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
     const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
-      threshold: 50_000, // IOPS
+      threshold: 60_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
     alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
     alarmAction && wIOPSAlarm.addOkAction(alarmAction);
+
+    const acuMetric = dbCluster.metricACUUtilization();
+    acuMetric.createAlarm(this, `${dbClusterName}ACUUtilizationAlarm`, {
+      threshold: 80, // pct
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
   }
 
   private addDynamoPerformanceAlarms(

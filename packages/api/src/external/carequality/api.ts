@@ -18,7 +18,8 @@ export function makeCarequalityAPI(apiKey?: string): Carequality | undefined {
  * @returns IHE Gateway client.
  */
 export function makeIheGatewayAPI(): IHEGateway | undefined {
-  if (Config.isProdEnv() || Config.isSandbox()) {
+  if (Config.isSandbox() || Config.isProdEnv()) {
+    // TODO: #1350 - Remove this when we go live with CQ
     return;
   } else if (Config.isStaging()) {
     return new IHEGateway(APIMode.integration);

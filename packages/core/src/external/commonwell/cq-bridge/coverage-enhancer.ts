@@ -2,7 +2,7 @@ import { PatientLoader } from "../../../domain/patient/patient-loader";
 import { CQOrgHydrated, getOrgChunksFromPos, getOrgsByPrio, OrgPrio } from "./get-orgs";
 
 // Try to keep it even to make testing easier
-export const defaultMaxOrgsToProcess = 2400;
+export const defaultMaxOrgsToProcess = 400;
 
 export type CoverageEnhancementParams = {
   cxId: string;

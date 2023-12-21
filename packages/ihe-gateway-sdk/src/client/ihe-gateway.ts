@@ -1,9 +1,9 @@
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientDiscoveryRequest } from "../models/patient-discovery";
 import { DocumentQueryRequest } from "../models/document-query";
 import { DocumentRetrievalRequest } from "../models/document-retrieval";
+import { PatientDiscoveryRequest } from "../models/patient-discovery";
 
 dayjs.extend(duration);
 
@@ -18,7 +18,7 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "http://host.docker.internal:8083";
+  static devUrl = "http://localhost:8082";
 
   static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
   static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
@@ -41,11 +41,11 @@ export class IHEGateway {
    * Patient Discovery (XCPD ITI-55) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
    *
-   * @param patientDiscoveryRequest A patient discovery transaction request to Ihe Gateway.
+   * @param pdRequest A patient discovery transaction request to IHE Gateway.
    *
    */
-  async startPatientDiscovery(patientDiscoveryRequest: PatientDiscoveryRequest): Promise<void> {
-    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequest);
+  async startPatientDiscovery(pdRequest: PatientDiscoveryRequest): Promise<void> {
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, pdRequest);
   }
 
   /**

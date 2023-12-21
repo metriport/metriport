@@ -10,7 +10,7 @@ export const generatePatient = (
   return {
     id: "abcd1234",
     cxId: "abc123",
-    xcpdGateways: xcpdGateways,
+    gateways: xcpdGateways,
     timestamp: "2021-05-04T19:32:00.000Z",
     samlAttributes: {
       subjectId: user,

@@ -38,3 +38,19 @@ export type DocumentReference = {
   creation?: string | null;
   title?: string | null;
 };
+
+export type IHEResultStatus = "success" | "failure";
+
+export function getIheResultStatus({
+  operationOutcome,
+  patientMatch,
+  docRefLength,
+}: {
+  operationOutcome?: OperationOutcome | undefined | null;
+  patientMatch?: boolean;
+  docRefLength?: number;
+}): IHEResultStatus {
+  // explicitly checking for a boolean value for patientMatch because it can be undefined
+  if (operationOutcome?.issue || patientMatch === false || docRefLength === 0) return "failure";
+  return "success";
+}

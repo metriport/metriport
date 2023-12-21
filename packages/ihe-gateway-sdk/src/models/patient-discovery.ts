@@ -1,5 +1,5 @@
 import { Patient } from "@medplum/fhirtypes";
-import { NPIStringArray, oidStringSchema, SamlAttributes } from "./shared";
+import { baseResponseSchema, NPIStringArray, oidStringSchema, SamlAttributes } from "./shared";
 import { z } from "zod";
 
 export const xcpdGatewaysSchema = z.array(
@@ -16,8 +16,15 @@ export type PatientDiscoveryRequest = {
   id: string;
   cxId: string;
   timestamp: string;
-  xcpdGateways: XCPDGateways;
+  gateways: XCPDGateways;
   samlAttributes: SamlAttributes;
   patientResource: Patient;
   principalCareProviderIds?: NPIStringArray;
 };
+
+export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
+  patientMatch: z.boolean(),
+  gatewayHomeCommunityId: z.string().nullish(),
+});
+
+export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;
