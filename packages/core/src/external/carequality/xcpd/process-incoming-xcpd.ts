@@ -9,7 +9,7 @@ import {
   InternalError,
   PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
-} from "./validating-iti55";
+} from "./validating-xcpd";
 import {
   matchPatients,
   jaroWinklerSimilarity,
@@ -19,11 +19,13 @@ import { normalizePatientDataMPI } from "../../mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "../../mpi/merge-patients";
 import { capture } from "../../../util/notifications";
 import { getEnvVarOrFail } from "../../../util/env-var";
-
 import axios from "axios";
+
 const ossApi = axios.create();
 const SIMILARITY_THRESHOLD = 0.96;
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
+const apiURL = getEnvVarOrFail("API_URL");
+const postEndpointUrl = `${apiURL}/internal/patient/mpi/block`;
 
 type MPIBlockParams = {
   dob: string;
@@ -94,8 +96,6 @@ function constructMatchResponse(
 export async function processIncomingRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
-  const apiClient = apiClientMPIBlockEndpoint();
-
   try {
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
     const normalizedPatientDemo = normalizePatientDataMPI(patient);
@@ -109,10 +109,11 @@ export async function processIncomingRequest(
       );
     }
 
-    const response = await apiClient.callInternalEndpoint({
+    const response = await callMPIBlockEndpoint({
       dob: normalizedPatientDemo.dob,
       genderAtBirth: normalizedPatientDemo.genderAtBirth,
     });
+
     const blockedPatients: PatientDataMPI[] = response.data;
 
     const matchingPatients = matchPatients(
@@ -168,35 +169,28 @@ export async function processIncomingRequest(
   }
 }
 
-export function apiClientMPIBlockEndpoint() {
-  const apiURL = getEnvVarOrFail("API_URL");
-  const postEndpointUrl = `${apiURL}/internal/patient/mpi/block`;
-
-  return {
-    callInternalEndpoint: async function (
-      params: MPIBlockParams
-    ): Promise<AxiosResponse<PatientDataMPI[]>> {
-      try {
-        return await ossApi.post(postEndpointUrl, null, {
-          params: {
-            dob: params.dob,
-            genderAtBirth: params.genderAtBirth,
-            firstNameInitial: params.firstNameInitial,
-            lastNameInitial: params.lastNameInitial,
-          },
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        const msg = "Error notifying MPI Blocking Internal API";
-        const extra = {
-          url: postEndpointUrl,
-          statusCode: error.response?.status,
-          error,
-        };
-        console.log(msg, extra);
-        capture.message(msg, { extra, level: "info" });
-        throw new Error(`Error from API: ${error.message}`);
-      }
-    },
-  };
+export async function callMPIBlockEndpoint(
+  params: MPIBlockParams
+): Promise<AxiosResponse<PatientDataMPI[]>> {
+  try {
+    return await ossApi.post(postEndpointUrl, null, {
+      params: {
+        dob: params.dob,
+        genderAtBirth: params.genderAtBirth,
+        firstNameInitial: params.firstNameInitial,
+        lastNameInitial: params.lastNameInitial,
+      },
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    const msg = "Error notifying MPI Blocking Internal API";
+    const extra = {
+      url: postEndpointUrl,
+      statusCode: error.response?.status,
+      error,
+    };
+    console.log(msg, extra);
+    capture.message(msg, { extra, level: "info" });
+    throw new Error(`Error from API: ${error.message}`);
+  }
 }

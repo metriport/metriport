@@ -508,7 +508,8 @@ router.post(
       },
     });
 
-    return res.status(status.OK).json(blockedPatients.map(convertPatientModelToPatientData));
+    const payload = blockedPatients.map(convertPatientModelToPatientData);
+    return res.status(status.OK).json(payload);
   })
 );
 

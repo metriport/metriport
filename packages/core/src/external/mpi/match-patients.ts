@@ -95,7 +95,7 @@ export const matchingContactDetailsRule = (
  * This function won't be called if gender and DOB are not identical, so that is a given.
  * @param patient1
  * @param patient2
- * @returns The average of the similarity scores for each field.
+ * @returns boolean if the patients are a match according to threshold.
  */
 export const jaroWinklerSimilarity = (
   patient1: PatientDataMPI,

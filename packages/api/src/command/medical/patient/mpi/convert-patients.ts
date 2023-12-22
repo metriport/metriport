@@ -3,9 +3,15 @@ import { PatientModel } from "../../../../models/medical/patient";
 import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
 
 export function convertPatientDataToPatientDataMPI(sourcePatientData: PatientData): PatientDataMPI {
-  return Object.assign({}, sourcePatientData, { id: "" });
+  return {
+    ...sourcePatientData,
+    id: "",
+  };
 }
 
 export function convertPatientModelToPatientData(sourcePatientData: PatientModel): PatientDataMPI {
-  return Object.assign({}, sourcePatientData.data, { id: sourcePatientData.id });
+  return {
+    ...sourcePatientData.data,
+    id: sourcePatientData.id,
+  };
 }

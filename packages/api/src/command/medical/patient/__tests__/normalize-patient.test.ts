@@ -180,12 +180,9 @@ describe("normalizePatientDataMPI", () => {
         },
       ],
     };
-
-    const expected = null;
-
     const result = normalizePatientDataMPI(PatientDataMPI);
 
-    expect(result).toEqual(expected);
+    expect(result).toBeNull();
   });
 });
 

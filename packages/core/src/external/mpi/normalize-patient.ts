@@ -125,6 +125,9 @@ function normalizePhoneNumber(phoneNumber: string): string {
   return normalizedNumber;
 }
 
+// TODO maybe want to have a rule that we will only normalize a single word in the address. If there are multiple, then
+// we will not normalize. This is because we don't want to normalize something like "123 boulevard rd" to "123 blvd rd"
+
 /**
  * The function `normalizeAddress` takes a string representing an address and replaces common street
  * suffixes with their abbreviated forms.
@@ -141,8 +144,6 @@ function normalizeAddress(address: string): string {
     terrace: "ter",
     place: "pl",
     lane: "ln",
-    court: "ct",
-    circle: "cir",
     highway: "hwy",
     parkway: "pkwy",
   };

@@ -1,8 +1,8 @@
 // TODO SLATE TO BE DEPRECATED.
-import { generatePatientDoc } from "./docs";
-import { generateTimeStrings, cleanXml } from "./utils";
+import { generatePatientDoc } from "../docs";
+import { generateTimeStrings, cleanXml } from "../utils";
 import * as xml2js from "xml2js";
-import { generateITI39Template } from "./iti-39-template";
+import { generateITI39Template } from "./dr-template";
 
 // mapping od document ids to docs
 const documentData: { [key: string]: string } = {

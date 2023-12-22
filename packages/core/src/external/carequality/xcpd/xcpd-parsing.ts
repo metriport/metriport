@@ -5,10 +5,10 @@ import {
   Address,
   LivingSubjectId,
   PrincipalCareProviderId,
-} from "../mpi/patient-incoming-schema";
-import { cleanXml, generateTimeStrings } from "./utils";
-import { generateXcpdTemplate } from "./iti-55-template";
-import { isAnyPatientMatching } from "./patient-matching";
+} from "../../mpi/patient-incoming-schema";
+import { cleanXml, generateTimeStrings } from "../utils";
+import { generateXcpdTemplate } from "./xcpd-template";
+import { isAnyPatientMatching } from "../patient-matching";
 
 /**
  * Parses an XML string and extracts patient data and other information.
