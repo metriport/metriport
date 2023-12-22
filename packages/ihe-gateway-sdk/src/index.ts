@@ -1,6 +1,7 @@
 export { IHEGateway, APIMode } from "./client/ihe-gateway";
 export {
   PatientDiscoveryRequestOutgoing,
+  PatientDiscoveryResponseIncoming,
   PatientDiscoveryResponseOutgoing,
   PatientDiscoveryRequestIncoming,
   XCPDGateways,

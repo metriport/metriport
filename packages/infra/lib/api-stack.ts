@@ -240,7 +240,6 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
-    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains

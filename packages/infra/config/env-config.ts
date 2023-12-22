@@ -95,8 +95,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  iheGateway: {
-    stackName: string;
+  iheGateway?: {
     certArn: string;
     subdomain: string; // Subdomain for IHE integrations
   };

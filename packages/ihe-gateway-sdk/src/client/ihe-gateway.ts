@@ -58,9 +58,9 @@ export class IHEGateway {
    *
    */
   async startDocumentsQuery(
-    DocumentQueryRequestOutgoing: DocumentQueryRequestOutgoing
+    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing
   ): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, DocumentQueryRequestOutgoing);
+    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequestOutgoing);
   }
 
   /**
@@ -71,8 +71,8 @@ export class IHEGateway {
    *
    */
   async startDocumentsRetrieval(
-    documentRetrieval: DocumentRetrievalRequestOutgoing
+    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing
   ): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
+    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalRequestOutgoing);
   }
 }
