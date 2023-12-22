@@ -10,7 +10,7 @@ class CoverageEnhancerLocal extends CoverageEnhancer {
   constructor(params: ConstructorParameters<typeof CoverageEnhancer>[0]) {
     super(params);
   }
-  public enhanceCoverage(): Promise<void> {
+  public enhanceCoverage(): Promise<string> {
     throw new Error("Method not implemented.");
   }
   override async getOrgsForPatients(cxId: string, patientIds: string[]): Promise<CQOrgHydrated[]> {

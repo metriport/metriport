@@ -7,16 +7,18 @@ import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
 import { Config } from "../shared/config";
-import { ModelSetup } from "./_default";
 import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { DocRefMappingModel } from "./medical/docref-mapping";
 import { DocumentQueryResultModel } from "./medical/document-query-result";
 import { DocumentRetrievalResultModel } from "./medical/document-retrieval-result";
+import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
+import { PatientDiscoveryResultModel } from "./medical/patient-discovery-result";
 import { Settings } from "./settings";
 import { WebhookRequest } from "./webhook-request";
+import { ModelSetup } from "./_default";
 
 // models to setup with sequelize
 const models: ModelSetup[] = [
@@ -33,6 +35,7 @@ const models: ModelSetup[] = [
   PatientDiscoveryResultModel.setup,
   DocumentQueryResultModel.setup,
   DocumentRetrievalResultModel.setup,
+  CoverageEnhancementModel.setup,
 ];
 
 export type MetriportDB = {
