@@ -1,10 +1,12 @@
 import { PatientLoader } from "../../../domain/patient/patient-loader";
+import { uuidv7 } from "../../../util/uuid-v7";
 import { CQOrgHydrated, getOrgChunksFromPos, getOrgsByPrio, OrgPrio } from "./get-orgs";
 
 // Try to keep it even to make testing easier
 export const defaultMaxOrgsToProcess = 400;
 
 export type CoverageEnhancementParams = {
+  ecId?: string | undefined;
   cxId: string;
   orgOID: string;
   patientIds: string[];
@@ -31,20 +33,27 @@ export abstract class CoverageEnhancer {
     this.maxOrgsToProcess = maxOrgsToProcess;
   }
 
+  public makeId(): string {
+    return uuidv7();
+  }
+
   /**
    * Execute the Enhanced Coverage flow using CW's CQ bridge.
    *
+   * @param ecId The ID of this EC run, optional (created if not provided)
    * @param cxId The customer ID
    * @param orgOID The OID of the customer's Org
    * @param patientIds The IDs of the patients to have coverage enhanced
    * @param fromOrgChunkPos The initial chunk of CQ orgs to start from (defaults to 0)
+   * @returns The ID of the EC run
    */
   public abstract enhanceCoverage({
+    ecId,
     cxId,
     orgOID,
     patientIds,
     fromOrgChunkPos,
-  }: CoverageEnhancementParams): Promise<void>;
+  }: CoverageEnhancementParams): Promise<string>;
 
   protected async getCarequalityOrgs({
     cxId,
