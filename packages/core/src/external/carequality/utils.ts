@@ -30,7 +30,24 @@ export function generateTimeStrings(): {
 export function cleanXml(xml: string): string {
   xml = xml.trim();
   xml = xml.replace(/^\\n/, "");
+  // all the different escape permutations I have seen
+  xml = xml.replace(/\\\\\\\\"/g, '"');
   xml = xml.replace(/\\\\\\"/g, '"');
+  xml = xml.replace(/\\\\"/g, '"');
   xml = xml.replace(/\\"/g, '"');
   return xml;
+}
+
+export function parseMtomResponseRegex(body: string): string {
+  const envelopeTags = ["soap:Envelope", "s:Envelope", "soapenv:Envelope"];
+  //eslint-disable-next-line
+  const regex = new RegExp(`(<(${envelopeTags.join("|")}).*<\/(${envelopeTags.join("|")})>)`, "s");
+  const match = body.match(regex);
+
+  if (match && match[1]) {
+    return match[1];
+  }
+
+  console.log("No valid XML envelope found in the body");
+  return body;
 }

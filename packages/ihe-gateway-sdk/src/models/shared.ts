@@ -47,3 +47,29 @@ export const documentReference = z.object({
 });
 
 export type DocumentReference = z.infer<typeof documentReference>;
+
+export const issue = z.object({
+  severity: z.string(),
+  code: z.string(),
+  details: z.object({ text: z.string() }),
+});
+
+export const operationOutcome = z.object({
+  resourceType: z.string(),
+  id: z.string(),
+  issue: z.array(issue),
+});
+
+export const gatewaySchema = z.object({ id: z.string(), oid: z.string(), url: z.string() });
+export type Gateway = z.infer<typeof gatewaySchema>;
+
+export const baseResponseSchema = z.object({
+  id: z.string(),
+  cxId: z.string(),
+  timestamp: z.string(),
+  responseTimestamp: z.string(),
+  gatewayPatientId: z.object({ id: z.string(), system: z.string() }).optional(),
+  gateway: gatewaySchema,
+  patientId: z.string(),
+  operationOutcome: operationOutcome.nullish(),
+});
