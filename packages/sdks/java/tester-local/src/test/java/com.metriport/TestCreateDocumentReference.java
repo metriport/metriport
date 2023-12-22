@@ -57,9 +57,9 @@ public class TestCreateDocumentReference {
                 .build();
 
         DocumentReference uploadDocumentReference = DocumentReference.builder()
-                .resourceType("DocumentReference")
+                .contained(null)
                 .type(typeCodeableConcept)
-                .context(Collections.singletonList(documentReferenceContext))
+                .context(documentReferenceContext)
                 .content(Collections.singletonList(documentReferenceContent))
                 .build();
 
