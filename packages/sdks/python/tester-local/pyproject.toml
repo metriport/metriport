@@ -9,6 +9,8 @@ readme = "README.md"
 python = "^3.11"
 httpx = ">=0.21.2"
 pydantic = ">= 1.9.2, < 2.5.0"
+python-dotenv = "^1.0.0"
+fastapi = "^0.105.0"
 
 [tool.poetry.dev-dependencies]
 mypy = "0.971"

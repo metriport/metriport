@@ -25,6 +25,9 @@ java {
     withJavadocJar()
 }
 
+tasks.withType(Test).configureEach {
+  outputs.upToDateWhen { false }
+}
 test {
     useJUnitPlatform()
     testLogging {
