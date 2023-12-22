@@ -6,7 +6,7 @@ export function generateITI39Template(status: string): string {
         <RepositoryUniqueId>{homeCommunityId}</RepositoryUniqueId>
         <DocumentUniqueId>{documentId}</DocumentUniqueId>
         <mimeType>text/xml</mimeType>
-        <Document>{base64}<Document>
+        <Document>{base64}</Document>
     </DocumentResponse>`;
   }
   const iti39Template = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
