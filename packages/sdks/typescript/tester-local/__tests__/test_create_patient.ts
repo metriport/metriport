@@ -29,13 +29,13 @@ describe("Patient tests", () => {
       genderAtBirth: "M",
       personalIdentifiers: [{
           type: "driversLicense",
-          state: UsState.CA,
+          state: UsState.Ca,
           value: "12345678",
         }],
       address: [{
           addressLine1: "123 Main St",
           city: "Los Angeles",
-          state: UsState.CA,
+          state: UsState.Ca,
           zip: "90001",
           country: "USA",
         }],

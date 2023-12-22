@@ -61,6 +61,7 @@ public class TestCreateDocumentReference {
                 .type(typeCodeableConcept)
                 .context(documentReferenceContext)
                 .content(Collections.singletonList(documentReferenceContent))
+                .description("Body weight Measured")
                 .build();
 
         UploadDocumentRequest uploadDocumentRequest = UploadDocumentRequest.builder()
