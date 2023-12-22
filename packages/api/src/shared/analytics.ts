@@ -36,6 +36,7 @@ export enum EventTypes {
   query = "query",
   webhook = "webhook",
   error = "error",
+  patientDiscovery = "patientDiscovery",
 }
 
 export enum EventErrMessage {

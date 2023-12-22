@@ -11,7 +11,7 @@ export type XCPDGateways = XCPDGateway[];
 // The following are for us crating a patient discovery request
 export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   cxId: string;
-  xcpdGateways: XCPDGateways;
+  gateways: XCPDGateways;
   patientResource: Patient;
   principalCareProviderIds?: NPIStringArray;
 };

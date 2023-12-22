@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
 
 const app = express();
+
 app.use(bodyParser.text({ type: "application/soap+xml" }));
 
 app.post("/xcpd/v1", async (req, res) => {

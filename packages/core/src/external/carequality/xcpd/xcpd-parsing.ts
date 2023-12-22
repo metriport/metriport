@@ -19,14 +19,13 @@ async function parseXmlString(
   xml: string
 ): Promise<[PatientDataMPI, [string, string, string | undefined, string]]> {
   // Removing leading newlines and escaping double quote variations
-  xml = cleanXml(xml);
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
 
   let result;
   try {
-    result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(cleanXml(xml));
   } catch (error) {
     console.error(error);
     throw new Error("XML parsing failed: Invalid XML");
@@ -59,7 +58,6 @@ async function parseXmlString(
             state: address["state"][0],
             zip: address["postalCode"][0],
             country: "USA",
-            addressLine2: "",
           },
         ];
       }

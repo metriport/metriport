@@ -7,14 +7,14 @@ export function generateITI39Template(status: string): string {
         <RepositoryUniqueId>{homeCommunityId}</RepositoryUniqueId>
         <DocumentUniqueId>{documentId}</DocumentUniqueId>
         <mimeType>text/xml</mimeType>
-        <Document>{base64}<Document
+        <Document>{base64}<Document>
     </DocumentResponse>`;
   }
   const iti39Template = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:ihe:iti:2007:CrossGatewayRetrieveResponse</a:Action>
-      <a:RelatesTo>urn:uuid:8da209fa-495c-44f7-bdc8-7b36ceadf65e</a:RelatesTo>
+      <a:RelatesTo>{messageId}</a:RelatesTo>
       <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
         <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
           <b:Created>{createdAt}</b:Created>
