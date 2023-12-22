@@ -84,8 +84,3 @@ types:
       - WV
       - WI
       - WY
-
-  Period:
-    properties:
-      start: optional<string>
-      end: optional<string>

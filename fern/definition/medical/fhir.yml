@@ -88,18 +88,34 @@ service:
         body: ConsolidatedBundleUpload
       response:
         type: fhir.Bundle
-      # examples:
-      #   - name: Example1
-      #     path-parameters:
-      #       id: "12345678"
-      #     request: $ConsolidatedBundleUpload.Example1
-      #     response:
-      #        body:
-      #           resourceType: "Bundle"
-      #           id: "12345"
-      #           type: "transaction-response"
-      #           entry: [{"response": {"status": "201 Created", "location": "Appointment/3/_history/1", "etag": "1", "lastModified": "2023-07-27T21:29:31.491+00:00", "outcome": {"resourceType": "OperationOutcome", "issue": [{"severity": "information", "code": "informational", "details": {"coding": [{"system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome", "code": "SUCCESSFUL_CREATE", "display": "Create succeeded."}]}, "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."}]}}}]
-
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+          request: $ConsolidatedBundleUpload.Example1
+          response:
+             body:
+                resourceType: "Bundle"
+                id: "12345"
+                type: "transaction-response"
+                entry:
+                  - resource: "" # <---------------------- adding this works
+                    response:
+                      status: 201 Created
+                      location: Appointment/3/_history/1
+                      etag: '1'
+                      lastModified: '2023-07-27T21:29:31.491+00:00'
+                      outcome:
+                        resourceType: OperationOutcome
+                        issue:
+                          - severity: information
+                            code: informational
+                            details:
+                              coding:
+                                - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
+                                  code: SUCCESSFUL_CREATE
+                                  display: Create succeeded.
+                            diagnostics: Successfully created resource "Appointment/3/_history/1". Took 7ms.
 
     countPatientData:
       display-name: Count Patient Data
