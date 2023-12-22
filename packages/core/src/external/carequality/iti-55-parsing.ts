@@ -166,7 +166,7 @@ const fillTemplate = (
       .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
       .replace(/{phone}/g, phone || "000-000-0000")
       .replace(/{patientId}/g, id || "1234567890")
-      .replace(/{systemId}/g, systemId || "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000")
+      .replace(/{systemId}/g, systemId || "2.16.840.1.113883.3.9621")
       .replace(/{code}/g, status);
   }
   return xcpdTemplate
