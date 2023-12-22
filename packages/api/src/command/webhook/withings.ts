@@ -2,7 +2,7 @@ import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { ConnectedUser } from "../../models/connected-user";
 import { Constants } from "../../shared/constants";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportDevicesUsage, WebhookUserDataPayload } from "./devices";

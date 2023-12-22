@@ -10,7 +10,7 @@ import { saveUserToken } from "../../command/cx-user/save-user-token";
 import { UserToken } from "../../domain/user-token";
 import { Config } from "../../shared/config";
 import { ProviderOAuth1Options } from "../../shared/constants";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 
 const axios = Axios.create();

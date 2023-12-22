@@ -15,7 +15,7 @@ import { mapToSleep } from "../mappings/google/sleep";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_GOOGLE } from "../shared/constants";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";

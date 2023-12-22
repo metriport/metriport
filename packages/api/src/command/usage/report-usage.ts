@@ -2,7 +2,7 @@ import Axios from "axios";
 import stringify from "json-stringify-safe";
 import { Product } from "../../domain/product";
 import { Config } from "../../shared/config";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 
 const axios = Axios.create({ timeout: 20_000 });
 

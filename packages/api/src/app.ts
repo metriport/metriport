@@ -12,7 +12,7 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { initEvents } from "./event";
 
 const app: Application = express();

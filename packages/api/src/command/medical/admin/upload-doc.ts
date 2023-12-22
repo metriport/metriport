@@ -5,7 +5,7 @@ import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { randomInt } from "../../../shared/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
 import { cloneDeep } from "lodash";

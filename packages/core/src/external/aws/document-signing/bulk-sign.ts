@@ -2,7 +2,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { DocumentReference } from "@medplum/fhirtypes";
-import { capture } from "../../../util/notifications";
+import { capture } from "../../../util/capture";
 import { S3Utils } from "../s3";
 import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-response";
 import { searchDocuments } from "../../fhir/document/search-documents";
@@ -95,7 +95,7 @@ export async function getSignedUrls(
 }
 
 export function makeApiClientTriggerBulkSignerCompletion(apiURL: string) {
-  const sendBulkDownloadUrl = `${apiURL}/internal/docs/bulkSignerCompletion`;
+  const sendBulkDownloadUrl = `${apiURL}/internal/docs/bulk-signer-completion`;
 
   return {
     callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {

@@ -24,7 +24,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
@@ -365,7 +365,7 @@ router.post(
 export default router;
 
 /**
- * POST /internal/docs/bulkSignerCompletion
+ * POST /internal/docs/bulk-signer-completion
  *
  * Endpoint called by the bulk signer lambda to trigger the webhook.
  * @param req.query.cxId - The customer/account's ID.
@@ -375,7 +375,7 @@ export default router;
  * @return Updated bulk download query progress.
  */
 router.post(
-  "/bulkSignerCompletion",
+  "/bulk-signer-completion",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);

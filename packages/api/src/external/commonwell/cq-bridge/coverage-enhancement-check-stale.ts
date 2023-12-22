@@ -4,7 +4,7 @@ import { groupBy } from "lodash";
 import { Op } from "sequelize";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { CQLinkStatus } from "../patient-shared";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
 

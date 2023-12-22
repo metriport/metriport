@@ -29,7 +29,7 @@ import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { errorToString } from "../../../shared/log";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";

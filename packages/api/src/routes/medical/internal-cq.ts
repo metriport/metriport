@@ -18,7 +18,7 @@ import {
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { asyncHandler, getFrom } from "../util";
 
 dayjs.extend(duration);

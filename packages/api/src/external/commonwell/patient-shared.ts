@@ -18,7 +18,7 @@ import { Organization } from "../../domain/medical/organization";
 import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";

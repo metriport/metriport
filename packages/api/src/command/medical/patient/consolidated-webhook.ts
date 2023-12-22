@@ -2,7 +2,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
 import { errorToString } from "../../../shared/log";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";

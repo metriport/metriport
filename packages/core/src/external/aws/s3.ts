@@ -9,7 +9,7 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
-import { capture } from "../../util/notifications";
+import { capture } from "../../util/capture";
 
 dayjs.extend(duration);
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();

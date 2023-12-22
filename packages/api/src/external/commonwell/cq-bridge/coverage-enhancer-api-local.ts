@@ -5,7 +5,7 @@ import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { PatientLoaderLocal } from "../patient-loader-local";
 import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";

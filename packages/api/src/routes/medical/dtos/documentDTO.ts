@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 
 export type DocumentReferenceDTO = {

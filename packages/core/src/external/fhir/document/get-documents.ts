@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { capture } from "../../../util/notifications";
+import { capture } from "../../../util/capture";
 import { makeFhirApi } from "../api/api-factory";
 import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
 import { Config } from "../../../util/config";

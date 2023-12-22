@@ -17,7 +17,7 @@ import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";

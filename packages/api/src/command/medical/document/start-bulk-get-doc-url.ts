@@ -11,7 +11,7 @@ import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-pr
 import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
 import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
