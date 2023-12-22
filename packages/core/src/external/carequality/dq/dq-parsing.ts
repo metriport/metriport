@@ -29,7 +29,7 @@ async function parseXmlString(xml: string): Promise<[string, string, string, str
   try {
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    const messageId = result["Envelope"]["Header"][0]["MessageID"][0]["_"];
+    const messageId = result["Envelope"]["Header"][0]["MessageID"][0];
     const id = result["Envelope"]["Body"][0]["AdhocQueryRequest"][0]["AdhocQuery"][0];
     const [patientId, systemId] = extractPatientAndSystemId(id);
     return [patientId, systemId, signature, messageId];
