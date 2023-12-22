@@ -91,7 +91,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "ITI38",
       entry: "iti38",
-      layers: [props.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
@@ -104,7 +104,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "ITI39",
       entry: "iti39",
-      layers: [props.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
@@ -117,7 +117,7 @@ export class IHEStack extends Stack {
       stack: this,
       name: "ITI55",
       entry: "iti55",
-      layers: [props.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
