@@ -1,10 +1,11 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientDiscoveryResultModel } from "../../../models/medical/patient-discovery-result";
-import { PatientDiscoveryResponse } from "../../../domain/medical/patient-discovery-result";
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
+import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
-import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
 import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
+import { getIheResultStatus } from "../../../domain/medical/ihe-result";
+import { createPatientDiscoveryResult } from "../../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
+import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
+import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
 
 export enum IHEResultType {
   PATIENT_DISCOVERY = "patient-discovery",
@@ -37,31 +38,27 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
   switch (type) {
     case IHEResultType.PATIENT_DISCOVERY: {
-      const hasError = operationOutcome?.issue && !response.patientMatch;
-
-      await PatientDiscoveryResultModel.create({
-        ...defaultPayload,
-        status: hasError ? "success" : "failure",
-        data: response,
-      });
+      await createPatientDiscoveryResult(response);
       return;
     }
     case IHEResultType.DOCUMENT_QUERY: {
-      const hasError = operationOutcome?.issue && !response.documentReference?.length;
-
       await DocumentQueryResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: getIheResultStatus({
+          operationOutcome,
+          docRefLength: response.documentReference?.length,
+        }),
         data: response,
       });
       return;
     }
     case IHEResultType.DOCUMENT_RETRIEVAL: {
-      const hasError = operationOutcome?.issue && !response.documentReference?.length;
-
       await DocumentRetrievalResultModel.create({
         ...defaultPayload,
-        status: hasError ? "success" : "failure",
+        status: getIheResultStatus({
+          operationOutcome,
+          docRefLength: response.documentReference?.length,
+        }),
         data: response,
       });
       return;

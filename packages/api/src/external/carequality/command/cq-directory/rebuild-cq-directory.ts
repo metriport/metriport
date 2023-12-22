@@ -1,15 +1,15 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { sleep } from "@metriport/core/util/sleep";
 import { QueryTypes, Sequelize } from "sequelize";
-import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
+import { Config } from "../../../../shared/config";
+import { capture } from "../../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
 import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "./shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { CQDirectoryEntryModel } from "../../../models/medical/cq-directory";
+import { executeOnDBTx } from "../../../../models/transaction-wrapper";
+import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
