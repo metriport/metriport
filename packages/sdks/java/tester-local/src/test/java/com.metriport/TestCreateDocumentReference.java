@@ -1,12 +1,15 @@
 package com.metriport;
 
 import com.metriport.generated.Metriport;
-import com.metriport.generated.resources.medical.document.types.UploadDocumentReference;
-import com.metriport.generated.resources.medical.document.types.Coding;
-import com.metriport.generated.resources.medical.document.types.CodeableConcept;
-import com.metriport.generated.resources.medical.document.types.DocumentReferenceContext;
+import com.metriport.generated.resources.fhir.types.Coding;
+import com.metriport.generated.resources.fhir.types.CodeableConcept;
 import com.metriport.generated.resources.medical.document.requests.UploadDocumentRequest;
 import com.metriport.generated.resources.fhir.types.Period;
+import com.metriport.generated.resources.fhir.types.Attachment;
+import com.metriport.generated.resources.fhir.types.DocumentReferenceContent;
+import com.metriport.generated.resources.fhir.types.DocumentReferenceContext;
+import com.metriport.generated.resources.fhir.types.DocumentReference;
+
 
 import org.junit.jupiter.api.Test;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -24,13 +27,12 @@ public class TestCreateDocumentReference {
                 .build();
 
         Coding coding = Coding.builder()
-                .system("100556-0")
-                .code("http://loinc.org")
-                .display("Burn management Hospital Progress note")
+                .system("http://loinc.org")
+                .code("3141-9")
+                .display("Body weight Measured")
                 .build();
 
         CodeableConcept typeCodeableConcept = CodeableConcept.builder()
-                .text("Burn management Hospital Progress note")
                 .coding(Collections.singletonList(coding))
                 .build();
 
@@ -48,10 +50,17 @@ public class TestCreateDocumentReference {
                 .facilityType(facilityType)
                 .build();
 
-        UploadDocumentReference uploadDocumentReference = UploadDocumentReference.builder()
-                .description("Third degree wrist burn treatment")
+        Attachment attachment = Attachment.builder().build();
+
+        DocumentReferenceContent documentReferenceContent = DocumentReferenceContent.builder()
+                .attachment(attachment)
+                .build();
+
+        DocumentReference uploadDocumentReference = DocumentReference.builder()
+                .resourceType("DocumentReference")
                 .type(typeCodeableConcept)
                 .context(Collections.singletonList(documentReferenceContext))
+                .content(Collections.singletonList(documentReferenceContent))
                 .build();
 
         UploadDocumentRequest uploadDocumentRequest = UploadDocumentRequest.builder()
