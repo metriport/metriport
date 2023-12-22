@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+imports:
+  fhir: ../fhir/__package__.yml
 
 service:
   base-path: /medical/v1
@@ -85,14 +87,19 @@ service:
       request:
         body: ConsolidatedBundleUpload
       response:
-        type: TransactionResponse
-      examples:
-        - name: Example1
-          path-parameters:
-            id: "12345678"
-          request: $ConsolidatedBundleUpload.Example1
-          response:
-            body: $TransactionResponse.Example0
+        type: fhir.Bundle
+      # examples:
+      #   - name: Example1
+      #     path-parameters:
+      #       id: "12345678"
+      #     request: $ConsolidatedBundleUpload.Example1
+      #     response:
+      #        body:
+      #           resourceType: "Bundle"
+      #           id: "12345"
+      #           type: "transaction-response"
+      #           entry: [{"response": {"status": "201 Created", "location": "Appointment/3/_history/1", "etag": "1", "lastModified": "2023-07-27T21:29:31.491+00:00", "outcome": {"resourceType": "OperationOutcome", "issue": [{"severity": "information", "code": "informational", "details": {"coding": [{"system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome", "code": "SUCCESSFUL_CREATE", "display": "Create succeeded."}]}, "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."}]}}}]
+
 
     countPatientData:
       display-name: Count Patient Data
@@ -198,101 +205,3 @@ types:
           resourceType: "Bundle"
           type: "collection"
           entry: [{"resource": {"resourceType": "Appointment", "status": "booked", "participant": [{"actor": {"reference": "Patient/${patientId}", "display": "John Doe"}, "status": "accepted", "period": {"start": "2021-05-24T13:21:28.527Z", "end": "2021-05-24T13:21:28.527Z"}}], "meta": {"versionId": "12345", "lastUpdated": "2023-05-24T13:21:28.527Z"}}}]
-
-  TransactionResponse:
-    properties:
-      resourceType:
-        type: string
-        docs: The type of the FHIR resource. For a transaction response, this is always "Bundle".
-      id:
-        type: string
-        docs: A unique identifier for this transaction response.
-      type:
-        type: string
-        docs: The type of the bundle, which is "transaction-response" in this case.
-      entry:
-        type: list<map<string, unknown>>
-        docs: An array of responses for each transaction in the bundle. Each entry can be any arbitrary JSON object. 
-    examples:
-      - name: Example0
-        value:
-          resourceType: "Bundle"
-          id: "12345"
-          type: "transaction-response"
-          entry: [{"response": {"status": "201 Created", "location": "Appointment/3/_history/1", "etag": "1", "lastModified": "2023-07-27T21:29:31.491+00:00", "outcome": {"resourceType": "OperationOutcome", "issue": [{"severity": "information", "code": "informational", "details": {"coding": [{"system": "https://public.metriport.com/fhir/StructureDefinition/operation-outcome", "code": "SUCCESSFUL_CREATE", "display": "Create succeeded."}]}, "diagnostics": "Successfully created resource \"Appointment/3/_history/1\". Took 7ms."}]}}}]
-
-  ResourcesSearchableByPatient:
-    enum:
-      - Account
-      - AllergyIntolerance
-      - Appointment
-      - AppointmentResponse
-      - AuditEvent
-      - Basic
-      - BodyStructure
-      - CarePlan
-      - CareTeam
-      - ChargeItem
-      - Claim
-      - ClaimResponse
-      - ClinicalImpression
-      - Communication
-      - CommunicationRequest
-      - Composition
-      - Condition
-      - Consent
-      - Contract
-      - Coverage
-      - CoverageEligibilityRequest
-      - CoverageEligibilityResponse
-      - DetectedIssue
-      - Device
-      - DeviceRequest
-      - DeviceUseStatement
-      - DiagnosticReport
-      - DocumentManifest
-      - DocumentReference
-      - Encounter
-      - EnrollmentRequest
-      - EpisodeOfCare
-      - ExplanationOfBenefit
-      - FamilyMemberHistory
-      - Flag
-      - Goal
-      - GuidanceResponse
-      - ImagingStudy
-      - Immunization
-      - ImmunizationEvaluation
-      - ImmunizationRecommendation
-      - Invoice
-      - List
-      - MeasureReport
-      - Media
-      - MedicationAdministration
-      - MedicationDispense
-      - MedicationRequest
-      - MedicationStatement
-      - MolecularSequence
-      - NutritionOrder
-      - Observation
-      - Person
-      - Procedure
-      - Provenance
-      - QuestionnaireResponse
-      - RelatedPerson
-      - RequestGroup
-      - ResearchSubject
-      - RiskAssessment
-      - ServiceRequest
-      - Specimen
-
-  ResourcesSearchableBySubject:
-    enum:
-      - AdverseEvent
-      - Task
-
-  ResourceTypeForConsolidation:
-    discriminated: false
-    union:
-      - ResourcesSearchableByPatient
-      - ResourcesSearchableBySubject

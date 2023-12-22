@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-api_key = os.environ.get("METRIPORT_API_KEY")
+api_key = os.environ.get("API_KEY")
 facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 

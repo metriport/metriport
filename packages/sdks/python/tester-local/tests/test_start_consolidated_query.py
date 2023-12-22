@@ -6,7 +6,7 @@ from generated.client import Metriport
 
 load_dotenv()
 
-api_key = os.environ.get("METRIPORT_API_KEY")
+api_key = os.environ.get("API_KEY")
 patient_id = os.environ.get("PATIENT_ID")
 base_url = os.environ.get("BASE_URL")
 
