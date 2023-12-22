@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fern generate
-##fern generate --group test
+fern generate --group test
 
 # Java tests
 ( cd packages/sdks/java/tester-local && ./gradlew test --no-build-cache)
