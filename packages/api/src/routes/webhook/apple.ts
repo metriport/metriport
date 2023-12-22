@@ -3,7 +3,7 @@ import Router from "express-promise-router";
 import { processAppleData } from "../../command/webhook/apple";
 import { appleSchema, mapData } from "../../mappings/apple";
 import { asyncHandler, getCxIdOrFail } from "../util";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { analytics, EventTypes } from "../../shared/analytics";
 
 const routes = Router();

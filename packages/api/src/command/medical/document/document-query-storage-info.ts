@@ -8,7 +8,7 @@ import {
 } from "../../../external/commonwell/document/shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());

@@ -29,7 +29,7 @@ import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
 import { joinName, Patient, splitName } from "../../../domain/medical/patient";
 import MetriportError from "../../../errors/metriport-error";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";

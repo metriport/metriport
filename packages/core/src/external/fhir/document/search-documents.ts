@@ -1,7 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
 import { Config } from "../../../util/config";
-import { capture } from "../../../util/notifications";
+import { capture } from "../../../util/capture";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../shared/extensions/metriport";

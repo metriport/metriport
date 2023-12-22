@@ -3,6 +3,6 @@
   "compilerOptions": {
     "noUncheckedIndexedAccess": true,
   },
-  "include": ["./**/*", "../../../../../core/src/external/aws/document-signing/document-bulk-signer-factory.ts", "../../../../../core/src/external/aws/document-signing/document-bulk-signer-lambda.ts", "../../../../../core/src/external/aws/document-signing/document-bulk-signer-local.ts"],
+  "include": ["./**/*"],
   "exclude": ["./**/*.test.ts"],
 }

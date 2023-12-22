@@ -16,7 +16,7 @@ import {
   providerOAuth2OptionsSchema,
   rpmDeviceProviderSchema,
 } from "../shared/constants";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { saveRpmDevice } from "./middlewares/connect-device";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";

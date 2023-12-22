@@ -30,7 +30,7 @@ import { mapToSleep } from "../mappings/withings/sleep";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_WITHINGS } from "../shared/constants";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { getHttpClient } from "./shared/http";

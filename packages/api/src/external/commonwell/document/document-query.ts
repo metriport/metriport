@@ -35,7 +35,7 @@ import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
