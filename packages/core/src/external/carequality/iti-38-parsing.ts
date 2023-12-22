@@ -15,14 +15,12 @@ const patientToDocumentLinks: { [key: string]: string } = {
  * @returns A promise that resolves to an array containing the patientId, systemId, signature, and messageId extracted from the XML.
  */
 async function parseXmlString(xml: string): Promise<[string, string, string, string]> {
-  xml = cleanXml(xml);
-
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
   let result;
   try {
-    result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(cleanXml(xml));
   } catch (err) {
     console.log("error", err);
     throw new Error("XML parsing failed: Invalid XML");
@@ -30,7 +28,7 @@ async function parseXmlString(xml: string): Promise<[string, string, string, str
   try {
     const signature =
       result["Envelope"]["Header"][0]["Security"][0]["Signature"][0]["SignatureValue"][0];
-    const messageId = result["Envelope"]["Header"][0]["MessageID"][0]["_"];
+    const messageId = result["Envelope"]["Header"][0]["MessageID"][0];
     const id = result["Envelope"]["Body"][0]["AdhocQueryRequest"][0]["AdhocQuery"][0];
     const [patientId, systemId] = extractPatientAndSystemId(id);
     return [patientId, systemId, signature, messageId];

@@ -14,14 +14,13 @@ async function parseXmlString(
   xml: string
 ): Promise<[PatientData, [string, string, string | undefined, string]]> {
   // Removing leading newlines and escaping double quote variations
-  xml = cleanXml(xml);
   const parser = new xml2js.Parser({
     tagNameProcessors: [xml2js.processors.stripPrefix],
   });
 
   let result;
   try {
-    result = await parser.parseStringPromise(xml);
+    result = await parser.parseStringPromise(cleanXml(xml));
   } catch (error) {
     console.error(error);
     throw new Error("XML parsing failed: Invalid XML");
@@ -53,7 +52,7 @@ async function parseXmlString(
             city: address["city"][0],
             state: address["state"][0],
             zip: address["postalCode"][0],
-            country: address["country"][0] || "USA",
+            country: "USA",
           },
         ];
       }
@@ -167,7 +166,7 @@ const fillTemplate = (
       .replace(/{livingSubjectId.root}/g, livingSubjectId?.root || "123456789")
       .replace(/{phone}/g, phone || "000-000-0000")
       .replace(/{patientId}/g, id || "1234567890")
-      .replace(/{systemId}/g, systemId || "1.2.840.114350.1.13.11511.3.7.3.688884.100.1000")
+      .replace(/{systemId}/g, systemId || "2.16.840.1.113883.3.9621")
       .replace(/{code}/g, status);
   }
   return xcpdTemplate

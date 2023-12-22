@@ -1,5 +1,5 @@
 import { CfnOutput, RemovalPolicy } from "aws-cdk-lib";
-import { Metric } from "aws-cdk-lib/aws-cloudwatch";
+import { ComparisonOperator, Metric } from "aws-cdk-lib/aws-cloudwatch";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as iam from "aws-cdk-lib/aws-iam";
 import {
@@ -147,16 +147,19 @@ export default class OpenSearchConstruct extends Construct {
       name,
       threshold,
       evaluationPeriods,
+      comparisonOperator,
     }: {
       metric: Metric;
       name: string;
       threshold: number;
       evaluationPeriods: number;
+      comparisonOperator?: ComparisonOperator;
     }) => {
       metric.createAlarm(this, `${id}${name}`, {
         threshold,
         evaluationPeriods,
         alarmName: `${id}${name}`,
+        comparisonOperator,
       });
     };
 
@@ -180,6 +183,7 @@ export default class OpenSearchConstruct extends Construct {
       name: "FreeStorage",
       threshold: freeStorageMB ?? 5_000,
       evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.LESS_THAN_THRESHOLD,
     });
 
     createAlarm({

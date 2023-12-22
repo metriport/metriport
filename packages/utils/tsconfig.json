@@ -3,7 +3,6 @@
   "compilerOptions": {
     // Using community best practices with 'extends'
     "outDir": "./dist",
-    "esModuleInterop": true,
     "resolveJsonModule": true
   },
   "include": ["./src"],
