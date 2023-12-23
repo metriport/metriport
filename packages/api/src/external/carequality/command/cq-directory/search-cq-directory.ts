@@ -2,9 +2,8 @@ import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { uniqBy } from "lodash";
 import { Sequelize } from "sequelize";
-import { upsertGeographicCoordinates } from "../../../../command/medical/patient/upsert-geographic-coordinates";
+import { Patient } from "../../../../domain/medical/patient";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
 
@@ -19,39 +18,23 @@ export type CQOrgBasicDetails = {
 };
 
 /**
- * Searches the Carequality Directory for organizations within a specified radius of a patient's addresses.
- * Updates the patient addresses with coordinates if they don't already exist.
+ * Searches the Carequality Directory for organizations within a specified radius of all patient's addresses.
  *
- * @param cxId The ID of the customer organization.
- * @param patientId The ID of the patient.
+ * @param patient The patient whose addresses to search around.
  * @param radiusInMiles Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
- * @param updatePatientAddresses Optional, whether to update the patient's addresses with coordinates if they don't already exist. Defaults to false.
- * @param reportRelevance Optional, whether to report low relevance addresses to the cx. Defaults to false.
  *
  * @returns Returns the details of organizations within the specified radius of the patient's addresses.
  */
-export async function addPatientCoordinatesAndSearchNearbyCQOrganizations({
-  cxId,
-  patientId,
+export async function searchCQDirectoriesAroundPatientAddresses({
+  patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
-  updatePatientAddresses = false,
-  reportRelevance = false,
 }: {
-  cxId: string;
-  patientId: string;
+  patient: Patient;
   radiusInMiles?: number;
-  updatePatientAddresses?: boolean;
-  reportRelevance?: boolean;
 }): Promise<CQOrgBasicDetails[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const addresses = await upsertGeographicCoordinates({
-    patient,
-    reportRelevance,
-    updatePatientAddresses,
-  });
 
-  const coordinates = addresses.flatMap(address => address.coordinates ?? []);
+  const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
   if (!coordinates.length) throw new Error("Failed to get patient coordinates");
 
   const orgs = await searchCQDirectoriesByRadius({

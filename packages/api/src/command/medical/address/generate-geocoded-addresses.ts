@@ -1,3 +1,4 @@
+import { capture } from "@metriport/core/util/notifications";
 import { Address } from "../../../domain/medical/address";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 
@@ -7,7 +8,7 @@ import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/ad
  * @param addressList a list of Address objects.
  * @returns a list of Address objects that got updated with coordinates, relevance scores, and suggested labels.
  */
-export async function generateGeocodedAddresses(
+export async function addGeographicCoordinates(
   addressList: Address[]
 ): Promise<AddressGeocodingResult[]> {
   const geocodingUpdates = await Promise.allSettled(
@@ -29,8 +30,17 @@ export async function generateGeocodedAddresses(
       return;
     })
   );
-  const updatedAddresses = geocodingUpdates.flatMap(p =>
-    p.status === "fulfilled" && p.value ? p.value : []
-  );
+
+  const updatedAddresses = geocodingUpdates.flatMap(p => {
+    if (p.status === "rejected") {
+      const msg = `Failed to geocode address`;
+      console.log(msg, p.reason);
+      capture.error(msg, {
+        extra: { context: `addGeographicCoordinates`, error: p.reason, status: p.status },
+      });
+      return [];
+    }
+    return p.status === "fulfilled" && p.value ? p.value : [];
+  });
   return updatedAddresses;
 }

@@ -10,11 +10,12 @@ import {
   IHEResultType,
   handleIHEResponse,
 } from "../../command/medical/ihe-result/create-ihe-result";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
-  addPatientCoordinatesAndSearchNearbyCQOrganizations,
+  searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
@@ -101,9 +102,9 @@ router.get(
     const radiusQuery = getFrom("query").optional("radius", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
-    const orgs = await addPatientCoordinatesAndSearchNearbyCQOrganizations({
-      cxId,
-      patientId,
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const orgs = await searchCQDirectoriesAroundPatientAddresses({
+      patient,
       radiusInMiles: radius,
     });
 

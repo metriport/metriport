@@ -6,7 +6,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { addCoordinatesToAddresses } from "./upsert-geographic-coordinates";
+import { addCoordinatesToAddresses } from "./add-coordinates";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &

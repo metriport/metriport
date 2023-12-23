@@ -7,7 +7,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { addCoordinatesToAddresses } from "./upsert-geographic-coordinates";
+import { addCoordinatesToAddresses } from "./add-coordinates";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
