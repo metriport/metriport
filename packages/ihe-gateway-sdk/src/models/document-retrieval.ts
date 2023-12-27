@@ -31,7 +31,8 @@ export type DocumentRetrievalResponseOutgoing =
   | BaseErrorResponse;
 
 export function isDocumentRetrievalResponse(
-  obj: DocumentRetrievalResponseIncoming
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any
 ): obj is DocumentRetrievalResponseIncoming & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
 }
