@@ -118,7 +118,7 @@ router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
     await handleIHEResponse({
-      type: IHEResultType.PATIENT_DISCOVERY_RESPONSE_INCOMING,
+      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE,
       response: req.body,
     });
 
@@ -135,7 +135,7 @@ router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
     await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_QUERY_RESPONSE_INCOMING,
+      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
       response: req.body,
     });
 
@@ -152,7 +152,7 @@ router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
     await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_RETRIEVAL_RESPONSE_INCOMING,
+      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE,
       response: req.body,
     });
 

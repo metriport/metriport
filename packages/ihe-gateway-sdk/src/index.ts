@@ -8,13 +8,17 @@ export {
 } from "./models/patient-discovery";
 export {
   DocumentQueryRequestOutgoing,
+  DocumentQueryResponseIncoming,
   DocumentQueryResponseOutgoing,
   DocumentQueryRequestIncoming,
+  isDocumentQueryResponse,
 } from "./models/document-query";
 export {
   DocumentRetrievalRequestOutgoing,
+  DocumentRetrievalResponseIncoming,
   DocumentRetrievalResponseOutgoing,
   DocumentRetrievalRequestIncoming,
+  isDocumentRetrievalResponse,
 } from "./models/document-retrieval";
 export {
   npiStringSchema,
@@ -28,4 +32,5 @@ export {
   OperationOutcome,
   BaseResponse,
   XCAGateway,
+  isBaseErrorResponse,
 } from "./models/shared";

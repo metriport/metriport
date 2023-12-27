@@ -1,6 +1,11 @@
-import { BaseRequest, DocumentReference, BaseResponse, XCAGateway } from "./shared";
+import {
+  BaseRequest,
+  DocumentReference,
+  BaseResponse,
+  BaseErrorResponse,
+  XCAGateway,
+} from "./shared";
 
-// The following are for us creating a document retrieval request
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
   gateway: XCAGateway;
@@ -8,11 +13,25 @@ export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   documentReference: DocumentReference[];
 };
 
-// The following are for us responding to a document retrieval request
+export type DocumentRetrievalResponseIncoming =
+  | (BaseResponse & {
+      documentReference: DocumentReference[];
+      gateway: { homeCommunityId: string; url: string };
+    })
+  | BaseErrorResponse;
+
 export type DocumentRetrievalRequestIncoming = BaseRequest & {
   documentReference: DocumentReference[];
 };
 // DocumentReference is optional because the error response doesnt have it
-export type DocumentRetrievalResponseOutgoing = BaseResponse & {
-  documentReference?: DocumentReference[];
-};
+export type DocumentRetrievalResponseOutgoing =
+  | (BaseResponse & {
+      documentReference: DocumentReference[];
+    })
+  | BaseErrorResponse;
+
+export function isDocumentRetrievalResponse(
+  obj: DocumentRetrievalResponseIncoming
+): obj is DocumentRetrievalResponseIncoming & { documentReference: DocumentReference[] } {
+  return "documentReference" in obj;
+}

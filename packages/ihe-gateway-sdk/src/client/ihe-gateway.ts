@@ -41,7 +41,7 @@ export class IHEGateway {
    * Patient Discovery (XCPD ITI-55) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
    *
-   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to Ihe Gateway.
+   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to IHE Gateway.
    *
    */
   async startPatientDiscovery(

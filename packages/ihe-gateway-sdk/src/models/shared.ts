@@ -42,31 +42,48 @@ export type Code = {
 
 export type Details = { coding: Code[] } | { text: string };
 
-export type Issue = {
-  severity: string;
-  code: string;
-  details: { text: string };
-};
+export const issueSchema = z.object({
+  severity: z.string(),
+  code: z.string(),
+  details: z.object({ text: z.string() }),
+});
+export type Issue = z.infer<typeof issueSchema>;
 
-export type OperationOutcome = {
-  resourceType: string;
-  id: string;
-  issue: Issue[];
-};
+export const operationOutcomeSchema = z.object({
+  resourceType: z.string(),
+  id: z.string(),
+  issue: z.array(issueSchema),
+});
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
-export type XCPDPatientId = {
-  id: string;
-  system: string;
-};
+export const xcpdPatientIdSchema = z.object({
+  id: z.string(),
+  system: z.string(),
+});
+export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
 
-export type BaseResponse = {
-  id: string;
-  timestamp: string;
-  responseTimestamp: string;
-  xcpdPatientId?: XCPDPatientId;
-  patientId?: string; // TODO should this not be nullish
-  operationOutcome?: OperationOutcome;
-};
+export const baseResponseSchema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  responseTimestamp: z.string(),
+  xcpdPatientId: xcpdPatientIdSchema.optional(),
+  patientId: z.string().optional(),
+});
+export type BaseResponse = z.infer<typeof baseResponseSchema>;
+
+export const baseErrorResponseSchema = z.intersection(
+  baseResponseSchema,
+  z.object({
+    operationOutcome: operationOutcomeSchema,
+  })
+);
+export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isBaseErrorResponse(obj: any): obj is BaseErrorResponse {
+  const result = baseErrorResponseSchema.safeParse(obj);
+  return result.success;
+}
 
 export type XCAGateway = {
   homeCommunityId: string;

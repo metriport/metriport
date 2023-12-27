@@ -1,6 +1,7 @@
 import {
   BaseRequest,
   BaseResponse,
+  BaseErrorResponse,
   DocumentReference,
   XCAGateway,
   XCPDPatientId,
@@ -12,7 +13,6 @@ export type DateRange = {
   dateTo: string;
 };
 
-// The following are for us creating a document query request
 export type DocumentQueryRequestOutgoing = BaseRequest & {
   cxId: string;
   xcpdPatientId: XCPDPatientId;
@@ -25,7 +25,13 @@ export type DocumentQueryRequestOutgoing = BaseRequest & {
   serviceDate?: DateRange;
 };
 
-// The following are for us responding to a document query request
+export type DocumentQueryResponseIncoming =
+  | (BaseResponse & {
+      documentReference: DocumentReference[];
+      gateway: { homeCommunityId: string; url: string };
+    })
+  | BaseErrorResponse;
+
 export type DocumentQueryRequestIncoming = BaseRequest & {
   xcpdPatientId: XCPDPatientId;
   classCode?: Code[];
@@ -34,7 +40,15 @@ export type DocumentQueryRequestIncoming = BaseRequest & {
   documentCreationDate?: DateRange;
   serviceDate?: DateRange;
 };
-// DocumentReference optional because the error response doesnt have it
-export type DocumentQueryResponseOutgoing = BaseResponse & {
-  documentReference?: DocumentReference[];
-};
+
+export type DocumentQueryResponseOutgoing =
+  | (BaseResponse & {
+      documentReference: DocumentReference[];
+    })
+  | BaseErrorResponse;
+
+export function isDocumentQueryResponse(
+  obj: DocumentQueryResponseIncoming
+): obj is DocumentQueryResponseIncoming & { documentReference: DocumentReference[] } {
+  return "documentReference" in obj;
+}

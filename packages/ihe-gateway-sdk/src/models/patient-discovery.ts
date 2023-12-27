@@ -1,5 +1,5 @@
 import { Patient } from "@medplum/fhirtypes";
-import { NPIStringArray, BaseResponse, BaseRequest } from "./shared";
+import { NPIStringArray, BaseResponse, BaseErrorResponse, BaseRequest } from "./shared";
 
 export type XCPDGateway = {
   oid: string;
@@ -8,7 +8,6 @@ export type XCPDGateway = {
 };
 export type XCPDGateways = XCPDGateway[];
 
-// The following are for us creating a patient discovery request
 export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   cxId: string;
   gateways: XCPDGateways;
@@ -16,20 +15,25 @@ export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   principalCareProviderIds?: NPIStringArray;
 };
 
-export type PatientDiscoveryResponseIncoming = BaseResponse & {
-  patientMatch: boolean;
-  gateway: XCPDGateway;
-  gatewayHomeCommunityId?: string;
-};
-
-// The following are for us receiving a patient discovery request
+export type PatientDiscoveryResponseIncoming =
+  | (BaseResponse | BaseErrorResponse) & {
+      isError: boolean;
+      patientMatch: boolean;
+      gateway: XCPDGateway;
+      gatewayHomeCommunityId?: string;
+    };
 
 export type PatientDiscoveryRequestIncoming = BaseRequest & {
   patientResource: Patient;
 };
 
-export type PatientDiscoveryResponseOutgoing = BaseResponse & {
-  patientMatch: boolean;
-  xcpdHomeCommunityId: string;
-  patientResource?: Patient;
-};
+export type PatientDiscoveryResponseOutgoing =
+  | (BaseResponse & {
+      patientMatch: boolean;
+      xcpdHomeCommunityId: string;
+      patientResource: Patient;
+    })
+  | (BaseErrorResponse & {
+      patientMatch: boolean;
+      xcpdHomeCommunityId: string;
+    });
