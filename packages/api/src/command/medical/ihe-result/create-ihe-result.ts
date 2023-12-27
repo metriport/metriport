@@ -53,12 +53,12 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
 
   switch (type) {
     case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
-      (status = getIheResultStatus({ patientMatch: response.patientMatch })),
-        await PatientDiscoveryResultModel.create({
-          ...defaultPayload,
-          status,
-          data: response,
-        });
+      status = getIheResultStatus({ patientMatch: response.patientMatch });
+      await PatientDiscoveryResultModel.create({
+        ...defaultPayload,
+        status,
+        data: response,
+      });
       return;
     }
     case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
