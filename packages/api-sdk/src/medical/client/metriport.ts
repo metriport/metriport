@@ -217,7 +217,7 @@ export class MetriportMedicalApi {
    * @param facilityId The facility providing the NPI to support this operation.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
+  async updatePatient(patient: PatientUpdate, facilityId?: string): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,

@@ -45,7 +45,7 @@ export const updatePatient = async (patientUpdate: PatientUpdateCmd): Promise<Pa
           dob: sanitized.dob,
           genderAtBirth: sanitized.genderAtBirth,
           personalIdentifiers: sanitized.personalIdentifiers,
-          address: sanitized.address,
+          address: patientUpdate.address,
           contact: sanitized.contact,
         },
         externalId: sanitized.externalId,
