@@ -2,6 +2,7 @@ import * as Sentry from "@sentry/serverless";
 import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
+  baseRequestSchema,
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "@medplum/fhirtypes";
 
@@ -11,10 +12,23 @@ import { Patient } from "@medplum/fhirtypes";
 async function processRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
+  // validate with zod schema
+  const baseRequest = baseRequestSchema.parse({
+    id: payload.id,
+    timestamp: payload.timestamp,
+    samlAttributes: payload.samlAttributes,
+    patientId: payload.patientId,
+  });
+
+  const fullRequest: PatientDiscoveryRequestIncoming = {
+    ...baseRequest,
+    patientResource: payload.patientResource,
+  };
+
   if (Math.random() > 0.5) {
-    return constructErrorResponse(payload);
+    return constructErrorResponse(fullRequest);
   }
-  return constructSuccessResponse(payload, true);
+  return constructSuccessResponse(fullRequest, true);
 }
 
 // Function to construct error response

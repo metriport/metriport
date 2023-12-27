@@ -4,6 +4,7 @@ export {
   PatientDiscoveryResponseIncoming,
   PatientDiscoveryResponseOutgoing,
   PatientDiscoveryRequestIncoming,
+  patientDiscoveryResponseIncomingSchema,
   XCPDGateways,
 } from "./models/patient-discovery";
 export {
@@ -11,6 +12,8 @@ export {
   DocumentQueryResponseIncoming,
   DocumentQueryResponseOutgoing,
   DocumentQueryRequestIncoming,
+  documentQueryRequestIncomingSchema,
+  documentQueryResponseIncomingSchema,
   isDocumentQueryResponse,
 } from "./models/document-query";
 export {
@@ -18,6 +21,8 @@ export {
   DocumentRetrievalResponseIncoming,
   DocumentRetrievalResponseOutgoing,
   DocumentRetrievalRequestIncoming,
+  documentRetrievalRequestIncomingSchema,
+  documentRetrievalResponseIncomingSchema,
   isDocumentRetrievalResponse,
 } from "./models/document-retrieval";
 export {
@@ -26,8 +31,8 @@ export {
   NPIStringArray,
   npiStringArraySchema,
   oidStringSchema,
-  SamlAttributes,
   BaseRequest,
+  baseRequestSchema,
   DocumentReference,
   OperationOutcome,
   BaseResponse,

@@ -4,7 +4,13 @@ import {
   BaseResponse,
   BaseErrorResponse,
   XCAGateway,
+  documentReferenceSchema,
+  baseRequestSchema,
+  baseResponseSchema,
+  baseErrorResponseSchema,
+  xcaGatewaySchema,
 } from "./shared";
+import * as z from "zod";
 
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
@@ -13,16 +19,28 @@ export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   documentReference: DocumentReference[];
 };
 
-export type DocumentRetrievalResponseIncoming =
-  | (BaseResponse & {
-      documentReference: DocumentReference[];
-      gateway: { homeCommunityId: string; url: string };
+export const documentRetrievalResponseIncomingSchema = z.union([
+  z.intersection(
+    baseResponseSchema,
+    z.object({
+      documentReference: documentReferenceSchema.array(),
+      gateway: xcaGatewaySchema,
     })
-  | BaseErrorResponse;
+  ),
+  baseErrorResponseSchema,
+]);
 
-export type DocumentRetrievalRequestIncoming = BaseRequest & {
-  documentReference: DocumentReference[];
-};
+export type DocumentRetrievalResponseIncoming = z.infer<
+  typeof documentRetrievalResponseIncomingSchema
+>;
+
+export const documentRetrievalRequestIncomingSchema = baseRequestSchema.extend({
+  documentReference: documentReferenceSchema.array(),
+});
+export type DocumentRetrievalRequestIncoming = z.infer<
+  typeof documentRetrievalRequestIncomingSchema
+>;
+
 // DocumentReference is optional because the error response doesnt have it
 export type DocumentRetrievalResponseOutgoing =
   | (BaseResponse & {

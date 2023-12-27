@@ -16,29 +16,33 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
-export type SamlAttributes = {
-  subjectId: string;
-  subjectRole: {
-    display: string;
-    code: string;
-  };
-  organization: string;
-  organizationId: string;
-  homeCommunityId: string;
-  purposeOfUse: string;
-};
+export const SamlAttributesSchema = z.object({
+  subjectId: z.string(),
+  subjectRole: z.object({
+    display: z.string(),
+    code: z.string(),
+  }),
+  organization: z.string(),
+  organizationId: z.string(),
+  homeCommunityId: z.string(),
+  purposeOfUse: z.string(),
+});
 
-export type BaseRequest = {
-  id: string;
-  timestamp: string;
-  samlAttributes: SamlAttributes;
-  patientId?: string;
-};
+export const baseRequestSchema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  samlAttributes: SamlAttributesSchema,
+  patientId: z.string().optional(),
+});
 
-export type Code = {
-  system: string;
-  code: string;
-};
+export type BaseRequest = z.infer<typeof baseRequestSchema>;
+
+export const codeSchema = z.object({
+  system: z.string(),
+  code: z.string(),
+});
+
+export type Code = z.infer<typeof codeSchema>;
 
 export type Details = { coding: Code[] } | { text: string };
 
@@ -85,22 +89,24 @@ export function isBaseErrorResponse(obj: any): obj is BaseErrorResponse {
   return result.success;
 }
 
-export type XCAGateway = {
-  homeCommunityId: string;
-  url: string;
-};
+export const xcaGatewaySchema = z.object({
+  homeCommunityId: z.string(),
+  url: z.string(),
+});
+export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
-export type DocumentReference = {
-  homeCommunityId: string;
-  docUniqueId: string;
-  urn: string;
-  repositoryUniqueId: string;
-  newRepositoryUniqueId?: string;
-  newDocumentUniqueId?: string;
-  contentType?: string | null;
-  language?: string | null;
-  uri?: string | null;
-  url?: string | null;
-  creation?: string | null;
-  title?: string | null;
-};
+export const documentReferenceSchema = z.object({
+  homeCommunityId: z.string(),
+  docUniqueId: z.string(),
+  urn: z.string(),
+  repositoryUniqueId: z.string(),
+  newRepositoryUniqueId: z.string().nullish(),
+  newDocumentUniqueId: z.string().nullish(),
+  contentType: z.string().nullish(),
+  language: z.string().nullish(),
+  uri: z.string().nullish(),
+  url: z.string().nullish(),
+  creation: z.string().nullish(),
+  title: z.string().nullish(),
+});
+export type DocumentReference = z.infer<typeof documentReferenceSchema>;

@@ -1,11 +1,21 @@
 import { Patient } from "@medplum/fhirtypes";
-import { NPIStringArray, BaseResponse, BaseErrorResponse, BaseRequest } from "./shared";
+import {
+  NPIStringArray,
+  BaseResponse,
+  baseResponseSchema,
+  BaseErrorResponse,
+  baseErrorResponseSchema,
+  BaseRequest,
+} from "./shared";
+import * as z from "zod";
 
-export type XCPDGateway = {
-  oid: string;
-  url: string;
-  id?: string;
-};
+const XCPDGatewaySchema = z.object({
+  oid: z.string(),
+  url: z.string(),
+  id: z.string().optional(),
+});
+export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
+
 export type XCPDGateways = XCPDGateway[];
 
 export type PatientDiscoveryRequestOutgoing = BaseRequest & {
@@ -15,13 +25,19 @@ export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   principalCareProviderIds?: NPIStringArray;
 };
 
-export type PatientDiscoveryResponseIncoming =
-  | (BaseResponse | BaseErrorResponse) & {
-      isError: boolean;
-      patientMatch: boolean;
-      gateway: XCPDGateway;
-      gatewayHomeCommunityId?: string;
-    };
+const PatientDiscoveryResponseSchema = z.object({
+  patientMatch: z.boolean(),
+  gateway: XCPDGatewaySchema,
+  gatewayHomeCommunityId: z.string().optional(),
+});
+
+export const patientDiscoveryResponseIncomingSchema = z.union([
+  z.intersection(baseResponseSchema, PatientDiscoveryResponseSchema),
+  z.intersection(baseErrorResponseSchema, PatientDiscoveryResponseSchema),
+]);
+export type PatientDiscoveryResponseIncoming = z.infer<
+  typeof patientDiscoveryResponseIncomingSchema
+>;
 
 export type PatientDiscoveryRequestIncoming = BaseRequest & {
   patientResource: Patient;
