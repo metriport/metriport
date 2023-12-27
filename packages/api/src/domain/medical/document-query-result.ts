@@ -1,11 +1,6 @@
-import { BaseResponse, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryResponseIncoming } from "@metriport/ihe-gateway-sdk";
 import { BaseResultDomain } from "./ihe-result";
 
 export interface DocumentQueryResult extends BaseResultDomain {
-  data: DocumentQueryResponse;
+  data: DocumentQueryResponseIncoming;
 }
-
-export type DocumentQueryResponse = BaseResponse & {
-  documentReference: DocumentReference[];
-  gateway: { homeCommunityId: string; url: string };
-};

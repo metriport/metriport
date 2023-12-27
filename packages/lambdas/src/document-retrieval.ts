@@ -3,16 +3,19 @@ import {
   DocumentRetrievalResponseOutgoing,
   DocumentRetrievalRequestIncoming,
   DocumentReference,
+  documentRetrievalRequestIncomingSchema,
 } from "@metriport/ihe-gateway-sdk";
 
 // Function to extract necessary fields and construct the responses
 async function processRequest(
   payload: DocumentRetrievalRequestIncoming
 ): Promise<DocumentRetrievalResponseOutgoing> {
+  // validate with zod schema
+  const xca = documentRetrievalRequestIncomingSchema.parse(payload);
   if (Math.random() > 0.5) {
-    return constructErrorResponse(payload);
+    return constructErrorResponse(xca);
   }
-  return constructSuccessResponse(payload);
+  return constructSuccessResponse(xca);
 }
 
 // Function to construct error response

@@ -1,34 +1,49 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientDiscoveryResponseIncoming } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResponse } from "../../../domain/medical/document-query-result";
-import { DocumentRetrievalResponse } from "../../../domain/medical/document-retrieval-result";
+import {
+  PatientDiscoveryResponseIncoming,
+  DocumentQueryResponseIncoming,
+  DocumentRetrievalResponseIncoming,
+  isBaseErrorResponse,
+  isDocumentQueryResponse,
+  isDocumentRetrievalResponse,
+} from "@metriport/ihe-gateway-sdk";
 import { getIheResultStatus } from "../../../domain/medical/ihe-result";
-import { createPatientDiscoveryResult } from "../../../external/carequality/command/patient-discovery-result/create-patient-discovery-result";
 import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
 import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
+import { PatientDiscoveryResultModel } from "../../../external/carequality/models/patient-discovery-result";
 
 export enum IHEResultType {
-  PATIENT_DISCOVERY_RESPONSE_INCOMING = "patient-discovery",
-  DOCUMENT_QUERY_RESPONSE_INCOMING = "document-query",
-  DOCUMENT_RETRIEVAL_RESPONSE_INCOMING = "document-retrieval",
+  INCOMING_PATIENT_DISCOVERY_RESPONSE = "patient-discovery",
+  INCOMING_DOCUMENT_QUERY_RESPONSE = "document-query",
+  INCOMING_DOCUMENT_RETRIEVAL_RESPONSE = "document-retrieval",
 }
 
 type IHEResult =
   | {
-      type: IHEResultType.DOCUMENT_QUERY_RESPONSE_INCOMING;
-      response: DocumentQueryResponse;
+      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE;
+      response: DocumentQueryResponseIncoming;
     }
   | {
-      type: IHEResultType.PATIENT_DISCOVERY_RESPONSE_INCOMING;
+      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE;
       response: PatientDiscoveryResponseIncoming;
     }
   | {
-      type: IHEResultType.DOCUMENT_RETRIEVAL_RESPONSE_INCOMING;
-      response: DocumentRetrievalResponse;
+      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE;
+      response: DocumentRetrievalResponseIncoming;
     };
 
 export async function handleIHEResponse({ type, response }: IHEResult): Promise<void> {
-  const { id, patientId, operationOutcome } = response;
+  const { id, patientId } = response;
+  let status = "failure";
+
+  // Check if response is a BaseErrorResponse
+  if (isBaseErrorResponse(response)) {
+    status = "failure";
+  } else if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
+    status = getIheResultStatus({
+      docRefLength: response.documentReference?.length,
+    });
+  }
 
   const defaultPayload = {
     id: uuidv7(),
@@ -37,28 +52,27 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   };
 
   switch (type) {
-    case IHEResultType.PATIENT_DISCOVERY_RESPONSE_INCOMING: {
-      await createPatientDiscoveryResult(response);
-      return;
-    }
-    case IHEResultType.DOCUMENT_QUERY_RESPONSE_INCOMING: {
-      await DocumentQueryResultModel.create({
+    case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
+      status = getIheResultStatus({ patientMatch: response.patientMatch });
+      await PatientDiscoveryResultModel.create({
         ...defaultPayload,
-        status: getIheResultStatus({
-          operationOutcome,
-          docRefLength: response.documentReference?.length,
-        }),
+        status,
         data: response,
       });
       return;
     }
-    case IHEResultType.DOCUMENT_RETRIEVAL_RESPONSE_INCOMING: {
+    case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
+      await DocumentQueryResultModel.create({
+        ...defaultPayload,
+        status,
+        data: response,
+      });
+      return;
+    }
+    case IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE: {
       await DocumentRetrievalResultModel.create({
         ...defaultPayload,
-        status: getIheResultStatus({
-          operationOutcome,
-          docRefLength: response.documentReference?.length,
-        }),
+        status,
         data: response,
       });
       return;
