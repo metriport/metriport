@@ -488,6 +488,20 @@ router.get(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/mpi/block
+ *
+ * An endpoint used by lambdas that don't have db access to "block" patients. Blocking patients
+ * is when you use a set of criteria and find patients that match that criteria. This is used
+ * in MPI systems generally.
+ *
+ * @param req.query.dob
+ * @param req.query.gender
+ * @param req.query.firstNameInitial
+ * @param req.query.lastNameInitial
+ *
+ * @return List of patients that match the criteria
+ */
 router.post(
   "/mpi/block",
   asyncHandler(async (req: Request, res: Response) => {

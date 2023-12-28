@@ -72,7 +72,8 @@ export const getPatientIds = async ({
 };
 
 /**
- * Retrieves a patient based on their demographic information.
+ * Retrieves a patient based on their demographic information. Utilizes functions
+ * imported from the MPI core module: normalization, blocking, matching, merging
  * @param facilityId - The ID of the facility where the patient is associated.
  * @param cxId - The ID of the patient in the external system.
  * @param demo - The demographic information of the patient.
