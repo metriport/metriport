@@ -11,12 +11,12 @@ import {
 } from "./validating-xcpd";
 import {
   matchPatients,
-  jaroWinklerSimilarity,
+  exactMatchSimilarity,
   matchingPersonalIdentifiersRule,
 } from "../../mpi/match-patients";
 import { normalizePatientDataMPI } from "../../mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "../../mpi/merge-patients";
-import { CQPatientBlocker } from "../../mpi/cq-patient-blocker";
+import { CQPatientBlocker } from "../cq-patient-blocker";
 import { makeBlockerFactory } from "../../mpi/patient-blocker";
 
 const SIMILARITY_THRESHOLD = 0.96;
@@ -119,7 +119,7 @@ export async function processIncomingRequest(
     });
 
     const matchingPatients = matchPatients(
-      jaroWinklerSimilarity,
+      exactMatchSimilarity,
       [matchingPersonalIdentifiersRule],
       blockedPatients,
       normalizedPatientDemo,

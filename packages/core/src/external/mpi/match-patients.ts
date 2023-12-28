@@ -97,7 +97,7 @@ export const matchingContactDetailsRule = (
  * @param patient2
  * @returns boolean if the patients are a match according to threshold.
  */
-export const jaroWinklerSimilarity = (
+export const jaroWinklerSimilarity: SimilarityFunction = (
   patient1: PatientDataMPI,
   patient2: PatientDataMPI,
   threshold: number
@@ -144,4 +144,17 @@ export const jaroWinklerSimilarity = (
   const totalScore = score / fieldCount;
   similarityScores["Total Score"] = [totalScore];
   return totalScore >= threshold;
+};
+
+export const exactMatchSimilarity: SimilarityFunction = (
+  patient1: PatientDataMPI,
+  patient2: PatientDataMPI
+): boolean => {
+  return (
+    patient1.firstName === patient2.firstName &&
+    patient1.lastName === patient2.lastName &&
+    patient1.dob === patient2.dob &&
+    patient1.genderAtBirth === patient2.genderAtBirth &&
+    patient1.address?.[0]?.zip === patient2.address?.[0]?.zip
+  );
 };

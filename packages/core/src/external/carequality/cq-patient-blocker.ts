@@ -1,8 +1,8 @@
 import axios from "axios";
 import { capture } from "../../util/notifications";
-import { PatientBlocker, PatientBlock } from "./patient-blocker";
+import { PatientBlocker, PatientBlock } from "../mpi/patient-blocker";
 import { getEnvVarOrFail } from "../../util/env-var";
-import { PatientDataMPI } from "./patient";
+import { PatientDataMPI } from "../mpi/patient";
 
 const apiURL = getEnvVarOrFail("API_URL");
 const postEndpointUrl = `${apiURL}/internal/patient/mpi/block`;
