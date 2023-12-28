@@ -10,8 +10,8 @@ import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { blockPatients } from "../../command/medical/patient/mpi/block-patients";
-import { convertPatientModelToPatientData } from "../../command/medical/patient/mpi/convert-patients";
+import { AppPatientBlocker } from "../../command/medical/patient/mpi/block-patients";
+import { makeBlockerFactory } from "@metriport/core/external/mpi/patient-blocker";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -499,7 +499,8 @@ router.post(
     const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
     const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
 
-    const blockedPatients = await blockPatients({
+    const patientBlocker = makeBlockerFactory(AppPatientBlocker);
+    const blockedPatients = await patientBlocker.block({
       data: {
         dob,
         genderAtBirth,
@@ -507,9 +508,7 @@ router.post(
         lastNameInitial,
       },
     });
-
-    const payload = blockedPatients.map(convertPatientModelToPatientData);
-    return res.status(status.OK).json(payload);
+    return res.status(status.OK).json(blockedPatients);
   })
 );
 

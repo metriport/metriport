@@ -1,4 +1,5 @@
-import { blockPatients } from "../mpi/block-patients";
+import { AppPatientBlocker } from "../mpi/block-patients";
+import { makeBlockerFactory } from "@metriport/core/external/mpi/patient-blocker";
 import { GenderAtBirth } from "../../../../domain/medical/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { Op } from "sequelize";
@@ -18,8 +19,10 @@ const mockPatients = [
   },
 ];
 
-/* This is a test suite for the `blockPatients` function. It tests the validity of different criteria passed into blockPatients */
-describe("blockPatients", () => {
+const patientBlocker = makeBlockerFactory(AppPatientBlocker);
+
+/* This is a test suite for the `patientBlocker.block` function. It tests the validity of different criteria passed into patientBlocker.block */
+describe("patientBlocker.block", () => {
   let findAllMock: jest.SpyInstance;
 
   beforeEach(() => {
@@ -30,7 +33,7 @@ describe("blockPatients", () => {
   it("should return patients based on cxId", async () => {
     findAllMock.mockResolvedValueOnce([mockPatients[0]]);
     const criteria = { cxId: "1" };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[0]]);
     expect(findAllMock).toHaveBeenCalledWith({ where: criteria });
@@ -39,7 +42,7 @@ describe("blockPatients", () => {
   it("should return patients based on facilityIds", async () => {
     findAllMock.mockResolvedValueOnce([mockPatients[1]]);
     const criteria = { facilityIds: ["2"] };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[1]]);
     expect(findAllMock).toHaveBeenCalledWith({ where: criteria });
@@ -48,7 +51,7 @@ describe("blockPatients", () => {
   it("should return patients based on dob", async () => {
     findAllMock.mockResolvedValueOnce([mockPatients[1]]);
     const criteria = { data: { dob: "1990-01-01" } };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[1]]);
     expect(findAllMock).toHaveBeenCalledWith({
@@ -61,7 +64,7 @@ describe("blockPatients", () => {
   it("should return patients based on genderAtBirth", async () => {
     findAllMock.mockResolvedValueOnce([mockPatients[0]]);
     const criteria = { data: { genderAtBirth: "M" as GenderAtBirth } };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[0]]);
     expect(findAllMock).toHaveBeenCalledWith({
@@ -74,7 +77,7 @@ describe("blockPatients", () => {
   it("should return empty array when no patients match the criteria", async () => {
     findAllMock.mockResolvedValueOnce([]);
     const criteria = { cxId: "3" };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([]);
     expect(findAllMock).toHaveBeenCalledWith({ where: criteria });
@@ -84,7 +87,7 @@ describe("blockPatients", () => {
     findAllMock.mockResolvedValueOnce([mockPatients[0]]);
 
     const criteria = { data: { firstNameInitial: "A" } };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[0]]);
     expect(findAllMock).toHaveBeenCalledWith({ where: { "data.firstName": { [Op.like]: "A%" } } });
@@ -95,7 +98,7 @@ describe("blockPatients", () => {
     findAllMock.mockResolvedValueOnce([mockPatients[1]]);
 
     const criteria = { data: { lastNameInitial: "B" } };
-    const result = await blockPatients(criteria);
+    const result = await patientBlocker.block(criteria);
 
     expect(result).toEqual([mockPatients[1]]);
     expect(findAllMock).toHaveBeenCalledWith({ where: { "data.lastName": { [Op.like]: "B%" } } });

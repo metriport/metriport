@@ -8,11 +8,6 @@ import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { blockPatients } from "./mpi/block-patients";
-import {
-  convertPatientModelToPatientData,
-  convertPatientDataToPatientDataMPI,
-} from "./mpi/convert-patients";
 import {
   matchPatients,
   jaroWinklerSimilarity,
@@ -21,6 +16,9 @@ import {
 } from "@metriport/core/external/mpi/match-patients";
 import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
 import { mergePatients, mergeWithFirstPatient } from "@metriport/core/external/mpi/merge-patients";
+import { makeBlockerFactory } from "@metriport/core/external/mpi/patient-blocker";
+import { AppPatientBlocker } from "./mpi/block-patients";
+import { convertPatientDataToPatientDataMPI } from "./mpi/convert-patients";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -96,7 +94,8 @@ export const getPatientByDemo = async ({
   }
 
   // Block patients based on the criteria of matching dob and genderAtBirth
-  const blockedPatients = await blockPatients({
+  const patientBlocker = makeBlockerFactory(AppPatientBlocker);
+  const blockedPatients = await patientBlocker.block({
     cxId,
     facilityIds: [facilityId],
     data: {
@@ -106,13 +105,11 @@ export const getPatientByDemo = async ({
   });
 
   // Convert patients to proper datatype
-  const blockedPatientsData = blockedPatients.map(p => convertPatientModelToPatientData(p));
-
   // Match the blocked patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
     [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
-    blockedPatientsData,
+    blockedPatients,
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );
