@@ -35,7 +35,7 @@ export function isDocumentQueryProgressEqual(
   return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
 }
 
-// TODO: eventually we will have to update this to support multiple HIEs
+// DEPENDING ON QUESTIONS WILL DETERMINE WHETHER WE KEEP OVERRIDE AND FORCEQUERY
 export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
@@ -74,6 +74,7 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
+  // Override nad forceQuery dont seem necessary anymore
   getDocumentsFromCW({
     patient,
     facilityId,

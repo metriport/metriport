@@ -10,6 +10,7 @@ import { queryDocumentsAcrossHIEs } from "./document-query";
  * Implementation of TriggerAndQueryDocRefs that excutes the logic local.
  */
 export class TriggerAndQueryDocRefsLocal extends TriggerAndQueryDocRefs {
+  // THIS FUNCTION DOESNT SEEM LIKE ITS BEING USED
   protected override async triggerDocQuery(
     cxId: string,
     patientId: string,

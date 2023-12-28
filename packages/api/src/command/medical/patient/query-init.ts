@@ -1,4 +1,3 @@
-import { cloneDeep } from "lodash";
 import { DocumentQueryProgress } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
 import { QueryProgress } from "../../../domain/medical/query-status";
@@ -32,31 +31,23 @@ export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
       transaction,
     });
 
-    const updatedData = cloneDeep(patient.data);
-
-    if (cmd.documentQueryProgress) {
-      updatedData.documentQueryProgress = cmd.documentQueryProgress;
-      updatedData.requestId = cmd.requestId;
-      updatedData.cxDocumentRequestMetadata = cmd.cxDocumentRequestMetadata;
-      updatedData.externalData = {
-        ...updatedData.externalData,
-        COMMONWELL: {
-          ...updatedData.externalData?.COMMONWELL,
+    const update = cmd.documentQueryProgress
+      ? {
           documentQueryProgress: cmd.documentQueryProgress,
-        },
-        CAREQUALITY: {
-          ...updatedData.externalData?.CAREQUALITY,
-          documentQueryProgress: cmd.documentQueryProgress,
-        },
-      };
-    } else {
-      updatedData.consolidatedQuery = cmd.consolidatedQuery;
-      updatedData.cxConsolidatedRequestMetadata = cmd.cxConsolidatedRequestMetadata;
-    }
+          requestId: cmd.requestId,
+          cxDocumentRequestMetadata: cmd.cxDocumentRequestMetadata,
+        }
+      : {
+          consolidatedQuery: cmd.consolidatedQuery,
+          cxConsolidatedRequestMetadata: cmd.cxConsolidatedRequestMetadata,
+        };
 
     return patient.update(
       {
-        data: updatedData,
+        data: {
+          ...patient.data,
+          ...update,
+        },
       },
       { transaction }
     );

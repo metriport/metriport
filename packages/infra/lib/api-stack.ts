@@ -334,6 +334,14 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
@@ -383,6 +391,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterQueue,
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
+      documentQueryResultsLambda,
       documentDownloaderLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
@@ -1083,6 +1092,35 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupDocumentQueryResults(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const documentQueryResultsLambda = createLambda({
+      stack: this,
+      name: "DocumentQueryResults",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "document-query-results",
+      envType,
+      envVars: {
+        // add more when working on lambda
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return documentQueryResultsLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {

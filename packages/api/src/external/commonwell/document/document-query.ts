@@ -8,6 +8,9 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { errorToString } from "@metriport/core/util/error";
+import { capture } from "@metriport/core/util/notifications";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
@@ -28,14 +31,11 @@ import { Organization } from "../../../domain/medical/organization";
 import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
-import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { errorToString } from "../../../shared/log";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
@@ -98,7 +98,9 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-}): Promise<number> {
+}): Promise<void> {
+  //
+
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
@@ -109,8 +111,9 @@ export async function queryAndProcessDocuments({
 
     if (!patient && isECEnabledForThisCx) {
       log(`Couldn't get CW Data for Patient, but EC is enabled for CX, skipping DQ.`);
-      return 0;
+      return;
     }
+
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
@@ -118,6 +121,18 @@ export async function queryAndProcessDocuments({
         patientId: patientParam.id,
       });
     }
+
+    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+
+    if (Config.isSandbox()) {
+      await sandboxGetDocRefsAndUpsert({
+        organization,
+        patient,
+        requestId,
+      });
+      return;
+    }
+
     const cwData = patient.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
@@ -126,65 +141,55 @@ export async function queryAndProcessDocuments({
       cwData.cqLinkStatus !== "linked";
 
     const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
-    if (!isTriggerDQ) return 0;
 
-    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+    if (!isTriggerDQ) return;
 
-    if (Config.isSandbox()) {
-      const documentsSandbox = await sandboxGetDocRefsAndUpsert({
-        organization,
-        patient,
-        requestId,
-      });
-      return documentsSandbox.length;
-    } else {
-      log(`Querying for documents of patient ${patient.id}...`);
-      const cwDocuments = await internalGetDocuments({ patient, organization, facility });
-      log(`Got ${cwDocuments.length} documents from CW`);
+    log(`Querying for documents of patient ${patient.id}...`);
+    const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+    log(`Got ${cwDocuments.length} documents from CW`);
 
-      const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-        patient,
-        facilityId,
-        documents: cwDocuments,
-        forceDownload,
-        ignoreDocRefOnFHIRServer,
-        ignoreFhirConversionAndUpsert,
-        requestId,
-      });
+    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+      forceDownload,
+      ignoreDocRefOnFHIRServer,
+      ignoreFhirConversionAndUpsert,
+      requestId,
+    });
 
-      if (
-        fhirDocRefs.length &&
-        forceDownload === undefined &&
-        ignoreDocRefOnFHIRServer === undefined
-      ) {
-        // THIS WILL NEED TO BE MOVED TO A DIFFERENT PLACE WHEN WE SUPPORT MULTIPLE HIEs
-        reportDocQueryUsage(patient);
-      }
-
-      log(`Finished processing ${fhirDocRefs.length} documents.`);
-      return fhirDocRefs.length;
+    // THIS WILL NEED TO BE MOVED TO A DIFFERENT PLACE WHEN WE SUPPORT MULTIPLE HIE
+    if (
+      fhirDocRefs.length &&
+      forceDownload === undefined &&
+      ignoreDocRefOnFHIRServer === undefined
+    ) {
+      reportDocQueryUsage(patient);
     }
+
+    log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
     const msg = `Failed to query and process documents`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
-    const updatedPatient = await appendDocQueryProgress({
+
+    await appendDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
 
-    const downloadProgressHasFailed =
-      updatedPatient.data.documentQueryProgress?.download?.status === "failed";
+    // const downloadProgressHasFailed =
+    //   updatedPatient.data.documentQueryProgress?.download?.status === "failed";
 
-    if (downloadProgressHasFailed) {
-      processPatientDocumentRequest(
-        patientParam.cxId,
-        patientParam.id,
-        "medical.document-download",
-        MAPIWebhookStatus.failed
-      );
-    }
+    // if (downloadProgressHasFailed) {
+    //   processPatientDocumentRequest(
+    //     patientParam.cxId,
+    //     patientParam.id,
+    //     "medical.document-download",
+    //     MAPIWebhookStatus.failed
+    //   );
+    // }
 
     capture.message(msg, {
       extra: {

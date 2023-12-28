@@ -32,12 +32,16 @@ export type SetDocQueryProgress = {
     }
 );
 
+// SHOULD MAKE SOURCE OPTIONAL AND NEED TO HANDLE THIS
 /**
  * Appends the given properties of a patient's document query progress.
  * Keeps existing sibling properties when those are not provided, unless
  * 'reset=true' is provided.
  * @returns
  */
+
+// purpose of this is to be able to update the overall progress and to hie progresses
+// but now im considering also using this to send webhooks if its complete
 export async function appendDocQueryProgress({
   patient,
   downloadProgress,
@@ -89,11 +93,16 @@ export async function appendDocQueryProgress({
         docQueryProgress,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+
+    // HERE ANALYZE THE PROGRESS AND SEND WEBHOOKS IF COMPLETE
+
     return updatedPatient;
   });
 }
 
+// MOVE TO EXTERNAL FOLDER
 function setExternalData(
   reset: boolean | undefined,
   patient: PatientModel,
@@ -155,6 +164,7 @@ function setExternalData(
   return externalData;
 }
 
+// MOVE TO EXTERNAL FOLDER
 function setDocQueryProgress(
   documentQueryProgress: DocumentQueryProgress,
   externalData: PatientExternalData
@@ -165,6 +175,7 @@ function setDocQueryProgress(
   const cwProgress = cwExternalData?.documentQueryProgress ?? {};
   const cqProgress = cqExternalData?.documentQueryProgress ?? {};
 
+  // DECOMPOSE
   const result = documentQueryProgress;
 
   const progresses: DocumentQueryProgress[] = [cwProgress, cqProgress];
@@ -172,13 +183,14 @@ function setDocQueryProgress(
   const docProgress = aggregateDocProgress(progresses);
 
   return {
-    ...docProgress,
     ...result,
+    ...docProgress,
   };
 }
 
 type RequiredProgress = Required<Progress>;
 
+// UNIT TESTS
 function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
   download?: RequiredProgress;
   convert?: RequiredProgress;
@@ -223,12 +235,10 @@ function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
 
 function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
-  const allAreCompleted = docQueryProgress.every(status => status === "completed");
   const hasFailed = docQueryProgress.some(status => status === "failed");
 
   if (hasProcessing) return "processing";
-  if (allAreCompleted) return "completed";
   if (hasFailed) return "failed";
 
-  return "processing";
+  return "completed";
 }

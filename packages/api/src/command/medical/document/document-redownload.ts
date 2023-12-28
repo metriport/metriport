@@ -46,6 +46,7 @@ const isForceDownload = (options: Options[]): boolean => options.includes("force
 const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
   options.includes("ignore-fhir-conversion-and-upsert");
 
+// IS THIS SOMETHING THATS OBSOLETE OR WE NEED TO TAKE INTO CONSIDERATION FOR CQ AS WELL?
 export const reprocessDocuments = async ({
   cxId,
   documentIds,

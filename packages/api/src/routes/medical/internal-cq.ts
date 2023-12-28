@@ -7,9 +7,10 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import {
-  IHEResultType,
   handleIHEResponse,
-} from "../../command/medical/ihe-result/create-ihe-result";
+  IHEResultType,
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -137,6 +138,20 @@ router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
     await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/results
+ *
+ * Receives Document Query results from the doc query results lambda
+ */
+router.post(
+  "/document-query/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    await processDocumentQueryResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

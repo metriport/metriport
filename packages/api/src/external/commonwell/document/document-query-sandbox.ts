@@ -39,7 +39,7 @@ export async function sandboxGetDocRefsAndUpsert({
   organization: Organization;
   patient: Patient;
   requestId: string;
-}): Promise<DocumentReference[]> {
+}): Promise<void> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
   // Mimic Prod by waiting for docs to download
@@ -70,7 +70,7 @@ export async function sandboxGetDocRefsAndUpsert({
       );
     }
 
-    return [];
+    return;
   }
 
   const entries = patientData.docRefs;
@@ -196,7 +196,7 @@ export async function sandboxGetDocRefsAndUpsert({
     );
   }
 
-  return result;
+  return;
 }
 
 function addSandboxFields(docRef: DocumentReference): DocumentReference {

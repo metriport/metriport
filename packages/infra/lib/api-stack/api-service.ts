@@ -45,6 +45,7 @@ export function createAPIService(
   sidechainFHIRConverterDLQ: IQueue | undefined,
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
+  documentQueryResultsLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
   fhirToMedicalRecordLambda: ILambda | undefined,
   searchIngestionQueue: IQueue,
@@ -130,6 +131,7 @@ export function createAPIService(
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
+          DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -195,6 +197,7 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

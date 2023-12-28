@@ -10,14 +10,14 @@ export type Progress = {
 
 export type ProgressIntKeys = keyof Omit<Progress, "status">;
 
-export type DocumentQueryProgress = {
-  download?: Progress;
-  convert?: Progress;
-  requestId?: string;
-};
-
-export type ProgressType = keyof Pick<DocumentQueryProgress, "convert" | "download">;
 export const progressTypes = ["convert", "download"] as const;
+export type ProgressType = (typeof progressTypes)[number];
+
+export type DocumentQueryProgress = Partial<
+  Record<ProgressType, Progress> & {
+    requestId: string;
+  }
+>;
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];

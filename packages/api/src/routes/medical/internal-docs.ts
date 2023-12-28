@@ -336,6 +336,9 @@ router.get(
   })
 );
 
+// Note: This doesnt seem like it would work anymore.
+// CQ will me sending messages to Mirth so if we try to reset in the middle of processing
+// The first request will still running running through mirth and sending messages to the api
 /**
  * POST /internal/docs/query
  *
