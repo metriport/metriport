@@ -1,4 +1,4 @@
-import { PatientDataMPI, Address } from "./patient-incoming-schema";
+import { PatientDataMPI, Address } from "./patient";
 
 // Define default values for each field
 const defaultValues = {

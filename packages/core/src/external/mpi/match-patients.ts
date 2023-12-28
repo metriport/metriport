@@ -1,5 +1,5 @@
 import { intersectionWith, isEqual } from "lodash";
-import { PatientDataMPI } from "./patient-incoming-schema";
+import { PatientDataMPI } from "./patient";
 import { normalizePatientDataMPI } from "./normalize-patient";
 import jaroWinkler from "jaro-winkler";
 

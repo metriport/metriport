@@ -118,7 +118,7 @@ export const getPatientByDemo = async ({
   );
 
   // Merge the matching patients
-  const mpiPatient = await mergePatients(
+  const mpiPatient = mergePatients(
     mergeWithFirstPatient,
     matchingPatients,
     normalizedPatientDemo,

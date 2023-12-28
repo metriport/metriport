@@ -1,4 +1,4 @@
-import { PatientDataMPI } from "./patient-incoming-schema";
+import { PatientDataMPI } from "./patient";
 import { capture } from "../../util/notifications";
 
 export type MergeProtocol = (
@@ -24,12 +24,12 @@ export const mergeWithFirstPatient: MergeProtocol = (patients, demo) => {
   return chosenOne;
 };
 
-export const mergePatients = async (
+export const mergePatients = (
   mergeProtocol: MergeProtocol,
   patients: PatientDataMPI[],
   demo: PatientDataMPI,
   cxId?: string
-): Promise<PatientDataMPI | undefined> => {
+): PatientDataMPI | undefined => {
   if (patients.length === 0) return undefined;
   if (patients.length === 1) return patients[0];
 

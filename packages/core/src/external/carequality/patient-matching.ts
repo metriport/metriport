@@ -1,6 +1,6 @@
 import { USState } from "@metriport/api-sdk/medical/models/common/us-data";
 import jaroWinkler from "jaro-winkler";
-import { PatientDataMPI } from "../mpi/patient-incoming-schema";
+import { PatientDataMPI } from "../mpi/patient";
 
 // TODO SLATE TO BE DEPRECATED.
 const SIMILARITY_THRESHOLD = 0.9;

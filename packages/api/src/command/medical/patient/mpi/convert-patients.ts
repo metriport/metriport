@@ -1,6 +1,6 @@
 import { PatientData } from "../../../../domain/medical/patient";
 import { PatientModel } from "../../../../models/medical/patient";
-import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
+import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient";
 
 export function convertPatientDataToPatientDataMPI(sourcePatientData: PatientData): PatientDataMPI {
   return {

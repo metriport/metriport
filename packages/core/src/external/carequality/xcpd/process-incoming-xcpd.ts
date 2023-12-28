@@ -3,7 +3,7 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientDataMPI, convertPatientToFHIR } from "../../mpi/patient-incoming-schema";
+import { PatientDataMPI, convertPatientToFHIR } from "../../mpi/patient";
 import {
   validateFHIRAndExtractPatient,
   InternalError,
@@ -72,6 +72,19 @@ function constructNoMatchResponse(
     responseTimestamp: new Date().toISOString(),
     patientMatch: false,
     xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    operationOutcome: {
+      resourceType: "OperationOutcome",
+      id: payload.id,
+      issue: [
+        {
+          severity: "error",
+          code: "processing",
+          details: {
+            text: "no match found",
+          },
+        },
+      ],
+    },
   };
 }
 
@@ -124,7 +137,7 @@ export async function processIncomingRequest(
       SIMILARITY_THRESHOLD
     );
 
-    const mpiPatient = await mergePatients(
+    const mpiPatient = mergePatients(
       mergeWithFirstPatient,
       matchingPatients,
       normalizedPatientDemo

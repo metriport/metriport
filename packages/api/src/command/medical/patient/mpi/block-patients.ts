@@ -2,9 +2,8 @@ import { GenderAtBirth } from "../../../../domain/medical/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { Op, WhereOptions } from "sequelize";
 
-// cxId is optional since we will use this code to also block patients for CQ
 export type PatientBlock = {
-  cxId?: string;
+  cxId: string;
   facilityIds?: string[];
   data?: {
     dob?: string;

@@ -1,4 +1,4 @@
-import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
+import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
 export const testPatientDataMPI: {
