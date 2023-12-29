@@ -1,6 +1,10 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
-import { Coordinates } from "@metriport/core/external/aws/location";
 import { uniqBy } from "lodash";
+
+export type Coordinates = {
+  lat: number;
+  lon: number;
+};
 
 export type Address = {
   addressLine1: string;

@@ -16,8 +16,10 @@ export async function addGeographicCoordinates(
       if (address.coordinates) {
         return;
       }
-      const suggested = await geocodeAddress(address);
-      if (suggested) {
+      try {
+        const suggested = await geocodeAddress(address);
+        if (!suggested) return;
+
         return {
           address: {
             ...address,
@@ -26,18 +28,19 @@ export async function addGeographicCoordinates(
           relevance: suggested.relevance,
           suggestedLabel: suggested.suggestedLabel,
         };
+      } catch (error) {
+        const msg = `Failed to geocode address`;
+        console.log(`${msg}. Cause: ${error}`);
+        capture.error(msg, {
+          extra: { context: `addGeographicCoordinates`, error, address },
+        });
+        throw error;
       }
-      return;
     })
   );
 
   const updatedAddresses = geocodingUpdates.flatMap(p => {
     if (p.status === "rejected") {
-      const msg = `Failed to geocode address`;
-      console.log(msg, p.reason);
-      capture.error(msg, {
-        extra: { context: `addGeographicCoordinates`, error: p.reason, status: p.status },
-      });
       return [];
     }
     return p.status === "fulfilled" && p.value ? p.value : [];

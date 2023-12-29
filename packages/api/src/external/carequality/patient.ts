@@ -97,11 +97,12 @@ export async function prepareForPatientDiscovery(
   facilityNPI: string
 ): Promise<PatientDiscoveryRequest> {
   const { cxId } = patient;
-  const organization = await getOrganizationOrFail({ cxId });
   const fhirPatient = toFHIR(patient);
-  const nearbyCQOrgs = await searchCQDirectoriesAroundPatientAddresses({
-    patient,
-  });
+  const [organization, nearbyCQOrgs] = await Promise.all([
+    getOrganizationOrFail({ cxId }),
+    searchCQDirectoriesAroundPatientAddresses({ patient }),
+  ]);
+
   const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
 
   const pdRequest = createPatientDiscoveryRequest({

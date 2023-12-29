@@ -4,7 +4,7 @@ import { defaultOptionalString, defaultString, stripNonNumericChars } from "../.
 
 const zipLength = 5;
 
-export const coordinateSchema = z.object({
+export const geoCoordinateSchema = z.object({
   lat: z.number(),
   lon: z.number(),
 });
@@ -20,7 +20,7 @@ export const addressSchema = z.object({
     .refine(zip => zip.length === zipLength, {
       message: `Zip must be a string consisting of ${zipLength} numbers.`,
     }),
-  coordinates: coordinateSchema.optional(),
+  coordinates: geoCoordinateSchema.optional(),
   country: z.literal("USA").optional().default("USA"),
 });
 

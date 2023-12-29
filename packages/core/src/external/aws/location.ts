@@ -39,21 +39,22 @@ export function parseSuggestedAddress(
   const point = suggestedAddress.Place?.Geometry?.Point;
   const relevance = suggestedAddress.Relevance;
   const label = suggestedAddress.Place.Label;
+  const errorMsg = "No location found";
 
-  if (point) {
-    const lon = point[0];
-    const lat = point[1];
-    if (lon && lat && relevance && label) {
-      return {
-        coordinates: {
-          lon,
-          lat,
-        },
-        relevance,
-        suggestedLabel: label,
-      };
-    }
+  if (!point) throw new Error(errorMsg);
+
+  const lon = point[0];
+  const lat = point[1];
+  if (lon && lat && relevance && label) {
+    return {
+      coordinates: {
+        lon,
+        lat,
+      },
+      relevance,
+      suggestedLabel: label,
+    };
   }
 
-  throw new Error("No location found");
+  throw new Error(errorMsg);
 }

@@ -3,10 +3,16 @@ import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
 import { AddressGeocodingResult, buildAddressText } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/notifications";
 import { addGeographicCoordinates } from "../address/generate-geocoded-addresses";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
+
+type AddressBelowThreshold = {
+  relevance: number;
+  address: Address;
+  suggested: string;
+};
 
 /**
  * Updates the addresses with geographic coordinates and optionally reports low relevance score addresses to the cx.
@@ -36,25 +42,21 @@ export function reportLowRelevance(
   addresses: AddressGeocodingResult[],
   patient: Partial<Patient>
 ): void {
+  const belowThreshold: AddressBelowThreshold[] = [];
+  const msg = `Low address match coefficient`;
+
   for (const a of addresses) {
     const aboveThreshold = a.relevance > ADDRESS_MATCH_RELEVANCE_THRESHOLD;
     if (!aboveThreshold) {
-      const msg = `Low address match coefficient`;
       console.log(
         `${msg}. Patient ID: ${patient.id}, Address: ${buildAddressText(a.address)}, Suggested: ${
           a.suggestedLabel
         }, Relevance: ${a.relevance}`
       );
-      capture.message(msg, {
-        extra: {
-          context: `getCoordinatesFromLocation`,
-          relevance: a.relevance,
-          address: a.address,
-          suggestedAddress: a.suggestedLabel,
-          patient,
-          threshold: ADDRESS_MATCH_RELEVANCE_THRESHOLD,
-        },
-        level: "info",
+      belowThreshold.push({
+        relevance: a.relevance,
+        address: a.address,
+        suggested: a.suggestedLabel,
       });
     }
     if (patient.cxId) {
@@ -69,5 +71,16 @@ export function reportLowRelevance(
       });
     }
     // TODO: #1327 - automatically email the CX about a bad address
+  }
+  if (belowThreshold.length) {
+    capture.message(msg, {
+      extra: {
+        context: `getCoordinatesFromLocation`,
+        belowThreshold,
+        patient,
+        threshold: ADDRESS_MATCH_RELEVANCE_THRESHOLD,
+      },
+      level: "warning",
+    });
   }
 }

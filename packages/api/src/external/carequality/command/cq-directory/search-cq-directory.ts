@@ -1,6 +1,5 @@
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
-import { uniqBy } from "lodash";
 import { Sequelize } from "sequelize";
 import { Patient } from "../../../../domain/medical/patient";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
@@ -42,7 +41,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
     radiusInMeters,
   });
 
-  return uniqBy(orgs.map(toBasicOrgAttributes), "id");
+  return orgs.map(toBasicOrgAttributes);
 }
 
 /**
