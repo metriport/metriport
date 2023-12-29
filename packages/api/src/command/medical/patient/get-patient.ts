@@ -112,7 +112,7 @@ export const getPatientByDemo = async ({
   );
 
   // Merge the matching patients
-  const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo, cxId);
+  const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
 
   if (!mpiPatient) {
     return undefined;

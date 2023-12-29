@@ -22,14 +22,14 @@ type MatchingRule = (patient1: PatientDataMPI, patient2: PatientDataMPI) => bool
  * @param greedy - If true, returns the first match. If false, returns all matches.
  * @returns matched patients.
  */
-export const matchPatients = (
+export function matchPatients(
   isSimilarEnough: SimilarityFunction,
   matchingRules: MatchingRule[],
   patients: PatientDataMPI[],
   currentPatient: PatientDataMPI,
   threshold: number,
   greedy = true
-): PatientDataMPI[] => {
+): PatientDataMPI[] {
   const matchFunction = (patientDataMPI: PatientDataMPI) => {
     const patient = normalizePatient(patientDataMPI);
     if (!patient) {
@@ -48,7 +48,7 @@ export const matchPatients = (
   } else {
     return patients.filter(matchFunction);
   }
-};
+}
 
 /**
  * This function checks if the patient has any personal identifiers that match the demo. The idea of having rules
@@ -57,16 +57,16 @@ export const matchPatients = (
  * @param patient
  * @returns true if the patient has any personal identifiers that match the demo.
  */
-export const matchingPersonalIdentifiersRule = (
+export function matchingPersonalIdentifiersRule(
   patient1: PatientDataMPI,
   patient2: PatientDataMPI
-): boolean => {
+): boolean {
   const identifiers1 = patient1.personalIdentifiers || [];
   const identifiers2 = patient2.personalIdentifiers || [];
   const isMatchIdentifier =
     intersectionWith(identifiers1, identifiers2, isSameIdentifierById).length > 0;
   return isMatchIdentifier;
-};
+}
 
 /**
  * This function checks if the patient has any contact details (phone or email) that match the demo. The idea of this rule
@@ -76,16 +76,16 @@ export const matchingPersonalIdentifiersRule = (
  * @param patient
  * @returns true if the patient has any contact details that match the demo.
  */
-export const matchingContactDetailsRule = (
+export function matchingContactDetailsRule(
   patient1: PatientDataMPI,
   patient2: PatientDataMPI
-): boolean => {
+): boolean {
   const contact1 = patient1.contact || [];
   const contact2 = patient2.contact || [];
   const isMatchPhone = intersectionWith(contact1, contact2, isSameContactByPhone).length > 0;
   const isMatchEmail = intersectionWith(contact1, contact2, isSameContactByEmail).length > 0;
   return isMatchPhone || isMatchEmail;
-};
+}
 
 /**
  * This function calculates the similarity between two patients using the Jaro-Winkler algorithm.
@@ -96,11 +96,11 @@ export const matchingContactDetailsRule = (
  * @param patient2
  * @returns boolean if the patients are a match according to threshold.
  */
-export const jaroWinklerSimilarity: SimilarityFunction = (
+export function jaroWinklerSimilarity(
   patient1: PatientDataMPI,
   patient2: PatientDataMPI,
   threshold: number
-): boolean => {
+): boolean {
   let score = 0;
   let fieldCount = 0;
   const similarityScores: { [key: string]: [number, string?, string?] } = {};
@@ -143,12 +143,9 @@ export const jaroWinklerSimilarity: SimilarityFunction = (
   const totalScore = score / fieldCount;
   similarityScores["Total Score"] = [totalScore];
   return totalScore >= threshold;
-};
+}
 
-export const exactMatchSimilarity: SimilarityFunction = (
-  patient1: PatientDataMPI,
-  patient2: PatientDataMPI
-): boolean => {
+export function exactMatchSimilarity(patient1: PatientDataMPI, patient2: PatientDataMPI): boolean {
   return (
     patient1.firstName === patient2.firstName &&
     patient1.lastName === patient2.lastName &&
@@ -156,7 +153,7 @@ export const exactMatchSimilarity: SimilarityFunction = (
     patient1.genderAtBirth === patient2.genderAtBirth &&
     patient1.address?.[0]?.zip === patient2.address?.[0]?.zip
   );
-};
+}
 
 function isSameContactByPhone(a?: Contact, b?: Contact): boolean {
   return a?.phone === b?.phone;

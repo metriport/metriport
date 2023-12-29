@@ -3,11 +3,13 @@ import { capture } from "../util/notifications";
 
 export type MergeProtocol = (
   patients: PatientDataMPI[],
-  currentPatient: PatientDataMPI,
-  cxId?: string
+  currentPatient: PatientDataMPI
 ) => PatientDataMPI | undefined;
 
-export const mergeWithFirstPatient: MergeProtocol = (patients, currentPatient) => {
+export function mergeWithFirstPatient(
+  patients: PatientDataMPI[],
+  currentPatient: PatientDataMPI
+): PatientDataMPI | undefined {
   if (patients.length === 0) return undefined;
   if (patients.length === 1) return patients[0];
 
@@ -27,4 +29,4 @@ export const mergeWithFirstPatient: MergeProtocol = (patients, currentPatient) =
     },
   });
   return chosenOne;
-};
+}
