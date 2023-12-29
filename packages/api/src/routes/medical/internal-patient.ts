@@ -48,7 +48,7 @@ dayjs.extend(duration);
 
 const router = Router();
 const patientChunkSize = 25;
-const SLEEP_TIME = dayjs.duration({ seconds: 1 });
+const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
@@ -507,7 +507,7 @@ router.post(
             cxId: patient.cxId,
             ...patient.data,
           };
-          await updatePatient(updateInfo);
+          await updatePatient(updateInfo, false);
         })
       );
       await sleep(SLEEP_TIME.asMilliseconds());
