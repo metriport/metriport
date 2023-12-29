@@ -83,8 +83,7 @@ export const baseErrorResponseSchema = z.intersection(
 );
 export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function isBaseErrorResponse(obj: any): obj is BaseErrorResponse {
+export function isBaseErrorResponse(obj: unknown): obj is BaseErrorResponse {
   const result = baseErrorResponseSchema.safeParse(obj);
   return result.success;
 }

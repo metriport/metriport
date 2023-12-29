@@ -6,6 +6,8 @@ import {
   documentRetrievalRequestIncomingSchema,
 } from "@metriport/ihe-gateway-sdk";
 
+export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
+
 // Function to extract necessary fields and construct the responses
 async function processRequest(
   payload: DocumentRetrievalRequestIncoming
@@ -60,5 +62,3 @@ function constructSuccessResponse(
     documentReference: [documentReference],
   };
 }
-
-export const handler = Sentry.AWSLambda.wrapHandler(processRequest);

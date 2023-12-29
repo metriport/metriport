@@ -6,7 +6,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "@medplum/fhirtypes";
 
-// import { Patient, patientCreateSchema} from "@metriport/api-sdk";
+export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
 // Function to extract necessary fields and construct the responses
 async function processRequest(
@@ -101,5 +101,3 @@ function constructSuccessResponse(
     patientResource: patientResource,
   };
 }
-
-export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
