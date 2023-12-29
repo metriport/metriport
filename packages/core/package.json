@@ -19,8 +19,8 @@
     "./domain/*": "./dist/domain/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js",
-    "./command*": "./dist/command/*.js",
-    "./mpi*": "./dist/mpi/*.js"
+    "./command/*": "./dist/command/*.js",
+    "./mpi/*": "./dist/mpi/*.js"
   },
   "typesVersions": {
     "*": {
