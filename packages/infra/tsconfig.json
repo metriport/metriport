@@ -7,7 +7,8 @@
     "allowUnreachableCode": false,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
+    // TODO 1377 revert this to true
+    "noUnusedLocals": false,
     "checkJs": true,
     "noImplicitReturns": true,
     "noUncheckedIndexedAccess": true,

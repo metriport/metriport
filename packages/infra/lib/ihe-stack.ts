@@ -5,6 +5,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
@@ -12,13 +13,20 @@ import { setupLambdasLayers, LambdaLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
-  vpc: ec2.IVpc;
-  alarmAction: SnsAction | undefined;
 }
 
 export class IHEStack extends Stack {
+  readonly vpc: ec2.IVpc;
+
   constructor(scope: Construct, id: string, props: IHEStackProps) {
     super(scope, id, props);
+
+    const vpcId = props.config.iheGateway?.vpcId;
+    if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
+    this.vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
+
+    const alarmAction = setupSlackNotifSnsTopic(this, props.config);
+
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
@@ -71,8 +79,8 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc: this.vpc,
+      alarmSnsAction: alarmAction,
     });
 
     const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
@@ -175,4 +183,14 @@ export class IHEStack extends Stack {
     const xcpdResource = api.root.addResource("xcpd");
     xcpdResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
   }
+}
+
+function setupSlackNotifSnsTopic(stack: Stack, config: EnvConfig): SnsAction | undefined {
+  if (!config.slack) return undefined;
+  const topicArn = config.iheGateway?.snsTopicArn;
+  if (!topicArn) throw new Error("Missing SNS topic ARN for IHE stack");
+
+  const slackNotifSnsTopic = sns.Topic.fromTopicArn(stack, "SlackSnsTopic", topicArn);
+  const alarmAction = new SnsAction(slackNotifSnsTopic);
+  return alarmAction;
 }

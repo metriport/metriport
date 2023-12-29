@@ -42,6 +42,8 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
+  // TODO 1377 remove the eslint directive and `apiStack` const when IHEStack is removed
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const apiStack = new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
@@ -51,8 +53,6 @@ async function deploy(config: EnvConfig) {
     new IHEStack(app, "IHEStack", {
       env,
       config: config,
-      vpc: apiStack.vpc,
-      alarmAction: apiStack.alarmAction,
     });
   }
   //---------------------------------------------------------------------------------
