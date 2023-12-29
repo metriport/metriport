@@ -1,7 +1,7 @@
 import { Address, combineAddresses } from "../../../domain/medical/address";
 import { Patient } from "../../../domain/medical/patient";
 import { Product } from "../../../domain/product";
-import { AddressGeocodingResult } from "../../../external/aws/address";
+import { AddressGeocodingResult, buildAddressText } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
 import { capture } from "../../../shared/notifications";
 import { addGeographicCoordinates } from "../address/generate-geocoded-addresses";
@@ -40,7 +40,11 @@ export function reportLowRelevance(
     const aboveThreshold = a.relevance > ADDRESS_MATCH_RELEVANCE_THRESHOLD;
     if (!aboveThreshold) {
       const msg = `Low address match coefficient`;
-      console.log(`${msg}. Address: ${a.address}, Relevance: ${a.relevance}`);
+      console.log(
+        `${msg}. Patient ID: ${patient.id}, Address: ${buildAddressText(a.address)}, Suggested: ${
+          a.suggestedLabel
+        }, Relevance: ${a.relevance}`
+      );
       capture.message(msg, {
         extra: {
           context: `getCoordinatesFromLocation`,
