@@ -68,7 +68,7 @@ export type DocumentQueryResponseOutgoing =
 
 export function isDocumentQueryResponse(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: BaseResponse
 ): obj is DocumentQueryResponseIncoming & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
 }

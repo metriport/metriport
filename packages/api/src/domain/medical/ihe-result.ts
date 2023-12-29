@@ -16,6 +16,6 @@ export function getIheResultStatus({
   docRefLength?: number;
 }): IHEResultStatus {
   // explicitly checking for a boolean value for patientMatch because it can be undefined
-  if (patientMatch === false || docRefLength === 0) return "failure";
-  return "success";
+  if (patientMatch === true || (docRefLength !== undefined && docRefLength >= 1)) return "success";
+  return "failure";
 }

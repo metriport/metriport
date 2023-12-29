@@ -50,7 +50,7 @@ export type DocumentRetrievalResponseOutgoing =
 
 export function isDocumentRetrievalResponse(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  obj: any
+  obj: BaseResponse
 ): obj is DocumentRetrievalResponseIncoming & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
 }
