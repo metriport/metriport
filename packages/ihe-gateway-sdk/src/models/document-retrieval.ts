@@ -1,6 +1,17 @@
-import { BaseRequest, DocumentReference, BaseResponse, XCAGateway } from "./shared";
+import {
+  BaseRequest,
+  DocumentReference,
+  BaseResponse,
+  BaseErrorResponse,
+  XCAGateway,
+  documentReferenceSchema,
+  baseRequestSchema,
+  baseResponseSchema,
+  baseErrorResponseSchema,
+  xcaGatewaySchema,
+} from "./shared";
+import * as z from "zod";
 
-// The following are for us creating a document retrieval request
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
   gateway: XCAGateway;
@@ -8,11 +19,38 @@ export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   documentReference: DocumentReference[];
 };
 
-// The following are for us responding to a document retrieval request
-export type DocumentRetrievalRequestIncoming = BaseRequest & {
-  documentReference: DocumentReference[];
-};
+export const documentRetrievalResponseIncomingSchema = z.union([
+  z.intersection(
+    baseResponseSchema,
+    z.object({
+      documentReference: documentReferenceSchema.array(),
+      gateway: xcaGatewaySchema,
+    })
+  ),
+  baseErrorResponseSchema,
+]);
+
+export type DocumentRetrievalResponseIncoming = z.infer<
+  typeof documentRetrievalResponseIncomingSchema
+>;
+
+export const documentRetrievalRequestIncomingSchema = baseRequestSchema.extend({
+  documentReference: documentReferenceSchema.array(),
+});
+export type DocumentRetrievalRequestIncoming = z.infer<
+  typeof documentRetrievalRequestIncomingSchema
+>;
+
 // DocumentReference is optional because the error response doesnt have it
-export type DocumentRetrievalResponseOutgoing = BaseResponse & {
-  documentReference?: DocumentReference[];
-};
+export type DocumentRetrievalResponseOutgoing =
+  | (BaseResponse & {
+      documentReference: DocumentReference[];
+    })
+  | BaseErrorResponse;
+
+export function isDocumentRetrievalResponse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: BaseResponse
+): obj is DocumentRetrievalResponseIncoming & { documentReference: DocumentReference[] } {
+  return "documentReference" in obj;
+}

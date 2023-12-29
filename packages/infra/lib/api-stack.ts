@@ -48,7 +48,6 @@ interface APIStackProps extends StackProps {
 
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
-  public readonly sharedLambdaLayers: LambdaLayers;
   public readonly alarmAction: SnsAction | undefined;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
@@ -241,7 +240,6 @@ export class APIStack extends Stack {
     }
 
     const lambdaLayers = setupLambdasLayers(this);
-    this.sharedLambdaLayers = lambdaLayers;
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -356,7 +354,6 @@ export class APIStack extends Stack {
       bucket: generalBucket,
       alarmSnsAction: slackNotification?.alarmAction,
     });
-    // const cqLinkPatientQueue = cwEnhancedQueryQueues?.linkPatientQueue;
     const cookieStore = cwEnhancedQueryQueues?.cookieStore;
 
     //-------------------------------------------
@@ -395,7 +392,6 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
       },
-      // cqLinkPatientQueue
       cookieStore
     );
 
@@ -483,7 +479,6 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    // cqLinkPatientQueue &&
     cookieStore &&
       cwEnhancedCoverageConnector.setupLambdas({
         stack: this,
@@ -494,7 +489,6 @@ export class APIStack extends Stack {
         apiAddress: apiLoadBalancerAddress,
         bucket: generalBucket,
         alarmSnsAction: slackNotification?.alarmAction,
-        // linkPatientQueue: cqLinkPatientQueue,
         cookieStore,
       });
 
@@ -1391,56 +1385,68 @@ export class APIStack extends Stack {
     dbClusterName: string,
     alarmAction?: SnsAction
   ) {
-    const memoryMetric = dbCluster.metricFreeableMemory();
-    const memoryAlarm = memoryMetric.createAlarm(this, `${dbClusterName}FreeableMemoryAlarm`, {
+    const createAlarm = ({
+      name,
+      metric,
+      threshold,
+      evaluationPeriods,
+      comparisonOperator,
+      treatMissingData,
+    }: {
+      name: string;
+      metric: cloudwatch.Metric;
+      threshold: number;
+      evaluationPeriods: number;
+      comparisonOperator?: cloudwatch.ComparisonOperator;
+      treatMissingData?: cloudwatch.TreatMissingData;
+    }) => {
+      const alarm = metric.createAlarm(this, `${dbClusterName}${name}`, {
+        threshold,
+        evaluationPeriods,
+        comparisonOperator,
+        treatMissingData,
+      });
+      alarmAction && alarm.addAlarmAction(alarmAction);
+      alarmAction && alarm.addOkAction(alarmAction);
+      return alarm;
+    };
+
+    createAlarm({
+      metric: dbCluster.metricFreeableMemory(),
+      name: "FreeableMemoryAlarm",
       threshold: mbToBytes(150),
       evaluationPeriods: 1,
       comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && memoryAlarm.addAlarmAction(alarmAction);
-    alarmAction && memoryAlarm.addOkAction(alarmAction);
 
-    const storageMetric = dbCluster.metricFreeLocalStorage();
-    const storageAlarm = storageMetric.createAlarm(this, `${dbClusterName}FreeLocalStorageAlarm`, {
-      threshold: mbToBytes(250),
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-    alarmAction && storageAlarm.addAlarmAction(alarmAction);
-    alarmAction && storageAlarm.addOkAction(alarmAction);
-
-    const cpuMetric = dbCluster.metricCPUUtilization();
-    const cpuAlarm = cpuMetric.createAlarm(this, `${dbClusterName}CPUUtilizationAlarm`, {
-      threshold: 90, // pct
+    createAlarm({
+      metric: dbCluster.metricCPUUtilization(),
+      name: "CPUUtilizationAlarm",
+      threshold: 90, // percentage
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && cpuAlarm.addAlarmAction(alarmAction);
-    alarmAction && cpuAlarm.addOkAction(alarmAction);
 
-    const readIOPsMetric = dbCluster.metricVolumeReadIOPs();
-    const rIOPSAlarm = readIOPsMetric.createAlarm(this, `${dbClusterName}VolumeReadIOPsAlarm`, {
-      // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraMonitoring.Metrics.html
+    createAlarm({
+      metric: dbCluster.metricVolumeReadIOPs(),
+      name: "VolumeReadIOPsAlarm",
       threshold: 300_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && rIOPSAlarm.addAlarmAction(alarmAction);
-    alarmAction && rIOPSAlarm.addOkAction(alarmAction);
 
-    const writeIOPsMetric = dbCluster.metricVolumeWriteIOPs();
-    const wIOPSAlarm = writeIOPsMetric.createAlarm(this, `${dbClusterName}VolumeWriteIOPsAlarm`, {
+    createAlarm({
+      metric: dbCluster.metricVolumeWriteIOPs(),
+      name: "VolumeWriteIOPsAlarm",
       threshold: 60_000, // IOPS
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
     });
-    alarmAction && wIOPSAlarm.addAlarmAction(alarmAction);
-    alarmAction && wIOPSAlarm.addOkAction(alarmAction);
 
-    const acuMetric = dbCluster.metricACUUtilization();
-    acuMetric.createAlarm(this, `${dbClusterName}ACUUtilizationAlarm`, {
+    createAlarm({
+      metric: dbCluster.metricACUUtilization(),
+      name: "ACUUtilizationAlarm",
       threshold: 80, // pct
       evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,

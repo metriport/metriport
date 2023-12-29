@@ -1,5 +1,5 @@
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
-import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patient-updater-metriport-api";
+import { PatientUpdaterMetriportAPI } from "@metriport/core/command/patient-updater-metriport-api";
 import { Input } from "@metriport/core/external/commonwell/cq-bridge/cq-link-patients";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";

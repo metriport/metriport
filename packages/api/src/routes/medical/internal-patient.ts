@@ -10,8 +10,7 @@ import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { blockPatients } from "../../command/medical/patient/mpi/block-patients";
-import { convertPatientModelToPatientData } from "../../command/medical/patient/mpi/convert-patients";
+import { PatientFinderLocal } from "../../command/medical/patient/patient-finder-local";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -190,6 +189,10 @@ router.delete(
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = req.params.source;
 
+    /* The above code is using TypeScript syntax to declare a constant variable named "patient". It is
+    using the "await" keyword to asynchronously call the "getPatientOrFail" function and assign the
+    returned value to the "patient" variable. The function is being called with an object that has
+    two properties: "cxId" and "id" with values "cxId" and "patientId" respectively. */
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
@@ -488,8 +491,22 @@ router.get(
   })
 );
 
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/mpi/find
+ *
+ * An endpoint used by lambdas that don't have db access to find ppatients. Finding (blocking) patients
+ * is when you use a set of criteria and find patients that match that criteria. This is used
+ * in MPI systems generally.
+ *
+ * @param req.query.dob
+ * @param req.query.gender
+ * @param req.query.firstNameInitial
+ * @param req.query.lastNameInitial
+ *
+ * @return List of patients that match the criteria
+ */
 router.post(
-  "/mpi/block",
+  "/mpi/find",
   asyncHandler(async (req: Request, res: Response) => {
     const dob = getFrom("query").orFail("dob", req);
     const genderAtBirth = getFrom("query").orFail("genderAtBirth", req);
@@ -499,7 +516,8 @@ router.post(
     const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
     const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
 
-    const blockedPatients = await blockPatients({
+    const patientFinder = new PatientFinderLocal();
+    const foundPatients = await patientFinder.find({
       data: {
         dob,
         genderAtBirth,
@@ -507,8 +525,7 @@ router.post(
         lastNameInitial,
       },
     });
-
-    return res.status(status.OK).json(blockedPatients.map(convertPatientModelToPatientData));
+    return res.status(status.OK).json(foundPatients);
   })
 );
 

@@ -1,24 +1,29 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import {
+  patientDiscoveryResponseIncomingSchema,
+  documentQueryResponseIncomingSchema,
+  documentRetrievalResponseIncomingSchema,
+} from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { parseCQDirectoryEntries } from "../../command/medical/cq-directory/parse-cq-directory-entry";
-import { rebuildCQDirectory } from "../../command/medical/cq-directory/rebuild-cq-directory";
+import {
+  IHEResultType,
+  handleIHEResponse,
+} from "../../command/medical/ihe-result/create-ihe-result";
+import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
+import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
-} from "../../command/medical/cq-directory/search-cq-directory";
+} from "../../external/carequality/command/cq-directory/search-cq-directory";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import {
-  handleIHEResponse,
-  IHEResultType,
-} from "../../command/medical/ihe-result/create-ihe-result";
 
 dayjs.extend(duration);
 
@@ -110,16 +115,17 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery/response
+ * POST /internal/carequality/patient-discovery/response/response
  *
  * Receives a Patient Discovery response from the IHE Gateway
  */
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
+    const pdResponse = patientDiscoveryResponseIncomingSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.PATIENT_DISCOVERY,
-      response: req.body,
+      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE,
+      response: pdResponse,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -134,7 +140,11 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
+    const dqResponse = documentQueryResponseIncomingSchema.parse(req.body);
+    await handleIHEResponse({
+      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
+      response: dqResponse,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -148,7 +158,11 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
+    const drResponse = documentRetrievalResponseIncomingSchema.parse(req.body);
+    await handleIHEResponse({
+      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE,
+      response: drResponse,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })

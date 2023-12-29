@@ -1,19 +1,18 @@
-import { Stack, StackProps, CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { LambdaLayers } from "./shared/lambda-layers";
+import { setupLambdasLayers, LambdaLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  lambdaLayers: LambdaLayers;
   alarmAction: SnsAction | undefined;
 }
 
@@ -23,12 +22,8 @@ export class IHEStack extends Stack {
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
-    if (!props.config.ihe?.subdomain) {
-      throw new Error("Must define subdomainmain if building the IHE stack!");
-    }
-
-    if (!props.config.ihe?.gatewayCertArn) {
-      throw new Error("Must define cert arn if building the IHE stack!");
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
     }
 
     // get the public zone
@@ -49,11 +44,11 @@ export class IHEStack extends Stack {
     const certificate = cert.Certificate.fromCertificateArn(
       this,
       "IHECertificate",
-      props.config.ihe.gatewayCertArn
+      props.config.iheGateway.certArn
     );
 
     // add domain cert + record
-    const iheApiUrl = `${props.config.ihe?.subdomain}.${props.config.domain}`;
+    const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
     api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
@@ -65,11 +60,13 @@ export class IHEStack extends Stack {
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
+    const lambdaLayers = setupLambdasLayers(this, true);
+
     const iheLambda = createLambda({
       stack: this,
       name: "IHE",
       entry: "ihe",
-      layers: [props.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
@@ -90,54 +87,10 @@ export class IHEStack extends Stack {
     });
 
     // Create lambdas
-    const iti38Lambda = createLambda({
-      stack: this,
-      name: "ITI38",
-      entry: "iti38",
-      layers: [props.lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
-    });
+    this.setupDocumentQueryLambda(props, lambdaLayers, api);
+    this.setupDocumentRetrievalLambda(props, lambdaLayers, api);
+    this.setupPatientDiscoveryLambda(props, lambdaLayers, api);
 
-    const iti39Lambda = createLambda({
-      stack: this,
-      name: "ITI39",
-      entry: "iti39",
-      layers: [props.lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
-    });
-
-    const iti55Lambda = createLambda({
-      stack: this,
-      name: "ITI55",
-      entry: "iti55",
-      layers: [props.lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
-    });
-
-    // Create resources for each lambda directly under the API root
-    const iti38Resource = api.root.addResource("ITI38");
-    const iti39Resource = api.root.addResource("ITI39");
-    const iti55Resource = api.root.addResource("ITI55");
-
-    // Add methods for each resource
-    iti38Resource.addMethod("ANY", new apig.LambdaIntegration(iti38Lambda));
-    iti39Resource.addMethod("ANY", new apig.LambdaIntegration(iti39Lambda));
-    iti55Resource.addMethod("ANY", new apig.LambdaIntegration(iti55Lambda));
     //-------------------------------------------
     // Output
     //-------------------------------------------
@@ -153,5 +106,73 @@ export class IHEStack extends Stack {
       description: "IHE API Gateway Root Resource ID",
       value: api.root.resourceId,
     });
+  }
+
+  private setupDocumentQueryLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    api: apig.RestApi
+  ) {
+    const documentQueryLambda = createLambda({
+      stack: this,
+      name: "DocumentQuery",
+      entry: "document-query",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const xcaResource = api.root.addResource("xca");
+    const documentQueryResource = xcaResource.addResource("document-query");
+    documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
+  }
+
+  private setupDocumentRetrievalLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    api: apig.RestApi
+  ) {
+    const documentRetrievalLambda = createLambda({
+      stack: this,
+      name: "DocumentRetrieval",
+      entry: "document-retrieval",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const xcaResource = api.root.addResource("xca");
+    const documentRetrievalResource = xcaResource.addResource("document-retrieve");
+    documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
+  }
+
+  private setupPatientDiscoveryLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    api: apig.RestApi
+  ) {
+    const patientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "PatientDiscovery",
+      entry: "patient-discovery",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const xcpdResource = api.root.addResource("xcpd");
+    xcpdResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
   }
 }

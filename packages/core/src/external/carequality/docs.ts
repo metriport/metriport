@@ -41,7 +41,7 @@ export function generatePatientDoc(patientNumber: number): string {
   }
   if (patientNumber == 3) {
     patientRole = `
-			<id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000" extension="EV12ZGR7J6K4MF8" />
+			<id root="2.16.840.1.113883.3.9621" extension="EV12ZGR7J6K4MF8" />
 			<addr use="HP">
 				<streetAddressLine>1100 test street</streetAddressLine>
 				<city>Helena</city>

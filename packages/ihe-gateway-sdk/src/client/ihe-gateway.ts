@@ -18,11 +18,11 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "https://localhost:8082";
+  static devUrl = "http://localhost:8082";
 
-  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd";
-  static DOCUMENT_QUERY_ENDPOINT = "/xcadq";
-  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr";
+  static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
+  static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
+  static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
   constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
@@ -41,13 +41,13 @@ export class IHEGateway {
    * Patient Discovery (XCPD ITI-55) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
    *
-   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to Ihe Gateway.
+   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to IHE Gateway.
    *
    */
   async startPatientDiscovery(
-    PatientDiscoveryRequestOutgoing: PatientDiscoveryRequestOutgoing
+    patientDiscoveryRequestOutgoing: PatientDiscoveryRequestOutgoing
   ): Promise<void> {
-    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, PatientDiscoveryRequestOutgoing);
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequestOutgoing);
   }
 
   /**
@@ -58,9 +58,9 @@ export class IHEGateway {
    *
    */
   async startDocumentsQuery(
-    DocumentQueryRequestOutgoing: DocumentQueryRequestOutgoing
+    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing
   ): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, DocumentQueryRequestOutgoing);
+    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequestOutgoing);
   }
 
   /**
@@ -71,8 +71,8 @@ export class IHEGateway {
    *
    */
   async startDocumentsRetrieval(
-    documentRetrieval: DocumentRetrievalRequestOutgoing
+    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing
   ): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
+    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalRequestOutgoing);
   }
 }

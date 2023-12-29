@@ -8,19 +8,16 @@ import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { blockPatients } from "./mpi/block-patients";
-import {
-  convertPatientModelToPatientData,
-  convertPatientDataToPatientDataMPI,
-} from "./mpi/convert-patients";
 import {
   matchPatients,
   jaroWinklerSimilarity,
   matchingPersonalIdentifiersRule,
   matchingContactDetailsRule,
-} from "@metriport/core/external/mpi/match-patients";
-import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
-import { mergePatients, mergeWithFirstPatient } from "@metriport/core/external/mpi/merge-patients";
+} from "@metriport/core/mpi/match-patients";
+import { normalizePatient } from "@metriport/core/mpi/normalize-patient";
+import { mergeWithFirstPatient } from "@metriport/core/mpi/merge-patients";
+import { PatientFinderLocal } from "./patient-finder-local";
+import { convertPatientDataToPatientDataMPI } from "./convert-patients";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -74,31 +71,30 @@ export const getPatientIds = async ({
 };
 
 /**
- * Retrieves a patient based on their demographic information.
+ * Retrieves a patient based on their demographic information. Utilizes functions
+ * imported from the MPI core module: normalization, finding(blocking), matching, merging
  * @param facilityId - The ID of the facility where the patient is associated.
  * @param cxId - The ID of the patient in the external system.
  * @param demo - The demographic information of the patient.
  * @returns The matched patient object if found, otherwise undefined.
  */
 export const getPatientByDemo = async ({
-  facilityId,
   cxId,
   demo,
 }: {
-  facilityId: string;
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | undefined> => {
   // Normalize the patient demographic data
-  const normalizedPatientDemo = normalizePatientDataMPI(convertPatientDataToPatientDataMPI(demo));
+  const normalizedPatientDemo = normalizePatient(convertPatientDataToPatientDataMPI(demo));
   if (!normalizedPatientDemo) {
     return undefined;
   }
 
-  // Block patients based on the criteria of matching dob and genderAtBirth
-  const blockedPatients = await blockPatients({
+  // Find patients based on the criteria of matching dob and genderAtBirth
+  const patientFinder = new PatientFinderLocal();
+  const foundPatients = await patientFinder.find({
     cxId,
-    facilityIds: [facilityId],
     data: {
       dob: normalizedPatientDemo.dob,
       genderAtBirth: normalizedPatientDemo.genderAtBirth,
@@ -106,24 +102,17 @@ export const getPatientByDemo = async ({
   });
 
   // Convert patients to proper datatype
-  const blockedPatientsData = blockedPatients.map(p => convertPatientModelToPatientData(p));
-
-  // Match the blocked patients with the normalized patient using the similarity function
+  // Match the found patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
     jaroWinklerSimilarity,
     [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
-    blockedPatientsData,
+    foundPatients,
     normalizedPatientDemo,
     SIMILARITY_THRESHOLD
   );
 
   // Merge the matching patients
-  const mpiPatient = await mergePatients(
-    mergeWithFirstPatient,
-    matchingPatients,
-    normalizedPatientDemo,
-    cxId
-  );
+  const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
 
   if (!mpiPatient) {
     return undefined;

@@ -16,73 +16,101 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
-export type SamlAttributes = {
-  subjectId: string;
-  subjectRole: {
-    display: string;
-    code: string;
-  };
-  organization: string;
-  organizationId: string;
-  homeCommunityId: string;
-  purposeOfUse: string;
-};
+export const SamlAttributesSchema = z.object({
+  subjectId: z.string(),
+  subjectRole: z.object({
+    display: z.string(),
+    code: z.string(),
+  }),
+  organization: z.string(),
+  organizationId: z.string(),
+  homeCommunityId: z.string(),
+  purposeOfUse: z.string(),
+});
 
-export type BaseRequest = {
-  id: string;
-  timestamp: string;
-  samlAttributes: SamlAttributes;
-  patientId?: string;
-};
+export const baseRequestSchema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  samlAttributes: SamlAttributesSchema,
+  patientId: z.string().optional(),
+});
 
-export type Code = {
-  system: string;
-  code: string;
-};
+export type BaseRequest = z.infer<typeof baseRequestSchema>;
 
-export type Details = { coding: Code[] } | { text: string };
+export const codeSchema = z.object({
+  system: z.string(),
+  code: z.string(),
+});
 
-export type Issue = {
-  severity: string;
-  code: string;
-  details: Details;
-};
+export type Code = z.infer<typeof codeSchema>;
 
-export type OperationOutcome = {
-  resourceType: string;
-  id: string;
-  issue: Issue[];
-};
+export const detailsSchema = z.union([
+  z.object({ coding: z.array(codeSchema) }),
+  z.object({ text: z.string() }),
+]);
 
-export type XCPDPatientId = {
-  id: string;
-  system: string;
-};
+export type Details = z.infer<typeof detailsSchema>;
 
-export type BaseResponse = {
-  id: string;
-  timestamp: string;
-  responseTimestamp: string;
-  xcpdPatientId?: XCPDPatientId;
-  patientId?: string; // TODO should this not be nullish
-  operationOutcome?: OperationOutcome;
-};
+export const issueSchema = z.object({
+  severity: z.string(),
+  code: z.string(),
+  details: detailsSchema,
+});
+export type Issue = z.infer<typeof issueSchema>;
 
-export type XCAGateway = {
-  homeCommunityId: string;
-  url: string;
-};
+export const operationOutcomeSchema = z.object({
+  resourceType: z.string(),
+  id: z.string(),
+  issue: z.array(issueSchema),
+});
+export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
-export type DocumentReference = {
-  homeCommunityId: string;
-  uniqueId: string;
-  urn?: string;
-  repositoryUniqueId: string;
-  newRepositoryUniqueId?: string;
-  newDocumentUniqueId?: string;
-  contentType?: string;
-  url?: string; // signed urls that mirth will use to download actually b64 bytes
-  uri?: string;
-  creation?: string;
-  title?: string;
-};
+export const xcpdPatientIdSchema = z.object({
+  id: z.string(),
+  system: z.string(),
+});
+export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
+
+export const baseResponseSchema = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  responseTimestamp: z.string(),
+  xcpdPatientId: xcpdPatientIdSchema.optional(),
+  patientId: z.string().optional(),
+});
+export type BaseResponse = z.infer<typeof baseResponseSchema>;
+
+export const baseErrorResponseSchema = z.intersection(
+  baseResponseSchema,
+  z.object({
+    operationOutcome: operationOutcomeSchema,
+  })
+);
+export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
+
+export function isBaseErrorResponse(obj: unknown): obj is BaseErrorResponse {
+  const result = baseErrorResponseSchema.safeParse(obj);
+  return result.success;
+}
+
+export const xcaGatewaySchema = z.object({
+  homeCommunityId: z.string(),
+  url: z.string(),
+});
+export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
+
+export const documentReferenceSchema = z.object({
+  homeCommunityId: z.string(),
+  docUniqueId: z.string(),
+  urn: z.string(),
+  repositoryUniqueId: z.string(),
+  newRepositoryUniqueId: z.string().nullish(),
+  newDocumentUniqueId: z.string().nullish(),
+  contentType: z.string().nullish(),
+  language: z.string().nullish(),
+  uri: z.string().nullish(),
+  url: z.string().nullish(),
+  creation: z.string().nullish(),
+  title: z.string().nullish(),
+});
+export type DocumentReference = z.infer<typeof documentReferenceSchema>;

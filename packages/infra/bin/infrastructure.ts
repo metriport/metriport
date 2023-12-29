@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
 import "source-map-support/register";
+import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
-import { EnvConfig } from "../config/env-config";
-import { SecretsStack } from "../lib/secrets-stack";
 import { IHEStack } from "../lib/ihe-stack";
+import { LocationServicesStack } from "../lib/location-services-stack";
+import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar } from "../lib/shared/util";
-import { LocationServicesStack } from "../lib/location-services-stack";
 
 const app = new cdk.App();
 
@@ -47,13 +47,14 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
-  new IHEStack(app, config.ihe.stackName, {
-    env,
-    config: config,
-    vpc: apiStack.vpc,
-    lambdaLayers: apiStack.sharedLambdaLayers,
-    alarmAction: apiStack.alarmAction,
-  });
+  if (config.iheGateway) {
+    new IHEStack(app, "IHEStack", {
+      env,
+      config: config,
+      vpc: apiStack.vpc,
+      alarmAction: apiStack.alarmAction,
+    });
+  }
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------

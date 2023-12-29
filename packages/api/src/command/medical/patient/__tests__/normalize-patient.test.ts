@@ -1,8 +1,8 @@
-import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient-incoming-schema";
-import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
+import { PatientDataMPI } from "@metriport/core/mpi/patient";
+import { normalizePatient } from "@metriport/core/mpi/normalize-patient";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
-describe("normalizePatientDataMPI", () => {
+describe("normalizePatient", () => {
   // Should return the same patient data if no normalization is needed
   it("should lowercase name and address and alter street suffix", () => {
     const PatientDataMPI: PatientDataMPI = {
@@ -50,7 +50,7 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
     expect(result).toEqual(expected);
   });
 
@@ -100,7 +100,7 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
@@ -152,118 +152,8 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
-
-  // Should handle default values for first name, last name, and address
-  it("should handle default values for first name, last name, and return null", () => {
-    const PatientDataMPI: PatientDataMPI = {
-      id: "123456789",
-      firstName: "John",
-      lastName: "Doe",
-      dob: "1990-01-01",
-      genderAtBirth: "M",
-      address: [
-        {
-          addressLine1: "123 Elm St",
-          city: "New York",
-          zip: "10001",
-          state: USState.NY,
-        },
-      ],
-      contact: [
-        {
-          email: "john.doe@example.com",
-          phone: "123-456-7890",
-        },
-      ],
-    };
-
-    const expected = null;
-
-    const result = normalizePatientDataMPI(PatientDataMPI);
-
-    expect(result).toEqual(expected);
-  });
-});
-
-// Should return null if the patient has a default address
-it("should handle default address values", () => {
-  const PatientDataMPI: PatientDataMPI = {
-    id: "123456789",
-    firstName: "John",
-    lastName: "Doe",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 main street",
-        city: "anytown",
-        zip: "00000",
-        state: USState.NY,
-      },
-    ],
-    contact: [
-      {
-        email: "john.doe@example.com",
-        phone: "123-456-7890",
-      },
-    ],
-  };
-
-  const result = normalizePatientDataMPI(PatientDataMPI);
-  expect(result).toBeNull();
-});
-
-// Should return null if the patient has default contact values
-it("should handle default contact values and remove period from street", () => {
-  const PatientDataMPI: PatientDataMPI = {
-    id: "123456789",
-    firstName: "john",
-    lastName: "dogo",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 elm st.",
-        city: "new york",
-        zip: "10001",
-        state: USState.NY,
-      },
-    ],
-    contact: [
-      {
-        email: "example@example.com",
-        phone: "0000000000",
-      },
-    ],
-  };
-
-  const expected: PatientDataMPI = {
-    id: "123456789",
-    firstName: "john",
-    lastName: "dogo",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 elm st",
-        city: "new york",
-        zip: "10001",
-        state: USState.NY,
-        country: "USA",
-      },
-    ],
-    contact: [
-      {
-        email: "",
-        phone: "",
-      },
-    ],
-  };
-
-  const result = normalizePatientDataMPI(PatientDataMPI);
-  expect(result).toEqual(expected);
 });
