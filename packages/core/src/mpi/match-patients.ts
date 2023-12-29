@@ -1,6 +1,6 @@
-import { intersectionWith, isEqual } from "lodash";
-import { PatientDataMPI } from "./patient";
-import { normalizePatientDataMPI } from "./normalize-patient";
+import { intersectionWith } from "lodash";
+import { PatientDataMPI, Contact, PersonalIdentifier } from "./patient";
+import { normalizePatient } from "./normalize-patient";
 import jaroWinkler from "jaro-winkler";
 
 // Define a type for the similarity function
@@ -23,24 +23,24 @@ type MatchingRule = (patient1: PatientDataMPI, patient2: PatientDataMPI) => bool
  * @returns matched patients.
  */
 export const matchPatients = (
-  similarityFunction: SimilarityFunction,
+  isSimilarEnough: SimilarityFunction,
   matchingRules: MatchingRule[],
   patients: PatientDataMPI[],
-  demo: PatientDataMPI,
+  currentPatient: PatientDataMPI,
   threshold: number,
   greedy = true
 ): PatientDataMPI[] => {
-  const matchFunction = (patient: PatientDataMPI) => {
-    const PatientDataMPI = normalizePatientDataMPI(patient);
-    if (!PatientDataMPI) {
+  const matchFunction = (patientDataMPI: PatientDataMPI) => {
+    const patient = normalizePatient(patientDataMPI);
+    if (!patient) {
       return false;
     }
-    for (const rule of matchingRules) {
-      if (rule(demo, PatientDataMPI)) {
+    for (const matchingRule of matchingRules) {
+      if (matchingRule(currentPatient, patient)) {
         return true;
       }
     }
-    return similarityFunction(PatientDataMPI, demo, threshold);
+    return isSimilarEnough(patient, currentPatient, threshold);
   };
   if (greedy) {
     const foundPatient = patients.find(matchFunction);
@@ -58,13 +58,14 @@ export const matchPatients = (
  * @returns true if the patient has any personal identifiers that match the demo.
  */
 export const matchingPersonalIdentifiersRule = (
-  demo: PatientDataMPI,
-  patient: PatientDataMPI
+  patient1: PatientDataMPI,
+  patient2: PatientDataMPI
 ): boolean => {
-  return Boolean(
-    intersectionWith(patient.personalIdentifiers || [], demo.personalIdentifiers || [], isEqual)
-      .length > 0
-  );
+  const identifiers1 = patient1.personalIdentifiers || [];
+  const identifiers2 = patient2.personalIdentifiers || [];
+  const isMatchIdentifier =
+    intersectionWith(identifiers1, identifiers2, isSameIdentifierById).length > 0;
+  return isMatchIdentifier;
 };
 
 /**
@@ -76,16 +77,14 @@ export const matchingPersonalIdentifiersRule = (
  * @returns true if the patient has any contact details that match the demo.
  */
 export const matchingContactDetailsRule = (
-  demo: PatientDataMPI,
-  patient: PatientDataMPI
+  patient1: PatientDataMPI,
+  patient2: PatientDataMPI
 ): boolean => {
-  // Boolean so if undefined || undefined, result will be false and not just falsy
-  return Boolean(
-    intersectionWith(patient.contact || [], demo.contact || [], (a, b) => a?.phone === b?.phone)
-      .length > 0 ||
-      intersectionWith(patient.contact || [], demo.contact || [], (a, b) => a?.email === b?.email)
-        .length > 0
-  );
+  const contact1 = patient1.contact || [];
+  const contact2 = patient2.contact || [];
+  const isMatchPhone = intersectionWith(contact1, contact2, isSameContactByPhone).length > 0;
+  const isMatchEmail = intersectionWith(contact1, contact2, isSameContactByEmail).length > 0;
+  return isMatchPhone || isMatchEmail;
 };
 
 /**
@@ -158,3 +157,15 @@ export const exactMatchSimilarity: SimilarityFunction = (
     patient1.address?.[0]?.zip === patient2.address?.[0]?.zip
   );
 };
+
+function isSameContactByPhone(a?: Contact, b?: Contact): boolean {
+  return a?.phone === b?.phone;
+}
+
+function isSameContactByEmail(a?: Contact, b?: Contact): boolean {
+  return a?.email === b?.email;
+}
+
+function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): boolean {
+  return a?.value === b?.value && a?.state === b?.state && a?.type === b?.type;
+}

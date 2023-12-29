@@ -2,11 +2,11 @@ import {
   jaroWinklerSimilarity,
   matchingPersonalIdentifiersRule,
   matchingContactDetailsRule,
-} from "@metriport/core/external/mpi/match-patients";
-import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient";
+} from "@metriport/core/mpi/match-patients";
+import { PatientDataMPI } from "@metriport/core/mpi/patient";
 import { testPatientDataMPI } from "./test_data";
 
-describe("normalizePatientDataMPI", () => {
+describe("normalizePatient", () => {
   it("identifies sampleInclusions as matches", async () => {
     const searchPatient: PatientDataMPI = testPatientDataMPI.sampleSearch[0];
     testPatientDataMPI.sampleInclusions.forEach((resultData: PatientDataMPI) => {

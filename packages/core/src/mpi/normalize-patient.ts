@@ -16,7 +16,7 @@ const defaultValues = {
  * represents the data of a patient, including their address, name, and contact information.
  * @returns either a modified `Patient` object or `null`.
  */
-function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
+export function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | undefined {
   const isDefaultAddress = patient.address?.some(
     addr =>
       addr &&
@@ -29,7 +29,7 @@ function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
     patient.firstName === defaultValues.firstName && patient.lastName === defaultValues.lastName;
 
   if (isDefaultAddress || isDefaultName) {
-    return null;
+    return undefined;
   }
 
   patient.contact = (patient.contact ?? []).map(contact => {
@@ -55,7 +55,7 @@ function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | null {
  * normalized patient data as an object of type `Patient`. If the patient data is null, it will
  * return null.
  */
-export function normalizePatientDataMPI(patient: PatientDataMPI): PatientDataMPI | null {
+export function normalizePatient(patient: PatientDataMPI): PatientDataMPI {
   // array destructuring to extract the first element of the array with defaults
   const [firstName = patient.firstName] = splitName(normalizeString(patient.firstName));
   const [lastName = patient.lastName] = splitName(normalizeString(patient.lastName));
@@ -74,7 +74,7 @@ export function normalizePatientDataMPI(patient: PatientDataMPI): PatientDataMPI
       const newAddress: Address = {
         addressLine1: normalizeAddress(addr.addressLine1),
         city: normalizeString(addr.city),
-        zip: addr.zip.slice(0, 5),
+        zip: normalizeZipCode(addr.zip),
         state: addr.state,
         country: addr.country || "USA",
       };
@@ -84,7 +84,17 @@ export function normalizePatientDataMPI(patient: PatientDataMPI): PatientDataMPI
       return newAddress;
     }),
   };
-  return handleDefaultValues(normalizedPatient);
+  // return handleDefaultValues(normalizedPatient);
+  return normalizedPatient;
+}
+
+/**
+ * Normalizes a zip code by taking the first 5 characters.
+ * @param zipCode - The zip code to be normalized.
+ * @returns The normalized zip code as a string.
+ */
+function normalizeZipCode(zipCode: string): string {
+  return zipCode.slice(0, 5);
 }
 
 /**
@@ -99,8 +109,7 @@ function normalizeString(str: string): string {
 }
 
 /**
- * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase,
- * and handling common domain typos.
+ * Normalizes an email address by removing leading and trailing spaces, converting all characters to lowercase
  *
  * @param email - The email address to be normalized.
  * @returns The normalized email address.

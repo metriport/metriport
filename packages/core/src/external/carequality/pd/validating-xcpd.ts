@@ -11,7 +11,7 @@ import {
   Contact,
   PersonalIdentifier,
   isContactType,
-} from "../../mpi/patient";
+} from "../../../mpi/patient";
 
 export class PatientAddressRequestedError extends Error {
   constructor(message?: string) {

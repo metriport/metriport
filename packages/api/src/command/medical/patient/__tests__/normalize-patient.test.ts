@@ -1,8 +1,8 @@
-import { PatientDataMPI } from "@metriport/core/src/external/mpi/patient";
-import { normalizePatientDataMPI } from "@metriport/core/external/mpi/normalize-patient";
+import { PatientDataMPI } from "@metriport/core/mpi/patient";
+import { normalizePatient } from "@metriport/core/mpi/normalize-patient";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
-describe("normalizePatientDataMPI", () => {
+describe("normalizePatient", () => {
   // Should return the same patient data if no normalization is needed
   it("should lowercase name and address and alter street suffix", () => {
     const PatientDataMPI: PatientDataMPI = {
@@ -50,7 +50,7 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
     expect(result).toEqual(expected);
   });
 
@@ -100,7 +100,7 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
@@ -152,7 +152,7 @@ describe("normalizePatientDataMPI", () => {
       ],
     };
 
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
 
     expect(result).toEqual(expected);
   });
@@ -180,7 +180,7 @@ describe("normalizePatientDataMPI", () => {
         },
       ],
     };
-    const result = normalizePatientDataMPI(PatientDataMPI);
+    const result = normalizePatient(PatientDataMPI);
 
     expect(result).toBeNull();
   });
@@ -210,7 +210,7 @@ it("should handle default address values", () => {
     ],
   };
 
-  const result = normalizePatientDataMPI(PatientDataMPI);
+  const result = normalizePatient(PatientDataMPI);
   expect(result).toBeNull();
 });
 
@@ -261,6 +261,6 @@ it("should handle default contact values and remove period from street", () => {
     ],
   };
 
-  const result = normalizePatientDataMPI(PatientDataMPI);
+  const result = normalizePatient(PatientDataMPI);
   expect(result).toEqual(expected);
 });

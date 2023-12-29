@@ -3,7 +3,7 @@ import { capture } from "./shared/capture";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
 import { generateITI39 } from "@metriport/core/external/carequality/dr/dr-parsing";
-import { generateXCPD } from "@metriport/core/external/carequality/xcpd/xcpd-parsing";
+import { generateXCPD } from "@metriport/core/external/carequality/pd/xcpd-parsing";
 
 capture.init();
 

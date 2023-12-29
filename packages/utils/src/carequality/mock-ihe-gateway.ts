@@ -1,5 +1,5 @@
 import express from "express";
-import { generateXCPD } from "@metriport/core/external/carequality/xcpd/xcpd-parsing";
+import { generateXCPD } from "@metriport/core/external/carequality/pd/xcpd-parsing";
 import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
 import { generateITI39 } from "@metriport/core/external/carequality/dr/dr-parsing";
 import bodyParser from "body-parser";

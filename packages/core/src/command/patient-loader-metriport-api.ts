@@ -1,5 +1,5 @@
 import axios from "axios";
-import { PatientLoader } from "./patient-loader";
+import { PatientLoader } from "../domain/patient/patient-loader";
 
 /**
  * Implementation of the PatientLoader that calls the Metriport API

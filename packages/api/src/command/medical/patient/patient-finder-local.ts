@@ -1,11 +1,11 @@
-import { PatientModel } from "../../../../models/medical/patient";
+import { PatientModel } from "../../../models/medical/patient";
 import { Op, WhereOptions } from "sequelize";
 import { convertPatientModelToPatientData } from "./convert-patients";
-import { PatientDataMPI } from "@metriport/core/external/mpi/patient";
-import { PatientBlock, PatientBlocker } from "@metriport/core/external/mpi/patient-blocker";
+import { PatientDataMPI } from "@metriport/core/mpi/patient";
+import { PatientFind, PatientFinder } from "@metriport/core/mpi/patient-finder";
 
-export class AppPatientBlocker extends PatientBlocker {
-  async block(params: PatientBlock): Promise<PatientDataMPI[]> {
+export class PatientFinderLocal extends PatientFinder {
+  async find(params: PatientFind): Promise<PatientDataMPI[]> {
     const { data, ...restCriteria } = params;
 
     // Define a specific type for the whereClause

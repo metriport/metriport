@@ -2,7 +2,7 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientDataMPI, convertPatientToFHIR } from "../../mpi/patient";
+import { PatientDataMPI, convertPatientToFHIR } from "../../../mpi/patient";
 import {
   validateFHIRAndExtractPatient,
   InternalError,
@@ -13,12 +13,13 @@ import {
   matchPatients,
   exactMatchSimilarity,
   matchingPersonalIdentifiersRule,
-} from "../../mpi/match-patients";
-import { normalizePatientDataMPI } from "../../mpi/normalize-patient";
-import { mergePatients, mergeWithFirstPatient } from "../../mpi/merge-patients";
-import { CQPatientBlocker } from "../cq-patient-blocker";
-import { makeBlockerFactory } from "../../mpi/patient-blocker";
+} from "../../../mpi/match-patients";
+import { normalizePatient } from "../../../mpi/normalize-patient";
+import { mergeWithFirstPatient } from "../../../mpi/merge-patients";
+import { PatientFinderMetriportAPI } from "../../../command/patient-finder-metriport-api";
+import { getEnvVarOrFail } from "../../../util/env-var";
 
+const apiUrl = getEnvVarOrFail("API_URL");
 const SIMILARITY_THRESHOLD = 0.96;
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
@@ -99,7 +100,7 @@ export async function processIncomingRequest(
 ): Promise<PatientDiscoveryResponseOutgoing> {
   try {
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
-    const normalizedPatientDemo = normalizePatientDataMPI(patient);
+    const normalizedPatientDemo = normalizePatient(patient);
 
     if (!normalizedPatientDemo) {
       return constructErrorResponse(
@@ -110,8 +111,8 @@ export async function processIncomingRequest(
       );
     }
 
-    const patientBlocker = makeBlockerFactory(CQPatientBlocker);
-    const blockedPatients = await patientBlocker.block({
+    const patientFinder = new PatientFinderMetriportAPI(apiUrl);
+    const foundPatients = await patientFinder.find({
       data: {
         dob: normalizedPatientDemo.dob,
         genderAtBirth: normalizedPatientDemo.genderAtBirth,
@@ -121,16 +122,12 @@ export async function processIncomingRequest(
     const matchingPatients = matchPatients(
       exactMatchSimilarity,
       [matchingPersonalIdentifiersRule],
-      blockedPatients,
+      foundPatients,
       normalizedPatientDemo,
       SIMILARITY_THRESHOLD
     );
 
-    const mpiPatient = mergePatients(
-      mergeWithFirstPatient,
-      matchingPatients,
-      normalizedPatientDemo
-    );
+    const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
 
     if (!mpiPatient) {
       return constructNoMatchResponse(payload);

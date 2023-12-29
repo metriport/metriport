@@ -5,7 +5,7 @@ import {
   Address,
   LivingSubjectId,
   PrincipalCareProviderId,
-} from "../../mpi/patient";
+} from "../../../mpi/patient";
 import { cleanXml, generateTimeStrings } from "../utils";
 import { generateXcpdTemplate } from "./xcpd-template";
 import { isAnyPatientMatching } from "../patient-matching";

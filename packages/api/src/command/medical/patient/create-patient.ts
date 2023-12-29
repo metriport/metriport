@@ -21,7 +21,6 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     sanitized;
 
   const patientExists = await getPatientByDemo({
-    facilityId,
     cxId,
     demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   });

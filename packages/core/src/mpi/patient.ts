@@ -1,4 +1,4 @@
-import { USState } from "../../domain/geographic-locations";
+import { USState } from "../domain/geographic-locations";
 import { Patient as FHIRPatient, ContactPoint } from "@medplum/fhirtypes";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
@@ -76,7 +76,7 @@ export type PatientDataMPI = {
   principalCareProviderId?: PrincipalCareProviderId;
   // TODO remove these.
   systemId?: string;
-  docmentId?: string;
+  documentId?: string;
 };
 
 export function convertPatientToFHIR(patient: PatientDataMPI): FHIRPatient {
