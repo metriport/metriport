@@ -31,7 +31,13 @@ import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
+import {
+  asyncHandler,
+  getFrom,
+  getFromQueryAsArray,
+  getFromQueryAsArrayOrFail,
+  getFromQueryAsBoolean,
+} from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -111,8 +117,8 @@ router.post(
  * Asychronous operation, returns 200 immediately.
  *
  * @param req.query.cxId - The customer's ID.
- * @param req.query.patientIds - Optional comma-separated list of Patient IDs to filter document
- *     references for; if not set all patients of the customer will be re-converted;
+ * @param req.query.patientIds - Comma-separated list of Patient IDs to filter document
+ *     references for;
  * @param req.query.documentIds - Optional comma-separated list of metriport document
  *     IDs to re-convert; if not set all documents of the customer will be re-converted;
  * @param req.query.dateFrom Start date that doc refs will be filtered by (inclusive, required).
@@ -125,7 +131,7 @@ router.post(
   "/re-convert",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
+    const patientIdsRaw = getFromQueryAsArrayOrFail("patientIds", req);
     const documentIds = getFromQueryAsArray("documentIds", req) ?? [];
     const dateFrom = parseISODate(getFrom("query").orFail("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
@@ -134,6 +140,9 @@ router.post(
       req
     );
     const requestId = uuidv7();
+
+    const patientIds = patientIdsRaw.flatMap(id => (id && id.trim().length > 0 ? id : []));
+    if (patientIds.length <= 0) throw new BadRequestError(`patientIds must have at least one item`);
 
     reConvertDocuments({
       cxId,

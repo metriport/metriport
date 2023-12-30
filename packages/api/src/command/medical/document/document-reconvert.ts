@@ -10,6 +10,7 @@ import { groupBy } from "lodash";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
+import { countResources } from "../../../external/fhir/patient/count-resources";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { PatientModel as Patient } from "../../../models/medical/patient";
@@ -18,13 +19,11 @@ import { errorToString } from "../../../shared/log";
 import { formatNumber } from "../../../shared/numbers";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
-import { getConsolidated } from "../patient/consolidated-get";
 import { getPatientOrFail } from "../patient/get-patient";
-import { makeDocRefContentToFileFunction, SimplerFile } from "./document-query-storage-info";
+import { docRefContentToFileFunction, SimplerFile } from "./document-query-storage-info";
 
 dayjs.extend(duration);
 
-// TODO review this
 const patientsToProcessInParallel = 1;
 
 const resourcesToDelete = resourceTypeForConsolidation.filter(r => r !== "DocumentReference");
@@ -67,10 +66,12 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       `patients: ${patientIds.join(", ")}`
   );
   try {
+    let consolidatedCountBefore: Record<string, number> | undefined = undefined;
     if (logConsolidatedCountBeforeAndAfter) {
-      await logConsolidatedCount({
+      consolidatedCountBefore = await countAndLogConsolidated({
         cxId,
         patientIds,
+        log,
       });
     }
 
@@ -99,10 +100,17 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       numberOfParallelExecutions: patientsToProcessInParallel,
     });
 
-    if (logConsolidatedCountBeforeAndAfter) {
-      await logConsolidatedCount({
+    if (consolidatedCountBefore) {
+      const consolidatedCountAfter = await countAndLogConsolidated({
         cxId,
         patientIds,
+        log,
+      });
+      compareBeforeAndAfterConsolidated({
+        patientIds,
+        consolidatedCountBefore,
+        consolidatedCountAfter,
+        log,
       });
     }
   } finally {
@@ -131,11 +139,7 @@ async function reConvertByPatient({
   // Only use use those we got from HIEs
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
 
-  const contentToFile = makeDocRefContentToFileFunction(patient);
-
-  const docRefWithS3InfoRaw = await Promise.all(
-    documentsFromHIEs.map(addS3InfoToDocRef(contentToFile, log))
-  );
+  const docRefWithS3InfoRaw = await Promise.all(documentsFromHIEs.map(addS3InfoToDocRef(log)));
   const docRefWithS3Info = docRefWithS3InfoRaw.flatMap(d => d ?? []);
 
   const documents = docRefWithS3Info;
@@ -159,10 +163,7 @@ async function reConvertByPatient({
   log(`Done for patient`);
 }
 
-function addS3InfoToDocRef(
-  contentToFile: ReturnType<typeof makeDocRefContentToFileFunction>,
-  log = console.log
-) {
+function addS3InfoToDocRef(log = console.log) {
   return async (doc: DocumentReference): Promise<DocRefWithS3Info | undefined> => {
     const docId = doc.id;
     if (!docId) {
@@ -175,7 +176,7 @@ function addS3InfoToDocRef(
       log(`No Metriport content found for docRef, skipping it - ${docId}`);
       return undefined;
     }
-    const file = contentToFile(content);
+    const file = docRefContentToFileFunction(content);
     if (!file) {
       log(`Could not determine file info for docRef, skipping it - ${docId}`);
       return undefined;
@@ -276,23 +277,70 @@ async function reConvertDocument({
   });
 }
 
-async function logConsolidatedCount({
+async function countAndLogConsolidated({
   cxId,
-  patientIds = [],
+  patientIds,
+  log = console.log,
 }: {
   cxId: string;
-  patientIds?: string[];
-}): Promise<void> {
+  patientIds: string[];
+  log?: typeof console.log;
+}): Promise<Record<string, number>> {
   const consolidatedBeforeMap: Record<string, number> = {};
   for (const patientId of patientIds) {
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-    const consolidated = await getConsolidated({
-      patient,
+    const resourceCount = await countResources({
+      patient: { id: patientId, cxId },
       resources: resourcesToDelete,
     });
-    consolidatedBeforeMap[patientId] = (consolidated.bundle.entry ?? []).length;
+    consolidatedBeforeMap[patientId] = resourceCount.total;
   }
-  console.log(`Consolidated count by patient: ${JSON.stringify(consolidatedBeforeMap)}`);
+  log(`Consolidated count by patient: ${JSON.stringify(consolidatedBeforeMap)}`);
+  return consolidatedBeforeMap;
+}
+
+async function compareBeforeAndAfterConsolidated({
+  patientIds,
+  consolidatedCountBefore,
+  consolidatedCountAfter,
+  log = console.log,
+}: {
+  patientIds: string[];
+  consolidatedCountBefore: Record<string, number>;
+  consolidatedCountAfter: Record<string, number>;
+  log?: typeof console.log;
+}): Promise<void> {
+  const extra: Record<string, unknown> = {};
+  const consolidatedCountDiff: Record<string, number> = {};
+
+  for (const patientId of patientIds) {
+    const countBefore = consolidatedCountBefore[patientId];
+    const countAfter = consolidatedCountAfter[patientId];
+    if (countBefore === undefined || countAfter === undefined) {
+      log(
+        `No consolidated count found for patient ${patientId} ` +
+          `(countBefore: ${countBefore}, countAfter: ${countAfter}) - skipping...`
+      );
+      continue;
+    }
+    consolidatedCountDiff[patientId] = countAfter - countBefore;
+  }
+  log(`Consolidated count diff by patient: ${JSON.stringify(consolidatedCountDiff)}`);
+
+  for (const patientId of Object.keys(consolidatedCountDiff)) {
+    const diff = consolidatedCountDiff[patientId];
+    if (diff == undefined) continue;
+    if (diff < 0)
+      extra[patientId] = {
+        before: consolidatedCountBefore[patientId],
+        after: consolidatedCountAfter[patientId],
+        diff,
+      };
+  }
+  if (Object.keys(extra).length > 0) {
+    const msg = `Unexpected consolidated count after re-convert`;
+    log(`${msg} - ${JSON.stringify(extra)}`);
+    capture.error(msg, { extra });
+  }
 }
 
 async function getDocRefsByCreatedAt({

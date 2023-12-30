@@ -23,7 +23,6 @@ export type S3Info = {
   fileContentType: string | undefined;
 };
 
-// TODO we need to overhaul this whole file
 export type SimplerFile = {
   fileName: string;
   fileLocation: string;
@@ -47,20 +46,16 @@ export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
     };
   };
 }
-export function makeDocRefContentToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
-  return (content: DocumentReferenceContent): SimplerFile | undefined => {
-    const attachment = content.attachment;
-    if (!attachment) return undefined;
-    const mimeType = attachment.contentType;
-    const extension = getFileExtension(mimeType);
-    const docName = `${content.id}${extension}`;
-    const fileName = createS3FileName(patient.cxId, patient.id, docName);
-    return {
-      fileName,
-      fileLocation: s3BucketName,
-      fileContentType: mimeType,
-    };
-  };
+export function docRefContentToFileFunction(
+  content: DocumentReferenceContent
+): SimplerFile | undefined {
+  const attachment = content.attachment;
+  if (!attachment) return undefined;
+  const fileLocation = s3BucketName;
+  const fileContentType = attachment.contentType;
+  const fileName = attachment.title;
+  if (!fileName) return undefined;
+  return { fileName, fileLocation, fileContentType };
 }
 
 // TODO convert this to: 1. list files on patient's folder on S3; 2. match to docs and retrieve info

@@ -47,7 +47,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
       });
       return resourcesToDelete;
     } catch (error) {
-      const msg = `Failed to get consolidated FHIR resources ;`;
+      const msg = `Failed to get consolidated FHIR resources`;
       log(`${msg}: ${JSON.stringify(params)}`);
       throw error;
     }
