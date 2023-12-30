@@ -51,16 +51,16 @@ export async function processDocumentQueryResults({
         total: convertibleDocCount,
       },
       requestId,
-      source: MedicalDataSource.COMMONWELL,
+      source: MedicalDataSource.CAREQUALITY,
     });
 
     // TODO - INTRODUCED WHEN IMPLEMENTING CQ DOC RETRIEVAL
+    // NOTE MAKE SURE TO ADD DOC REFS TO TABLE WITH REQUESTID
     // downloadDocs(docsToDownload, patientId, cxId, requestId);
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    // HAVE APPEND PROGRESS HANDLE THE WEBOOK
     await appendDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },

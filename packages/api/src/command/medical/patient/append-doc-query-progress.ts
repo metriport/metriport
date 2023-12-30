@@ -10,24 +10,26 @@ import { Patient, PatientExternalData } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
+import { processDocQueryProgressWebhook } from "../document/process-doc-query-webhook";
 import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
 import { PatientDataCarequality } from "../../../external/carequality/patient-shared";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
-  source: MedicalDataSource;
   convertibleDownloadErrors?: number;
   increaseCountConvertible?: number;
-  requestId?: string | undefined;
+  requestId: string;
 } & (
   | {
       downloadProgress?: Progress | undefined | null;
       convertProgress?: Progress | undefined | null;
+      source?: MedicalDataSource;
       reset?: false | undefined;
     }
   | {
       downloadProgress: Progress;
       convertProgress?: never;
+      source?: never;
       reset?: true;
     }
 );
@@ -72,9 +74,9 @@ export async function appendDocQueryProgress({
     const externalData = setExternalData(
       reset,
       existingPatient,
-      source,
       downloadProgress,
       convertProgress,
+      source,
       convertibleDownloadErrors,
       increaseCountConvertible
     );
@@ -96,7 +98,11 @@ export async function appendDocQueryProgress({
 
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
-    // HERE ANALYZE THE PROGRESS AND SEND WEBHOOKS IF COMPLETE
+    await processDocQueryProgressWebhook({
+      patient,
+      docQueryProgress,
+      requestId,
+    });
 
     return updatedPatient;
   });
@@ -106,24 +112,31 @@ export async function appendDocQueryProgress({
 function setExternalData(
   reset: boolean | undefined,
   patient: PatientModel,
-  source: MedicalDataSource,
   downloadProgress: Progress | undefined | null,
   convertProgress: Progress | undefined | null,
+  source?: MedicalDataSource,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): PatientExternalData {
   const externalData = patient.data.externalData ?? {};
-  const sourceData = externalData[source] as PatientDataCarequality | PatientDataCommonwell;
 
   if (reset) {
     return {
       ...externalData,
-      [source]: {
-        ...sourceData,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        documentQueryProgress: {},
+      },
+      CAREQUALITY: {
+        ...externalData.CAREQUALITY,
         documentQueryProgress: {},
       },
     };
+  } else if (!source) {
+    return externalData;
   }
+
+  const sourceData = externalData[source] as PatientDataCarequality | PatientDataCommonwell;
 
   externalData[source] = {
     ...externalData[source],
@@ -175,7 +188,6 @@ function setDocQueryProgress(
   const cwProgress = cwExternalData?.documentQueryProgress ?? {};
   const cqProgress = cqExternalData?.documentQueryProgress ?? {};
 
-  // DECOMPOSE
   const result = documentQueryProgress;
 
   const progresses: DocumentQueryProgress[] = [cwProgress, cqProgress];

@@ -9,7 +9,7 @@ import {
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { errorToString } from "@metriport/core/util/error";
+import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
@@ -159,13 +159,13 @@ export async function queryAndProcessDocuments({
     });
 
     // THIS WILL NEED TO BE MOVED TO A DIFFERENT PLACE WHEN WE SUPPORT MULTIPLE HIE
-    if (
-      fhirDocRefs.length &&
-      forceDownload === undefined &&
-      ignoreDocRefOnFHIRServer === undefined
-    ) {
-      reportDocQueryUsage(patient);
-    }
+    // if (
+    //   fhirDocRefs.length &&
+    //   forceDownload === undefined &&
+    //   ignoreDocRefOnFHIRServer === undefined
+    // ) {
+    //   reportDocQueryUsage(patient);
+    // }
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
@@ -178,18 +178,6 @@ export async function queryAndProcessDocuments({
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
-
-    // const downloadProgressHasFailed =
-    //   updatedPatient.data.documentQueryProgress?.download?.status === "failed";
-
-    // if (downloadProgressHasFailed) {
-    //   processPatientDocumentRequest(
-    //     patientParam.cxId,
-    //     patientParam.id,
-    //     "medical.document-download",
-    //     MAPIWebhookStatus.failed
-    //   );
-    // }
 
     capture.message(msg, {
       extra: {
@@ -405,12 +393,21 @@ function convertToNonExistingS3Info(
   };
 }
 
-function addMetriportDocRefId({ cxId, patientId }: { cxId: string; patientId: string }) {
+function addMetriportDocRefId({
+  cxId,
+  patientId,
+  requestId,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+}) {
   return async (document: Document): Promise<DocumentWithMetriportId> => {
     const { metriportId, originalId } = await mapDocRefToMetriport({
       cxId,
       patientId,
       document,
+      requestId,
       source: MedicalDataSource.COMMONWELL,
     });
     return {
@@ -470,6 +467,7 @@ export async function downloadDocsAndUpsertFHIR({
       addMetriportDocRefId({
         cxId: patient.cxId,
         patientId: patient.id,
+        requestId,
       })
     )
   );
@@ -727,6 +725,7 @@ export async function downloadDocsAndUpsertFHIR({
     source: MedicalDataSource.COMMONWELL,
   });
 
+  // WILL BE REMOVED
   const downloadProgressIsCompleted =
     updatedPatient.data.documentQueryProgress?.download?.status === "completed";
 
@@ -737,6 +736,7 @@ export async function downloadDocsAndUpsertFHIR({
       patient.id,
       "medical.document-download",
       MAPIWebhookStatus.completed,
+      requestId,
       toDTO(docsNewLocation)
     );
   }
@@ -750,7 +750,8 @@ export async function downloadDocsAndUpsertFHIR({
       cxId,
       patient.id,
       "medical.document-conversion",
-      MAPIWebhookStatus.completed
+      MAPIWebhookStatus.completed,
+      requestId
     );
     if (conversionStatusFromAppend !== conversionStatusFromDB) {
       log(

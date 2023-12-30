@@ -31,7 +31,6 @@ import { Util } from "../../../shared/util";
 import { getDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { appendDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
-import { MedicalDataSource } from "../../../external";
 import { areDocumentsProcessing } from "./document-status";
 
 export const options = [
@@ -46,7 +45,9 @@ const isForceDownload = (options: Options[]): boolean => options.includes("force
 const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
   options.includes("ignore-fhir-conversion-and-upsert");
 
-// IS THIS SOMETHING THATS OBSOLETE OR WE NEED TO TAKE INTO CONSIDERATION FOR CQ AS WELL?
+/**
+ * @deprecated No longer in use (Intro to CQ)
+ */
 export const reprocessDocuments = async ({
   cxId,
   documentIds,
@@ -152,7 +153,7 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
         reset: true,
-        source: MedicalDataSource.COMMONWELL,
+        requestId,
       });
       await queryAndProcessDocuments({
         patient,
@@ -216,7 +217,7 @@ async function processDocuments({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
       reset: true,
-      source: MedicalDataSource.COMMONWELL,
+      requestId,
     });
 
     await downloadDocsAndUpsertFHIR({
@@ -236,7 +237,7 @@ async function processDocuments({
     await appendDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "completed" },
-      source: MedicalDataSource.COMMONWELL,
+      requestId,
     });
   }
   log(`Done for patient ${patientId}`);

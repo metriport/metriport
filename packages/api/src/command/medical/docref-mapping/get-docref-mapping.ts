@@ -8,18 +8,29 @@ export const getDocRefMapping = async (id: string): Promise<DocRefMapping | unde
   return docRef ?? undefined;
 };
 
+export const getAllDocRefMappingByRequestId = async (
+  requestId: string
+): Promise<DocRefMapping[]> => {
+  const docRefs = await DocRefMappingModel.findAll({
+    where: { requestId },
+  });
+  return docRefs;
+};
+
 export const getOrCreateDocRefMapping = async ({
   cxId,
   patientId,
+  requestId,
   externalId,
   source,
 }: {
   cxId: string;
   patientId: string;
+  requestId: string;
   externalId: string;
   source: MedicalDataSource;
 }): Promise<DocRefMapping> => {
-  const docRef = { cxId, patientId, externalId, source };
+  const docRef = { cxId, patientId, externalId, requestId, source };
   const [res] = await DocRefMappingModel.findOrCreate({
     where: docRef,
     defaults: {

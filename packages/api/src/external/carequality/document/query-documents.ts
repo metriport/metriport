@@ -61,18 +61,6 @@ export async function getDocumentsFromCQ({
       source: MedicalDataSource.CAREQUALITY,
     });
 
-    // const downloadProgressHasFailed =
-    //   updatedPatient.data.documentQueryProgress?.download?.status === "failed";
-
-    // if (downloadProgressHasFailed) {
-    //   processPatientDocumentRequest(
-    //     patient.cxId,
-    //     patient.id,
-    //     "medical.document-download",
-    //     MAPIWebhookStatus.failed
-    //   );
-    // }
-
     capture.message(msg, {
       extra: {
         context: `cq.queryAndProcessDocuments`,

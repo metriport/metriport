@@ -59,6 +59,7 @@ const reprocessOptionsSchema = z.enum(options).array().optional();
  *
  * Asychronous operation, returns 200 immediately.
  *
+ * @deprecated No longer in use (Intro to CQ)
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.documentIds - Optional comma-separated list of metriport document
  *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
@@ -106,6 +107,7 @@ const convertResultSchema = z.enum(convertResult);
 router.post(
   "/conversion-status",
   asyncHandler(async (req: Request, res: Response) => {
+    // THIS LOGIC WILL BE UPDATED WITH CQ DOC RETRIEVAL PR
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
@@ -122,6 +124,7 @@ router.post(
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
     // END TODO 785
 
+    // need to update
     let expectedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
@@ -164,7 +167,8 @@ router.post(
         cxId,
         patientId,
         "medical.document-conversion",
-        MAPIWebhookStatus.completed
+        MAPIWebhookStatus.completed,
+        ""
       );
     }
 
@@ -189,13 +193,14 @@ router.post(
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
+    // need to update
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      requestId: patient.data.documentQueryProgress?.requestId,
       source:
         source === "commonwell" ? MedicalDataSource.COMMONWELL : MedicalDataSource.CAREQUALITY,
+      requestId: patient.data.documentQueryProgress?.requestId ?? "",
     });
 
     return res.json(updatedPatient.data.documentQueryProgress);
@@ -403,6 +408,7 @@ router.post(
       patientId,
       "medical.document-bulk-download-urls",
       status as MAPIWebhookStatus,
+      requestId,
       dtos
     );
 

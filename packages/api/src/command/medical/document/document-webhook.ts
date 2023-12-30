@@ -44,6 +44,7 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
+  requestId: string,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
   try {
@@ -69,6 +70,7 @@ export const processPatientDocumentRequest = async (
         cxId,
         type: whType,
         payload,
+        requestId,
       });
       await processRequest(
         webhookRequest,
@@ -81,6 +83,7 @@ export const processPatientDocumentRequest = async (
         cxId,
         type: whType,
         payload,
+        requestId,
         status: "success",
       });
     }
