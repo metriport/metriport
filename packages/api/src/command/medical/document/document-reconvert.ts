@@ -71,8 +71,6 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       await logConsolidatedCount({
         cxId,
         patientIds,
-        dateFrom,
-        dateTo,
       });
     }
 
@@ -105,8 +103,6 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       await logConsolidatedCount({
         cxId,
         patientIds,
-        dateFrom,
-        dateTo,
       });
     }
   } finally {
@@ -283,24 +279,18 @@ async function reConvertDocument({
 async function logConsolidatedCount({
   cxId,
   patientIds = [],
-  dateFrom,
-  dateTo,
 }: {
   cxId: string;
   patientIds?: string[];
-  dateFrom?: string;
-  dateTo?: string;
 }): Promise<void> {
-  const consolidatedBeforeMap = new Map<string, number>();
+  const consolidatedBeforeMap: Record<string, number> = {};
   for (const patientId of patientIds) {
     const patient = await getPatientOrFail({ id: patientId, cxId });
-    const consolidatedBefore = await getConsolidated({
+    const consolidated = await getConsolidated({
       patient,
       resources: resourcesToDelete,
-      dateFrom,
-      dateTo,
     });
-    consolidatedBeforeMap.set(patientId, (consolidatedBefore.bundle.entry ?? []).length);
+    consolidatedBeforeMap[patientId] = (consolidated.bundle.entry ?? []).length;
   }
   console.log(`Consolidated count by patient: ${JSON.stringify(consolidatedBeforeMap)}`);
 }

@@ -31,7 +31,7 @@ import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -117,6 +117,8 @@ router.post(
  *     IDs to re-convert; if not set all documents of the customer will be re-converted;
  * @param req.query.dateFrom Start date that doc refs will be filtered by (inclusive, required).
  * @param req.query.dateTo Optional end date that doc refs will be filtered by (inclusive).
+ * @param req.query.logConsolidatedCountBeforeAndAfter Optional whether to log consolidated data
+ *     count before and after the conversion (defaults false).
  * @return 200
  */
 router.post(
@@ -127,6 +129,10 @@ router.post(
     const documentIds = getFromQueryAsArray("documentIds", req) ?? [];
     const dateFrom = parseISODate(getFrom("query").orFail("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const logConsolidatedCountBeforeAndAfter = getFromQueryAsBoolean(
+      "logConsolidatedCountBeforeAndAfter",
+      req
+    );
     const requestId = uuidv7();
 
     reConvertDocuments({
@@ -136,7 +142,7 @@ router.post(
       dateFrom,
       dateTo,
       requestId,
-      logConsolidatedCountBeforeAndAfter: true,
+      logConsolidatedCountBeforeAndAfter,
     }).catch(err => {
       console.log(`Error re-converting documents for cxId ${cxId}: ${errorToString(err)}`);
       capture.error(err);
