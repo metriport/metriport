@@ -1,10 +1,13 @@
 import { Operator } from "@medplum/core";
 import {
   DocumentReference,
+  Extension,
   OperationOutcomeIssue,
+  Resource,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
+import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
@@ -78,4 +81,13 @@ const resourcesSupportingDateQueriesMap: { [k in MedplumResourceType]?: boolean 
 
 export function resourceSupportsDateQuery(resourceType: MedplumResourceType): boolean {
   return Object.keys(resourcesSupportingDateQueriesMap).includes(resourceType);
+}
+
+export function isResourceDerivedFromDocRef(resource: Resource, docId: string): boolean {
+  if (!("extension" in resource)) return false;
+  return (resource.extension ?? [])?.some(e => isExtensionDerivedFromDocRef(e, docId));
+}
+
+export function isExtensionDerivedFromDocRef(e: Extension, docId: string): boolean {
+  return e.url === DOC_ID_EXTENSION_URL && (e.valueString ?? "")?.includes(docId);
 }

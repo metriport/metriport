@@ -1,4 +1,6 @@
+import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { Document } from "@metriport/commonwell-sdk";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Patient } from "../../../domain/medical/patient";
 import {
   DocumentWithMetriportId,
@@ -8,7 +10,6 @@ import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 const s3BucketName = Config.getMedicalDocumentsBucketName();
@@ -22,12 +23,15 @@ export type S3Info = {
   fileContentType: string | undefined;
 };
 
-type SimpleFile = {
-  docId: string;
+// TODO we need to overhaul this whole file
+export type SimplerFile = {
   fileName: string;
   fileLocation: string;
   fileContentType: string | undefined;
 };
+type SimpleFile = {
+  docId: string;
+} & SimplerFile;
 
 export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
@@ -40,6 +44,21 @@ export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
       fileName,
       fileLocation: s3BucketName,
       fileContentType: doc.content?.mimeType,
+    };
+  };
+}
+export function makeDocRefContentToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
+  return (content: DocumentReferenceContent): SimplerFile | undefined => {
+    const attachment = content.attachment;
+    if (!attachment) return undefined;
+    const mimeType = attachment.contentType;
+    const extension = getFileExtension(mimeType);
+    const docName = `${content.id}${extension}`;
+    const fileName = createS3FileName(patient.cxId, patient.id, docName);
+    return {
+      fileName,
+      fileLocation: s3BucketName,
+      fileContentType: mimeType,
     };
   };
 }
