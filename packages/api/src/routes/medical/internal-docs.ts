@@ -31,13 +31,7 @@ import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import {
-  asyncHandler,
-  getFrom,
-  getFromQueryAsArray,
-  getFromQueryAsArrayOrFail,
-  getFromQueryAsBoolean,
-} from "../util";
+import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -131,7 +125,7 @@ router.post(
   "/re-convert",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const patientIdsRaw = getFromQueryAsArrayOrFail("patientIds", req);
+    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
     const documentIds = getFromQueryAsArray("documentIds", req) ?? [];
     const dateFrom = parseISODate(getFrom("query").orFail("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
@@ -140,9 +134,6 @@ router.post(
       req
     );
     const requestId = uuidv7();
-
-    const patientIds = patientIdsRaw.flatMap(id => (id && id.trim().length > 0 ? id : []));
-    if (patientIds.length <= 0) throw new BadRequestError(`patientIds must have at least one item`);
 
     reConvertDocuments({
       cxId,
