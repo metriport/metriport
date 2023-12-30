@@ -549,6 +549,6 @@ function removeCDUNK(payloadRaw: string): string {
 
 function removeNullFlavor(payloadRaw: string): string {
   const stringToReplace = /<id nullFlavor="%"/g;
-  const replacement = `<id extension="1" root="1""`;
+  const replacement = `<id extension="1" root="1"`;
   return payloadRaw.replace(stringToReplace, replacement);
 }
