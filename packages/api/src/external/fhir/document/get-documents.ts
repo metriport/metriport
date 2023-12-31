@@ -11,7 +11,7 @@ export async function getDocuments({
   documentIds,
 }: {
   cxId: string;
-  patientId: string;
+  patientId?: string;
   from?: string;
   to?: string;
   documentIds?: string[];
@@ -45,7 +45,7 @@ export function getFilters({
 } = {}) {
   const filters = new URLSearchParams();
   patientId && filters.append("patient", patientId);
-  documentIds.length && filters.append(`_ids`, documentIds.join(","));
+  documentIds.length && filters.append(`_id`, documentIds.join(","));
   from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
   to && filters.append("date", isoDateToFHIRDateQueryTo(to));
   const filtersAsStr = filters.toString();

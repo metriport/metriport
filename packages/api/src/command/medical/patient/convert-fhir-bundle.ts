@@ -47,9 +47,9 @@ export async function handleBundleToMedicalRecord({
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
   const isSandbox = Config.isSandbox();
-  const patientMatch = getSandboxSeedData(patient.data.firstName);
 
   if (isSandbox) {
+    const patientMatch = getSandboxSeedData(patient.data.firstName);
     const url = await processSandboxSeed({
       firstName: patientMatch ? patient.data.firstName : "jane",
       conversionType,
