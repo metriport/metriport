@@ -36,7 +36,8 @@ export type ReConvertDocumentsCommand = {
   dateFrom?: string;
   dateTo?: string;
   requestId: string;
-  logConsolidatedCountBeforeAndAfter?: boolean;
+  dryRun?: boolean;
+  logConsolidatedCountBefore?: boolean;
 };
 
 type DocumentReferenceWithId = DocumentReference & { id: string };
@@ -50,31 +51,24 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
   const startedAt = Date.now();
   const {
     cxId,
-    patientIds = [],
+    patientIds: patientIdsParam = [],
     documentIds = [],
     dateFrom,
     dateTo,
     requestId,
-    logConsolidatedCountBeforeAndAfter = false,
+    dryRun = false,
+    logConsolidatedCountBefore = false,
   } = params;
-  const { log } = out(`reConvertDocuments - cxId ${cxId}`);
+  const dryRunMsg = getDryRunPrefix(dryRun);
+  const { log } = out(`${dryRunMsg}reConvertDocuments - cxId ${cxId}`);
   log(
     `Re-converting documents: ${documentIds.length ?? "all"}, ` +
-      `patients: ${patientIds.length ?? "all"}, ` +
+      `patients: ${patientIdsParam.length ?? "all"}, ` +
       `dateFrom: ${dateFrom}, dateTo: ${dateTo} - ` +
       `docs: ${documentIds.join(", ")}; ` +
-      `patients: ${patientIds.join(", ")}`
+      `patients: ${patientIdsParam.join(", ")}`
   );
   try {
-    let consolidatedCountBefore: Record<string, number> | undefined = undefined;
-    if (logConsolidatedCountBeforeAndAfter) {
-      consolidatedCountBefore = await countAndLogConsolidated({
-        cxId,
-        patientIds,
-        log,
-      });
-    }
-
     const docRefs = await getDocRefsByCreatedAt(params);
     if (docRefs.length <= 0) {
       log(`No DocumentReferenceMappings found, exiting...`);
@@ -82,12 +76,21 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
     }
 
     const docsByPatientId = groupBy(docRefs, d => d.patientId);
+    const patientIds = Object.keys(docsByPatientId);
+
+    if (logConsolidatedCountBefore) {
+      await countAndLogConsolidated({
+        cxId,
+        patientIds,
+        log,
+      });
+    }
 
     const patientPromise = async ([patientId, docs]: [string, DocRefMapping[]]) => {
       try {
         const documentIds = docs.map(d => d.id);
         const patient = await getPatientOrFail({ id: patientId, cxId });
-        await reConvertByPatient({ patient, documentIds, requestId });
+        await reConvertByPatient({ patient, documentIds, requestId, dryRun });
       } catch (error) {
         const msg = `Error re-converting documents for patient`;
         const extra = { error, patientId, documentIds };
@@ -99,20 +102,6 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
     await executeAsynchronously(Object.entries(docsByPatientId), patientPromise, {
       numberOfParallelExecutions: patientsToProcessInParallel,
     });
-
-    if (consolidatedCountBefore) {
-      const consolidatedCountAfter = await countAndLogConsolidated({
-        cxId,
-        patientIds,
-        log,
-      });
-      compareBeforeAndAfterConsolidated({
-        patientIds,
-        consolidatedCountBefore,
-        consolidatedCountAfter,
-        log,
-      });
-    }
   } finally {
     const duration = Date.now() - startedAt;
     const durationMin = formatNumber(dayjs.duration(duration).asMinutes());
@@ -125,12 +114,15 @@ async function reConvertByPatient({
   patient,
   documentIds,
   requestId,
+  dryRun,
 }: {
   patient: Patient;
   documentIds: string[];
   requestId: string;
+  dryRun?: boolean;
 }): Promise<void> {
-  const { log } = out(`reConvertDocuments - patient ${patient.id}`);
+  const dryRunMsg = getDryRunPrefix(dryRun);
+  const { log } = out(`${dryRunMsg}reConvertDocuments - patient ${patient.id}`);
 
   const documentsFromFHIR = await getDocumentsFromFHIRServer({
     cxId: patient.cxId,
@@ -157,6 +149,7 @@ async function reConvertByPatient({
     patient,
     documents,
     requestId,
+    dryRun,
     log,
   });
 
@@ -197,11 +190,13 @@ async function reConvertFHIRResources({
   patient,
   documents,
   requestId,
+  dryRun,
   log = console.log,
 }: {
   patient: Patient;
   documents: DocRefWithS3Info[];
   requestId: string;
+  dryRun?: boolean;
   log?: typeof console.log;
 }): Promise<void> {
   const docIds = documents.map(d => d.docRef.id);
@@ -211,12 +206,14 @@ async function reConvertFHIRResources({
     patient,
     resources: resourcesToDelete,
     docIds,
+    dryRun,
   });
 
   await reConvertDocumentsInternal({
     patient,
     documents,
     requestId,
+    dryRun,
     log,
   });
 }
@@ -225,13 +222,19 @@ async function reConvertDocumentsInternal({
   patient,
   documents,
   requestId,
+  dryRun,
   log = console.log,
 }: {
   patient: Patient;
   documents: DocRefWithS3Info[];
   requestId: string;
+  dryRun?: boolean;
   log?: typeof console.log;
 }): Promise<void> {
+  if (dryRun) {
+    log(`[DRY-RUN] Would trigger re-conversion of ${documents.length} doc refs`);
+    return;
+  }
   const { id: patientId } = patient;
 
   try {
@@ -298,51 +301,6 @@ async function countAndLogConsolidated({
   return consolidatedBeforeMap;
 }
 
-async function compareBeforeAndAfterConsolidated({
-  patientIds,
-  consolidatedCountBefore,
-  consolidatedCountAfter,
-  log = console.log,
-}: {
-  patientIds: string[];
-  consolidatedCountBefore: Record<string, number>;
-  consolidatedCountAfter: Record<string, number>;
-  log?: typeof console.log;
-}): Promise<void> {
-  const extra: Record<string, unknown> = {};
-  const consolidatedCountDiff: Record<string, number> = {};
-
-  for (const patientId of patientIds) {
-    const countBefore = consolidatedCountBefore[patientId];
-    const countAfter = consolidatedCountAfter[patientId];
-    if (countBefore === undefined || countAfter === undefined) {
-      log(
-        `No consolidated count found for patient ${patientId} ` +
-          `(countBefore: ${countBefore}, countAfter: ${countAfter}) - skipping...`
-      );
-      continue;
-    }
-    consolidatedCountDiff[patientId] = countAfter - countBefore;
-  }
-  log(`Consolidated count diff by patient: ${JSON.stringify(consolidatedCountDiff)}`);
-
-  for (const patientId of Object.keys(consolidatedCountDiff)) {
-    const diff = consolidatedCountDiff[patientId];
-    if (diff == undefined) continue;
-    if (diff < 0)
-      extra[patientId] = {
-        before: consolidatedCountBefore[patientId],
-        after: consolidatedCountAfter[patientId],
-        diff,
-      };
-  }
-  if (Object.keys(extra).length > 0) {
-    const msg = `Unexpected consolidated count after re-convert`;
-    log(`${msg} - ${JSON.stringify(extra)}`);
-    capture.error(msg, { extra });
-  }
-}
-
 async function getDocRefsByCreatedAt({
   cxId,
   documentIds = [],
@@ -363,4 +321,8 @@ async function getDocRefsByCreatedAt({
     patientId: patientIds,
     createdAtRange,
   });
+}
+
+function getDryRunPrefix(dryRun?: boolean) {
+  return dryRun ? "--DRY-RUN-- " : "";
 }

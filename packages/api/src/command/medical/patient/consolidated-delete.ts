@@ -18,10 +18,11 @@ export type DeleteConsolidatedFilters = {
 
 export type DeleteConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  dryRun?: boolean;
 } & DeleteConsolidatedFilters;
 
 export async function deleteConsolidated(params: DeleteConsolidatedParams): Promise<void> {
-  const { patient, resources, docIds } = params;
+  const { patient, resources, docIds, dryRun = false } = params;
   const { log } = Util.out(`deleteConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const fhir = makeFhirApi(patient.cxId);
 
@@ -72,7 +73,11 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
       return;
     }
     try {
-      await fhir.deleteResource(resourceType, resourceId);
+      if (dryRun) {
+        log(`[DRY-RUN] Would delete ${resourceType}/${resourceId} from FHRIR server`);
+      } else {
+        await fhir.deleteResource(resourceType, resourceId);
+      }
     } catch (err) {
       if (err instanceof OperationOutcomeError) errorsToReport[resourceType] = getMessage(err);
       else errorsToReport[resourceType] = String(err);
