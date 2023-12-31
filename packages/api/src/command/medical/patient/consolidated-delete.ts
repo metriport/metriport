@@ -4,10 +4,9 @@ import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { isResourceDerivedFromDocRef } from "../../../external/fhir/shared";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { getConsolidated } from "./consolidated-get";
+import { getConsolidatedPatientData } from "./consolidated-get";
 
 const numberOfParallelExecutions = 10;
 
@@ -28,23 +27,21 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
 
   const getResourcesToDelete = async () => {
     try {
-      const bundle = await getConsolidated({
+      const bundle = await getConsolidatedPatientData({
         patient,
+        documentIds: docIds,
         resources,
       });
-      const resourcesFromFHIRServer = bundle.bundle.entry;
+      const resourcesFromFHIRServer = bundle.entry;
       if (!resourcesFromFHIRServer || resourcesFromFHIRServer.length <= 0) {
         log(`No resources to delete`);
         return;
       }
 
-      const isDerivedFromDocRefs = (r: Resource) =>
-        docIds.some(id => isResourceDerivedFromDocRef(r, id));
-
       const resourcesToDelete = resourcesFromFHIRServer.filter(r => {
         const resource = r.resource;
         if (!resource) return false;
-        return resource.resourceType !== "DocumentReference" && isDerivedFromDocRefs(resource);
+        return resource.resourceType !== "DocumentReference";
       });
       return resourcesToDelete;
     } catch (error) {
@@ -82,7 +79,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
   };
 
   if (dryRun) {
-    log(`[DRY-RUN] Would delete ${resourcesToDelete.length} resources from FHRIR server`);
+    log(`[DRY-RUN] Would delete ${resourcesToDelete.length} resources from FHIR server`);
     return;
   }
   await executeAsynchronously(resourcesToDelete, async r => deleteResource(r), {
