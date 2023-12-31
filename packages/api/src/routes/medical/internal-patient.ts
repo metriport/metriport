@@ -36,7 +36,13 @@ import {
   stringListFromQuerySchema,
 } from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail } from "../util";
+import {
+  asyncHandler,
+  getFrom,
+  getFromParamsOrFail,
+  getFromQueryAsArray,
+  getFromQueryAsArrayOrFail,
+} from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -474,6 +480,8 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  *
  * @param req.query.cxId The customer ID.
  * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.documentIds Optional list of docRef IDs to filter by. If provided, only
+ *            resources derived from these document references will be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
@@ -486,6 +494,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
+    const documentIds = getFromQueryAsArray("documentIds", req);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
@@ -497,6 +506,7 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const data = await getConsolidated({
       patient,
+      documentIds,
       resources,
       dateFrom,
       dateTo,

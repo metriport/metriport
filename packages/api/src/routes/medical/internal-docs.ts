@@ -20,7 +20,9 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
+import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url";
 import { convertResult } from "../../domain/medical/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
@@ -29,16 +31,17 @@ import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromQueryAsArray } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
-import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url";
 
 import {
   DocumentBulkSignerLambdaResponse,
   DocumentBulkSignerLambdaResponseArraySchema,
 } from "@metriport/core/domain/document-bulk-signer-response";
+import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
+import { parseISODate } from "../../shared/date";
+import { errorToString } from "../../shared/log";
 
 const router = Router();
 const upload = multer();
@@ -67,7 +70,7 @@ const reprocessOptionsSchema = z.enum(options).array().optional();
  *     - force-download: whether we should re-download the documents from CommonWell, if not
  *       present the API will not download them again if already present on S3.
  *     - ignore-fhir-conversion-and-upsert: whether we should not-convert the documents to FHIR and store the reference, if not
- *      present the API will convert and store the new reference.
+ *       present the API will convert and store the new reference.
  * @return 200
  */
 router.post(
@@ -92,6 +95,62 @@ router.post(
       capture.error(err);
     });
     return res.json({ processing: true, options, documentIds, cxId });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/docs/re-convert
+ *
+ * WARNING: This will remove all non-DocumentReferences from the FHIR server!
+ *
+ * Use the document references we have on FHIR server and the respective CDA on S3
+ * to re-convert them to FHIR and insert on the FHIR server.
+ *
+ * WARNING: This will remove all non-DocumentReferences from the FHIR server!
+ *
+ * Asychronous operation, returns 200 immediately.
+ *
+ * @param req.query.cxId - The customer's ID.
+ * @param req.query.patientIds - Comma-separated list of Patient IDs to filter document
+ *     references for;
+ * @param req.query.documentIds - Optional comma-separated list of metriport document
+ *     IDs to re-convert; if not set all documents of the customer will be re-converted;
+ * @param req.query.dateFrom Start date that doc refs will be filtered by (inclusive, required).
+ * @param req.query.dateTo Optional end date that doc refs will be filtered by (inclusive).
+ * @param req.query.logConsolidatedCountBefore Optional whether to log consolidated data count
+ *     before the re-conversion (defaults false).
+ * @param req.query.dry-run Optional whether just simulate the execution of the endpoint, no
+ *     change is expected in the repositories (defaults false).
+ * @return 200
+ */
+router.post(
+  "/re-convert",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
+    const documentIds = getFromQueryAsArray("documentIds", req) ?? [];
+    const dateFrom = parseISODate(getFrom("query").orFail("dateFrom", req));
+    const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
+    const dryRun = getFromQueryAsBoolean("dry-run", req);
+    const logConsolidatedCountBefore = getFromQueryAsBoolean("logConsolidatedCountBefore", req);
+    const requestId = uuidv7();
+
+    reConvertDocuments({
+      cxId,
+      patientIds,
+      documentIds,
+      dateFrom,
+      dateTo,
+      requestId,
+      dryRun,
+      logConsolidatedCountBefore,
+    }).catch(err => {
+      console.log(`Error re-converting documents for cxId ${cxId}: ${errorToString(err)}`);
+      capture.error(err);
+    });
+    return res
+      .status(httpStatus.OK)
+      .json({ processing: true, cxId, patientIds, documentIds, dateFrom, dateTo, requestId });
   })
 );
 
