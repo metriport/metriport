@@ -73,11 +73,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
       return;
     }
     try {
-      if (dryRun) {
-        log(`[DRY-RUN] Would delete ${resourceType}/${resourceId} from FHRIR server`);
-      } else {
-        await fhir.deleteResource(resourceType, resourceId);
-      }
+      await fhir.deleteResource(resourceType, resourceId);
     } catch (err) {
       if (err instanceof OperationOutcomeError) errorsToReport[resourceType] = getMessage(err);
       else errorsToReport[resourceType] = String(err);
@@ -85,6 +81,10 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
     }
   };
 
+  if (dryRun) {
+    log(`[DRY-RUN] Would delete ${resourcesToDelete.length} resources from FHRIR server`);
+    return;
+  }
   await executeAsynchronously(resourcesToDelete, async r => deleteResource(r), {
     numberOfParallelExecutions,
   });
