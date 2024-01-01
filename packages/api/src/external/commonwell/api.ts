@@ -8,6 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
+import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
 import { X509Certificate } from "crypto";
 import dayjs from "dayjs";
 import { Config } from "../../shared/config";
@@ -28,10 +29,8 @@ export function makeCommonWellManagementAPI(): CommonWellManagementAPI | undefin
   if (!cwManagementBaseUrl) return undefined;
 
   const cookieManager = new CookieManagerOnSecrets(cookieArn, Config.getAWSRegion());
-  return new CommonWellManagementAPI({
-    cookieManager,
-    baseUrl: cwManagementBaseUrl,
-  });
+
+  return makeApi({ cookieManager, baseUrl: cwManagementBaseUrl });
 }
 
 /**

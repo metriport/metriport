@@ -14,6 +14,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { difference, groupBy } from "lodash";
 import { DeepRequired } from "ts-essentials";
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import {
   downloadDocsAndUpsertFHIR,
   queryAndProcessDocuments,
@@ -145,10 +146,8 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
     }
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
-    const facilityId = patient.facilityIds[0];
-    if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
-
     if (isReQuery(options)) {
+      const facilityId = getFacilityIdOrFail(patient);
       await appendDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
@@ -208,8 +207,7 @@ async function processDocuments({
   }
   if (docsAsCW.length === 0) return;
 
-  const facilityId = patient.facilityIds[0];
-  if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
+  const facilityId = getFacilityIdOrFail(patient);
 
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);

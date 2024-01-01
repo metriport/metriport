@@ -37,7 +37,7 @@ describe("getDocuments", () => {
     it("returns document IDs when only `documentIds` is set", async () => {
       const documentIds = [uuidv4(), uuidv4()];
       const res = getFilters({ documentIds });
-      expect(res).toEqual("_ids=" + documentIds.join(encodeURIComponent(",")));
+      expect(res).toEqual("_id=" + documentIds.join(encodeURIComponent(",")));
     });
 
     it("groups patientId and documentIds when both are set", async () => {
@@ -45,7 +45,7 @@ describe("getDocuments", () => {
       const documentIds = [uuidv4(), uuidv4()];
       const res = getFilters({ patientId: patient.id, documentIds });
       expect(res).toEqual(
-        "patient=" + patient.id + "&_ids=" + documentIds.join(encodeURIComponent(","))
+        "patient=" + patient.id + "&_id=" + documentIds.join(encodeURIComponent(","))
       );
     });
 
@@ -63,7 +63,7 @@ describe("getDocuments", () => {
       const to = dayjs(faker.date.past()).format(ISO_DATE);
       const res = getFilters({ documentIds, from, to });
       expect(res).toEqual(
-        "_ids=" + documentIds.join(encodeURIComponent(",")) + "&date=ge" + from + "&date=le" + to
+        "_id=" + documentIds.join(encodeURIComponent(",")) + "&date=ge" + from + "&date=le" + to
       );
     });
 
@@ -76,7 +76,7 @@ describe("getDocuments", () => {
       expect(res).toEqual(
         "patient=" +
           patient.id +
-          "&_ids=" +
+          "&_id=" +
           documentIds.join(encodeURIComponent(",")) +
           "&date=ge" +
           from +

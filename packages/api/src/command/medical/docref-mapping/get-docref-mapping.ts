@@ -1,7 +1,8 @@
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { Op } from "sequelize";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { MedicalDataSource } from "../../../external";
 import { DocRefMappingModel } from "../../../models/medical/docref-mapping";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {
   const docRef = await DocRefMappingModel.findByPk(id);
@@ -36,6 +37,37 @@ export const getOrCreateDocRefMapping = async ({
     defaults: {
       id: uuidv7(),
       ...docRef,
+    },
+  });
+  return res;
+};
+
+export const getDocRefMappings = async ({
+  cxId,
+  ids = [],
+  patientId: patientIdParam = [],
+  externalId,
+  source,
+  createdAtRange: { from, to } = {},
+}: {
+  cxId: string;
+  ids?: string[];
+  patientId?: string[] | string;
+  externalId?: string;
+  source?: MedicalDataSource;
+  createdAtRange?: { from?: Date; to?: Date };
+}): Promise<DocRefMapping[]> => {
+  const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
+  const res = await DocRefMappingModel.findAll({
+    where: {
+      cxId,
+      ...(ids && ids.length ? { id: { [Op.in]: ids } } : {}),
+      ...(patientIds.length ? { patientId: { [Op.in]: patientIds } } : {}),
+      ...(externalId ? { externalId } : {}),
+      ...(source ? { source } : {}),
+      ...(from || to
+        ? { createdAt: { ...(from && { [Op.gte]: from }), ...(to && { [Op.lte]: to }) } }
+        : {}),
     },
   });
   return res;
