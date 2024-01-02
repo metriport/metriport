@@ -10,9 +10,13 @@ export function convertPatientDataToPatientDataMPI(sourcePatientData: PatientDat
 }
 
 export function convertPatientModelToPatientData(sourcePatientData: PatientModel): PatientDataMPI {
-  const sourcePatientId = btoa(`${sourcePatientData.cxId}/${sourcePatientData.id}`);
+  const sourcePatientId = createPatientUniqueId(sourcePatientData.cxId, sourcePatientData.id);
   return {
     ...sourcePatientData.data,
     id: sourcePatientId,
   };
+}
+
+export function createPatientUniqueId(cxId: string, patientId: string): string {
+  return btoa(`${cxId}/${patientId}`);
 }

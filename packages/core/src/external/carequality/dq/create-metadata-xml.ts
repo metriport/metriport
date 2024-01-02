@@ -32,19 +32,31 @@ import {
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
 } from "../shared";
 
-export function createExtrinsicObjectXml(
-  createdTime: string,
-  hash: string,
-  repositoryUniqueId: string,
-  homeCommunityId: string,
-  size: string,
-  patientId: string,
-  title: string,
-  classCode: CodeableConcept,
-  practiceSettingCode: CodeableConcept,
-  healthcareFacilityTypeCode: CodeableConcept,
-  documentUniqueId: string
-) {
+export function createExtrinsicObjectXml({
+  createdTime,
+  hash,
+  repositoryUniqueId,
+  homeCommunityId,
+  size,
+  patientId,
+  classCode,
+  practiceSettingCode,
+  healthcareFacilityTypeCode,
+  documentUniqueId,
+  title,
+}: {
+  createdTime: string;
+  hash: string;
+  repositoryUniqueId: string;
+  homeCommunityId: string;
+  size: string;
+  patientId: string;
+  documentUniqueId: string;
+  classCode?: CodeableConcept;
+  practiceSettingCode?: CodeableConcept;
+  healthcareFacilityTypeCode?: CodeableConcept;
+  title?: string;
+}) {
   const documentUUID = uuidv4();
   const classCodeNode = classCode?.coding?.[0]?.code || DEFAULT_CLASS_CODE_NODE;
   const classCodeDisplay = classCode?.coding?.[0]?.display || DEFAULT_CLASS_CODE_DISPLAY;

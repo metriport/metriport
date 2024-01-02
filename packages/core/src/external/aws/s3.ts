@@ -12,6 +12,7 @@ import * as stream from "stream";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
+const UPLOADS_FOLDER = "uploads";
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
 export function makeS3Client(region: string): AWS.S3 {
@@ -209,4 +210,36 @@ export class S3Utils {
 
     return newKey;
   }
+  async uploadFile(
+    bucket: string,
+    key: string,
+    file: Buffer
+  ): Promise<AWS.S3.ManagedUpload.SendData> {
+    return new Promise((resolve, reject) => {
+      this._s3.upload(
+        {
+          Bucket: bucket,
+          Key: key,
+          Body: file,
+        },
+        (err, data) => {
+          if (err) {
+            console.error("Error during upload:", err);
+            reject(err);
+          } else {
+            console.log("Upload successful");
+            resolve(data);
+          }
+        }
+      );
+    });
+  }
+}
+
+export function buildDestinationKeyMetadata(
+  cxId: string,
+  patientId: string,
+  docId: string
+): string {
+  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}_metadata.xml`;
 }

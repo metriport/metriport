@@ -10,9 +10,7 @@ import {
   XDSRegistryError,
   validateDQ,
 } from "./validating-dq";
-
-const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
-const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
+import { METRIPORT_HOME_COMMUNITY_ID, METRIPORT_REPOSITORY_UNIQUE_ID } from "../shared";
 
 function constructErrorResponse(
   payload: DocumentQueryRequestIncoming,
