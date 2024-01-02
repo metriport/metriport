@@ -3,6 +3,7 @@ import { resourceTypeForConsolidation } from "@metriport/api-sdk";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { out } from "@metriport/core/util/log";
+import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -175,7 +176,7 @@ function addS3InfoToDocRef(log = console.log) {
       return undefined;
     }
     const s3Info = await s3Utils.getFileInfoFromS3(file.fileName, file.fileLocation);
-    if (s3Info.contentType !== "application/xml") {
+    if (!isMimeTypeXML(s3Info.contentType)) {
       log(`DocRef's content is not XML, skipping it - ${docId}`);
       return undefined;
     }
