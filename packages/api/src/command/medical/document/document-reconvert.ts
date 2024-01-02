@@ -8,13 +8,13 @@ import { capture } from "@metriport/core/util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
+import { Patient } from "../../../domain/medical/patient";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
 import { getPatientId } from "../../../external/fhir/patient";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
-import { PatientModel as Patient } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
 import { formatNumber } from "../../../shared/numbers";
@@ -184,20 +184,17 @@ async function reConvertByPatient({
   documents: DocRefWithS3Info[];
   requestId: string;
   isDisableWH: boolean;
-  dryRun?: boolean;
+  dryRun: boolean;
 }): Promise<void> {
   const dryRunMsg = getDryRunPrefix(dryRun);
   const { log } = out(`${dryRunMsg}reConvertDocuments - patient ${patientParam.id}`);
 
-  const patient = await getPatientOrFail(patientParam);
-
-  await setDisableDocumentRequestWHFlag({
-    patient,
-    isDisableWH,
-  });
-  const docIds = documents.map(d => d.docRef.id);
+  const patient = dryRun
+    ? await getPatientOrFail(patientParam)
+    : await setDisableDocumentRequestWHFlag({ patient: patientParam, isDisableWH });
 
   log(`Deleting consolidated data...`);
+  const docIds = documents.map(d => d.docRef.id);
   await deleteConsolidatedOnFHIRServer({
     patient,
     resources: resourcesToDelete,

@@ -44,8 +44,11 @@ export function getFilters({
   to?: string;
 } = {}) {
   const filters = new URLSearchParams();
-  const patientId = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
-  patientId.length && filters.append("patient", patientId.join(","));
+  const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
+  const patientIdsFiltered = patientIds.flatMap(id =>
+    id && id.trim().length > 0 ? id.trim() : []
+  );
+  patientIdsFiltered.length && filters.append("patient", patientIdsFiltered.join(","));
   documentIds.length && filters.append(`_id`, documentIds.join(","));
   from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
   to && filters.append("date", isoDateToFHIRDateQueryTo(to));

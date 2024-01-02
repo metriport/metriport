@@ -17,14 +17,14 @@ export type DisableWHCommand = {
   isDisableWH: boolean;
 };
 
-async function setDisableWHFlag(cmd: DisableWHCommand): Promise<void> {
+async function setDisableWHFlag(cmd: DisableWHCommand): Promise<Patient> {
   const {
     patient: { id, cxId },
     field,
     isDisableWH,
   } = cmd;
 
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       id,
       cxId,
@@ -39,13 +39,13 @@ async function setDisableWHFlag(cmd: DisableWHCommand): Promise<void> {
         [webhookDisableFlagName]: isDisableWH,
       },
     };
-    await patient.save({ transaction });
+    return patient.save({ transaction });
   });
 }
 
 export async function setDisableDocumentRequestWHFlag(
   cmd: Omit<DisableWHCommand, "field">
-): Promise<void> {
+): Promise<Patient> {
   return setDisableWHFlag({
     ...cmd,
     field: "cxDocumentRequestMetadata",
@@ -54,7 +54,7 @@ export async function setDisableDocumentRequestWHFlag(
 
 export async function setDisableConsolidatedRequestWHFlag(
   cmd: Omit<DisableWHCommand, "field">
-): Promise<void> {
+): Promise<Patient> {
   return setDisableWHFlag({
     ...cmd,
     field: "cxConsolidatedRequestMetadata",
