@@ -40,9 +40,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
   return { cxId, id };
 }
 
-export async function validateITI38Request(
-  payload: DocumentQueryRequestIncoming
-): Promise<string[]> {
+export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise<string[]> {
   if (!payload.id) {
     throw new XDSRegistryError("Request id is not defined");
   }

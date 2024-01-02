@@ -8,9 +8,8 @@ import {
   XDSUnknownCommunity,
   XDSMissingHomeCommunityId,
   XDSRegistryError,
-} from "./validating-iti38";
-
-import { validateITI38Request } from "./validating-iti38";
+  validateDQ,
+} from "./validating-dq";
 
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
@@ -47,15 +46,16 @@ export async function processIncomingRequest(
 ): Promise<DocumentQueryResponseOutgoing> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
-    const documents = await validateITI38Request(payload);
+    const documents = await validateDQ(payload);
 
     // construct documentReference array
     const documentReference: DocumentReference[] = documents.map((doc: string) => ({
       contentType: "text/xml", // replace with actual content type if available
       homeCommunityId: METRIPORT_HOME_COMMUNITY_ID, // assuming doc is the homeCommunityId
       repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID, // assuming doc is the repositoryUniqueId
-      uniqueId: doc, // assuming doc is the uniqueId
+      docUniqueId: doc, // assuming doc is the uniqueId
       title: "Document Title", // replace with actual title if available
+      urn: "placeholder", // replace with actual urn if available
     }));
 
     // construct response

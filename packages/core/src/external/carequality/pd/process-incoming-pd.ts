@@ -8,7 +8,7 @@ import {
   InternalError,
   PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
-} from "./validating-xcpd";
+} from "./validating-pd";
 import {
   matchPatients,
   exactMatchSimilarity,

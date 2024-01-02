@@ -1,5 +1,5 @@
 import * as dotenv from "dotenv";
-import { processIncomingRequest } from "@metriport/core/external/carequality/iti38/process-incoming-iti-38";
+import { processIncomingRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
 
 dotenv.config();
 
