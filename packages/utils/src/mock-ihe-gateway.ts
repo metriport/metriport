@@ -1,7 +1,10 @@
 import express from "express";
 import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
 import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
-import { generateITI39 } from "@metriport/core/external/carequality/iti-39-parsing";
+import {
+  // generateITI39,
+  generateITI39MTOM,
+} from "@metriport/core/external/carequality/iti-39-parsing";
 import bodyParser from "body-parser";
 
 // TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
@@ -34,8 +37,13 @@ app.post("/iti38/v1", async (req, res) => {
 
 app.post("/iti39/v1", async (req, res) => {
   try {
-    const iti39 = await generateITI39(req.body);
-    res.set("Content-Type", "application/soap+xml; charset=utf-8");
+    // const iti39 = await generateITI39(req.body);
+    const iti39 = await generateITI39MTOM(req.body);
+    // res.set("Content-Type", "application/soap+xml; charset=utf-8");
+    res.set(
+      "Content-Type",
+      'multipart/related; boundary=--MIMEBoundary782a6cafc4cf4aab9dbf291522804454; charset=UTF-8; type="application/soap+xml"'
+    );
     res.send(iti39);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
