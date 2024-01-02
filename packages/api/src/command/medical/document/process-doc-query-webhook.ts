@@ -3,10 +3,8 @@ import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { DocumentQueryProgress } from "../../../domain/medical/document-query";
 import { Patient } from "../../../domain/medical/patient";
-import { Product } from "../../../domain/product";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
-import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { getAllDocRefMappingByRequestId } from "../docref-mapping/get-docref-mapping";
 import { getDocuments } from "../../../external/fhir/document/get-documents";
 import { toDTO, DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
@@ -28,21 +26,18 @@ const isSandbox = Config.isSandbox();
  */
 export const processDocQueryProgressWebhook = async ({
   patient,
-  docQueryProgress,
+  documentQueryProgress,
   requestId,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  docQueryProgress: DocumentQueryProgress;
+  documentQueryProgress: DocumentQueryProgress;
   requestId: string;
 }): Promise<void> => {
-  const apiType = Product.medical;
-  const { id: patientId, cxId } = patient;
+  const { id: patientId } = patient;
 
   try {
-    let successfulDownloadWebhookSent = false;
-
-    const downloadStatus = docQueryProgress.download?.status;
-    const convertStatus = docQueryProgress.convert?.status;
+    const downloadStatus = documentQueryProgress.download?.status;
+    const convertStatus = documentQueryProgress.convert?.status;
 
     const webhooks = await getAllWebhookRequestByRequestId(requestId);
     const downloadWebhookSent = webhooks.some(
@@ -72,7 +67,6 @@ export const processDocQueryProgressWebhook = async ({
           requestId,
           payload
         );
-        successfulDownloadWebhookSent = true;
       }
     }
 
@@ -95,10 +89,6 @@ export const processDocQueryProgressWebhook = async ({
         );
       }
     }
-
-    if (successfulDownloadWebhookSent) {
-      reportUsageCmd({ cxId, entityId: patientId, product: apiType, docQuery: true });
-    }
   } catch (err) {
     log(`Error on processDocQueryProgressWebhook: ${errorToString(err)}`);
     capture.error(err, {
@@ -107,7 +97,7 @@ export const processDocQueryProgressWebhook = async ({
   }
 };
 
-const composeDocRefPayload = async (
+export const composeDocRefPayload = async (
   patientId: string,
   cxId: string,
   requestId: string

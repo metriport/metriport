@@ -22,7 +22,7 @@ const { log } = Util.out("populateFhirServer");
 export type PopulateFhirServerResponse = { patientsOK: number; patientsError: number };
 
 /**
- * @deprecated (IF WE DONT NEED THE ENDPOINT THIS IS DEPRECATED AS WELL)
+ * @deprecated
  */
 export async function populateFhirServer({
   cxId,

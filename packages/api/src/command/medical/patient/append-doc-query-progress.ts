@@ -1,18 +1,15 @@
 import {
-  getStatusFromProgress,
   Progress,
   DocumentQueryProgress,
-  progressTypes,
-  DocumentQueryStatus,
+  getStatusFromProgress,
 } from "../../../domain/medical/document-query";
 import { MedicalDataSource } from "../../../external";
-import { Patient, PatientExternalData } from "../../../domain/medical/patient";
+import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 import { processDocQueryProgressWebhook } from "../document/process-doc-query-webhook";
-import { PatientDataCommonwell } from "../../../external/commonwell/patient-shared";
-import { PatientDataCarequality } from "../../../external/carequality/patient-shared";
+import { setExternalData, setDocQueryProgressWithExternal } from "../../../external/hie";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -34,16 +31,12 @@ export type SetDocQueryProgress = {
     }
 );
 
-// SHOULD MAKE SOURCE OPTIONAL AND NEED TO HANDLE THIS
 /**
  * Appends the given properties of a patient's document query progress.
  * Keeps existing sibling properties when those are not provided, unless
  * 'reset=true' is provided.
  * @returns
  */
-
-// purpose of this is to be able to update the overall progress and to hie progresses
-// but now im considering also using this to send webhooks if its complete
 export async function appendDocQueryProgress({
   patient,
   downloadProgress,
@@ -65,102 +58,86 @@ export async function appendDocQueryProgress({
       transaction,
     });
 
-    const initDocQueryProgress =
+    let documentQueryProgress =
       reset || !existingPatient.data.documentQueryProgress
         ? {}
         : existingPatient.data.documentQueryProgress;
 
-    // Set the doc query progress for the given hie
-    const externalData = setExternalData(
-      reset,
-      existingPatient,
-      downloadProgress,
-      convertProgress,
-      source,
-      convertibleDownloadErrors,
-      increaseCountConvertible
-    );
+    if (source) {
+      // Set the doc query progress for the given hie
+      const externalData = setExternalData(
+        reset,
+        existingPatient,
+        downloadProgress,
+        convertProgress,
+        source,
+        convertibleDownloadErrors,
+        increaseCountConvertible
+      );
 
-    existingPatient.data.externalData = externalData;
+      existingPatient.data.externalData = externalData;
 
-    // Set the aggregated doc query progress for the patient
-    const docQueryProgress = setDocQueryProgress(initDocQueryProgress, externalData);
+      // Set the aggregated doc query progress for the patient
+      documentQueryProgress = setDocQueryProgressWithExternal(documentQueryProgress, externalData);
+    } else {
+      documentQueryProgress = setDocQueryProgress(
+        documentQueryProgress,
+        downloadProgress,
+        convertProgress,
+        convertibleDownloadErrors,
+        increaseCountConvertible
+      );
+    }
 
-    docQueryProgress.requestId = requestId;
+    documentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
-        docQueryProgress,
+        documentQueryProgress,
       },
     };
 
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
 
-    await processDocQueryProgressWebhook({
-      patient,
-      docQueryProgress,
-      requestId,
-    });
+    // NEED TO MOCK
+    // await processDocQueryProgressWebhook({
+    //   patient,
+    //   documentQueryProgress,
+    //   requestId,
+    // });
 
     return updatedPatient;
   });
 }
 
-// MOVE TO EXTERNAL FOLDER
-function setExternalData(
-  reset: boolean | undefined,
-  patient: PatientModel,
-  downloadProgress: Progress | undefined | null,
-  convertProgress: Progress | undefined | null,
-  source?: MedicalDataSource,
+export const setDocQueryProgress = (
+  documentQueryProgress: DocumentQueryProgress,
+  downloadProgress?: Progress | undefined | null,
+  convertProgress?: Progress | undefined | null,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
-): PatientExternalData {
-  const externalData = patient.data.externalData ?? {};
-
-  if (reset) {
-    return {
-      ...externalData,
-      COMMONWELL: {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      },
-      CAREQUALITY: {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      },
+): DocumentQueryProgress => {
+  if (downloadProgress) {
+    documentQueryProgress.download = {
+      ...documentQueryProgress.download,
+      ...downloadProgress,
     };
-  } else if (!source) {
-    return externalData;
+  } else if (downloadProgress === null) {
+    documentQueryProgress.download = undefined;
   }
 
-  const sourceData = externalData[source] as PatientDataCarequality | PatientDataCommonwell;
+  if (convertProgress) {
+    documentQueryProgress.convert = {
+      ...documentQueryProgress.convert,
+      ...convertProgress,
+    };
+  } else if (convertProgress === null) {
+    documentQueryProgress.convert = undefined;
+  }
 
-  externalData[source] = {
-    ...externalData[source],
-    documentQueryProgress: {
-      ...(downloadProgress
-        ? {
-            download: {
-              ...sourceData?.documentQueryProgress?.download,
-              ...downloadProgress,
-            },
-          }
-        : {}),
-      ...(convertProgress
-        ? {
-            convert: {
-              ...sourceData?.documentQueryProgress?.convert,
-              ...convertProgress,
-            },
-          }
-        : {}),
-    },
-  };
-
-  const convert = sourceData.documentQueryProgress?.convert;
+  const convert = documentQueryProgress.convert;
 
   if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
     convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
@@ -174,83 +151,5 @@ function setExternalData(
     convert.status = getStatusFromProgress(convert);
   }
 
-  return externalData;
-}
-
-// MOVE TO EXTERNAL FOLDER
-function setDocQueryProgress(
-  documentQueryProgress: DocumentQueryProgress,
-  externalData: PatientExternalData
-): DocumentQueryProgress {
-  const cwExternalData = externalData.COMMONWELL as PatientDataCommonwell;
-  const cqExternalData = externalData.CAREQUALITY as PatientDataCarequality;
-
-  const cwProgress = cwExternalData?.documentQueryProgress ?? {};
-  const cqProgress = cqExternalData?.documentQueryProgress ?? {};
-
-  const result = documentQueryProgress;
-
-  const progresses: DocumentQueryProgress[] = [cwProgress, cqProgress];
-
-  const docProgress = aggregateDocProgress(progresses);
-
-  return {
-    ...result,
-    ...docProgress,
-  };
-}
-
-type RequiredProgress = Required<Progress>;
-
-// UNIT TESTS
-function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
-  download?: RequiredProgress;
-  convert?: RequiredProgress;
-} {
-  const tallyResults = hieDocProgresses.reduce(
-    (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
-      for (const type of progressTypes) {
-        const progressType = progress[type];
-
-        if (progressType) {
-          const statuses: DocumentQueryStatus[] = [];
-
-          const currTotal = progressType.total ?? 0;
-          const currErrors = progressType.errors ?? 0;
-          const currSuccessful = progressType.successful ?? 0;
-          const accType = acc[type];
-          statuses.push(progressType.status);
-
-          if (accType) {
-            accType.total += currTotal;
-            accType.errors += currErrors;
-            accType.successful += currSuccessful;
-            accType.status = setStatus(statuses);
-          } else {
-            acc[type] = {
-              total: currTotal,
-              errors: currErrors,
-              successful: currSuccessful,
-              status: progressType.status,
-            };
-          }
-        }
-      }
-
-      return acc;
-    },
-    {}
-  );
-
-  return tallyResults;
-}
-
-function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
-  const hasProcessing = docQueryProgress.some(status => status === "processing");
-  const hasFailed = docQueryProgress.some(status => status === "failed");
-
-  if (hasProcessing) return "processing";
-  if (hasFailed) return "failed";
-
-  return "completed";
-}
+  return documentQueryProgress;
+};

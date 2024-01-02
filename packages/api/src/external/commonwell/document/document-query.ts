@@ -99,8 +99,6 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<void> {
-  //
-
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
@@ -157,15 +155,6 @@ export async function queryAndProcessDocuments({
       ignoreFhirConversionAndUpsert,
       requestId,
     });
-
-    // THIS WILL NEED TO BE MOVED TO A DIFFERENT PLACE WHEN WE SUPPORT MULTIPLE HIE
-    // if (
-    //   fhirDocRefs.length &&
-    //   forceDownload === undefined &&
-    //   ignoreDocRefOnFHIRServer === undefined
-    // ) {
-    //   reportDocQueryUsage(patient);
-    // }
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {

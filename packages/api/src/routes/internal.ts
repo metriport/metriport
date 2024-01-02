@@ -70,7 +70,7 @@ router.delete(
  * This an idempotent endpoint, which means it can be called multiple times and it
  * will not have side effects.
  *
- * @deprecated (DO WE NEED THIS ENDPOINT ANYMORE?)
+ * @deprecated
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.allCustomers - Whether we should populate all customers.

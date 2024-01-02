@@ -15,6 +15,8 @@ const lambdaClient = makeLambdaClient(region);
 const iheGateway = makeIheGatewayAPI();
 const lambdaName = Config.getDocQueryResultsLambdaName();
 
+console.log(lambdaName, "LAMBDA NAME");
+
 export async function getDocumentsFromCQ({
   requestId,
   patient,
