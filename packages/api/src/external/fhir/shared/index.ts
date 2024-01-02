@@ -3,11 +3,15 @@ import {
   DocumentReference,
   Extension,
   OperationOutcomeIssue,
+  Reference,
   Resource,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
+
+export const SEPARATOR_ID = "/";
+export const SEPARATOR_REF = "#";
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
@@ -90,4 +94,22 @@ export function isResourceDerivedFromDocRef(resource: Resource, docId: string): 
 
 export function isExtensionDerivedFromDocRef(e: Extension, docId: string): boolean {
   return e.url === DOC_ID_EXTENSION_URL && (e.valueString ?? "")?.includes(docId);
+}
+
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectId(subject: Reference | undefined): string | undefined {
+  return subject?.id;
+}
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
+  if (subject?.reference) {
+    const reference = subject.reference;
+    if (reference.includes(SEPARATOR_ID)) return subject.reference.split(SEPARATOR_ID)[1];
+    if (reference.includes(SEPARATOR_REF)) return subject.reference.split(SEPARATOR_REF)[1];
+  }
+  return undefined;
 }

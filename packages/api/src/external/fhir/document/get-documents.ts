@@ -11,7 +11,7 @@ export async function getDocuments({
   documentIds,
 }: {
   cxId: string;
-  patientId?: string;
+  patientId?: string | string[];
   from?: string;
   to?: string;
   documentIds?: string[];
@@ -33,18 +33,22 @@ export async function getDocuments({
 }
 
 export function getFilters({
-  patientId,
+  patientId: patientIdParam,
   documentIds = [],
   from,
   to,
 }: {
-  patientId?: string;
+  patientId?: string | string[];
   documentIds?: string[];
   from?: string;
   to?: string;
 } = {}) {
   const filters = new URLSearchParams();
-  patientId && filters.append("patient", patientId);
+  const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
+  const patientIdsFiltered = patientIds.flatMap(id =>
+    id && id.trim().length > 0 ? id.trim() : []
+  );
+  patientIdsFiltered.length && filters.append("patient", patientIdsFiltered.join(","));
   documentIds.length && filters.append(`_id`, documentIds.join(","));
   from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
   to && filters.append("date", isoDateToFHIRDateQueryTo(to));
