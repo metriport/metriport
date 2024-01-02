@@ -3,6 +3,7 @@ import {
   DocumentReference,
   Extension,
   OperationOutcomeIssue,
+  Reference,
   Resource,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
@@ -90,4 +91,22 @@ export function isResourceDerivedFromDocRef(resource: Resource, docId: string): 
 
 export function isExtensionDerivedFromDocRef(e: Extension, docId: string): boolean {
   return e.url === DOC_ID_EXTENSION_URL && (e.valueString ?? "")?.includes(docId);
+}
+
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectId(subject: Reference | undefined): string | undefined {
+  return subject?.id;
+}
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
+  if (subject?.reference) {
+    const reference = subject.reference;
+    if (reference.includes("/")) return subject.reference.split("/")[1];
+    if (reference.includes("#")) return subject.reference.split("#")[1];
+  }
+  return undefined;
 }

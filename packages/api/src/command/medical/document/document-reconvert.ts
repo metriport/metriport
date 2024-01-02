@@ -8,9 +8,9 @@ import { capture } from "@metriport/core/util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
-import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
+import { getPatientId } from "../../../external/fhir/patient";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
@@ -18,17 +18,21 @@ import { PatientModel as Patient } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
 import { formatNumber } from "../../../shared/numbers";
-import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
 import { getPatientOrFail } from "../patient/get-patient";
+import { setDisableDocumentRequestWHFlag } from "../patient/webhook";
 import { docRefContentToFileFunction, SimplerFile } from "./document-query-storage-info";
 
 dayjs.extend(duration);
 
 const patientsToProcessInParallel = 1;
+const countResourcesInParallel = 3;
 
 const resourcesToDelete = resourceTypeForConsolidation.filter(r => r !== "DocumentReference");
 const s3Utils = new S3Utils(Config.getAWSRegion());
+
+const context = "reConvertDocuments";
+const MISSING_ID = "missing-id";
 
 export type ReConvertDocumentsCommand = {
   cxId: string;
@@ -37,6 +41,7 @@ export type ReConvertDocumentsCommand = {
   dateFrom?: string;
   dateTo?: string;
   requestId: string;
+  isDisableWH?: boolean;
   dryRun?: boolean;
   logConsolidatedCountBefore?: boolean;
 };
@@ -57,6 +62,7 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
     dateFrom,
     dateTo,
     requestId,
+    isDisableWH = true,
     dryRun = false,
     logConsolidatedCountBefore = false,
   } = params;
@@ -70,13 +76,20 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       `patients: ${patientIdsParam.join(", ")}`
   );
   try {
-    const docRefs = await getDocRefsByCreatedAt(params);
-    if (docRefs.length <= 0) {
-      log(`No DocumentReferenceMappings found, exiting...`);
+    const documents = await getDocuments({
+      cxId: cxId,
+      patientIds: patientIdsParam,
+      documentIds,
+      dateFrom,
+      dateTo,
+      log,
+    });
+    if (documents.length <= 0) {
+      log(`No DocumentReference found, exiting...`);
       return;
     }
 
-    const docsByPatientId = groupBy(docRefs, d => d.patientId);
+    const docsByPatientId = groupBy(documents, d => getPatientId(d.docRef) ?? MISSING_ID);
     const patientIds = Object.keys(docsByPatientId);
 
     if (logConsolidatedCountBefore) {
@@ -87,11 +100,22 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
       });
     }
 
-    const patientPromise = async ([patientId, docs]: [string, DocRefMapping[]]) => {
+    const patientPromise = async ([patientId, documents]: [string, DocRefWithS3Info[]]) => {
       try {
-        const documentIds = docs.map(d => d.id);
-        const patient = await getPatientOrFail({ id: patientId, cxId });
-        await reConvertByPatient({ patient, documentIds, requestId, dryRun });
+        if (patientId === MISSING_ID) {
+          const docIDs = documents.map(d => d.docRef.id);
+          const msg = "DocumentReferences with missing patient ID";
+          log(`${msg} (${docIDs.length}): ${docIDs.join(", ")}`);
+          capture.message(msg, { extra: { docIDs, context }, level: "warning" });
+          return;
+        }
+        await reConvertByPatient({
+          patient: { id: patientId, cxId },
+          documents,
+          requestId,
+          isDisableWH,
+          dryRun,
+        });
       } catch (error) {
         const msg = `Error re-converting documents for patient`;
         const extra = { error, patientId, documentIds };
@@ -111,25 +135,30 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
   }
 };
 
-async function reConvertByPatient({
-  patient,
+async function getDocuments({
+  cxId,
+  patientIds,
   documentIds,
-  requestId,
-  dryRun,
+  dateFrom,
+  dateTo,
+  log,
 }: {
-  patient: Patient;
-  documentIds: string[];
-  requestId: string;
-  dryRun?: boolean;
-}): Promise<void> {
-  const dryRunMsg = getDryRunPrefix(dryRun);
-  const { log } = out(`${dryRunMsg}reConvertDocuments - patient ${patient.id}`);
-
+  cxId: string;
+  patientIds?: string[];
+  documentIds?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  log: typeof console.log;
+}): Promise<DocRefWithS3Info[]> {
   const documentsFromFHIR = await getDocumentsFromFHIRServer({
-    cxId: patient.cxId,
+    cxId: cxId,
+    patientId: patientIds,
     documentIds,
+    from: dateFrom,
+    to: dateTo,
   });
-  // Only use use those we got from HIEs
+  if (documentsFromFHIR.length <= 0) return [];
+
   const documentsFromHIEs = documentsFromFHIR.filter(downloadedFromHIEs);
 
   const docRefWithS3InfoRaw = await Promise.all(documentsFromHIEs.map(addS3InfoToDocRef(log)));
@@ -141,12 +170,42 @@ async function reConvertByPatient({
       `${documentsFromHIEs.length} documentsFromHIEs, ` +
       `${documents.length} to process`
   );
-  if (documents.length <= 0) {
-    log(`No documents to process, exiting...`);
-    return;
-  }
+  return documents;
+}
 
-  await reConvertFHIRResources({
+async function reConvertByPatient({
+  patient: patientParam,
+  documents,
+  requestId,
+  isDisableWH,
+  dryRun,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  documents: DocRefWithS3Info[];
+  requestId: string;
+  isDisableWH: boolean;
+  dryRun?: boolean;
+}): Promise<void> {
+  const dryRunMsg = getDryRunPrefix(dryRun);
+  const { log } = out(`${dryRunMsg}reConvertDocuments - patient ${patientParam.id}`);
+
+  const patient = await getPatientOrFail(patientParam);
+
+  await setDisableDocumentRequestWHFlag({
+    patient,
+    isDisableWH,
+  });
+  const docIds = documents.map(d => d.docRef.id);
+
+  log(`Deleting consolidated data...`);
+  await deleteConsolidatedOnFHIRServer({
+    patient,
+    resources: resourcesToDelete,
+    docIds,
+    dryRun,
+  });
+
+  await reConvertDocumentsInternal({
     patient,
     documents,
     requestId,
@@ -185,38 +244,6 @@ function addS3InfoToDocRef(log = console.log) {
       file,
     };
   };
-}
-
-async function reConvertFHIRResources({
-  patient,
-  documents,
-  requestId,
-  dryRun,
-  log = console.log,
-}: {
-  patient: Patient;
-  documents: DocRefWithS3Info[];
-  requestId: string;
-  dryRun?: boolean;
-  log?: typeof console.log;
-}): Promise<void> {
-  const docIds = documents.map(d => d.docRef.id);
-
-  log(`Deleting consolidated data...`);
-  await deleteConsolidatedOnFHIRServer({
-    patient,
-    resources: resourcesToDelete,
-    docIds,
-    dryRun,
-  });
-
-  await reConvertDocumentsInternal({
-    patient,
-    documents,
-    requestId,
-    dryRun,
-    log,
-  });
 }
 
 async function reConvertDocumentsInternal({
@@ -291,37 +318,21 @@ async function countAndLogConsolidated({
   log?: typeof console.log;
 }): Promise<Record<string, number>> {
   const consolidatedBeforeMap: Record<string, number> = {};
-  for (const patientId of patientIds) {
+
+  const countPatientResources = async (patientId: string) => {
     const resourceCount = await countResources({
       patient: { id: patientId, cxId },
       resources: resourcesToDelete,
     });
     consolidatedBeforeMap[patientId] = resourceCount.total;
-  }
+  };
+
+  await executeAsynchronously(patientIds, countPatientResources, {
+    numberOfParallelExecutions: countResourcesInParallel,
+  });
+
   log(`Consolidated count by patient: ${JSON.stringify(consolidatedBeforeMap)}`);
   return consolidatedBeforeMap;
-}
-
-async function getDocRefsByCreatedAt({
-  cxId,
-  documentIds = [],
-  patientIds = [],
-  dateFrom,
-  dateTo,
-}: ReConvertDocumentsCommand) {
-  const createdAtRange =
-    dateFrom || dateTo
-      ? {
-          ...(dateFrom ? { from: new Date(dateFrom) } : undefined),
-          ...(dateTo ? { to: new Date(dateTo) } : undefined),
-        }
-      : undefined;
-  return getDocRefMappings({
-    cxId,
-    ids: documentIds,
-    patientId: patientIds,
-    createdAtRange,
-  });
 }
 
 function getDryRunPrefix(dryRun?: boolean) {
