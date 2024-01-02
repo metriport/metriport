@@ -15,8 +15,6 @@ const lambdaClient = makeLambdaClient(region);
 const iheGateway = makeIheGatewayAPI();
 const lambdaName = Config.getDocQueryResultsLambdaName();
 
-console.log(lambdaName, "LAMBDA NAME");
-
 export async function getDocumentsFromCQ({
   requestId,
   patient,
@@ -30,14 +28,14 @@ export async function getDocumentsFromCQ({
     const organization = await getOrganizationOrFail({ cxId: patient.cxId });
     const cqPatientData = await getCQPatientData({ id: patient.id, cxId: patient.cxId });
 
-    const docQueryRequest = createCQDocumentQueryRequest({
+    const documentQueryRequest = createCQDocumentQueryRequest({
       requestId,
       cxId: patient.cxId,
       organization,
       cqLinks: cqPatientData?.data.links ?? [],
     });
 
-    await iheGateway.startDocumentsQuery(docQueryRequest);
+    await iheGateway.startDocumentsQuery({ documentQueryRequest });
 
     await lambdaClient
       .invoke({
@@ -47,7 +45,7 @@ export async function getDocumentsFromCQ({
           requestId,
           patientId: patient.id,
           cxId: patient.cxId,
-          numOfLinks: docQueryRequest.length,
+          numOfLinks: documentQueryRequest.length,
         }),
       })
       .promise();
@@ -55,7 +53,6 @@ export async function getDocumentsFromCQ({
     const msg = `Failed to query and process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    // HAVE APPEND PROGRESS HANDLE THE WEBOOK
     await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },

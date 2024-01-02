@@ -17,7 +17,6 @@ let patientModel: PatientModel;
 
 let patientModel_update: jest.SpyInstance;
 let patientModel_findOne: jest.SpyInstance;
-// add expectation for webhooks
 beforeEach(() => {
   documentQueryProgress = {
     download: makeProgress(),

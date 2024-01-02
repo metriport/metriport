@@ -10,7 +10,7 @@ import {
   getPatientDiscoveryResults,
 } from "./command/patient-discovery-result/get-patient-discovery-result";
 import { CQLink } from "./domain/cq-patient-data";
-import { Patient } from "../../domain/medical/patient";
+import { Patient, PatientExternalData } from "../../domain/medical/patient";
 import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
@@ -20,8 +20,17 @@ import { toFHIR } from "../fhir/patient";
 import { makeIheGatewayAPI } from "./api";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
+import { MedicalDataSource } from "..";
+import { PatientDataCarequality } from "./patient-shared";
 
 dayjs.extend(duration);
+
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
+}
 
 const createContext = "cq.patient.discover";
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });

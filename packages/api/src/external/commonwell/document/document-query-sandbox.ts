@@ -159,7 +159,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   // update download progress to completed, convert progress will be updated async
   // by the FHIR converter
-  const updatedPatient = await appendDocQueryProgress({
+  await appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       total: entries.length,
@@ -181,19 +181,14 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const result = entries.map(d => d.docRef);
 
-  const downloadProgressIsCompleted =
-    updatedPatient.data.documentQueryProgress?.download?.status === "completed";
-
-  if (downloadProgressIsCompleted) {
-    processPatientDocumentRequest(
-      organization.cxId,
-      patient.id,
-      "medical.document-download",
-      MAPIWebhookStatus.completed,
-      requestId,
-      toDTO(result)
-    );
-  }
+  processPatientDocumentRequest(
+    organization.cxId,
+    patient.id,
+    "medical.document-download",
+    MAPIWebhookStatus.completed,
+    requestId,
+    toDTO(result)
+  );
 
   return;
 }

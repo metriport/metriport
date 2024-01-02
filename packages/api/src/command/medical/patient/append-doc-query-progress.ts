@@ -2,6 +2,8 @@ import {
   Progress,
   DocumentQueryProgress,
   getStatusFromProgress,
+  progressTypes,
+  DocumentQueryStatus,
 } from "../../../domain/medical/document-query";
 import { MedicalDataSource } from "../../../external";
 import { Patient } from "../../../domain/medical/patient";
@@ -78,7 +80,14 @@ export async function appendDocQueryProgress({
       existingPatient.data.externalData = externalData;
 
       // Set the aggregated doc query progress for the patient
-      documentQueryProgress = setDocQueryProgressWithExternal(documentQueryProgress, externalData);
+      const externalQueryProgresses = setDocQueryProgressWithExternal(externalData);
+
+      const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+
+      documentQueryProgress = {
+        ...documentQueryProgress,
+        ...aggregatedDocProgress,
+      };
     } else {
       documentQueryProgress = setDocQueryProgress(
         documentQueryProgress,
@@ -99,14 +108,16 @@ export async function appendDocQueryProgress({
       },
     };
 
-    await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
 
-    // NEED TO MOCK
-    // await processDocQueryProgressWebhook({
-    //   patient,
-    //   documentQueryProgress,
-    //   requestId,
-    // });
+    await processDocQueryProgressWebhook({
+      patient: updatedPatient,
+      documentQueryProgress,
+      requestId,
+    });
 
     return updatedPatient;
   });
@@ -153,3 +164,57 @@ export const setDocQueryProgress = (
 
   return documentQueryProgress;
 };
+
+type RequiredProgress = Required<Progress>;
+
+function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
+  download?: RequiredProgress;
+  convert?: RequiredProgress;
+} {
+  const tallyResults = hieDocProgresses.reduce(
+    (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
+      const statuses: DocumentQueryStatus[] = [];
+
+      for (const type of progressTypes) {
+        const progressType = progress[type];
+
+        if (progressType) {
+          const currTotal = progressType.total ?? 0;
+          const currErrors = progressType.errors ?? 0;
+          const currSuccessful = progressType.successful ?? 0;
+          const accType = acc[type];
+          statuses.push(progressType.status);
+
+          if (accType) {
+            accType.total += currTotal;
+            accType.errors += currErrors;
+            accType.successful += currSuccessful;
+            accType.status = setStatus(statuses);
+          } else {
+            acc[type] = {
+              total: currTotal,
+              errors: currErrors,
+              successful: currSuccessful,
+              status: progressType.status,
+            };
+          }
+        }
+      }
+
+      return acc;
+    },
+    {}
+  );
+
+  return tallyResults;
+}
+
+function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+  const hasProcessing = docQueryProgress.some(status => status === "processing");
+  const hasFailed = docQueryProgress.some(status => status === "failed");
+
+  if (hasProcessing) return "processing";
+  if (hasFailed) return "failed";
+
+  return "completed";
+}

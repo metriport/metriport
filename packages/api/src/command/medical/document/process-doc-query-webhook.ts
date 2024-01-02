@@ -14,15 +14,8 @@ import { Config } from "../../../shared/config";
 const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
 
-// NEED TO UPDATE THIS BELOW
-// ALSO NEED TO ACCOUNT FOR WHEN THE WEBHOOK VARIABLE IS NOT TO SEND FOR OPS
 /**
- * Sends a list of document references resulting of a doc query to the customer's
- * webhook URL. The list of document references is optional so we can send a failure
- * notification.
- *
- * Callers are not notified of issues/errors while processing the request -
- * nothing is thrown. Instead, the error is logged and captured (Sentry).
+ * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
 export const processDocQueryProgressWebhook = async ({
   patient,

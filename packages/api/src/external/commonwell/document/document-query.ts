@@ -697,7 +697,7 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  const updatedPatient = await appendDocQueryProgress({
+  await appendDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0
@@ -713,43 +713,6 @@ export async function downloadDocsAndUpsertFHIR({
     requestId,
     source: MedicalDataSource.COMMONWELL,
   });
-
-  // WILL BE REMOVED
-  const downloadProgressIsCompleted =
-    updatedPatient.data.documentQueryProgress?.download?.status === "completed";
-
-  if (downloadProgressIsCompleted) {
-    // send webhook to CXs when docs are done downloading
-    processPatientDocumentRequest(
-      cxId,
-      patient.id,
-      "medical.document-download",
-      MAPIWebhookStatus.completed,
-      requestId,
-      toDTO(docsNewLocation)
-    );
-  }
-
-  // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
-  const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });
-  const conversionStatusFromDB = patientFromDB.data.documentQueryProgress?.convert?.status;
-  const conversionStatusFromAppend = updatedPatient.data.documentQueryProgress?.convert?.status;
-  if (conversionStatusFromAppend === "completed" || conversionStatusFromDB === "completed") {
-    processPatientDocumentRequest(
-      cxId,
-      patient.id,
-      "medical.document-conversion",
-      MAPIWebhookStatus.completed,
-      requestId
-    );
-    if (conversionStatusFromAppend !== conversionStatusFromDB) {
-      log(
-        `Conversion status from DB and append are different! ` +
-          `fromAppend: ${conversionStatusFromAppend}, ` +
-          `fromDB: ${conversionStatusFromDB}`
-      );
-    }
-  }
 
   return docsNewLocation;
 }
@@ -865,13 +828,4 @@ async function ingestIntoSearchEngine(
     });
     // intentionally not throwing here, we don't want to fail b/c of search ingestion
   }
-}
-
-function reportDocQueryUsage(patient: Patient, docQuery = true): void {
-  reportUsage({
-    cxId: patient.cxId,
-    entityId: patient.id,
-    product: Product.medical,
-    docQuery,
-  });
 }

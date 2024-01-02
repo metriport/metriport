@@ -61,12 +61,12 @@ describe("processDocQueryProgressWebhook", () => {
     });
 
     it("handles convert progress processing", async () => {
-      const downloadProgress = { status: "processing" as const };
+      const convertProgress = { status: "processing" as const };
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,
         requestId,
-        documentQueryProgress: { convert: downloadProgress },
+        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();

@@ -55,7 +55,11 @@ export class IHEGateway {
    * @param documentQueryRequest An array of document query transaction requests.
    *
    */
-  async startDocumentsQuery(documentQueryRequest: DocumentQueryRequest[]): Promise<void> {
+  async startDocumentsQuery({
+    documentQueryRequest,
+  }: {
+    documentQueryRequest: DocumentQueryRequest[];
+  }): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequest);
   }
 
@@ -66,7 +70,11 @@ export class IHEGateway {
    * @param documentRetrieval An array of document retrieval transaction requests.
    *
    */
-  async startDocumentsRetrieval(documentRetrieval: DocumentRetrievalRequest[]): Promise<void> {
+  async startDocumentsRetrieval({
+    documentRetrieval,
+  }: {
+    documentRetrieval: DocumentRetrievalRequest[];
+  }): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
   }
 }
