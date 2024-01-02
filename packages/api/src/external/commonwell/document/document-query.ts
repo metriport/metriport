@@ -19,21 +19,13 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import {
-  MAPIWebhookStatus,
-  processPatientDocumentRequest,
-} from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { reportUsage } from "../../../command/usage/report-usage";
 import { Facility } from "../../../domain/medical/facility";
 import { Organization } from "../../../domain/medical/organization";
 import { Patient } from "../../../domain/medical/patient";
-import { Product } from "../../../domain/product";
 import ConversionError from "../../../errors/conversion-error";
 import NotFoundError from "../../../errors/not-found";
 import { MedicalDataSource } from "../../../external";
-import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
