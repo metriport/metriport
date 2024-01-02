@@ -14,7 +14,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   console.log(JSON.stringify(event));
   const path = event.path;
   let result;
-  let result2;
 
   if (!event.body) {
     return buildResponse(400, "Request body is missing");
@@ -28,9 +27,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
         result = await generateITI38(event.body);
         break;
       case "/iti39/v1":
+        if (event.headers) console.log("event.headers", event.headers);
+        if (
+          event.headers &&
+          event.headers["Content-Type"] &&
+          event.headers["Content-Type"].includes("multipart/related")
+        ) {
+          result = await generateITI39MTOM(event.body);
+          console.log("result", result);
+          return buildResponseMTOM(200, result);
+        }
         result = await generateITI39(event.body);
-        result2 = await generateITI39MTOM(event.body);
-        return buildResponseMTOM(200, result2);
+        break;
       // break;
       default:
         throw new Error("Invalid path");
