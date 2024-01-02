@@ -35,10 +35,15 @@ export function generateITI39TemplateMTOM(status: string): string {
   if (status != "Success") {
     return generateITI39Template(status);
   } else {
-    const part1 = `----MIMEBoundary782a6cafc4cf4aab9dbf291522804454
+    const part1 = `Content-Type: multipart/related; 
+    boundary="MIMEBoundary782a6cafc4cf4aab9dbf291522804454"; 
+    type="application/xop+xml"; 
+    charset=UTF-8
+
+----MIMEBoundary782a6cafc4cf4aab9dbf291522804454
     Content-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml"
     Content-Transfer-Encoding: binary
-    Content-ID: <doc0@metriport.com>
+    Content-ID: <{documentId}>
     
     `;
 
