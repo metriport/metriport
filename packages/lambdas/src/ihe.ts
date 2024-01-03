@@ -61,7 +61,7 @@ const buildResponseMTOM = (status: number, body?: unknown) => ({
   statusCode: status,
   headers: {
     "Content-Type":
-      'multipart/related; boundary=--MIMEBoundary782a6cafc4cf4aab9dbf291522804454; charset=UTF-8; type="application/soap+xml"',
+      'multipart/related; boundary=--MIMEBoundary782a6cafc4cf4aab9dbf291522804454; charset=UTF-8; type="application/xop+xml"',
   },
   body: body,
 });

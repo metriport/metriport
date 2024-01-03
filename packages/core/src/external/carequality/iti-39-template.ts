@@ -36,7 +36,7 @@ export function generateITI39TemplateMTOM(status: string): string {
     return generateITI39Template(status);
   } else {
     const part1 = `Content-Type: multipart/related; 
-    boundary="MIMEBoundary782a6cafc4cf4aab9dbf291522804454"; 
+    boundary="--MIMEBoundary782a6cafc4cf4aab9dbf291522804454"; 
     type="application/xop+xml"; 
     charset=UTF-8
 
