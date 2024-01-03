@@ -70,7 +70,7 @@ export const baseResponseSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
-  xcpdPatientId: xcpdPatientIdSchema.optional(),
+  externalGatewayPatient: xcpdPatientIdSchema.optional(),
   patientId: z.string().optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;

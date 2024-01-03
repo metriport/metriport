@@ -94,7 +94,7 @@ function constructSuccessResponse(
     patientId: payload.patientResource.id || undefined,
     patientMatch: patientMatch,
     xcpdHomeCommunityId: payload.samlAttributes.homeCommunityId,
-    xcpdPatientId: {
+    externalGatewayPatient: {
       id: payload.patientResource.id || "",
       system: payload.samlAttributes.homeCommunityId,
     },
