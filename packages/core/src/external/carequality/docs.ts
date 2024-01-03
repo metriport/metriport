@@ -1,8 +1,7 @@
 export function generatePatientDoc(patientNumber: number): string {
   let patientRole = "";
   if (patientNumber == 1) {
-    patientRole = `
-			<id root="1.2.840.114350.1.13.11511.3.7.8.456721.987654" extension="EV38NJT4M6Q2B5X" />
+    patientRole = `<id root="1.2.840.114350.1.13.11511.3.7.8.456721.987654" extension="EV38NJT4M6Q2B5X" />
 			<addr use="HP">
 				<streetAddressLine>2517 Durant Ave</streetAddressLine>
 				<city>Berkeley</city>
@@ -20,8 +19,7 @@ export function generatePatientDoc(patientNumber: number): string {
 				<birthTime value="19690420" />`;
   }
   if (patientNumber == 2) {
-    patientRole = `
-			<id root="1.2.840.114350.1.13.11511.3.7.8.234587.334455" extension="EV72KHP9L1C3FA4" />
+    patientRole = `<id root="1.2.840.114350.1.13.11511.3.7.8.234587.334455" extension="EV72KHP9L1C3FA4" />
 			<addr use="HP">
 				<streetAddressLine>237 Hegmann Avenue</streetAddressLine>
 				<city>Berkley</city>
@@ -39,8 +37,7 @@ export function generatePatientDoc(patientNumber: number): string {
 				<birthTime value="19810712" />`;
   }
   if (patientNumber == 3) {
-    patientRole = `
-			<id root="2.16.840.1.113883.3.9621" extension="EV12ZGR7J6K4MF8" />
+    patientRole = `<id root="2.16.840.1.113883.3.9621" extension="EV12ZGR7J6K4MF8" />
 			<addr use="HP">
 				<streetAddressLine>1100 test street</streetAddressLine>
 				<city>Helena</city>
@@ -67,10 +64,8 @@ export function generatePatientDoc(patientNumber: number): string {
 				<birthTime value="19810101" />`;
   }
 
-  const patient_doc = `
-	<?xml version="1.0" encoding="UTF-8"?>
-	<ClinicalDocument
-		xmlns="urn:hl7-org:v3">
+  const patient_doc = `<?xml version="1.0" encoding="UTF-8"?>
+	<ClinicalDocument xmlns="urn:hl7-org:v3">
 		<realmCode code="US" />
 		<typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3" />
 		<templateId root="1.2.840.114350.1.72.1.51693" />
