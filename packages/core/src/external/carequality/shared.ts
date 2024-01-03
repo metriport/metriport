@@ -1,3 +1,8 @@
+/*
+CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
+FORMAT_CODE is always urn:ihe:iti:xds:2017:mimeTypeSufficient, which is sufficient for all document types.
+*/
+
 export const DEFAULT_CLASS_CODE_NODE = "34133-9";
 export const DEFAULT_CLASS_CODE_DISPLAY = "Continuity of Care Document";
 export const DEFAULT_CONFIDENTIALITY_CODE = "N";
@@ -13,6 +18,6 @@ export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY = "Health Encounter S
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
-export function createPatientUniqueId(cxId: string, patientId: string): string {
-  return btoa(`${cxId}/${patientId}`);
+export function createPatientUniqueId(internalId: string, patientId: string): string {
+  return btoa(`${internalId}/${patientId}`);
 }

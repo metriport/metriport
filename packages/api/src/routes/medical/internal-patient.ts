@@ -510,7 +510,6 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const dob = getFrom("query").orFail("dob", req);
     const genderAtBirth = getFrom("query").orFail("genderAtBirth", req);
-    console.log(`dob: ${dob}, genderAtBirth: ${genderAtBirth}`);
     if (genderAtBirth !== "F" && genderAtBirth !== "M") {
       throw new Error("Invalid genderAtBirth value");
     }

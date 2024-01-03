@@ -1,20 +1,3 @@
-// creationTime
-// hash
-// repository unique id (constant)
-// size
-// sourcePatientId (computed from cxId and patientId) + constant systemId
-// Title (pulled from DocRef description)
-// ClassCode (pulled from DocRef type.coding.system/code)
-// DEFAULT_CONFIDENTIALITY_CODE (always N)
-// FormatCode (always urn:ihe:iti:xds:2017:mimeTypeSufficient)
-// PracticeSettingCode 2.16.840.1.113883.6.96 and 394802001 unless otherwise
-//      specified in context.practicesetting.coding code is 394802001, system is 2.16.840.1.113883.6.96
-// typeCode (pulled from DocRef type.coding.system/code). same as classCode
-// healthcareFacilityTypeCode ( 394777002 is Health encounter site--NOT LISTED)
-//      unless otherwise specified in context.facilityType.coding.system/code)
-// patientId (computed from cxId and patientId)
-// uniqueId (computed from cxId and
-
 import { v4 as uuidv4 } from "uuid";
 import { CodeableConcept } from "@medplum/fhirtypes";
 import {

@@ -118,7 +118,7 @@ async function createAndUploadMetadataFile(
   docId: string,
   hash: string,
   size: string,
-  docRef: DocumentReference // Add this line
+  docRef: DocumentReference
 ): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -126,7 +126,6 @@ async function createAndUploadMetadataFile(
   const classCode = docRef.type;
   const practiceSettingCode = docRef.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef.context?.facilityType;
-  console.log("optional values:", classCode, practiceSettingCode, healthcareFacilityTypeCode);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
     hash,
