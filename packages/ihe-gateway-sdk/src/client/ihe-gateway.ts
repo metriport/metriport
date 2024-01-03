@@ -18,7 +18,7 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "http://localhost:8082";
+  static devUrl = "http://host.docker.internal:8083";
 
   static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
   static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
