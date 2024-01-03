@@ -119,7 +119,9 @@ router.post(
  * @param req.query.dateTo Optional end date that doc refs will be filtered by (inclusive).
  * @param req.query.logConsolidatedCountBefore Optional whether to log consolidated data count
  *     before the re-conversion (defaults false).
- * @param req.query.dry-run Optional whether just simulate the execution of the endpoint, no
+ * @param req.query.isDisableWH Optional whether to disable sending WH notifications after the
+ *     re-conversion is done (defaults true).
+ * @param req.query.dryRun Optional whether just simulate the execution of the endpoint, no
  *     change is expected in the repositories (defaults false).
  * @return 200
  */
@@ -131,7 +133,8 @@ router.post(
     const documentIds = getFromQueryAsArray("documentIds", req) ?? [];
     const dateFrom = parseISODate(getFrom("query").orFail("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
-    const dryRun = getFromQueryAsBoolean("dry-run", req);
+    const isDisableWH = getFromQueryAsBoolean("isDisableWH", req);
+    const dryRun = getFromQueryAsBoolean("dryRun", req);
     const logConsolidatedCountBefore = getFromQueryAsBoolean("logConsolidatedCountBefore", req);
     const requestId = uuidv7();
 
@@ -142,15 +145,24 @@ router.post(
       dateFrom,
       dateTo,
       requestId,
+      isDisableWH,
       dryRun,
       logConsolidatedCountBefore,
     }).catch(err => {
       console.log(`Error re-converting documents for cxId ${cxId}: ${errorToString(err)}`);
       capture.error(err);
     });
-    return res
-      .status(httpStatus.OK)
-      .json({ processing: true, cxId, patientIds, documentIds, dateFrom, dateTo, requestId });
+    return res.status(httpStatus.OK).json({
+      processing: true,
+      cxId,
+      patientIds,
+      documentIds,
+      dateFrom,
+      dateTo,
+      requestId,
+      isDisableWH,
+      dryRun,
+    });
   })
 );
 
