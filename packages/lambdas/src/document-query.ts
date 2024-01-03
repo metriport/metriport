@@ -3,7 +3,6 @@ import {
   DocumentQueryResponseOutgoing,
   documentQueryRequestIncomingSchema,
   DocumentQueryRequestIncoming,
-  DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 
 export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
@@ -46,19 +45,10 @@ function constructErrorResponse(
 function constructSuccessResponse(
   payload: DocumentQueryRequestIncoming
 ): DocumentQueryResponseOutgoing {
-  const documentReference: DocumentReference = {
-    homeCommunityId: "1.2.3.4.5.6.7.8.9",
-    docUniqueId: "123456789",
-    urn: "urn:oid:1.2.3.4.5.6.7.8.9",
-    repositoryUniqueId: "123456789",
-    contentType: "application/pdf",
-    url: "http://example.com/document.pdf",
-  };
-
   return {
     id: payload.id,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
-    documentReference: [documentReference],
+    extrinsicObjectXmls: [" "],
   };
 }

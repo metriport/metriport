@@ -1,5 +1,4 @@
 import AWS from "aws-sdk";
-import path from "path";
 import { getEnvVarOrFail } from "../../../util/env-var";
 const s3 = new AWS.S3();
 
@@ -17,15 +16,26 @@ export async function retrieveDocumentIdsFromS3(
 
   try {
     const data = await s3.listObjectsV2(params).promise();
-    const documentIds =
-      data.Contents?.map(item => {
-        // TODO this looks wrong. No assigned empty string.
-        const fileName = path.basename(item.Key || "");
-        const documentId = path.parse(fileName).name;
-        return documentId;
-      }) || [];
+    const documentContents = (
+      await Promise.all(
+        data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
+          async item => {
+            if (item.Key) {
+              const params = {
+                Bucket: bucketName,
+                Key: item.Key,
+              };
 
-    return documentIds;
+              const data = await s3.getObject(params).promise();
+              return data.Body?.toString();
+            }
+            return undefined;
+          }
+        ) || []
+      )
+    ).filter((item): item is string => Boolean(item));
+
+    return documentContents;
   } catch (error) {
     console.error(`Error retrieving document IDs from S3: ${error}`);
     return undefined;

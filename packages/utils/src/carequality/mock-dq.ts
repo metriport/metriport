@@ -1,7 +1,6 @@
 import * as dotenv from "dotenv";
-import { processIncomingRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
-
 dotenv.config();
+import { processIncomingRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
 
 import express, { Application, Request, Response } from "express";
 
@@ -10,8 +9,9 @@ const app: Application = express();
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
-app.post("/iti55/v1", async (req: Request, res: Response) => {
+app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
+    console.log("req.body", req.body);
     const response = await processIncomingRequest(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });

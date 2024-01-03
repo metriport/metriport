@@ -62,7 +62,7 @@ export type DocumentQueryRequestIncoming = z.infer<typeof documentQueryRequestIn
 
 export type DocumentQueryResponseOutgoing =
   | (BaseResponse & {
-      documentReference: DocumentReference[];
+      extrinsicObjectXmls: string[];
     })
   | BaseErrorResponse;
 

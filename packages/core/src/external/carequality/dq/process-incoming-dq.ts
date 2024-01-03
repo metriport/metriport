@@ -1,7 +1,6 @@
 import {
   DocumentQueryRequestIncoming,
   DocumentQueryResponseOutgoing,
-  DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 import {
   XDSUnknownPatientId,
@@ -10,7 +9,6 @@ import {
   XDSRegistryError,
   validateDQ,
 } from "./validating-dq";
-import { METRIPORT_HOME_COMMUNITY_ID, METRIPORT_REPOSITORY_UNIQUE_ID } from "../shared";
 
 function constructErrorResponse(
   payload: DocumentQueryRequestIncoming,
@@ -44,24 +42,14 @@ export async function processIncomingRequest(
 ): Promise<DocumentQueryResponseOutgoing> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
-    const documents = await validateDQ(payload);
-
-    // construct documentReference array
-    const documentReference: DocumentReference[] = documents.map((doc: string) => ({
-      contentType: "text/xml", // replace with actual content type if available
-      homeCommunityId: METRIPORT_HOME_COMMUNITY_ID, // assuming doc is the homeCommunityId
-      repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID, // assuming doc is the repositoryUniqueId
-      docUniqueId: doc, // assuming doc is the uniqueId
-      title: "Document Title", // replace with actual title if available
-      urn: "placeholder", // replace with actual urn if available
-    }));
+    const documentIds = await validateDQ(payload);
 
     // construct response
     const response: DocumentQueryResponseOutgoing = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
-      documentReference: documentReference,
+      extrinsicObjectXmls: documentIds,
     };
 
     return response;

@@ -59,6 +59,7 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
   const { cxId, id } = id_pair;
+  console.log(`cxId: ${cxId}, id: ${id}`);
 
   const documentIds = await retrieveDocumentIdsFromS3(cxId, id);
 
