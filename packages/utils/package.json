@@ -45,7 +45,7 @@
     "express-promise-router": "^4.1.1",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",
-    "playwright": "^1.40.0",
+    "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
     "sequelize": "^6.31.0"
   },
