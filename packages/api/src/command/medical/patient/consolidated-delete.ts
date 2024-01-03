@@ -1,15 +1,14 @@
 import { OperationOutcomeError } from "@medplum/core";
-import { BundleEntry, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
+import { OperationOutcomeIssue } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { flatten } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getConsolidatedPatientData } from "./consolidated-get";
 
-const numberOfParallelExecutions = 10;
-
+const SUCCESS_CODE = `SUCCESSFUL_DELETE`;
 export type DeleteConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
   docIds: string[];
@@ -20,6 +19,10 @@ export type DeleteConsolidatedParams = {
   dryRun?: boolean;
 } & DeleteConsolidatedFilters;
 
+/**
+ * HEADS UP! This is very destructive, it will delete all resources from the FHIR server that match
+ * the filters provided. It will not delete DocumentReference resources.
+ */
 export async function deleteConsolidated(params: DeleteConsolidatedParams): Promise<void> {
   const { patient, resources, docIds, dryRun = false } = params;
   const { log } = Util.out(`deleteConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
@@ -41,6 +44,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
       const resourcesToDelete = resourcesFromFHIRServer.filter(r => {
         const resource = r.resource;
         if (!resource) return false;
+        // TODO make this dynamic, get a list of resources to exclude
         return resource.resourceType !== "DocumentReference";
       });
       return resourcesToDelete;
@@ -54,50 +58,65 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
   const resourcesToDelete = await getResourcesToDelete();
   if (!resourcesToDelete || resourcesToDelete.length <= 0) return;
 
-  const errorsToReport: Record<string, string> = {};
-
-  const deleteResource = async (entry: BundleEntry<Resource>) => {
-    const resource = entry.resource;
-    if (!resource) return;
-    const resourceType = resource.resourceType;
-    if (!resourceType) {
-      log(`No resourceType found for entry ${JSON.stringify(entry)}`);
-      return;
-    }
-    const resourceId = resource.id;
-    if (!resourceId) {
-      log(`No resourceId found for entry ${JSON.stringify(entry)}`);
-      return;
-    }
-    try {
-      await fhir.deleteResource(resourceType, resourceId);
-    } catch (err) {
-      if (err instanceof OperationOutcomeError) errorsToReport[resourceType] = getMessage(err);
-      else errorsToReport[resourceType] = String(err);
-      throw err;
-    }
-  };
-
-  if (dryRun) {
-    log(`[DRY-RUN] Would delete ${resourcesToDelete.length} resources from FHIR server`);
-    return;
-  }
-  await executeAsynchronously(resourcesToDelete, async r => deleteResource(r), {
-    numberOfParallelExecutions,
+  const entries = resourcesToDelete.flatMap(r => {
+    const resource = r.resource;
+    if (!resource || !resource.id || !resource.resourceType) return [];
+    return {
+      request: {
+        method: "DELETE" as const,
+        url: `${resource.resourceType}/${resource.id}`,
+      },
+    };
   });
 
-  const failuresAmount = Object.keys(errorsToReport).length;
-  if (failuresAmount > 0) {
+  if (dryRun) {
+    log(`[DRY-RUN] Would delete ${entries.length} resources from FHIR server`);
+    return;
+  }
+
+  try {
+    log(`Deleting ${entries.length} resources from FHIR server...`);
+    const resp = await fhir.executeBatch({
+      resourceType: "Bundle",
+      type: "transaction",
+      entry: entries,
+    });
+    const issues = resp.entry?.flatMap(e => {
+      return e.response?.outcome?.issue?.flatMap(i => {
+        return i.details?.coding?.map(c => {
+          if (c.code === SUCCESS_CODE) return [];
+          return {
+            code: c.code,
+            message: i.diagnostics,
+          };
+        });
+      });
+    });
+    const issuesFlattened = flatten(issues);
+    if (issuesFlattened.length > 0) {
+      const msg = `Gracefully failed to delete FHIR resources`;
+      log(`${msg} - ${JSON.stringify(issuesFlattened)}`);
+      capture.error(msg, {
+        extra: {
+          context: `deleteConsolidated.graceful-fail`,
+          patientId: patient.id,
+          issues: issuesFlattened,
+        },
+      });
+    }
+  } catch (error) {
+    const detailMsg = error instanceof OperationOutcomeError ? getMessage(error) : String(error);
     const msg = `Failed to delete FHIR resources`;
-    log(`${msg} (${failuresAmount} failures): ${JSON.stringify(errorsToReport)}`);
+    log(`${msg} - ${detailMsg} - ${JSON.stringify(error)}`);
     capture.error(msg, {
       extra: {
-        context: `getConsolidatedPatientData`,
+        context: `deleteConsolidated.catch`,
         patientId: patient.id,
-        errorAmount: failuresAmount,
-        errorsToReport,
+        detailMsg,
+        error,
       },
     });
+    throw error;
   }
 }
 
