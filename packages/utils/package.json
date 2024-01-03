@@ -15,6 +15,7 @@
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/create-mr-for-patients",
     "mock-ihe-gateway": "ts-node src/mock-ihe-gateway",
+    "document-upload": "ts-node src/document/document-upload-post-process",
     "mock-iti55": "ts-node src/mock-iti55",
     "build": "tsc -p .",
     "build:cloud": "npm run build",

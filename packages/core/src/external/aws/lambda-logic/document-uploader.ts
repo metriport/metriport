@@ -57,7 +57,10 @@ export async function documentUploaderHandler(
   }
 
   // Get file info from the copied file
-  const { size, contentType } = await s3Utils.getFileInfoFromS3(destinationKey, destinationBucket);
+  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(
+    destinationKey,
+    destinationBucket
+  );
 
   const fileData: FileData = {
     mimeType: contentType,
@@ -68,10 +71,9 @@ export async function documentUploaderHandler(
   };
 
   try {
-    console.log("Forwarding call to server with this fileData:", JSON.stringify(fileData));
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
-    const hash = "TODO";
+    const hash = eTag ? eTag : "";
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
@@ -124,6 +126,7 @@ async function createAndUploadMetadataFile(
   const classCode = docRef.type;
   const practiceSettingCode = docRef.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef.context?.facilityType;
+  console.log("optional values:", classCode, practiceSettingCode, healthcareFacilityTypeCode);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
     hash,
@@ -131,10 +134,10 @@ async function createAndUploadMetadataFile(
     homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
     size,
     patientId: uniquePatientId,
-    documentUniqueId: docId,
     classCode,
     practiceSettingCode,
     healthcareFacilityTypeCode,
+    documentUniqueId: docId,
     title,
   });
 

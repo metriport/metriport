@@ -59,15 +59,19 @@ export function createExtrinsicObjectXml({
 }) {
   const documentUUID = uuidv4();
   const classCodeNode = classCode?.coding?.[0]?.code || DEFAULT_CLASS_CODE_NODE;
-  const classCodeDisplay = classCode?.coding?.[0]?.display || DEFAULT_CLASS_CODE_DISPLAY;
+  const classCodeDisplay =
+    classCode?.coding?.[0]?.display || classCode?.text || DEFAULT_CLASS_CODE_DISPLAY;
   const practiceSettingCodeNode =
     practiceSettingCode?.coding?.[0]?.code || DEFAULT_PRACTICE_SETTING_CODE_NODE;
   const practiceSettingCodeDisplay =
-    practiceSettingCode?.coding?.[0]?.display || DEFAULT_PRACTICE_SETTING_CODE_DISPLAY;
+    practiceSettingCode?.coding?.[0]?.display ||
+    practiceSettingCode?.text ||
+    DEFAULT_PRACTICE_SETTING_CODE_DISPLAY;
   const healthcareFacilityTypeCodeNode =
     healthcareFacilityTypeCode?.coding?.[0]?.code || DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE;
   const healthcareFacilityTypeCodeDisplay =
     healthcareFacilityTypeCode?.coding?.[0]?.display ||
+    healthcareFacilityTypeCode?.text ||
     DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY;
 
   const metadataXml = `<ExtrinsicObject home="{Metriport OID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
@@ -119,7 +123,6 @@ export function createExtrinsicObjectXml({
         </ValueList>
       </Slot>
       <Name>
-        <!-- The displayName for the @nodeRepresentation value -->
         <LocalizedString charset="UTF-8" value="${classCodeDisplay}"/>
       </Name>
     </Classification>

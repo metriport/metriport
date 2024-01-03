@@ -307,7 +307,7 @@ router.post(
       fileData,
     });
 
-    return res.sendStatus(httpStatus.OK).json(docRef);
+    return res.status(httpStatus.OK).json(docRef);
   })
 );
 
