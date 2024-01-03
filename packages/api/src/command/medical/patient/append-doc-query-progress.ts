@@ -114,7 +114,7 @@ export async function appendDocQueryProgress({
     });
 
     await processDocQueryProgressWebhook({
-      patient: updatedPatient,
+      patient: existingPatient,
       documentQueryProgress,
       requestId,
     });
