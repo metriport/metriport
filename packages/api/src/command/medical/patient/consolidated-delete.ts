@@ -1,14 +1,16 @@
 import { OperationOutcomeError } from "@medplum/core";
-import { OperationOutcomeIssue } from "@medplum/fhirtypes";
+import { BundleEntry, OperationOutcomeIssue, Resource } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
-import { flatten } from "lodash";
+import { chunk, flatten } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getConsolidatedPatientData } from "./consolidated-get";
 
+const MAX_ITEMS_PER_BATCH = 100;
 const SUCCESS_CODE = `SUCCESSFUL_DELETE`;
+
 export type DeleteConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
   docIds: string[];
@@ -58,7 +60,7 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
   const resourcesToDelete = await getResourcesToDelete();
   if (!resourcesToDelete || resourcesToDelete.length <= 0) return;
 
-  const entries = resourcesToDelete.flatMap(r => {
+  const entriesForFHIRBundle = resourcesToDelete.flatMap(r => {
     const resource = r.resource;
     if (!resource || !resource.id || !resource.resourceType) return [];
     return {
@@ -70,53 +72,62 @@ export async function deleteConsolidated(params: DeleteConsolidatedParams): Prom
   });
 
   if (dryRun) {
-    log(`[DRY-RUN] Would delete ${entries.length} resources from FHIR server`);
+    log(`[DRY-RUN] Would delete ${entriesForFHIRBundle.length} resources from FHIR server`);
     return;
   }
 
-  try {
-    log(`Deleting ${entries.length} resources from FHIR server...`);
-    const resp = await fhir.executeBatch({
-      resourceType: "Bundle",
-      type: "transaction",
-      entry: entries,
-    });
-    const issues = resp.entry?.flatMap(e => {
-      return e.response?.outcome?.issue?.flatMap(i => {
-        return i.details?.coding?.map(c => {
-          if (c.code === SUCCESS_CODE) return [];
-          return {
-            code: c.code,
-            message: i.diagnostics,
-          };
+  const deleteChunk = async (entries: BundleEntry<Resource>[]) => {
+    try {
+      log(`Deleting ${entries.length} resources from FHIR server...`);
+      const resp = await fhir.executeBatch({
+        resourceType: "Bundle",
+        type: "transaction",
+        entry: entries,
+      });
+      const issues = resp.entry?.flatMap(e => {
+        return e.response?.outcome?.issue?.flatMap(i => {
+          return i.details?.coding?.map(c => {
+            if (c.code === SUCCESS_CODE) return [];
+            return {
+              code: c.code,
+              message: i.diagnostics,
+            };
+          });
         });
       });
-    });
-    const issuesFlattened = flatten(issues);
-    if (issuesFlattened.length > 0) {
-      const msg = `Gracefully failed to delete FHIR resources`;
-      log(`${msg} - ${JSON.stringify(issuesFlattened)}`);
+      const issuesFlattened = flatten(issues);
+      if (issuesFlattened.length > 0) {
+        const msg = `Gracefully failed to delete FHIR resources`;
+        log(`${msg} - ${JSON.stringify(issuesFlattened)}`);
+        capture.error(msg, {
+          extra: {
+            context: `deleteConsolidated.graceful-fail`,
+            patientId: patient.id,
+            issues: issuesFlattened,
+          },
+        });
+      }
+    } catch (error) {
+      const detailMsg = error instanceof OperationOutcomeError ? getMessage(error) : String(error);
+      const msg = `Failed to delete FHIR resources`;
+      log(`${msg} - ${detailMsg} - ${JSON.stringify(error)}`);
       capture.error(msg, {
         extra: {
-          context: `deleteConsolidated.graceful-fail`,
+          context: `deleteConsolidated.catch`,
           patientId: patient.id,
-          issues: issuesFlattened,
+          detailMsg,
+          entries,
+          error,
         },
       });
+      throw error;
     }
-  } catch (error) {
-    const detailMsg = error instanceof OperationOutcomeError ? getMessage(error) : String(error);
-    const msg = `Failed to delete FHIR resources`;
-    log(`${msg} - ${detailMsg} - ${JSON.stringify(error)}`);
-    capture.error(msg, {
-      extra: {
-        context: `deleteConsolidated.catch`,
-        patientId: patient.id,
-        detailMsg,
-        error,
-      },
-    });
-    throw error;
+  };
+
+  const chunks = chunk(entriesForFHIRBundle, MAX_ITEMS_PER_BATCH);
+  for (const [i, chunk] of chunks.entries()) {
+    log(`Deleting chunk ${i + 1}/${chunks.length}...`);
+    await deleteChunk(chunk);
   }
 }
 
