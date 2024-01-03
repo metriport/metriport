@@ -52,10 +52,10 @@ export function createExtrinsicObjectXml({
   size: string;
   patientId: string;
   documentUniqueId: string;
-  classCode?: CodeableConcept;
-  practiceSettingCode?: CodeableConcept;
-  healthcareFacilityTypeCode?: CodeableConcept;
-  title?: string;
+  classCode?: CodeableConcept | undefined;
+  practiceSettingCode?: CodeableConcept | undefined;
+  healthcareFacilityTypeCode?: CodeableConcept | undefined;
+  title?: string | undefined;
 }) {
   const documentUUID = uuidv4();
   const classCodeNode = classCode?.coding?.[0]?.code || DEFAULT_CLASS_CODE_NODE;

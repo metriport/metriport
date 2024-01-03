@@ -1,6 +1,7 @@
 import { PatientData } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { PatientDataMPI } from "@metriport/core/mpi/patient";
+import { createPatientUniqueId } from "@metriport/core/external/carequality/shared";
 
 export function convertPatientDataToPatientDataMPI(sourcePatientData: PatientData): PatientDataMPI {
   return {
@@ -15,8 +16,4 @@ export function convertPatientModelToPatientData(sourcePatientData: PatientModel
     ...sourcePatientData.data,
     id: sourcePatientId,
   };
-}
-
-export function createPatientUniqueId(cxId: string, patientId: string): string {
-  return btoa(`${cxId}/${patientId}`);
 }

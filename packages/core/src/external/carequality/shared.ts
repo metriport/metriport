@@ -12,3 +12,7 @@ export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE = "394777002";
 export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY = "Health Encounter Site";
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
+
+export function createPatientUniqueId(cxId: string, patientId: string): string {
+  return btoa(`${cxId}/${patientId}`);
+}

@@ -1,8 +1,4 @@
-import {
-  S3Utils,
-  createS3FileName,
-  buildDestinationKeyMetadata,
-} from "@metriport/core/external/aws/s3";
+import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { UploadDocumentResult } from "@metriport/api-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -29,18 +25,11 @@ import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../uti
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { createPatientUniqueId } from "../../command/medical/patient/convert-patients";
-import {
-  METRIPORT_HOME_COMMUNITY_ID,
-  METRIPORT_REPOSITORY_UNIQUE_ID,
-} from "@metriport/core/external/carequality/shared";
-import { createExtrinsicObjectXml } from "@metriport/core/external/carequality/dq/create-metadata-xml";
 
 const router = Router();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const medicalDocumentsUploadBucketName = Config.getMedicalDocumentsUploadBucketName();
-const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
 const getDocSchema = z.object({
   dateFrom: optionalDateSchema,
@@ -235,42 +224,6 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
     s3FileName,
     medicalDocumentsUploadBucketName
   );
-
-  // create uniquePatientId
-  const createdTime = new Date().toISOString();
-  // need placeholdsers for hash and size since document has not been recieved yet.
-  const hash = "{hash}";
-  const size = "{size}";
-  const uniquePatientId = createPatientUniqueId(cxId, patientId);
-  const title = docRef.description;
-  const classCode = docRef.type;
-  const practiceSettingCode = docRef.context?.practiceSetting;
-  const healthcareFacilityTypeCode = docRef.context?.facilityType;
-  const extrinsicObjectXml = createExtrinsicObjectXml({
-    createdTime,
-    hash,
-    repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-    homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-    size,
-    patientId: uniquePatientId,
-    documentUniqueId: docId,
-    classCode,
-    practiceSettingCode,
-    healthcareFacilityTypeCode,
-    title,
-  });
-
-  const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
-  console.log("Uploading metadata to S3 with key:", s3KMetadataFileName);
-
-  const uploadResult = await s3Utils.uploadFile(
-    medicalDocumentsBucketName,
-    s3KMetadataFileName,
-    Buffer.from(extrinsicObjectXml)
-  );
-
-  console.log("Uploaded file location:", uploadResult.Location);
-  console.log("Uploaded file key:", uploadResult.Key);
 
   const url = await s3Utils.getPresignedUploadUrl({
     bucket: medicalDocumentsUploadBucketName,
