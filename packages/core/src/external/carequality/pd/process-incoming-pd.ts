@@ -2,7 +2,8 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { PatientDataMPI, convertPatientToFHIR } from "../../../mpi/patient";
+import { Patient } from "../../../domain/patient/patient";
+import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
 import {
   validateFHIRAndExtractPatient,
   InternalError,
@@ -79,7 +80,7 @@ function constructNoMatchResponse(
 
 function constructMatchResponse(
   payload: PatientDiscoveryRequestIncoming,
-  patient: PatientDataMPI
+  patient: Patient
 ): PatientDiscoveryResponseOutgoing {
   return {
     id: payload.id,
@@ -114,8 +115,8 @@ export async function processIncomingRequest(
     const patientFinder = new PatientFinderMetriportAPI(apiUrl);
     const foundPatients = await patientFinder.find({
       data: {
-        dob: normalizedPatientDemo.dob,
-        genderAtBirth: normalizedPatientDemo.genderAtBirth,
+        dob: normalizedPatientDemo.data.dob,
+        genderAtBirth: normalizedPatientDemo.data.genderAtBirth,
       },
     });
 

@@ -1,5 +1,5 @@
-import { PatientDataMPI, Address } from "./patient";
-
+import { Patient } from "../domain/patient/patient";
+import { Address } from "../domain/patient/address";
 // Define default values for each field
 const defaultValues = {
   firstName: "john",
@@ -16,8 +16,8 @@ const defaultValues = {
  * represents the data of a patient, including their address, name, and contact information.
  * @returns either a modified `Patient` object or `null`.
  */
-export function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | undefined {
-  const isDefaultAddress = patient.address?.some(
+export function handleDefaultValues(patient: Patient): Patient | undefined {
+  const isDefaultAddress = patient.data.address?.some(
     addr =>
       addr &&
       (addr.addressLine1 === defaultValues.address?.[0]?.addressLine1 ||
@@ -26,13 +26,14 @@ export function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | u
   );
 
   const isDefaultName =
-    patient.firstName === defaultValues.firstName && patient.lastName === defaultValues.lastName;
+    patient.data.firstName === defaultValues.firstName &&
+    patient.data.lastName === defaultValues.lastName;
 
   if (isDefaultAddress || isDefaultName) {
     return undefined;
   }
 
-  patient.contact = (patient.contact ?? []).map(contact => {
+  patient.data.contact = (patient.data.contact ?? []).map(contact => {
     const defaultContact = defaultValues.contact?.[0];
     if (!defaultContact) {
       return contact;
@@ -55,34 +56,37 @@ export function handleDefaultValues(patient: PatientDataMPI): PatientDataMPI | u
  * normalized patient data as an object of type `Patient`. If the patient data is null, it will
  * return null.
  */
-export function normalizePatient(patient: PatientDataMPI): PatientDataMPI {
+export function normalizePatient(patient: Patient): Patient {
   // array destructuring to extract the first element of the array with defaults
-  const [firstName = patient.firstName] = splitName(normalizeString(patient.firstName));
-  const [lastName = patient.lastName] = splitName(normalizeString(patient.lastName));
+  const [firstName = patient.data.firstName] = splitName(normalizeString(patient.data.firstName));
+  const [lastName = patient.data.lastName] = splitName(normalizeString(patient.data.lastName));
 
-  const normalizedPatient: PatientDataMPI = {
+  const normalizedPatient: Patient = {
     ...patient,
     // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
-    firstName,
-    lastName,
-    contact: (patient.contact ?? []).map(contact => ({
-      ...contact,
-      email: contact.email ? normalizeEmail(contact.email) : contact.email,
-      phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
-    })),
-    address: (patient.address ?? []).map(addr => {
-      const newAddress: Address = {
-        addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
-        city: normalizeString(addr.city),
-        zip: normalizeZipCode(addr.zip),
-        state: addr.state,
-        country: addr.country || "USA",
-      };
-      if (addr.addressLine2) {
-        newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
-      }
-      return newAddress;
-    }),
+    data: {
+      ...patient.data,
+      firstName,
+      lastName,
+      contact: (patient.data.contact ?? []).map(contact => ({
+        ...contact,
+        email: contact.email ? normalizeEmail(contact.email) : contact.email,
+        phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
+      })),
+      address: (patient.data.address ?? []).map(addr => {
+        const newAddress: Address = {
+          addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
+          city: normalizeString(addr.city),
+          zip: normalizeZipCode(addr.zip),
+          state: addr.state,
+          country: addr.country || "USA",
+        };
+        if (addr.addressLine2) {
+          newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
+        }
+        return newAddress;
+      }),
+    },
   };
   // return handleDefaultValues(normalizedPatient);
   return normalizedPatient;

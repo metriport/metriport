@@ -1,15 +1,12 @@
-import { PatientDataMPI } from "./patient";
+import { Patient } from "../domain/patient/patient";
 import { capture } from "../util/notifications";
 
-export type MergeProtocol = (
-  patients: PatientDataMPI[],
-  currentPatient: PatientDataMPI
-) => PatientDataMPI | undefined;
+export type MergeProtocol = (patients: Patient[], currentPatient: Patient) => Patient | undefined;
 
 export function mergeWithFirstPatient(
-  patients: PatientDataMPI[],
-  currentPatient: PatientDataMPI
-): PatientDataMPI | undefined {
+  patients: Patient[],
+  currentPatient: Patient
+): Patient | undefined {
   if (patients.length === 0) return undefined;
   if (patients.length === 1) return patients[0];
 
