@@ -82,6 +82,7 @@ export function joinName(name: string[]): string {
   return name.join(" ");
 }
 
+// TODO 574 remove and update references to use Core's Patient (and downstream types)
 export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USState[] {

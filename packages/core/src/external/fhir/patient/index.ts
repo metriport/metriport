@@ -14,7 +14,7 @@ export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   M: "male",
 };
 
-export const toFHIR = (patient: Patient): FHIRPatient => {
+export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   return {
     resourceType: "Patient",
     id: patient.id,

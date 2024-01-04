@@ -1,14 +1,15 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
+import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
 import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
+import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { MPILocal } from "./patient-mpi-local";
 
 export const getPatients = async ({
   facilityId,
@@ -62,7 +63,6 @@ export const getPatientIds = async ({
 /**
  * Retrieves a patient based on their demographic information. Utilizes functions
  * imported from the MPI core module: normalization, finding(blocking), matching, merging
- * @param facilityId - The ID of the facility where the patient is associated.
  * @param cxId - The ID of the patient in the external system.
  * @param demo - The demographic information of the patient.
  * @returns The matched patient object if found, otherwise undefined.
@@ -74,24 +74,8 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | undefined> => {
-  // TODO remove this once we have a proper refactor of Patient, PatientData, PatientDemographics
-  const patient: Patient = {
-    cxId,
-    eTag: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    facilityIds: [],
-    id: "",
-    data: demo,
-  };
-
-  const mpi = new MPILocal();
-  const mpiPatient = await mpi.findMatchingPatient(patient, cxId);
-  if (!mpiPatient) {
-    return undefined;
-  }
-
-  return getPatientOrFail({ id: mpiPatient.id, cxId });
+  const patientLoader = new PatientLoaderLocal();
+  return getPatientByDemoMPI({ cxId, demo, patientLoader });
 };
 
 export type GetPatient = {

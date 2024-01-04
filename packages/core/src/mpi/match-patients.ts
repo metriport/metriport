@@ -1,13 +1,18 @@
-import { intersectionWith } from "lodash";
-import { Patient, PersonalIdentifier } from "../domain/patient/patient";
-import { Contact } from "../domain/patient/contact";
-import { normalizePatient } from "./normalize-patient";
 import jaroWinkler from "jaro-winkler";
+import { intersectionWith } from "lodash";
+import { Contact } from "../domain/patient/contact";
+import { PatientData, PersonalIdentifier } from "../domain/patient/patient";
+import { normalizePatient } from "./normalize-patient";
+import { PatientMPI } from "./shared";
 
 // Define a type for the similarity function
-type SimilarityFunction = (patient1: Patient, patient2: Patient, threshold: number) => boolean;
+type SimilarityFunction = (
+  patient1: PatientData,
+  patient2: PatientData,
+  threshold: number
+) => boolean;
 
-type MatchingRule = (patient1: Patient, patient2: Patient) => boolean;
+type MatchingRule = (patient1: PatientData, patient2: PatientData) => boolean;
 
 /**
  * `matchPatients` filters patients based on a similarity function, rules, and a threshold.
@@ -22,12 +27,12 @@ type MatchingRule = (patient1: Patient, patient2: Patient) => boolean;
 export function matchPatients(
   isSimilarEnough: SimilarityFunction,
   matchingRules: MatchingRule[],
-  patients: Patient[],
-  currentPatient: Patient,
+  patients: PatientMPI[],
+  currentPatient: PatientData,
   threshold: number,
   greedy = true
-): Patient[] {
-  const matchFunction = (patient: Patient) => {
+): PatientMPI[] {
+  const matchFunction = (patient: PatientMPI) => {
     const normalizedPatient = normalizePatient(patient);
     if (!normalizedPatient) {
       return false;
@@ -54,9 +59,12 @@ export function matchPatients(
  * @param patient
  * @returns true if the patient has any personal identifiers that match the demo.
  */
-export function matchingPersonalIdentifiersRule(patient1: Patient, patient2: Patient): boolean {
-  const identifiers1 = patient1.data.personalIdentifiers || [];
-  const identifiers2 = patient2.data.personalIdentifiers || [];
+export function matchingPersonalIdentifiersRule(
+  patient1: PatientData,
+  patient2: PatientData
+): boolean {
+  const identifiers1 = patient1.personalIdentifiers || [];
+  const identifiers2 = patient2.personalIdentifiers || [];
   const isMatchIdentifier =
     intersectionWith(identifiers1, identifiers2, isSameIdentifierById).length > 0;
   return isMatchIdentifier;
@@ -70,9 +78,9 @@ export function matchingPersonalIdentifiersRule(patient1: Patient, patient2: Pat
  * @param patient
  * @returns true if the patient has any contact details that match the demo.
  */
-export function matchingContactDetailsRule(patient1: Patient, patient2: Patient): boolean {
-  const contact1 = patient1.data.contact || [];
-  const contact2 = patient2.data.contact || [];
+export function matchingContactDetailsRule(patient1: PatientData, patient2: PatientData): boolean {
+  const contact1 = patient1.contact || [];
+  const contact2 = patient2.contact || [];
   const isMatchPhone = intersectionWith(contact1, contact2, isSameContactByPhone).length > 0;
   const isMatchEmail = intersectionWith(contact1, contact2, isSameContactByEmail).length > 0;
   return isMatchPhone || isMatchEmail;
@@ -88,8 +96,8 @@ export function matchingContactDetailsRule(patient1: Patient, patient2: Patient)
  * @returns boolean if the patients are a match according to threshold.
  */
 export function jaroWinklerSimilarity(
-  patient1: Patient,
-  patient2: Patient,
+  patient1: PatientData,
+  patient2: PatientData,
   threshold: number
 ): boolean {
   let score = 0;
@@ -103,12 +111,12 @@ export function jaroWinklerSimilarity(
     fieldCount += 1;
   };
 
-  addScore("First Name", patient1.data.firstName, patient2.data.firstName);
-  addScore("Last Name", patient1.data.lastName, patient2.data.lastName);
+  addScore("First Name", patient1.firstName, patient2.firstName);
+  addScore("Last Name", patient1.lastName, patient2.lastName);
 
   // Calculate similarity for addresses
-  const address1 = patient1.data.address?.[0];
-  const address2 = patient2.data.address?.[0];
+  const address1 = patient1.address?.[0];
+  const address2 = patient2.address?.[0];
   if (address1 && address2) {
     addScore("Address Line 1", address1.addressLine1, address2.addressLine1);
     if (address1.addressLine2 && address2.addressLine2) {
@@ -120,8 +128,8 @@ export function jaroWinklerSimilarity(
   }
 
   // Calculate similarity for contact details
-  const contact1 = patient1.data.contact?.[0];
-  const contact2 = patient2.data.contact?.[0];
+  const contact1 = patient1.contact?.[0];
+  const contact2 = patient2.contact?.[0];
   if (contact1 && contact2) {
     if (contact1.phone && contact2.phone) {
       addScore("Phone", contact1.phone, contact2.phone);
@@ -136,13 +144,13 @@ export function jaroWinklerSimilarity(
   return totalScore >= threshold;
 }
 
-export function exactMatchSimilarity(patient1: Patient, patient2: Patient): boolean {
+export function exactMatchSimilarity(patient1: PatientData, patient2: PatientData): boolean {
   return (
-    patient1.data.firstName === patient2.data.firstName &&
-    patient1.data.lastName === patient2.data.lastName &&
-    patient1.data.dob === patient2.data.dob &&
-    patient1.data.genderAtBirth === patient2.data.genderAtBirth &&
-    patient1.data.address?.[0]?.zip === patient2.data.address?.[0]?.zip
+    patient1.firstName === patient2.firstName &&
+    patient1.lastName === patient2.lastName &&
+    patient1.dob === patient2.dob &&
+    patient1.genderAtBirth === patient2.genderAtBirth &&
+    patient1.address?.[0]?.zip === patient2.address?.[0]?.zip
   );
 }
 

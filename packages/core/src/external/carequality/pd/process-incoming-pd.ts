@@ -3,14 +3,15 @@ import {
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "../../../domain/patient/patient";
+import { MPI } from "../../../mpi/mpi";
+import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
 import {
-  validateFHIRAndExtractPatient,
   InternalError,
-  PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
+  PatientAddressRequestedError,
+  validateFHIRAndExtractPatient,
 } from "./validating-pd";
-import { MPIMetriportAPI } from "../../../command/patient-mpi-metriport-api";
 
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
@@ -70,7 +71,7 @@ function constructNoMatchResponse(
 
 function constructMatchResponse(
   payload: PatientDiscoveryRequestIncoming,
-  patient: Patient
+  patient: Pick<Patient, "id" | "data">
 ): PatientDiscoveryResponseOutgoing {
   return {
     id: payload.id,
@@ -87,16 +88,17 @@ function constructMatchResponse(
 }
 
 export async function processIncomingRequest(
-  payload: PatientDiscoveryRequestIncoming
+  payload: PatientDiscoveryRequestIncoming,
+  // workaround to allow injecting the behavior since this is an isolated function, not a class
+  mpi: MPI
 ): Promise<PatientDiscoveryResponseOutgoing> {
   try {
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
-    const mpiMetriportApi = new MPIMetriportAPI();
-    const matchingPatient = await mpiMetriportApi.findMatchingPatient(patient);
+    const matchingPatient = await mpi.findMatchingPatient(patient);
     if (!matchingPatient) {
       return constructNoMatchResponse(payload);
     }
-    return constructMatchResponse(payload, matchingPatient);
+    return constructMatchResponse(payload, patientMPIToPartialPatient(matchingPatient));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     switch (error.constructor) {
