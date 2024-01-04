@@ -119,7 +119,6 @@ export async function processIncomingRequest(
         genderAtBirth: normalizedPatientDemo.data.genderAtBirth,
       },
     });
-    console.log("Found Patients", foundPatients);
 
     const matchingPatients = matchPatients(
       exactMatchSimilarity,
@@ -128,7 +127,6 @@ export async function processIncomingRequest(
       normalizedPatientDemo,
       SIMILARITY_THRESHOLD
     );
-    console.log("Matching Patients", matchingPatients);
 
     const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
     console.log("MPI Patient", mpiPatient);

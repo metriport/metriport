@@ -1,11 +1,7 @@
-import { Patient, GenderAtBirth } from "../domain/patient/patient";
+import { Patient, PatientData } from "../domain/patient/patient";
 
-export type PatientFind = {
-  cxId?: string;
-  facilityIds?: string[];
-  data?: {
-    dob?: string;
-    genderAtBirth?: GenderAtBirth;
+export type PatientFind = Partial<Omit<Patient, "data">> & {
+  data?: Partial<PatientData> & {
     firstNameInitial?: string;
     lastNameInitial?: string;
   };
