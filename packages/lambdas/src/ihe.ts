@@ -1,7 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
 import {
   generateITI39,
   generateITI39MTOM,
@@ -19,9 +18,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   }
   try {
     switch (path) {
-      case "/iti38/v1":
-        result = await generateITI38(event.body);
-        break;
       case "/iti39/v1":
         if (event.headers) console.log("event.headers", event.headers);
         if (
