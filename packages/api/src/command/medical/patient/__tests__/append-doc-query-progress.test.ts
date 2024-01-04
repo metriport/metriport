@@ -10,6 +10,7 @@ import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
+import { appendDocQueryProgressWithSource } from "../../../../external/hie";
 
 let documentQueryProgress: DocumentQueryProgress;
 let patient: Patient;
@@ -100,7 +101,6 @@ describe("appendDocQueryProgress", () => {
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
         requestId,
-        downloadProgress: null,
       });
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
@@ -147,7 +147,6 @@ describe("appendDocQueryProgress", () => {
     it("removes convert when its null", async () => {
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
-        convertProgress: null,
         downloadProgress: documentQueryProgress.download,
         requestId,
       });
@@ -165,7 +164,6 @@ describe("appendDocQueryProgress", () => {
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress,
-        downloadProgress: null,
         requestId,
       });
       checkPatientUpdateWith({
@@ -326,13 +324,13 @@ describe("appendDocQueryProgress with source", () => {
   describe("download all hies", () => {
     it("sets download progress processing", async () => {
       const downloadProgress = { status: "processing" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress,
@@ -345,13 +343,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets one hie as complete", async () => {
       const downloadProgress = { status: "processing" as const };
       const downloadComplete = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadComplete,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress,
@@ -363,13 +361,13 @@ describe("appendDocQueryProgress with source", () => {
 
     it("sets all hie's as complete", async () => {
       const downloadComplete = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadComplete,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadComplete,
@@ -382,13 +380,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets one hie as failed", async () => {
       const downloadProgress = { status: "processing" as const };
       const downloadFailed = { status: "failed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress,
@@ -400,13 +398,13 @@ describe("appendDocQueryProgress with source", () => {
 
     it("sets all hie's as failed", async () => {
       const downloadFailed = { status: "failed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadFailed,
@@ -419,13 +417,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets some hie's as failed and some complete", async () => {
       const downloadFailed = { status: "failed" as const };
       const downloadCompleted = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         downloadProgress: downloadCompleted,
@@ -439,13 +437,13 @@ describe("appendDocQueryProgress with source", () => {
   describe("convert all hies", () => {
     it("sets convert progress processing", async () => {
       const convertProgress = { status: "processing" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress,
@@ -458,13 +456,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets one hie as complete", async () => {
       const convertProgress = { status: "processing" as const };
       const convertComplete = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertComplete,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress,
@@ -476,13 +474,13 @@ describe("appendDocQueryProgress with source", () => {
 
     it("sets all hie's as complete", async () => {
       const convertComplete = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertComplete,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertComplete,
@@ -495,13 +493,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets one hie as failed", async () => {
       const convertProgress = { status: "processing" as const };
       const convertFailed = { status: "failed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress,
@@ -513,13 +511,13 @@ describe("appendDocQueryProgress with source", () => {
 
     it("sets all hie's as failed", async () => {
       const convertFailed = { status: "failed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertFailed,
@@ -532,13 +530,13 @@ describe("appendDocQueryProgress with source", () => {
     it("sets some hie's as failed and some complete", async () => {
       const convertFailed = { status: "failed" as const };
       const downloadCompleted = { status: "completed" as const };
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: convertFailed,
         source: MedicalDataSource.COMMONWELL,
       });
-      await appendDocQueryProgress({
+      await appendDocQueryProgressWithSource({
         patient: { id: "theId", cxId: "theCxId" },
         requestId,
         convertProgress: downloadCompleted,

@@ -50,6 +50,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
+import { appendDocQueryProgressWithSource } from "../../hie";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -153,7 +154,7 @@ export async function queryAndProcessDocuments({
     const msg = `Failed to query and process documents`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await appendDocQueryProgress({
+    await appendDocQueryProgressWithSource({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
@@ -333,7 +334,7 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
-  return appendDocQueryProgress({
+  return appendDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       status: "processing",
@@ -658,7 +659,7 @@ export async function downloadDocsAndUpsertFHIR({
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
-            await appendDocQueryProgress({
+            await appendDocQueryProgressWithSource({
               patient: { id: patient.id, cxId: patient.cxId },
               downloadProgress: {
                 status: "processing",
@@ -689,7 +690,7 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  await appendDocQueryProgress({
+  await appendDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0

@@ -1,10 +1,4 @@
-import { BaseResultDomain, BaseResponse, DocumentReference } from "./ihe-result";
+import { DocumentQueryResult as DocumentQueryResultCore } from "@metriport/core/src/external/carequality/domain/document-query-result";
+import { BaseDomainCreate } from "../../../domain/base-domain";
 
-export interface DocumentQueryResult extends BaseResultDomain {
-  data: DocumentQueryResponse;
-}
-
-export type DocumentQueryResponse = BaseResponse & {
-  documentReference: DocumentReference[];
-  gateway: { homeCommunityId: string; url: string };
-};
+export interface DocumentQueryResult extends BaseDomainCreate, DocumentQueryResultCore {}

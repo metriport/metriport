@@ -9,6 +9,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "../../../external";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { appendDocQueryProgressWithSource } from "../../hie";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -53,7 +54,7 @@ export async function getDocumentsFromCQ({
     const msg = `Failed to query and process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await appendDocQueryProgress({
+    await appendDocQueryProgressWithSource({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
       requestId,

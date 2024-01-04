@@ -6,6 +6,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
@@ -336,6 +337,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
+      dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
     });
@@ -1092,20 +1094,20 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
+    dbCredsSecret: secret.ISecret;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
     const documentQueryResultsLambda = createLambda({
       stack: this,
       name: "DocumentQueryResults",
-      runtime: lambda.Runtime.NODEJS_18_X,
       entry: "document-query-results",
       envType,
       envVars: {
-        // add more when working on lambda
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretValue.toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,

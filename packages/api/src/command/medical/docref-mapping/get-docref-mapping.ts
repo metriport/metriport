@@ -9,11 +9,17 @@ export const getDocRefMapping = async (id: string): Promise<DocRefMapping | unde
   return docRef ?? undefined;
 };
 
-export const getAllDocRefMappingByRequestId = async (
-  requestId: string
-): Promise<DocRefMapping[]> => {
+export const getAllDocRefMapping = async ({
+  requestId,
+  patientId,
+  cxId,
+}: {
+  requestId?: string;
+  patientId?: string;
+  cxId?: string;
+}): Promise<DocRefMapping[]> => {
   const docRefs = await DocRefMappingModel.findAll({
-    where: { requestId },
+    where: { requestId, patientId, cxId },
   });
   return docRefs;
 };

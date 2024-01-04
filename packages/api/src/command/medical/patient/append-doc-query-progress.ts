@@ -2,16 +2,11 @@ import {
   Progress,
   DocumentQueryProgress,
   getStatusFromProgress,
-  progressTypes,
-  DocumentQueryStatus,
 } from "../../../domain/medical/document-query";
-import { MedicalDataSource } from "../../../external";
 import { Patient } from "../../../domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
-import { processDocQueryProgressWebhook } from "../document/process-doc-query-webhook";
-import { setExternalData, setDocQueryProgressWithExternal } from "../../../external/hie";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
@@ -20,15 +15,13 @@ export type SetDocQueryProgress = {
   requestId: string;
 } & (
   | {
-      downloadProgress?: Progress | undefined | null;
-      convertProgress?: Progress | undefined | null;
-      source?: MedicalDataSource;
+      downloadProgress?: Progress | undefined;
+      convertProgress?: Progress | undefined;
       reset?: false | undefined;
     }
   | {
       downloadProgress: Progress;
       convertProgress?: never;
-      source?: never;
       reset?: true;
     }
 );
@@ -47,12 +40,12 @@ export async function appendDocQueryProgress({
   increaseCountConvertible,
   reset,
   requestId,
-  source,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
+
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
@@ -60,51 +53,26 @@ export async function appendDocQueryProgress({
       transaction,
     });
 
-    let documentQueryProgress =
+    const documentQueryProgress =
       reset || !existingPatient.data.documentQueryProgress
         ? {}
         : existingPatient.data.documentQueryProgress;
 
-    if (source) {
-      // Set the doc query progress for the given hie
-      const externalData = setExternalData(
-        reset,
-        existingPatient,
-        downloadProgress,
-        convertProgress,
-        source,
-        convertibleDownloadErrors,
-        increaseCountConvertible
-      );
+    const updatedDocumentQueryProgress = setDocQueryProgress(
+      documentQueryProgress,
+      downloadProgress,
+      convertProgress,
+      convertibleDownloadErrors,
+      increaseCountConvertible
+    );
 
-      existingPatient.data.externalData = externalData;
-
-      // Set the aggregated doc query progress for the patient
-      const externalQueryProgresses = setDocQueryProgressWithExternal(externalData);
-
-      const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
-
-      documentQueryProgress = {
-        ...documentQueryProgress,
-        ...aggregatedDocProgress,
-      };
-    } else {
-      documentQueryProgress = setDocQueryProgress(
-        documentQueryProgress,
-        downloadProgress,
-        convertProgress,
-        convertibleDownloadErrors,
-        increaseCountConvertible
-      );
-    }
-
-    documentQueryProgress.requestId = requestId;
+    updatedDocumentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
-        documentQueryProgress,
+        documentQueryProgress: updatedDocumentQueryProgress,
       },
     };
 
@@ -113,20 +81,21 @@ export async function appendDocQueryProgress({
       transaction,
     });
 
-    await processDocQueryProgressWebhook({
-      patient: existingPatient,
-      documentQueryProgress,
-      requestId,
-    });
-
     return updatedPatient;
   });
+
+  // MAY NOT BE NEEDED
+  // await processDocQueryProgressWebhook({
+  //   patient: result,
+  //   documentQueryProgress: result.data.documentQueryProgress,
+  //   requestId,
+  // });
 }
 
 export const setDocQueryProgress = (
   documentQueryProgress: DocumentQueryProgress,
-  downloadProgress?: Progress | undefined | null,
-  convertProgress?: Progress | undefined | null,
+  downloadProgress?: Progress | undefined,
+  convertProgress?: Progress | undefined,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): DocumentQueryProgress => {
@@ -135,7 +104,7 @@ export const setDocQueryProgress = (
       ...documentQueryProgress.download,
       ...downloadProgress,
     };
-  } else if (downloadProgress === null) {
+  } else {
     documentQueryProgress.download = undefined;
   }
 
@@ -144,7 +113,7 @@ export const setDocQueryProgress = (
       ...documentQueryProgress.convert,
       ...convertProgress,
     };
-  } else if (convertProgress === null) {
+  } else {
     documentQueryProgress.convert = undefined;
   }
 
@@ -164,57 +133,3 @@ export const setDocQueryProgress = (
 
   return documentQueryProgress;
 };
-
-type RequiredProgress = Required<Progress>;
-
-function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
-  download?: RequiredProgress;
-  convert?: RequiredProgress;
-} {
-  const tallyResults = hieDocProgresses.reduce(
-    (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
-      const statuses: DocumentQueryStatus[] = [];
-
-      for (const type of progressTypes) {
-        const progressType = progress[type];
-
-        if (progressType) {
-          const currTotal = progressType.total ?? 0;
-          const currErrors = progressType.errors ?? 0;
-          const currSuccessful = progressType.successful ?? 0;
-          const accType = acc[type];
-          statuses.push(progressType.status);
-
-          if (accType) {
-            accType.total += currTotal;
-            accType.errors += currErrors;
-            accType.successful += currSuccessful;
-            accType.status = setStatus(statuses);
-          } else {
-            acc[type] = {
-              total: currTotal,
-              errors: currErrors,
-              successful: currSuccessful,
-              status: progressType.status,
-            };
-          }
-        }
-      }
-
-      return acc;
-    },
-    {}
-  );
-
-  return tallyResults;
-}
-
-function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
-  const hasProcessing = docQueryProgress.some(status => status === "processing");
-  const hasFailed = docQueryProgress.some(status => status === "failed");
-
-  if (hasProcessing) return "processing";
-  if (hasFailed) return "failed";
-
-  return "completed";
-}

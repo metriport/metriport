@@ -1,8 +1,6 @@
 import { Sequelize } from "sequelize";
-import {
-  DocumentQueryResult,
-  DocumentQueryResponse,
-} from "../../external/carequality/domain/document-query-result";
+import { DocumentQueryResponse } from "@metriport/core/src/external/carequality/domain/document-query-result";
+import { DocumentQueryResult } from "../../external/carequality/domain/document-query-result";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
 

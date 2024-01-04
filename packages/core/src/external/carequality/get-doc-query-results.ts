@@ -3,8 +3,10 @@ import axios from "axios";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { capture } from "../../util/notifications";
 import { MetriportError } from "../../util/error/metriport-error";
+import { initSequelize } from "../../util/sequelize";
+import { errorToString } from "../../util/error";
+import { DocumentQueryResult, TABLE_NAME, REQUEST_ID_COLUMN } from "./domain/document-query-result";
 
 const api = axios.create();
 
@@ -15,26 +17,7 @@ const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
 
 type RaceControl = { isRaceInProgress: boolean };
 
-type DocumentQueryResult = {
-  requestId: string;
-  status: string;
-  createdAt: Date;
-  data: {
-    documentReference: {
-      homeCommunityId: string;
-      docUniqueId: string;
-      repositoryUniqueId: string;
-      contentType?: string | null;
-      language?: string | null;
-      uri?: string | null;
-      creation?: string | null;
-      title?: string | null;
-    }[];
-    gateway: { homeCommunityId: string; url: string };
-  };
-};
-
-export const getDocumentQueryResults = async ({
+export const sendDocumentQueryResults = async ({
   requestId,
   patientId,
   cxId,
@@ -53,22 +36,22 @@ export const getDocumentQueryResults = async ({
 
   const raceControl: RaceControl = { isRaceInProgress: true };
 
-  // Run the document query until it either times out, or all the results are in the database
-  const raceResult = await Promise.race([
-    controlDuration(),
-    checkNumberOfResults(sequelize, raceControl, requestId, numOfLinks),
-  ]);
-
-  const documentQueryResults = await queryDocumentQueryResults(sequelize, requestId);
-
-  if (raceResult) {
-    console.log(
-      `${raceResult}. Got ${documentQueryResults.length} successes out of ${numOfLinks} gateways for PD. RequestID: ${requestId}`
-    );
-    raceControl.isRaceInProgress = false;
-  }
-
   try {
+    // Run the document query until it either times out, or all the results are in the database
+    const raceResult = await Promise.race([
+      controlDuration(),
+      checkNumberOfResults(sequelize, raceControl, requestId, numOfLinks),
+    ]);
+
+    const documentQueryResults = await queryDocumentQueryResults(sequelize, requestId);
+
+    if (raceResult) {
+      console.log(
+        `${raceResult}. Got ${documentQueryResults.length} successes out of ${numOfLinks} gateways for PD. RequestID: ${requestId}`
+      );
+      raceControl.isRaceInProgress = false;
+    }
+
     await api.post(endpointUrl, {
       requestId,
       patientId,
@@ -76,28 +59,11 @@ export const getDocumentQueryResults = async ({
       documentQueryResults,
     });
   } catch (error) {
-    const msg = `Failed to post document query results to ${endpointUrl}. Error: ${error}`;
-    console.log(`${msg}: ${error}`);
-    throw new MetriportError(msg, error, { requestId, numOfLinks });
+    const msg = `Failed to post document query results`;
+    console.log(`${msg} - endpoint ${endpointUrl}. Error: ${errorToString(error)}`);
+    throw new MetriportError(msg, error, { requestId, patientId, cxId, numOfLinks });
   }
 };
-
-function initSequelize(dbCreds: string) {
-  const sqlDBCreds = JSON.parse(dbCreds);
-
-  const sequelize = new Sequelize(sqlDBCreds.dbname, sqlDBCreds.username, sqlDBCreds.password, {
-    host: sqlDBCreds.host,
-    port: sqlDBCreds.port,
-    dialect: sqlDBCreds.engine,
-    pool: {
-      max: 50,
-      min: 20,
-      acquire: 30000,
-      idle: 10000,
-    },
-  });
-  return sequelize;
-}
 
 async function controlDuration(): Promise<string> {
   const timeout = DOC_QUERY_TIMEOUT.asMilliseconds();
@@ -110,18 +76,18 @@ async function checkNumberOfResults(
   raceControl: RaceControl,
   requestId: string,
   numOfLinks: number
-): Promise<string | undefined> {
+): Promise<string> {
   while (raceControl.isRaceInProgress) {
     const isComplete = await isDQComplete(sequelize, requestId, numOfLinks);
     if (isComplete) {
-      const msg = `Document Query results came back in full (${numOfLinks} links). RequestID: ${requestId}`;
-      raceControl.isRaceInProgress = false;
+      const msg = `Document Query results came back in full (${numOfLinks} links).`;
+
       return msg;
     }
     await sleep(CHECK_DB_INTERVAL.asMilliseconds());
   }
 
-  return;
+  return "";
 }
 
 async function isDQComplete(
@@ -138,7 +104,7 @@ async function getDocumentQueryResultCount(
   requestId: string
 ): Promise<number> {
   try {
-    const query = `SELECT COUNT(*) FROM document_query_result WHERE request_id = '${requestId}';`;
+    const query = `SELECT COUNT(*) FROM ${TABLE_NAME} WHERE ${REQUEST_ID_COLUMN} = '${requestId}';`;
 
     const [res] = await sequelize.query<{ count: number }>(query, {
       type: QueryTypes.SELECT,
@@ -146,16 +112,9 @@ async function getDocumentQueryResultCount(
 
     return res?.count || 0;
   } catch (error) {
-    const msg = `Failed to get document query result count. Error: ${error}`;
-    capture.message(msg, {
-      extra: {
-        context: `cq.getDocumentQueryResultCount`,
-        error,
-        requestId,
-      },
-      level: "error",
-    });
-    throw new Error(msg);
+    const msg = `Failed to get document query result count`;
+
+    throw new MetriportError(msg);
   }
 }
 
@@ -164,22 +123,15 @@ async function queryDocumentQueryResults(
   requestId: string
 ): Promise<DocumentQueryResult[]> {
   try {
-    const query = `SELECT * FROM document_query_result WHERE request_id = '${requestId}' ORDER BY created_at DESC;`;
-    const res = await sequelize.query<DocumentQueryResult>(query, {
+    const query = `SELECT * FROM ${TABLE_NAME} WHERE ${REQUEST_ID_COLUMN} = '${requestId}' ORDER BY created_at DESC;`;
+    const res = (await sequelize.query<DocumentQueryResult>(query, {
       type: QueryTypes.SELECT,
-    });
+    })) as DocumentQueryResult[];
 
-    return res || [];
+    return res;
   } catch (error) {
     const msg = `Failed to query document query results. Error: ${error}`;
-    capture.message(msg, {
-      extra: {
-        context: `cq.queryDocumentQueryResults`,
-        error,
-        requestId,
-      },
-      level: "error",
-    });
-    throw new Error(msg);
+
+    throw new MetriportError(msg);
   }
 }

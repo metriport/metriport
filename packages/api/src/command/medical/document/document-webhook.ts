@@ -44,7 +44,7 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
-  requestId: string,
+  requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
   try {

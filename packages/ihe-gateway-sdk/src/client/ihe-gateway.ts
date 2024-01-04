@@ -18,14 +18,14 @@ export enum APIMode {
 export class IHEGateway {
   static productionUrl = "https://ihe.metriport.com";
   static integrationUrl = "https://ihe.staging.metriport.com";
-  static devUrl = "http://host.docker.internal:8083";
+  static devUrl = "http://localhost:8082";
 
   static PATIENT_DISCOVERY_ENDPOINT = "/xcpd/";
   static DOCUMENT_QUERY_ENDPOINT = "/xcadq/";
   static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
-  constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
+  constructor(apiMode: APIMode, options: { timeout?: number; url?: string } = {}) {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.milliseconds(),
       baseURL:
@@ -33,7 +33,7 @@ export class IHEGateway {
           ? IHEGateway.productionUrl
           : apiMode === APIMode.integration
           ? IHEGateway.integrationUrl
-          : IHEGateway.devUrl,
+          : options.url ?? IHEGateway.devUrl,
     });
   }
 

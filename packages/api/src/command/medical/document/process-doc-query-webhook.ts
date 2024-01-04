@@ -2,10 +2,11 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { DocumentQueryProgress } from "../../../domain/medical/document-query";
+import { WebhookRequest } from "../../../models/webhook-request";
 import { Patient } from "../../../domain/medical/patient";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
-import { getAllDocRefMappingByRequestId } from "../docref-mapping/get-docref-mapping";
+import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { getDocuments } from "../../../external/fhir/document/get-documents";
 import { toDTO, DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getAllWebhookRequestByRequestId } from "../../webhook/webhook-request";
@@ -29,64 +30,73 @@ export const processDocQueryProgressWebhook = async ({
   const { id: patientId } = patient;
 
   try {
-    const downloadStatus = documentQueryProgress.download?.status;
-    const convertStatus = documentQueryProgress.convert?.status;
-
     const webhooks = await getAllWebhookRequestByRequestId(requestId);
-    const downloadWebhookSent = webhooks.some(
-      webhook => webhook.type === "medical.document-download"
+
+    await handleDownloadWebhook(webhooks, patient, requestId, documentQueryProgress);
+    await handleConversionWebhook(webhooks, patient, requestId, documentQueryProgress);
+  } catch (error) {
+    const msg = `Error on processDocQueryProgressWebhook`;
+    const extra = {
+      documentQueryProgress,
+      requestId,
+      patientId,
+      msg,
+      context: `webhook.processDocQueryProgressWebhook`,
+      error,
+    };
+
+    log(`${msg}: ${errorToString(error)} - ${JSON.stringify(extra)}`);
+    capture.error(error, { extra });
+  }
+};
+
+const handleDownloadWebhook = async (
+  webhooks: WebhookRequest[],
+  patient: Pick<Patient, "id" | "cxId" | "externalId">,
+  requestId: string,
+  documentQueryProgress: DocumentQueryProgress
+): Promise<void> => {
+  const downloadWebhookType = "medical.document-download";
+  const downloadStatus = documentQueryProgress.download?.status;
+
+  const downloadWebhookSent = webhooks.some(webhook => webhook.type === downloadWebhookType);
+
+  if (!downloadWebhookSent && !isSandbox) {
+    const downloadIsCompleted = downloadStatus === "completed";
+    const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
+
+    processPatientDocumentRequest(
+      patient.cxId,
+      patient.id,
+      downloadWebhookType,
+      downloadIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+      requestId,
+      downloadIsCompleted ? payload : undefined
     );
-    const convertWebhookSent = webhooks.some(
-      webhook => webhook.type === "medical.document-conversion"
+  }
+};
+
+const handleConversionWebhook = async (
+  webhooks: WebhookRequest[],
+  patient: Pick<Patient, "id" | "cxId" | "externalId">,
+  requestId: string,
+  documentQueryProgress: DocumentQueryProgress
+): Promise<void> => {
+  const convertWebhookType = "medical.document-conversion";
+  const convertStatus = documentQueryProgress.convert?.status;
+
+  const convertWebhookSent = webhooks.some(webhook => webhook.type === convertWebhookType);
+
+  if (!convertWebhookSent) {
+    const convertIsCompleted = convertStatus === "completed";
+
+    processPatientDocumentRequest(
+      patient.cxId,
+      patient.id,
+      convertWebhookType,
+      convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+      requestId
     );
-
-    if (!downloadWebhookSent && !isSandbox) {
-      if (downloadStatus === "failed") {
-        processPatientDocumentRequest(
-          patient.cxId,
-          patient.id,
-          "medical.document-download",
-          MAPIWebhookStatus.failed,
-          requestId
-        );
-      } else if (downloadStatus === "completed") {
-        const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
-
-        processPatientDocumentRequest(
-          patient.cxId,
-          patient.id,
-          "medical.document-download",
-          MAPIWebhookStatus.completed,
-          requestId,
-          payload
-        );
-      }
-    }
-
-    if (!convertWebhookSent) {
-      if (convertStatus === "failed") {
-        processPatientDocumentRequest(
-          patient.cxId,
-          patient.id,
-          "medical.document-conversion",
-          MAPIWebhookStatus.failed,
-          requestId
-        );
-      } else if (convertStatus === "completed") {
-        processPatientDocumentRequest(
-          patient.cxId,
-          patient.id,
-          "medical.document-conversion",
-          MAPIWebhookStatus.completed,
-          requestId
-        );
-      }
-    }
-  } catch (err) {
-    log(`Error on processDocQueryProgressWebhook: ${errorToString(err)}`);
-    capture.error(err, {
-      extra: { patientId, context: `webhook.processDocQueryProgressWebhook`, err },
-    });
   }
 };
 
@@ -95,7 +105,7 @@ export const composeDocRefPayload = async (
   cxId: string,
   requestId: string
 ): Promise<DocumentReferenceDTO[]> => {
-  const docRefs = await getAllDocRefMappingByRequestId(requestId);
+  const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
   const documents = await getDocuments({ patientId, cxId, documentIds: docRefsIds });
 
