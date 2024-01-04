@@ -17,7 +17,7 @@ import {
   sourceIdSteps,
 } from "./models/activity";
 import { sessionSleepType } from "./models/sleep";
-import { formatNumber } from "../../shared/numbers";
+import { formatNumber } from "@metriport/shared/common/numbers";
 
 export const mapToActivity = (
   date: string,
