@@ -1,8 +1,8 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
-import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
-import { DocumentQueryProgress } from "../../domain/medical/document-query";
+import { BaseDomain, BaseDomainCreate } from "../base-domain";
+import { DocumentQueryProgress } from "./document-query";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { QueryProgress } from "../../domain/medical/query-status";
+import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";

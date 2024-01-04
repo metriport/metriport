@@ -1,16 +1,12 @@
-import { GenderAtBirth, PatientDataMPI } from "./patient";
+import { Patient, PatientData } from "../domain/patient/patient";
 
-export type PatientFind = {
-  cxId?: string;
-  facilityIds?: string[];
-  data?: {
-    dob?: string;
-    genderAtBirth?: GenderAtBirth;
+export type PatientFind = Partial<Omit<Patient, "data">> & {
+  data?: Partial<PatientData> & {
     firstNameInitial?: string;
     lastNameInitial?: string;
   };
 };
 
 export abstract class PatientFinder {
-  public abstract find(data: PatientFind): Promise<PatientDataMPI[]>;
+  public abstract find(data: PatientFind): Promise<Patient[]>;
 }

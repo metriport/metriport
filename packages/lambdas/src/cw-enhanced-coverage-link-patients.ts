@@ -1,7 +1,8 @@
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { PatientUpdaterMetriportAPI } from "@metriport/core/command/patient-updater-metriport-api";
 import { Input } from "@metriport/core/external/commonwell/cq-bridge/cq-link-patients";
-import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
+import { ECUpdaterAPI } from "@metriport/core/external/commonwell/cq-bridge/ec-updater-api";
+import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell/management/api-impl";
 import { LinkPatients } from "@metriport/core/external/commonwell/management/link-patients";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { sleep } from "@metriport/core/util/sleep";
@@ -38,12 +39,13 @@ const cookieSecretArn = getEnvOrFail("COOKIE_SECRET_ARN");
 const metriportBaseUrl = getEnvOrFail("API_URL");
 
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
-const cwManagementApi = new CommonWellManagementAPI({
+const cwManagementApi = new CommonWellManagementAPIImpl({
   cookieManager,
   baseUrl: cwManagementBaseUrl,
 });
 const patientUpdater = new PatientUpdaterMetriportAPI(metriportBaseUrl);
-const linkPatients = new LinkPatients(cwManagementApi, patientUpdater);
+const ecUpdater = new ECUpdaterAPI(metriportBaseUrl);
+const linkPatients = new LinkPatients(cwManagementApi, patientUpdater, ecUpdater);
 
 /**
  * Lambda that processes each "chunk" of CQ orgs received as param, updating CW's include list

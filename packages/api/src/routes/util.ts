@@ -3,6 +3,7 @@ import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
+import { stringToBoolean } from "../shared/types";
 
 export const asyncHandler =
   (
@@ -71,6 +72,14 @@ export const getFromQueryAsArray = (prop: string, req: Request): string[] | unde
 export const getFromQueryAsArrayOrFail = (prop: string, req: Request) => {
   const value = getFromQueryAsArray(prop, req);
   if (!value) throw new BadRequestError(`Missing ${prop} query param`);
+  return value;
+};
+export const getFromQueryAsBoolean = (prop: string, req: Request): boolean | undefined => {
+  return stringToBoolean(getFrom("query").optional(prop, req));
+};
+export const getFromQueryAsBooleanOrFail = (prop: string, req: Request): boolean => {
+  const value = getFromQueryAsBoolean(prop, req);
+  if (value == undefined) throw new BadRequestError(`Missing ${prop} query param`);
   return value;
 };
 

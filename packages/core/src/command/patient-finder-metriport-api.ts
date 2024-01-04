@@ -1,12 +1,12 @@
 import axios from "axios";
 import { PatientFinder, PatientFind } from "../mpi/patient-finder";
-import { PatientDataMPI } from "../mpi/patient";
+import { Patient } from "../domain/patient/patient";
 
 export class PatientFinderMetriportAPI extends PatientFinder {
   constructor(private readonly apiUrl: string) {
     super();
   }
-  async find(params: PatientFind): Promise<PatientDataMPI[]> {
+  async find(params: PatientFind): Promise<Patient[]> {
     const response = await axios.get(`${this.apiUrl}/internal/patient/mpi/find`, {
       params: {
         dob: params.data?.dob,

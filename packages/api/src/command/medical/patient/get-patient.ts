@@ -17,7 +17,6 @@ import {
 import { normalizePatient } from "@metriport/core/mpi/normalize-patient";
 import { mergeWithFirstPatient } from "@metriport/core/mpi/merge-patients";
 import { PatientFinderLocal } from "./patient-finder-local";
-import { convertPatientDataToPatientDataMPI } from "./convert-patients";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -85,8 +84,19 @@ export const getPatientByDemo = async ({
   cxId: string;
   demo: PatientData;
 }): Promise<Patient | undefined> => {
+  // TODO remove this once we have a proper refactor of Patient, PatientData, PatientDemographics
+  const patient: Patient = {
+    cxId,
+    eTag: "",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    facilityIds: [],
+    id: "",
+    data: demo,
+  };
+
   // Normalize the patient demographic data
-  const normalizedPatientDemo = normalizePatient(convertPatientDataToPatientDataMPI(demo));
+  const normalizedPatientDemo = normalizePatient(patient);
   if (!normalizedPatientDemo) {
     return undefined;
   }
@@ -96,8 +106,8 @@ export const getPatientByDemo = async ({
   const foundPatients = await patientFinder.find({
     cxId,
     data: {
-      dob: normalizedPatientDemo.dob,
-      genderAtBirth: normalizedPatientDemo.genderAtBirth,
+      dob: normalizedPatientDemo.data.dob,
+      genderAtBirth: normalizedPatientDemo.data.genderAtBirth,
     },
   });
 

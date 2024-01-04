@@ -1,6 +1,5 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-
 import { processIncomingRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
 
 import express, { Application, Request, Response } from "express";

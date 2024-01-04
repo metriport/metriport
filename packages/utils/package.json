@@ -14,7 +14,6 @@
     "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/create-mr-for-patients",
-    "mock-ihe-gateway": "ts-node src/mock-ihe-gateway",
     "document-upload": "ts-node src/document/document-upload-post-process",
     "mock-pd": "ts-node src/carequality/mock-pd",
     "mock-dq": "ts-node src/carequality/mock-dq",
