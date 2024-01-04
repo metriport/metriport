@@ -15,7 +15,7 @@ export abstract class BaseIHEResultModel<T extends Model<any, any>> extends Mode
 > {
   declare id: string;
   declare requestId: string;
-  declare patientId: string | undefined;
+  declare patientId: string;
   declare status: string;
   declare createdAt: CreationOptional<Date>;
 

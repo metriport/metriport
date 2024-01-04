@@ -49,7 +49,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   const defaultPayload: DefaultPayload = {
     id: uuidv7(),
     requestId: id,
-    patientId,
+    patientId: patientId ? patientId : "",
   };
 
   switch (type) {
