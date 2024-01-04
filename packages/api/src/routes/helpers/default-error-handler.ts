@@ -3,7 +3,7 @@ import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "../../errors/metriport-error";
-import { operationOutcomeIssueToString } from "../../external/fhir/shared";
+import { getDetailFromOutcomeError } from "../../external/fhir/shared";
 import { isClientError } from "../../shared/http";
 import { capture } from "../../shared/notifications";
 import { httpResponseBody } from "../util";
@@ -66,6 +66,10 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     if (req.path.includes("fhir/R4")) {
       return res.contentType("json").status(status).send(err.outcome);
     } else {
+      const detail = getDetailFromOutcomeError(err);
+      if (status > 499) {
+        console.log(`Error on FHIR: ${detail}`);
+      }
       return res
         .contentType("json")
         .status(status)
@@ -73,7 +77,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
           httpResponseBody({
             status,
             title: err.name,
-            detail: err.outcome.issue?.map(i => operationOutcomeIssueToString(i)).join("; "),
+            detail,
             name: httpStatus[status],
           })
         );

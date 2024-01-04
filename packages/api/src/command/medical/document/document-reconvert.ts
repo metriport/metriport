@@ -17,7 +17,7 @@ import { downloadedFromHIEs } from "../../../external/fhir/shared";
 import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
-import { formatNumber } from "../../../shared/numbers";
+import { formatNumber } from "@metriport/shared/common/numbers";
 import { getDocRefMappings } from "../docref-mapping/get-docref-mapping";
 import { deleteConsolidated as deleteConsolidatedOnFHIRServer } from "../patient/consolidated-delete";
 import { getPatientOrFail } from "../patient/get-patient";
