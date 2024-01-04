@@ -7,7 +7,7 @@ import {
   isDocumentQueryResponse,
   isDocumentRetrievalResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { getIheResultStatus } from "../../../domain/medical/ihe-result";
+import { getIheResultStatus } from "../../../../domain/medical/ihe-result";
 import { DefaultPayload } from "./shared";
 import { createPatientDiscoveryResult } from "./create-patient-discovery-result";
 import { createDocumentQueryResult } from "./create-document-query-result";
@@ -55,15 +55,15 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   switch (type) {
     case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
       status = getIheResultStatus({ patientMatch: response.patientMatch });
-      await createPatientDiscoveryResult(defaultPayload, status, response);
+      await createPatientDiscoveryResult({ defaultPayload, status, response });
       return;
     }
     case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
-      await createDocumentQueryResult(defaultPayload, status, response);
+      await createDocumentQueryResult({ defaultPayload, status, response });
       return;
     }
     case IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE: {
-      await createDocumentRetrievalResult(defaultPayload, status, response);
+      await createDocumentRetrievalResult({ defaultPayload, status, response });
       return;
     }
   }
