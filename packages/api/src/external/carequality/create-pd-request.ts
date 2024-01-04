@@ -1,4 +1,4 @@
-import { PatientDiscoveryRequestOutgoing, XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryRequest, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/carequality-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -19,7 +19,7 @@ export function createPatientDiscoveryRequest({
   facilityNPI: string;
   orgName: string;
   orgOid: string;
-}): PatientDiscoveryRequestOutgoing {
+}): PatientDiscoveryRequest {
   const user = `${orgName} System User`;
 
   return {

@@ -16,96 +16,60 @@ export const oidStringSchema = z
   .string()
   .refine(oid => normalizeOid(oid), { message: "OID is not valid" });
 
-export const SamlAttributesSchema = z.object({
-  subjectId: z.string(),
-  subjectRole: z.object({
-    display: z.string(),
-    code: z.string(),
-  }),
-  organization: z.string(),
-  organizationId: z.string(),
+export type SamlAttributes = {
+  subjectId: string;
+  subjectRole: {
+    display: string;
+    code: string;
+  };
+  organization: string;
+  organizationId: string;
+  homeCommunityId: string;
+  purposeOfUse: string;
+};
+
+export type BaseRequest = {
+  id: string;
+  cxId: string;
+  timestamp: string;
+  samlAttributes: SamlAttributes;
+};
+
+export const documentReference = z.object({
   homeCommunityId: z.string(),
-  purposeOfUse: z.string(),
+  docUniqueId: z.string(),
+  repositoryUniqueId: z.string(),
+  contentType: z.string().nullish(),
+  language: z.string().nullish(),
+  uri: z.string().nullish(),
+  creation: z.string().nullish(),
+  title: z.string().nullish(),
 });
 
-export const baseRequestSchema = z.object({
-  id: z.string(),
-  timestamp: z.string(),
-  samlAttributes: SamlAttributesSchema,
-  patientId: z.string().optional(),
-});
+export type DocumentReference = z.infer<typeof documentReference>;
 
-export type BaseRequest = z.infer<typeof baseRequestSchema>;
-
-export const codeSchema = z.object({
-  system: z.string(),
-  code: z.string(),
-});
-
-export type Code = z.infer<typeof codeSchema>;
-
-export type Details = { coding: Code[] } | { text: string };
-
-export const issueSchema = z.object({
+export const issue = z.object({
   severity: z.string(),
   code: z.string(),
   details: z.object({ text: z.string() }),
 });
-export type Issue = z.infer<typeof issueSchema>;
 
-export const operationOutcomeSchema = z.object({
+export const operationOutcome = z.object({
   resourceType: z.string(),
   id: z.string(),
-  issue: z.array(issueSchema),
+  issue: z.array(issue),
 });
-export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
-export const xcpdPatientIdSchema = z.object({
-  id: z.string(),
-  system: z.string(),
-});
-export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
+export const gatewaySchema = z.object({ id: z.string(), oid: z.string(), url: z.string() });
+export type Gateway = z.infer<typeof gatewaySchema>;
 
 export const baseResponseSchema = z.object({
   id: z.string(),
+  cxId: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
-  externalGatewayPatient: xcpdPatientIdSchema.optional(),
-  patientId: z.string().optional(),
+  gatewayPatientId: z.object({ id: z.string(), system: z.string() }).optional(),
+  gateway: gatewaySchema,
+  patientId: z.string(),
+  operationOutcome: operationOutcome.nullish(),
 });
-export type BaseResponse = z.infer<typeof baseResponseSchema>;
-
-export const baseErrorResponseSchema = z.intersection(
-  baseResponseSchema,
-  z.object({
-    operationOutcome: operationOutcomeSchema,
-  })
-);
-export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
-
-export function isBaseErrorResponse(obj: unknown): obj is BaseErrorResponse {
-  const result = baseErrorResponseSchema.safeParse(obj);
-  return result.success;
-}
-
-export const xcaGatewaySchema = z.object({
-  homeCommunityId: z.string(),
-  url: z.string(),
-});
-export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
-
-export const documentReferenceSchema = z.object({
-  homeCommunityId: z.string(),
-  docUniqueId: z.string(),
-  urn: z.string(),
-  repositoryUniqueId: z.string(),
-  newRepositoryUniqueId: z.string().nullish(),
-  newDocumentUniqueId: z.string().nullish(),
-  contentType: z.string().nullish(),
-  language: z.string().nullish(),
-  uri: z.string().nullish(),
-  url: z.string().nullish(),
-  creation: z.string().nullish(),
-  title: z.string().nullish(),
-});
-export type DocumentReference = z.infer<typeof documentReferenceSchema>;

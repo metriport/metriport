@@ -1,10 +1,10 @@
-import { XCPDGateways, PatientDiscoveryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateways, PatientDiscoveryRequest } from "@metriport/ihe-gateway-sdk";
 
 export const generatePatient = (
   xcpdGateways: XCPDGateways,
   orgOid: string,
   orgName: string
-): PatientDiscoveryRequestOutgoing => {
+): PatientDiscoveryRequest => {
   const user = `${orgName} System User`;
 
   return {

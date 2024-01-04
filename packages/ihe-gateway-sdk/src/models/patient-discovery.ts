@@ -1,55 +1,30 @@
 import { Patient } from "@medplum/fhirtypes";
-import {
-  NPIStringArray,
-  BaseResponse,
-  baseResponseSchema,
-  BaseErrorResponse,
-  baseErrorResponseSchema,
-  BaseRequest,
-} from "./shared";
-import * as z from "zod";
+import { baseResponseSchema, NPIStringArray, oidStringSchema, SamlAttributes } from "./shared";
+import { z } from "zod";
 
-const XCPDGatewaySchema = z.object({
-  oid: z.string(),
-  url: z.string(),
-  id: z.string().optional(),
-});
-export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
+export const xcpdGatewaysSchema = z.array(
+  z.object({
+    oid: oidStringSchema,
+    url: z.string(),
+    id: z.string(),
+  })
+);
 
-export type XCPDGateways = XCPDGateway[];
+export type XCPDGateways = z.infer<typeof xcpdGatewaysSchema>;
 
-export type PatientDiscoveryRequestOutgoing = BaseRequest & {
+export type PatientDiscoveryRequest = {
+  id: string;
   cxId: string;
+  timestamp: string;
   gateways: XCPDGateways;
+  samlAttributes: SamlAttributes;
   patientResource: Patient;
   principalCareProviderIds?: NPIStringArray;
 };
 
-const PatientDiscoveryResponseSchema = z.object({
+export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
   patientMatch: z.boolean(),
-  gateway: XCPDGatewaySchema,
-  gatewayHomeCommunityId: z.string().optional(),
+  gatewayHomeCommunityId: z.string().nullish(),
 });
 
-export const patientDiscoveryResponseIncomingSchema = z.union([
-  z.intersection(baseResponseSchema, PatientDiscoveryResponseSchema),
-  z.intersection(baseErrorResponseSchema, PatientDiscoveryResponseSchema),
-]);
-export type PatientDiscoveryResponseIncoming = z.infer<
-  typeof patientDiscoveryResponseIncomingSchema
->;
-
-export type PatientDiscoveryRequestIncoming = BaseRequest & {
-  patientResource: Patient;
-};
-
-export type PatientDiscoveryResponseOutgoing =
-  | (BaseResponse & {
-      patientMatch: boolean;
-      xcpdHomeCommunityId: string;
-      patientResource: Patient;
-    })
-  | (BaseErrorResponse & {
-      patientMatch: boolean;
-      xcpdHomeCommunityId: string;
-    });
+export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;

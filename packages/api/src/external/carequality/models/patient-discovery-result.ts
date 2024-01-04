@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
-import { PatientDiscoveryResponseIncoming } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
 import { PatientDiscoveryResult } from "../domain/patient-discovery-result";
 import { ModelSetup } from "../../../models/_default";
 
@@ -11,7 +11,7 @@ export class PatientDiscoveryResultModel extends Model<any, any> implements Pati
   declare patientId: string;
   declare status: string;
   declare createdAt: CreationOptional<Date>;
-  declare data: PatientDiscoveryResponseIncoming;
+  declare data: PatientDiscoveryResponse;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientDiscoveryResultModel.init(

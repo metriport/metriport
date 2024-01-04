@@ -1,6 +1,8 @@
 import { Sequelize } from "sequelize";
-import { DocumentRetrievalResult } from "../../domain/medical/document-retrieval-result";
-import { DocumentRetrievalResponseIncoming } from "@metriport/ihe-gateway-sdk";
+import {
+  DocumentRetrievalResult,
+  DocumentRetrievalResponse,
+} from "../../domain/medical/document-retrieval-result";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
 
@@ -9,7 +11,7 @@ export class DocumentRetrievalResultModel
   implements DocumentRetrievalResult
 {
   static NAME = "document_retrieval_result";
-  declare data: DocumentRetrievalResponseIncoming;
+  declare data: DocumentRetrievalResponse;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     DocumentRetrievalResultModel.init(BaseIHEResultModel.attributes(), {
