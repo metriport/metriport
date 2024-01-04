@@ -1,8 +1,6 @@
 import { Sequelize } from "sequelize";
-import {
-  DocumentRetrievalResult,
-  DocumentRetrievalResponse,
-} from "../../external/carequality/domain/document-retrieval-result";
+import { DocumentRetrievalResult } from "../../external/carequality/domain/document-retrieval-result";
+import { DocumentRetrievalResponseIncoming } from "@metriport/ihe-gateway-sdk";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
 
@@ -11,7 +9,7 @@ export class DocumentRetrievalResultModel
   implements DocumentRetrievalResult
 {
   static NAME = "document_retrieval_result";
-  declare data: DocumentRetrievalResponse;
+  declare data: DocumentRetrievalResponseIncoming;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     DocumentRetrievalResultModel.init(BaseIHEResultModel.attributes(), {

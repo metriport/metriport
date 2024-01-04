@@ -1,9 +1,9 @@
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { DocumentQueryRequest } from "../models/document-query";
-import { DocumentRetrievalRequest } from "../models/document-retrieval";
-import { PatientDiscoveryRequest } from "../models/patient-discovery";
+import { PatientDiscoveryRequestOutgoing } from "../models/patient-discovery";
+import { DocumentQueryRequestOutgoing } from "../models/document-query";
+import { DocumentRetrievalRequestOutgoing } from "../models/document-retrieval";
 
 dayjs.extend(duration);
 
@@ -41,26 +41,26 @@ export class IHEGateway {
    * Patient Discovery (XCPD ITI-55) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
    *
-   * @param pdRequest A patient discovery transaction request to IHE Gateway.
+   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to IHE Gateway.
    *
    */
-  async startPatientDiscovery(pdRequest: PatientDiscoveryRequest): Promise<void> {
-    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, pdRequest);
+  async startPatientDiscovery(
+    patientDiscoveryRequestOutgoing: PatientDiscoveryRequestOutgoing
+  ): Promise<void> {
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequestOutgoing);
   }
 
   /**
    * Query Documents (XCA-ITI-38) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-38.html
    *
-   * @param documentQueryRequest An array of document query transaction requests.
+   * @param DocumentQueryRequestOutgoing An array of document query transaction requests.
    *
    */
-  async startDocumentsQuery({
-    documentQueryRequest,
-  }: {
-    documentQueryRequest: DocumentQueryRequest[];
-  }): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequest);
+  async startDocumentsQuery(
+    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing
+  ): Promise<void> {
+    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequestOutgoing);
   }
 
   /**
@@ -70,11 +70,9 @@ export class IHEGateway {
    * @param documentRetrieval An array of document retrieval transaction requests.
    *
    */
-  async startDocumentsRetrieval({
-    documentRetrieval,
-  }: {
-    documentRetrieval: DocumentRetrievalRequest[];
-  }): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrieval);
+  async startDocumentsRetrieval(
+    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing
+  ): Promise<void> {
+    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalRequestOutgoing);
   }
 }

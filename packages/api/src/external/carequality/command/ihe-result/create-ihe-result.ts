@@ -1,66 +1,69 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { PatientDiscoveryResponse } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResponse } from "@metriport/core/src/external/carequality/domain/document-query-result";
-import { DocumentRetrievalResponse } from "../../domain/document-retrieval-result";
+import {
+  PatientDiscoveryResponseIncoming,
+  DocumentQueryResponseIncoming,
+  DocumentRetrievalResponseIncoming,
+  isBaseErrorResponse,
+  isDocumentQueryResponse,
+  isDocumentRetrievalResponse,
+} from "@metriport/ihe-gateway-sdk";
 import { getIheResultStatus } from "../../domain/ihe-result";
-import { createPatientDiscoveryResult } from "../patient-discovery-result/create-patient-discovery-result";
-import { DocumentQueryResultModel } from "../../../../models/medical/document-query-result";
-import { DocumentRetrievalResultModel } from "../../../../models/medical/document-retrieval-result";
+import { DefaultPayload } from "./shared";
+import { createPatientDiscoveryResult } from "./create-patient-discovery-result";
+import { createDocumentQueryResult } from "./create-document-query-result";
+import { createDocumentRetrievalResult } from "./create-document-retrieval-result";
 
 export enum IHEResultType {
-  PATIENT_DISCOVERY = "patient-discovery",
-  DOCUMENT_QUERY = "document-query",
-  DOCUMENT_RETRIEVAL = "document-retrieval",
+  INCOMING_PATIENT_DISCOVERY_RESPONSE = "patient-discovery",
+  INCOMING_DOCUMENT_QUERY_RESPONSE = "document-query",
+  INCOMING_DOCUMENT_RETRIEVAL_RESPONSE = "document-retrieval",
 }
 
 type IHEResult =
   | {
-      type: IHEResultType.DOCUMENT_QUERY;
-      response: DocumentQueryResponse;
+      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE;
+      response: DocumentQueryResponseIncoming;
     }
   | {
-      type: IHEResultType.PATIENT_DISCOVERY;
-      response: PatientDiscoveryResponse;
+      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE;
+      response: PatientDiscoveryResponseIncoming;
     }
   | {
-      type: IHEResultType.DOCUMENT_RETRIEVAL;
-      response: DocumentRetrievalResponse;
+      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE;
+      response: DocumentRetrievalResponseIncoming;
     };
 
 export async function handleIHEResponse({ type, response }: IHEResult): Promise<void> {
-  const { id, patientId, operationOutcome } = response;
+  const { id, patientId } = response;
+  let status = "failure";
 
-  const defaultPayload = {
+  // Check if response is a BaseErrorResponse
+  if (isBaseErrorResponse(response)) {
+    status = "failure";
+  } else if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
+    status = getIheResultStatus({
+      docRefLength: response.documentReference?.length,
+    });
+  }
+
+  const defaultPayload: DefaultPayload = {
     id: uuidv7(),
     requestId: id,
-    patientId,
+    patientId: patientId ? patientId : "",
   };
 
   switch (type) {
-    case IHEResultType.PATIENT_DISCOVERY: {
-      await createPatientDiscoveryResult(response);
+    case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
+      status = getIheResultStatus({ patientMatch: response.patientMatch });
+      await createPatientDiscoveryResult({ defaultPayload, status, response });
       return;
     }
-    case IHEResultType.DOCUMENT_QUERY: {
-      await DocumentQueryResultModel.create({
-        ...defaultPayload,
-        status: getIheResultStatus({
-          operationOutcome,
-          docRefLength: response.documentReference?.length,
-        }),
-        data: response,
-      });
+    case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
+      await createDocumentQueryResult({ defaultPayload, status, response });
       return;
     }
-    case IHEResultType.DOCUMENT_RETRIEVAL: {
-      await DocumentRetrievalResultModel.create({
-        ...defaultPayload,
-        status: getIheResultStatus({
-          operationOutcome,
-          docRefLength: response.documentReference?.length,
-        }),
-        data: response,
-      });
+    case IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE: {
+      await createDocumentRetrievalResult({ defaultPayload, status, response });
       return;
     }
   }

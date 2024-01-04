@@ -17,7 +17,7 @@ import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { formatNumber, getFloatValue } from "../../shared/numbers";
+import { formatNumber, getFloatValue } from "@metriport/shared/common/numbers";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import {
