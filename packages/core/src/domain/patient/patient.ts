@@ -1,4 +1,4 @@
-import { USState } from "@metriport/core/domain/geographic-locations";
+import { USState } from "../geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "../base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
