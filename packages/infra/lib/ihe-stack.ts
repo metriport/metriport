@@ -62,30 +62,6 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    const iheLambda = createLambda({
-      stack: this,
-      name: "IHE",
-      entry: "ihe",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
-    });
-
-    const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
-      parent: api.root,
-      anyMethod: false,
-      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
-    });
-    proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-    });
-
     // Create lambdas
     this.setupDocumentQueryLambda(props, lambdaLayers, api);
     this.setupDocumentRetrievalLambda(props, lambdaLayers, api);
