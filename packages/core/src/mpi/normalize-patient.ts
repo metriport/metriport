@@ -72,14 +72,14 @@ export function normalizePatient(patient: PatientDataMPI): PatientDataMPI {
     })),
     address: (patient.address ?? []).map(addr => {
       const newAddress: Address = {
-        addressLine1: normalizeAddress(addr.addressLine1),
+        addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
         city: normalizeString(addr.city),
         zip: normalizeZipCode(addr.zip),
         state: addr.state,
         country: addr.country || "USA",
       };
       if (addr.addressLine2) {
-        newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
+        newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
       }
       return newAddress;
     }),
@@ -105,7 +105,7 @@ function normalizeZipCode(zipCode: string): string {
  * @returns a normalized version of the input string.
  */
 function normalizeString(str: string): string {
-  return str.trim().toLowerCase().replace(/['-]/g, "");
+  return str.trim().toLowerCase(); //.replace(/['-]/g, "");
 }
 
 /**
@@ -143,7 +143,7 @@ function normalizePhoneNumber(phoneNumber: string): string {
  * @param {string} address - The `address` parameter is a string that represents a street address.
  * @returns The function `normalizeAddress` returns a string.
  */
-function normalizeAddress(address: string): string {
+export function normalizeAddress(address: string): string {
   const suffixes: Record<string, string> = {
     street: "st",
     avenue: "ave",

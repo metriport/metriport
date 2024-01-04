@@ -86,7 +86,7 @@ function constructMatchResponse(
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
     patientMatch: true,
-    xcpdPatientId: {
+    externalGatewayPatient: {
       id: patient.id,
       system: "000", // TBD	- what is this
     },
