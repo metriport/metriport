@@ -1,5 +1,5 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { DocumentQueryRequest } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "../../../domain/medical/organization";
 import { CQLink } from "../domain/cq-patient-data";
@@ -17,7 +17,7 @@ export function createCQDocumentQueryRequest({
   cxId: string;
   organization: Organization;
   cqLinks: CQLink[];
-}): DocumentQueryRequest[] {
+}): DocumentQueryRequestOutgoing[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;

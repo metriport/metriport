@@ -9,7 +9,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await queryInterface.addColumn(
       tableName,
       "request_id",
-      { type: DataTypes.STRING },
+      { type: DataTypes.STRING, allowNull: true },
       { transaction }
     );
   });

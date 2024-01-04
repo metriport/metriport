@@ -2,9 +2,10 @@ import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
+import { DocumentReference } from "@metriport/core/src/external/carequality/domain/ihe-result";
 import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { DocumentQueryResult } from "../domain/document-query-result";
-import { DocumentReference } from "../domain/ihe-result";
+// import { DocumentReference } from "../domain/ihe-result";
 import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
@@ -84,7 +85,9 @@ export async function processDocumentQueryResults({
 
 function combineDocRefs(documentQueryResults: DocumentQueryResult[]): DocumentReference[] {
   return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
-    return [...acc, ...curr.data.documentReference];
+    const documentReferences = curr.data.documentReference ?? [];
+
+    return [...acc, ...documentReferences];
   }, []);
 }
 

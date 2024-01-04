@@ -254,12 +254,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
-    const source = getFrom("query").optional("source", req);
     const docQueryProgressRaw = req.body;
     const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
     const downloadProgress = docQueryProgress.download;
     const convertProgress = docQueryProgress.convert;
-    const parsedSource = sourceSchema.parse(source);
 
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
@@ -270,12 +268,6 @@ router.post(
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      source:
-        parsedSource === "commonwell"
-          ? MedicalDataSource.COMMONWELL
-          : parsedSource === "carequality"
-          ? MedicalDataSource.CAREQUALITY
-          : undefined,
       requestId: patient.data.documentQueryProgress?.requestId ?? "",
     });
 

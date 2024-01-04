@@ -3,7 +3,6 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "../../../domain/medical/patient";
 import { Config } from "../../../shared/config";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { createCQDocumentQueryRequest } from "./document-query-request";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { makeIheGatewayAPI } from "../api";
@@ -36,7 +35,7 @@ export async function getDocumentsFromCQ({
       cqLinks: cqPatientData?.data.links ?? [],
     });
 
-    await iheGateway.startDocumentsQuery({ documentQueryRequest });
+    await iheGateway.startDocumentsQuery({ documentQueryRequestOutgoing: documentQueryRequest });
 
     await lambdaClient
       .invoke({
