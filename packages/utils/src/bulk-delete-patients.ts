@@ -114,7 +114,7 @@ async function main() {
     console.log("----------------------------------------------------------");
   }
 
-  console.log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+  console.log(`>>> Done deleting patients in ${Date.now() - startedAt} ms`);
 }
 
 main();
