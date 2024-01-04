@@ -1,5 +1,9 @@
 import { DocumentQueryRequestIncoming } from "@metriport/ihe-gateway-sdk";
-import { retrieveDocumentIdsFromS3 } from "./s3-operations";
+import { S3Utils } from "../../aws/s3";
+import { Config } from "../../../util/config";
+
+const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
+const region = Config.getAWSRegion();
 
 export class XDSUnknownPatientId extends Error {
   constructor(message?: string) {
@@ -61,7 +65,8 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
   const { cxId, id } = id_pair;
   console.log(`cxId: ${cxId}, id: ${id}`);
 
-  const documentIds = await retrieveDocumentIdsFromS3(cxId, id);
+  const s3Utils = new S3Utils(region);
+  const documentIds = await s3Utils.retrieveDocumentIdsFromS3(cxId, id, medicalDocumentsBucketName);
 
   if (!documentIds) {
     throw new XDSUnknownPatientId("Patient ID is not valid");
