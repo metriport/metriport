@@ -86,6 +86,7 @@ async function getDocRefsFromCx(cxId: string): Promise<DocumentReference[]> {
   try {
     const fhirApi = makeFhirApi(cxId, fhirBaseUrl);
     const docs: DocumentReference[] = [];
+    // TODO use getDocuments() instead - see src/external/fhir/document/get-documents.ts
     for await (const page of fhirApi.searchResourcePages("DocumentReference", filters)) {
       docs.push(...page);
     }

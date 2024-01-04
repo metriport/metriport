@@ -20,16 +20,20 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
   }
 
   public override async enhanceCoverage({
+    ecId: ecIdParam,
     cxId,
     orgOID,
     patientIds,
     fromOrgChunkPos = 0,
-  }: CoverageEnhancementParams) {
+  }: CoverageEnhancementParams): Promise<string> {
+    const ecId = ecIdParam ?? super.makeId();
+
     const { chunks } = await this.getCarequalityOrgs({ cxId, patientIds, fromOrgChunkPos });
 
     // Each chunk of CQ orgs
     for (const cqOrgList of chunks) {
       await this.sendEnhancedCoverageByCxAndChunk({
+        ecId,
         cxId,
         orgOID,
         patientIds,
@@ -37,21 +41,26 @@ export class CoverageEnhancerCloud extends CoverageEnhancer {
       });
     }
     await this.sendEnhancedCoverageDone(cxId, patientIds);
+
+    return ecId;
   }
 
   // for each patientId, send a message to SQS with the patientId and the orgChunks
   private async sendEnhancedCoverageByCxAndChunk({
+    ecId,
     cxId,
     orgOID,
     patientIds,
     cqOrgIds,
   }: {
+    ecId: string;
     cxId: string;
     orgOID: string;
     patientIds: string[];
     cqOrgIds: string[];
   }) {
     const payload: Input = {
+      ecId,
       cxId,
       cxOrgOID: orgOID,
       patientIds,

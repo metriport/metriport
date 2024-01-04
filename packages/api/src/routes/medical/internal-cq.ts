@@ -13,7 +13,7 @@ import httpStatus from "http-status";
 import {
   IHEResultType,
   handleIHEResponse,
-} from "../../command/medical/ihe-result/create-ihe-result";
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {

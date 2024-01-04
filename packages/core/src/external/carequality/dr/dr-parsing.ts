@@ -1,7 +1,7 @@
 import { generatePatientDoc } from "../docs";
 import { generateTimeStrings, cleanXml, parseMtomResponseRegex } from "../utils";
 import * as xml2js from "xml2js";
-import { generateITI39Template } from "./dr-template";
+import { generateITI39Template, generateITI39TemplateMTOM } from "./dr-template";
 
 // mapping od document ids to docs
 const documentData: { [key: string]: string } = {
@@ -77,13 +77,42 @@ const fillTemplate = (
   );
 };
 
+const fillMTOMTemplate = (
+  iti39Template: string,
+  signature: string,
+  createdAt: string,
+  expiresAt: string,
+  homeCommunityId: string,
+  documentId: string,
+  messageId: string,
+  document?: string,
+  mtomDocument?: string
+) => {
+  const templateVariables = {
+    signature,
+    createdAt,
+    expiresAt,
+    homeCommunityId,
+    documentId,
+    messageId,
+    base64: document ? document : "",
+    status: document ? "Success" : "Failed",
+    mtomDocument: mtomDocument ? btoa(mtomDocument) : "",
+  };
+
+  return Object.entries(templateVariables).reduce(
+    (filledTemplate, [key, value]) => filledTemplate.replace(new RegExp(`{${key}}`, "g"), value),
+    iti39Template
+  );
+};
+
 export async function generateITI39(xml: string): Promise<string> {
   const [signature, documentId, homeCommunityid, messageId] = await parseXmlString(xml);
   const { createdAt, expiresAt } = generateTimeStrings();
   const document = documentData[documentId];
   const status = document ? "Success" : "Failed";
   const iti39Template = generateITI39Template(status);
-  const iti38 = fillTemplate(
+  const iti39 = fillTemplate(
     iti39Template,
     signature,
     createdAt,
@@ -93,5 +122,26 @@ export async function generateITI39(xml: string): Promise<string> {
     messageId,
     document
   );
-  return iti38;
+  return iti39;
+}
+
+export async function generateITI39MTOM(xml: string): Promise<string> {
+  const [signature, documentId, homeCommunityid, messageId] = await parseXmlString(xml);
+  const { createdAt, expiresAt } = generateTimeStrings();
+  const mtomDocument = documentData[documentId];
+  const document = `<xop:Include xmlns:xop="http://www.w3.org/2004/08/xop/include" href="cid:${documentId}"/>`;
+  const status = document ? "Success" : "Failed";
+  const iti39Template = generateITI39TemplateMTOM(status);
+  const iti39 = fillMTOMTemplate(
+    iti39Template,
+    signature,
+    createdAt,
+    expiresAt,
+    homeCommunityid,
+    documentId,
+    messageId,
+    document,
+    mtomDocument
+  );
+  return iti39;
 }

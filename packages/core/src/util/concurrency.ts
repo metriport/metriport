@@ -31,7 +31,8 @@ export type FunctionType<T> = (
 ) => Promise<void>;
 
 /**
- * Process an array or items asynchronously.
+ * Process an array or items asynchronously. It doesn't throw if one of the promises fails
+ * (error handling should be done within the promise/function).
  *
  * For example, with an array of 19 elements and 4 parallel executions,
  * we would have something like this being executed, where:
