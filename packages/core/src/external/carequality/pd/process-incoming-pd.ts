@@ -10,18 +10,8 @@ import {
   PatientAddressRequestedError,
   LivingSubjectAdministrativeGenderRequestedError,
 } from "./validating-pd";
-import {
-  matchPatients,
-  exactMatchSimilarity,
-  matchingPersonalIdentifiersRule,
-} from "../../../mpi/match-patients";
-import { normalizePatient } from "../../../mpi/normalize-patient";
-import { mergeWithFirstPatient } from "../../../mpi/merge-patients";
-import { PatientFinderMetriportAPI } from "../../../command/patient-finder-metriport-api";
-import { getEnvVarOrFail } from "../../../util/env-var";
+import { MPIMetriportAPI } from "../../../command/patient-mpi-metriport-api";
 
-const apiUrl = getEnvVarOrFail("API_URL");
-const SIMILARITY_THRESHOLD = 0.96;
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
 function constructErrorResponse(
@@ -101,40 +91,12 @@ export async function processIncomingRequest(
 ): Promise<PatientDiscoveryResponseOutgoing> {
   try {
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
-    const normalizedPatientDemo = normalizePatient(patient);
-
-    if (!normalizedPatientDemo) {
-      return constructErrorResponse(
-        payload,
-        "1.3.6.1.4.1.19376.1.2.27.3",
-        "Internal Server Error",
-        "Invalid Patient Data"
-      );
-    }
-
-    const patientFinder = new PatientFinderMetriportAPI(apiUrl);
-    const foundPatients = await patientFinder.find({
-      data: {
-        dob: normalizedPatientDemo.data.dob,
-        genderAtBirth: normalizedPatientDemo.data.genderAtBirth,
-      },
-    });
-
-    const matchingPatients = matchPatients(
-      exactMatchSimilarity,
-      [matchingPersonalIdentifiersRule],
-      foundPatients,
-      normalizedPatientDemo,
-      SIMILARITY_THRESHOLD
-    );
-
-    const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
-    console.log("MPI Patient", mpiPatient);
-
-    if (!mpiPatient) {
+    const mpiMetriportApi = new MPIMetriportAPI();
+    const matchingPatient = await mpiMetriportApi.findMatchingPatient(patient);
+    if (!matchingPatient) {
       return constructNoMatchResponse(payload);
     }
-    return constructMatchResponse(payload, mpiPatient);
+    return constructMatchResponse(payload, matchingPatient);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     switch (error.constructor) {

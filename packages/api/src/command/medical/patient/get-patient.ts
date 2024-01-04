@@ -8,17 +8,7 @@ import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import {
-  matchPatients,
-  jaroWinklerSimilarity,
-  matchingPersonalIdentifiersRule,
-  matchingContactDetailsRule,
-} from "@metriport/core/mpi/match-patients";
-import { normalizePatient } from "@metriport/core/mpi/normalize-patient";
-import { mergeWithFirstPatient } from "@metriport/core/mpi/merge-patients";
-import { PatientFinderLocal } from "./patient-finder-local";
-
-const SIMILARITY_THRESHOLD = 0.96;
+import { MPILocal } from "./patient-mpi-local";
 
 export const getPatients = async ({
   facilityId,
@@ -95,35 +85,8 @@ export const getPatientByDemo = async ({
     data: demo,
   };
 
-  // Normalize the patient demographic data
-  const normalizedPatientDemo = normalizePatient(patient);
-  if (!normalizedPatientDemo) {
-    return undefined;
-  }
-
-  // Find patients based on the criteria of matching dob and genderAtBirth
-  const patientFinder = new PatientFinderLocal();
-  const foundPatients = await patientFinder.find({
-    cxId,
-    data: {
-      dob: normalizedPatientDemo.data.dob,
-      genderAtBirth: normalizedPatientDemo.data.genderAtBirth,
-    },
-  });
-
-  // Convert patients to proper datatype
-  // Match the found patients with the normalized patient using the similarity function
-  const matchingPatients = matchPatients(
-    jaroWinklerSimilarity,
-    [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
-    foundPatients,
-    normalizedPatientDemo,
-    SIMILARITY_THRESHOLD
-  );
-
-  // Merge the matching patients
-  const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
-
+  const mpi = new MPILocal();
+  const mpiPatient = await mpi.findMatchingPatient(patient, cxId);
   if (!mpiPatient) {
     return undefined;
   }
