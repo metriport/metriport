@@ -119,8 +119,8 @@ export async function handlePatientDiscoveryResults(
 
 export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
   return pdResults.flatMap(pd => {
-    const id = pd.data.gatewayPatientId?.id;
-    const system = pd.data.gatewayPatientId?.system;
+    const id = pd.data.externalGatewayPatient?.id;
+    const system = pd.data.externalGatewayPatient?.system;
     if (!id || !system) return [];
     return {
       patientId: id,
