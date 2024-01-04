@@ -104,13 +104,27 @@ types:
         type: ConsolidatedWebhookStatus
         docs: The status of the webhook.
       bundle:
-        type: optional<fhir.Bundle>
+        type: optional<BundleWithResource>
         docs: The FHIR bundle with the patient's consolidated data.
       filters:
         type: optional<Filters>
         docs: The filters used to obtain the bundle.
     audiences:
     - public
+
+  BundleWithResource:
+    extends: fhir.Bundle
+    properties:
+      entry:
+        type: list<BundleEntryWithResource>
+        docs: The entries in the bundle.
+        
+  BundleEntryWithResource:
+    extends: fhir.BundleEntry
+    properties:
+      resource:
+        type: fhir.Resource
+        docs: The resource that was added to the bundle.
 
   ConsolidatedWebhookStatus:
     enum:
