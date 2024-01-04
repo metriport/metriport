@@ -1,33 +1,6 @@
 import { DocumentQueryRequestIncoming } from "@metriport/ihe-gateway-sdk";
 import { retrieveDocumentIdsFromS3 } from "./s3-operations";
-
-export class XDSUnknownPatientId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownPatientId";
-  }
-}
-
-export class XDSUnknownCommunity extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownCommunity";
-  }
-}
-
-export class XDSMissingHomeCommunityId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSMissingHomeCommunityId";
-  }
-}
-
-export class XDSRegistryError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSRegistryError";
-  }
-}
+import { XDSMissingHomeCommunityId, XDSRegistryError, XDSUnknownPatientId } from "../shared";
 
 export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
   const decodedString = atob(patientIdB64);
@@ -59,7 +32,6 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
   const { cxId, id } = id_pair;
-  console.log(`cxId: ${cxId}, id: ${id}`);
 
   const documentIds = await retrieveDocumentIdsFromS3(cxId, id);
 

@@ -78,7 +78,17 @@ export async function documentUploaderHandler(
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadMetadataFile(s3Utils, cxId, patientId, docId, hash, stringSize, docRef);
+      const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
+      await createAndUploadMetadataFile(
+        s3Utils,
+        cxId,
+        patientId,
+        destinationKey,
+        hash,
+        stringSize,
+        docRef,
+        s3KMetadataFileName
+      );
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
@@ -118,7 +128,8 @@ async function createAndUploadMetadataFile(
   docId: string,
   hash: string,
   size: string,
-  docRef: DocumentReference
+  docRef: DocumentReference,
+  s3KMetadataFileName: string
 ): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -141,7 +152,6 @@ async function createAndUploadMetadataFile(
   });
 
   const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
-  const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
 
   console.log("Uploading metadata to S3 with key:", s3KMetadataFileName);
   await s3Utils.uploadFile(

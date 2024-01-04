@@ -7,8 +7,8 @@ import {
   XDSUnknownCommunity,
   XDSMissingHomeCommunityId,
   XDSRegistryError,
-  validateDQ,
-} from "./validating-dq";
+} from "../shared";
+import { validateDQ } from "./validating-dq";
 
 function constructErrorResponse(
   payload: DocumentQueryRequestIncoming,

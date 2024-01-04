@@ -21,3 +21,38 @@ export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621"
 export function createPatientUniqueId(internalId: string, patientId: string): string {
   return btoa(`${internalId}/${patientId}`);
 }
+
+export class XDSUnknownPatientId extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "XDSUnknownPatientId";
+  }
+}
+
+export class XDSUnknownCommunity extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "XDSUnknownCommunity";
+  }
+}
+
+export class XDSMissingHomeCommunityId extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "XDSMissingHomeCommunityId";
+  }
+}
+
+export class XDSRegistryError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "XDSRegistryError";
+  }
+}
+
+export class XDSUnknownDocumentId extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "XDSUnknownDocumentId";
+  }
+}
