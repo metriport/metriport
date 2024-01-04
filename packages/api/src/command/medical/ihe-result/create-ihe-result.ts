@@ -8,9 +8,10 @@ import {
   isDocumentRetrievalResponse,
 } from "@metriport/ihe-gateway-sdk";
 import { getIheResultStatus } from "../../../domain/medical/ihe-result";
-import { DocumentQueryResultModel } from "../../../models/medical/document-query-result";
-import { DocumentRetrievalResultModel } from "../../../models/medical/document-retrieval-result";
-import { PatientDiscoveryResultModel } from "../../../external/carequality/models/patient-discovery-result";
+import { DefaultPayload } from "./shared";
+import { createPatientDiscoveryResult } from "./create-patient-discovery-result";
+import { createDocumentQueryResult } from "./create-document-query-result";
+import { createDocumentRetrievalResult } from "./create-document-retrieval-result";
 
 export enum IHEResultType {
   INCOMING_PATIENT_DISCOVERY_RESPONSE = "patient-discovery",
@@ -45,7 +46,7 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
     });
   }
 
-  const defaultPayload = {
+  const defaultPayload: DefaultPayload = {
     id: uuidv7(),
     requestId: id,
     patientId,
@@ -54,27 +55,15 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   switch (type) {
     case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
       status = getIheResultStatus({ patientMatch: response.patientMatch });
-      await PatientDiscoveryResultModel.create({
-        ...defaultPayload,
-        status,
-        data: response,
-      });
+      await createPatientDiscoveryResult(defaultPayload, status, response);
       return;
     }
     case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
-      await DocumentQueryResultModel.create({
-        ...defaultPayload,
-        status,
-        data: response,
-      });
+      await createDocumentQueryResult(defaultPayload, status, response);
       return;
     }
     case IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE: {
-      await DocumentRetrievalResultModel.create({
-        ...defaultPayload,
-        status,
-        data: response,
-      });
+      await createDocumentRetrievalResult(defaultPayload, status, response);
       return;
     }
   }
