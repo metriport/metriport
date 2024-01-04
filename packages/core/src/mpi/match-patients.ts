@@ -29,7 +29,7 @@ export function matchPatients(
 ): Patient[] {
   const matchFunction = (patient: Patient) => {
     const normalizedPatient = normalizePatient(patient);
-    if (!patient) {
+    if (!normalizedPatient) {
       return false;
     }
     for (const matchingRule of matchingRules) {
@@ -37,7 +37,7 @@ export function matchPatients(
         return true;
       }
     }
-    return isSimilarEnough(patient, currentPatient, threshold);
+    return isSimilarEnough(normalizedPatient, currentPatient, threshold);
   };
   if (greedy) {
     const foundPatient = patients.find(matchFunction);

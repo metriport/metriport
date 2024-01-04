@@ -1,8 +1,6 @@
 import * as dotenv from "dotenv";
-import { processIncomingRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
-
 dotenv.config();
-
+import { processIncomingRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
 import express, { Application, Request, Response } from "express";
 
 const app: Application = express();
