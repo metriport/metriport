@@ -188,11 +188,6 @@ router.delete(
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = req.params.source;
-
-    /* The above code is using TypeScript syntax to declare a constant variable named "patient". It is
-    using the "await" keyword to asynchronously call the "getPatientOrFail" function and assign the
-    returned value to the "patient" variable. The function is being called with an object that has
-    two properties: "cxId" and "id" with values "cxId" and "patientId" respectively. */
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
