@@ -28,13 +28,12 @@ import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { documentQueryProgressSchema, sourceSchema } from "../schemas/internal";
+import { documentQueryProgressSchema } from "../schemas/internal";
 import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { MedicalDataSource } from "../../external";
 import {
   DocumentBulkSignerLambdaResponse,
   DocumentBulkSignerLambdaResponseArraySchema,

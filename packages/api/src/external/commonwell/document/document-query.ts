@@ -19,7 +19,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { Facility } from "../../../domain/medical/facility";
 import { Organization } from "../../../domain/medical/organization";
 import { Patient } from "../../../domain/medical/patient";
