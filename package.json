@@ -18,6 +18,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present && SCRIPT='typecheck' npm run lambdas",
     "lint": "npm run lint --workspaces --if-present && SCRIPT='lint' npm run lambdas",
     "lint-fix": "npm run lint-fix --workspaces --if-present",
+    "lint-tsdoc": "npm run lint-tsdoc --workspaces --if-present",
     "lint-staged": "npx lint-staged",
     "prettier-fix": "npm run prettier-fix --workspaces --if-present",
     "test": "if npm run test --workspaces --if-present && SCRIPT='test' npm run lambdas; then echo '\n\\033[1;32mTests passed\\033[0m'; else echo '\n\\033[1;31m>>> Tests failed <<<\\033[0m' && exit 1; fi",
