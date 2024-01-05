@@ -19,59 +19,7 @@ import {
   CODE_SYSTEM_REQUIRED_ERROR as PD_CODE_SYSTEM_REQUIRED_ERROR,
 } from "../shared";
 
-function constructErrorResponse(
-  payload: PatientDiscoveryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
-): PatientDiscoveryResponseOutgoing {
-  return {
-    id: payload.id,
-    timestamp: payload.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    patientMatch: null,
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-    operationOutcome: {
-      resourceType: "OperationOutcome",
-      id: payload.id,
-      issue: [
-        {
-          severity: "error",
-          code: "processing",
-          details: {
-            coding: [{ system: codingSystem, code: code }],
-            text: error,
-          },
-        },
-      ],
-    },
-  };
-}
-
-function constructNoMatchResponse(
-  payload: PatientDiscoveryRequestIncoming
-): PatientDiscoveryResponseOutgoing {
-  return {
-    id: payload.id,
-    timestamp: payload.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    patientMatch: false,
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-    operationOutcome: {
-      resourceType: "OperationOutcome",
-      id: payload.id,
-      issue: [
-        {
-          severity: "error",
-          code: "processing",
-          details: {
-            text: "no match found",
-          },
-        },
-      ],
-    },
-  };
-}
+import { constructPDNoMatchResponse, constructPDErrorResponse } from "../error";
 
 function constructMatchResponse(
   payload: PatientDiscoveryRequestIncoming,
@@ -100,35 +48,35 @@ export async function processIncomingRequest(
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
     const matchingPatient = await mpi.findMatchingPatient(patient);
     if (!matchingPatient) {
-      return constructNoMatchResponse(payload);
+      return constructPDNoMatchResponse(payload);
     }
     return constructMatchResponse(payload, patientMPIToPartialPatient(matchingPatient));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     switch (error.constructor) {
       case InternalError:
-        return constructErrorResponse(
+        return constructPDErrorResponse(
           payload,
           PD_CODE_SYSTEM_REQUIRED_ERROR,
           "InternalError",
           error.message
         );
       case PatientAddressRequestedError:
-        return constructErrorResponse(
+        return constructPDErrorResponse(
           payload,
           PD_CODE_SYSTEM_REQUESTED_ERROR,
           "PatientAddressRequested",
           error.message
         );
       case LivingSubjectAdministrativeGenderRequestedError:
-        return constructErrorResponse(
+        return constructPDErrorResponse(
           payload,
           PD_CODE_SYSTEM_REQUESTED_ERROR,
           "LivingSubjectAdministrativeGenderRequested",
           error.message
         );
       default:
-        return constructErrorResponse(
+        return constructPDErrorResponse(
           payload,
           PD_CODE_SYSTEM_REQUIRED_ERROR,
           "Internal Server Error",

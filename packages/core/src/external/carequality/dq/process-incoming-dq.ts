@@ -3,40 +3,14 @@ import {
   DocumentQueryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
 import { validateDQ } from "./validating-dq";
+import { CODE_SYSTEM_REQUIRED_ERROR as DQ_CODE_SYSTEM_REQUIRED_ERROR } from "../shared";
 import {
   XDSUnknownPatientId,
   XDSUnknownCommunity,
   XDSMissingHomeCommunityId,
   XDSRegistryError,
-  CODE_SYSTEM_REQUIRED_ERROR as DQ_CODE_SYSTEM_REQUIRED_ERROR,
-} from "../shared";
-
-function constructErrorResponse(
-  payload: DocumentQueryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
-): DocumentQueryResponseOutgoing {
-  return {
-    id: payload.id,
-    timestamp: payload.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    operationOutcome: {
-      resourceType: "OperationOutcome",
-      id: payload.id,
-      issue: [
-        {
-          severity: "error",
-          code: "processing",
-          details: {
-            coding: [{ system: codingSystem, code: code }],
-            text: error,
-          },
-        },
-      ],
-    },
-  };
-}
+  constructDQErrorResponse,
+} from "../error";
 
 export async function processIncomingRequest(
   payload: DocumentQueryRequestIncoming
@@ -58,35 +32,35 @@ export async function processIncomingRequest(
   } catch (error: any) {
     switch (error.constructor) {
       case XDSUnknownPatientId:
-        return constructErrorResponse(
+        return constructDQErrorResponse(
           payload,
           DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSUnknownPatientId",
           error.message
         );
       case XDSUnknownCommunity:
-        return constructErrorResponse(
+        return constructDQErrorResponse(
           payload,
           DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSUnknownCommunity",
           error.message
         );
       case XDSMissingHomeCommunityId:
-        return constructErrorResponse(
+        return constructDQErrorResponse(
           payload,
           DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSMissingHomeCommunityId",
           error.message
         );
       case XDSRegistryError:
-        return constructErrorResponse(
+        return constructDQErrorResponse(
           payload,
           DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSRegistryError",
           error.message
         );
       default:
-        return constructErrorResponse(
+        return constructDQErrorResponse(
           payload,
           DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "Internal Server Error",

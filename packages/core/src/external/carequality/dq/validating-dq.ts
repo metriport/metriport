@@ -1,7 +1,7 @@
 import { DocumentQueryRequestIncoming } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
-import { XDSUnknownPatientId, XDSMissingHomeCommunityId, XDSRegistryError } from "../shared";
+import { XDSUnknownPatientId, XDSMissingHomeCommunityId, XDSRegistryError } from "../error";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 

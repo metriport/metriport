@@ -3,33 +3,7 @@ import {
   DocumentRetrievalResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
 import { validateDR } from "./validating-dr";
-
-function constructErrorResponse(
-  payload: DocumentRetrievalRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
-): DocumentRetrievalResponseOutgoing {
-  return {
-    id: payload.id,
-    timestamp: payload.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    operationOutcome: {
-      resourceType: "OperationOutcome",
-      id: payload.id,
-      issue: [
-        {
-          severity: "error",
-          code: "processing",
-          details: {
-            coding: [{ system: codingSystem, code: code }],
-            text: error,
-          },
-        },
-      ],
-    },
-  };
-}
+import { constructDRErrorResponse } from "../error";
 
 export async function processIncomingRequest(
   payload: DocumentRetrievalRequestIncoming
@@ -51,7 +25,7 @@ export async function processIncomingRequest(
   } catch (error: any) {
     switch (error.constructor) {
       default:
-        return constructErrorResponse(
+        return constructDRErrorResponse(
           payload,
           "1.3.6.1.4.1.19376.1.2.27.3",
           "Internal Server Error",

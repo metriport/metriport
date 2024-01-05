@@ -23,38 +23,3 @@ export const CODE_SYSTEM_REQUIRED_ERROR = "1.3.6.1.4.1.19376.1.2.27.3";
 export function createPatientUniqueId(internalId: string, patientId: string): string {
   return btoa(`${internalId}/${patientId}`);
 }
-
-export class XDSUnknownPatientId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownPatientId";
-  }
-}
-
-export class XDSUnknownCommunity extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownCommunity";
-  }
-}
-
-export class XDSMissingHomeCommunityId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSMissingHomeCommunityId";
-  }
-}
-
-export class XDSRegistryError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSRegistryError";
-  }
-}
-
-export class XDSUnknownDocumentId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownDocumentId";
-  }
-}
