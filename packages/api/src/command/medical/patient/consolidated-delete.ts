@@ -2,7 +2,7 @@ import { OperationOutcomeError } from "@medplum/core";
 import { OperationOutcomeIssue } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { flatten } from "lodash";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";

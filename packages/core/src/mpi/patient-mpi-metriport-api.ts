@@ -1,5 +1,5 @@
 import { PatientLoaderMetriportAPI } from "../command/patient-loader-metriport-api";
-import { PatientData } from "../domain/patient/patient";
+import { PatientData } from "../domain/medical/patient";
 import {
   exactMatchSimilarity,
   matchingPersonalIdentifiersRule,

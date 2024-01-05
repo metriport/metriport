@@ -5,9 +5,9 @@ import {
   Patient as FHIRPatient,
 } from "@medplum/fhirtypes";
 import { getStateEnum, USState } from "../../../domain/geographic-locations";
-import { Address } from "../../../domain/patient/address";
-import { Contact } from "../../../domain/patient/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/patient/patient";
+import { Address } from "../../../domain/medical/address";
+import { Contact } from "../../../domain/medical/contact";
+import { PatientData, PersonalIdentifier } from "../../../domain/medical/patient";
 import { isContactType } from "../../fhir/patient";
 
 export class PatientAddressRequestedError extends Error {

@@ -1,4 +1,4 @@
-import { PatientData } from "../domain/patient/patient";
+import { PatientData } from "../domain/medical/patient";
 import { PatientMPI } from "./shared";
 
 export interface MPI {

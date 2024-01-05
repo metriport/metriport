@@ -10,7 +10,7 @@ import {
   getPatientDiscoveryResults,
 } from "./command/patient-discovery-result/get-patient-discovery-result";
 import { CQLink } from "./domain/cq-patient-data";
-import { Patient } from "../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/medical/patient";
 import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";

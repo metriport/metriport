@@ -1,13 +1,13 @@
 import { Identifier, Patient as FHIRPatient, ContactPoint } from "@medplum/fhirtypes";
 import { driversLicenseURIs } from "../../../domain/oid";
-import { ContactTypes, Contact } from "../../../domain/patient/contact";
-import { Address } from "../../../domain/patient/address";
+import { ContactTypes, Contact } from "../../../domain/medical/contact";
+import { Address } from "../../../domain/medical/address";
 import {
   GenderAtBirth,
   Patient,
   PersonalIdentifier,
   splitName,
-} from "../../../domain/patient/patient";
+} from "../../../domain/medical/patient";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",

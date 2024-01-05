@@ -1,4 +1,4 @@
-import { Patient, PatientData } from "../domain/patient/patient";
+import { Patient, PatientData } from "../domain/medical/patient";
 import { capture } from "../util/notifications";
 import { PatientMPI } from "./shared";
 

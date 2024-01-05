@@ -1,6 +1,6 @@
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import BadRequestError from "../../errors/bad-request";
-import { Patient } from "./patient";
+import { Patient } from "@metriport/core/domain/medical/patient";
 
 /**
  * Checks if the patient's list of associated facility IDs contains the facility ID parameter passed by the user.

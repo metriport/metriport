@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient } from "../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/medical/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";

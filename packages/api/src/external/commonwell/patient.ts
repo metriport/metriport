@@ -12,7 +12,7 @@ import { oid } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "..";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
-import { Patient, PatientExternalData } from "../../domain/medical/patient";
+import { Patient, PatientExternalData } from "@metriport/core/domain/medical/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";

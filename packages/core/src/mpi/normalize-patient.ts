@@ -1,5 +1,5 @@
-import { Address } from "../domain/patient/address";
-import { Patient, PatientData } from "../domain/patient/patient";
+import { Address } from "../domain/medical/address";
+import { Patient, PatientData } from "../domain/medical/patient";
 
 // Define default values for each field
 const defaultValues = {
@@ -51,7 +51,7 @@ export function handleDefaultValues(patient: Patient): Patient | undefined {
 /**
  * Takes in patient data and normalizes it by splitting the first and last names,
  * normalizing email and phone numbers, and formatting the address.
- * 
+ *
  * @param patient - The patient data.
  * @returns a normalized version of the patient data. If the patient data is valid, it will return the
  *    normalized patient data as an object of type `Patient`. If the patient data is null, it will

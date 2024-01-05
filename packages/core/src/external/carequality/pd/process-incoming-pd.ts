@@ -2,7 +2,7 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { Patient } from "../../../domain/patient/patient";
+import { Patient } from "../../../domain/medical/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";

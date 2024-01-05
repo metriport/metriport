@@ -2,7 +2,11 @@ import { USState } from "@metriport/core/domain/geographic-locations";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
+import {
+  getStatesFromAddresses,
+  Patient,
+  PatientData,
+} from "@metriport/core/domain/medical/patient";
 import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
 import { FacilityModel } from "../../../models/medical/facility";

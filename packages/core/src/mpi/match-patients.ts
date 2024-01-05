@@ -1,7 +1,7 @@
 import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
-import { Contact } from "../domain/patient/contact";
-import { PatientData, PersonalIdentifier } from "../domain/patient/patient";
+import { Contact } from "../domain/medical/contact";
+import { PatientData, PersonalIdentifier } from "../domain/medical/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 
