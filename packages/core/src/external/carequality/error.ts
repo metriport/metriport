@@ -20,13 +20,6 @@ export class XDSUnknownPatientId extends Error {
   }
 }
 
-export class XDSUnknownCommunity extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownCommunity";
-  }
-}
-
 export class XDSMissingHomeCommunityId extends Error {
   constructor(message?: string) {
     super(message);
@@ -41,10 +34,31 @@ export class XDSRegistryError extends Error {
   }
 }
 
-export class XDSUnknownDocumentId extends Error {
+export class XDSUnknownCommunity extends Error {
   constructor(message?: string) {
     super(message);
-    this.name = "XDSUnknownDocumentId";
+    this.name = "XDSUnknownCommunity";
+  }
+}
+
+export class PatientAddressRequestedError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "PatientAddressRequestedError";
+  }
+}
+
+export class LivingSubjectAdministrativeGenderRequestedError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "LivingSubjectAdministrativeGenderRequestedError";
+  }
+}
+
+export class InternalError extends Error {
+  constructor(message?: string) {
+    super(message);
+    this.name = "InternalError";
   }
 }
 

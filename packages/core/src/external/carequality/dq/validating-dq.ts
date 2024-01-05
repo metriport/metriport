@@ -1,7 +1,8 @@
 import { DocumentQueryRequestIncoming } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
-import { XDSUnknownPatientId, XDSMissingHomeCommunityId, XDSRegistryError } from "../error";
+import { XDSUnknownPatientId } from "../error";
+import { validateBasePayload } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
@@ -17,18 +18,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
 }
 
 export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise<string[]> {
-  if (!payload.id) {
-    throw new XDSRegistryError("Request id is not defined");
-  }
-
-  if (!payload.timestamp) {
-    throw new XDSRegistryError("Timestamp is not defined");
-  }
-
-  if (!payload.samlAttributes.homeCommunityId) {
-    throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
-  }
-
+  validateBasePayload(payload);
   const id_pair = decodePatientId(payload.xcpdPatientId.id);
 
   if (!id_pair) {

@@ -1,8 +1,12 @@
 import { DocumentRetrievalRequestIncoming, DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { METRIPORT_HOME_COMMUNITY_ID, METRIPORT_REPOSITORY_UNIQUE_ID } from "../shared";
+import {
+  METRIPORT_HOME_COMMUNITY_ID,
+  METRIPORT_REPOSITORY_UNIQUE_ID,
+  validateBasePayload,
+} from "../shared";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
-import { XDSMissingHomeCommunityId, XDSRegistryError, XDSUnknownDocumentId } from "../error";
+import { XDSRegistryError } from "../error";
 
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
@@ -10,21 +14,11 @@ const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 export async function validateDR(
   payload: DocumentRetrievalRequestIncoming
 ): Promise<DocumentReference[]> {
-  if (!payload.id) {
-    throw new XDSRegistryError("Request id is not defined");
-  }
-
-  if (!payload.timestamp) {
-    throw new XDSRegistryError("Timestamp is not defined");
-  }
-
-  if (!payload.samlAttributes.homeCommunityId) {
-    throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
-  }
+  validateBasePayload(payload);
 
   const documentIds = extractDocumentIds(payload);
   if (documentIds.length === 0) {
-    throw new XDSUnknownDocumentId("Valid Dcument ID is not defined");
+    throw new XDSRegistryError("Valid Dcument ID is not defined");
   }
 
   return await retrievePreSignedUrls(documentIds);

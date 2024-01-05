@@ -6,12 +6,12 @@ import { Patient } from "../../../domain/medical/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
+import { validateFHIRAndExtractPatient } from "./validating-pd";
 import {
   InternalError,
   LivingSubjectAdministrativeGenderRequestedError,
   PatientAddressRequestedError,
-  validateFHIRAndExtractPatient,
-} from "./validating-pd";
+} from "../error";
 
 import {
   METRIPORT_HOME_COMMUNITY_ID,
@@ -45,7 +45,7 @@ export async function processIncomingRequest(
   mpi: MPI
 ): Promise<PatientDiscoveryResponseOutgoing> {
   try {
-    const patient = validateFHIRAndExtractPatient(payload.patientResource);
+    const patient = validateFHIRAndExtractPatient(payload);
     const matchingPatient = await mpi.findMatchingPatient(patient);
     if (!matchingPatient) {
       return constructPDNoMatchResponse(payload);
