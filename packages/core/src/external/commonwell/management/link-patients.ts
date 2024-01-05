@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientUpdater } from "../../../domain/patient/patient-updater";
+import { PatientUpdater } from "../../../domain/medical/patient-updater";
 import { sleep } from "../../../util/sleep";
 import { ECUpdater } from "../cq-bridge/ec-updater";
 import { CommonWellManagementAPI } from "./api";

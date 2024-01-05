@@ -2,13 +2,14 @@ import {
   DocumentQueryRequestIncoming,
   DocumentQueryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
+import { validateDQ } from "./validating-dq";
 import {
   XDSUnknownPatientId,
   XDSUnknownCommunity,
   XDSMissingHomeCommunityId,
   XDSRegistryError,
+  CODE_SYSTEM_REQUIRED_ERROR as DQ_CODE_SYSTEM_REQUIRED_ERROR,
 } from "../shared";
-import { validateDQ } from "./validating-dq";
 
 function constructErrorResponse(
   payload: DocumentQueryRequestIncoming,
@@ -59,35 +60,35 @@ export async function processIncomingRequest(
       case XDSUnknownPatientId:
         return constructErrorResponse(
           payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
+          DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSUnknownPatientId",
           error.message
         );
       case XDSUnknownCommunity:
         return constructErrorResponse(
           payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
+          DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSUnknownCommunity",
           error.message
         );
       case XDSMissingHomeCommunityId:
         return constructErrorResponse(
           payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
+          DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSMissingHomeCommunityId",
           error.message
         );
       case XDSRegistryError:
         return constructErrorResponse(
           payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
+          DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "XDSRegistryError",
           error.message
         );
       default:
         return constructErrorResponse(
           payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
+          DQ_CODE_SYSTEM_REQUIRED_ERROR,
           "Internal Server Error",
           "Unknown Error: Contact Metriport Support for assistance"
         );

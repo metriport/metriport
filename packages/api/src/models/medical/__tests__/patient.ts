@@ -1,4 +1,4 @@
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/medical/patient";
 import { makePatient } from "../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../patient";
 

@@ -6,7 +6,7 @@ import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
-import { randomInt } from "../../../shared/numbers";
+import { randomInt } from "@metriport/shared/common/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
 import { cloneDeep } from "lodash";
 

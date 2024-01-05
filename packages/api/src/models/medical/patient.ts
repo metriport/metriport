@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Patient, PatientData } from "../../domain/medical/patient";
+import { Patient, PatientData } from "@metriport/core/domain/medical/patient";
 import { BaseModel, ModelSetup } from "../_default";
 
 export class PatientModel extends BaseModel<PatientModel> implements Patient {

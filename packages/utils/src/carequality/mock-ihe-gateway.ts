@@ -3,8 +3,13 @@ dotenv.config();
 import { processIncomingRequest as processIncomingDrRequest } from "@metriport/core/external/carequality/dr/process-incoming-dr";
 import { processIncomingRequest as processIncomingDqRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
 import { processIncomingRequest as processIncomingPdRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
+import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import express, { Application, Request, Response } from "express";
+
+const apiUrl = getEnvVarOrFail("API_URL");
+const mpi = new MPIMetriportAPI(apiUrl);
 
 const app: Application = express();
 
@@ -14,7 +19,7 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 app.post("/pd/v1", async (req: Request, res: Response) => {
   try {
     console.log("req.body", req.body);
-    const response = await processIncomingPdRequest(req.body);
+    const response = await processIncomingPdRequest(req.body, mpi);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

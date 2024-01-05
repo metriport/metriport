@@ -3,7 +3,7 @@ import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
-import { stringToBoolean } from "../shared/types";
+import { stringToBoolean } from "@metriport/shared";
 
 export const asyncHandler =
   (

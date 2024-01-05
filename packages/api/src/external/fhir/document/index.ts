@@ -27,7 +27,7 @@ import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
-import { joinName, Patient, splitName } from "../../../domain/medical/patient";
+import { joinName, Patient, splitName } from "@metriport/core/domain/medical/patient";
 import MetriportError from "../../../errors/metriport-error";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";

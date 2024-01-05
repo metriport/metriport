@@ -1,13 +1,13 @@
 import {
-  Patient as FHIRPatient,
   Address as FHIRAddress,
   ContactPoint,
   Identifier,
+  Patient as FHIRPatient,
 } from "@medplum/fhirtypes";
-import { USState, getStateEnum } from "../../../domain/geographic-locations";
-import { Patient, PersonalIdentifier } from "../../../domain/patient/patient";
-import { Address } from "../../../domain/patient/address";
-import { Contact } from "../../../domain/patient/contact";
+import { getStateEnum, USState } from "../../../domain/geographic-locations";
+import { Address } from "../../../domain/medical/address";
+import { Contact } from "../../../domain/medical/contact";
+import { PatientData, PersonalIdentifier } from "../../../domain/medical/patient";
 import { isContactType } from "../../fhir/patient";
 
 export class PatientAddressRequestedError extends Error {
@@ -31,7 +31,7 @@ export class InternalError extends Error {
   }
 }
 
-export function validateFHIRAndExtractPatient(patient: FHIRPatient): Patient {
+export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData {
   const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
   if (!firstName) {
     throw new InternalError("Given name is not defined");
@@ -108,24 +108,14 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): Patient {
     })
     .filter((item): item is PersonalIdentifier => item !== undefined);
 
-  // TODO: this is a nessecary consequence of using Patient here, since we are taking a demographic type
-  // and converting it to the full patient type
-  const convertedPatient: Patient = {
-    cxId: "",
-    eTag: "",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    facilityIds: [],
-    id: "",
-    data: {
-      firstName: firstName,
-      lastName: lastName,
-      dob: birthDate,
-      genderAtBirth: genderAtBirth,
-      address: addresses,
-      contact: contacts,
-      personalIdentifiers: personalIdentifiers,
-    },
+  const convertedPatient: PatientData = {
+    firstName: firstName,
+    lastName: lastName,
+    dob: birthDate,
+    genderAtBirth: genderAtBirth,
+    address: addresses,
+    contact: contacts,
+    personalIdentifiers: personalIdentifiers,
   };
   return convertedPatient;
 }
