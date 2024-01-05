@@ -87,8 +87,10 @@ export class IHEStack extends Stack {
     });
 
     // Create lambdas
-    this.setupDocumentQueryLambda(props, lambdaLayers, api);
-    this.setupDocumentRetrievalLambda(props, lambdaLayers, api);
+    const xcaResource = api.root.addResource("xca");
+
+    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource);
+    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource);
     this.setupPatientDiscoveryLambda(props, lambdaLayers, api);
 
     //-------------------------------------------
@@ -111,7 +113,7 @@ export class IHEStack extends Stack {
   private setupDocumentQueryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    api: apig.RestApi
+    xcaResource: apig.Resource
   ) {
     const documentQueryLambda = createLambda({
       stack: this,
@@ -126,7 +128,6 @@ export class IHEStack extends Stack {
       alarmSnsAction: props.alarmAction,
     });
 
-    const xcaResource = api.root.addResource("xca");
     const documentQueryResource = xcaResource.addResource("document-query");
     documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
   }
@@ -134,7 +135,7 @@ export class IHEStack extends Stack {
   private setupDocumentRetrievalLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    api: apig.RestApi
+    xcaResource: apig.Resource
   ) {
     const documentRetrievalLambda = createLambda({
       stack: this,
@@ -149,7 +150,6 @@ export class IHEStack extends Stack {
       alarmSnsAction: props.alarmAction,
     });
 
-    const xcaResource = api.root.addResource("xca");
     const documentRetrievalResource = xcaResource.addResource("document-retrieve");
     documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
   }

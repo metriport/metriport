@@ -2,7 +2,7 @@ import { Body, SourceType } from "@metriport/api-sdk";
 import { PROVIDER_TENOVI } from "../../shared/constants";
 import { TenoviMeasurementData } from ".";
 import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
-import { getFloatValue, formatNumber } from "../../shared/numbers";
+import { getFloatValue, formatNumber } from "@metriport/shared/common/numbers";
 import convert from "convert-units";
 
 /**
