@@ -72,6 +72,4 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
   return documentIds;
-
-  // Add more validation checks as needed
 }
