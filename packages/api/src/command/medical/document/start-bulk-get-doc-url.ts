@@ -2,7 +2,7 @@ import {
   BulkGetDocumentsUrlProgress,
   isBulkGetDocUrlProcessing,
   BulkGetDocUrlStatus,
-} from "../../../domain/medical/bulk-get-document-url";
+} from "@metriport/core/domain/medical/bulk-get-document-url";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "@metriport/core/domain/medical/patient";

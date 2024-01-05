@@ -1,4 +1,4 @@
-import { DocumentQueryProgress } from "../../../domain/medical/document-query";
+import { DocumentQueryProgress } from "@metriport/core/domain/medical/document-query";
 import { Patient } from "@metriport/core/domain/medical/patient";
 import { QueryProgress } from "@metriport/core/domain/medical/query-status";
 import { PatientModel } from "../../../models/medical/patient";
