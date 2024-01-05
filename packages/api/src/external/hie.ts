@@ -163,8 +163,8 @@ function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus
 export function setExternalData(
   reset: boolean | undefined,
   patient: PatientModel,
-  downloadProgress: Progress | undefined,
-  convertProgress: Progress | undefined,
+  downloadProgress: Progress | undefined | null,
+  convertProgress: Progress | undefined | null,
   source: MedicalDataSource,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number

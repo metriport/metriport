@@ -58,10 +58,12 @@ const handleDownloadWebhook = async (
 ): Promise<void> => {
   const downloadWebhookType = "medical.document-download";
   const downloadStatus = documentQueryProgress.download?.status;
-
+  const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
   const downloadWebhookSent = webhooks.some(webhook => webhook.type === downloadWebhookType);
 
-  if (!downloadWebhookSent && !isSandbox) {
+  const canProcessRequest = isDownloadFinished && !downloadWebhookSent;
+
+  if (canProcessRequest && !isSandbox) {
     const downloadIsCompleted = downloadStatus === "completed";
     const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
 
@@ -84,10 +86,12 @@ const handleConversionWebhook = async (
 ): Promise<void> => {
   const convertWebhookType = "medical.document-conversion";
   const convertStatus = documentQueryProgress.convert?.status;
-
+  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
   const convertWebhookSent = webhooks.some(webhook => webhook.type === convertWebhookType);
 
-  if (!convertWebhookSent) {
+  const canProcessRequest = isConvertFinished && !convertWebhookSent;
+
+  if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
 
     processPatientDocumentRequest(

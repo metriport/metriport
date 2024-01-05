@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/serverless";
-import { sendDocumentQueryResults } from "@metriport/core/external/carequality/get-doc-query-results";
+import { sendDocumentQueryResults } from "@metriport/core/command/documents/get-doc-query-results";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
 import { errorToString } from "@metriport/core/util/error";

@@ -15,8 +15,8 @@ export type SetDocQueryProgress = {
   requestId: string;
 } & (
   | {
-      downloadProgress?: Progress | undefined;
-      convertProgress?: Progress | undefined;
+      downloadProgress?: Progress | undefined | null;
+      convertProgress?: Progress | undefined | null;
       reset?: false | undefined;
     }
   | {
@@ -94,8 +94,8 @@ export async function appendDocQueryProgress({
 
 export const setDocQueryProgress = (
   documentQueryProgress: DocumentQueryProgress,
-  downloadProgress?: Progress | undefined,
-  convertProgress?: Progress | undefined,
+  downloadProgress?: Progress | undefined | null,
+  convertProgress?: Progress | undefined | null,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): DocumentQueryProgress => {
@@ -104,7 +104,7 @@ export const setDocQueryProgress = (
       ...documentQueryProgress.download,
       ...downloadProgress,
     };
-  } else {
+  } else if (downloadProgress === null) {
     documentQueryProgress.download = undefined;
   }
 
@@ -113,7 +113,7 @@ export const setDocQueryProgress = (
       ...documentQueryProgress.convert,
       ...convertProgress,
     };
-  } else {
+  } else if (convertProgress === null) {
     documentQueryProgress.convert = undefined;
   }
 

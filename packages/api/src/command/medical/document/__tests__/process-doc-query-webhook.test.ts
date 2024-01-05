@@ -94,6 +94,7 @@ describe("processDocQueryProgressWebhook", () => {
 
     it("handles convert progress completed", async () => {
       const convertProgress = { status: "completed" as const };
+      composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,
@@ -112,6 +113,7 @@ describe("processDocQueryProgressWebhook", () => {
 
     it("handles download progress failed", async () => {
       const downloadProgress = { status: "failed" as const };
+      composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,
@@ -124,12 +126,14 @@ describe("processDocQueryProgressWebhook", () => {
         patient.id,
         "medical.document-download",
         downloadProgress.status,
-        requestId
+        requestId,
+        undefined
       );
     });
 
     it("handles convert progress failed", async () => {
       const convertProgress = { status: "failed" as const };
+      composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,
@@ -149,7 +153,7 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles download progress - webhook exists", async () => {
       const downloadProgress = { status: "completed" as const };
       const webhooks = [{ type: "medical.document-download" }];
-
+      composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
       getAllWebhookRequestByRequestId.mockResolvedValueOnce(webhooks);
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({

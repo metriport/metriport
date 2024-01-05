@@ -12,11 +12,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { type: DataTypes.STRING, allowNull: true },
       { transaction }
     );
+
+    await queryInterface.addIndex(tableName, ["cx_id"], { transaction });
   });
 };
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.removeColumn(tableName, "request_id", { transaction });
+    await queryInterface.removeIndex(tableName, ["request_id"], { transaction });
   });
 };
