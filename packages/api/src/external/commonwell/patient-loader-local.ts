@@ -38,7 +38,12 @@ export class PatientLoaderLocal implements PatientLoader {
     patient: Partial<Pick<FindBySimilarity, "cxId">> & Omit<FindBySimilarity, "cxId">
   ): Promise<Patient[]> {
     // Define a specific type for the whereClause
-    const whereClause: WhereOptions = { cxId: patient.cxId };
+    const whereClause: WhereOptions = {};
+
+    // Only add cxId to whereClause if it is not undefined
+    if (patient.cxId !== undefined) {
+      whereClause.cxId = patient.cxId;
+    }
 
     // Handling data criteria
     if (patient.data.firstNameInitial) {
