@@ -1,5 +1,6 @@
-import { Patient } from "../domain/patient/patient";
-import { Address } from "../domain/patient/address";
+import { Address } from "../domain/medical/address";
+import { Patient, PatientData } from "../domain/medical/patient";
+
 // Define default values for each field
 const defaultValues = {
   firstName: "john",
@@ -48,45 +49,41 @@ export function handleDefaultValues(patient: Patient): Patient | undefined {
 }
 
 /**
- * The function `normalizePatient` takes in patient data and normalizes it by splitting the first
- * and last names, normalizing email and phone numbers, and formatting the address.
- * @param patient - The `patient` parameter is an object that represents patient data. It
- * has the following properties:
+ * Takes in patient data and normalizes it by splitting the first and last names,
+ * normalizing email and phone numbers, and formatting the address.
+ *
+ * @param patient - The patient data.
  * @returns a normalized version of the patient data. If the patient data is valid, it will return the
- * normalized patient data as an object of type `Patient`. If the patient data is null, it will
- * return null.
+ *    normalized patient data as an object of type `Patient`. If the patient data is null, it will
+ *    return null.
  */
-export function normalizePatient(patient: Patient): Patient {
+export function normalizePatient<T extends PatientData>(patient: T): T {
   // array destructuring to extract the first element of the array with defaults
-  const [firstName = patient.data.firstName] = splitName(normalizeString(patient.data.firstName));
-  const [lastName = patient.data.lastName] = splitName(normalizeString(patient.data.lastName));
+  const [firstName = patient.firstName] = splitName(normalizeString(patient.firstName));
+  const [lastName = patient.lastName] = splitName(normalizeString(patient.lastName));
 
-  const normalizedPatient: Patient = {
+  const normalizedPatient: T = {
     ...patient,
-    // TODO: Handle the possibility of multiple patient names. right now we are just selecting for the first patient name.
-    data: {
-      ...patient.data,
-      firstName,
-      lastName,
-      contact: (patient.data.contact ?? []).map(contact => ({
-        ...contact,
-        email: contact.email ? normalizeEmail(contact.email) : contact.email,
-        phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
-      })),
-      address: (patient.data.address ?? []).map(addr => {
-        const newAddress: Address = {
-          addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
-          city: normalizeString(addr.city),
-          zip: normalizeZipCode(addr.zip),
-          state: addr.state,
-          country: addr.country || "USA",
-        };
-        if (addr.addressLine2) {
-          newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
-        }
-        return newAddress;
-      }),
-    },
+    firstName,
+    lastName,
+    contact: (patient.contact ?? []).map(contact => ({
+      ...contact,
+      email: contact.email ? normalizeEmail(contact.email) : contact.email,
+      phone: contact.phone ? normalizePhoneNumber(contact.phone) : contact.phone,
+    })),
+    address: (patient.address ?? []).map(addr => {
+      const newAddress: Address = {
+        addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
+        city: normalizeString(addr.city),
+        zip: normalizeZipCode(addr.zip),
+        state: addr.state,
+        country: addr.country || "USA",
+      };
+      if (addr.addressLine2) {
+        newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
+      }
+      return newAddress;
+    }),
   };
   // return handleDefaultValues(normalizedPatient);
   return normalizedPatient;

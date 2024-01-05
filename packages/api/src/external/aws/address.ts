@@ -1,4 +1,4 @@
-import { Address } from "../../domain/medical/address";
+import { Address } from "@metriport/core/domain/medical/address";
 import {
   getCoordinatesFromLocation,
   makeLocationClient,

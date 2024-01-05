@@ -8,8 +8,8 @@ import {
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "../../../domain/medical/document-query";
-import { Patient, PatientCreate, PatientData } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/medical/document-query";
+import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/medical/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";

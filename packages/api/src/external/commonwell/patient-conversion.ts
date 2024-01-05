@@ -20,7 +20,7 @@ import {
   Patient,
   PatientData,
   splitName,
-} from "../../domain/medical/patient";
+} from "@metriport/core/domain/medical/patient";
 
 export const genderMapping: { [k in GenderAtBirth]: string } = {
   F: "F",

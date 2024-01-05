@@ -1,4 +1,4 @@
-import { Operator } from "@medplum/core";
+import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
   DocumentReference,
   Extension,
@@ -15,6 +15,10 @@ export const SEPARATOR_REF = "#";
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
+}
+
+export function getDetailFromOutcomeError(err: OperationOutcomeError): string {
+  return err.outcome.issue ? err.outcome.issue.map(operationOutcomeIssueToString).join(";") : "";
 }
 
 export function downloadedFromCW(doc: DocumentReference): boolean {

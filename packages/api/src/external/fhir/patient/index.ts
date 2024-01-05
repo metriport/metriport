@@ -5,13 +5,13 @@ import {
   Reference,
 } from "@medplum/fhirtypes";
 import { driversLicenseURIs } from "@metriport/core/domain/oid";
-import { ContactTypes } from "../../../domain/medical/contact";
+import { ContactTypes } from "@metriport/core/domain/medical/contact";
 import {
   GenderAtBirth,
   Patient,
   PersonalIdentifier,
   splitName,
-} from "../../../domain/medical/patient";
+} from "@metriport/core/domain/medical/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {

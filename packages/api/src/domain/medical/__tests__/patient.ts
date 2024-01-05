@@ -3,7 +3,7 @@ import { USState } from "@metriport/core/domain/geographic-locations";
 import dayjs from "dayjs";
 import { ISO_DATE } from "../../../shared/date";
 import { makeBaseDomain } from "../../__tests__/base-domain";
-import { Patient, PatientData, PersonalIdentifier } from "../patient";
+import { Patient, PatientData, PersonalIdentifier } from "@metriport/core/domain/medical/patient";
 import { makeAddressStrict } from "./location-address";
 
 export const makePersonalIdentifier = (): PersonalIdentifier => {

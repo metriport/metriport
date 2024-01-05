@@ -1,4 +1,4 @@
-import { PatientLoader } from "../../../domain/patient/patient-loader";
+import { PatientLoader } from "../../../domain/medical/patient-loader";
 import { sha256 } from "../../../util/hash";
 import { SQSClient } from "../../aws/sqs";
 import { CoverageEnhancementParams, CoverageEnhancer } from "./coverage-enhancer";

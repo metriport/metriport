@@ -1,5 +1,7 @@
+import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { out } from "@metriport/core/util/log";
+import { stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -10,7 +12,6 @@ import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { PatientFinderLocal } from "../../command/medical/patient/patient-finder-local";
 import {
   getPatientIds,
   getPatientOrFail,
@@ -27,10 +28,10 @@ import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-p
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
+import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
-import { stringToBoolean } from "../../shared/types";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -51,6 +52,7 @@ import { linkCreateSchema } from "./schemas/link";
 dayjs.extend(duration);
 
 const router = Router();
+const patientLoader = new PatientLoaderLocal();
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
@@ -517,32 +519,21 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/mpi/find
+ * GET /internal/patient/
  *
- * An endpoint used by lambdas that don't have db access to find ppatients. Finding (blocking) patients
- * is when you use a set of criteria and find patients that match that criteria. This is used
- * in MPI systems generally.
+ * WIP
  *
- * @param req.query.dob
- * @param req.query.gender
- * @param req.query.firstNameInitial
- * @param req.query.lastNameInitial
- *
- * @return List of patients that match the criteria
  */
 router.get(
-  "/mpi/find",
+  "/",
   asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const dob = getFrom("query").orFail("dob", req);
-    const genderAtBirth = getFrom("query").orFail("genderAtBirth", req);
-    if (genderAtBirth !== "F" && genderAtBirth !== "M") {
-      throw new Error("Invalid genderAtBirth value");
-    }
+    const genderAtBirth = genderAtBirthSchema.parse(getFrom("query").orFail("genderAtBirth", req));
     const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
     const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
-
-    const patientFinder = new PatientFinderLocal();
-    const foundPatients = await patientFinder.find({
+    const foundPatients = await patientLoader.findBySimilarity({
+      cxId,
       data: {
         dob,
         genderAtBirth,
@@ -550,7 +541,27 @@ router.get(
         lastNameInitial,
       },
     });
+    // TODO check if we're not returning Sequelize's Model data here; even thought the shape is Patient, the underlying object is PatientModel
+    // If we are, we should convert it to a DTO. Here, on `GET /internal/patient/:id`, and on `GET /internal/mpi/patient`
     return res.status(status.OK).json(foundPatients);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id
+ *
+ * WIP
+ *
+ */
+router.get(
+  "/:id", // move this to GET /internal/patient
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+
+    const patient = await getPatientOrFail({ cxId, id });
+
+    return res.status(status.OK).json(patient);
   })
 );
 
