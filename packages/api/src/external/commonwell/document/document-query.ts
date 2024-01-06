@@ -443,6 +443,8 @@ export async function downloadDocsAndUpsertFHIR({
   let increaseCountConvertible = 0;
   const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
 
+  console.log("DOCUMENTS", JSON.stringify(documents, null, 2));
+
   const docsWithMetriportId = await Promise.all(
     documents.map(
       addMetriportDocRefId({
