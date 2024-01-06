@@ -12,6 +12,7 @@ export type PatientDTO = {
   externalId?: string;
   address: Address | Address[];
   contact?: Contact | Contact[];
+  dateCreated?: Date;
 };
 
 type Address = {

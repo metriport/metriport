@@ -5,6 +5,7 @@ import { DemographicsDTO } from "./demographicsDTO";
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
+  dateCreated?: Date;
 } & DemographicsDTO;
 
 export function dtoFromModel(patient: Patient): PatientDTO {
@@ -21,5 +22,6 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     personalIdentifiers,
     address,
     contact,
+    dateCreated: patient.createdAt,
   };
 }
