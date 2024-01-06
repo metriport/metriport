@@ -13,7 +13,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
 
-    await queryInterface.addIndex(tableName, ["cx_id"], { transaction });
+    await queryInterface.addIndex(tableName, ["request_id"], { transaction });
   });
 };
 
