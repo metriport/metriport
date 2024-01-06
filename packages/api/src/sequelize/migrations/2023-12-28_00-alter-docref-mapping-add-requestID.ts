@@ -4,7 +4,7 @@ import type { Migration } from "..";
 const tableName = "docref_mapping";
 
 // Use 'Promise.all' when changes are independent of each other
-export const down: Migration = async ({ context: queryInterface }) => {
+export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.addColumn(
       tableName,
@@ -13,11 +13,11 @@ export const down: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
 
-    await queryInterface.addIndex(tableName, ["cx_id"], { transaction });
+    await queryInterface.addIndex(tableName, ["request_id"], { transaction });
   });
 };
 
-export const up: Migration = ({ context: queryInterface }) => {
+export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.removeColumn(tableName, "request_id", { transaction });
     await queryInterface.removeIndex(tableName, ["request_id"], { transaction });
