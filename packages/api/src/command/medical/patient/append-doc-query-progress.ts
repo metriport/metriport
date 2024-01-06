@@ -83,13 +83,6 @@ export async function appendDocQueryProgress({
 
     return updatedPatient;
   });
-
-  // MAY NOT BE NEEDED
-  // await processDocQueryProgressWebhook({
-  //   patient: result,
-  //   documentQueryProgress: result.data.documentQueryProgress,
-  //   requestId,
-  // });
 }
 
 export const setDocQueryProgress = (
