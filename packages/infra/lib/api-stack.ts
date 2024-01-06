@@ -5,6 +5,7 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
@@ -1106,7 +1107,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: dbCredsSecret.secretValue.toString(),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
