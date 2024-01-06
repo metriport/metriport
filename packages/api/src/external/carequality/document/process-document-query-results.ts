@@ -5,7 +5,6 @@ import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/core/src/external/carequality/domain/ihe-result";
 import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { DocumentQueryResult } from "../domain/document-query-result";
-// import { DocumentReference } from "../domain/ihe-result";
 import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
@@ -91,7 +90,6 @@ function combineDocRefs(documentQueryResults: DocumentQueryResult[]): DocumentRe
   }, []);
 }
 
-// REFACTOR THIS TO BE SHARD WITH CW
 const getNonExistentDocRefs = async (
   documents: DocumentReference[],
   patientId: string,

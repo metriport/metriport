@@ -60,7 +60,7 @@ const reprocessOptionsSchema = z.enum(options).array().optional();
  *
  * Asychronous operation, returns 200 immediately.
  *
- * @deprecated No longer in use (Intro to CQ)
+ * @deprecated No longer in use
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.documentIds - Optional comma-separated list of metriport document
  *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
@@ -193,7 +193,6 @@ router.post(
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
     // END TODO 785
 
-    // need to update
     let expectedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       convertResult,
@@ -262,7 +261,7 @@ router.post(
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    // need to update
+
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,

@@ -30,7 +30,6 @@ const randomDates = [
   "2020-02-19",
 ];
 
-// SANDBOX DOESNT STORE IN DOCREF TABLE
 export async function sandboxGetDocRefsAndUpsert({
   organization,
   patient,
