@@ -51,6 +51,7 @@ type DocRefWithS3Info = {
   file: SimplerFile;
 };
 
+// TODO 1403 In order to use this consider first implementing the changes on #1403
 export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Promise<void> => {
   const startedAt = Date.now();
   const {
