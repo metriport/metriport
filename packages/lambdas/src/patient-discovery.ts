@@ -4,6 +4,7 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { baseRequestSchema, PatientDiscoveryRequestIncoming } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 
+// comment for diff...
 const apiUrl = getEnvVarOrFail("API_URL");
 const mpi = new MPIMetriportAPI(apiUrl);
 
