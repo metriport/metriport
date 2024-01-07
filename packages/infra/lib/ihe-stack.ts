@@ -110,6 +110,8 @@ export class IHEStack extends Stack {
     });
   }
 
+  // aws region, medical documents bucket name
+
   private setupDocumentQueryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
@@ -122,6 +124,8 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
+        AWS_REGION: props.config.region,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc: props.vpc,
