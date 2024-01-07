@@ -29,6 +29,8 @@
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/api-sdk": "^7.2.3-alpha2.0",
     "@metriport/commonwell-sdk": "^4.8.17",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
+    "@metriport/core": "file:packages/core",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/serverless": "^7.46.0",
     "@types/xmldom": "^0.1.32",
@@ -50,6 +52,7 @@
   },
   "devDependencies": {
     "@metriport/core": "file:packages/core",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
