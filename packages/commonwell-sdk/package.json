@@ -1,6 +1,6 @@
 {
   "name": "@metriport/commonwell-sdk",
-  "version": "4.9.11-alpha.0",
+  "version": "4.9.11-alpha.1",
   "description": "SDK to simplify CommonWell API integration - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -75,5 +75,6 @@
     "eslint-config-prettier": "^8.6.0",
     "prettier": "^2.8.3",
     "typescript": "^4.9.5"
-  }
+  },
+  "gitHead": "25740b037535d032ac484018cffb458daf3f4229"
 }

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.1.11-alpha.0",
+  "version": "0.1.11-alpha.1",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -50,5 +50,6 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
-  }
+  },
+  "gitHead": "25740b037535d032ac484018cffb458daf3f4229"
 }
