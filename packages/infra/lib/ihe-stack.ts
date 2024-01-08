@@ -3,29 +3,35 @@ import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { IVpc } from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { setupLambdasLayers, LambdaLayers } from "./shared/lambda-layers";
+import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
 }
 
-export class IHEStack extends Stack {
-  readonly vpc: ec2.IVpc;
+type CreateLambdaProps = {
+  props: IHEStackProps;
+  lambdaLayers: LambdaLayers;
+  vpc: IVpc;
+  alarmSnsAction?: SnsAction;
+};
 
+export class IHEStack extends Stack {
   constructor(scope: Construct, id: string, props: IHEStackProps) {
     super(scope, id, props);
 
     const vpcId = props.config.iheGateway?.vpcId;
     if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
-    this.vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
+    const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
 
-    const alarmAction = setupSlackNotifSnsTopic(this, props.config);
+    const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
 
     //-------------------------------------------
     // API Gateway
@@ -79,8 +85,8 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: this.vpc,
-      alarmSnsAction: alarmAction,
+      vpc,
+      alarmSnsAction,
     });
 
     const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
@@ -97,9 +103,9 @@ export class IHEStack extends Stack {
     // Create lambdas
     const xcaResource = api.root.addResource("xca");
 
-    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource);
-    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource);
-    this.setupPatientDiscoveryLambda(props, lambdaLayers, api);
+    this.setupDocumentQueryLambda({ props, lambdaLayers, vpc, xcaResource, alarmSnsAction });
+    this.setupDocumentRetrievalLambda({ props, lambdaLayers, vpc, xcaResource, alarmSnsAction });
+    this.setupPatientDiscoveryLambda({ props, lambdaLayers, vpc, api, alarmSnsAction });
 
     //-------------------------------------------
     // Output
@@ -118,11 +124,13 @@ export class IHEStack extends Stack {
     });
   }
 
-  private setupDocumentQueryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource
-  ) {
+  private setupDocumentQueryLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    alarmSnsAction,
+    xcaResource,
+  }: CreateLambdaProps & { xcaResource: apig.Resource }) {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "DocumentQuery",
@@ -132,19 +140,21 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
     });
 
     const documentQueryResource = xcaResource.addResource("document-query");
     documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
   }
 
-  private setupDocumentRetrievalLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource
-  ) {
+  private setupDocumentRetrievalLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    alarmSnsAction,
+    xcaResource,
+  }: CreateLambdaProps & { xcaResource: apig.Resource }) {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "DocumentRetrieval",
@@ -154,19 +164,21 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
     });
 
     const documentRetrievalResource = xcaResource.addResource("document-retrieve");
     documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
   }
 
-  private setupPatientDiscoveryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    api: apig.RestApi
-  ) {
+  private setupPatientDiscoveryLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    alarmSnsAction,
+    api,
+  }: CreateLambdaProps & { api: apig.RestApi }) {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "PatientDiscovery",
@@ -176,8 +188,8 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
     });
 
     const xcpdResource = api.root.addResource("xcpd");
