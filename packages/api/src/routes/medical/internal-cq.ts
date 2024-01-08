@@ -1,25 +1,26 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import {
-  patientDiscoveryResponseIncomingSchema,
   documentQueryResponseIncomingSchema,
   documentRetrievalResponseIncomingSchema,
+  patientDiscoveryResponseIncomingSchema,
 } from "@metriport/ihe-gateway-sdk";
-import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import {
-  IHEResultType,
-  handleIHEResponse,
-} from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import {
+  IHEResultType,
+  handleIHEResponse,
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";

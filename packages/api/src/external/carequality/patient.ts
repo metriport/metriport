@@ -1,4 +1,4 @@
-import { PatientDiscoveryRequest } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -95,7 +95,7 @@ export async function remove(patient: Patient): Promise<void> {
 export async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
-): Promise<PatientDiscoveryRequest> {
+): Promise<PatientDiscoveryRequestOutgoing> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
   const [organization, nearbyCQOrgs] = await Promise.all([
