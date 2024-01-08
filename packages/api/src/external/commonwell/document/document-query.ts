@@ -515,6 +515,7 @@ export async function downloadDocsAndUpsertFHIR({
             await jitterSingleDownload();
 
             if (!fileInfo.fileExists) {
+              console.log("FILE DOES NOT EXIST");
               // Download from CW and upload to S3
               uploadToS3 = async () => {
                 const { organization, facility } = await getPatientDataWithSingleFacility(
@@ -535,6 +536,7 @@ export async function downloadDocsAndUpsertFHIR({
                 return newFile;
               };
             } else {
+              console.log("FILE EXISTS");
               // Get info from existing S3 file
               uploadToS3 = async () => {
                 const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
@@ -583,6 +585,9 @@ export async function downloadDocsAndUpsertFHIR({
           // This will prevent us from converting non xml documents to FHIR.
           const isFileConvertible = fileIsConvertible(file);
 
+          console.log("IS FILE CONVERTIBLE", isFileConvertible);
+          console.log("IS FILE NEW", file.isNew);
+
           const shouldConvertCDA =
             file.isNew && !ignoreFhirConversionAndUpsert && isFileConvertible;
 
@@ -602,8 +607,11 @@ export async function downloadDocsAndUpsertFHIR({
             increaseCountConvertible++;
           }
 
+          console.log("SHOULD CONVERT CDA", shouldConvertCDA);
+
           if (shouldConvertCDA) {
             try {
+              console.log("CONVERTING CDA");
               await convertCDAToFHIR({
                 patient,
                 document: doc,

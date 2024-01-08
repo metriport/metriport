@@ -19,7 +19,11 @@ export const getAllDocRefMapping = async ({
   cxId?: string;
 }): Promise<DocRefMapping[]> => {
   const docRefs = await DocRefMappingModel.findAll({
-    where: { requestId, patientId, cxId },
+    where: {
+      requestId,
+      ...(patientId && { patientId }),
+      ...(cxId && { cxId }),
+    },
   });
   return docRefs;
 };
