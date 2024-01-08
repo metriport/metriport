@@ -200,7 +200,7 @@ export function setExternalData(
 
   const sourceData = externalData[source] as HIEPatientData;
 
-  console.log("SOURCE DATA", sourceData.documentQueryProgress);
+  console.log("SOURCE DATA", sourceData?.documentQueryProgress);
 
   const docQueryProgress = setDocQueryProgress(
     sourceData?.documentQueryProgress ?? {},
