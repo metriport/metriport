@@ -11,16 +11,14 @@ _[Regular PRs:]_
 
 _[Document your changes, give context for reviewers, add images/videos of UI changes]_
 
-_[Release PRs]_
-
-PSs:
+_[Release PRs:]_
 
 - ...
 - ...
 
 ### Testing
 
-_[Regular PRs]_
+_[Regular PRs:]_
 
 - Local
   - [x] _[Indicate how you tested this, on local or staging]_
@@ -35,7 +33,7 @@ _[Regular PRs]_
   - [ ] _testing step 1_
   - [ ] _testing step 2_
 
-_[Release PRs]_
+_[Release PRs:]_
 
 Check each PR.
 
