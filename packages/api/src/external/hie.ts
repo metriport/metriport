@@ -56,6 +56,8 @@ export async function appendDocQueryProgressWithSource({
         ? {}
         : existingPatient.data.documentQueryProgress;
 
+    console.log("PROCESS", documentQueryProgress, source);
+
     // Set the doc query progress for the given hie
     const externalData = setExternalData(
       reset,
@@ -67,17 +69,25 @@ export async function appendDocQueryProgressWithSource({
       increaseCountConvertible
     );
 
+    console.log("EXTERNAL DATA", externalData);
+
     existingPatient.data.externalData = externalData;
 
     // Set the aggregated doc query progress for the patient
     const externalQueryProgresses = setDocQueryProgressWithExternal(externalData);
 
+    console.log("EXTERNAL QUERY PROGRESSES", externalQueryProgresses);
+
     const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+
+    console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
 
     const updatedDocumentQueryProgress = {
       ...documentQueryProgress,
       ...aggregatedDocProgress,
     };
+
+    console.log("UPDATED DOC PROGRESS", updatedDocumentQueryProgress);
 
     updatedDocumentQueryProgress.requestId = requestId;
 
@@ -96,10 +106,6 @@ export async function appendDocQueryProgressWithSource({
 
     return updatedPatient;
   });
-
-  console.log("PROCESS", result.data.documentQueryProgress, source);
-  console.log("DOWNLOAD", downloadProgress, source);
-  console.log("CONVERT", convertProgress, source);
 
   await processDocQueryProgressWebhook({
     patient: result.dataValues,

@@ -89,8 +89,6 @@ const handleConversionWebhook = async (
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
   const convertWebhookSent = webhooks.some(webhook => webhook.type === convertWebhookType);
 
-  console.log("CONVERT", convertStatus, convertWebhookSent, isConvertFinished, isSandbox);
-
   const canProcessRequest = isConvertFinished && !convertWebhookSent;
 
   if (canProcessRequest) {

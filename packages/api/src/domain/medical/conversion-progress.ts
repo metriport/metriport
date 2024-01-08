@@ -13,7 +13,6 @@ export const calculateConversionProgress = ({
 } & {
   patient: Pick<Patient, "data" | "id">;
 }): DocumentQueryProgress => {
-  console.log("CONVERT RESULT", convertResult);
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;

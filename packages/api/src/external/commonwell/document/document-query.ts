@@ -607,8 +607,6 @@ export async function downloadDocsAndUpsertFHIR({
             increaseCountConvertible++;
           }
 
-          console.log("SHOULD CONVERT CDA", shouldConvertCDA);
-
           if (shouldConvertCDA) {
             try {
               console.log("CONVERTING CDA");
