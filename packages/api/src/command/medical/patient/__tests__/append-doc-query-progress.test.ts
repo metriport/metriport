@@ -139,44 +139,45 @@ describe("appendDocQueryProgress", () => {
       checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
       checkUnchanged("download");
     });
-    // it("sets convert progress completed", async () => {
-    //   const convertProgress = { status: "completed" as const };
-    //   await appendDocQueryProgress({
-    //     patient: { id: "theId", cxId: "theCxId" },
-    //     convertProgress,
-    //     requestId,
-    //   });
-    //   checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
-    //   checkUnchanged("download");
-    // });
-    // it("removes convert when its null", async () => {
-    //   await appendDocQueryProgress({
-    //     patient: { id: "theId", cxId: "theCxId" },
-    //     convertProgress: null,
-    //     downloadProgress: documentQueryProgress.download,
-    //     requestId,
-    //   });
-    //   const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
-    //     | PatientModel
-    //     | undefined;
-    //   expect(patientSentToUpdate).toBeTruthy();
-    //   expect(patientSentToUpdate?.data).toBeTruthy();
-    //   expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
-    //   expect(patientSentToUpdate?.data.documentQueryProgress?.convert).toBeFalsy();
-    //   checkUnchanged("download");
-    // });
-    // it("resets download while setting convert", async () => {
-    //   const convertProgress = { status: "completed" as const };
-    //   await appendDocQueryProgress({
-    //     patient: { id: "theId", cxId: "theCxId" },
-    //     convertProgress,
-    //     requestId,
-    //   });
-    //   checkPatientUpdateWith({
-    //     convert: expect.objectContaining(convertProgress),
-    //     download: undefined,
-    //   });
-    // });
+    it("sets convert progress completed", async () => {
+      const convertProgress = { status: "completed" as const };
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        convertProgress,
+        requestId,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
+    it("removes convert when its null", async () => {
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        convertProgress: null,
+        downloadProgress: documentQueryProgress.download,
+        requestId,
+      });
+      const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
+        | PatientModel
+        | undefined;
+      expect(patientSentToUpdate).toBeTruthy();
+      expect(patientSentToUpdate?.data).toBeTruthy();
+      expect(patientSentToUpdate?.data.documentQueryProgress).toBeTruthy();
+      expect(patientSentToUpdate?.data.documentQueryProgress?.convert).toBeFalsy();
+      checkUnchanged("download");
+    });
+    it("resets download while setting convert", async () => {
+      const convertProgress = { status: "completed" as const };
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        convertProgress,
+        downloadProgress: null,
+        requestId,
+      });
+      checkPatientUpdateWith({
+        convert: expect.objectContaining(convertProgress),
+        download: undefined,
+      });
+    });
   });
 
   describe("convert", () => {
