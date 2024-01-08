@@ -1,19 +1,18 @@
-import { Stack, StackProps, CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
-import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { LambdaLayers } from "./shared/lambda-layers";
+import { setupLambdasLayers, LambdaLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
-  lambdaLayers: LambdaLayers;
   alarmAction: SnsAction | undefined;
 }
 
@@ -61,11 +60,13 @@ export class IHEStack extends Stack {
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
+    const lambdaLayers = setupLambdasLayers(this, true);
+
     const iheLambda = createLambda({
       stack: this,
       name: "IHE",
       entry: "ihe",
-      layers: [props.lambdaLayers.shared],
+      layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
@@ -85,6 +86,13 @@ export class IHEStack extends Stack {
       },
     });
 
+    // Create lambdas
+    const xcaResource = api.root.addResource("xca");
+
+    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource);
+    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource);
+    this.setupPatientDiscoveryLambda(props, lambdaLayers, api);
+
     //-------------------------------------------
     // Output
     //-------------------------------------------
@@ -100,5 +108,71 @@ export class IHEStack extends Stack {
       description: "IHE API Gateway Root Resource ID",
       value: api.root.resourceId,
     });
+  }
+
+  private setupDocumentQueryLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    xcaResource: apig.Resource
+  ) {
+    const documentQueryLambda = createLambda({
+      stack: this,
+      name: "DocumentQuery",
+      entry: "document-query",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const documentQueryResource = xcaResource.addResource("document-query");
+    documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
+  }
+
+  private setupDocumentRetrievalLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    xcaResource: apig.Resource
+  ) {
+    const documentRetrievalLambda = createLambda({
+      stack: this,
+      name: "DocumentRetrieval",
+      entry: "document-retrieval",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const documentRetrievalResource = xcaResource.addResource("document-retrieve");
+    documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
+  }
+
+  private setupPatientDiscoveryLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    api: apig.RestApi
+  ) {
+    const patientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "PatientDiscovery",
+      entry: "patient-discovery",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc: props.vpc,
+      alarmSnsAction: props.alarmAction,
+    });
+
+    const xcpdResource = api.root.addResource("xcpd");
+    xcpdResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
   }
 }

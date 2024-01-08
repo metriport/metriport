@@ -4,7 +4,7 @@ import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-manage
 import * as orgs from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { CQOrgHydrated } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { makeSimpleOrg } from "@metriport/core/external/commonwell/cq-bridge/__tests__/cq-orgs";
-import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
+import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell/management/api-impl";
 import * as api from "../api";
 import { initCQOrgIncludeList } from "../organization";
 jest.mock("@metriport/core/external/commonwell/management/api");
@@ -15,12 +15,12 @@ let getOrgsByPrio_mock: jest.SpyInstance;
 let makeCommonWellManagementAPI_mock: jest.SpyInstance;
 beforeEach(() => {
   jest.restoreAllMocks();
-  updateIncludeList_mock = jest.spyOn(CommonWellManagementAPI.prototype, "updateIncludeList");
+  updateIncludeList_mock = jest.spyOn(CommonWellManagementAPIImpl.prototype, "updateIncludeList");
   getOrgsByPrio_mock = jest.spyOn(orgs, "getOrgsByPrio");
   makeCommonWellManagementAPI_mock = jest
     .spyOn(api, "makeCommonWellManagementAPI")
     .mockImplementation(() => {
-      return new CommonWellManagementAPI({
+      return new CommonWellManagementAPIImpl({
         cookieManager: new CookieManagerInMemory(),
         baseUrl: "",
       });

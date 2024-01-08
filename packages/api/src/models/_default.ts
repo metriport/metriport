@@ -7,35 +7,58 @@ import {
   Model,
   Sequelize,
 } from "sequelize";
-import { BaseDomain } from "../domain/base-domain";
+import { BaseDomain, BaseDomainNoId } from "../domain/base-domain";
 import VersionMismatchError from "../errors/version-mismatch";
 import { Util } from "../shared/util";
 
 export type ModelSetup = (sequelize: Sequelize) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export abstract class BaseModel<T extends Model<any, any>>
+export abstract class BaseModelNoId<T extends Model<any, any>>
   extends Model<InferAttributes<T>, InferCreationAttributes<T>>
-  implements BaseDomain
+  implements BaseDomainNoId
 {
-  declare id: string;
   declare createdAt: CreationOptional<Date>;
   declare updatedAt: CreationOptional<Date>;
-  private declare version: CreationOptional<number>;
-  declare eTag: CreationOptional<string>;
 
   static attributes() {
     return {
-      id: {
-        type: DataTypes.UUID,
-        primaryKey: true,
-      },
       createdAt: {
         type: DataTypes.DATE(6),
       },
       updatedAt: {
         type: DataTypes.DATE(6),
       },
+    };
+  }
+  static modelOptions<M extends Model>(sequelize: Sequelize): InitOptions<M> {
+    return {
+      sequelize,
+      freezeTableName: true,
+      underscored: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    };
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export abstract class BaseModel<T extends Model<any, any>>
+  extends BaseModelNoId<T>
+  implements BaseDomain
+{
+  declare id: string;
+  private declare version: CreationOptional<number>;
+  declare eTag: CreationOptional<string>;
+
+  static override attributes() {
+    return {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+      },
+      ...BaseModelNoId.attributes(),
       // Full definition because this determines in-memory behavior to Sequelize
       version: {
         type: DataTypes.INTEGER,
@@ -51,14 +74,9 @@ export abstract class BaseModel<T extends Model<any, any>>
       },
     };
   }
-  static modelOptions<M extends Model>(sequelize: Sequelize): InitOptions<M> {
+  static override modelOptions<M extends Model>(sequelize: Sequelize): InitOptions<M> {
     return {
-      sequelize,
-      freezeTableName: true,
-      underscored: true,
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
+      ...BaseModelNoId.modelOptions(sequelize),
       version: true, // requires a `version` column; override it to false if you don't want versioning
     };
   }

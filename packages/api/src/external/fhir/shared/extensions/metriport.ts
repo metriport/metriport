@@ -1,4 +1,5 @@
-import { Coding, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { Coding, DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { capture } from "@metriport/core/util/notifications";
 import { DeepRequired } from "ts-essentials";
 import { METRIPORT } from "../../../../shared/constants";
 import { isCommonwellContent } from "../../../commonwell/extension";
@@ -27,4 +28,19 @@ export function isMetriportContent(content: DocumentReferenceContent): boolean {
   // stored on S3 (Metriport) and w/o the extension.
   // So, return true if it's explicitly Metriport or is not explicitly CommonWell.
   return content.extension?.some(isMetriportExtension) === true || !isCommonwellContent(content);
+}
+
+export function getMetriportContent(doc: DocumentReference): DocumentReferenceContent | undefined {
+  if (!doc || !doc.content) return undefined;
+  const contents = doc.content.filter(isMetriportContent);
+  if (contents.length > 1) {
+    const msg = "DocRef contains more than one Metriport content item";
+    const extra = {
+      id: doc.id,
+      metriport_contents: contents.length,
+    };
+    console.log(`${msg}, returning the first one - ${JSON.stringify(extra)}`);
+    capture.message(msg, { extra, level: "warning" });
+  }
+  return contents[0];
 }

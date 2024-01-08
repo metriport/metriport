@@ -26,9 +26,9 @@ export function generateXcpdTemplate(code: string) {
                 <country>{country}</country>
               </addr>
               <asOtherIDs classCode="PAT">
-                <id extension="EV10045900" root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+                <id extension="EV10045900" root="2.16.840.1.113883.3.9621"/>
                 <scopingOrganization classCode="ORG" determinerCode="INSTANCE">
-                  <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+                  <id root="2.16.840.1.113883.3.9621"/>
                 </scopingOrganization>
               </asOtherIDs>
             </patientPerson>
@@ -42,7 +42,7 @@ export function generateXcpdTemplate(code: string) {
         </subject1>
         <custodian typeCode="CST">
           <assignedEntity classCode="ASSIGNED">
-            <id root="1.2.840.114350.1.13.11511.3.7.3.688884.100.1000"/>
+            <id root="2.16.840.1.113883.3.9621"/>
             <code code="NotHealthDataLocator" codeSystem="1.3.6.1.4.1.19376.1.2.27.2"/>
           </assignedEntity>
         </custodian>
@@ -97,7 +97,7 @@ export function generateXcpdTemplate(code: string) {
   <s:Envelope xmlns:a="http://www.w3.org/2005/08/addressing" xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Header xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
       <a:Action s:mustUnderstand="1">urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery</a:Action>
-      <a:RelatesTo>urn:uuid:{messageId}</a:RelatesTo>
+      <a:RelatesTo>{messageId}</a:RelatesTo>
       <Security xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:b="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" s:mustUnderstand="1">
         <Timestamp xmlns="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" b:Id="_1">
           <b:Created>{createdAt}</b:Created>

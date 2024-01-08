@@ -1,6 +1,10 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import {
+  patientDiscoveryResponseIncomingSchema,
+  documentQueryResponseIncomingSchema,
+  documentRetrievalResponseIncomingSchema,
+} from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { patientDiscoveryResponseSchema } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -9,8 +13,7 @@ import httpStatus from "http-status";
 import {
   IHEResultType,
   handleIHEResponse,
-} from "../../command/medical/ihe-result/create-ihe-result";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -122,9 +125,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = patientDiscoveryResponseSchema.parse(req.body);
+    const pdResponse = patientDiscoveryResponseIncomingSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.PATIENT_DISCOVERY,
+      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE,
       response: pdResponse,
     });
 
@@ -140,7 +143,11 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_QUERY, response: req.body });
+    const dqResponse = documentQueryResponseIncomingSchema.parse(req.body);
+    await handleIHEResponse({
+      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
+      response: dqResponse,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -154,7 +161,11 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    await handleIHEResponse({ type: IHEResultType.DOCUMENT_RETRIEVAL, response: req.body });
+    const drResponse = documentRetrievalResponseIncomingSchema.parse(req.body);
+    await handleIHEResponse({
+      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE,
+      response: drResponse,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })

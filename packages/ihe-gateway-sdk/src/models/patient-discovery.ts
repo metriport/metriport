@@ -1,30 +1,55 @@
 import { Patient } from "@medplum/fhirtypes";
-import { baseResponseSchema, NPIStringArray, oidStringSchema, SamlAttributes } from "./shared";
-import { z } from "zod";
+import {
+  NPIStringArray,
+  BaseResponse,
+  baseResponseSchema,
+  BaseErrorResponse,
+  baseErrorResponseSchema,
+  BaseRequest,
+} from "./shared";
+import * as z from "zod";
 
-export const xcpdGatewaysSchema = z.array(
-  z.object({
-    oid: oidStringSchema,
-    url: z.string(),
-    id: z.string(),
-  })
-);
+const XCPDGatewaySchema = z.object({
+  oid: z.string(),
+  url: z.string(),
+  id: z.string().optional(),
+});
+export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
 
-export type XCPDGateways = z.infer<typeof xcpdGatewaysSchema>;
+export type XCPDGateways = XCPDGateway[];
 
-export type PatientDiscoveryRequest = {
-  id: string;
+export type PatientDiscoveryRequestOutgoing = BaseRequest & {
   cxId: string;
-  timestamp: string;
   gateways: XCPDGateways;
-  samlAttributes: SamlAttributes;
   patientResource: Patient;
   principalCareProviderIds?: NPIStringArray;
 };
 
-export const patientDiscoveryResponseSchema = baseResponseSchema.extend({
+const PatientDiscoveryResponseSchema = z.object({
   patientMatch: z.boolean(),
-  gatewayHomeCommunityId: z.string().nullish(),
+  gateway: XCPDGatewaySchema,
+  gatewayHomeCommunityId: z.string().optional(),
 });
 
-export type PatientDiscoveryResponse = z.infer<typeof patientDiscoveryResponseSchema>;
+export const patientDiscoveryResponseIncomingSchema = z.union([
+  z.intersection(baseResponseSchema, PatientDiscoveryResponseSchema),
+  z.intersection(baseErrorResponseSchema, PatientDiscoveryResponseSchema),
+]);
+export type PatientDiscoveryResponseIncoming = z.infer<
+  typeof patientDiscoveryResponseIncomingSchema
+>;
+
+export type PatientDiscoveryRequestIncoming = BaseRequest & {
+  patientResource: Patient;
+};
+
+export type PatientDiscoveryResponseOutgoing =
+  | (BaseResponse & {
+      patientMatch: boolean;
+      xcpdHomeCommunityId: string;
+      patientResource: Patient;
+    })
+  | (BaseErrorResponse & {
+      patientMatch: boolean;
+      xcpdHomeCommunityId: string;
+    });

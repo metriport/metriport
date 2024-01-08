@@ -8,7 +8,8 @@ import {
 } from "../../../domain/auth/cookie-management/cookie-manager";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { sleep } from "../../../util/sleep";
-import { CommonWellManagementAPI, userAgent } from "./api";
+import { CommonWellManagementAPI } from "./api";
+import { userAgent } from "./api-impl";
 
 // This file relies heavily on Playwright: https://playwright.dev/docs/library
 

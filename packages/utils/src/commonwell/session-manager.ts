@@ -6,7 +6,6 @@ import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
-import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
 import {
   SessionManagement,
   SessionManagementConfig,
@@ -18,6 +17,7 @@ require("aws-sdk/lib/maintenance_mode_message").suppress = true; // eslint-disab
 
 // Leaving this separated from the rest as we might need to switch browsers if it fails to get the cookie
 // import { chromium as runtime } from "playwright";
+import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
 import { firefox as runtime } from "playwright";
 
 /**
@@ -81,7 +81,7 @@ const buildStores = () => {
 };
 const { codeChallenge, cookieManager } = buildStores();
 
-const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
+const cwManagementApi = makeApi({ cookieManager, baseUrl: cwBaseUrl });
 
 export async function main() {
   console.log(`Runnning at ${new Date().toISOString()}`);

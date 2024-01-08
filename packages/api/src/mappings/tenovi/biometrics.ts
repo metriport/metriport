@@ -3,7 +3,7 @@ import { SourceInfo } from "@metriport/api-sdk/devices/models/common/source-info
 import convert from "convert-units";
 import { TenoviMeasurementData } from ".";
 import { PROVIDER_TENOVI } from "../../shared/constants";
-import { getFloatValue } from "../../shared/numbers";
+import { getFloatValue } from "@metriport/shared/common/numbers";
 
 export const mapToBiometrics = (
   date: string,
