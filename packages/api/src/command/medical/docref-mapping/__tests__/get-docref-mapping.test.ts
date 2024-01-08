@@ -33,7 +33,12 @@ describe("getOrCreateDocumentReference", () => {
     await getOrCreateDocRefMapping(docRefBase);
     expect(docRefModel_findOrCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: docRefBase,
+        where: {
+          cxId: docRefBase.cxId,
+          patientId: docRefBase.patientId,
+          externalId: docRefBase.externalId,
+          source: docRefBase.source,
+        },
       })
     );
   });
