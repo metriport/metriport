@@ -46,7 +46,7 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
-    const updatedPatient = await appendDocQueryProgress({
+    await appendDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: {
         status: "completed",
@@ -55,19 +55,14 @@ export async function sandboxGetDocRefsAndUpsert({
       requestId,
     });
 
-    const downloadProgressIsCompleted =
-      updatedPatient.data.documentQueryProgress?.download?.status === "completed";
-
-    if (downloadProgressIsCompleted) {
-      processPatientDocumentRequest(
-        organization.cxId,
-        patient.id,
-        "medical.document-download",
-        MAPIWebhookStatus.completed,
-        requestId,
-        []
-      );
-    }
+    processPatientDocumentRequest(
+      organization.cxId,
+      patient.id,
+      "medical.document-download",
+      MAPIWebhookStatus.completed,
+      requestId,
+      []
+    );
 
     return;
   }
