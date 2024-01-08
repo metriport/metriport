@@ -97,6 +97,8 @@ export async function appendDocQueryProgressWithSource({
     return updatedPatient;
   });
 
+  console.log("RESULT", result);
+
   await processDocQueryProgressWebhook({
     patient: result.dataValues,
     documentQueryProgress: result.data.documentQueryProgress,

@@ -27,6 +27,8 @@ export const processDocQueryProgressWebhook = async ({
   documentQueryProgress: DocumentQueryProgress;
   requestId: string;
 }): Promise<void> => {
+  console.log("PATIENT", patient);
+
   const { id: patientId } = patient;
 
   try {
