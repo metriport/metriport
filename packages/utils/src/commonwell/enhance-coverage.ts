@@ -8,7 +8,8 @@ import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-qu
 import { PatientLoaderMetriportAPI } from "@metriport/core/domain/patient/patient-loader-metriport-api";
 import { PatientUpdaterMetriportAPI } from "@metriport/core/domain/patient/patient-updater-metriport-api";
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
-import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
+import { ECUpdaterAPI } from "@metriport/core/external/commonwell/cq-bridge/ec-updater-api";
+import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
 import {
   SessionManagement,
   SessionManagementConfig,
@@ -113,13 +114,15 @@ function getConnectors() {
 
 const { codeChallenge, cookieManager } = getConnectors();
 
-const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl: cwBaseUrl });
+const cwManagementApi = makeApi({ cookieManager, baseUrl: cwBaseUrl });
 const patientLoader = new PatientLoaderMetriportAPI(metriportApiBaseUrl);
 const patientUpdater = new PatientUpdaterMetriportAPI(metriportApiBaseUrl);
+const ecUpdater = new ECUpdaterAPI(metriportApiBaseUrl);
 const coverageEnhancer = new CoverageEnhancerLocal(
   cwManagementApi,
   patientLoader,
   patientUpdater,
+  ecUpdater,
   undefined,
   prefix
 );
@@ -129,6 +132,11 @@ export async function main() {
   const { orgOID: cxOrgOID } = await getCxData(cxId, undefined, false);
 
   console.log(`Running coverage enhancement... - started at ${new Date().toISOString()}`);
+
+  if (patientIds.length <= 0) {
+    console.log(`No patient IDs provided, nothing to do.`);
+    return;
+  }
   const startedAt = Date.now();
 
   if (cookies && cookies.trim().length) {
@@ -155,7 +163,7 @@ export async function main() {
     await cwSession.initSession();
   }
 
-  await coverageEnhancer.enhanceCoverage({
+  const ecId = await coverageEnhancer.enhanceCoverage({
     cxId,
     orgOID: cxOrgOID,
     patientIds,
@@ -179,6 +187,12 @@ export async function main() {
           minDocsToConsiderCompleted,
         },
       });
+      await ecUpdater.storeECAfterDocQuery({
+        ecId,
+        cxId,
+        patientId,
+        docsFound,
+      });
       console.log(`Done doc query for patient ${patientId}, found ${docsFound} docs`);
     },
     {
@@ -194,8 +208,10 @@ export async function main() {
   const durationMin = dayjs.duration(duration).asMinutes();
   console.log(`${prefix}Total time: ${duration} ms / ${durationMin} min`);
 
-  // for some reason it was hanging when updating this script, this fixes it
-  process.exit(0);
+  return;
 }
 
-main();
+main().then(() => {
+  // for some reason it was hanging when updating this script, this fixes it
+  process.exit(0);
+});

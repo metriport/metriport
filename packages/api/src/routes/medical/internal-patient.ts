@@ -24,18 +24,25 @@ import { findDuplicatedPersons } from "../../external/commonwell/admin/find-pati
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
-import { completeEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-complete";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
-import { cqLinkStatus } from "../../external/commonwell/patient-shared";
+import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
-import { errorToString } from "../../shared/log";
-import { capture } from "@metriport/core/util/capture";
 import { stringToBoolean } from "../../shared/types";
-import { stringIntegerSchema, stringListFromQuerySchema } from "../schemas/shared";
+import {
+  nonEmptyStringListFromQuerySchema,
+  stringIntegerSchema,
+  stringListFromQuerySchema,
+} from "../schemas/shared";
 import { getUUIDFrom, uuidSchema } from "../schemas/uuid";
-import { asyncHandler, getFrom, getFromParamsOrFail, getFromQueryAsArrayOrFail } from "../util";
+import {
+  asyncHandler,
+  getFrom,
+  getFromParamsOrFail,
+  getFromQueryAsArray,
+  getFromQueryAsArrayOrFail,
+} from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -398,50 +405,69 @@ router.post(
   })
 );
 
-const cqLinkStatusSchema = z.enum(cqLinkStatus);
-
-const completeEnhancedCoverageSchema = z.object({
+const updateECAfterIncludeListSchema = z.object({
+  ecId: uuidSchema,
   cxId: uuidSchema,
-  patientIds: uuidSchema.array(),
-  cqLinkStatus: cqLinkStatusSchema,
+  patientIds: nonEmptyStringListFromQuerySchema,
+  cqOrgIds: nonEmptyStringListFromQuerySchema,
 });
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/enhance-coverage/completed
+ * POST /internal/patient/enhance-coverage/after-include-list
  *
- * Indicate the coverage enhancement has been completed.
+ * Store the result of running Enhanced Coverage from the local environment.
  *
- * @param req.query.cxId The customer ID.
- * @param req.body.patientIds The IDs of patient to update their CQLinkStatus and trigger doc query.
- * @param req.body.cqLinkStatus The status of the link to CareQuality. (one of "linked",
- *                              "processing", "failed").
- * @return 200 OK - processing asynchronously
+ * @return 200 OK
  */
 router.post(
-  "/enhance-coverage/completed",
+  "/enhance-coverage/after-include-list",
   asyncHandler(async (req: Request, res: Response) => {
-    const { cxId, patientIds, cqLinkStatus } = completeEnhancedCoverageSchema.parse(req.body);
+    const { ecId, cxId, patientIds, cqOrgIds } = updateECAfterIncludeListSchema.parse(req.query);
+    if (patientIds && !patientIds.length) throw new BadRequestError(`Patient IDs are required`);
+    if (cqOrgIds && !cqOrgIds.length) throw new BadRequestError(`CQ Org IDs are required`);
 
-    // intentionally async, no need to wait for it
-    completeEnhancedCoverage({
+    await new ECUpdaterLocal().storeECAfterIncludeList({
+      ecId,
       cxId,
       patientIds,
-      cqLinkStatus,
-    }).catch(error => {
-      console.log(
-        `Failed to set cqLinkStatus for patients ${patientIds.join(", ")} - ${errorToString(error)}`
-      );
-      capture.error(error, {
-        extra: {
-          cxId,
-          patientIds,
-          cqLinkStatus,
-          error,
-        },
-      });
+      cqOrgIds,
     });
+    return res.sendStatus(status.OK);
+  })
+);
 
-    return res.status(status.OK).json({ status: status[status.OK] });
+const updateECAfterDocQuerySchema = z.object({
+  ecId: uuidSchema,
+  cxId: uuidSchema,
+  patientId: uuidSchema,
+  docsFound: stringIntegerSchema,
+});
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/enhance-coverage/after-doc-query
+ *
+ * Store the result of running Enhanced Coverage from the local environment.
+ *
+ * @return 200 OK
+ */
+router.post(
+  "/enhance-coverage/after-doc-query",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { ecId, cxId, patientId, docsFound } = updateECAfterDocQuerySchema.parse(req.query);
+    if (docsFound < 0) {
+      console.log(
+        `[/enhance-coverage/after-doc-query] Invalid docsFound: ${docsFound}, patientId: ${patientId}, ecId: ${ecId}`
+      );
+      throw new BadRequestError(`Docs found must be >= 0`);
+    }
+
+    await new ECUpdaterLocal().storeECAfterDocQuery({
+      ecId,
+      cxId,
+      patientId,
+      docsFound,
+    });
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -454,6 +480,8 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  *
  * @param req.query.cxId The customer ID.
  * @param req.query.patientId The ID of the patient whose data is to be returned.
+ * @param req.query.documentIds Optional list of docRef IDs to filter by. If provided, only
+ *            resources derived from these document references will be returned.
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
@@ -466,6 +494,7 @@ router.get(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
+    const documentIds = getFromQueryAsArray("documentIds", req);
     const resources = getResourcesQueryParam(req);
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
@@ -477,6 +506,7 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const data = await getConsolidated({
       patient,
+      documentIds,
       resources,
       dateFrom,
       dateTo,

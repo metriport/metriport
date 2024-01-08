@@ -10,6 +10,7 @@ import {
   bodyCategory,
   sleepCategory,
 } from "../command/webhook/withings";
+import MetriportError from "../errors/metriport-error";
 import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToBody } from "../mappings/withings/body";
@@ -31,9 +32,9 @@ import { Config } from "../shared/config";
 import { PROVIDER_WITHINGS } from "../shared/constants";
 import { capture } from "@metriport/core/util/capture";
 import { Util } from "../shared/util";
-import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { getHttpClient } from "./shared/http";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
 const api = getHttpClient();
 
@@ -305,10 +306,20 @@ export class Withings extends Provider implements OAuth2 {
     });
 
     if (response.data?.status !== Withings.STATUS_OK) {
-      capture.error(response.data, {
-        extra: { context: `withings.fetch.measurements` },
+      const msg = `Error fetching measure data from Withings`;
+      console.log(`${msg} - response: ${JSON.stringify(response.data)}`);
+      capture.error(msg, {
+        extra: {
+          context: `withings.fetch.measurements`,
+          status: response.status,
+          statusText: response.statusText,
+          response: response.data,
+        },
       });
-      throw new Error(response.data.error);
+      throw new MetriportError(msg, undefined, {
+        status: response.status,
+        statusText: response.statusText,
+      });
     }
 
     return withingsMeasurementResp.parse(response.data.body);

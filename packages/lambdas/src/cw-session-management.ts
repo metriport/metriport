@@ -2,7 +2,7 @@ import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { CodeChallengeFromSecretManager } from "@metriport/core/domain/auth/code-challenge/code-challenge-on-secrets";
 import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-management/cookie-manager-on-secrets";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
-import { CommonWellManagementAPI } from "@metriport/core/external/commonwell/management/api";
+import { CommonWellManagementAPIImpl } from "@metriport/core/external/commonwell/management/api-impl";
 import {
   SessionManagement,
   SessionManagementConfig,
@@ -32,7 +32,7 @@ const errorBucketName = getEnvOrFail("ERROR_BUCKET_NAME");
 
 const s3Client = makeS3Client(region);
 const cookieManager = new CookieManagerOnSecrets(cookieSecretArn, region);
-const cwManagementApi = new CommonWellManagementAPI({ cookieManager, baseUrl });
+const cwManagementApi = new CommonWellManagementAPIImpl({ cookieManager, baseUrl });
 // TODO 1195 move this to an email based code challenge, so it can be fully automated.
 // Could use AWS SES for that, it can send the email to a SNS topic, which could trigger
 // a lambda and update the secret: https://docs.aws.amazon.com/ses/latest/dg/receiving-email-concepts.html

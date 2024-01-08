@@ -9,6 +9,7 @@ import { capture } from "@metriport/core/util/capture";
 import { PatientLoaderLocal } from "../patient-loader-local";
 import { PatientUpdaterCommonWell } from "../patient-updater-commonwell";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
+import { ECUpdaterLocal } from "./ec-updater-local";
 
 dayjs.extend(duration);
 
@@ -24,6 +25,7 @@ export class CoverageEnhancerApiLocal extends CoverageEnhancerLocal {
       cwManagementApi,
       new PatientLoaderLocal(),
       new PatientUpdaterCommonWell(),
+      new ECUpdaterLocal(),
       capture,
       prefix
     );
@@ -36,20 +38,23 @@ export class CoverageEnhancerApiLocal extends CoverageEnhancerLocal {
   }: CoverageEnhancementParams & {
     waitBetweenLinkingAndDocQuery: duration.Duration;
     startedAt?: number;
-  }) {
+  }): Promise<string> {
     const { cxId, patientIds } = params;
-    const { log } = out(`EC - MAIN - cx ${cxId}`);
 
-    await super.enhanceCoverage(params);
+    const ecId = await super.enhanceCoverage(params);
+
+    const { log } = out(`EC ${ecId} - cx ${cxId}`);
 
     const waitTime = waitBetweenLinkingAndDocQuery.asMilliseconds();
     log(`Giving some time for patients to be updated @ CW... (${waitTime} ms)`);
     await sleep(waitTime);
 
-    await completeEnhancedCoverage({ cxId, patientIds, cqLinkStatus: "linked" });
+    await completeEnhancedCoverage({ ecId, cxId, patientIds, cqLinkStatus: "linked" });
 
     const duration = Date.now() - startedAt;
     const durationMin = dayjs.duration(duration).asMinutes();
     log(`Done, total time: ${duration} ms / ${durationMin} min`);
+
+    return ecId;
   }
 }

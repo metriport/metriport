@@ -1,6 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { capture } from "@metriport/core/util/capture";
+import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { CodeableConceptDTO, toDTO as codeableToDTO } from "./codeableDTO";
 
 export type DocumentReferenceDTO = {
@@ -15,35 +14,23 @@ export type DocumentReferenceDTO = {
 };
 
 export function toDTO(docs: DocumentReference[] | undefined): DocumentReferenceDTO[] {
-  if (docs) {
-    return docs.flatMap(doc => {
-      if (doc && doc.id && doc.content) {
-        const contents = doc.content.filter(isMetriportContent);
-        if (contents.length > 1) {
-          capture.message("Doc contains more than one Metriport content item", {
-            extra: {
-              id: doc.id,
-              content_length: contents.length,
-            },
-          });
-        }
-        const content = contents[0];
-        if (content && content.attachment && content.attachment.title && content.attachment.url) {
-          return {
-            id: doc.id,
-            description: doc.description,
-            fileName: content.attachment.title,
-            type: codeableToDTO(doc.type),
-            status: doc.status,
-            indexed: content.attachment.creation,
-            mimeType: content.attachment.contentType,
-            size: content.attachment.size,
-          };
-        }
-        return [];
+  if (!docs) return [];
+  return docs.flatMap(doc => {
+    if (doc && doc.id) {
+      const content = getMetriportContent(doc);
+      if (content && content.attachment && content.attachment.title && content.attachment.url) {
+        return {
+          id: doc.id,
+          description: doc.description,
+          fileName: content.attachment.title,
+          type: codeableToDTO(doc.type),
+          status: doc.status,
+          indexed: content.attachment.creation,
+          mimeType: content.attachment.contentType,
+          size: content.attachment.size,
+        };
       }
-      return [];
-    });
-  }
-  return [];
+    }
+    return [];
+  });
 }

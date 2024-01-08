@@ -12,7 +12,7 @@ export async function getDocuments({
   documentIds = [],
 }: {
   cxId: string;
-  patientId: string;
+  patientId?: string;
   from?: string | undefined;
   to?: string | undefined;
   documentIds?: string[];
@@ -34,18 +34,22 @@ export async function getDocuments({
 }
 
 export function getFilters({
-  patientId,
+  patientId: patientIdParam,
   documentIds = [],
   from,
   to,
 }: {
-  patientId?: string;
+  patientId?: string | string[] | undefined;
   documentIds?: string[];
   from?: string | undefined;
   to?: string | undefined;
 } = {}) {
   const filters = new URLSearchParams();
-  patientId && filters.append("patient", patientId);
+  const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
+  const patientIdsFiltered = patientIds.flatMap(id =>
+    id && id.trim().length > 0 ? id.trim() : []
+  );
+  patientIdsFiltered.length && filters.append("patient", patientIdsFiltered.join(","));
   documentIds.length && filters.append(`_ids`, documentIds.join(","));
   from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
   to && filters.append("date", isoDateToFHIRDateQueryTo(to));

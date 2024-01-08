@@ -3,7 +3,6 @@ import {
   DocumentReference,
   DocumentReferenceContent,
   Identifier,
-  Reference,
   Resource,
 } from "@medplum/fhirtypes";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { difference, groupBy } from "lodash";
 import { DeepRequired } from "ts-essentials";
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import {
   downloadDocsAndUpsertFHIR,
   queryAndProcessDocuments,
@@ -25,6 +25,7 @@ import {
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared/index";
 import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { getPatientId } from "../../../external/fhir/patient";
 import { getAllPages } from "../../../external/fhir/shared/paginated";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
@@ -106,21 +107,6 @@ export const reprocessDocuments = async ({
 
 const MISSING_ID = "missing-id";
 
-const getIdFromSubjectId = (subject: Reference | undefined): string | undefined => subject?.id;
-
-function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
-  if (subject?.reference) {
-    const reference = subject.reference;
-    if (reference.includes("/")) return subject.reference.split("/")[1];
-    if (reference.includes("#")) return subject.reference.split("#")[1];
-  }
-  return undefined;
-}
-
-function getPatientId(doc: DocumentReference): string | undefined {
-  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
-}
-
 async function downloadDocsAndUpsertFHIRWithDocRefs({
   cxId,
   documents,
@@ -145,10 +131,8 @@ async function downloadDocsAndUpsertFHIRWithDocRefs({
     }
     const patient = await getPatientOrFail({ id: patientId, cxId });
 
-    const facilityId = patient.facilityIds[0];
-    if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
-
     if (isReQuery(options)) {
+      const facilityId = getFacilityIdOrFail(patient);
       await appendDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
@@ -207,8 +191,7 @@ async function processDocuments({
   }
   if (docsAsCW.length === 0) return;
 
-  const facilityId = patient.facilityIds[0];
-  if (!facilityId) throw new Error(`Patient ${patientId} is missing facilityId`);
+  const facilityId = getFacilityIdOrFail(patient);
 
   try {
     log(`Processing ${docs.length} documents for patient ${patientId}...`);
