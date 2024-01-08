@@ -1,5 +1,5 @@
 import { sleep } from "@metriport/shared";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
