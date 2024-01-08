@@ -14,7 +14,7 @@ import { Patient } from "../../domain/medical/patient";
 import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { toFHIR } from "../fhir/patient";
 import { makeIheGatewayAPI } from "./api";

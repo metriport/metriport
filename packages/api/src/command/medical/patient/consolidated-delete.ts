@@ -8,8 +8,8 @@ import duration from "dayjs/plugin/duration";
 import { chunk, flatten } from "lodash";
 import { Patient } from "../../../domain/medical/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
-import { getDetailFromOutcomeError } from "../../../external/fhir/shared";
-import { capture } from "../../../shared/notifications";
+import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { getConsolidatedPatientData } from "./consolidated-get";
 
