@@ -37,12 +37,13 @@ export const getOrCreateDocRefMapping = async ({
   externalId: string;
   source: MedicalDataSource;
 }): Promise<DocRefMapping> => {
-  const docRef = { cxId, patientId, externalId, requestId, source };
+  const docRef = { cxId, patientId, externalId, source };
   console.log("docRef", docRef);
   const [res] = await DocRefMappingModel.findOrCreate({
     where: docRef,
     defaults: {
       id: uuidv7(),
+      requestId,
       ...docRef,
     },
   });
