@@ -44,6 +44,9 @@ export async function appendDocQueryProgressWithSource({
     cxId: patient.cxId,
   };
 
+  console.log("DOWNLOAD PROGRESS", downloadProgress);
+  console.log("CONVERT PROGRESS", convertProgress);
+
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
@@ -69,7 +72,7 @@ export async function appendDocQueryProgressWithSource({
       increaseCountConvertible
     );
 
-    console.log("EXTERNAL DATA", externalData);
+    console.log("EXTERNAL DATA AFTER", externalData);
 
     existingPatient.data.externalData = externalData;
 
@@ -197,6 +200,8 @@ export function setExternalData(
 
   const sourceData = externalData[source] as HIEPatientData;
 
+  console.log("SOURCE DATA", sourceData.documentQueryProgress);
+
   const docQueryProgress = setDocQueryProgress(
     sourceData?.documentQueryProgress ?? {},
     downloadProgress,
@@ -204,6 +209,8 @@ export function setExternalData(
     convertibleDownloadErrors,
     increaseCountConvertible
   );
+
+  console.log("DOC QUERY PROGRESS", docQueryProgress);
 
   externalData[source] = {
     ...externalData[source],
