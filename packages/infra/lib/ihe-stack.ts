@@ -1,34 +1,23 @@
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import { IVpc } from "aws-cdk-lib/aws-ec2";
-import * as r53 from "aws-cdk-lib/aws-route53";
-import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { setupLambdasLayers } from "./shared/lambda-layers";
 
-interface IHEStackProps extends StackProps {
+interface IHECertStackProps extends StackProps {
   config: EnvConfig;
 }
 
-type CreateLambdaProps = {
-  props: IHEStackProps;
-  lambdaLayers: LambdaLayers;
-  vpc: IVpc;
-  alarmSnsAction?: SnsAction;
-};
-
-export class IHEStack extends Stack {
-  constructor(scope: Construct, id: string, props: IHEStackProps) {
+export class IHECertStack extends Stack {
+  constructor(scope: Construct, id: string, props: IHECertStackProps) {
     super(scope, id, props);
 
-    const vpcId = props.config.iheGateway?.vpcId;
-    if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
+    const vpcId = props.config.iheCertification?.vpcId;
+    if (!vpcId) throw new Error("Missing VPC ID for IHE Certification stack");
     const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
 
     const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
@@ -36,50 +25,23 @@ export class IHEStack extends Stack {
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
-    if (!props.config.iheGateway) {
-      throw new Error("Must define IHE properties!");
+    if (!props.config.iheCertification) {
+      throw new Error("Must define IHE Cert properties!");
     }
 
-    // get the public zone
-    const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
-      domainName: props.config.host,
-    });
-
     // Create the API Gateway
-    const api = new apig.RestApi(this, "IHEAPIGateway", {
-      description: "Metriport IHE Gateway",
-      defaultCorsPreflightOptions: {
-        allowOrigins: ["*"],
-        allowHeaders: ["*"],
-      },
-    });
-
-    // get the certificate form ACM
-    const certificate = cert.Certificate.fromCertificateArn(
+    const api = apig.RestApi.fromRestApiId(
       this,
-      "IHECertificate",
-      props.config.iheGateway.certArn
+      "IHECertAPIGateway",
+      props.config.iheCertification.restApiId
     );
-
-    // add domain cert + record
-    const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
-    api.addDomainName("IHEAPIDomain", {
-      domainName: iheApiUrl,
-      certificate: certificate,
-      securityPolicy: apig.SecurityPolicy.TLS_1_2,
-    });
-    new r53.ARecord(this, "IHEAPIDomainRecord", {
-      recordName: iheApiUrl,
-      zone: publicZone,
-      target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
-    });
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
     const iheLambda = createLambda({
       stack: this,
-      name: "IHE",
-      entry: "ihe",
+      name: "IHECertification",
+      entry: "ihe-certification",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -100,106 +62,23 @@ export class IHEStack extends Stack {
       },
     });
 
-    // Create lambdas
-    const xcaResource = api.root.addResource("xca");
-
-    this.setupDocumentQueryLambda({ props, lambdaLayers, vpc, xcaResource, alarmSnsAction });
-    this.setupDocumentRetrievalLambda({ props, lambdaLayers, vpc, xcaResource, alarmSnsAction });
-    this.setupPatientDiscoveryLambda({ props, lambdaLayers, vpc, api, alarmSnsAction });
-
     //-------------------------------------------
     // Output
     //-------------------------------------------
-    new CfnOutput(this, "IHEAPIGatewayUrl", {
-      description: "IHE API Gateway URL",
-      value: api.url,
-    });
-    new CfnOutput(this, "IHEAPIGatewayID", {
-      description: "IHE API Gateway ID",
+    new CfnOutput(this, "IHECertAPIGatewayID", {
+      description: "IHE Certification API Gateway ID",
       value: api.restApiId,
     });
-    new CfnOutput(this, "IHEAPIGatewayRootResourceID", {
-      description: "IHE API Gateway Root Resource ID",
+    new CfnOutput(this, "IHECertAPIGatewayRootResourceID", {
+      description: "IHE Certification API Gateway Root Resource ID",
       value: api.root.resourceId,
     });
-  }
-
-  private setupDocumentQueryLambda({
-    props,
-    lambdaLayers,
-    vpc,
-    alarmSnsAction,
-    xcaResource,
-  }: CreateLambdaProps & { xcaResource: apig.Resource }) {
-    const documentQueryLambda = createLambda({
-      stack: this,
-      name: "DocumentQuery",
-      entry: "document-query",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-    });
-
-    const documentQueryResource = xcaResource.addResource("document-query");
-    documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
-  }
-
-  private setupDocumentRetrievalLambda({
-    props,
-    lambdaLayers,
-    vpc,
-    alarmSnsAction,
-    xcaResource,
-  }: CreateLambdaProps & { xcaResource: apig.Resource }) {
-    const documentRetrievalLambda = createLambda({
-      stack: this,
-      name: "DocumentRetrieval",
-      entry: "document-retrieval",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-    });
-
-    const documentRetrievalResource = xcaResource.addResource("document-retrieve");
-    documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
-  }
-
-  private setupPatientDiscoveryLambda({
-    props,
-    lambdaLayers,
-    vpc,
-    alarmSnsAction,
-    api,
-  }: CreateLambdaProps & { api: apig.RestApi }) {
-    const patientDiscoveryLambda = createLambda({
-      stack: this,
-      name: "PatientDiscovery",
-      entry: "patient-discovery",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-    });
-
-    const xcpdResource = api.root.addResource("xcpd");
-    xcpdResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
   }
 }
 
 function setupSlackNotifSnsTopic(stack: Stack, config: EnvConfig): SnsAction | undefined {
   if (!config.slack) return undefined;
-  const topicArn = config.iheGateway?.snsTopicArn;
+  const topicArn = config.iheCertification?.snsTopicArn;
   if (!topicArn) throw new Error("Missing SNS topic ARN for IHE stack");
 
   const slackNotifSnsTopic = sns.Topic.fromTopicArn(stack, "SlackSnsTopic", topicArn);

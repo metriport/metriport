@@ -4,7 +4,7 @@ import "source-map-support/register";
 import { EnvConfig } from "../config/env-config";
 import { APIStack } from "../lib/api-stack";
 import { ConnectWidgetStack } from "../lib/connect-widget-stack";
-import { IHEStack } from "../lib/ihe-stack";
+import { IHECertStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
@@ -42,19 +42,18 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 2. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  // TODO 1377 remove the eslint directive and `apiStack` const when IHEStack is removed
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
+  // 3. Deploy the TEMPORARY IHE Certification stack.
   //---------------------------------------------------------------------------------
-  if (config.iheGateway) {
-    new IHEStack(app, "IHEStack", {
+  if (config.iheCertification) {
+    new IHECertStack(app, "IHECertificationStack", {
       env,
       config: config,
     });
   }
+
   //---------------------------------------------------------------------------------
   // 3. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
