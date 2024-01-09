@@ -14,7 +14,7 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { intersectionBy, minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
-import { Organization } from "../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";

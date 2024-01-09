@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientLoader } from "../../../domain/patient-loader";
-import { PatientUpdater } from "../../../domain/patient-updater";
+import { PatientLoader } from "../../../command/patient-loader";
+import { PatientUpdater } from "../../../command/patient-updater";
 import { Capture, emptyCapture } from "../../../util/capture";
 import { out } from "../../../util/log";
 import { CommonWellManagementAPI } from "../management/api";

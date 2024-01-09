@@ -11,7 +11,7 @@ import {
 import { oid } from "@metriport/core/domain/oid";
 import { MedicalDataSource } from "..";
 import { Facility } from "../../domain/medical/facility";
-import { Organization } from "../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";

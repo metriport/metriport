@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Patient } from "../domain/patient";
-import { FindBySimilarity, GetOne, PatientLoader } from "../domain/patient-loader";
+import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
 
 /**
  * Implementation of the PatientLoader that calls the Metriport API

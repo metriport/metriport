@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { Organization, OrganizationData, OrgType } from "../organization";
+import { Organization, OrganizationData, OrgType } from "@metriport/core/domain/organization";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { makeAddressStrict } from "./location-address";
 

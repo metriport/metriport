@@ -8,7 +8,7 @@ import { getStateEnum, USState } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
 import { PatientData, PersonalIdentifier } from "../../../domain/patient";
-import { isContactType } from "../../fhir/patient";
+import { isContactType } from "../../fhir/patient/index";
 import { MetriportError } from "../../../util/error/metriport-error";
 import status from "http-status";
 

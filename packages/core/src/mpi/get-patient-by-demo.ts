@@ -1,5 +1,5 @@
 import { Patient, PatientData } from "../domain/patient";
-import { PatientLoader } from "../domain/patient-loader";
+import { PatientLoader } from "../command/patient-loader";
 import {
   jaroWinklerSimilarity,
   matchingContactDetailsRule,

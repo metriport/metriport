@@ -1,4 +1,4 @@
-import { OrganizationData } from "../../../domain/medical/organization";
+import { OrganizationData } from "@metriport/core/domain/organization";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";

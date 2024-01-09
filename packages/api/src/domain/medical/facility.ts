@@ -1,5 +1,5 @@
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
-import { AddressStrict } from "./location-address";
+import { AddressStrict } from "@metriport/core/domain/location-address";
 
 export type FacilityData = {
   name: string;

@@ -1,5 +1,5 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
-import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/domain/patient-loader";
+import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
 import { Op, WhereOptions } from "sequelize";
 import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
