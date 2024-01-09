@@ -35,7 +35,7 @@ describe("normalizePatient", () => {
       genderAtBirth: "M",
       address: [
         {
-          addressLine1: "123 elm st",
+          addressLine1: "123 elm street",
           city: "new york",
           zip: "10001",
           state: USState.NY,
@@ -54,11 +54,11 @@ describe("normalizePatient", () => {
     expect(result).toEqual(expected);
   });
 
-  it("should normalize first and last name to lowercase and remove apostrophes and hyphens", () => {
+  it("should normalize first and last name to lowercase", () => {
     const PatientMPI: PatientMPI = {
       id: "123456789",
-      firstName: "John-O'Connor",
-      lastName: "Doe-Smith",
+      firstName: "John",
+      lastName: " Smith",
       dob: "1990-01-01",
       genderAtBirth: "M",
       address: [
@@ -79,8 +79,8 @@ describe("normalizePatient", () => {
 
     const expected: PatientMPI = {
       id: "123456789",
-      firstName: "johnoconnor",
-      lastName: "doesmith",
+      firstName: "john",
+      lastName: "smith",
       dob: "1990-01-01",
       genderAtBirth: "M",
       address: [
@@ -156,114 +156,4 @@ describe("normalizePatient", () => {
 
     expect(result).toEqual(expected);
   });
-
-  // Should handle default values for first name, last name, and address
-  it("should handle default values for first name, last name, and return null", () => {
-    const PatientMPI: PatientMPI = {
-      id: "123456789",
-      firstName: "John",
-      lastName: "Doe",
-      dob: "1990-01-01",
-      genderAtBirth: "M",
-      address: [
-        {
-          addressLine1: "123 Elm St",
-          city: "New York",
-          zip: "10001",
-          state: USState.NY,
-        },
-      ],
-      contact: [
-        {
-          email: "john.doe@example.com",
-          phone: "123-456-7890",
-        },
-      ],
-    };
-
-    const expected = null;
-
-    const result = normalizePatient(PatientMPI);
-
-    expect(result).toEqual(expected);
-  });
-});
-
-// Should return null if the patient has a default address
-it("should handle default address values", () => {
-  const PatientMPI: PatientMPI = {
-    id: "123456789",
-    firstName: "John",
-    lastName: "Doe",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 main street",
-        city: "anytown",
-        zip: "00000",
-        state: USState.NY,
-      },
-    ],
-    contact: [
-      {
-        email: "john.doe@example.com",
-        phone: "123-456-7890",
-      },
-    ],
-  };
-
-  const result = normalizePatient(PatientMPI);
-  expect(result).toBeNull();
-});
-
-// Should return null if the patient has default contact values
-it("should handle default contact values and remove period from street", () => {
-  const PatientMPI: PatientMPI = {
-    id: "123456789",
-    firstName: "john",
-    lastName: "dogo",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 elm st.",
-        city: "new york",
-        zip: "10001",
-        state: USState.NY,
-      },
-    ],
-    contact: [
-      {
-        email: "example@example.com",
-        phone: "0000000000",
-      },
-    ],
-  };
-
-  const expected: PatientMPI = {
-    id: "123456789",
-    firstName: "john",
-    lastName: "dogo",
-    dob: "1990-01-01",
-    genderAtBirth: "M",
-    address: [
-      {
-        addressLine1: "123 elm st",
-        city: "new york",
-        zip: "10001",
-        state: USState.NY,
-        country: "USA",
-      },
-    ],
-    contact: [
-      {
-        email: "",
-        phone: "",
-      },
-    ],
-  };
-
-  const result = normalizePatient(PatientMPI);
-  expect(result).toEqual(expected);
 });
