@@ -112,8 +112,6 @@ export const setDocQueryProgress = (
 
   const convert = documentQueryProgress.convert;
 
-  console.log("CONVERT BEFORE", convert);
-
   if (convert && convertibleDownloadErrors != null && convertibleDownloadErrors > 0) {
     convert.total = Math.max((convert.total ?? 0) - convertibleDownloadErrors, 0);
     // since we updated the total above, we should update the status as well
@@ -125,8 +123,6 @@ export const setDocQueryProgress = (
 
     convert.status = getStatusFromProgress(convert);
   }
-
-  console.log("CONVERT AFTER", convert);
 
   return documentQueryProgress;
 };

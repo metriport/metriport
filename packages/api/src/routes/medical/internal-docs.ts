@@ -63,7 +63,7 @@ const reprocessOptionsSchema = z.enum(options).array().optional();
  *
  * Asychronous operation, returns 200 immediately.
  *
- * @deprecated No longer in use
+ * @deprecated Should no longer be used. Does not handle multiple hies.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.documentIds - Optional comma-separated list of metriport document
  *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
@@ -187,30 +187,27 @@ router.post(
     const jobId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
     const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
+
     const requestId = jobId?.split("_")[0] ?? "";
     const docId = jobId?.split("_")[1] ?? "";
-
-    console.log("PASSED", requestId, docId, source);
 
     const hasSource = isMedicalDataSource(source);
 
     log(`Converted document ${docId} with status ${convertResult}, details: ${details}`);
 
-    // START TODO 785 remove this once we're confident with the flow
-    const patientPre = await getPatientOrFail({ id: patientId, cxId });
-    const docQueryProgress = patientPre.data.documentQueryProgress;
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const docQueryProgress = patient.data.documentQueryProgress;
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
-    // END TODO 785
 
     if (hasSource) {
       const updatedSourceDocProgress = updateSourceConversionProgress({
-        patient: patientPre,
+        patient: patient,
         convertResult,
         source: source,
       });
 
       appendDocQueryProgressWithSource({
-        patient: patientPre,
+        patient: patient,
         convertProgress: updatedSourceDocProgress,
         requestId,
         source,
@@ -431,9 +428,6 @@ router.get(
   })
 );
 
-// Note: This doesnt seem like it would work anymore.
-// CQ will me sending messages to Mirth so if we try to reset in the middle of processing
-// The first request will still running running through mirth and sending messages to the api
 /**
  * POST /internal/docs/query
  *

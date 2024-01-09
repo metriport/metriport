@@ -146,8 +146,6 @@ export const updateConversionProgress = async ({
       convertResult,
     });
 
-    console.log("DOCUMENT QUERY PROGRESS", documentQueryProgress);
-
     const updatedPatient = {
       ...existingPatient,
       data: {

@@ -47,7 +47,7 @@ const isIgnoreFhirConversionAndUpsert = (options: Options[]): boolean =>
   options.includes("ignore-fhir-conversion-and-upsert");
 
 /**
- * @deprecated No longer in use
+ * @deprecated Should no longer be used. Does not handle multiple hies.
  */
 export const reprocessDocuments = async ({
   cxId,

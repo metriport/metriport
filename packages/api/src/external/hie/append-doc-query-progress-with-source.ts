@@ -44,9 +44,6 @@ export async function appendDocQueryProgressWithSource({
     cxId: patient.cxId,
   };
 
-  console.log("DOWNLOAD PROGRESS", downloadProgress);
-  console.log("CONVERT PROGRESS", convertProgress);
-
   const result = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
@@ -59,8 +56,6 @@ export async function appendDocQueryProgressWithSource({
         ? {}
         : existingPatient.data.documentQueryProgress;
 
-    console.log("PROCESS", documentQueryProgress, source);
-
     // Set the doc query progress for the given hie
     const externalData = setExternalData(
       reset,
@@ -72,25 +67,17 @@ export async function appendDocQueryProgressWithSource({
       increaseCountConvertible
     );
 
-    console.log("EXTERNAL DATA AFTER", externalData);
-
     existingPatient.data.externalData = externalData;
 
     // Set the aggregated doc query progress for the patient
     const externalQueryProgresses = setDocQueryProgressWithExternal(externalData);
 
-    console.log("EXTERNAL QUERY PROGRESSES", externalQueryProgresses);
-
     const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
-
-    console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
 
     const updatedDocumentQueryProgress = {
       ...documentQueryProgress,
       ...aggregatedDocProgress,
     };
-
-    console.log("UPDATED DOC PROGRESS", updatedDocumentQueryProgress);
 
     updatedDocumentQueryProgress.requestId = requestId;
 
@@ -200,8 +187,6 @@ export function setExternalData(
 
   const sourceData = externalData[source] as HIEPatientData;
 
-  console.log("SOURCE DATA", sourceData?.documentQueryProgress);
-
   const docQueryProgress = setDocQueryProgress(
     sourceData?.documentQueryProgress ?? {},
     downloadProgress,
@@ -209,8 +194,6 @@ export function setExternalData(
     convertibleDownloadErrors,
     increaseCountConvertible
   );
-
-  console.log("DOC QUERY PROGRESS", docQueryProgress);
 
   externalData[source] = {
     ...externalData[source],
