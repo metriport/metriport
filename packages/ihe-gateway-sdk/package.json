@@ -58,6 +58,5 @@
     "@metriport/shared": "^0.1.11-alpha.1",
     "axios": "^1.6.0",
     "zod": "^3.22.1"
-  },
-  "gitHead": "25740b037535d032ac484018cffb458daf3f4229"
+  }
 }

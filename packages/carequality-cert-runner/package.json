@@ -43,6 +43,5 @@
   "dependencies": {
     "@metriport/core": "^1.6.12-alpha.0",
     "@metriport/ihe-gateway-sdk": "^0.1.14-alpha.1"
-  },
-  "gitHead": "25740b037535d032ac484018cffb458daf3f4229"
+  }
 }

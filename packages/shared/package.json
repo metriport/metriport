@@ -50,6 +50,5 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
-  },
-  "gitHead": "25740b037535d032ac484018cffb458daf3f4229"
+  }
 }
