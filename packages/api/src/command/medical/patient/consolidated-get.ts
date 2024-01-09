@@ -17,7 +17,7 @@ import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared";
+import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";

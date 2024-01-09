@@ -2,7 +2,7 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { OperationOutcome, OperationOutcomeIssue, ResourceType } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
-import { operationOutcomeIssueToString } from "@metriport/core/external/fhir/shared";
+import { operationOutcomeIssueToString } from "@metriport/core/external/fhir/shared/index";
 import { FhirErrorMapping, groupFHIRErrors, tryDetermineFhirError } from "../error-mapping";
 
 const toOperationOutcome = (issue: OperationOutcomeIssue[]): OperationOutcome => ({

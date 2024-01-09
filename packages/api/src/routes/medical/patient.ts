@@ -19,7 +19,7 @@ import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
-import { toFHIR } from "@metriport/core/external/fhir/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -84,7 +84,6 @@ router.post(
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
     await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
-
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );

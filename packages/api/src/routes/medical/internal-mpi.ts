@@ -6,6 +6,7 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { asyncHandler, getFrom } from "../util";
+import { dtoFromModel } from "./dtos/patientDTO";
 
 dayjs.extend(duration);
 
@@ -41,7 +42,7 @@ router.get(
         lastNameInitial,
       },
     });
-    return res.status(status.OK).json(foundPatients);
+    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
   })
 );
 

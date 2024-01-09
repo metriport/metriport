@@ -48,6 +48,7 @@ import {
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { dtoFromModel } from "./dtos/patientDTO";
 
 dayjs.extend(duration);
 
@@ -548,7 +549,7 @@ router.get(
     });
     // TODO check if we're not returning Sequelize's Model data here; even thought the shape is Patient, the underlying object is PatientModel
     // If we are, we should convert it to a DTO. Here, on `GET /internal/patient/:id`, and on `GET /internal/mpi/patient`
-    return res.status(status.OK).json(foundPatients);
+    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
   })
 );
 
@@ -569,7 +570,7 @@ router.get(
 
     const patient = await getPatientOrFail({ cxId, id });
 
-    return res.status(status.OK).json(patient);
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 

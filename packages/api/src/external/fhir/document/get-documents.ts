@@ -4,7 +4,7 @@ import { makeFhirApi } from "../api/api-factory";
 import {
   isoDateToFHIRDateQueryFrom,
   isoDateToFHIRDateQueryTo,
-} from "@metriport/core/external/fhir/shared";
+} from "@metriport/core/external/fhir/shared/index";
 
 export async function getDocuments({
   cxId,

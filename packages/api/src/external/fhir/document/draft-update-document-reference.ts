@@ -1,5 +1,5 @@
 import { Attachment, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
-import { toFHIRSubject } from "@metriport/core/external/fhir/patient";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import BadRequestError from "../../../errors/bad-request";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
