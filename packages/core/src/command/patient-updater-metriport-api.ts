@@ -1,7 +1,7 @@
 import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientUpdater } from "../domain/medical/patient-updater";
+import { PatientUpdater } from "./patient-updater";
 
 dayjs.extend(duration);
 

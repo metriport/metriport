@@ -6,8 +6,8 @@ import {
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "@metriport/core/domain/medical/document-query";
-import { Patient } from "@metriport/core/domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientModel } from "../../../models/medical/patient";

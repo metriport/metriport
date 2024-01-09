@@ -1,4 +1,4 @@
-import { USState } from "../geographic-locations";
+import { USState } from "./geographic-locations";
 
 export type Address = {
   addressLine1: string;

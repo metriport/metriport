@@ -10,13 +10,13 @@ import {
   getPatientDiscoveryResults,
 } from "./command/patient-discovery-result/get-patient-discovery-result";
 import { CQLink } from "./domain/cq-patient-data";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { toFHIR } from "../fhir/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";

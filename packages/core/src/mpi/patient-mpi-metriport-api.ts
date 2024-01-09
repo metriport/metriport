@@ -1,11 +1,11 @@
 import { PatientLoaderMetriportAPI } from "../command/patient-loader-metriport-api";
-import { PatientData } from "../domain/medical/patient";
+import { PatientData } from "../domain/patient";
 import {
   exactMatchSimilarity,
   matchingPersonalIdentifiersRule,
   matchPatients,
 } from "./match-patients";
-import { mergeWithFirstPatient } from "./merge-patients";
+import { useFirstMatchingPatient } from "./merge-patients";
 import { MPI } from "./mpi";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI, patientToPatientMPI } from "./shared";
@@ -33,6 +33,6 @@ export class MPIMetriportAPI implements MPI {
       normalizedPatientDemo,
       this.SIMILARITY_THRESHOLD
     );
-    return mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
+    return useFirstMatchingPatient(matchingPatients);
   }
 }

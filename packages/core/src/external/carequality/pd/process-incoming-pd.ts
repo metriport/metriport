@@ -2,28 +2,23 @@ import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
 import {
-  InternalError,
+  XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
   PatientAddressRequestedError,
   validateFHIRAndExtractPatient,
+  IHEGatewayError,
 } from "./validating-pd";
 
-import {
-  METRIPORT_HOME_COMMUNITY_ID,
-  CODE_SYSTEM_REQUESTED_ERROR as PD_CODE_SYSTEM_REQUESTED_ERROR,
-  CODE_SYSTEM_REQUIRED_ERROR as PD_CODE_SYSTEM_REQUIRED_ERROR,
-} from "../shared";
+import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 
 function constructErrorResponse(
   payload: PatientDiscoveryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
+  error: IHEGatewayError
 ): PatientDiscoveryResponseOutgoing {
   return {
     id: payload.id,
@@ -39,8 +34,8 @@ function constructErrorResponse(
           severity: "error",
           code: "processing",
           details: {
-            coding: [{ system: codingSystem, code: code }],
-            text: error,
+            coding: [{ system: error.name, code: error.iheErrorCode }],
+            text: error.message,
           },
         },
       ],
@@ -93,7 +88,6 @@ function constructMatchResponse(
 
 export async function processIncomingRequest(
   payload: PatientDiscoveryRequestIncoming,
-  // workaround to allow injecting the behavior since this is an isolated function, not a class
   mpi: MPI
 ): Promise<PatientDiscoveryResponseOutgoing> {
   try {
@@ -103,37 +97,15 @@ export async function processIncomingRequest(
       return constructNoMatchResponse(payload);
     }
     return constructMatchResponse(payload, patientMPIToPartialPatient(matchingPatient));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    switch (error.constructor) {
-      case InternalError:
-        return constructErrorResponse(
-          payload,
-          PD_CODE_SYSTEM_REQUIRED_ERROR,
-          "InternalError",
-          error.message
-        );
-      case PatientAddressRequestedError:
-        return constructErrorResponse(
-          payload,
-          PD_CODE_SYSTEM_REQUESTED_ERROR,
-          "PatientAddressRequested",
-          error.message
-        );
-      case LivingSubjectAdministrativeGenderRequestedError:
-        return constructErrorResponse(
-          payload,
-          PD_CODE_SYSTEM_REQUESTED_ERROR,
-          "LivingSubjectAdministrativeGenderRequested",
-          error.message
-        );
-      default:
-        return constructErrorResponse(
-          payload,
-          PD_CODE_SYSTEM_REQUIRED_ERROR,
-          "Internal Server Error",
-          "Unknown Error: Contact Metriport Support for assistance"
-        );
+  } catch (error) {
+    if (error instanceof XDSRegistryError) {
+      return constructErrorResponse(payload, error);
+    } else if (error instanceof PatientAddressRequestedError) {
+      return constructErrorResponse(payload, error);
+    } else if (error instanceof LivingSubjectAdministrativeGenderRequestedError) {
+      return constructErrorResponse(payload, error);
+    } else {
+      return constructErrorResponse(payload, new XDSRegistryError());
     }
   }
 }

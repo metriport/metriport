@@ -1,5 +1,5 @@
-import { Address } from "../domain/medical/address";
-import { Patient, PatientData } from "../domain/medical/patient";
+import { Address } from "../domain/address";
+import { Patient, PatientData } from "../domain/patient";
 
 // Define default values for each field
 const defaultValues = {
@@ -73,14 +73,14 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
     })),
     address: (patient.address ?? []).map(addr => {
       const newAddress: Address = {
-        addressLine1: addr.addressLine1, // normalizeAddress(addr.addressLine1),
+        addressLine1: normalizeAddress(addr.addressLine1),
         city: normalizeString(addr.city),
         zip: normalizeZipCode(addr.zip),
         state: addr.state,
         country: addr.country || "USA",
       };
       if (addr.addressLine2) {
-        newAddress.addressLine2 = addr.addressLine2; // normalizeAddress(addr.addressLine2);
+        newAddress.addressLine2 = normalizeAddress(addr.addressLine2);
       }
       return newAddress;
     }),
@@ -145,28 +145,7 @@ function normalizePhoneNumber(phoneNumber: string): string {
  * @returns The function `normalizeAddress` returns a string.
  */
 export function normalizeAddress(address: string): string {
-  const suffixes: Record<string, string> = {
-    street: "st",
-    avenue: "ave",
-    boulevard: "blvd",
-    drive: "dr",
-    road: "rd",
-    terrace: "ter",
-    place: "pl",
-    lane: "ln",
-    highway: "hwy",
-    parkway: "pkwy",
-  };
-
-  address = address.trim().toLowerCase().replace(/['-.]/g, "");
-  const words: string[] = address.split(" ");
-
-  const transformedWords = words.map(word => {
-    const suffix = suffixes[word];
-    return suffix ? suffix : word;
-  });
-
-  return transformedWords.join(" ");
+  return normalizeString(address);
 }
 
 export function splitName(name: string): string[] {

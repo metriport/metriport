@@ -1,6 +1,6 @@
-import { DocumentQueryProgress } from "@metriport/core/domain/medical/document-query";
-import { Patient } from "@metriport/core/domain/medical/patient";
-import { QueryProgress } from "@metriport/core/domain/medical/query-status";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";

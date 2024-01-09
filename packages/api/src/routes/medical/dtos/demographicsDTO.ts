@@ -1,4 +1,4 @@
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { AddressDTO } from "./addressDTO";
 import { ContactDTO } from "./contact-dto";
 import { PersonalIdentifierDTO } from "./personal-identifier-dto";

@@ -1,13 +1,15 @@
-import { Identifier, Patient as FHIRPatient, ContactPoint } from "@medplum/fhirtypes";
-import { driversLicenseURIs } from "../../../domain/oid";
-import { ContactTypes, Contact } from "../../../domain/medical/contact";
-import { Address } from "../../../domain/medical/address";
 import {
-  GenderAtBirth,
-  Patient,
-  PersonalIdentifier,
-  splitName,
-} from "../../../domain/medical/patient";
+  Identifier,
+  Patient as FHIRPatient,
+  ContactPoint,
+  Reference,
+  DocumentReference,
+} from "@medplum/fhirtypes";
+import { driversLicenseURIs } from "../../../domain/oid";
+import { ContactTypes, Contact } from "../../../domain/contact";
+import { Address } from "../../../domain/address";
+import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
+import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
@@ -71,6 +73,18 @@ const convertDriversLicenseToIdentifier = (
     };
   });
 };
+
+export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
+  const subject: Reference<FHIRPatient> = {
+    reference: `Patient/${patientId}`,
+    type: "Patient",
+  };
+  return subject;
+}
+
+export function getPatientId(doc: DocumentReference): string | undefined {
+  return getIdFromSubjectId(doc.subject) ?? getIdFromSubjectRef(doc.subject);
+}
 
 export function isContactType(type: string): type is ContactTypes {
   return ["phone", "fax", "email", "pager", "url", "sms", "other"].includes(type);

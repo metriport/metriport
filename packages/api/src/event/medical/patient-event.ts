@@ -1,5 +1,5 @@
 import EventEmitter from "events";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 
 export type PatientEvent = Pick<Patient, "id" | "cxId">;
 

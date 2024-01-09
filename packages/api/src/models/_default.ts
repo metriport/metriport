@@ -7,7 +7,7 @@ import {
   Model,
   Sequelize,
 } from "sequelize";
-import { BaseDomain, BaseDomainNoId } from "../domain/base-domain";
+import { BaseDomain, BaseDomainNoId } from "@metriport/core/domain/base-domain";
 import VersionMismatchError from "../errors/version-mismatch";
 import { Util } from "../shared/util";
 

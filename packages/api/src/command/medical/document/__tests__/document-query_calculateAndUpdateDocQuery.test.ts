@@ -5,7 +5,7 @@ import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
-} from "@metriport/core/domain/medical/document-query";
+} from "@metriport/core/domain/document-query";
 import { makeDocumentQueryProgress } from "../../../../domain/medical/__tests__/document-query";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";
