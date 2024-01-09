@@ -1,23 +1,23 @@
-import { Progress, DocumentQueryProgress } from "../domain/medical/document-query";
-import { MedicalDataSource } from ".";
-import { PatientExternalData } from "../domain/medical/patient";
-import { progressTypes } from "../domain/medical/document-query";
-import { DocumentQueryStatus } from "../domain/medical/document-query";
-import { Patient } from "../domain/medical/patient";
-import { PatientModel } from "../models/medical/patient";
-import { executeOnDBTx } from "../models/transaction-wrapper";
+import { Progress, DocumentQueryProgress } from "../../domain/medical/document-query";
+import { MedicalDataSource } from "..";
+import { PatientExternalData } from "../../domain/medical/patient";
+import { progressTypes } from "../../domain/medical/document-query";
+import { DocumentQueryStatus } from "../../domain/medical/document-query";
+import { Patient } from "../../domain/medical/patient";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
   SetDocQueryProgress,
   setDocQueryProgress,
-} from "../command/medical/patient/append-doc-query-progress";
-import { getPatientOrFail } from "../command/medical/patient/get-patient";
-import { processDocQueryProgressWebhook } from "../command/medical/document/process-doc-query-webhook";
-import { PatientDataCommonwell } from "./commonwell/patient-shared";
-import { PatientDataCarequality } from "./carequality/patient-shared";
-import { getCWData } from "./commonwell/patient";
-import { getCQData } from "./carequality/patient";
+} from "../../command/medical/patient/append-doc-query-progress";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
+import { PatientDataCommonwell } from "../commonwell/patient-shared";
+import { PatientDataCarequality } from "../carequality/patient-shared";
+import { getCWData } from "../commonwell/patient";
+import { getCQData } from "../carequality/patient";
 
-type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
+export type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
 
 type SetDocQueryProgressWithSource = SetDocQueryProgress & {
   source: MedicalDataSource;
@@ -81,19 +81,14 @@ export async function appendDocQueryProgressWithSource({
 
     console.log("EXTERNAL QUERY PROGRESSES", externalQueryProgresses);
 
-    let updatedDocumentQueryProgress = documentQueryProgress;
+    const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
 
-    // TODO: Remove when introducing doc retrieval
-    // It currently breaks convert
-    if (downloadProgress) {
-      const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
-      console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
+    console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
 
-      updatedDocumentQueryProgress = {
-        ...documentQueryProgress,
-        ...aggregatedDocProgress,
-      };
-    }
+    const updatedDocumentQueryProgress = {
+      ...documentQueryProgress,
+      ...aggregatedDocProgress,
+    };
 
     console.log("UPDATED DOC PROGRESS", updatedDocumentQueryProgress);
 

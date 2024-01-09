@@ -8,7 +8,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "../../../external";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
-import { appendDocQueryProgressWithSource } from "../../hie";
+import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);

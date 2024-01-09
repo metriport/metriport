@@ -10,7 +10,7 @@ import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
-import { appendDocQueryProgressWithSource } from "../../../../external/hie";
+import { appendDocQueryProgressWithSource } from "../../../../external/hie/append-doc-query-progress-with-source";
 import * as webhooks from "../../document/process-doc-query-webhook";
 
 let documentQueryProgress: DocumentQueryProgress;
@@ -441,118 +441,116 @@ describe("appendDocQueryProgress with source", () => {
     });
   });
 
-  // TODO: Add back when introducing doc retrieval
-  // Dont break CW flow
-  // describe("convert all hies", () => {
-  //   it("sets convert progress processing", async () => {
-  //     const convertProgress = { status: "processing" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
-  //     checkUnchanged("download");
-  //   });
+  describe("convert all hies", () => {
+    it("sets convert progress processing", async () => {
+      const convertProgress = { status: "processing" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
 
-  //   it("sets one hie as complete", async () => {
-  //     const convertProgress = { status: "processing" as const };
-  //     const convertComplete = { status: "completed" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertComplete,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
-  //     checkUnchanged("download");
-  //   });
+    it("sets one hie as complete", async () => {
+      const convertProgress = { status: "processing" as const };
+      const convertComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
 
-  //   it("sets all hie's as complete", async () => {
-  //     const convertComplete = { status: "completed" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertComplete,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertComplete,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertComplete) });
-  //     checkUnchanged("download");
-  //   });
+    it("sets all hie's as complete", async () => {
+      const convertComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertComplete) });
+      checkUnchanged("download");
+    });
 
-  //   it("sets one hie as failed", async () => {
-  //     const convertProgress = { status: "processing" as const };
-  //     const convertFailed = { status: "failed" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertFailed,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
-  //     checkUnchanged("download");
-  //   });
+    it("sets one hie as failed", async () => {
+      const convertProgress = { status: "processing" as const };
+      const convertFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
 
-  //   it("sets all hie's as failed", async () => {
-  //     const convertFailed = { status: "failed" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertFailed,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertFailed,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
-  //     checkUnchanged("download");
-  //   });
+    it("sets all hie's as failed", async () => {
+      const convertFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
+      checkUnchanged("download");
+    });
 
-  //   it("sets some hie's as failed and some complete", async () => {
-  //     const convertFailed = { status: "failed" as const };
-  //     const downloadCompleted = { status: "completed" as const };
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: convertFailed,
-  //       source: MedicalDataSource.COMMONWELL,
-  //     });
-  //     await appendDocQueryProgressWithSource({
-  //       patient: { id: "theId", cxId: "theCxId" },
-  //       requestId,
-  //       convertProgress: downloadCompleted,
-  //       source: MedicalDataSource.CAREQUALITY,
-  //     });
-  //     checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
-  //     checkUnchanged("download");
-  //   });
-  // });
+    it("sets some hie's as failed and some complete", async () => {
+      const convertFailed = { status: "failed" as const };
+      const downloadCompleted = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: downloadCompleted,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
+      checkUnchanged("download");
+    });
+  });
 });

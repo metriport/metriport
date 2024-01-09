@@ -49,7 +49,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
-import { appendDocQueryProgressWithSource } from "../../hie";
+import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -616,6 +616,7 @@ export async function downloadDocsAndUpsertFHIR({
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
                 requestId,
+                source: MedicalDataSource.COMMONWELL,
               });
             } catch (err) {
               // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function

@@ -285,6 +285,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
+      const source = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -310,7 +311,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
             level: "warning",
           });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
           return;
         }
 
@@ -389,6 +390,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           conversionResult,
           jobStartedAt,
           jobId,
+          source,
           log
         );
 
@@ -426,7 +428,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.sendToDLQ(message);
 
           if (isSidechainConnector()) {
-            await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+            await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
           }
         }
       }
@@ -500,6 +502,7 @@ async function sendConversionResult(
   conversionPayload: FHIRBundle,
   jobStartedAt: string | undefined,
   jobId: string | undefined,
+  source: string | undefined,
   log: Log
 ) {
   const fileName = `${sourceFileName}.json`;
@@ -528,6 +531,7 @@ async function sendConversionResult(
         ...sqsUtils.singleAttributeToSend("patientId", patientId),
         ...(jobStartedAt ? sqsUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
         ...(jobId ? sqsUtils.singleAttributeToSend("jobId", jobId) : {}),
+        ...(source ? sqsUtils.singleAttributeToSend("source", source) : {}),
       },
     };
     await sqsUtils.sqs.sendMessage(sendParams).promise();

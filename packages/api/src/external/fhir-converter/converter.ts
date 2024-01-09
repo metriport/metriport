@@ -8,6 +8,7 @@ import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extens
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
+import { MedicalDataSource } from "..";
 
 const connector = makeFHIRConverterConnector();
 const templateExt = "hbs";
@@ -47,6 +48,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
+  source?: MedicalDataSource;
 }): Promise<void> {
   const {
     patient,
@@ -57,6 +59,7 @@ export async function convertCDAToFHIR(params: {
     keepUnusedSegments = false,
     keepInvalidAccess = false,
     requestId,
+    source,
   } = params;
   const { log } = Util.out(
     `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
@@ -110,5 +113,6 @@ export async function convertCDAToFHIR(params: {
     s3FileName,
     s3BucketName,
     requestId,
+    source,
   });
 }
