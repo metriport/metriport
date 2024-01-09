@@ -1,4 +1,3 @@
-import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { Progress } from "../../domain/medical/document-query";
 import { Patient } from "../../domain/medical/patient";
 import { tallyDocQueryProgress, ConvertResult } from "../../domain/medical/conversion-progress";
