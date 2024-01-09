@@ -10,14 +10,14 @@ import {
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { emptyFunction } from "@metriport/shared";
-import { Patient } from "@metriport/core/domain/medical/patient";
-import { QueryProgress } from "@metriport/core/domain/medical/query-status";
+import { Patient } from "@metriport/core/domain/patient";
+import { QueryProgress } from "@metriport/core/domain/query-status";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
-import { isResourceDerivedFromDocRef } from "../../../external/fhir/shared";
+import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";

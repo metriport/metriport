@@ -1,5 +1,5 @@
 import { AtLeastOne } from "@metriport/shared/common/types";
-import { Patient, PatientData } from "./patient";
+import { Patient, PatientData } from "../domain/patient";
 
 export type GetOne = Pick<Patient, "id" | "cxId">;
 

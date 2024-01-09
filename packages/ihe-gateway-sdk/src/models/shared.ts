@@ -83,7 +83,7 @@ export type BaseResponse = z.infer<typeof baseResponseSchema>;
 export const baseErrorResponseSchema = z.intersection(
   baseResponseSchema,
   z.object({
-    operationOutcome: operationOutcomeSchema,
+    operationOutcome: operationOutcomeSchema.optional(),
   })
 );
 export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;

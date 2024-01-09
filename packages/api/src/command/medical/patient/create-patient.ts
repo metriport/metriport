@@ -1,5 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/medical/patient";
+import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { processAsyncError } from "../../../errors";
 import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";

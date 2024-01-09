@@ -48,6 +48,7 @@ import {
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { dtoFromModel } from "./dtos/patientDTO";
 
 dayjs.extend(duration);
 
@@ -521,8 +522,13 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/
  *
- * WIP
- *
+ * Returns a list of patients that match the given demographics.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.dob The patient's date of birth.
+ * @param req.query.genderAtBirth The patient's gender at birth.
+ * @param req.query.firstNameInitial The patient's first name initial.
+ * @param req.query.lastNameInitial The patient's last name initial.
+ * @return A list of patients that match the given demographics.
  */
 router.get(
   "/",
@@ -543,25 +549,28 @@ router.get(
     });
     // TODO check if we're not returning Sequelize's Model data here; even thought the shape is Patient, the underlying object is PatientModel
     // If we are, we should convert it to a DTO. Here, on `GET /internal/patient/:id`, and on `GET /internal/mpi/patient`
-    return res.status(status.OK).json(foundPatients);
+    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
   })
 );
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/:id
  *
- * WIP
+ * return a patient given a specific customer id and patient id
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return A patient.
  *
  */
 router.get(
-  "/:id", // move this to GET /internal/patient
+  "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
 
     const patient = await getPatientOrFail({ cxId, id });
 
-    return res.status(status.OK).json(patient);
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 

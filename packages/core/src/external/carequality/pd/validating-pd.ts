@@ -1,14 +1,14 @@
 import { Address as FHIRAddress, ContactPoint, Identifier } from "@medplum/fhirtypes";
-import { getStateEnum } from "../../../domain/geographic-locations";
-import { Address } from "../../../domain/medical/address";
-import { Contact } from "../../../domain/medical/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/medical/patient";
-import { isContactType } from "../../fhir/patient";
 import { PatientDiscoveryRequestIncoming } from "@metriport/ihe-gateway-sdk";
+import { getStateEnum } from "../../../domain/geographic-locations";
+import { Address } from "../../../domain/address";
+import { Contact } from "../../../domain/contact";
+import { PatientData, PersonalIdentifier } from "../../../domain/patient";
+import { isContactType } from "../../fhir/patient/index";
 import {
-  PatientAddressRequestedError,
+  XDSRegistryError,
   LivingSubjectAdministrativeGenderRequestedError,
-  InternalError,
+  PatientAddressRequestedError,
 } from "../error";
 import { STATE_MAPPINGS } from "../shared";
 
@@ -18,15 +18,15 @@ export function validateFHIRAndExtractPatient(
   const patient = payload.patientResource;
   const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
   if (!firstName) {
-    throw new InternalError("Given name is not defined");
+    throw new XDSRegistryError("Given name is not defined");
   }
   const lastName = patient.name?.[0]?.family;
   if (!lastName) {
-    throw new InternalError("Family name is not defined");
+    throw new XDSRegistryError("Family name is not defined");
   }
   const birthDate = patient.birthDate;
   if (!birthDate) {
-    throw new InternalError("Birth date is not defined");
+    throw new XDSRegistryError("Birth date is not defined");
   }
 
   const genderAtBirth =

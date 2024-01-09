@@ -2,10 +2,10 @@ import {
   BulkGetDocumentsUrlProgress,
   isBulkGetDocUrlProcessing,
   BulkGetDocUrlStatus,
-} from "@metriport/core/domain/medical/bulk-get-document-url";
+} from "@metriport/core/domain/bulk-get-document-url";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
 import { makeLambdaClient } from "../../../external/aws/lambda";

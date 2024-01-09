@@ -1,4 +1,4 @@
-import { PatientLoader } from "../../../domain/medical/patient-loader";
+import { PatientLoader } from "../../../command/patient-loader";
 import { uuidv7 } from "../../../util/uuid-v7";
 import { CQOrgHydrated, getOrgChunksFromPos, getOrgsByPrio, OrgPrio } from "./get-orgs";
 

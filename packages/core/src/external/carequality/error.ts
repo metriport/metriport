@@ -2,63 +2,67 @@
 import {
   DocumentQueryRequestIncoming,
   DocumentQueryResponseOutgoing,
-} from "@metriport/ihe-gateway-sdk";
-import {
   DocumentRetrievalRequestIncoming,
   DocumentRetrievalResponseOutgoing,
-} from "@metriport/ihe-gateway-sdk";
-import {
   PatientDiscoveryRequestIncoming,
   PatientDiscoveryResponseOutgoing,
+  BaseErrorResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { METRIPORT_HOME_COMMUNITY_ID } from "./shared";
+import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
+import { MetriportError } from "../../util/error/metriport-error";
+import status from "http-status";
 
-export class XDSUnknownPatientId extends Error {
-  constructor(message?: string) {
+export class IHEGatewayError extends MetriportError {
+  constructor(
+    message: string,
+    public iheErrorCode: string,
+    statusCode: number = status.BAD_REQUEST
+  ) {
     super(message);
-    this.name = "XDSUnknownPatientId";
+    this.name = this.constructor.name;
+    this.status = statusCode;
   }
 }
 
-export class XDSMissingHomeCommunityId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSMissingHomeCommunityId";
+export class PatientAddressRequestedError extends IHEGatewayError {
+  constructor(message = "Address Line 1 is not defined") {
+    super(message, CODE_SYSTEM_ERROR);
+    this.name = this.constructor.name;
   }
 }
 
-export class XDSRegistryError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSRegistryError";
+export class LivingSubjectAdministrativeGenderRequestedError extends IHEGatewayError {
+  constructor(message = "Gender at Birth is not defined") {
+    super(message, CODE_SYSTEM_ERROR);
+    this.name = this.constructor.name;
   }
 }
 
-export class XDSUnknownCommunity extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownCommunity";
+export class XDSRegistryError extends IHEGatewayError {
+  constructor(message = "Internal Server Error") {
+    super(message, CODE_SYSTEM_ERROR, status.INTERNAL_SERVER_ERROR);
+    this.name = this.constructor.name;
   }
 }
 
-export class PatientAddressRequestedError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "PatientAddressRequestedError";
+export class XDSUnknownPatientId extends IHEGatewayError {
+  constructor(message = "Unknown Patient ID") {
+    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
   }
 }
 
-export class LivingSubjectAdministrativeGenderRequestedError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "LivingSubjectAdministrativeGenderRequestedError";
+export class XDSMissingHomeCommunityId extends IHEGatewayError {
+  constructor(message = "Missing Home Community ID") {
+    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
   }
 }
 
-export class InternalError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "InternalError";
+export class XDSUnknownCommunity extends IHEGatewayError {
+  constructor(message = "Unknown Community") {
+    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+    this.name = this.constructor.name;
   }
 }
 
@@ -67,15 +71,15 @@ function constructBaseErrorResponse(
     | DocumentQueryRequestIncoming
     | DocumentRetrievalRequestIncoming
     | PatientDiscoveryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
+  error?: IHEGatewayError
 ) {
-  return {
+  const baseResponse: BaseErrorResponse = {
     id: payload.id,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
-    operationOutcome: {
+  };
+  if (error) {
+    baseResponse.operationOutcome = {
       resourceType: "OperationOutcome",
       id: payload.id,
       issue: [
@@ -83,34 +87,31 @@ function constructBaseErrorResponse(
           severity: "error",
           code: "processing",
           details: {
-            coding: [{ system: codingSystem, code: code }],
-            text: error,
+            coding: [{ system: error.name, code: error.iheErrorCode }],
+            text: error.message,
           },
         },
       ],
-    },
-  };
+    };
+  }
+  return baseResponse;
 }
 
 export function constructDQErrorResponse(
   payload: DocumentQueryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
+  error: IHEGatewayError
 ): DocumentQueryResponseOutgoing {
   return {
-    ...constructBaseErrorResponse(payload, codingSystem, code, error),
+    ...constructBaseErrorResponse(payload, error),
   };
 }
 
 export function constructDRErrorResponse(
   payload: DocumentRetrievalRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
+  error: IHEGatewayError
 ): DocumentRetrievalResponseOutgoing {
   return {
-    ...constructBaseErrorResponse(payload, codingSystem, code, error),
+    ...constructBaseErrorResponse(payload, error),
   };
 }
 
@@ -118,7 +119,7 @@ export function constructPDNoMatchResponse(
   payload: PatientDiscoveryRequestIncoming
 ): PatientDiscoveryResponseOutgoing {
   return {
-    ...constructBaseErrorResponse(payload, "processing", "no match found", "no match found"),
+    ...constructBaseErrorResponse(payload),
     patientMatch: false,
     xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
@@ -126,12 +127,10 @@ export function constructPDNoMatchResponse(
 
 export function constructPDErrorResponse(
   payload: PatientDiscoveryRequestIncoming,
-  codingSystem: string,
-  code: string,
-  error: string
+  error: IHEGatewayError
 ): PatientDiscoveryResponseOutgoing {
   return {
-    ...constructBaseErrorResponse(payload, codingSystem, code, error),
+    ...constructBaseErrorResponse(payload, error),
     patientMatch: null,
     xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };

@@ -1,5 +1,5 @@
-import { Address } from "@metriport/core/domain/medical/address";
-import { PatientData } from "@metriport/core/domain/medical/patient";
+import { Address } from "@metriport/core/domain/address";
+import { PatientData } from "@metriport/core/domain/patient";
 import { aaminaDocRefs } from "./sandbox-seed-data-aamina";
 import { andreasDocRefs } from "./sandbox-seed-data-andreas";
 import { damienDocRefs } from "./sandbox-seed-data-damien";

@@ -1,9 +1,9 @@
-import { USState } from "../geographic-locations";
-import { BaseDomain, BaseDomainCreate } from "../base-domain";
+import { USState } from "./geographic-locations";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { QueryProgress } from "./query-status";
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
 

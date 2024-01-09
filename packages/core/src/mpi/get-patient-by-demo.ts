@@ -1,12 +1,12 @@
-import { Patient, PatientData } from "../domain/medical/patient";
-import { PatientLoader } from "../domain/medical/patient-loader";
+import { Patient, PatientData } from "../domain/patient";
+import { PatientLoader } from "../command/patient-loader";
 import {
   jaroWinklerSimilarity,
   matchingContactDetailsRule,
   matchingPersonalIdentifiersRule,
   matchPatients,
 } from "./match-patients";
-import { mergeWithFirstPatient } from "./merge-patients";
+import { useFirstMatchingPatient } from "./merge-patients";
 import { normalizePatient } from "./normalize-patient";
 import { patientToPatientMPI } from "./shared";
 
@@ -53,7 +53,7 @@ export const getPatientByDemo = async ({
   );
 
   // Merge the matching patients
-  const mpiPatient = mergeWithFirstPatient(matchingPatients, normalizedPatientDemo);
+  const mpiPatient = useFirstMatchingPatient(matchingPatients);
   if (!mpiPatient) return undefined;
 
   return patientLoader.getOneOrFail({ id: mpiPatient.id, cxId });

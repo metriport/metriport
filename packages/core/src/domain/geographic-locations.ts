@@ -55,7 +55,14 @@ export enum USState {
   // "Puerto Rico", "PR"
 }
 
+function isKeyOfUSState(key: string): key is keyof typeof USState {
+  return key in USState;
+}
+
 export function getStateEnum(state: string): USState | undefined {
   const upperCaseState = state.toUpperCase();
-  return upperCaseState in USState ? (upperCaseState as USState) : undefined;
+  if (isKeyOfUSState(upperCaseState)) {
+    return USState[upperCaseState];
+  }
+  return undefined;
 }

@@ -3,7 +3,7 @@ import {
   DocumentRetrievalResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
 import { validateDR } from "./validating-dr";
-import { constructDRErrorResponse } from "../error";
+import { IHEGatewayError, constructDRErrorResponse, XDSRegistryError } from "../error";
 
 export async function processIncomingRequest(
   payload: DocumentRetrievalRequestIncoming
@@ -21,16 +21,11 @@ export async function processIncomingRequest(
     };
 
     return response;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    switch (error.constructor) {
-      default:
-        return constructDRErrorResponse(
-          payload,
-          "1.3.6.1.4.1.19376.1.2.27.3",
-          "Internal Server Error",
-          "Unknown Error: Contact Metriport Support for assistance"
-        );
+  } catch (error) {
+    if (error instanceof IHEGatewayError) {
+      return constructDRErrorResponse(payload, error);
+    } else {
+      return constructDRErrorResponse(payload, new XDSRegistryError("Internal Server Error"));
     }
   }
 }

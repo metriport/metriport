@@ -1,4 +1,4 @@
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { toBaseDTO } from "./baseDTO";
 import { DemographicsDTO } from "./demographicsDTO";
 
