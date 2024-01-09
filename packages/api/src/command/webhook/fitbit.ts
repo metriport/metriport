@@ -201,8 +201,8 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
           properties: {
             method: "POST",
             url: "/webhook/fitbit",
-            apiType: Product.devices,
           },
+          apiType: Product.devices,
         });
         const webhookRequest = await createWebhookRequest({
           cxId,
