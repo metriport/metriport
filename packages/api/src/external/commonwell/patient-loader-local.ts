@@ -1,4 +1,4 @@
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient, PatientData } from "@metriport/core/domain/medical/patient";
 import {
   FindBySimilarity,
   GetOne,
@@ -37,26 +37,29 @@ export class PatientLoaderLocal implements PatientLoader {
   private async findBySimilarityInternal(
     patient: Partial<Pick<FindBySimilarity, "cxId">> & Omit<FindBySimilarity, "cxId">
   ): Promise<Patient[]> {
-    // Define a specific type for the whereClause
     const whereClause: WhereOptions = {};
 
-    // Only add cxId to whereClause if it is not undefined
     if (patient.cxId !== undefined) {
       whereClause.cxId = patient.cxId;
     }
 
-    // Handling data criteria
+    // Explicitly pick each key as a key of PatientData
+    const firstNameKey: keyof Pick<PatientData, "firstName"> = "firstName";
+    const lastNameKey: keyof Pick<PatientData, "lastName"> = "lastName";
+    const dobKey: keyof Pick<PatientData, "dob"> = "dob";
+    const genderAtBirthKey: keyof Pick<PatientData, "genderAtBirth"> = "genderAtBirth";
+
     if (patient.data.firstNameInitial) {
-      whereClause["data.firstName"] = { [Op.like]: `${patient.data.firstNameInitial}%` };
+      whereClause[`data.${firstNameKey}`] = { [Op.like]: `${patient.data.firstNameInitial}%` };
     }
     if (patient.data.lastNameInitial) {
-      whereClause["data.lastName"] = { [Op.like]: `${patient.data.lastNameInitial}%` };
+      whereClause[`data.${lastNameKey}`] = { [Op.like]: `${patient.data.lastNameInitial}%` };
     }
     if (patient.data.dob) {
-      whereClause["data.dob"] = patient.data.dob;
+      whereClause[`data.${dobKey}`] = patient.data.dob;
     }
     if (patient.data.genderAtBirth) {
-      whereClause["data.genderAtBirth"] = patient.data.genderAtBirth;
+      whereClause[`data.${genderAtBirthKey}`] = patient.data.genderAtBirth;
     }
 
     const patients = await PatientModel.findAll({ where: whereClause });

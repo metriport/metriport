@@ -1,4 +1,4 @@
-import { BaseDomain, BaseDomainCreate } from "../base-domain";
+import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { AddressStrict } from "./location-address";
 
 export enum OrgType {

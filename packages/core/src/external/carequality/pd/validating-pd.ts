@@ -5,44 +5,58 @@ import {
   Patient as FHIRPatient,
 } from "@medplum/fhirtypes";
 import { getStateEnum, USState } from "../../../domain/geographic-locations";
-import { Address } from "../../../domain/medical/address";
-import { Contact } from "../../../domain/medical/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/medical/patient";
+import { Address } from "../../../domain/address";
+import { Contact } from "../../../domain/contact";
+import { PatientData, PersonalIdentifier } from "../../../domain/patient";
 import { isContactType } from "../../fhir/patient";
+import { MetriportError } from "../../../util/error/metriport-error";
+import status from "http-status";
 
-export class PatientAddressRequestedError extends Error {
-  constructor(message?: string) {
+export class IHEGatewayError extends MetriportError {
+  constructor(
+    message: string,
+    public iheErrorCode: string,
+    statusCode: number = status.BAD_REQUEST
+  ) {
     super(message);
-    this.name = "PatientAddressRequestedError";
+    this.name = this.constructor.name;
+    this.status = statusCode;
   }
 }
 
-export class LivingSubjectAdministrativeGenderRequestedError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "LivingSubjectAdministrativeGenderRequestedError";
+export class PatientAddressRequestedError extends IHEGatewayError {
+  constructor(message = "Address Line 1 is not defined") {
+    super(message, "1.3.6.1.4.1.19376.1.2.27.1");
+    this.name = this.constructor.name;
   }
 }
 
-export class InternalError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "InternalError";
+export class LivingSubjectAdministrativeGenderRequestedError extends IHEGatewayError {
+  constructor(message = "Gender at Birth is not defined") {
+    super(message, "1.3.6.1.4.1.19376.1.2.27.2");
+    this.name = this.constructor.name;
+  }
+}
+
+export class XDSRegistryError extends IHEGatewayError {
+  constructor(message = "Internal Server Error") {
+    super(message, "1.3.6.1.4.1.19376.1.2.27.3", status.INTERNAL_SERVER_ERROR);
+    this.name = this.constructor.name;
   }
 }
 
 export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData {
   const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
   if (!firstName) {
-    throw new InternalError("Given name is not defined");
+    throw new XDSRegistryError("Given name is not defined");
   }
   const lastName = patient.name?.[0]?.family;
   if (!lastName) {
-    throw new InternalError("Family name is not defined");
+    throw new XDSRegistryError("Family name is not defined");
   }
   const birthDate = patient.birthDate;
   if (!birthDate) {
-    throw new InternalError("Birth date is not defined");
+    throw new XDSRegistryError("Birth date is not defined");
   }
 
   const genderAtBirth =

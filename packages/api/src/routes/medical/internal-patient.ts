@@ -521,8 +521,13 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/
  *
- * WIP
- *
+ * Returns a list of patients that match the given demographics.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.dob The patient's date of birth.
+ * @param req.query.genderAtBirth The patient's gender at birth.
+ * @param req.query.firstNameInitial The patient's first name initial.
+ * @param req.query.lastNameInitial The patient's last name initial.
+ * @return A list of patients that match the given demographics.
  */
 router.get(
   "/",
@@ -550,11 +555,14 @@ router.get(
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/:id
  *
- * WIP
+ * return a patient given a specific customer id and patient id
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return A patient.
  *
  */
 router.get(
-  "/:id", // move this to GET /internal/patient
+  "/:id",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);

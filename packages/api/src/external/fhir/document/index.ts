@@ -34,7 +34,7 @@ import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
-import { toFHIRSubject } from "../patient";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;

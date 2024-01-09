@@ -13,7 +13,7 @@ import { Patient } from "@metriport/core/domain/medical/patient";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
 import { countResources } from "../../../external/fhir/patient/count-resources";
-import { downloadedFromHIEs } from "../../../external/fhir/shared";
+import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared";
 import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";

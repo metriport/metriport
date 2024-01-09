@@ -16,7 +16,7 @@ import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { toFHIR } from "../fhir/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient";
 import { makeIheGatewayAPI } from "./api";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";

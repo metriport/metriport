@@ -1,6 +1,6 @@
 import axios from "axios";
-import { Patient } from "../domain/medical/patient";
-import { FindBySimilarity, GetOne, PatientLoader } from "../domain/medical/patient-loader";
+import { Patient } from "../domain/patient";
+import { FindBySimilarity, GetOne, PatientLoader } from "../domain/patient-loader";
 
 /**
  * Implementation of the PatientLoader that calls the Metriport API
@@ -19,14 +19,12 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
     return resp.data.states;
   }
 
-  // TODO should it be getOneOrFail or just getOne?
-  // TODO we should prob do some basic validation here to make sure we got the patient
   async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
     const response = await axios.get(`${this.apiUrl}/internal/patient/${id}?cxId=${cxId}`);
+    validatePatient(response.data);
     return response.data;
   }
 
-  // TODO we should prob do some basic validation here to make sure we got the patient
   async findBySimilarity({ cxId, data }: FindBySimilarity): Promise<Patient[]> {
     const response = await axios.get(`${this.apiUrl}/internal/patient`, {
       params: {
@@ -37,10 +35,10 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
         lastNameInitial: data?.lastNameInitial,
       },
     });
+    validatePatient(response.data);
     return response.data;
   }
 
-  // TODO we should prob do some basic validation here to make sure we got the patient
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
     const response = await axios.get(`${this.apiUrl}/internal/mpi/patient`, {
       params: {
@@ -50,6 +48,29 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
         lastNameInitial: data?.lastNameInitial,
       },
     });
+    validatePatient(response.data);
     return response.data;
   }
+}
+
+function validatePatient(patient: Patient): boolean {
+  if (!patient) {
+    throw new Error("Patient object is not defined");
+  }
+  if (!patient.id) {
+    throw new Error("Patient ID is not defined");
+  }
+  if (!patient.data.firstName) {
+    throw new Error("Patient name is not defined");
+  }
+  if (!patient.data.lastName) {
+    throw new Error("Patient last name is not defined");
+  }
+  if (!patient.data.dob) {
+    throw new Error("Patient birth date is not defined");
+  }
+  if (!patient.data.genderAtBirth) {
+    throw new Error("Patient gender is not defined");
+  }
+  return true;
 }

@@ -1,5 +1,5 @@
-import { Address } from "../domain/medical/address";
-import { Patient, PatientData } from "../domain/medical/patient";
+import { Address } from "../domain/address";
+import { Patient, PatientData } from "../domain/patient";
 
 // Define default values for each field
 const defaultValues = {

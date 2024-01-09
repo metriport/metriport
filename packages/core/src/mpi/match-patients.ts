@@ -1,7 +1,7 @@
 import jaroWinkler from "jaro-winkler";
 import { intersectionWith } from "lodash";
-import { Contact } from "../domain/medical/contact";
-import { PatientData, PersonalIdentifier } from "../domain/medical/patient";
+import { Contact } from "../domain/contact";
+import { PatientData, PersonalIdentifier } from "../domain/patient";
 import { normalizePatient } from "./normalize-patient";
 import { PatientMPI } from "./shared";
 
@@ -16,6 +16,7 @@ type MatchingRule = (patient1: PatientData, patient2: PatientData) => boolean;
 
 /**
  * `matchPatients` filters patients based on a similarity function, rules, and a threshold.
+ *
  * @param similarityFunction - Determines if a patient is a match.
  * @param matchingRules - Rules that determines if a patient is a match.
  * @param patients - Array of patients.
