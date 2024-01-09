@@ -1,6 +1,6 @@
 import { getId, Person } from "@metriport/commonwell-sdk";
 import { differenceBy } from "lodash";
-import { joinName } from "@metriport/core/domain/medical/patient";
+import { joinName } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "../../../external";
 import { DemographicsDTO, GenderDTO } from "./demographicsDTO";
 

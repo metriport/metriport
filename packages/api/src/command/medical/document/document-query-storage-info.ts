@@ -1,7 +1,7 @@
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { Document } from "@metriport/commonwell-sdk";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import {
   DocumentWithMetriportId,
   getFileExtension,

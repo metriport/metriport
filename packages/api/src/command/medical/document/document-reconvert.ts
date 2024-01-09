@@ -9,7 +9,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
 import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
 import { countResources } from "../../../external/fhir/patient/count-resources";

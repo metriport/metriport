@@ -1,6 +1,6 @@
-import { PatientUpdater } from "@metriport/core/domain/medical/patient-updater";
+import { PatientUpdater } from "@metriport/core/domain/patient-updater";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import cwCommands from ".";
 import { errorToString } from "../../shared/log";

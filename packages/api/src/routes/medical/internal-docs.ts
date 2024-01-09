@@ -22,8 +22,8 @@ import {
 } from "../../command/medical/document/document-webhook";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { BulkGetDocUrlStatus } from "@metriport/core/domain/medical/bulk-get-document-url";
-import { convertResult } from "@metriport/core/domain/medical/document-query";
+import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
+import { convertResult } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";

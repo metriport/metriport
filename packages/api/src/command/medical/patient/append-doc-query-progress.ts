@@ -1,5 +1,5 @@
-import { getStatusFromProgress, Progress } from "@metriport/core/domain/medical/document-query";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { getStatusFromProgress, Progress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";

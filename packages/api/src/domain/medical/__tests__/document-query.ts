@@ -5,7 +5,7 @@ import {
   DocumentQueryProgress,
   documentQueryStatus,
   Progress,
-} from "@metriport/core/domain/medical/document-query";
+} from "@metriport/core/domain/document-query";
 
 export function makeProgress(seed: Partial<DeepNullable<Progress>> = {}): Progress {
   return {

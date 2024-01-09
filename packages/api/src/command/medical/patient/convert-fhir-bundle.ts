@@ -9,7 +9,7 @@ import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/extern
 import { makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Patient } from "@metriport/core/domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";

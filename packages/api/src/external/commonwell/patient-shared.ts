@@ -15,7 +15,7 @@ import { intersectionBy, minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
-import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/medical/patient";
+import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
