@@ -43,14 +43,14 @@ export async function processIncomingRequest(
 ): Promise<DocumentQueryResponseOutgoing> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
-    const documentIds = await validateDQ(payload);
+    const documentContents = await validateDQ(payload);
 
     // construct response
     const response: DocumentQueryResponseOutgoing = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
-      extrinsicObjectXmls: documentIds,
+      extrinsicObjectXmls: documentContents,
     };
 
     return response;

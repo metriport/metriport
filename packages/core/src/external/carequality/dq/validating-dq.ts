@@ -66,10 +66,14 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
   console.log(`cxId: ${cxId}, id: ${id}`);
 
   const s3Utils = new S3Utils(region);
-  const documentIds = await s3Utils.retrieveDocumentIdsFromS3(cxId, id, medicalDocumentsBucketName);
+  const documentContents = await s3Utils.retrieveDocumentIdsFromS3(
+    cxId,
+    id,
+    medicalDocumentsBucketName
+  );
 
-  if (!documentIds) {
+  if (!documentContents) {
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
-  return documentIds;
+  return documentContents;
 }
