@@ -81,14 +81,19 @@ export async function appendDocQueryProgressWithSource({
 
     console.log("EXTERNAL QUERY PROGRESSES", externalQueryProgresses);
 
-    const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+    let updatedDocumentQueryProgress = documentQueryProgress;
 
-    console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
+    // TODO: Remove when introducing doc retrieval
+    // It currently breaks convert
+    if (downloadProgress) {
+      const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+      console.log("AGGREGATED DOC PROGRESS", aggregatedDocProgress);
 
-    const updatedDocumentQueryProgress = {
-      ...documentQueryProgress,
-      ...aggregatedDocProgress,
-    };
+      updatedDocumentQueryProgress = {
+        ...documentQueryProgress,
+        ...aggregatedDocProgress,
+      };
+    }
 
     console.log("UPDATED DOC PROGRESS", updatedDocumentQueryProgress);
 
