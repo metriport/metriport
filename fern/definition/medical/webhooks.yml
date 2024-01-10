@@ -42,6 +42,9 @@ types:
       externalId:
         type: optional<string>
         docs: The external ID of the patient.
+      type:
+        type: string
+        docs: The type of the webhook.
       documents:
         type: optional<list<WebhookDocumentDataPayload>>
         docs: An array of WebhookDocumentDataPayload objects.
@@ -104,127 +107,13 @@ types:
         type: ConsolidatedWebhookStatus
         docs: The status of the webhook.
       bundle:
-        type: optional<BundleWithResource>
+        type: optional<fhir.Bundle>
         docs: The FHIR bundle with the patient's consolidated data.
       filters:
         type: optional<Filters>
         docs: The filters used to obtain the bundle.
     audiences:
     - public
-
-  BundleWithoutEntry:
-    properties:
-      resourceType: literal<"Bundle">
-      id:
-        docs: The logical id of the resource, as used in the URL for the resource.
-          Once assigned, this value never changes.
-        type: optional<fhir.id>
-      meta:
-        docs: The metadata about the resource. This is content that is maintained
-          by the infrastructure. Changes to the content might not always be associated
-          with version changes to the resource.
-        type: optional<fhir.Meta>
-      implicitRules:
-        docs: A reference to a set of rules that were followed when the resource was
-          constructed, and which must be understood when processing the content. Often,
-          this is a reference to an implementation guide that defines the special
-          rules along with other profiles etc.
-        type: optional<fhir.uri>
-      language:
-        docs: The base language in which the resource is written.
-        type: optional<fhir.code>
-      identifier:
-        docs: A persistent identifier for the bundle that won't change as a bundle
-          is copied from server to server.
-        type: optional<fhir.Identifier>
-      type:
-        docs: Indicates the purpose of this bundle - how it is intended to be used.
-        type: optional<fhir.BundleType>
-      timestamp:
-        docs: The date/time that the bundle was assembled - i.e. when the resources
-          were placed in the bundle.
-        type: optional<fhir.instant>
-      total:
-        docs: If a set of search matches, this is the total number of entries of type
-          'match' across all pages in the search.  It does not include search.mode
-          = 'include' or 'outcome' entries and it does not provide a count of the
-          number of entries in the Bundle.
-        type: optional<fhir.unsignedInt>
-      link:
-        docs: A series of links that provide context to this bundle.
-        type: optional<list<fhir.BundleLink>>
-      signature:
-        docs: Digital Signature - base64 encoded. XML-DSig or a JWT.
-        type: optional<fhir.Signature>
-
-  BundleWithResource:
-    extends: BundleWithoutEntry
-    properties:
-      entry:
-        type: list<BundleEntryWithResource>
-        docs: The entries in the bundle.
-
-  BundleEntryWithResource:
-    extends: BundleEntryWithoutResource
-    properties:
-      resource:
-        type: fhir.Resource
-        docs: The resource that was added to the bundle.
-
-  BundleEntryWithoutResource:
-    properties:
-      id:
-        docs: Unique id for the element within a resource (for internal references).
-          This may be any string value that does not contain spaces.
-        type: optional<string>
-      extension:
-        docs: May be used to represent additional information that is not part of
-          the basic definition of the element. To make the use of extensions safe
-          and manageable, there is a strict set of governance  applied to the definition
-          and use of extensions. Though any implementer can define an extension, there
-          is a set of requirements that SHALL be met as part of the definition of
-          the extension.
-        type: optional<list<fhir.Extension>>
-      modifierExtension:
-        docs: May be used to represent additional information that is not part of
-          the basic definition of the element and that modifies the understanding
-          of the element in which it is contained and/or the understanding of the
-          containing element's descendants. Usually modifier elements provide negation
-          or qualification. To make the use of extensions safe and manageable, there
-          is a strict set of governance applied to the definition and use of extensions.
-          Though any implementer can define an extension, there is a set of requirements
-          that SHALL be met as part of the definition of the extension. Applications
-          processing a resource are required to check for modifier extensions. Modifier
-          extensions SHALL NOT change the meaning of any elements on Resource or DomainResource
-          (including cannot change the meaning of modifierExtension itself).
-        type: optional<list<fhir.Extension>>
-      link:
-        docs: A series of links that provide context to this entry.
-        type: optional<list<fhir.BundleLink>>
-      fullUrl:
-        docs: 'The Absolute URL for the resource.  The fullUrl SHALL NOT disagree
-          with the id in the resource - i.e. if the fullUrl is not a urn:uuid, the
-          URL shall be version-independent URL consistent with the Resource.id. The
-          fullUrl is a version independent reference to the resource. The fullUrl
-          element SHALL have a value except that:  * fullUrl can be empty on a POST
-          (although it does not need to when specifying a temporary id for reference
-          in the bundle) * Results from operations might involve resources that are
-          not identified.'
-        type: optional<fhir.uri>
-      search:
-        docs: Information about the search process that lead to the creation of this
-          entry.
-        type: optional<fhir.BundleSearch>
-      request:
-        docs: Additional information about how this entry should be processed as part
-          of a transaction or batch.  For history, it shows how the entry was processed
-          to create the version contained in the entry.
-        type: optional<fhir.BundleRequest>
-      response:
-        docs: Indicates the results of processing the corresponding 'request' entry
-          in the batch or transaction being responded to or what the results of an
-          operation where when returning history.
-        type: optional<fhir.BundleResponse>
 
   ConsolidatedWebhookStatus:
     enum:

@@ -1,8 +1,8 @@
 import { WebhookPatientDocumentDataPayload } from "../src/api/resources/medical/resources/webhooks/types/WebhookPatientDocumentDataPayload";
-// import { WebhookPatientConsolidatedDataPayload } from "../src/api/resources/medical/resources/webhooks/types/WebhookPatientConsolidatedDataPayload";
+import { WebhookPatientConsolidatedDataPayload } from "../src/api/resources/medical/resources/webhooks/types/WebhookPatientConsolidatedDataPayload";
 import { MapiWebhookStatus } from "../src/api/resources/medical/resources/webhooks/types/MapiWebhookStatus";
 
-const documentDataPayload = {
+const documentDataPayload: WebhookPatientDocumentDataPayload = {
   meta: {
     messageId: "<message-id>",
     when: "<date-time-in-utc>",
@@ -62,7 +62,7 @@ const documentDataPayload = {
   ],
 };
 
-export const consolidatedDataPayload = {
+export const consolidatedDataPayload: WebhookPatientConsolidatedDataPayload = {
   meta: {
     messageId: "1e82424a-1220-473d-a0d1-6e5fde15159e",
     when: "2023-08-23T22:09:11.373Z",
@@ -144,8 +144,8 @@ describe("Webhook types", () => {
     expect(!!parsedPayload).toBe(true);
   });
 
-  //   it('should match the WebhookPatientConsolidatedDataPayload type', async () => {
-  //     const parsedPayload: WebhookPatientConsolidatedDataPayload = consolidatedDataPayload;
-  //     expect(true).toBe(true);
-  //   });
+    it('should match the WebhookPatientConsolidatedDataPayload type', async () => {
+      const parsedPayload: WebhookPatientConsolidatedDataPayload = consolidatedDataPayload;
+      expect(!!parsedPayload).toBe(true);
+    });
 });
