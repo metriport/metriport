@@ -36,7 +36,7 @@ import { DocumentFromBulkSignerLambda } from "@metriport/core/domain/document-si
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
-import { MAPIWebhookStatus } from "@metriport/core/domain/webhook";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
 
 const router = Router();
 const upload = multer();

@@ -8,7 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
-import { MAPIWebhookStatus } from "@metriport/core/domain/webhook";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
