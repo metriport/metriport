@@ -25,6 +25,8 @@ export async function initEnhancedCoverage(
     return;
   }
 
+  const ecId = coverageEnhancer.makeId();
+
   const getPatientsToProcess = async () => {
     if (patientIds && patientIds.length > 0) {
       const cxId = cxIds[0];
@@ -58,6 +60,7 @@ export async function initEnhancedCoverage(
 
     const patientIds = patients.map(p => p.id);
     await coverageEnhancer.enhanceCoverage({
+      ecId,
       cxId,
       orgOID: org.oid,
       patientIds,

@@ -17,6 +17,7 @@ import {
   fullDateQueryForResource,
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
+import { isResourceDerivedFromDocRef } from "../../../external/fhir/shared";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
@@ -33,6 +34,7 @@ export type GetConsolidatedFilters = {
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  documentIds?: string[];
 } & GetConsolidatedFilters;
 
 export type ConsolidatedQueryParams = {
@@ -104,6 +106,7 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promis
 
 export async function getConsolidated({
   patient,
+  documentIds,
   resources,
   dateFrom,
   dateTo,
@@ -115,7 +118,13 @@ export async function getConsolidated({
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    let bundle = await getConsolidatedPatientData({ patient, resources, dateFrom, dateTo });
+    let bundle = await getConsolidatedPatientData({
+      patient,
+      documentIds,
+      resources,
+      dateFrom,
+      dateTo,
+    });
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && hasResources;
 
@@ -146,13 +155,22 @@ export async function getConsolidated({
   }
 }
 
+/**
+ * Get consolidated patient data from FHIR server.
+ *
+ * @param documentIds (Optional) List of document reference IDs to filter by. If provided, only
+ *            resources derived from these document references will be returned.
+ * @returns FHIR bundle of resources matching the filters.
+ */
 export async function getConsolidatedPatientData({
   patient,
+  documentIds = [],
   resources,
   dateFrom,
   dateTo,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
+  documentIds?: string[];
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
@@ -173,6 +191,7 @@ export async function getConsolidatedPatientData({
   });
   log(`Getting consolidated data with resources by patient: ${resourcesByPatient.join(", ")}...`);
   log(`...and by subject: ${resourcesBySubject.join(", ")}`);
+  documentIds.length > 0 && log(`...and document IDs: ${documentIds.join(", ")}`);
   log(`...and general resources with no specific filter: ${generalResourcesNoFilter.join(", ")}`);
 
   const fhir = makeFhirApi(cxId);
@@ -221,8 +240,27 @@ export async function getConsolidatedPatientData({
     });
   }
 
-  const entry: BundleEntry[] = success.map(r => ({ resource: r }));
+  const filtered = filterByDocumentIds(success, documentIds, log);
+
+  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
   return buildResponse(entry);
+}
+
+function filterByDocumentIds(
+  resources: Resource[],
+  documentIds: string[],
+  log = console.log
+): Resource[] {
+  const defaultMsg = `Got ${resources.length} resources from FHIR server`;
+  if (documentIds.length <= 0) {
+    log(`${defaultMsg}, not filtering by documentIds`);
+    return resources;
+  }
+  const isDerivedFromDocRefs = (r: Resource) =>
+    documentIds.some(id => isResourceDerivedFromDocRef(r, id));
+  const filtered = documentIds.length > 0 ? resources.filter(isDerivedFromDocRefs) : resources;
+  log(`${defaultMsg}, filtered by documentIds to ${filtered.length} resources`);
+  return filtered;
 }
 
 const searchResources = async <K extends ResourceType>(

@@ -6,7 +6,7 @@ export function generateITI39Template(status: string): string {
         <RepositoryUniqueId>{homeCommunityId}</RepositoryUniqueId>
         <DocumentUniqueId>{documentId}</DocumentUniqueId>
         <mimeType>text/xml</mimeType>
-        <Document>{base64}<Document>
+        <Document>{base64}</Document>
     </DocumentResponse>`;
   }
   const iti39Template = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -29,4 +29,28 @@ export function generateITI39Template(status: string): string {
     </s:Body>
   </s:Envelope>`;
   return iti39Template;
+}
+
+export function generateITI39TemplateMTOM(status: string): string {
+  if (status != "Success") {
+    return generateITI39Template(status);
+  } else {
+    const part1 = `----MIMEBoundary782a6cafc4cf4aab9dbf291522804454
+    Content-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml"
+    Content-Transfer-Encoding: binary
+    Content-ID: <doc0@metriport.com>
+    
+    `;
+
+    const part2 = generateITI39Template(status);
+    const part3 = `
+    ----MIMEBoundary782a6cafc4cf4aab9dbf291522804454
+    Content-Type: text/xml
+    Content-Transfer-Encoding: binary
+    Content-ID: <{documentId}>
+
+    {mtomDocument}
+    ----MIMEBoundary782a6cafc4cf4aab9dbf291522804454--`;
+    return part1 + part2 + part3;
+  }
 }

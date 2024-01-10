@@ -77,6 +77,7 @@ export const processPatientDocumentRequest = async (
         patient.data.cxDocumentRequestMetadata
       );
     } else {
+      // TODO 858 indicate this was not really sent to the customer
       await createWebhookRequest({
         cxId,
         type: whType,

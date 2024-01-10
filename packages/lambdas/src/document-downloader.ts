@@ -11,11 +11,17 @@ import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/common
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
 import { getEnvType } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { capture } from "./shared/capture";
 import { getEnv, getEnvOrFail, isProduction } from "./shared/env";
 
 // Keep this as early on the file as possible
 capture.init();
+
+dayjs.extend(duration);
+
+const timeout = dayjs.duration({ minutes: 4 });
 
 // Automatically set by AWS
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
@@ -74,5 +80,7 @@ export function makeCommonWellAPI(
   orgName: string,
   orgOID: string
 ): CommonWellAPI {
-  return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode);
+  return new CommonWell(cwOrgCertificate, cwOrgKey, orgName, orgOID, apiMode, {
+    timeout: timeout.asMilliseconds(),
+  });
 }
