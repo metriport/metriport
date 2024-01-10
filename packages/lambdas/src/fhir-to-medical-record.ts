@@ -1,7 +1,7 @@
 import puppeteer from "puppeteer-core";
 import fs from "fs";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/domain/lambda-logic/bundle-to-html";
 import chromium from "@sparticuz/chromium";
 import * as uuid from "uuid";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";

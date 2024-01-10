@@ -1,8 +1,8 @@
 import * as Sentry from "@sentry/serverless";
 import { getEnvOrFail, getEnv } from "./shared/env";
 import { getEnvType } from "@metriport/core/util/env-var";
-import { signUrlsAndSendToApi } from "@metriport/core/external/aws/document-signing/bulk-sign";
-import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
+import { signUrlsAndSendToApi } from "@metriport/core/domain/document-signing/bulk-sign";
+import { DocumentBulkSignerRequest } from "@metriport/core/domain/document-signing/document-bulk-signer";
 import { capture } from "./shared/capture";
 
 // Automatically set by AWS
