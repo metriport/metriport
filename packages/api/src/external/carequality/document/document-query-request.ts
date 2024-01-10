@@ -7,7 +7,7 @@ import { CQLink } from "../domain/cq-patient-data";
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
-export function createCQDocumentQueryRequest({
+export function createCQDocumentQueryRequests({
   requestId,
   cxId,
   organization,

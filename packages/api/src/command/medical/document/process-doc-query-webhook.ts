@@ -2,7 +2,6 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { DocumentQueryProgress } from "../../../domain/medical/document-query";
-import { WebhookRequest } from "../../../models/webhook-request";
 import { Patient } from "../../../domain/medical/patient";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
@@ -14,6 +13,8 @@ import { Config } from "../../../shared/config";
 
 const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
+const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
+const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
@@ -31,9 +32,12 @@ export const processDocQueryProgressWebhook = async ({
 
   try {
     const webhooks = await getAllWebhookRequestByRequestId(requestId);
+    const webhookSet = new Set(webhooks.map(webhook => webhook.type));
+    const downloadWebhookSent = webhookSet.has(DOWNLOAD_WEBHOOK_TYPE);
+    const convertWebhookSent = webhookSet.has(CONVERSION_WEBHOOK_TYPE);
 
-    await handleDownloadWebhook(webhooks, patient, requestId, documentQueryProgress);
-    await handleConversionWebhook(webhooks, patient, requestId, documentQueryProgress);
+    await handleDownloadWebhook(downloadWebhookSent, patient, requestId, documentQueryProgress);
+    await handleConversionWebhook(convertWebhookSent, patient, requestId, documentQueryProgress);
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -51,17 +55,15 @@ export const processDocQueryProgressWebhook = async ({
 };
 
 const handleDownloadWebhook = async (
-  webhooks: WebhookRequest[],
+  webhookSent: boolean,
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress
 ): Promise<void> => {
-  const downloadWebhookType = "medical.document-download";
   const downloadStatus = documentQueryProgress.download?.status;
   const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
-  const downloadWebhookSent = webhooks.some(webhook => webhook.type === downloadWebhookType);
 
-  const canProcessRequest = isDownloadFinished && !downloadWebhookSent;
+  const canProcessRequest = isDownloadFinished && !webhookSent;
 
   if (canProcessRequest && !isSandbox) {
     const downloadIsCompleted = downloadStatus === "completed";
@@ -70,7 +72,7 @@ const handleDownloadWebhook = async (
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,
-      downloadWebhookType,
+      DOWNLOAD_WEBHOOK_TYPE,
       downloadIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
       requestId,
       downloadIsCompleted ? payload : undefined
@@ -79,17 +81,15 @@ const handleDownloadWebhook = async (
 };
 
 const handleConversionWebhook = async (
-  webhooks: WebhookRequest[],
+  webhookSent: boolean,
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress
 ): Promise<void> => {
-  const convertWebhookType = "medical.document-conversion";
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
-  const convertWebhookSent = webhooks.some(webhook => webhook.type === convertWebhookType);
 
-  const canProcessRequest = isConvertFinished && !convertWebhookSent;
+  const canProcessRequest = isConvertFinished && !webhookSent;
 
   if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
@@ -97,7 +97,7 @@ const handleConversionWebhook = async (
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,
-      convertWebhookType,
+      CONVERSION_WEBHOOK_TYPE,
       convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
       requestId
     );

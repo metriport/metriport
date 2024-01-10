@@ -474,6 +474,12 @@ export class APIStack extends Stack {
         })
       : undefined;
 
+    // Add ENV after apiserivce is created
+    documentQueryResultsLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
       sandboxSeedDataBucket.grantReadWrite(apiService.taskDefinition.taskRole);

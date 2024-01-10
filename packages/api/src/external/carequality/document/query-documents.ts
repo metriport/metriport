@@ -3,7 +3,7 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "../../../domain/medical/patient";
 import { Config } from "../../../shared/config";
-import { createCQDocumentQueryRequest } from "./document-query-request";
+import { createCQDocumentQueryRequests } from "./document-query-request";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "../../../external";
@@ -28,16 +28,21 @@ export async function getDocumentsFromCQ({
     const organization = await getOrganizationOrFail({ cxId: patient.cxId });
     const cqPatientData = await getCQPatientData({ id: patient.id, cxId: patient.cxId });
 
-    const documentQueryRequest = createCQDocumentQueryRequest({
+    const documentQueryRequests = createCQDocumentQueryRequests({
       requestId,
       cxId: patient.cxId,
       organization,
       cqLinks: cqPatientData?.data.links ?? [],
     });
 
-    await iheGateway.startDocumentsQuery({ documentQueryRequestOutgoing: documentQueryRequest });
+    // We send the request to IHE Gateway to initiate the doc query.
+    // Then as they are processed by each gateway it will start
+    // sending them to the internal route one by one
+    await iheGateway.startDocumentsQuery({ documentQueryRequestOutgoing: documentQueryRequests });
 
-    await lambdaClient
+    // We invoke the lambda that will start polling for the results
+    // from the IHE Gateway and process them
+    lambdaClient
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "Event",
@@ -45,7 +50,7 @@ export async function getDocumentsFromCQ({
           requestId,
           patientId: patient.id,
           cxId: patient.cxId,
-          numOfLinks: documentQueryRequest.length,
+          numOfLinks: documentQueryRequests.length,
         }),
       })
       .promise();
