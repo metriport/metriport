@@ -207,6 +207,7 @@ export class APIStack extends Stack {
       bucketName: props.config.generalBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     //-------------------------------------------
