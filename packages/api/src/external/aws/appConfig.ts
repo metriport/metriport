@@ -36,12 +36,10 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
   return [];
 }
 
-// Wrapper function for Enhanced Coverage feature flag
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithEnhancedCoverageFeatureFlagName());
 }
 
-// Wrapper function for CQ Direct feature flag
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
 }
