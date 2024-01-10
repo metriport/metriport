@@ -25,8 +25,11 @@ export class DocumentBulkSignerLambda extends DocumentBulkSigner {
       })
       .promise()
       .catch(error => {
-        const msg = "Error in DocumentBulkSignerLambda.sign";
-        console.log(msg, JSON.stringify(error));
+        console.log(
+          `Error invoking lambda ${this.lambdaName} with error ${JSON.stringify(
+            error
+          )}. The lambda name is likely wrong`
+        );
       });
   }
 }
