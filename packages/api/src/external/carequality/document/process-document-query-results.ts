@@ -2,7 +2,7 @@ import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference } from "@metriport/core/src/external/carequality/domain/ihe-result";
+import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { DocumentQueryResult } from "../domain/document-query-result";
 import { Config } from "../../../shared/config";
