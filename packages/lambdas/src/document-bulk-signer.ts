@@ -1,7 +1,7 @@
 import * as Sentry from "@sentry/serverless";
 import { getEnvOrFail, getEnv } from "./shared/env";
 import { getEnvType } from "@metriport/core/util/env-var";
-import { getSignedUrls } from "@metriport/core/external/aws/document-signing/bulk-sign";
+import { signUrlsAndSendToApi } from "@metriport/core/external/aws/document-signing/bulk-sign";
 import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
 import { capture } from "./shared/capture";
 
@@ -20,5 +20,5 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: DocumentBulkSign
       `bucketName: ${bucketName}, cxId: ${cxId}, patientId: ${patientId}, requestId: ${requestId} `
   );
 
-  await getSignedUrls(cxId, patientId, requestId, bucketName, region, apiURL);
+  await signUrlsAndSendToApi(cxId, patientId, requestId, bucketName, region, apiURL);
 });

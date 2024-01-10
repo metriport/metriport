@@ -1,5 +1,5 @@
 import * as AWS from "aws-sdk";
-import { makeLambdaClient } from "../lambda";
+import { makeLambdaClient } from "../../external/aws/lambda";
 import { DocumentBulkSigner, DocumentBulkSignerRequest } from "./document-bulk-signer";
 
 export class DocumentBulkSignerLambda extends DocumentBulkSigner {
@@ -25,7 +25,8 @@ export class DocumentBulkSignerLambda extends DocumentBulkSigner {
       })
       .promise()
       .catch(error => {
-        throw error;
+        const msg = "Error in DocumentBulkSignerLambda.sign";
+        console.log(msg, JSON.stringify(error));
       });
   }
 }

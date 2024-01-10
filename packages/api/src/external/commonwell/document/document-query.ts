@@ -8,6 +8,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
@@ -16,10 +17,7 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import {
-  MAPIWebhookStatus,
-  processPatientDocumentRequest,
-} from "../../../command/medical/document/document-webhook";
+import { processPatientDocumentRequest } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { reportUsage } from "../../../command/usage/report-usage";

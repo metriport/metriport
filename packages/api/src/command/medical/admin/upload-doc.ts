@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { FileData } from "@metriport/core/domain/lambda-logic/document-uploader";
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";

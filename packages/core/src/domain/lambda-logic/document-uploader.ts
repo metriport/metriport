@@ -1,6 +1,6 @@
 import axios from "axios";
-import { MetriportError } from "../../../util/error/metriport-error";
-import { S3Utils, parseS3FileName } from "../s3";
+import { MetriportError } from "../../util/error/metriport-error";
+import { S3Utils, parseS3FileName } from "../../external/aws/s3";
 
 const api = axios.create();
 

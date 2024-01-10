@@ -6,7 +6,8 @@ import {
   PatientsWithValidationResult,
   SingleValidationResult,
 } from "./check-doc-queries-shared";
-import { MAPIWebhookStatus, processPatientDocumentRequest } from "./document-webhook";
+import { processPatientDocumentRequest } from "./document-webhook";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook";
 
 type PatientToNotify = Pick<Patient, "id" | "cxId">;
 

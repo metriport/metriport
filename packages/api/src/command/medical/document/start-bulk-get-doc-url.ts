@@ -8,10 +8,8 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "../../../domain/medical/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
-import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
+import { DocumentBulkSignerRequest } from "@metriport/core/domain/document-signing/document-bulk-signer";
 import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
-import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
-import { capture } from "@metriport/core/util/capture";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
@@ -52,20 +50,7 @@ export const startBulkGetDocumentUrls = async (
   };
 
   const documentBulkSigner = makeDocumentBulkSigner();
-
-  try {
-    documentBulkSigner.sign(payload);
-  } catch (error) {
-    appendBulkGetDocUrlProgress({
-      patient: { id: patientId, cxId: cxId },
-      status: BulkGetDocUrlStatus.failed,
-      requestId: requestId,
-    });
-    capture.error(error, {
-      extra: { patientId, context: `startBulkGetDocumentUrls`, error },
-    });
-    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
-  }
+  await documentBulkSigner.sign(payload);
 
   return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, updatedPatient);
 };

@@ -1,20 +1,10 @@
 import * as Sentry from "@sentry/node";
 import { Extras, ScopeContext } from "@sentry/types";
 import stringify from "json-stringify-safe";
-import {
-  sendAlert as coreSendAlert,
-  sendNotification as coreSendNotification,
-  SlackMessage as CoreSlackMessage,
-} from "../external/slack/index";
+import { SlackMessage as CoreSlackMessage } from "../external/slack/index";
 import { MetriportError } from "./error/metriport-error";
 
 export type SlackMessage = CoreSlackMessage;
-
-export const sendNotification = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendNotification(notif);
-
-export const sendAlert = async (notif: SlackMessage | string): Promise<void> =>
-  coreSendAlert(notif);
 
 export type UserData = Pick<Sentry.User, "id" | "email">;
 

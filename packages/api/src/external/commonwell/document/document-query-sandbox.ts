@@ -1,9 +1,7 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import {
-  MAPIWebhookStatus,
-  processPatientDocumentRequest,
-} from "../../../command/medical/document/document-webhook";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook";
+import { processPatientDocumentRequest } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
 import { Organization } from "../../../domain/medical/organization";
 import { Patient } from "../../../domain/medical/patient";

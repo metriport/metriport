@@ -1,6 +1,6 @@
-import { DocumentBulkSignerLambda } from "@metriport/core/external/aws/document-signing/document-bulk-signer-lambda";
-import { DocumentBulkSignerLocal } from "@metriport/core/external/aws/document-signing//document-bulk-signer-local";
-import { DocumentBulkSigner } from "@metriport/core/external/aws/document-signing//document-bulk-signer";
+import { DocumentBulkSignerLambda } from "@metriport/core/domain/document-signing/document-bulk-signer-lambda";
+import { DocumentBulkSignerLocal } from "@metriport/core/domain/document-signing/document-bulk-signer-local";
+import { DocumentBulkSigner } from "@metriport/core/domain/document-signing/document-bulk-signer";
 import { Config } from "@metriport/core/util/config";
 
 const bulkSigningLambdaName = "BulkUrlSigningLambda";

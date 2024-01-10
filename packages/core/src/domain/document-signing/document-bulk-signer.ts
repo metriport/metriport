@@ -6,5 +6,5 @@ export type DocumentBulkSignerRequest = {
 
 export abstract class DocumentBulkSigner {
   constructor(readonly region: string) {}
-  abstract sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest): void | Promise<void>;
+  abstract sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest): Promise<void>;
 }
