@@ -15,6 +15,7 @@ export function createAppConfigStack(
   appConfigAppId: string;
   appConfigConfigId: string;
   cxsWithEnhancedCoverageFeatureFlag: string;
+  cxsWithCQDirectFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
@@ -28,6 +29,7 @@ export function createAppConfigStack(
   });
 
   const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
+  const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
   const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
     stack,
     "OSSAPIConfigVersion",
@@ -36,7 +38,7 @@ export function createAppConfigStack(
       configurationProfileId: appConfigOSSProfile.ref,
       contentType: "application/json",
       content: JSON.stringify({
-        version: "1",
+        version: "2",
         flags: {
           [cxsWithEnhancedCoverageFeatureFlag]: {
             name: cxsWithEnhancedCoverageFeatureFlag,
@@ -46,9 +48,21 @@ export function createAppConfigStack(
               },
             },
           },
+          [cxsWithCQDirectFeatureFlag]: {
+            name: cxsWithCQDirectFeatureFlag,
+            attributes: {
+              cxIds: {
+                type: "string[]",
+              },
+            },
+          },
         },
         values: {
           [cxsWithEnhancedCoverageFeatureFlag]: {
+            enabled: true,
+            cxIds: [],
+          },
+          [cxsWithCQDirectFeatureFlag]: {
             enabled: true,
             cxIds: [],
           },
@@ -86,5 +100,6 @@ export function createAppConfigStack(
     appConfigAppId: appConfigOSSApp.ref,
     appConfigConfigId: appConfigOSSProfile.ref,
     cxsWithEnhancedCoverageFeatureFlag,
+    cxsWithCQDirectFeatureFlag,
   };
 }

@@ -295,4 +295,7 @@ export class Config {
   static getCxsWithEnhancedCoverageFeatureFlagName(): string {
     return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
   }
+  static getCxsWithCQDirectFeatureFlagName(): string {
+    return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
+  }
 }
