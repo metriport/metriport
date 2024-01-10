@@ -56,7 +56,7 @@ export const sendDocumentQueryResults = async ({
       raceControl.isRaceInProgress = false;
     }
 
-    await api.post(endpointUrl, {
+    await api.post(`${endpointUrl}/internal/carequality/document-query/results`, {
       requestId,
       patientId,
       cxId,
