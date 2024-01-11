@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
+  <id>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</id>
+  <nextMetaDataId>5</nextMetaDataId>
+  <name>XCPD ITI-55 Processor</name>
+  <description>XCPD ITI-55 Processor channel
+ - Generates ITI-55 "Cross Gateway Patient Discovery" SOAP message
+ - Calls XCPD endpoint
+ - Processes responses
+
+Last updated: Dec 20 2023</description>
+  <revision>111</revision>
+  <sourceConnector version="4.4.2">
+    <metaDataId>0</metaDataId>
+    <name>sourceConnector</name>
+    <properties class="com.mirth.connect.connectors.vm.VmReceiverProperties" version="4.4.2">
+      <pluginProperties/>
+      <sourceConnectorProperties version="4.4.2">
+        <responseVariable>Auto-generate (Before processing)</responseVariable>
+        <respondAfterProcessing>true</respondAfterProcessing>
+        <processBatch>false</processBatch>
+        <firstResponse>false</firstResponse>
+        <processingThreads>20</processingThreads>
+        <resourceIds class="linked-hash-map">
+          <entry>
+            <string>Default Resource</string>
+            <string>[Default Resource]</string>
+          </entry>
+        </resourceIds>
+        <queueBufferSize>1000</queueBufferSize>
+      </sourceConnectorProperties>
+    </properties>
+    <transformer version="4.4.2">
+      <elements>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Set Stats</name>
+          <sequenceNumber>0</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-0-Set Stats.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Generate Query Parameters</name>
+          <sequenceNumber>1</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-1-Generate Query Parameters.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Store Query Parameters</name>
+          <sequenceNumber>2</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-2-Store Query Parameters.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+      </elements>
+      <inboundTemplate encoding="base64"/>
+      <outboundTemplate encoding="base64"/>
+      <inboundDataType>JSON</inboundDataType>
+      <outboundDataType>JSON</outboundDataType>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </inboundProperties>
+      <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+          <splitType>JavaScript</splitType>
+          <batchScript/>
+        </batchProperties>
+      </outboundProperties>
+    </transformer>
+    <filter version="4.4.2">
+      <elements/>
+    </filter>
+    <transportName>Channel Reader</transportName>
+    <mode>SOURCE</mode>
+    <enabled>true</enabled>
+    <waitForPrevious>true</waitForPrevious>
+  </sourceConnector>
+  <destinationConnectors>
+    <connector version="4.4.2">
+      <metaDataId>1</metaDataId>
+      <name>XCPD Endpoint</name>
+      <properties class="com.mirth.connect.connectors.interop.xcpd.shared.XCPDDispatcherProperties" version="4.4.2">
+        <pluginProperties>
+          <com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties version="4.4.2">
+            <enabled>true</enabled>
+            <clientAuthentication>DISABLED</clientAuthentication>
+            <hostnameVerificationEnabled>true</hostnameVerificationEnabled>
+            <trustAllCertificates>false</trustAllCertificates>
+            <trustedCertificates>
+              <trustedCertificateAliases/>
+              <trustCACerts>true</trustCACerts>
+            </trustedCertificates>
+            <localCertificateAlias>carequality</localCertificateAlias>
+            <ocspEnabled>false</ocspEnabled>
+            <ocspURI/>
+            <ocspHardFail>false</ocspHardFail>
+            <crlEnabled>false</crlEnabled>
+            <crlURI/>
+            <crlHardFail>false</crlHardFail>
+            <subjectDNValidationEnabled>false</subjectDNValidationEnabled>
+            <trustedSubjectDNs class="linked-hash-map"/>
+            <hideIssuerDNs>false</hideIssuerDNs>
+            <allowExpiredCertificates>false</allowExpiredCertificates>
+            <implicitFTPS>true</implicitFTPS>
+            <useSTARTTLS>false</useSTARTTLS>
+          </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
+        </pluginProperties>
+        <destinationConnectorProperties version="4.4.2">
+          <queueEnabled>false</queueEnabled>
+          <sendFirst>false</sendFirst>
+          <retryIntervalMillis>10000</retryIntervalMillis>
+          <regenerateTemplate>false</regenerateTemplate>
+          <retryCount>0</retryCount>
+          <rotate>false</rotate>
+          <includeFilterTransformer>false</includeFilterTransformer>
+          <threadCount>1</threadCount>
+          <threadAssignmentVariable/>
+          <validateResponse>false</validateResponse>
+          <resourceIds class="linked-hash-map">
+            <entry>
+              <string>Default Resource</string>
+              <string>[Default Resource]</string>
+            </entry>
+          </resourceIds>
+          <queueBufferSize>1000</queueBufferSize>
+          <reattachAttachments>false</reattachAttachments>
+        </destinationConnectorProperties>
+        <wsdlUrl>&lt;Using Built-in Default WSDL&gt;</wsdlUrl>
+        <service>{urn:ihe:iti:xcpd:2009}RespondingGateway_Service</service>
+        <port>{urn:ihe:iti:xcpd:2009}RespondingGateway_Port_Soap</port>
+        <operation>RespondingGateway_PRPA_IN201305UV02</operation>
+        <locationURI>${URL}</locationURI>
+        <socketTimeout>30000</socketTimeout>
+        <useAuthentication>false</useAuthentication>
+        <username/>
+        <password/>
+        <envelope>${SOAP_REQUEST}</envelope>
+        <oneWay>false</oneWay>
+        <headers class="linked-hash-map"/>
+        <headersVariable/>
+        <isUseHeadersVariable>false</isUseHeadersVariable>
+        <useMtom>false</useMtom>
+        <attachmentNames/>
+        <attachmentContents/>
+        <attachmentTypes/>
+        <attachmentsVariable/>
+        <isUseAttachmentsVariable>false</isUseAttachmentsVariable>
+        <soapAction>urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery</soapAction>
+        <wsdlDefinitionMap>
+          <map class="linked-hash-map">
+            <entry>
+              <string>{urn:ihe:iti:xcpd:2009}RespondingGateway_Service</string>
+              <com.mirth.connect.connectors.ws.DefinitionServiceMap_-DefinitionPortMap>
+                <map class="linked-hash-map">
+                  <entry>
+                    <string>{urn:ihe:iti:xcpd:2009}RespondingGateway_Port_Soap</string>
+                    <com.mirth.connect.connectors.ws.DefinitionServiceMap_-PortInformation>
+                      <operations>
+                        <string>RespondingGateway_PRPA_IN201305UV02</string>
+                      </operations>
+                      <actions>
+                        <string>urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery</string>
+                      </actions>
+                    </com.mirth.connect.connectors.ws.DefinitionServiceMap_-PortInformation>
+                  </entry>
+                </map>
+              </com.mirth.connect.connectors.ws.DefinitionServiceMap_-DefinitionPortMap>
+            </entry>
+          </map>
+        </wsdlDefinitionMap>
+        <tcpMode>false</tcpMode>
+        <remoteAddress/>
+        <remotePort/>
+        <useUDDI>false</useUDDI>
+        <uddiSummary/>
+        <useSOAPTemplate>true</useSOAPTemplate>
+        <useDefaultWsdl>true</useDefaultWsdl>
+        <convertResponseToJSON>false</convertResponseToJSON>
+        <mustUnderstand>false</mustUnderstand>
+        <storeSOAPPayloads>true</storeSOAPPayloads>
+        <expandedJsonFormat>false</expandedJsonFormat>
+        <validateSAML>false</validateSAML>
+        <generateSAML>true</generateSAML>
+        <samlGenerationProperties version="4.4.2">
+          <homeCommunityId>${HomeCommunityId}</homeCommunityId>
+          <issuerEmail>support@metriport.com</issuerEmail>
+          <subjectLocality>127.0.0.1</subjectLocality>
+          <subjectLocalityDNS>localhost</subjectLocalityDNS>
+          <includeConditions>true</includeConditions>
+          <conditionsExpirationDuration>300000</conditionsExpirationDuration>
+          <conditionsAudienceUseCustom>false</conditionsAudienceUseCustom>
+          <conditionsAudience/>
+          <useSSLManager>true</useSSLManager>
+          <keyStorePath/>
+          <keyStorePassword/>
+          <keyAlias>carequality</keyAlias>
+          <keyPassword/>
+          <stringAttributes>
+            <com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+              <name>urn:oasis:names:tc:xspa:1.0:subject:subject-id</name>
+              <format>URI_REFERENCE</format>
+              <value>${SubjectRoleDisplay}</value>
+            </com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+            <com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+              <name>urn:oasis:names:tc:xspa:1.0:subject:organization</name>
+              <format>URI_REFERENCE</format>
+              <value>${Organization}</value>
+            </com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+            <com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+              <name>urn:oasis:names:tc:xspa:1.0:subject:organization-id</name>
+              <format>URI_REFERENCE</format>
+              <value>urn:oid:${HomeCommunityId}</value>
+            </com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+            <com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+              <name>urn:nhin:names:saml:homeCommunityId</name>
+              <format>URI_REFERENCE</format>
+              <value>urn:oid:${HomeCommunityId}</value>
+            </com.mirth.connect.connectors.interop.shared.SAMLStringAttribute>
+          </stringAttributes>
+          <hl7Attributes>
+            <com.mirth.connect.connectors.interop.shared.SAMLHL7CEAttribute>
+              <name>urn:oasis:names:tc:xacml:2.0:subject:role</name>
+              <format>URI_REFERENCE</format>
+              <tagName>Role</tagName>
+              <code>${SubjectRoleCode}</code>
+              <codeSystem>2.16.840.1.113883.6.96</codeSystem>
+              <codeSystemName>SNOMED_CT</codeSystemName>
+              <displayName>${SubjectRoleDisplay}</displayName>
+            </com.mirth.connect.connectors.interop.shared.SAMLHL7CEAttribute>
+            <com.mirth.connect.connectors.interop.shared.SAMLHL7CEAttribute>
+              <name>urn:oasis:names:tc:xspa:1.0:subject:purposeofuse</name>
+              <format>URI_REFERENCE</format>
+              <tagName>PurposeOfUse</tagName>
+              <code>${PurposeOfUseCode}</code>
+              <codeSystem>2.16.840.1.113883.3.18.7.1</codeSystem>
+              <codeSystemName>nhin-purpose</codeSystemName>
+              <displayName>${PurposeOfUseDisplay}</displayName>
+            </com.mirth.connect.connectors.interop.shared.SAMLHL7CEAttribute>
+          </hl7Attributes>
+        </samlGenerationProperties>
+      </properties>
+      <transformer version="4.4.2">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>SOAP Envelope</name>
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-transformer-step-0-SOAP Envelope.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>PRPA Payload</name>
+            <sequenceNumber>1</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-transformer-step-1-PRPA Payload.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>SAML Variables</name>
+            <sequenceNumber>2</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-transformer-step-2-SAML Variables.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"/>
+        <outboundTemplate encoding="base64"/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>XML</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </transformer>
+      <responseTransformer version="4.4.2">
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Process response</name>
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-0-Process response.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 1: One Match</name>
+            <sequenceNumber>1</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-1-Case 1: One Match.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 2: Multiple Match</name>
+            <sequenceNumber>2</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-2-Case 2: Multiple Match.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 3: Multiple matches need refinement</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-3-Case 3: Multiple matches need refinement.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 4: No Match</name>
+            <sequenceNumber>4</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-4-Case 4: No Match.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 5: Application Error</name>
+            <sequenceNumber>5</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-5-Case 5: Application Error.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"/>
+        <outboundTemplate encoding="base64"/>
+        <inboundDataType>XML</inboundDataType>
+        <outboundDataType>XML</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
+            <batchScript/>
+          </batchProperties>
+        </inboundProperties>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
+            <batchScript/>
+          </batchProperties>
+        </outboundProperties>
+      </responseTransformer>
+      <filter version="4.4.2">
+        <elements/>
+      </filter>
+      <transportName>XCPD Sender</transportName>
+      <mode>DESTINATION</mode>
+      <enabled>true</enabled>
+      <waitForPrevious>true</waitForPrevious>
+    </connector>
+  </destinationConnectors>
+  <preprocessingScript msync-fileref="PreprocessingScript.js"/>
+  <postprocessingScript msync-fileref="PostprocessingScript.js"/>
+  <deployScript msync-fileref="DeployScript.js"/>
+  <undeployScript msync-fileref="UndeployScript.js"/>
+  <properties version="4.4.2">
+    <clearGlobalChannelMap>true</clearGlobalChannelMap>
+    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <encryptData>false</encryptData>
+    <encryptAttachments>false</encryptAttachments>
+    <encryptCustomMetaData>false</encryptCustomMetaData>
+    <removeContentOnCompletion>false</removeContentOnCompletion>
+    <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
+    <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
+    <initialState>STARTED</initialState>
+    <storeAttachments>false</storeAttachments>
+    <metaDataColumns>
+      <metaDataColumn>
+        <name>SOURCE</name>
+        <type>STRING</type>
+        <mappingName>mirth_source</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>TYPE</name>
+        <type>STRING</type>
+        <mappingName>mirth_type</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>ENTRY_ID</name>
+        <type>STRING</type>
+        <mappingName>MSG_ID</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>CUSTOMER</name>
+        <type>STRING</type>
+        <mappingName>CUSTOMER_ID</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>HTTP</name>
+        <type>STRING</type>
+        <mappingName>HTTP</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>ACK</name>
+        <type>STRING</type>
+        <mappingName>ACK</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>QUERY_ACK</name>
+        <type>STRING</type>
+        <mappingName>QACK</mappingName>
+      </metaDataColumn>
+      <metaDataColumn>
+        <name>RESULT</name>
+        <type>STRING</type>
+        <mappingName>RESULT</mappingName>
+      </metaDataColumn>
+    </metaDataColumns>
+    <attachmentProperties version="4.4.2">
+      <type>None</type>
+      <properties/>
+    </attachmentProperties>
+    <resourceIds class="linked-hash-map">
+      <entry>
+        <string>Default Resource</string>
+        <string>[Default Resource]</string>
+      </entry>
+    </resourceIds>
+  </properties>
+  <exportData>
+    <metadata>
+      <enabled>true</enabled>
+      <lastModified>
+        <time>1704995347958</time>
+        <timezone>America/Los_Angeles</timezone>
+      </lastModified>
+      <pruningSettings>
+        <pruneMetaDataDays>5</pruneMetaDataDays>
+        <pruneContentDays>5</pruneContentDays>
+        <archiveEnabled>false</archiveEnabled>
+        <pruneErroredMessages>true</pruneErroredMessages>
+      </pruningSettings>
+      <userId>1</userId>
+    </metadata>
+    <dependentIds/>
+    <dependencyIds/>
+    <channelTags/>
+  </exportData>
+</channel>
