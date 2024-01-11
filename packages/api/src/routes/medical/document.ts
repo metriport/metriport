@@ -16,7 +16,7 @@ import {
   docRefCheck,
 } from "../../external/fhir/document/draft-update-document-reference";
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
-import { searchDocuments } from "../../external/fhir/document/search-documents";
+import { searchDocuments } from "@metriport/core/external/opensearch/search-documents";
 import { Config } from "../../shared/config";
 import { stringToBoolean } from "../../shared/types";
 import { sanitize } from "../helpers/string";
