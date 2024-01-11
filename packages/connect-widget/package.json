@@ -1,6 +1,6 @@
 {
   "name": "connect-widget",
-  "version": "1.7.16-1.7.16-alpha3.0.0",
+  "version": "1.7.16-alpha4.0",
   "private": true,
   "scripts": {
     "clean": "rimraf build && rimraf node_modules",
@@ -38,7 +38,7 @@
     "@chakra-ui/react": "^2.4.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
-    "@metriport/api-sdk": "^7.8.8-7.8.8-alpha3.0.0",
+    "@metriport/api-sdk": "^7.8.8-alpha4.0",
     "@sentry/react": "^7.45.0",
     "@sentry/tracing": "^7.45.0",
     "@testing-library/jest-dom": "^5.16.5",
