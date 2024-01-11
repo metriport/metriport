@@ -393,7 +393,10 @@ router.post(
       const cqDirectCxIds = await getCxsWithCQDirectFeatureFlagValue();
       const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
 
-      if (filteredCxIds.length < 1) {
+      if (filteredCxIds.length < 1 && cxIds.length == 1) {
+        console.log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
+        return res.status(status.OK).json({ patientIds: [] });
+      } else if (filteredCxIds.length < 1) {
         console.log(`No customers to Enhanced Coverage, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       }
