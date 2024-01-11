@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { DocRefMappingCreate } from "../../../../domain/medical/docref-mapping";
-import { MedicalDataSource } from "../../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { makeDocRefMappingModel } from "../../../../models/medical/__tests__/docref-mapping";
 import { DocRefMappingModel } from "../../../../models/medical/docref-mapping";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";

@@ -33,7 +33,7 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { toFHIRSubject } from "../patient";
 dayjs.extend(isToday);
 

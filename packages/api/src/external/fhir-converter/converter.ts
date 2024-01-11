@@ -4,7 +4,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { sandboxSleepTime } from "../commonwell/document/shared";
 import { makeFHIRServerConnector } from "../fhir/connector/connector-factory";
-import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { buildDocIdFHIRExtension } from "@metriport/core/src/external/fhir/shared/extensions/doc-id-extension";
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";

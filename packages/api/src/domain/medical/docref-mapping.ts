@@ -1,4 +1,4 @@
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { BaseDomain, BaseDomainCreate } from "../base-domain";
 
 export interface DocRefMappingCreate extends Omit<BaseDomainCreate, "id"> {

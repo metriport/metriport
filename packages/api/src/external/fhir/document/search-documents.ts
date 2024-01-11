@@ -4,7 +4,7 @@ import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
-import { isMetriportExtension } from "../shared/extensions/metriport";
+import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { getDocuments } from "./get-documents";
 
 export async function searchDocuments({

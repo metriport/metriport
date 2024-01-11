@@ -9,7 +9,7 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
-import { MedicalDataSource } from "..";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
 import { Patient, PatientExternalData } from "../../domain/medical/patient";

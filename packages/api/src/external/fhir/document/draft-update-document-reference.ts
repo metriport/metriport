@@ -2,7 +2,7 @@ import { Attachment, DocumentReference, DocumentReferenceContent } from "@medplu
 import { toFHIRSubject } from "../patient";
 import BadRequestError from "../../../errors/bad-request";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { appendIdentifierOID, toFHIR } from "../organization";

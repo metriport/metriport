@@ -12,7 +12,10 @@ import {
   PersonalIdentifier,
   splitName,
 } from "../../../domain/medical/patient";
-import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+import {
+  getIdFromSubjectId,
+  getIdFromSubjectRef,
+} from "@metriport/core/external/fhir/shared/index";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",

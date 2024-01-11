@@ -2,7 +2,8 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
-import { isCommonwellExtension } from "../commonwell/extension";
+import { isCommonwellExtension } from "../../external/commonwell/extension";
+import { isCarequalityExtension } from "../../external/carequality/extension";
 import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
 import { getDocuments } from "../fhir/document/get-documents";
@@ -54,7 +55,8 @@ function checkExtensions(doc: DocumentReference) {
   if (!extensions) return false;
   const metriport = extensions.find(isMetriportExtension);
   const cw = extensions.find(isCommonwellExtension);
-  if (!metriport && !cw) return false;
+  const cq = extensions.find(isCarequalityExtension);
+  if (!metriport && !cw && !cq) return false;
   return true;
 }
 

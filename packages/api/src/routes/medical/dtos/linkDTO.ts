@@ -1,7 +1,7 @@
 import { getId, Person } from "@metriport/commonwell-sdk";
 import { differenceBy } from "lodash";
 import { joinName } from "../../../domain/medical/patient";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { DemographicsDTO, GenderDTO } from "./demographicsDTO";
 
 export type LinkDTO = {

@@ -14,7 +14,7 @@ import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter"
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { getFileExtension, sandboxSleepTime } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
-import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 
 const randomDates = [
   "2023-06-15",

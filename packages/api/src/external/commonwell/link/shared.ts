@@ -5,7 +5,7 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { MedicalDataSource } from "../..";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   Patient,
   PatientData,

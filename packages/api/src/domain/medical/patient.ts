@@ -3,7 +3,7 @@ import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { QueryProgress } from "../../domain/medical/query-status";
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
 

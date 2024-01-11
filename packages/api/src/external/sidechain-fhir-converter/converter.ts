@@ -1,5 +1,5 @@
 import { capture } from "../../shared/notifications";
-import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { buildDocIdFHIRExtension } from "@metriport/core/src/external/fhir/shared/extensions/doc-id-extension";
 import { makeSidechainFHIRConverterConnector } from "./connector-factory";
 
 const connector = makeSidechainFHIRConverterConnector();

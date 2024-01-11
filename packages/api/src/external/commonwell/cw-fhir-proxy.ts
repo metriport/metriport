@@ -7,7 +7,7 @@ import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
-import { downloadedFromCW } from "../fhir/shared";
+import { downloadedFromCW } from "@metriport/core/external/fhir/shared/index";
 import { getOrgOrFail } from "./cw-fhir-proxy-helpers";
 
 const fhirServerUrl = Config.getFHIRServerUrl();
