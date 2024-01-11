@@ -58,7 +58,12 @@ $ docker-compose start
 
 Make sure to have the `.env` file initialized. See `.env.example` for more details.
 
-:warning: The commands below will overwrite the destination (either local config files or server configs).
+Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
+backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
+information (SSL/Java keystore certificates).
+
+:warning: The commands below will overwrite the destination (either local config files or server
+configs).
 
 To pull configs and backup from the server:
 

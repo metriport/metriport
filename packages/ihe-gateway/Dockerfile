@@ -54,7 +54,7 @@ RUN chmod 755 /entrypoint.sh
 ENTRYPOINT [ "/entrypoint.sh" ]
 
 # XML Schemas to validate incoming requests
-COPY schemas /opt/schemas/
+COPY config/schemas /opt/schemas/
 
 RUN chown -R mirth:mirth /opt/connect
 USER mirth
