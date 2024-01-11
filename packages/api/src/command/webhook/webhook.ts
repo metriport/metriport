@@ -80,11 +80,11 @@ export const processRequest = async (
       distinctId: webhookRequest.cxId,
       event: EventTypes.webhook,
       properties: {
-        apiType: getProductFromWebhookRequest(webhookRequest),
         whType: webhookRequest.type,
         whStatus: status,
         ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
       },
+      apiType: getProductFromWebhookRequest(webhookRequest),
     });
   };
 
