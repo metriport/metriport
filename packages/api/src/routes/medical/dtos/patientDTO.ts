@@ -15,6 +15,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
+    dateCreated: patient.createdAt,
     firstName,
     lastName,
     dob,
@@ -22,6 +23,5 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     personalIdentifiers,
     address,
     contact,
-    dateCreated: patient.createdAt,
   };
 }
