@@ -2,6 +2,9 @@ import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { Config } from "../../shared/config";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
+import { Util } from "../../shared/util";
+
+const log = Util.log(`App Config`);
 
 /**
  * Returns the list of Customer IDs that are enabled for the given feature flag.
@@ -22,16 +25,10 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
     );
     if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
   } catch (error) {
-    console.log(
-      `Failed to get ${featureFlagName} Feature Flag Value with error: ${errorToString(error)}`
-    );
-    capture.error(error, {
-      extra: {
-        context: `appConfig.getCxsWithFeatureFlagValue: ${featureFlagName}`,
-        featureFlagName,
-        error,
-      },
-    });
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
   }
   return [];
 }
