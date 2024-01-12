@@ -63,6 +63,8 @@ export type DocumentQueryRequestIncoming = z.infer<typeof documentQueryRequestIn
 export type DocumentQueryResponseOutgoing =
   | (BaseResponse & {
       documentReference: DocumentReference[];
+      gateway: XCAGateway;
+      cxId: string;
       operationOutcome?: never;
     })
   | (BaseErrorResponse & {

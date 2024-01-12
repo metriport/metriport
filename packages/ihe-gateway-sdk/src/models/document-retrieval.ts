@@ -15,7 +15,6 @@ import * as z from "zod";
 export type DocumentRetrievalRequestOutgoing = BaseRequest & {
   cxId: string;
   gateway: XCAGateway;
-  patientId: string;
   documentReference: DocumentReference[];
 };
 
