@@ -1,5 +1,5 @@
 import { Sequelize } from "sequelize";
-import { DocumentQueryResponseIncoming } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryResponseOutgoing } from "@metriport/ihe-gateway-sdk";
 import { DocumentQueryResult } from "../../external/carequality/document-query-result";
 import { ModelSetup } from "../_default";
 import { BaseIHEResultModel } from "./ihe-result";
@@ -9,7 +9,7 @@ export class DocumentQueryResultModel
   implements DocumentQueryResult
 {
   static NAME = "document_query_result";
-  declare data: DocumentQueryResponseIncoming;
+  declare data: DocumentQueryResponseOutgoing;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     DocumentQueryResultModel.init(BaseIHEResultModel.attributes(), {
