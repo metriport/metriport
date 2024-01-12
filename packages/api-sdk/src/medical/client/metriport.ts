@@ -202,7 +202,7 @@ export class MetriportMedicalApi {
    * Returns a patient.
    *
    * @param id The ID of the patient to be returned.
-   * @return The patients.
+   * @return The patient.
    */
   async getPatient(id: string): Promise<PatientDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);

@@ -113,8 +113,8 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
             properties: {
               method: "POST",
               url: "/webhook/garmin",
-              apiType: Product.devices,
             },
+            apiType: Product.devices,
           });
           await processOneCustomer(cxId, settings, payloads);
           reportDevicesUsage(

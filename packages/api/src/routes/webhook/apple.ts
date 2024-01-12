@@ -5,6 +5,7 @@ import { appleSchema, mapData } from "../../mappings/apple";
 import { asyncHandler, getCxIdOrFail } from "../util";
 import { capture } from "@metriport/core/util/capture";
 import { analytics, EventTypes } from "../../shared/analytics";
+import { Product } from "../../domain/product";
 
 const routes = Router();
 /** ---------------------------------------------------------------------------
@@ -34,6 +35,7 @@ routes.post(
         type: key,
         payload,
       },
+      apiType: Product.devices,
     });
 
     if (payload.error) {

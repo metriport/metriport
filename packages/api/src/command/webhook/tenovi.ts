@@ -1,4 +1,5 @@
 import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk";
+import { formatNumber, getFloatValue } from "@metriport/shared/common/numbers";
 import convert from "convert-units";
 import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
@@ -141,8 +142,8 @@ async function createAndSendPayload(
           properties: {
             method: "POST",
             url: "/webhook/tenovi",
-            apiType: Product.devices,
           },
+          apiType: Product.devices,
         });
         reportDevicesUsage(cxId, [userId]);
       } catch (error) {
