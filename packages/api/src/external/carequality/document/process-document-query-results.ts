@@ -4,7 +4,7 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
-import { DocumentQueryResult } from "../domain/document-query-result";
+import { DocumentQueryResult } from "../document-query-result";
 import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";

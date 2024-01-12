@@ -17,8 +17,8 @@ import {
   getPatientDiscoveryResults,
 } from "./command/patient-discovery-result/get-patient-discovery-result";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
-import { CQLink } from "./domain/cq-patient-data";
-import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
+import { CQLink } from "./cq-patient-data";
+import { PatientDiscoveryResult } from "./patient-discovery-result";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { MedicalDataSource } from "..";
 import { PatientDataCarequality } from "./patient-shared";

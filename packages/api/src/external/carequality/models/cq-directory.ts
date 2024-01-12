@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CQDirectoryEntry } from "../domain/cq-directory";
+import { CQDirectoryEntry } from "../cq-directory";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 

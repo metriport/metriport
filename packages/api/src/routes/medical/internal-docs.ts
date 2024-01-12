@@ -15,7 +15,6 @@ import {
   queryDocumentsAcrossHIEs,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
-import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -29,7 +28,6 @@ import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
-import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
@@ -50,56 +48,6 @@ const upload = multer();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
-
-const reprocessOptionsSchema = z.enum(options).array().optional();
-
-/** ---------------------------------------------------------------------------
- * POST /internal/docs/reprocess
- *
- * Use the document reference we have on FHIR server to:
- * - re-download the Binary and update it on S3 (if override = true);
- * - re-convert it to FHIR (when applicable);
- * - update the FHIR server with the results.
- *
- * Asychronous operation, returns 200 immediately.
- *
- * @deprecated Should no longer be used. Does not handle multiple hies.
- * @param req.query.cxId - The customer/account's ID.
- * @param req.query.documentIds - Optional comma-separated list of metriport document
- *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
- * @param req.query.options - Optional, array with elements being one of:
- *     - re-query-doc-refs: indicates we should re-query the document references, if not present
- *       the API will use the existing doc refs on the FHIR server;
- *     - force-download: whether we should re-download the documents from CommonWell, if not
- *       present the API will not download them again if already present on S3.
- *     - ignore-fhir-conversion-and-upsert: whether we should not-convert the documents to FHIR and store the reference, if not
- *       present the API will convert and store the new reference.
- * @return 200
- */
-router.post(
-  "/reprocess",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const documentIdsRaw = getFrom("query").optional("documentIds", req);
-    const documentIds = documentIdsRaw
-      ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
-      : [];
-    const optionsRaw = getFrom("query").optional("options", req);
-    if (typeof optionsRaw !== "string") {
-      throw new BadRequestError(`options must be a string, with comma-separated values`);
-    }
-    const options = optionsRaw
-      ? reprocessOptionsSchema.parse(optionsRaw.split(",").map(id => id.trim()))
-      : [];
-    const requestId = uuidv7();
-
-    reprocessDocuments({ cxId, documentIds, options, requestId }).catch(err => {
-      console.log(`Error re-processing documents for cxId ${cxId}: `, err);
-      capture.error(err);
-    });
-    return res.json({ processing: true, options, documentIds, cxId });
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/re-convert

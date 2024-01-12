@@ -3,14 +3,10 @@ import axios from "axios";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { MetriportError } from "../../util/error/metriport-error";
-import { initSequelize } from "../../util/sequelize";
-import { errorToString } from "../../util/error";
-import {
-  DocumentQueryResult,
-  TABLE_NAME,
-  REQUEST_ID_COLUMN,
-} from "../../external/carequality/domain/document-query-result";
+import { MetriportError } from "../../../../util/error/metriport-error";
+import { initSequelizeForLambda } from "../../../../util/sequelize";
+import { errorToString } from "../../../../util/error";
+import { DocumentQueryResult, TABLE_NAME, REQUEST_ID_COLUMN } from "../../document-query-result";
 
 const api = axios.create();
 
@@ -36,7 +32,7 @@ export const sendDocumentQueryResults = async ({
   dbCreds: string;
   endpointUrl: string;
 }): Promise<void> => {
-  const sequelize = initSequelize(dbCreds);
+  const sequelize = initSequelizeForLambda(dbCreds);
 
   const raceControl: RaceControl = { isRaceInProgress: true };
 
