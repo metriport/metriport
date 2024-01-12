@@ -1,20 +1,18 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { DocumentQueryResult } from "../domain/document-query-result";
-import { Config } from "../../../shared/config";
-import { makeFhirApi } from "../../fhir/api/api-factory";
-import { getAllPages } from "../../fhir/shared/paginated";
 import { isConvertible } from "../../fhir-converter/converter";
 import { MedicalDataSource } from "../../../external";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
+import { mapDocRefToMetriport } from "../../../shared/external";
+import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
+import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
+import { makeIheGatewayAPI } from "../api";
+import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
 
-const region = Config.getAWSRegion();
-const s3Utils = new S3Utils(region);
-const s3BucketName = Config.getMedicalDocumentsBucketName();
+const iheGateway = makeIheGatewayAPI();
 
 export async function processDocumentQueryResults({
   requestId,
@@ -27,12 +25,18 @@ export async function processDocumentQueryResults({
   cxId: string;
   documentQueryResults: DocumentQueryResult[];
 }): Promise<void> {
+  if (!iheGateway) return;
+
   const { log } = out(`CQ query docs - requestId ${requestId}, M patient ${patientId}`);
 
   const docRefs = combineDocRefs(documentQueryResults);
 
+  const docRefsWithMetriportId = await Promise.all(
+    docRefs.map(addMetriportDocRef({ cxId, patientId, requestId }))
+  );
+
   try {
-    const docsToDownload = await getNonExistentDocRefs(docRefs, patientId, cxId);
+    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
 
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
@@ -54,8 +58,22 @@ export async function processDocumentQueryResults({
       source: MedicalDataSource.CAREQUALITY,
     });
 
+    const documentRetrievalRequests = createCQDocumentRetrievalRequests({
+      requestId,
+      cxId,
+      documentReferences: docsToDownload,
+    });
+
+    await iheGateway.startDocumentsRetrieval({
+      documentRetrievalRequestOutgoing: documentRetrievalRequests,
+    });
+
     // TODO - INTRODUCED WHEN IMPLEMENTING CQ DOC RETRIEVAL
-    // NOTE MAKE SURE TO ADD DOC REFS TO TABLE WITH REQUESTID
+
+    // Download and store files in S3
+    // Convert all XML files to FHIR
+    // Store document references in FHIR
+
     // downloadDocs(docsToDownload, patientId, cxId, requestId);
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
@@ -82,6 +100,7 @@ export async function processDocumentQueryResults({
   }
 }
 
+// Create a single array of all the document references from all the document query results
 function combineDocRefs(documentQueryResults: DocumentQueryResult[]): DocumentReference[] {
   return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
     const documentReferences = curr.data.documentReference ?? [];
@@ -90,78 +109,29 @@ function combineDocRefs(documentQueryResults: DocumentQueryResult[]): DocumentRe
   }, []);
 }
 
-const getNonExistentDocRefs = async (
-  documents: DocumentReference[],
-  patientId: string,
-  cxId: string
-): Promise<DocumentReference[]> => {
-  const [{ existingDocRefs, nonExistingDocRefs }, FHIRDocRefs] = await Promise.all([
-    filterOutExistingDocRefsS3(documents, patientId, cxId),
-    getDocRefsFromFHIR(cxId, patientId),
-  ]);
+function addMetriportDocRef({
+  cxId,
+  patientId,
+  requestId,
+}: {
+  patientId: string;
+  cxId: string;
+  requestId: string;
+}) {
+  return async (document: DocumentReference): Promise<DocumentWithMetriportId> => {
+    const documentId = document.docUniqueId;
 
-  const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
-    f => !FHIRDocRefs.find(d => d.id === f.docUniqueId)
-  );
-
-  const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
-
-  return docsToDownload;
-};
-
-type ExistentialDocRefs = {
-  existingDocRefs: DocumentReference[];
-  nonExistingDocRefs: DocumentReference[];
-};
-
-const filterOutExistingDocRefsS3 = async (
-  documents: DocumentReference[],
-  patientId: string,
-  cxId: string
-): Promise<ExistentialDocRefs> => {
-  const docIdWithExist = await Promise.allSettled(
-    documents.map(async (doc): Promise<{ docId: string; exists: boolean }> => {
-      const fileName = createS3FileName(cxId, patientId, doc.docUniqueId);
-
-      const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
-
-      return {
-        docId: doc.docUniqueId,
-        exists,
-      };
-    })
-  );
-
-  const successfulDocs = docIdWithExist.flatMap(ref =>
-    ref.status === "fulfilled" && ref.value ? ref.value : []
-  );
-
-  const existentialDocRefs = documents.reduce(
-    (acc: ExistentialDocRefs, curr) => {
-      for (const succDoc of successfulDocs) {
-        if (succDoc.docId === curr.docUniqueId) {
-          if (succDoc.exists) {
-            acc.existingDocRefs = [...acc.existingDocRefs, curr];
-          } else {
-            acc.nonExistingDocRefs = [...acc.nonExistingDocRefs, curr];
-          }
-        }
-      }
-      return acc;
-    },
-    {
-      existingDocRefs: [],
-      nonExistingDocRefs: [],
-    }
-  );
-
-  return existentialDocRefs;
-};
-
-const getDocRefsFromFHIR = (cxId: string, patientId: string): Promise<FHIRDocumentReference[]> => {
-  const fhirApi = makeFhirApi(cxId);
-
-  return getAllPages(() =>
-    fhirApi.searchResourcePages("DocumentReference", `patient=${patientId}`)
-  );
-};
+    const { metriportId, originalId } = await mapDocRefToMetriport({
+      cxId,
+      patientId,
+      documentId,
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+    return {
+      ...document,
+      originalId: originalId,
+      id: metriportId,
+    };
+  };
+}

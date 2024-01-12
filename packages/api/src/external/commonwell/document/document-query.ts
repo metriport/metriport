@@ -384,10 +384,12 @@ function addMetriportDocRefId({
   requestId: string;
 }) {
   return async (document: Document): Promise<DocumentWithMetriportId> => {
+    const documentId = document.content?.masterIdentifier?.value || document.id;
+
     const { metriportId, originalId } = await mapDocRefToMetriport({
       cxId,
       patientId,
-      document,
+      documentId,
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
