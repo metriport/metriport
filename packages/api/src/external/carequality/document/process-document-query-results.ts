@@ -100,9 +100,9 @@ const getNonExistentDocRefs = async (
     getDocRefsFromFHIR(cxId, patientId),
   ]);
 
-  const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
-    f => !FHIRDocRefs.find(d => d.id === f.docUniqueId)
-  );
+  const fhirDocRefIds = new Set(FHIRDocRefs.map(d => d.id));
+
+  const foundOnStorageButNotOnFHIR = existingDocRefs.filter(f => !fhirDocRefIds.has(f.docUniqueId));
 
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
