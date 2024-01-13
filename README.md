@@ -548,7 +548,21 @@ $ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.stackName>"
 This will create the infrastructure to run the API, including the ECR repository where the API will be deployed at. Take note of that to populate
 the environment variable `ECR_REPO_URI`.
 
-4. To deploy the API on ECR and restart the ECS service to make use of it:
+4. To provision the IHE Gateway:
+
+Update the `packages/infra/config/production.ts` configuration file, populating the properties under
+`iheGateway` with the information from the respective resources created on the previous step
+(API Stack).
+
+Execute:
+
+```shell
+$ ./packages/scripts/deploy-infra.sh -e "production" -s "IHEStack"
+```
+
+This will create the infrastructure to run the IHE Gateway.
+
+5. To deploy the API on ECR and restart the ECS service to make use of it:
 
 ```shell
 $ AWS_REGION=xxx ECR_REPO_URI=xxx ECS_CLUSTER=xxx ECS_SERVICE=xxx ./packages/scripts/deploy-api.sh"
