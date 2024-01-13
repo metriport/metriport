@@ -2,7 +2,7 @@ import { PurposeOfUse } from "@metriport/shared";
 import { DocumentQueryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "../../../domain/medical/organization";
-import { CQLink } from "../domain/cq-patient-data";
+import { CQLink } from "../cq-patient-data";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";

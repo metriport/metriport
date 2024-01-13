@@ -65,14 +65,13 @@ export async function getDocumentsFromCQ({
       source: MedicalDataSource.CAREQUALITY,
     });
 
-    capture.message(msg, {
+    capture.error(msg, {
       extra: {
         context: `cq.queryAndProcessDocuments`,
         error,
         patientId: patient.id,
         requestId,
       },
-      level: "error",
     });
     throw error;
   }

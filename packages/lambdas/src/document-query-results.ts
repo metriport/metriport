@@ -1,5 +1,5 @@
 import * as Sentry from "@sentry/serverless";
-import { sendDocumentQueryResults } from "@metriport/core/command/documents/send-doc-query-results";
+import { sendDocumentQueryResults } from "@metriport/core/external/carequality/command/documents/send-doc-query-results";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
 import { errorToString } from "@metriport/core/util/error";
@@ -10,6 +10,8 @@ capture.init();
 const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
 const dbCreds = getEnvVarOrFail("DB_CREDS");
 const apiUrl = getEnvVarOrFail("API_URL");
+
+capture.setExtra({ lambdaName: lambdaName });
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({
@@ -23,8 +25,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     patientId: string;
     cxId: string;
   }) => {
-    capture.setExtra({ lambdaName: lambdaName });
-
     console.log(
       `Running with envType: ${getEnvType()}, requestId: ${requestId}, numOfLinks: ${numOfLinks} `
     );

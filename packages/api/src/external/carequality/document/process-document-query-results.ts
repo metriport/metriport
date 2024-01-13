@@ -2,7 +2,7 @@ import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResult } from "../domain/document-query-result";
+import { DocumentQueryResult } from "../document-query-result";
 import { isConvertible } from "../../fhir-converter/converter";
 import { MedicalDataSource } from "../../../external";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";

@@ -10,7 +10,7 @@ import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { normalizeOid } from "@metriport/shared";
-import { CQDirectoryEntryData } from "../../domain/cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 
 const EARTH_RADIUS = 6378168;
 

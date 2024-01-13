@@ -14,7 +14,7 @@ export const getAllDocRefMapping = async ({
   patientId,
   cxId,
 }: {
-  requestId?: string;
+  requestId: string;
   patientId?: string;
   cxId?: string;
 }): Promise<DocRefMapping[]> => {

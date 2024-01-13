@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.10.5-alpha2.0",
+  "version": "1.10.5-alpha9.0",
   "description": "",
   "main": "app.js",
   "private": true,
@@ -61,7 +61,7 @@
     "oauth-signature": "^1.5.0",
     "pg": "^8.8.0",
     "pg-hstore": "^2.3.4",
-    "posthog-node": "^2.6.0",
+    "posthog-node": "^3.3.0",
     "reflect-metadata": "^0.1.13",
     "sequelize": "^6.31.0",
     "simple-oauth2": "^5.0.0",

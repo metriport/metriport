@@ -1,6 +1,6 @@
 import { Request } from "express";
 import { Product } from "../../domain/product";
-import { EventTypes, analytics } from "../../shared/analytics";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { getCxId, getCxIdFromHeaders } from "../util";
 
 const medicalRoutes = ["medical", "fhir"];
@@ -44,12 +44,12 @@ export const analyzeRoute = ({
     properties: {
       method,
       url,
-      ...(isMedical
-        ? { apiType: Product.medical }
-        : isDevices
-        ? { apiType: Product.devices }
-        : { apiType: "internal" }),
       duration,
     },
+    ...(isMedical
+      ? { apiType: Product.medical }
+      : isDevices
+      ? { apiType: Product.devices }
+      : { apiType: "internal" }),
   });
 };

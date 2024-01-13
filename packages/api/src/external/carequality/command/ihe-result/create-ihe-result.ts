@@ -7,7 +7,7 @@ import {
   isDocumentQueryResponse,
   isDocumentRetrievalResponse,
 } from "@metriport/ihe-gateway-sdk";
-import { getIheResultStatus } from "../../domain/ihe-result";
+import { getIheResultStatus } from "../../ihe-result";
 import { DefaultPayload } from "./shared";
 import { createPatientDiscoveryResult } from "./create-patient-discovery-result";
 import { createDocumentQueryResult } from "./create-document-query-result";
