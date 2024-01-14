@@ -67,7 +67,7 @@ function normalizeString(str: string): string {
  * @param email - The email address to be normalized.
  * @returns The normalized email address.
  */
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
