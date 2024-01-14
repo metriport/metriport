@@ -1,10 +1,13 @@
-import * as Sentry from "@sentry/serverless";
+import { getEnvVar } from "@metriport/core/util/env-var";
 import {
-  DocumentRetrievalResponseOutgoing,
-  DocumentRetrievalRequestIncoming,
   DocumentReference,
+  DocumentRetrievalRequestIncoming,
   documentRetrievalRequestIncomingSchema,
+  DocumentRetrievalResponseOutgoing,
 } from "@metriport/ihe-gateway-sdk";
+import * as Sentry from "@sentry/serverless";
+
+const version = getEnvVar(`METRIPORT_VERSION`);
 
 export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
@@ -12,6 +15,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 async function processRequest(
   payload: DocumentRetrievalRequestIncoming
 ): Promise<DocumentRetrievalResponseOutgoing> {
+  console.log(`Running with patientId: ${payload.patientId}; version: ${version}`);
+
   // validate with zod schema
   const xca = documentRetrievalRequestIncomingSchema.parse(payload);
   if (Math.random() > 0.5) {

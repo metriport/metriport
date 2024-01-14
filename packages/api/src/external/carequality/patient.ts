@@ -1,9 +1,6 @@
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
-import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
-import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import {
   getPatientDiscoveryResultCount,
@@ -13,11 +10,14 @@ import { CQLink } from "./domain/cq-patient-data";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
 import { Product } from "../../domain/product";
-import { EventTypes, analytics } from "../../shared/analytics";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
+import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
+import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
+import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 
@@ -76,10 +76,10 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
       distinctId: cxId,
       event: EventTypes.patientDiscovery,
       properties: {
-        apiType: Product.medical,
         numberGateways: numGateways,
         numberLinkedGateways: pdResults.length,
       },
+      apiType: Product.medical,
     });
 
     if (pdResults.length === 0) {
