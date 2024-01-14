@@ -1,10 +1,16 @@
 import { ProviderSource } from "@metriport/api-sdk";
+import { Product } from "../../domain/product";
 import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import Provider from "../provider";
 
-export type ExtraType = Record<string, string | undefined> & { action: keyof Provider };
+export type ExtraType = Record<string, string | undefined> & {
+  action: keyof Provider;
+};
 
+/**
+ * DAPI only!
+ */
 export async function executeAndReportAnalytics<R>(
   fnToExecute: () => Promise<R>,
   connectedUser: ConnectedUser,
@@ -25,6 +31,7 @@ export async function executeAndReportAnalytics<R>(
       duration: durationInMs,
       ...(extra ? extra : {}),
     },
+    apiType: Product.devices,
   });
   return resp;
 }

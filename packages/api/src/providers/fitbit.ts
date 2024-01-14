@@ -15,6 +15,7 @@ import {
   getProviderTokenFromConnectedUserOrFail,
 } from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
+import { Product } from "../domain/product";
 import MetriportError from "../errors/metriport-error";
 import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionsSchema } from "../mappings/fitbit";
 import { mapToActivity } from "../mappings/fitbit/activity";
@@ -743,6 +744,7 @@ export async function executeWithoutConnectedUser<R>(
       duration: durationInMs,
       ...additionalAnalyticsData,
     },
+    apiType: Product.devices,
   });
   return resp;
 }
