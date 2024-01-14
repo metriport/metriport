@@ -5,6 +5,9 @@ import {
   baseRequestSchema,
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "@medplum/fhirtypes";
+import { getEnvVar } from "@metriport/core/util/env-var";
+
+const version = getEnvVar(`METRIPORT_VERSION`);
 
 export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
@@ -12,6 +15,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 async function processRequest(
   payload: PatientDiscoveryRequestIncoming
 ): Promise<PatientDiscoveryResponseOutgoing> {
+  console.log(`Running with patientId: ${payload.patientId}; version: ${version}`);
+
   // validate with zod schema
   const baseRequest = baseRequestSchema.parse({
     id: payload.id,

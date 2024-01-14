@@ -1,4 +1,5 @@
 import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk";
+import { formatNumber, getFloatValue } from "@metriport/shared/common/numbers";
 import convert from "convert-units";
 import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
@@ -17,7 +18,6 @@ import { ConnectedUser } from "../../models/connected-user";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { formatNumber, getFloatValue } from "@metriport/shared/common/numbers";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import {
@@ -141,8 +141,8 @@ async function createAndSendPayload(
           properties: {
             method: "POST",
             url: "/webhook/tenovi",
-            apiType: Product.devices,
           },
+          apiType: Product.devices,
         });
         reportDevicesUsage(cxId, [userId]);
       } catch (error) {

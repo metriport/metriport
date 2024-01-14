@@ -5,6 +5,7 @@ import { DemographicsDTO } from "./demographicsDTO";
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
+  dateCreated?: Date;
 } & DemographicsDTO;
 
 export function dtoFromModel(patient: Patient): PatientDTO {
@@ -14,6 +15,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
+    dateCreated: patient.createdAt,
     firstName,
     lastName,
     dob,
