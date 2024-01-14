@@ -38,9 +38,6 @@ export function createAppConfigStack(
       configurationProfileId: appConfigOSSProfile.ref,
       contentType: "application/json",
       content: JSON.stringify({
-        // we update this version number linearly as we add more feature flags.
-        // If you update the config, please update the version by 1.
-        version: "2",
         flags: {
           [cxsWithEnhancedCoverageFeatureFlag]: {
             name: cxsWithEnhancedCoverageFeatureFlag,
