@@ -10,6 +10,7 @@ import {
 } from "../../carequality/shared";
 import { Config } from "../../../util/config";
 
+const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const api = axios.create();
 
 const UPLOADS_FOLDER = "uploads";
@@ -140,7 +141,6 @@ async function createAndUploadMetadataFile(
     title,
   });
 
-  const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
   const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
 
   console.log("Uploading metadata to S3 with key:", s3KMetadataFileName);
