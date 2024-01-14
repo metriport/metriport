@@ -19,7 +19,7 @@ import {
 } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../external/aws/appConfig";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -523,6 +523,7 @@ router.get(
  * GET /internal/patient/
  *
  * Returns a list of patients that match the given demographics.
+ *
  * @param req.query.cxId The customer ID.
  * @param req.query.dob The patient's date of birth.
  * @param req.query.genderAtBirth The patient's gender at birth.

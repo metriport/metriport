@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { DocRefMapping, DocRefMappingCreate } from "../docref-mapping";

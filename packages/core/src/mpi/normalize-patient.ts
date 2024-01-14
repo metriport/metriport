@@ -1,52 +1,5 @@
 import { Address } from "../domain/address";
-import { Patient, PatientData } from "../domain/patient";
-
-// Define default values for each field
-const defaultValues = {
-  firstName: "john",
-  lastName: "doe",
-  address: [{ addressLine1: "123 main street", city: "anytown", zip: "00000" }],
-  contact: [{ email: "example@example.com", phone: "0000000000" }],
-};
-
-/**
- * The function checks if a patient's address or name matches the default values and returns null if
- * they do, otherwise it updates the patient's contact information and returns the modified patient
- * object.
- * @param patient - The `patient` parameter is an object of type `Patient`. It
- * represents the data of a patient, including their address, name, and contact information.
- * @returns either a modified `Patient` object or `null`.
- */
-export function handleDefaultValues(patient: Patient): Patient | undefined {
-  const isDefaultAddress = patient.data.address?.some(
-    addr =>
-      addr &&
-      (addr.addressLine1 === defaultValues.address?.[0]?.addressLine1 ||
-        addr.city === defaultValues.address?.[0]?.city ||
-        addr.zip === defaultValues.address?.[0]?.zip)
-  );
-
-  const isDefaultName =
-    patient.data.firstName === defaultValues.firstName &&
-    patient.data.lastName === defaultValues.lastName;
-
-  if (isDefaultAddress || isDefaultName) {
-    return undefined;
-  }
-
-  patient.data.contact = (patient.data.contact ?? []).map(contact => {
-    const defaultContact = defaultValues.contact?.[0];
-    if (!defaultContact) {
-      return contact;
-    }
-    return {
-      email: contact.email === defaultContact.email ? "" : contact.email,
-      phone: contact.phone === defaultContact.phone ? "" : contact.phone,
-    };
-  });
-
-  return patient;
-}
+import { PatientData } from "../domain/patient";
 
 /**
  * Takes in patient data and normalizes it by splitting the first and last names,
@@ -85,7 +38,6 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
       return newAddress;
     }),
   };
-  // return handleDefaultValues(normalizedPatient);
   return normalizedPatient;
 }
 
