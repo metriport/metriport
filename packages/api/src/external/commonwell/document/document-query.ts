@@ -37,7 +37,7 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
-import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -102,9 +102,10 @@ export async function queryAndProcessDocuments({
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
-    const [patient, isECEnabledForThisCx] = await Promise.all([
+    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(patientParam.cxId),
+      isCQDirectEnabledForCx(patientParam.cxId),
     ]);
 
     if (!patient && isECEnabledForThisCx) {
@@ -125,7 +126,9 @@ export async function queryAndProcessDocuments({
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
+    // if CQ direct is enabled, then even if we are waiting for EC, we should go ahead with DQ,
+    // since we don't trigger EC for cx's with CQ direct enabled
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
     if (!isTriggerDQ) return 0;
 
     const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
