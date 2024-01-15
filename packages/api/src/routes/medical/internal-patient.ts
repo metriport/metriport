@@ -18,7 +18,10 @@ import {
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import { MedicalDataSource } from "../../external";
-import { getCxsWithEnhancedCoverageFeatureFlagValue } from "../../external/aws/appConfig";
+import {
+  getCxsWithEnhancedCoverageFeatureFlagValue,
+  getCxsWithCQDirectFeatureFlagValue,
+} from "../../external/aws/appConfig";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
@@ -385,16 +388,24 @@ router.post(
       if (!cxIds.length) {
         cxIds.push(...(await getCxsWithEnhancedCoverageFeatureFlagValue()));
       }
-      if (cxIds.length < 1) {
+
+      // Filter out customers that have CQ Direct feature flag enabled
+      const cqDirectCxIds = await getCxsWithCQDirectFeatureFlagValue();
+      const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
+
+      if (filteredCxIds.length < 1 && cxIds.length == 1) {
+        console.log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
+        return res.status(status.OK).json({ patientIds: [] });
+      } else if (filteredCxIds.length < 1) {
         console.log(`No customers to Enhanced Coverage, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       }
       log(`Using these cxIds: ${cxIds.join(", ")}`);
 
       const checkStaleEC = !fromOrgPos || fromOrgPos <= 0;
-      if (checkStaleEC) await checkStaleEnhancedCoverage(cxIds);
+      if (checkStaleEC) await checkStaleEnhancedCoverage(filteredCxIds);
 
-      const patientIdsUpdated = await initEnhancedCoverage(cxIds, patientIds, fromOrgPos);
+      const patientIdsUpdated = await initEnhancedCoverage(filteredCxIds, patientIds, fromOrgPos);
 
       return res.status(status.OK).json({ patientIds: patientIdsUpdated });
     } finally {
