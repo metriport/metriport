@@ -5,20 +5,27 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
-import { setupLambdasLayers, LambdaLayers } from "./shared/lambda-layers";
+import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
-  vpc: ec2.IVpc;
-  alarmAction: SnsAction | undefined;
+  version: string | undefined;
 }
 
 export class IHEStack extends Stack {
   constructor(scope: Construct, id: string, props: IHEStackProps) {
     super(scope, id, props);
+
+    const vpcId = props.config.iheGateway?.vpcId;
+    if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
+    const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
+
+    const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
+
     //-------------------------------------------
     // API Gateway
     //-------------------------------------------
@@ -71,8 +78,8 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
     });
 
     const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
@@ -88,10 +95,12 @@ export class IHEStack extends Stack {
 
     // Create lambdas
     const xcaResource = api.root.addResource("xca");
+    const xcpdResource = api.root.addResource("xcpd");
 
-    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource);
-    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource);
-    this.setupPatientDiscoveryLambda(props, lambdaLayers, api);
+    // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
+    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
+    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
+    this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
 
     //-------------------------------------------
     // Output
@@ -115,7 +124,9 @@ export class IHEStack extends Stack {
   private setupDocumentQueryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource
+    xcaResource: apig.Resource,
+    vpc: ec2.IVpc,
+    alarmSnsAction?: SnsAction | undefined
   ) {
     const documentQueryLambda = createLambda({
       stack: this,
@@ -128,8 +139,9 @@ export class IHEStack extends Stack {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
+      version: props.version,
     });
 
     const documentQueryResource = xcaResource.addResource("document-query");
@@ -139,7 +151,9 @@ export class IHEStack extends Stack {
   private setupDocumentRetrievalLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource
+    xcaResource: apig.Resource,
+    vpc: ec2.IVpc,
+    alarmSnsAction?: SnsAction | undefined
   ) {
     const documentRetrievalLambda = createLambda({
       stack: this,
@@ -150,8 +164,9 @@ export class IHEStack extends Stack {
       envVars: {
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
+      version: props.version,
     });
 
     const documentRetrievalResource = xcaResource.addResource("document-retrieve");
@@ -161,7 +176,9 @@ export class IHEStack extends Stack {
   private setupPatientDiscoveryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    api: apig.RestApi
+    apiResource: apig.Resource,
+    vpc: ec2.IVpc,
+    alarmSnsAction?: SnsAction | undefined
   ) {
     const patientDiscoveryLambda = createLambda({
       stack: this,
@@ -173,11 +190,21 @@ export class IHEStack extends Stack {
         API_URL: `${props.config.subdomain}.${props.config.domain}`,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
-      vpc: props.vpc,
-      alarmSnsAction: props.alarmAction,
+      vpc,
+      alarmSnsAction,
+      version: props.version,
     });
 
-    const xcpdResource = api.root.addResource("xcpd");
-    xcpdResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
+    apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
   }
+}
+
+function setupSlackNotifSnsTopic(stack: Stack, config: EnvConfig): SnsAction | undefined {
+  if (!config.slack) return undefined;
+  const topicArn = config.iheGateway?.snsTopicArn;
+  if (!topicArn) throw new Error("Missing SNS topic ARN for IHE stack");
+
+  const slackNotifSnsTopic = sns.Topic.fromTopicArn(stack, "SlackSnsTopic", topicArn);
+  const alarmAction = new SnsAction(slackNotifSnsTopic);
+  return alarmAction;
 }

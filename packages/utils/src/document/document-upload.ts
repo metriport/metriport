@@ -8,6 +8,10 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { sizeInBytes } from "@metriport/core/util/string";
 import axios from "axios";
 
+/**
+ * This script creates a document reference for a medical document and uploads the document to s3.
+ */
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const patientId = getEnvVarOrFail("PATIENT_ID");

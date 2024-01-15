@@ -107,8 +107,12 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const { appConfigAppId, appConfigConfigId, cxsWithEnhancedCoverageFeatureFlag } =
-      createAppConfigStack(this, { config: props.config });
+    const {
+      appConfigAppId,
+      appConfigConfigId,
+      cxsWithEnhancedCoverageFeatureFlag,
+      cxsWithCQDirectFeatureFlag,
+    } = createAppConfigStack(this, { config: props.config });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -206,6 +210,7 @@ export class APIStack extends Stack {
       bucketName: props.config.generalBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
+      versioned: true,
     });
 
     //-------------------------------------------
@@ -391,6 +396,7 @@ export class APIStack extends Stack {
         appId: appConfigAppId,
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
+        cxsWithCQDirectFeatureFlag,
       },
       cookieStore
     );

@@ -1,8 +1,8 @@
-# Welcome to your CDK TypeScript project
+# Metriport Infrastructure as Code (IaC)
 
-This is a blank project for CDK development with TypeScript.
+Metriport's Infrastructure as Code (IaC) is an AWS CDK project that uses TypeScript.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+The `cdk.json` file tells the CDK Toolkit how to execute the app.
 
 ## Useful commands
 
@@ -42,7 +42,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
      ```
      -----BEGIN CERTIFICATE-----
-     ABCDEFG...
+     ABCDEFGH...
      -----END CERTIFICATE-----
      ```
 

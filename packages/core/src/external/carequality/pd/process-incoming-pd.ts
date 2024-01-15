@@ -6,13 +6,7 @@ import { Patient } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
 import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
-import {
-  XDSRegistryError,
-  LivingSubjectAdministrativeGenderRequestedError,
-  PatientAddressRequestedError,
-  validateFHIRAndExtractPatient,
-  IHEGatewayError,
-} from "./validating-pd";
+import { XDSRegistryError, validateFHIRAndExtractPatient, IHEGatewayError } from "./validating-pd";
 
 import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 
@@ -34,7 +28,9 @@ function constructErrorResponse(
           severity: "error",
           code: "processing",
           details: {
-            coding: [{ system: error.name, code: error.iheErrorCode }],
+            coding: [
+              { system: error.name, code: error.iheErrorCode ?? "1.3.6.1.4.1.19376.1.2.27.1" },
+            ],
             text: error.message,
           },
         },
@@ -98,14 +94,10 @@ export async function processIncomingRequest(
     }
     return constructMatchResponse(payload, patientMPIToPartialPatient(matchingPatient));
   } catch (error) {
-    if (error instanceof XDSRegistryError) {
-      return constructErrorResponse(payload, error);
-    } else if (error instanceof PatientAddressRequestedError) {
-      return constructErrorResponse(payload, error);
-    } else if (error instanceof LivingSubjectAdministrativeGenderRequestedError) {
+    if (error instanceof IHEGatewayError) {
       return constructErrorResponse(payload, error);
     } else {
-      return constructErrorResponse(payload, new XDSRegistryError());
+      return constructErrorResponse(payload, new XDSRegistryError("Internal Server Error", error));
     }
   }
 }

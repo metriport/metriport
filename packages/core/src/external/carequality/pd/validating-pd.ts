@@ -15,32 +15,35 @@ import status from "http-status";
 export class IHEGatewayError extends MetriportError {
   constructor(
     message: string,
-    public iheErrorCode: string,
-    statusCode: number = status.BAD_REQUEST
+    cause?: unknown,
+    public iheErrorCode?: string,
+    statusCode: number = status.INTERNAL_SERVER_ERROR
   ) {
-    super(message);
+    super(message, cause);
     this.name = this.constructor.name;
     this.status = statusCode;
   }
 }
 
 export class PatientAddressRequestedError extends IHEGatewayError {
-  constructor(message = "Address Line 1 is not defined") {
-    super(message, "1.3.6.1.4.1.19376.1.2.27.1");
+  constructor(message = "Address Line 1 is not defined", cause?: unknown) {
+    super(message, cause, "1.3.6.1.4.1.19376.1.2.27.1");
     this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
   }
 }
 
 export class LivingSubjectAdministrativeGenderRequestedError extends IHEGatewayError {
-  constructor(message = "Gender at Birth is not defined") {
-    super(message, "1.3.6.1.4.1.19376.1.2.27.2");
+  constructor(message = "Gender at Birth is not defined", cause?: unknown) {
+    super(message, cause, "1.3.6.1.4.1.19376.1.2.27.2");
     this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
   }
 }
 
 export class XDSRegistryError extends IHEGatewayError {
-  constructor(message = "Internal Server Error") {
-    super(message, "1.3.6.1.4.1.19376.1.2.27.3", status.INTERNAL_SERVER_ERROR);
+  constructor(message = "Internal Server Error", cause?: unknown) {
+    super(message, cause, "1.3.6.1.4.1.19376.1.2.27.3", status.INTERNAL_SERVER_ERROR);
     this.name = this.constructor.name;
   }
 }
@@ -134,7 +137,7 @@ export function validateFHIRAndExtractPatient(patient: FHIRPatient): PatientData
   return convertedPatient;
 }
 
-const stateMappings: { [key: string]: USState } = {
+export const stateMappings: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.2": USState.AK, // Alaska Driver's License
   "urn:oid:2.16.840.1.113883.4.3.1": USState.AL, // Alabama Driver's License
   "urn:oid:2.16.840.1.113883.4.3.5": USState.AR, // Arkansas Driver's License
