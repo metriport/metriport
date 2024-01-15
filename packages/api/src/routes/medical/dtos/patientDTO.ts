@@ -8,6 +8,7 @@ export type PatientDTO = {
   dateCreated?: Date;
 } & DemographicsDTO;
 
+// the getDomainFromDTO function is in core in patient-loader-metriport-api.ts
 export function dtoFromModel(patient: Patient): PatientDTO {
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     patient.data;

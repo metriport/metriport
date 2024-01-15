@@ -25,7 +25,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   // TODO: Response is DTO not domain object
   async getOneOrFail({ id, cxId }: GetOne): Promise<Patient> {
     const response = await axios.get(`${this.apiUrl}/internal/patient/${id}?cxId=${cxId}`);
-    const patient = convertFromDomainObject(response.data);
+    const patient = getDomainFromDTO(response.data);
     validatePatient(patient);
     return patient;
   }
@@ -42,7 +42,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
       },
     });
     const patients: Patient[] = response.data.map((patient: PatientDTO) =>
-      convertFromDomainObject(patient)
+      getDomainFromDTO(patient)
     );
     patients.forEach(validatePatient);
     return patients;
@@ -59,7 +59,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
     });
     // call convertToDomainObject(response) here
     const patients: Patient[] = response.data.map((patient: PatientDTO) =>
-      convertFromDomainObject(patient)
+      getDomainFromDTO(patient)
     );
     patients.forEach(validatePatient);
     return patients;
@@ -89,7 +89,7 @@ function validatePatient(patient: Patient): boolean {
 }
 
 //
-function convertFromDomainObject(dto: PatientDTO): Patient {
+function getDomainFromDTO(dto: PatientDTO): Patient {
   return {
     id: dto.id,
     eTag: dto.eTag ?? "",
