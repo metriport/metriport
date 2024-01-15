@@ -9,10 +9,9 @@ import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
 import { validateFHIRAndExtractPatient } from "./validating-pd";
 import {
   XDSRegistryError,
-  LivingSubjectAdministrativeGenderRequestedError,
-  PatientAddressRequestedError,
   constructPDNoMatchResponse,
   constructPDErrorResponse,
+  IHEGatewayError,
 } from "../error";
 import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 
@@ -46,14 +45,13 @@ export async function processIncomingRequest(
     }
     return constructMatchResponse(payload, patientMPIToPartialPatient(matchingPatient));
   } catch (error) {
-    if (
-      error instanceof XDSRegistryError ||
-      error instanceof PatientAddressRequestedError ||
-      error instanceof LivingSubjectAdministrativeGenderRequestedError
-    ) {
+    if (error instanceof IHEGatewayError) {
       return constructPDErrorResponse(payload, error);
     } else {
-      return constructPDErrorResponse(payload, new XDSRegistryError());
+      return constructPDErrorResponse(
+        payload,
+        new XDSRegistryError("Internal Server Error", error)
+      );
     }
   }
 }

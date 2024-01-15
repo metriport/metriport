@@ -10,15 +10,16 @@ export type PatientDTO = {
   personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
   externalId?: string;
+  dateCreated?: Date;
   address: Address | Address[];
   contact?: Contact | Contact[];
 };
 
 type Address = {
-  addressLine1?: string;
+  addressLine1: string;
   addressLine2?: string;
-  city?: string;
-  state?: string;
+  city: string;
+  state: string;
   zip: string;
   country: string;
 };

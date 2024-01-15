@@ -1,8 +1,8 @@
-import * as Sentry from "@sentry/serverless";
 import {
   documentQueryRequestIncomingSchema,
   DocumentQueryRequestIncoming,
 } from "@metriport/ihe-gateway-sdk";
+import * as Sentry from "@sentry/serverless";
 import { processIncomingRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
 
 export const handler = Sentry.AWSLambda.wrapHandler(

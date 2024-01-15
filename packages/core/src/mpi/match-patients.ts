@@ -83,8 +83,9 @@ export function matchingContactDetailsRule(patient1: PatientData, patient2: Pati
   const contact1 = patient1.contact || [];
   const contact2 = patient2.contact || [];
   const isMatchPhone = intersectionWith(contact1, contact2, isSameContactByPhone).length > 0;
+  if (isMatchPhone) return true;
   const isMatchEmail = intersectionWith(contact1, contact2, isSameContactByEmail).length > 0;
-  return isMatchPhone || isMatchEmail;
+  return isMatchEmail;
 }
 
 /**

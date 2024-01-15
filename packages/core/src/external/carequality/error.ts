@@ -15,53 +15,56 @@ import status from "http-status";
 export class IHEGatewayError extends MetriportError {
   constructor(
     message: string,
-    public iheErrorCode: string,
-    statusCode: number = status.BAD_REQUEST
+    cause?: unknown,
+    public iheErrorCode?: string,
+    statusCode: number = status.INTERNAL_SERVER_ERROR
   ) {
-    super(message);
+    super(message, cause);
     this.name = this.constructor.name;
     this.status = statusCode;
   }
 }
 
 export class PatientAddressRequestedError extends IHEGatewayError {
-  constructor(message = "Address Line 1 is not defined") {
-    super(message, CODE_SYSTEM_ERROR);
+  constructor(message = "Address Line 1 is not defined", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
     this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
   }
 }
 
 export class LivingSubjectAdministrativeGenderRequestedError extends IHEGatewayError {
-  constructor(message = "Gender at Birth is not defined") {
-    super(message, CODE_SYSTEM_ERROR);
+  constructor(message = "Gender at Birth is not defined", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
     this.name = this.constructor.name;
+    this.status = status.BAD_REQUEST;
   }
 }
 
 export class XDSRegistryError extends IHEGatewayError {
-  constructor(message = "Internal Server Error") {
-    super(message, CODE_SYSTEM_ERROR, status.INTERNAL_SERVER_ERROR);
+  constructor(message = "Internal Server Error", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.INTERNAL_SERVER_ERROR);
     this.name = this.constructor.name;
   }
 }
 
 export class XDSUnknownPatientId extends IHEGatewayError {
-  constructor(message = "Unknown Patient ID") {
-    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+  constructor(message = "Unknown Patient ID", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
     this.name = this.constructor.name;
   }
 }
 
 export class XDSMissingHomeCommunityId extends IHEGatewayError {
-  constructor(message = "Missing Home Community ID") {
-    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+  constructor(message = "Missing Home Community ID", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
     this.name = this.constructor.name;
   }
 }
 
 export class XDSUnknownCommunity extends IHEGatewayError {
-  constructor(message = "Unknown Community") {
-    super(message, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
+  constructor(message = "Unknown Community", cause?: unknown) {
+    super(message, cause, CODE_SYSTEM_ERROR, status.BAD_REQUEST);
     this.name = this.constructor.name;
   }
 }
@@ -87,7 +90,7 @@ function constructBaseErrorResponse(
           severity: "error",
           code: "processing",
           details: {
-            coding: [{ system: error.name, code: error.iheErrorCode }],
+            coding: [{ system: error.name, code: error.iheErrorCode ?? CODE_SYSTEM_ERROR }],
             text: error.message,
           },
         },
