@@ -56,6 +56,7 @@ export function createAPIService(
     appId: string;
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
+    cxsWithCQDirectFeatureFlag: string;
   },
   cookieStore: secret.ISecret | undefined
 ): {
@@ -162,6 +163,7 @@ export function createAPIService(
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+          CXS_WITH_CQ_DIRECT_FEATURE_FLAG: appConfigEnvVars.cxsWithCQDirectFeatureFlag,
           CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
             appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
           ...(coverageEnhancementConfig && {

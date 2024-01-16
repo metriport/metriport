@@ -55,6 +55,7 @@ export interface LambdaProps extends StackProps {
   readonly runtime?: Runtime;
   readonly architecture?: Architecture;
   readonly layers: ILayerVersion[];
+  readonly version?: string | undefined;
 }
 
 export function createLambda(props: LambdaProps): Lambda {
@@ -79,6 +80,7 @@ export function createLambda(props: LambdaProps): Lambda {
     environment: {
       ...props.envVars,
       ENV_TYPE: props.envType,
+      ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
     },
     retryAttempts: props.retryAttempts ?? 0,
     maxEventAge: props.maxEventAge ?? undefined,

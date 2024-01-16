@@ -28,7 +28,7 @@ import { MedicalDataSource } from "../../../external";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -94,9 +94,10 @@ export async function queryAndProcessDocuments({
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
-    const [patient, isECEnabledForThisCx] = await Promise.all([
+    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(patientParam.cxId),
+      isCQDirectEnabledForCx(patientParam.cxId),
     ]);
 
     if (!patient && isECEnabledForThisCx) {
@@ -130,7 +131,7 @@ export async function queryAndProcessDocuments({
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
 
     if (!isTriggerDQ) return;
 
