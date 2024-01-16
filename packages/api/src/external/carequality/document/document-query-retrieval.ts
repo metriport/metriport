@@ -1,6 +1,8 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { DocumentRetrievalRequestOutgoing, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { DocumentRetrievalReqToExternalGW, DocumentReference } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
+import { DocumentWithMetriportId } from "./shared";
+import { DocumentQueryResult } from "../document-query-result";
 import { Organization } from "../../../domain/medical/organization";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -11,41 +13,53 @@ export function createCQDocumentRetrievalRequests({
   cxId,
   organization,
   documentReferences,
+  documentQueryResults,
 }: {
   requestId: string;
   cxId: string;
   organization: Organization;
-  documentReferences: DocumentReference[];
-}): DocumentRetrievalRequestOutgoing[] {
+  documentReferences: DocumentWithMetriportId[];
+  documentQueryResults: DocumentQueryResult[];
+}): DocumentRetrievalReqToExternalGW[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  return documentReferences.map(documentReference => {
-    const { patientId, systemId, url } = documentReference;
+  const requests: DocumentRetrievalReqToExternalGW[] = documentQueryResults.map(
+    documentQueryResult => {
+      const { patientId, gateway } = documentQueryResult.data;
 
-    return {
-      id: requestId,
-      patientId: patientId,
-      timestamp: now,
-      samlAttributes: {
-        subjectId: user,
-        subjectRole: {
-          code: SUBJECT_ROLE_CODE,
-          display: SUBJECT_ROLE_DISPLAY,
+      const requestDocReferences: DocumentReference[] = documentReferences.filter(
+        docRef => docRef.homeCommunityId === gateway?.homeCommunityId
+      );
+
+      return {
+        id: requestId,
+        cxId: cxId,
+        patientId: patientId,
+        timestamp: now,
+        samlAttributes: {
+          subjectId: user,
+          subjectRole: {
+            code: SUBJECT_ROLE_CODE,
+            display: SUBJECT_ROLE_DISPLAY,
+          },
+          organization: orgName,
+          organizationId: orgOid,
+          homeCommunityId: orgOid,
+          purposeOfUse: PurposeOfUse.TREATMENT,
         },
-        organization: orgName,
-        organizationId: orgOid,
-        homeCommunityId: orgOid,
-        purposeOfUse: PurposeOfUse.TREATMENT,
-      },
-      cxId: cxId,
-      gateway: {
-        homeCommunityId: systemId,
-        url: url,
-      },
-      documentReference: [documentReference],
-    };
-  });
+        gateway: {
+          homeCommunityId: gateway?.homeCommunityId || "",
+          url: gateway?.url || "",
+        },
+        documentReference: requestDocReferences,
+      };
+    }
+  );
+
+  const requestsWithDocRefs = requests.filter(request => request.documentReference.length > 0);
+
+  return requestsWithDocRefs;
 }

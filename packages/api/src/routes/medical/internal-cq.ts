@@ -1,8 +1,8 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import {
-  patientDiscoveryResponseIncomingSchema,
-  documentQueryResponseIncomingSchema,
-  documentRetrievalResponseIncomingSchema,
+  patientDiscoveryRespFromExternalGWSchema,
+  documentQueryRespFromExternalGWSchema,
+  documentRetrievalRespFromExternalGWSchema,
 } from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
@@ -15,6 +15,7 @@ import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-d
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import { IHEResultType } from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
+import { processDocumentRetrievalResults } from "../../external/carequality/document/process-document-retrieval-results";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
@@ -121,9 +122,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = patientDiscoveryResponseIncomingSchema.parse(req.body);
+    const pdResponse = patientDiscoveryRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE,
+      type: IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW,
       response: pdResponse,
     });
 
@@ -139,9 +140,9 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const dqResponse = documentQueryResponseIncomingSchema.parse(req.body);
+    const dqResponse = documentQueryRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
+      type: IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW,
       response: dqResponse,
     });
 
@@ -172,11 +173,26 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const drResponse = documentRetrievalResponseIncomingSchema.parse(req.body);
+    const drResponse = documentRetrievalRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE,
+      type: IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW,
       response: drResponse,
     });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/results
+ *
+ * Receives Document Retrieval results from the doc retrieval results lambda
+ */
+router.post(
+  "/document-retrieval/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    // DocumentRetrievalResponseIncoming
+    await processDocumentRetrievalResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

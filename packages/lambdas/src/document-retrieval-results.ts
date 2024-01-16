@@ -1,8 +1,8 @@
 import * as Sentry from "@sentry/serverless";
 import { sendIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
 import {
-  DOC_QUERY_RESULT_TABLE_NAME,
-  DocumentQueryResult,
+  DOC_RETRIEVAL_RESULT_TABLE_NAME,
+  DocumentRetrievalResult,
 } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
@@ -33,23 +33,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       `Running with envType: ${getEnvType()}, requestId: ${requestId}, numOfGateways: ${numOfGateways} `
     );
 
-    const endpointUrl = `${apiUrl}/internal/carequality/document-query/results`;
+    const endpointUrl = `${apiUrl}/internal/carequality/document-retrieval/results`;
 
     try {
-      await sendIHEGatewayResults<DocumentQueryResult>({
+      await sendIHEGatewayResults<DocumentRetrievalResult>({
         requestId,
         patientId,
         cxId,
         numOfGateways,
         dbCreds,
         endpointUrl,
-        resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
+        resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
       });
     } catch (error) {
-      const msg = `Error sending document query results`;
+      const msg = `Error sending document retrieval results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(error, {
-        extra: { context: `sendDocumentQueryResults`, error, patientId, requestId, cxId },
+        extra: { context: `sendDocumentRetrievalResults`, error, patientId, requestId, cxId },
       });
     }
   }

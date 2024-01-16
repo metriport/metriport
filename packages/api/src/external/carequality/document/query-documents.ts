@@ -38,7 +38,7 @@ export async function getDocumentsFromCQ({
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    await iheGateway.startDocumentsQuery({ documentQueryRequestOutgoing: documentQueryRequests });
+    await iheGateway.startDocumentsQuery({ documentQueryReqToExternalGW: documentQueryRequests });
 
     // We invoke the lambda that will start polling for the results
     // from the IHE Gateway and process them
@@ -50,7 +50,7 @@ export async function getDocumentsFromCQ({
           requestId,
           patientId: patient.id,
           cxId: patient.cxId,
-          numOfLinks: documentQueryRequests.length,
+          numOfGateways: documentQueryRequests.length,
         }),
       })
       .promise();

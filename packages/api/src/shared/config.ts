@@ -259,6 +259,10 @@ export class Config {
     return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
   }
 
+  static getDocRetrievalResultsLambdaName(): string {
+    return getEnvVarOrFail("DOC_RETRIEVAL_RESULTS_LAMBDA_NAME");
+  }
+
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }

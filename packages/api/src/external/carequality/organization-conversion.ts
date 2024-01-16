@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 
-export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateways {
+export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateway[] {
   return cqOrgs.map(org => {
     return {
       id: uuidv7(),

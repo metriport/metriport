@@ -1,9 +1,11 @@
 import { out } from "@metriport/core/util/log";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { DocumentQueryResult } from "../document-query-result";
 import { isConvertible } from "../../fhir-converter/converter";
+import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "../../../external";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -11,8 +13,13 @@ import { DocumentWithMetriportId } from "../../../external/carequality/document/
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { makeIheGatewayAPI } from "../api";
 import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
+import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
+import { combineDocRefs } from "./shared";
 
+const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
+const lambdaClient = makeLambdaClient(region);
+const lambdaName = Config.getDocQueryResultsLambdaName();
 
 export async function processDocumentQueryResults({
   requestId,
@@ -26,8 +33,9 @@ export async function processDocumentQueryResults({
   documentQueryResults: DocumentQueryResult[];
 }): Promise<void> {
   if (!iheGateway) return;
-
   const { log } = out(`CQ query docs - requestId ${requestId}, M patient ${patientId}`);
+
+  const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
   const docRefs = combineDocRefs(documentQueryResults);
 
@@ -61,20 +69,30 @@ export async function processDocumentQueryResults({
     const documentRetrievalRequests = createCQDocumentRetrievalRequests({
       requestId,
       cxId,
+      organization,
       documentReferences: docsToDownload,
+      documentQueryResults: documentQueryResults,
     });
 
+    // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     await iheGateway.startDocumentsRetrieval({
-      documentRetrievalRequestOutgoing: documentRetrievalRequests,
+      documentRetrievalReqToExternalGW: documentRetrievalRequests,
     });
 
-    // TODO - INTRODUCED WHEN IMPLEMENTING CQ DOC RETRIEVAL
-
-    // Download and store files in S3
-    // Convert all XML files to FHIR
-    // Store document references in FHIR
-
-    // downloadDocs(docsToDownload, patientId, cxId, requestId);
+    // We invoke the lambda that will start polling for the results
+    // from the IHE Gateway for document retrieval results and process them
+    lambdaClient
+      .invoke({
+        FunctionName: lambdaName,
+        InvocationType: "Event",
+        Payload: JSON.stringify({
+          requestId,
+          patientId: patientId,
+          cxId: cxId,
+          numOfGateways: documentRetrievalRequests.length,
+        }),
+      })
+      .promise();
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
@@ -98,15 +116,6 @@ export async function processDocumentQueryResults({
     });
     throw error;
   }
-}
-
-// Create a single array of all the document references from all the document query results
-function combineDocRefs(documentQueryResults: DocumentQueryResult[]): DocumentReference[] {
-  return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
-    const documentReferences = curr.data.documentReference ?? [];
-
-    return [...acc, ...documentReferences];
-  }, []);
 }
 
 function addMetriportDocRef({

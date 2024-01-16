@@ -347,6 +347,15 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
+    const documentRetrievalResultsLambda = this.setupDocumentRetrievalResults({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
@@ -397,6 +406,7 @@ export class APIStack extends Stack {
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       documentQueryResultsLambda,
+      documentRetrievalResultsLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       ccdaSearchQueue,
@@ -482,6 +492,11 @@ export class APIStack extends Stack {
 
     // Add ENV after apiserivce is created
     documentQueryResultsLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
+    documentRetrievalResultsLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
@@ -1129,6 +1144,35 @@ export class APIStack extends Stack {
     });
 
     return documentQueryResultsLambda;
+  }
+
+  private setupDocumentRetrievalResults(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const documentRetrievalResultsLambda = createLambda({
+      stack: this,
+      name: "DocumentRetrievalResults",
+      entry: "document-retrieval-results",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return documentRetrievalResultsLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
