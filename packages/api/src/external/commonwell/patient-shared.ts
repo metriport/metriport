@@ -15,6 +15,7 @@ import { intersectionBy, minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "../../domain/medical/organization";
+import { DocumentQueryProgress } from "../../domain/medical/document-query";
 import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
@@ -34,7 +35,8 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus
+    public cqLinkStatus?: CQLinkStatus,
+    public documentQueryProgress?: DocumentQueryProgress
   ) {
     super();
   }

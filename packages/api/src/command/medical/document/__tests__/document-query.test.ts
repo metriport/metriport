@@ -35,7 +35,6 @@ describe("document-query", () => {
       // TODO 785 IMPLEMENT IT
     });
   });
-
   describe("updateDocQuery", () => {
     describe("updateConversionProgress", () => {
       it(`Calls updateConversionProgress when convertResult is present`, async () => {
@@ -43,45 +42,42 @@ describe("document-query", () => {
         await updateDocQuery({ patient, convertResult: "success" });
         expect(docQuery_updateConversionProgress).toHaveBeenCalled();
       });
-
       // TODO check params are passed to updateConversionProgress
-
       it(`return result of updateConversionProgress`, async () => {
         const patient = makePatient();
         const res = await updateDocQuery({ patient, convertResult: "success" });
         expect(res).toEqual(patientModel);
       });
     });
-
     describe("appendDocQueryProgress", () => {
+      const requestId = uuidv7_file.uuidv4();
+
       it(`Calls appendDocQueryProgress when convertResult is not present`, async () => {
         const patient = makePatient();
-        await updateDocQuery({ patient, convertProgress: { status: "processing" } });
+        await updateDocQuery({ patient, requestId, convertProgress: { status: "processing" } });
         expect(appendDocQueryProgress_mock).toHaveBeenCalled();
       });
-
-      // TODO check params are passed to appendDocQueryProgress
-
       it(`return result of appendDocQueryProgress`, async () => {
         const patient = makePatient();
-        const res = await updateDocQuery({ patient, convertProgress: { status: "processing" } });
+        const res = await updateDocQuery({
+          patient,
+          requestId,
+          convertProgress: { status: "processing" },
+        });
         expect(res).toEqual(patientModel);
       });
     });
   });
-
   describe("getOrGenerateRequestId", () => {
     afterEach(() => {
       uuidv7_mock.mockRestore();
     });
-
     it(`returns new reqId when no doc query status`, async () => {
       const expectedResult = uuidv7_file.uuidv4();
       uuidv7_mock.mockReturnValue(expectedResult);
       const res = getOrGenerateRequestId(undefined);
       expect(res).toEqual(expectedResult);
     });
-
     it(`returns existing when download is processing`, async () => {
       const expectedResult = uuidv7_file.uuidv4();
       const docQueryProgress = makeDocumentQueryProgress({
@@ -92,7 +88,6 @@ describe("document-query", () => {
       const res = getOrGenerateRequestId(docQueryProgress);
       expect(res).toEqual(expectedResult);
     });
-
     it(`returns existing when convert is processing`, async () => {
       const expectedResult = uuidv7_file.uuidv4();
       const docQueryProgress = makeDocumentQueryProgress({
@@ -103,7 +98,6 @@ describe("document-query", () => {
       const res = getOrGenerateRequestId(docQueryProgress);
       expect(res).toEqual(expectedResult);
     });
-
     it(`returns a new one when both are completed`, async () => {
       const expectedResult = uuidv7_file.uuidv4();
       uuidv7_mock.mockReturnValue(expectedResult);
@@ -115,7 +109,6 @@ describe("document-query", () => {
       const res = getOrGenerateRequestId(docQueryProgress);
       expect(res).toEqual(expectedResult);
     });
-
     it(`returns a new one when both are failed`, async () => {
       const expectedResult = uuidv7_file.uuidv4();
       uuidv7_mock.mockReturnValue(expectedResult);
