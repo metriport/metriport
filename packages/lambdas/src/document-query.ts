@@ -1,10 +1,13 @@
-import * as Sentry from "@sentry/serverless";
+import { getEnvVar } from "@metriport/core/util/env-var";
 import {
-  DocumentQueryResponseOutgoing,
-  documentQueryRequestIncomingSchema,
   DocumentQueryRequestIncoming,
+  documentQueryRequestIncomingSchema,
+  DocumentQueryResponseOutgoing,
   DocumentReference,
 } from "@metriport/ihe-gateway-sdk";
+import * as Sentry from "@sentry/serverless";
+
+const version = getEnvVar(`METRIPORT_VERSION`);
 
 export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
@@ -12,6 +15,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 async function processRequest(
   payload: DocumentQueryRequestIncoming
 ): Promise<DocumentQueryResponseOutgoing> {
+  console.log(`Running with payload: ${JSON.stringify(payload)}; version: ${version}`);
+
   // Randomly return error or success response
   const xca = documentQueryRequestIncomingSchema.parse(payload);
   if (Math.random() > 0.5) {

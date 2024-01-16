@@ -40,23 +40,22 @@ async function deploy(config: EnvConfig) {
   });
 
   //---------------------------------------------------------------------------------
-  // 2. Deploy the API stack once all secrets are defined.
+  // 3. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
-  // 3. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
+  // 4. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
   //---------------------------------------------------------------------------------
   if (config.iheGateway) {
     new IHEStack(app, "IHEStack", {
       env,
       config: config,
-      vpc: apiStack.vpc,
-      alarmAction: apiStack.alarmAction,
+      version,
     });
   }
   //---------------------------------------------------------------------------------
-  // 3. Deploy the Connect widget stack.
+  // 5. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
   if (config.connectWidget) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
