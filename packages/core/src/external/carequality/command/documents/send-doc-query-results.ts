@@ -6,7 +6,10 @@ import duration from "dayjs/plugin/duration";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
 import { errorToString } from "../../../../util/error";
-import { DocumentQueryResult, TABLE_NAME, REQUEST_ID_COLUMN } from "../../document-query-result";
+import { DocumentQueryResult } from "../../document-query-result";
+
+const REQUEST_ID_COLUMN = "request_id";
+const TABLE_NAME = "document_query_result";
 
 const api = axios.create();
 
