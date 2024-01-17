@@ -5,11 +5,6 @@ addPackageToLayer() {
    package_folder="../$package"
    package_on_layer="./layers/shared/nodejs/node_modules/@metriport/$package"
    echo "Copying $package_folder to shared layer..."
-   
-   if [ -L "$package_on_layer" ] && [ ! -e "$package_on_layer" ]; then
-      echo "$package_on_layer is a dangling symlink. Removing..."
-      rm $package_on_layer
-   fi
 
    mkdir $package_on_layer
    cp $package_folder/package.json $package_on_layer
