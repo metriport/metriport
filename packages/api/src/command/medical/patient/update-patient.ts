@@ -1,4 +1,4 @@
-import { Patient, PatientData } from "../../../domain/medical/patient";
+import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { patientEvents } from "../../../event/medical/patient-event";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";

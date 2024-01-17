@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { BaseDomain } from "../base-domain";
+import { BaseDomain } from "@metriport/core/domain/base-domain";
 
 export const makeBaseDomain = ({ id }: { id?: string } = {}): BaseDomain => {
   return {

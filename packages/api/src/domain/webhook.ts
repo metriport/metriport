@@ -1,5 +1,5 @@
 import { Product } from "./product";
-import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { WebhookRequestStatus } from "../models/webhook-request";
 
 export const dapiWHPrefix = Product.devices;

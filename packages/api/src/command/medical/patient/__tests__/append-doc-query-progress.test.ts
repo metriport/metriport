@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
-import { MedicalDataSource } from "../../../../external";
-import { DocumentQueryProgress } from "../../../../domain/medical/document-query";
-import { Patient } from "../../../../domain/medical/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";

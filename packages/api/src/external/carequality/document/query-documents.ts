@@ -1,12 +1,12 @@
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { Config } from "../../../shared/config";
 import { createCQDocumentQueryRequests } from "./document-query-request";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { makeIheGatewayAPI } from "../api";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 

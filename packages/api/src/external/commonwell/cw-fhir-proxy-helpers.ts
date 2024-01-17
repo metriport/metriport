@@ -1,4 +1,4 @@
-import { Organization } from "../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import NotFoundError from "../../errors/not-found";
 import { OrganizationModel } from "../../models/medical/organization";
 

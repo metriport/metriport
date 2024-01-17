@@ -1,9 +1,9 @@
-import { Progress, DocumentQueryProgress } from "../../domain/medical/document-query";
-import { MedicalDataSource } from "..";
-import { PatientExternalData } from "../../domain/medical/patient";
-import { progressTypes } from "../../domain/medical/document-query";
-import { DocumentQueryStatus } from "../../domain/medical/document-query";
-import { Patient } from "../../domain/medical/patient";
+import { Progress, DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { PatientExternalData } from "@metriport/core/domain//patient";
+import { progressTypes } from "@metriport/core/domain/document-query";
+import { DocumentQueryStatus } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {

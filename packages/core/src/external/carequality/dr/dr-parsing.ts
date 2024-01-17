@@ -1,7 +1,7 @@
-import { generatePatientDoc } from "./docs";
-import { generateTimeStrings, cleanXml, parseMtomResponseRegex } from "./utils";
+import { generatePatientDoc } from "../docs";
+import { generateTimeStrings, cleanXml, parseMtomResponseRegex } from "../utils";
 import * as xml2js from "xml2js";
-import { generateITI39Template, generateITI39TemplateMTOM } from "./iti-39-template";
+import { generateITI39Template, generateITI39TemplateMTOM } from "./dr-template";
 
 // mapping od document ids to docs
 const documentData: { [key: string]: string } = {

@@ -4,12 +4,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import {
-  ProgressType,
-  DocumentQueryStatus,
-  Progress,
-} from "../../../domain/medical/document-query";
-import { Patient, PatientCreate, PatientData } from "../../../domain/medical/patient";
+import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/domain/document-query";
+import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { capture } from "../../../shared/notifications";

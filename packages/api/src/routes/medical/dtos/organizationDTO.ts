@@ -1,4 +1,4 @@
-import { Organization, OrgType } from "../../../domain/medical/organization";
+import { Organization, OrgType } from "@metriport/core/domain/organization";
 import { BaseDTO, toBaseDTO } from "./baseDTO";
 import { AddressStrictDTO } from "./location-address-dto";
 

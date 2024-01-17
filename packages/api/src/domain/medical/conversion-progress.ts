@@ -1,5 +1,8 @@
-import { DocumentQueryProgress, getStatusFromProgress } from "./document-query";
-import { Patient } from "./patient";
+import {
+  DocumentQueryProgress,
+  getStatusFromProgress,
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];

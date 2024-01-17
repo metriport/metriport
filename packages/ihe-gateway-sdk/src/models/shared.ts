@@ -44,12 +44,17 @@ export const codeSchema = z.object({
 
 export type Code = z.infer<typeof codeSchema>;
 
-export type Details = { coding: Code[] } | { text: string };
+export const detailsSchema = z.union([
+  z.object({ coding: z.array(codeSchema) }),
+  z.object({ text: z.string() }),
+]);
+
+export type Details = z.infer<typeof detailsSchema>;
 
 export const issueSchema = z.object({
   severity: z.string(),
   code: z.string(),
-  details: z.object({ text: z.string() }),
+  details: detailsSchema,
 });
 export type Issue = z.infer<typeof issueSchema>;
 
