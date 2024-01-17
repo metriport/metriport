@@ -14,7 +14,13 @@ type IHEResults = DocumentQueryResult | DocumentRetrievalResult;
 export function combineDocRefs(documentQueryResults: IHEResults[]): DocumentReference[] {
   return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
     const documentReferences = curr.data.documentReference ?? [];
+    const documentReferencesWithUrl = documentReferences.map(docRef => {
+      return {
+        ...docRef,
+        url: curr.data.gateway.url,
+      };
+    });
 
-    return [...acc, ...documentReferences];
+    return [...acc, ...documentReferencesWithUrl];
   }, []);
 }

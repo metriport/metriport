@@ -15,6 +15,8 @@ import { makeIheGatewayAPI } from "../api";
 import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
 import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
 import { combineDocRefs } from "./shared";
+import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
+import { cqToFHIR } from "../../fhir/document";
 
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
@@ -66,6 +68,8 @@ export async function processDocumentQueryResults({
       source: MedicalDataSource.CAREQUALITY,
     });
 
+    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
+
     const documentRetrievalRequests = createCQDocumentRetrievalRequests({
       requestId,
       cxId,
@@ -116,6 +120,37 @@ export async function processDocumentQueryResults({
     });
     throw error;
   }
+}
+
+// Since we have most of the document contents when doing the document query,
+// we will store this in s3 and then upsert the reference to the s3 object in FHIR
+// when doing the doc retrieval
+async function storeInitDocRefInFHIR(
+  docRefs: DocumentWithMetriportId[],
+  cxId: string,
+  patientId: string
+) {
+  await Promise.allSettled(
+    docRefs.map(async docRef => {
+      try {
+        const docId = docRef.metriportId ?? "";
+
+        const FHIRDocRef = cqToFHIR(docId, docRef, patientId);
+
+        await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+      } catch (error) {
+        console.log(`Failed to store initial doc ref in FHIR: ${errorToString(error)}`);
+        capture.error(error, {
+          extra: {
+            context: `cq.storeInitDocRefInFHIR`,
+            error,
+            docRef,
+          },
+        });
+        throw error;
+      }
+    })
+  );
 }
 
 function addMetriportDocRef({
