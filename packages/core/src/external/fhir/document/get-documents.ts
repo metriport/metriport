@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { chunk } from "lodash";
 import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
@@ -19,10 +20,14 @@ export async function getDocuments({
 }): Promise<DocumentReference[]> {
   try {
     const api = makeFhirApi(cxId, Config.getFHIRServerUrl());
-    const filtersAsStr = getFilters({ patientId, documentIds, from, to });
     const docs: DocumentReference[] = [];
-    for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
-      docs.push(...page);
+    const chunksDocIds = chunk(documentIds, 10);
+
+    for (const docIds of chunksDocIds) {
+      const filtersAsStr = getFilters({ patientId, documentIds: docIds, from, to });
+      for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
+        docs.push(...page);
+      }
     }
     return docs;
   } catch (error) {
