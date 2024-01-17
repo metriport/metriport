@@ -7,6 +7,7 @@ export type CreateWebhookRequestCommand = {
   cxId: string;
   type: WebhookType;
   payload: object;
+  requestId?: string;
   status?: WebhookRequestStatus;
 };
 
@@ -32,4 +33,10 @@ export const updateWebhookRequestStatus = async ({
   const log = await WebhookRequest.findOne({ where: { id } });
   if (!log) throw new NotFoundError(`Could not find webhook requst ${id}`);
   await WebhookRequest.update({ status }, { where: { id } });
+};
+
+export const getAllWebhookRequestByRequestId = async (
+  requestId: string
+): Promise<WebhookRequest[]> => {
+  return WebhookRequest.findAll({ where: { requestId } });
 };

@@ -1,5 +1,5 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
-import { CQDirectoryEntry } from "../../domain/cq-directory";
+import { CQDirectoryEntry } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const getCQDirectoryEntry = async (

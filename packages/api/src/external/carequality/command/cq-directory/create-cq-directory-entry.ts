@@ -1,5 +1,5 @@
 import { QueryTypes, Sequelize } from "sequelize";
-import { CQDirectoryEntryData } from "../../domain/cq-directory";
+import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { cqDirectoryEntryTemp } from "./shared";
 

@@ -15,7 +15,6 @@ import {
   queryDocumentsAcrossHIEs,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
-import { options, reprocessDocuments } from "../../command/medical/document/document-redownload";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -29,12 +28,10 @@ import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
-import { stringListSchema } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-
 import {
   DocumentBulkSignerLambdaResponse,
   DocumentBulkSignerLambdaResponseArraySchema,
@@ -42,61 +39,15 @@ import {
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
+import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
+import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
+import { isMedicalDataSource } from "../../external";
 
 const router = Router();
 const upload = multer();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
-
-const reprocessOptionsSchema = z.enum(options).array().optional();
-
-/** ---------------------------------------------------------------------------
- * POST /internal/docs/reprocess
- *
- * Use the document reference we have on FHIR server to:
- * - re-download the Binary and update it on S3 (if override = true);
- * - re-convert it to FHIR (when applicable);
- * - update the FHIR server with the results.
- *
- * Asychronous operation, returns 200 immediately.
- *
- * @param req.query.cxId - The customer/account's ID.
- * @param req.query.documentIds - Optional comma-separated list of metriport document
- *     IDs to re-download; if not set all documents of the customer will be re-downloaded;
- * @param req.query.options - Optional, array with elements being one of:
- *     - re-query-doc-refs: indicates we should re-query the document references, if not present
- *       the API will use the existing doc refs on the FHIR server;
- *     - force-download: whether we should re-download the documents from CommonWell, if not
- *       present the API will not download them again if already present on S3.
- *     - ignore-fhir-conversion-and-upsert: whether we should not-convert the documents to FHIR and store the reference, if not
- *       present the API will convert and store the new reference.
- * @return 200
- */
-router.post(
-  "/reprocess",
-  asyncHandler(async (req: Request, res: Response) => {
-    const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const documentIdsRaw = getFrom("query").optional("documentIds", req);
-    const documentIds = documentIdsRaw
-      ? stringListSchema.parse(documentIdsRaw.split(",").map(id => id.trim()))
-      : [];
-    const optionsRaw = getFrom("query").optional("options", req);
-    if (typeof optionsRaw !== "string") {
-      throw new BadRequestError(`options must be a string, with comma-separated values`);
-    }
-    const options = optionsRaw
-      ? reprocessOptionsSchema.parse(optionsRaw.split(",").map(id => id.trim()))
-      : [];
-    const requestId = uuidv7();
-
-    reprocessDocuments({ cxId, documentIds, options, requestId }).catch(err => {
-      console.log(`Error re-processing documents for cxId ${cxId}: `, err);
-      capture.error(err);
-    });
-    return res.json({ processing: true, options, documentIds, cxId });
-  })
-);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/re-convert
@@ -179,63 +130,83 @@ router.post(
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const status = getFrom("query").orFail("status", req);
+    const source = getFrom("query").optional("source", req);
     const details = getFrom("query").optional("details", req);
-    const docId = getFrom("query").optional("jobId", req);
+    const jobId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
     const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
 
+    const requestId = jobId?.split("_")[0] ?? "";
+    const docId = jobId?.split("_")[1] ?? "";
+
+    const hasSource = isMedicalDataSource(source);
+
     log(`Converted document ${docId} with status ${convertResult}, details: ${details}`);
 
-    // START TODO 785 remove this once we're confident with the flow
-    const patientPre = await getPatientOrFail({ id: patientId, cxId });
-    const docQueryProgress = patientPre.data.documentQueryProgress;
+    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const docQueryProgress = patient.data.documentQueryProgress;
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
-    // END TODO 785
 
-    let expectedPatient = await updateDocQuery({
-      patient: { id: patientId, cxId },
-      convertResult,
-    });
+    if (hasSource) {
+      const updatedSourceDocProgress = updateSourceConversionProgress({
+        patient: patient,
+        convertResult,
+        source: source,
+      });
 
-    // START TODO 785 remove this once we're confident with the flow
-    const maxAttempts = 3;
-    let curAttempt = 1;
-    let verifiedSuccess = false;
-    while (curAttempt++ < maxAttempts) {
-      const patientPost = await getPatientOrFail({ id: patientId, cxId });
-      const postDocQueryProgress = patientPost.data.documentQueryProgress;
-      log(`[attempt ${curAttempt}] Status post-update: ${JSON.stringify(postDocQueryProgress)}`);
-      if (
-        !isDocumentQueryProgressEqual(
-          expectedPatient.data.documentQueryProgress,
-          postDocQueryProgress
-        )
-      ) {
-        log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
-        expectedPatient = await updateDocQuery({
-          patient: { id: patientId, cxId },
-          convertResult,
-        });
-      } else {
-        log(`[attempt ${curAttempt}] Status post-update is as expected!`);
-        verifiedSuccess = true;
-        break;
+      appendDocQueryProgressWithSource({
+        patient: patient,
+        convertProgress: updatedSourceDocProgress,
+        requestId,
+        source,
+      });
+    } else {
+      let expectedPatient = await updateDocQuery({
+        patient: { id: patientId, cxId },
+        convertResult,
+      });
+
+      // START TODO 785 remove this once we're confident with the flow
+      const maxAttempts = 3;
+      let curAttempt = 1;
+      let verifiedSuccess = false;
+      while (curAttempt++ < maxAttempts) {
+        const patientPost = await getPatientOrFail({ id: patientId, cxId });
+        const postDocQueryProgress = patientPost.data.documentQueryProgress;
+        log(`[attempt ${curAttempt}] Status post-update: ${JSON.stringify(postDocQueryProgress)}`);
+        if (
+          !isDocumentQueryProgressEqual(
+            expectedPatient.data.documentQueryProgress,
+            postDocQueryProgress
+          )
+        ) {
+          log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
+          expectedPatient = await updateDocQuery({
+            patient: { id: patientId, cxId },
+            convertResult,
+          });
+        } else {
+          log(`[attempt ${curAttempt}] Status post-update is as expected!`);
+          verifiedSuccess = true;
+          break;
+        }
       }
-    }
-    if (!verifiedSuccess) {
-      const patientPost = await getPatientOrFail({ id: patientId, cxId });
-      log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
-    }
-    // END TODO 785
+      if (!verifiedSuccess) {
+        const patientPost = await getPatientOrFail({ id: patientId, cxId });
+        log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
+      }
+      // END TODO 785
 
-    const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
-    if (conversionStatus === "completed") {
-      processPatientDocumentRequest(
-        cxId,
-        patientId,
-        "medical.document-conversion",
-        MAPIWebhookStatus.completed
-      );
+      const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
+      if (conversionStatus === "completed") {
+        processPatientDocumentRequest(
+          cxId,
+          patientId,
+          "medical.document-conversion",
+          MAPIWebhookStatus.completed,
+          ""
+        );
+      }
     }
 
     return res.sendStatus(httpStatus.OK);
@@ -254,15 +225,17 @@ router.post(
     const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
     const downloadProgress = docQueryProgress.download;
     const convertProgress = docQueryProgress.convert;
+
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
+
     const updatedPatient = await updateDocQuery({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      requestId: patient.data.documentQueryProgress?.requestId,
+      requestId: patient.data.documentQueryProgress?.requestId ?? "",
     });
 
     return res.json(updatedPatient.data.documentQueryProgress);
@@ -467,6 +440,7 @@ router.post(
       patientId,
       "medical.document-bulk-download-urls",
       status as MAPIWebhookStatus,
+      requestId,
       dtos
     );
 

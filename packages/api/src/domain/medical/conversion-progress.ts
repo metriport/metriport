@@ -18,6 +18,15 @@ export const calculateConversionProgress = ({
 }): DocumentQueryProgress => {
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
+  const talliedDocQueryProgress = tallyDocQueryProgress(docQueryProgress, convertResult);
+
+  return talliedDocQueryProgress;
+};
+
+export const tallyDocQueryProgress = (
+  docQueryProgress: DocumentQueryProgress,
+  convertResult: ConvertResult
+): DocumentQueryProgress => {
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;
 
   const successfulConvert = docQueryProgress?.convert?.successful ?? 0;

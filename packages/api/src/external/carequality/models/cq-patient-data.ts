@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { CQData, CQPatientData } from "../domain/cq-patient-data";
+import { CQData, CQPatientData } from "../cq-patient-data";
 import { BaseModel, ModelSetup } from "../../../models/_default";
 
 export class CQPatientDataModel extends BaseModel<CQPatientDataModel> implements CQPatientData {

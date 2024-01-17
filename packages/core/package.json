@@ -17,6 +17,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./domain/*": "./dist/domain/*.js",
+    "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js",
     "./command/*": "./dist/command/*.js",
@@ -29,6 +30,9 @@
       ],
       "domain/*": [
         "dist/domain/*"
+      ],
+      "command/*": [
+        "dist/command/*"
       ],
       "external/*": [
         "dist/external/*"

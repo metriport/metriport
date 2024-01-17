@@ -31,6 +31,7 @@ const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-infe
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
+const cxId = getEnvVarOrFail("CX_ID");
 const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 const inputFileName = "bulk-insert-patients.csv";
 const outputFileName = "./runs/bulk-insert-patient-ids.txt";
@@ -56,7 +57,7 @@ async function main() {
 
   if (!dryRun) initPatientIdRepository();
 
-  const { facilityId: localFacilityId } = await getCxData(apiKey, facilityId.trim());
+  const { facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
 
   const results: PatientCreate[] = [];
@@ -67,7 +68,7 @@ async function main() {
   fs.createReadStream(path.join(__dirname, inputFileName))
     .pipe(
       csv({
-        mapHeaders: ({ header }) => header.toLowerCase().replaceAll(" ", "").replaceAll("*", ""),
+        mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", ""),
       })
     )
     .on("data", async data => {
