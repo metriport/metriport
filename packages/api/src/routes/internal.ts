@@ -70,6 +70,8 @@ router.delete(
  * This an idempotent endpoint, which means it can be called multiple times and it
  * will not have side effects.
  *
+ * @deprecated Should no longer be used. Does not handle multiple hies.
+ *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.allCustomers - Whether we should populate all customers.
  * @param req.query.createIfNotExists - Creates the tenant on the FHIR server if

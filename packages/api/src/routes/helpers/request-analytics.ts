@@ -39,8 +39,8 @@ export const analyzeRoute = ({
 
   const distinctId = cxId ?? "not-available";
   analytics({
-    distinctId,
     event: EventTypes.query,
+    distinctId,
     properties: {
       method,
       url,

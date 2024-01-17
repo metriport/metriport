@@ -21,6 +21,9 @@ const { log } = Util.out("populateFhirServer");
 
 export type PopulateFhirServerResponse = { patientsOK: number; patientsError: number };
 
+/**
+ * @deprecated Should no longer be used. Does not handle multiple hies.
+ */
 export async function populateFhirServer({
   cxId,
   createIfNotExists = false,

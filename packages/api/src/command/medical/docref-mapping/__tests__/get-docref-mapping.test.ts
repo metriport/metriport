@@ -16,6 +16,7 @@ beforeEach(() => {
     cxId: uuidv7(),
     patientId: uuidv7(),
     externalId: uuidv7(),
+    requestId: uuidv7(),
     source: MedicalDataSource.COMMONWELL,
   };
   docRefModel = makeDocRefMappingModel(docRefBase);
@@ -32,7 +33,12 @@ describe("getOrCreateDocumentReference", () => {
     await getOrCreateDocRefMapping(docRefBase);
     expect(docRefModel_findOrCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: docRefBase,
+        where: {
+          cxId: docRefBase.cxId,
+          patientId: docRefBase.patientId,
+          externalId: docRefBase.externalId,
+          source: docRefBase.source,
+        },
       })
     );
   });

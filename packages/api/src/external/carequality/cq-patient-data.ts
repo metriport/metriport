@@ -1,4 +1,4 @@
-import { BaseDomain, BaseDomainCreate } from "../../../domain/base-domain";
+import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
 
 export type CQExternalPatient = {
   patientId: string;

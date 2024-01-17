@@ -58,6 +58,7 @@ export type PatientData = {
   personalIdentifiers?: PersonalIdentifier[] | null;
   address: Address[];
   contact?: Contact[];
+  requestId?: string;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;

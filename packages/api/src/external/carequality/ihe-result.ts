@@ -1,4 +1,4 @@
-import { BaseDomainCreate } from "../base-domain";
+import { BaseDomainCreate } from "../../domain/base-domain";
 
 export interface BaseResultDomain extends BaseDomainCreate {
   requestId: string;

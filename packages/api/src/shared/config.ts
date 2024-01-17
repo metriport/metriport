@@ -255,6 +255,10 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
+  static getDocQueryResultsLambdaName(): string {
+    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
+  }
+
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }

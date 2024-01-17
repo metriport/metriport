@@ -44,6 +44,7 @@ export const processPatientDocumentRequest = async (
   patientId: string,
   whType: MAPIWebhookType,
   status: MAPIWebhookStatus,
+  requestId: string | undefined,
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[]
 ): Promise<void> => {
   try {
@@ -63,13 +64,16 @@ export const processPatientDocumentRequest = async (
         },
       ],
     };
+
     // send it to the customer and update the request status
     if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
         payload,
+        requestId,
       });
+
       await processRequest(
         webhookRequest,
         settings,
@@ -82,6 +86,7 @@ export const processPatientDocumentRequest = async (
         cxId,
         type: whType,
         payload,
+        requestId,
         status: "success",
       });
     }

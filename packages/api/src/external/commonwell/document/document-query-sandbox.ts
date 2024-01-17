@@ -38,7 +38,7 @@ export async function sandboxGetDocRefsAndUpsert({
   organization: Organization;
   patient: Patient;
   requestId: string;
-}): Promise<DocumentReference[]> {
+}): Promise<void> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
 
   // Mimic Prod by waiting for docs to download
@@ -54,14 +54,17 @@ export async function sandboxGetDocRefsAndUpsert({
       reset: true,
       requestId,
     });
+
     processPatientDocumentRequest(
       organization.cxId,
       patient.id,
       "medical.document-download",
       MAPIWebhookStatus.completed,
+      requestId,
       []
     );
-    return [];
+
+    return;
   }
 
   const entries = patientData.docRefs;
@@ -177,10 +180,11 @@ export async function sandboxGetDocRefsAndUpsert({
     patient.id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
+    requestId,
     toDTO(result)
   );
 
-  return result;
+  return;
 }
 
 function addSandboxFields(docRef: DocumentReference): DocumentReference {

@@ -25,7 +25,7 @@ export class IHEGateway {
   static DOCUMENT_RETRIEVAL_ENDPOINT = "/xcadr/";
 
   private api: AxiosInstance;
-  constructor(apiMode: APIMode, options: { timeout?: number } = {}) {
+  constructor(apiMode: APIMode, options: { timeout?: number; url?: string } = {}) {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.milliseconds(),
       baseURL:
@@ -33,7 +33,7 @@ export class IHEGateway {
           ? IHEGateway.productionUrl
           : apiMode === APIMode.integration
           ? IHEGateway.integrationUrl
-          : IHEGateway.devUrl,
+          : options.url ?? IHEGateway.devUrl,
     });
   }
 
@@ -57,9 +57,11 @@ export class IHEGateway {
    * @param DocumentQueryRequestOutgoing An array of document query transaction requests.
    *
    */
-  async startDocumentsQuery(
-    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing
-  ): Promise<void> {
+  async startDocumentsQuery({
+    documentQueryRequestOutgoing,
+  }: {
+    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing[];
+  }): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequestOutgoing);
   }
 
@@ -70,9 +72,11 @@ export class IHEGateway {
    * @param documentRetrieval An array of document retrieval transaction requests.
    *
    */
-  async startDocumentsRetrieval(
-    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing
-  ): Promise<void> {
+  async startDocumentsRetrieval({
+    documentRetrievalRequestOutgoing,
+  }: {
+    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing[];
+  }): Promise<void> {
     await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalRequestOutgoing);
   }
 }
