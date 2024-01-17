@@ -8,7 +8,7 @@ import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/ex
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
-import { MedicalDataSource } from "..";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 const connector = makeFHIRConverterConnector();
 const templateExt = "hbs";
