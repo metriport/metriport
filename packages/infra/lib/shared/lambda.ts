@@ -13,6 +13,7 @@ import {
   Runtime,
   SingletonFunction,
 } from "aws-cdk-lib/aws-lambda";
+import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
 import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
@@ -175,4 +176,18 @@ export function addErrorAlarmToLambdaFunc(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
   alarmAction && alarm.addAlarmAction(alarmAction);
+}
+
+export function addProvisionedConcurrencyToLambda(
+  stack: Construct,
+  theLambda: lambda.Function,
+  lambdaName: string,
+  provisionedConcurrentExecutions: number
+): lambda.IAlias {
+  const options = {
+    aliasName: `${lambdaName}Alias`,
+    version: theLambda.currentVersion,
+    provisionedConcurrentExecutions,
+  };
+  return new lambda.Alias(stack, `${options.aliasName}Resource`, options);
 }

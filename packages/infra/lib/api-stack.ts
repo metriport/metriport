@@ -33,7 +33,12 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import {
+  addErrorAlarmToLambdaFunc,
+  createLambda,
+  MAXIMUM_LAMBDA_TIMEOUT,
+  addProvisionedConcurrencyToLambda,
+} from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -1014,9 +1019,11 @@ export class APIStack extends Stack {
       sandboxSeedDataBucket,
     } = ownProps;
 
+    const name = "CdaToVisualization";
+
     const cdaToVisualizationLambda = createLambda({
       stack: this,
-      name: "CdaToVisualization",
+      name: name,
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "cda-to-visualization",
       envType,
@@ -1030,6 +1037,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    addProvisionedConcurrencyToLambda(this, cdaToVisualizationLambda, name, 1);
 
     medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
 
