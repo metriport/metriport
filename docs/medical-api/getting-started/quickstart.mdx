@@ -242,13 +242,15 @@ Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoi
 We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
 Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
-## 9. Generate Patient Medical Record Summary
+## 9. Generate Patient Medical Record Summary ⭐⭐⭐
 
 The aforementioned FHIR resources are generated from all available CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, you can follow these steps:
 
-- kick off a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post)
+- kick off a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
 
 This route allows you to choose what FHIR resources and what date range you want to include into the summary. When this query completes, a webhook with a JSON payload containing all these resources will be sent to you.
+
+- monitor the status of the query using the [Get Consolidated Data Query Status endpoint](#/medical-api/api-reference/fhir/consolidated-data-query-get).
 
 - download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary endpoint](/medical-api/api-reference/fhir/get-medical-record-summary.mdx).
 
