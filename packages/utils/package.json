@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.7.14",
+  "version": "1.10.0-alpha.0",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,
@@ -14,7 +14,7 @@
     "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/create-mr-for-patients",
-    "mock-ihe-gateway": "ts-node src/mock-ihe-gateway",
+    "mock-pd": "ts-node src/carequality/mock-pd",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",

@@ -1,6 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
-import { OrganizationData } from "../../../domain/medical/organization";
+import { OrganizationData } from "@metriport/core/domain/organization";
 import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { OrganizationModel } from "../../../models/medical/organization";

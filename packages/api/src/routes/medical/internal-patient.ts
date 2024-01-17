@@ -1,5 +1,7 @@
+import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { out } from "@metriport/core/util/log";
+import { stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -17,7 +19,7 @@ import {
 } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   getCxsWithEnhancedCoverageFeatureFlagValue,
   getCxsWithCQDirectFeatureFlagValue,
@@ -29,10 +31,10 @@ import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-p
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
+import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
-import { stringToBoolean } from "../../shared/types";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -49,10 +51,12 @@ import {
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { dtoFromModel } from "./dtos/patientDTO";
 
 dayjs.extend(duration);
 
 const router = Router();
+const patientLoader = new PatientLoaderLocal();
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
@@ -197,7 +201,6 @@ router.delete(
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = req.params.source;
-
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
@@ -524,6 +527,62 @@ router.get(
       conversionType,
     });
     return res.json(data);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/
+ *
+ * Returns a list of patients that match the given demographics.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.dob The patient's date of birth.
+ * @param req.query.genderAtBirth The patient's gender at birth.
+ * @param req.query.firstNameInitial The patient's first name initial.
+ * @param req.query.lastNameInitial The patient's last name initial.
+ * @return A list of patients that match the given demographics.
+ */
+router.get(
+  "/",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const dob = getFrom("query").orFail("dob", req);
+    const genderAtBirth = genderAtBirthSchema.parse(getFrom("query").orFail("genderAtBirth", req));
+    const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
+    const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
+    const foundPatients = await patientLoader.findBySimilarity({
+      cxId,
+      data: {
+        dob,
+        genderAtBirth,
+        firstNameInitial,
+        lastNameInitial,
+      },
+    });
+    // TODO check if we're not returning Sequelize's Model data here; even thought the shape is Patient, the underlying object is PatientModel
+    // If we are, we should convert it to a DTO. Here, on `GET /internal/patient/:id`, and on `GET /internal/mpi/patient`
+    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id
+ *
+ * return a patient given a specific customer id and patient id
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return A patient.
+ *
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+
+    const patient = await getPatientOrFail({ cxId, id });
+
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 

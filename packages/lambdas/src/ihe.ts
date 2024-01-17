@@ -1,12 +1,11 @@
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 import { APIGatewayProxyEvent } from "aws-lambda";
-import { generateITI38 } from "@metriport/core/external/carequality/iti-38-parsing";
+import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
 import {
   generateITI39,
   generateITI39MTOM,
-} from "@metriport/core/external/carequality/iti-39-parsing";
-import { generateXCPD } from "@metriport/core/external/carequality/iti-55-parsing";
+} from "@metriport/core/external/carequality/dr/dr-parsing";
 
 capture.init();
 
@@ -20,9 +19,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   }
   try {
     switch (path) {
-      case "/xcpd/v1":
-        result = await generateXCPD(event.body);
-        break;
       case "/iti38/v1":
         result = await generateITI38(event.body);
         break;

@@ -1,6 +1,6 @@
 import { Document } from "@metriport/commonwell-sdk";
 import { getOrCreateDocRefMapping } from "../command/medical/docref-mapping/get-docref-mapping";
-import { MedicalDataSource } from "../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 /**
  * @deprecated Use @metriport/core instead

@@ -1,3 +1,5 @@
+// TODO SLATE TO BE DEPRECATED.
+
 export function generateITI38Template(status: string): string {
   let registryObjectList = "";
   if (status === "Success") {

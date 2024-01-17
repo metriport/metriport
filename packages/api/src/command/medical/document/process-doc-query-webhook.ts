@@ -1,8 +1,8 @@
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
-import { DocumentQueryProgress } from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";

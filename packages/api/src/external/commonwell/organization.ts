@@ -1,7 +1,7 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
-import { Organization } from "../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";

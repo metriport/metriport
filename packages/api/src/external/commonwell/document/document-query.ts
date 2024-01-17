@@ -20,11 +20,11 @@ import {
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
 import { Facility } from "../../../domain/medical/facility";
-import { Organization } from "../../../domain/medical/organization";
-import { Patient } from "../../../domain/medical/patient";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import ConversionError from "../../../errors/conversion-error";
 import NotFoundError from "../../../errors/not-found";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";

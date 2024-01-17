@@ -1,5 +1,5 @@
 import { PatientDiscoveryResponseIncoming } from "@metriport/ihe-gateway-sdk";
-import { BaseDomainCreate } from "../../domain/base-domain";
+import { BaseDomainCreate } from "@metriport/core/domain/base-domain";
 
 export interface PatientDiscoveryResult extends BaseDomainCreate {
   requestId: string;

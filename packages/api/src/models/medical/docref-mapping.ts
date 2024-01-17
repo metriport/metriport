@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize } from "sequelize";
 import { DocRefMapping } from "../../domain/medical/docref-mapping";
-import { MedicalDataSource } from "../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { BaseModel, ModelSetup } from "../_default";
 
 export class DocRefMappingModel extends BaseModel<DocRefMappingModel> implements DocRefMapping {

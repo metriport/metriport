@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Op } from "sequelize";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { DocRefMappingModel } from "../../../models/medical/docref-mapping";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {

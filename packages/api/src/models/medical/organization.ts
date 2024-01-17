@@ -1,5 +1,5 @@
 import { DataTypes, Sequelize } from "sequelize";
-import { Organization, OrganizationData } from "../../domain/medical/organization";
+import { Organization, OrganizationData } from "@metriport/core/domain/organization";
 import { BaseModel, ModelSetup } from "../../models/_default";
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {

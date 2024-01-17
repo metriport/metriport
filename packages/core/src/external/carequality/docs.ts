@@ -1,3 +1,4 @@
+// TODO SLATE TO BE DEPRECATED.
 export function generatePatientDoc(patientNumber: number): string {
   let patientRole = "";
   if (patientNumber == 1) {

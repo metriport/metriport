@@ -5,13 +5,13 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { MedicalDataSource } from "../..";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
-} from "../../../domain/medical/patient";
+} from "@metriport/core/domain/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";

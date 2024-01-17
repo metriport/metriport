@@ -1,3 +1,4 @@
+// TODO SLATE TO BE DEPRECATED.
 export function generateITI39Template(status: string): string {
   let documentResponse = "";
   if (status === "Success") {
