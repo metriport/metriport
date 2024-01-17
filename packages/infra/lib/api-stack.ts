@@ -37,6 +37,7 @@ import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { IGrantable } from "aws-cdk-lib/aws-iam";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -49,6 +50,7 @@ interface APIStackProps extends StackProps {
 export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
+  public readonly taskRole: IGrantable;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -400,6 +402,9 @@ export class APIStack extends Stack {
       },
       cookieStore
     );
+
+    // create a role for accessing the apiService that can be passed to the IHE stack
+    this.taskRole = apiService.service.taskDefinition.taskRole;
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);

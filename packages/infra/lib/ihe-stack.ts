@@ -10,10 +10,12 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { IGrantable } from "aws-cdk-lib/aws-iam";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
+  taskRole: IGrantable;
 }
 
 export class IHEStack extends Stack {
@@ -196,6 +198,7 @@ export class IHEStack extends Stack {
     });
 
     apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
+    patientDiscoveryLambda.grantInvoke(props.taskRole);
   }
 }
 
