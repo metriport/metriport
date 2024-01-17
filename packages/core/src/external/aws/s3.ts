@@ -97,8 +97,8 @@ export class S3Utils {
     key: string,
     bucket: string
   ): Promise<
-    | { exists: true; size: number; contentType: string }
-    | { exists: false; size?: never; contentType?: never }
+    | { exists: true; size: number; contentType: string; dateCreated: Date | undefined }
+    | { exists: false; size?: never; contentType?: never; dateCreated?: never }
   > {
     try {
       const head = await this.s3
@@ -107,7 +107,12 @@ export class S3Utils {
           Key: key,
         })
         .promise();
-      return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
+      return {
+        exists: true,
+        size: head.ContentLength ?? 0,
+        contentType: head.ContentType ?? "",
+        dateCreated: head.LastModified,
+      };
     } catch (err) {
       return { exists: false };
     }

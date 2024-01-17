@@ -11,6 +11,10 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
+import {
+  getExistingMedicalRecord,
+  getExistingMedicalRecordInfo,
+} from "../../command/medical/patient/create-medical-record";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
@@ -308,6 +312,46 @@ router.post(
       status: queryResponse.status ?? null,
     };
     return res.json(respPayload);
+  })
+);
+
+/**
+ * GET /patient/:id/medical-record
+ *
+ * Returns the url to download a patient's medical record summary, if it exists.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.conversionType Indicates how the medical record summary should be rendered. Accepts "pdf" or "html".
+ */
+router.get(
+  "/:id/medical-record",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const type = getFrom("query").orFail("conversionType", req);
+    const conversionType = consolidationConversionTypeSchema.parse(type);
+
+    const url = await getExistingMedicalRecord({ patientId, cxId, conversionType });
+    return res.json({ url });
+  })
+);
+
+/**
+ * GET /patient/:id/medical-record-info
+ *
+ * Checks if a patient's medical record summary exists in either PDF or HTML format and the date it was created.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ */
+router.get(
+  "/:id/medical-record-info",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const info = await getExistingMedicalRecordInfo({ patientId, cxId });
+    return res.json(info);
   })
 );
 

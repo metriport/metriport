@@ -69,3 +69,9 @@ export type UploadDocumentResult = {
   documentReferenceId: string;
   uploadUrl: string;
 };
+
+export type MedicalRecordDateAndFormat = {
+  date?: Date;
+  htmlExists: boolean;
+  pdfExists: boolean;
+};

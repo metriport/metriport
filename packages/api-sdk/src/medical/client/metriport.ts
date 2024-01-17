@@ -19,6 +19,7 @@ import {
   documentListSchema,
   documentQuerySchema,
   bulkGetDocumentUrlQuerySchema,
+  MedicalRecordDateAndFormat,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -282,6 +283,36 @@ export class MetriportMedicalApi {
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
     });
+    return resp.data;
+  }
+
+  /**
+   * Returns the URL for a medical record summary, if it exists.
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @param conversionType Optional to indicate how the medical record should be rendered.
+   * @return The URL for the medical record summary.
+   */
+  async getMedicalRecord(
+    patientId: string,
+    conversionType: "html" | "pdf"
+  ): Promise<{ url: string }> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+      params: {
+        conversionType,
+      },
+    });
+    return resp.data;
+  }
+
+  /**
+   * Checks for the existence of a medical record summary in either PDF or HTML format, and the date they were created.
+   *
+   * @param patientId The ID of the patient whose data is to be returned.
+   * @return An object with date and boolean values for PDF and HTML versions of the medical record summary.
+   */
+  async getMedicalRecordInfo(patientId: string): Promise<MedicalRecordDateAndFormat> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-info`);
     return resp.data;
   }
 
