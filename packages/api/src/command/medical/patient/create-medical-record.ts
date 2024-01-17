@@ -1,8 +1,8 @@
 import { MedicalRecordDateAndFormat, ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { HTML_FILE_EXTENSION, PDF_FILE_EXTENSION } from "@metriport/core/util/mime";
-import { Patient } from "../../../domain/medical/patient";
 import { Config } from "../../../shared/config";
 import { MEDICAL_RECORD_KEY } from "./convert-fhir-bundle";
 
