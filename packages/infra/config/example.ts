@@ -42,12 +42,15 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
-  iheGateway: {
-    vpcId: "<your-vpc-id>",
-    certArn: "<your-cert-arn>",
-    subdomain: "ihe",
-    snsTopicArn: "<your-sns-topic-arn>",
-  },
+  // TODO 1377 Update this
+  // TODO 1377 Update this
+  // TODO 1377 Update this
+  // iheGateway: {
+  //   vpcId: "<your-vpc-id>",
+  //   certArn: "<your-cert-arn>",
+  //   subdomain: "ihe",
+  //   snsTopicArn: "<your-sns-topic-arn>",
+  // },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
