@@ -17,6 +17,7 @@ import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
+import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
@@ -27,6 +28,7 @@ router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
 router.use("/carequality", carequalityRoutes);
+router.use("/mpi", mpiRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -69,6 +71,8 @@ router.delete(
  * Populate the FHIR server with customer's data.
  * This an idempotent endpoint, which means it can be called multiple times and it
  * will not have side effects.
+ *
+ * @deprecated Should no longer be used. Does not handle multiple hies.
  *
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.allCustomers - Whether we should populate all customers.

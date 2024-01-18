@@ -1,8 +1,8 @@
 import {
   BulkGetDocUrlStatus,
   BulkGetDocumentsUrlProgress,
-} from "../../../domain/medical/bulk-get-document-url";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/bulk-get-document-url";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";

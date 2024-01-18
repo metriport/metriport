@@ -2,8 +2,8 @@ import { Op } from "sequelize";
 import NotFoundError from "../../errors/not-found";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
-import { AtLeastOne } from "../../shared/types";
 import { capture } from "@metriport/core/util/capture";
+import { AtLeastOne } from "@metriport/shared";
 
 export const getConnectedUser = async ({
   id,

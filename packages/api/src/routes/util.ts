@@ -2,8 +2,8 @@ import { NextFunction, Request, Response } from "express";
 import BadRequestError from "../errors/bad-request";
 import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
-import { stringToBoolean } from "../shared/types";
 import { capture } from "@metriport/core/util/capture";
+import { stringToBoolean } from "@metriport/shared";
 
 export const asyncHandler =
   (

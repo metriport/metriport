@@ -18,7 +18,7 @@ import {
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "@metriport/core/external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
-import { stringToBoolean } from "../../shared/types";
+import { stringToBoolean } from "@metriport/shared";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";

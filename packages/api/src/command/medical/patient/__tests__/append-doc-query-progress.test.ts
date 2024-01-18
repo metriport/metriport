@@ -1,13 +1,17 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import { DocumentQueryProgress } from "../../../../domain/medical/document-query";
-import { Patient } from "../../../../domain/medical/patient";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
+import { appendDocQueryProgressWithSource } from "../../../../external/hie/append-doc-query-progress-with-source";
+import * as webhooks from "../../document/process-doc-query-webhook";
 
 let documentQueryProgress: DocumentQueryProgress;
 let patient: Patient;
@@ -15,11 +19,13 @@ let patientModel: PatientModel;
 
 let patientModel_update: jest.SpyInstance;
 let patientModel_findOne: jest.SpyInstance;
+
 beforeEach(() => {
   documentQueryProgress = {
     download: makeProgress(),
     convert: makeProgress(),
   };
+  jest.spyOn(webhooks, "processDocQueryProgressWebhook").mockImplementation();
   patient = makePatient({ data: makePatientData({ documentQueryProgress }) });
   patientModel = patient as unknown as PatientModel;
   mockStartTransaction();
@@ -70,26 +76,36 @@ const checkConvertTotal = (patient: Patient, expectedTotal: number) => {
 };
 
 describe("appendDocQueryProgress", () => {
+  const requestId = uuidv7_file.uuidv4();
+
   describe("download", () => {
     it("sets download progress processing", async () => {
       const downloadProgress = { status: "processing" as const };
-      await appendDocQueryProgress({ patient: { id: "theId", cxId: "theCxId" }, downloadProgress });
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+      });
+
       checkPatientUpdateWith({ download: expect.objectContaining(downloadProgress) });
       checkUnchanged("convert");
     });
-
     it("sets download progress completed", async () => {
       const downloadProgress = { status: "completed" as const };
-      await appendDocQueryProgress({ patient: { id: "theId", cxId: "theCxId" }, downloadProgress });
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+      });
       checkPatientUpdateWith({ download: expect.objectContaining(downloadProgress) });
       checkUnchanged("convert");
     });
-
     it("removes download when its null", async () => {
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: documentQueryProgress.convert,
         downloadProgress: null,
+        requestId,
       });
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
@@ -100,12 +116,12 @@ describe("appendDocQueryProgress", () => {
       expect(patientSentToUpdate?.data.documentQueryProgress?.download).toBeFalsy();
       checkUnchanged("convert");
     });
-
     it("resets convert while setting download", async () => {
       const downloadProgress = { status: "completed" as const };
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         downloadProgress,
+        requestId,
         reset: true,
       });
       checkPatientUpdateWith({ download: downloadProgress });
@@ -115,23 +131,30 @@ describe("appendDocQueryProgress", () => {
   describe("convert", () => {
     it("sets convert progress processing", async () => {
       const convertProgress = { status: "processing" as const };
-      await appendDocQueryProgress({ patient: { id: "theId", cxId: "theCxId" }, convertProgress });
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        convertProgress,
+        requestId,
+      });
       checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
       checkUnchanged("download");
     });
-
     it("sets convert progress completed", async () => {
       const convertProgress = { status: "completed" as const };
-      await appendDocQueryProgress({ patient: { id: "theId", cxId: "theCxId" }, convertProgress });
+      await appendDocQueryProgress({
+        patient: { id: "theId", cxId: "theCxId" },
+        convertProgress,
+        requestId,
+      });
       checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
       checkUnchanged("download");
     });
-
     it("removes convert when its null", async () => {
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress: null,
         downloadProgress: documentQueryProgress.download,
+        requestId,
       });
       const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as
         | PatientModel
@@ -142,13 +165,13 @@ describe("appendDocQueryProgress", () => {
       expect(patientSentToUpdate?.data.documentQueryProgress?.convert).toBeFalsy();
       checkUnchanged("download");
     });
-
     it("resets download while setting convert", async () => {
       const convertProgress = { status: "completed" as const };
       await appendDocQueryProgress({
         patient: { id: "theId", cxId: "theCxId" },
         convertProgress,
         downloadProgress: null,
+        requestId,
       });
       checkPatientUpdateWith({
         convert: expect.objectContaining(convertProgress),
@@ -167,15 +190,14 @@ describe("appendDocQueryProgress", () => {
         }),
       });
       patientModel_findOne.mockResolvedValueOnce(patient);
-
       const res = await appendDocQueryProgress({
         patient,
         convertProgress,
         convertibleDownloadErrors,
+        requestId,
       });
       checkConvertTotal(res, 0);
     });
-
     it("sets convert.total to zero when convert.total - downloadErrors is lower than zero", async () => {
       const total = faker.number.int({ min: 0, max: 10 });
       const convertibleDownloadErrors = faker.number.int({ min: 11, max: 20 });
@@ -186,15 +208,14 @@ describe("appendDocQueryProgress", () => {
         }),
       });
       patientModel_findOne.mockResolvedValueOnce(patient);
-
       const res = await appendDocQueryProgress({
         patient,
         convertProgress,
         convertibleDownloadErrors,
+        requestId,
       });
       checkConvertTotal(res, 0);
     });
-
     it("decreases convert.total when downloadErrors is provided", async () => {
       const total = faker.number.int({ min: 3, max: 100 });
       const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
@@ -206,11 +227,11 @@ describe("appendDocQueryProgress", () => {
       });
       patientModel_findOne.mockResolvedValueOnce(patient);
       const expectedTotal = total - convertibleDownloadErrors;
-
       const res = await appendDocQueryProgress({
         patient,
         convertProgress,
         convertibleDownloadErrors,
+        requestId,
       });
       checkConvertTotal(res, expectedTotal);
     });
@@ -229,11 +250,11 @@ describe("appendDocQueryProgress", () => {
       });
       patientModel_findOne.mockResolvedValueOnce(patient);
       const expectedTotal = convertProgress.total - convertibleDownloadErrors;
-
       const res = await appendDocQueryProgress({
         patient,
         convertProgress,
         convertibleDownloadErrors,
+        requestId,
       });
       checkConvertTotal(res, expectedTotal);
     });
@@ -259,6 +280,7 @@ describe("appendDocQueryProgress", () => {
         patient,
         downloadProgress,
         convertibleDownloadErrors,
+        requestId,
       });
       expect(res.data.documentQueryProgress?.convert?.status).toEqual("completed");
       expect(res.data.documentQueryProgress?.convert?.total).toEqual(
@@ -273,10 +295,10 @@ describe("appendDocQueryProgress", () => {
       data: makePatientData({ documentQueryProgress: { download: { status: "completed" } } }),
     });
     jest.spyOn(PatientModel, "findOne").mockResolvedValue(patient as PatientModel);
-
     const res = await appendDocQueryProgress({
       patient: { id: "theId", cxId: "theCxId" },
       downloadProgress: expectedDownloadProgress,
+      requestId,
     });
     expect(res).toEqual(
       expect.objectContaining({
@@ -292,13 +314,243 @@ describe("appendDocQueryProgress", () => {
     await appendDocQueryProgress({
       patient: { id: "theId", cxId: "theCxId" },
       downloadProgress: { status: "failed" as const },
+      requestId,
     });
-
     // ".mock.calls[0][0]" means the first parameter of the first call to that function
     const patientSentToUpdate = patientModel_update.mock.calls[0]?.[0] as PatientModel | undefined;
     expect(patientSentToUpdate).toBeTruthy();
     expect(patientSentToUpdate === patientModel).toBeFalsy();
     expect(patientSentToUpdate?.data).toBeTruthy();
     expect(patientSentToUpdate?.data === patientModel.data).toBeFalsy();
+  });
+});
+
+describe("appendDocQueryProgress with source", () => {
+  const requestId = uuidv7_file.uuidv4();
+
+  describe("download all hies", () => {
+    it("sets download progress processing", async () => {
+      const downloadProgress = { status: "processing" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadProgress) });
+      checkUnchanged("convert");
+    });
+
+    it("sets one hie as complete", async () => {
+      const downloadProgress = { status: "processing" as const };
+      const downloadComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadProgress) });
+      checkUnchanged("convert");
+    });
+
+    it("sets all hie's as complete", async () => {
+      const downloadComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadComplete,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadComplete) });
+      checkUnchanged("convert");
+    });
+
+    it("sets one hie as failed", async () => {
+      const downloadProgress = { status: "processing" as const };
+      const downloadFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadProgress) });
+      checkUnchanged("convert");
+    });
+
+    it("sets all hie's as failed", async () => {
+      const downloadFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadFailed,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadFailed) });
+      checkUnchanged("convert");
+    });
+
+    it("sets some hie's as failed and some complete", async () => {
+      const downloadFailed = { status: "failed" as const };
+      const downloadCompleted = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        downloadProgress: downloadCompleted,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ download: expect.objectContaining(downloadFailed) });
+      checkUnchanged("convert");
+    });
+  });
+
+  describe("convert all hies", () => {
+    it("sets convert progress processing", async () => {
+      const convertProgress = { status: "processing" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
+
+    it("sets one hie as complete", async () => {
+      const convertProgress = { status: "processing" as const };
+      const convertComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
+
+    it("sets all hie's as complete", async () => {
+      const convertComplete = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertComplete,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertComplete) });
+      checkUnchanged("download");
+    });
+
+    it("sets one hie as failed", async () => {
+      const convertProgress = { status: "processing" as const };
+      const convertFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertProgress) });
+      checkUnchanged("download");
+    });
+
+    it("sets all hie's as failed", async () => {
+      const convertFailed = { status: "failed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
+      checkUnchanged("download");
+    });
+
+    it("sets some hie's as failed and some complete", async () => {
+      const convertFailed = { status: "failed" as const };
+      const downloadCompleted = { status: "completed" as const };
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: convertFailed,
+        source: MedicalDataSource.COMMONWELL,
+      });
+      await appendDocQueryProgressWithSource({
+        patient: { id: "theId", cxId: "theCxId" },
+        requestId,
+        convertProgress: downloadCompleted,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+      checkPatientUpdateWith({ convert: expect.objectContaining(convertFailed) });
+      checkUnchanged("download");
+    });
   });
 });

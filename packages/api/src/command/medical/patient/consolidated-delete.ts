@@ -6,7 +6,7 @@ import { logDuration } from "@metriport/shared/common/duration";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { chunk, flatten } from "lodash";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "@metriport/core/util/capture";

@@ -9,10 +9,10 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
-import { MedicalDataSource } from "..";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Facility } from "../../domain/medical/facility";
-import { Organization } from "../../domain/medical/organization";
-import { Patient, PatientExternalData } from "../../domain/medical/patient";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";

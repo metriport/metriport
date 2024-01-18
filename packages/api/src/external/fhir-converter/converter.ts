@@ -4,10 +4,11 @@ import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { sandboxSleepTime } from "../commonwell/document/shared";
 import { makeFHIRServerConnector } from "../fhir/connector/connector-factory";
-import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 const connector = makeFHIRConverterConnector();
 const templateExt = "hbs";
@@ -27,7 +28,7 @@ export enum FHIRConverterCDATemplate {
 
 export type ContentMimeType = Pick<Document["content"], "mimeType">;
 
-export function isConvertible(mimeType?: string): boolean {
+export function isConvertible(mimeType?: string | undefined): boolean {
   // TODO move to core's isMimeTypeXML()
   return mimeType != null && ["text/xml", "application/xml"].includes(mimeType);
 }
@@ -47,6 +48,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
+  source?: MedicalDataSource;
 }): Promise<void> {
   const {
     patient,
@@ -57,6 +59,7 @@ export async function convertCDAToFHIR(params: {
     keepUnusedSegments = false,
     keepInvalidAccess = false,
     requestId,
+    source,
   } = params;
   const { log } = Util.out(
     `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
@@ -110,5 +113,6 @@ export async function convertCDAToFHIR(params: {
     s3FileName,
     s3BucketName,
     requestId,
+    source,
   });
 }

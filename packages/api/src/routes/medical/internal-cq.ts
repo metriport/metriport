@@ -10,12 +10,11 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import {
-  IHEResultType,
-  handleIHEResponse,
-} from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { handleIHEResponse } from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
+import { IHEResultType } from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchNearbyCQOrganizations,
@@ -145,6 +144,20 @@ router.post(
       type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
       response: dqResponse,
     });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/results
+ *
+ * Receives Document Query results from the doc query results lambda
+ */
+router.post(
+  "/document-query/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    await processDocumentQueryResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

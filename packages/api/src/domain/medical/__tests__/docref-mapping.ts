@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { DocRefMapping, DocRefMappingCreate } from "../docref-mapping";
@@ -11,6 +11,7 @@ export const makeDocRefMappingCreate = (
     cxId: params.cxId ?? faker.string.uuid(),
     patientId: params.patientId ?? uuidv7(),
     externalId: params.externalId ?? faker.string.uuid(),
+    requestId: params.requestId ?? uuidv7(),
     source: params.source ?? faker.helpers.arrayElement(Object.values(MedicalDataSource)),
   };
 };

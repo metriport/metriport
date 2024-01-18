@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { groupBy } from "lodash";
 import { Op } from "sequelize";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "@metriport/core/util/capture";
 import { CQLinkStatus } from "../patient-shared";

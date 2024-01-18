@@ -8,7 +8,9 @@ import {
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
-import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { errorToString } from "@metriport/core/util/error/index";
+import { capture } from "@metriport/core/util/capture";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
@@ -17,25 +19,16 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { processPatientDocumentRequest } from "../../../command/medical/document/document-webhook";
-import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { reportUsage } from "../../../command/usage/report-usage";
 import { Facility } from "../../../domain/medical/facility";
-import { Organization } from "../../../domain/medical/organization";
-import { Patient } from "../../../domain/medical/patient";
-import { Product } from "../../../domain/product";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import ConversionError from "../../../errors/conversion-error";
-import MetriportError from "../../../errors/metriport-error";
 import NotFoundError from "../../../errors/not-found";
-import { MedicalDataSource } from "../../../external";
-import { toDTO } from "../../../routes/medical/dtos/documentDTO";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { errorToString } from "../../../shared/log";
-import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
-import { isEnhancedCoverageEnabledForCx } from "../../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -56,6 +49,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
+import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -96,19 +90,21 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-}): Promise<number> {
+}): Promise<void> {
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
 
   try {
-    const [patient, isECEnabledForThisCx] = await Promise.all([
+    const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(patientParam.cxId),
+      isCQDirectEnabledForCx(patientParam.cxId),
     ]);
 
     if (!patient && isECEnabledForThisCx) {
       log(`Couldn't get CW Data for Patient, but EC is enabled for CX, skipping DQ.`);
-      return 0;
+      return;
     }
+
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
@@ -116,6 +112,18 @@ export async function queryAndProcessDocuments({
         patientId: patientParam.id,
       });
     }
+
+    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+
+    if (Config.isSandbox()) {
+      await sandboxGetDocRefsAndUpsert({
+        organization,
+        patient,
+        requestId,
+      });
+      return;
+    }
+
     const cwData = patient.data.externalData.COMMONWELL;
 
     const isWaitingForEnhancedCoverage =
@@ -123,58 +131,36 @@ export async function queryAndProcessDocuments({
       cwData.cqLinkStatus && // we're not waiting for EC if the patient was created before cqLinkStatus was introduced
       cwData.cqLinkStatus !== "linked";
 
-    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage;
-    if (!isTriggerDQ) return 0;
+    const isTriggerDQ = forceQuery || !isWaitingForEnhancedCoverage || isCQDirectEnabledForThisCx;
 
-    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
+    if (!isTriggerDQ) return;
 
-    if (Config.isSandbox()) {
-      const documentsSandbox = await sandboxGetDocRefsAndUpsert({
-        organization,
-        patient,
-        requestId,
-      });
-      return documentsSandbox.length;
-    } else {
-      log(`Querying for documents of patient ${patient.id}...`);
-      const cwDocuments = await internalGetDocuments({ patient, organization, facility });
-      log(`Got ${cwDocuments.length} documents from CW`);
+    log(`Querying for documents of patient ${patient.id}...`);
+    const cwDocuments = await internalGetDocuments({ patient, organization, facility });
+    log(`Got ${cwDocuments.length} documents from CW`);
 
-      const fhirDocRefs = await downloadDocsAndUpsertFHIR({
-        patient,
-        facilityId,
-        documents: cwDocuments,
-        forceDownload,
-        ignoreDocRefOnFHIRServer,
-        ignoreFhirConversionAndUpsert,
-        requestId,
-      });
+    const fhirDocRefs = await downloadDocsAndUpsertFHIR({
+      patient,
+      facilityId,
+      documents: cwDocuments,
+      forceDownload,
+      ignoreDocRefOnFHIRServer,
+      ignoreFhirConversionAndUpsert,
+      requestId,
+    });
 
-      if (
-        fhirDocRefs.length &&
-        forceDownload === undefined &&
-        ignoreDocRefOnFHIRServer === undefined
-      ) {
-        reportDocQueryUsage(patient);
-      }
-
-      log(`Finished processing ${fhirDocRefs.length} documents.`);
-      return fhirDocRefs.length;
-    }
+    log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
     const msg = `Failed to query and process documents`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
-    processPatientDocumentRequest(
-      patientParam.cxId,
-      patientParam.id,
-      "medical.document-download",
-      MAPIWebhookStatus.failed
-    );
-    await appendDocQueryProgress({
+
+    await appendDocQueryProgressWithSource({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
+      source: MedicalDataSource.COMMONWELL,
     });
+
     capture.message(msg, {
       extra: {
         context: `cw.queryAndProcessDocuments`,
@@ -348,7 +334,7 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
-  return appendDocQueryProgress({
+  return appendDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       status: "processing",
@@ -359,6 +345,7 @@ async function initPatientDocQuery(
       total: convertibleDocs,
     },
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
 }
 
@@ -388,12 +375,21 @@ function convertToNonExistingS3Info(
   };
 }
 
-function addMetriportDocRefId({ cxId, patientId }: { cxId: string; patientId: string }) {
+function addMetriportDocRefId({
+  cxId,
+  patientId,
+  requestId,
+}: {
+  cxId: string;
+  patientId: string;
+  requestId: string;
+}) {
   return async (document: Document): Promise<DocumentWithMetriportId> => {
     const { metriportId, originalId } = await mapDocRefToMetriport({
       cxId,
       patientId,
       document,
+      requestId,
       source: MedicalDataSource.COMMONWELL,
     });
     return {
@@ -453,6 +449,7 @@ export async function downloadDocsAndUpsertFHIR({
       addMetriportDocRefId({
         cxId: patient.cxId,
         patientId: patient.id,
+        requestId,
       })
     )
   );
@@ -614,6 +611,7 @@ export async function downloadDocsAndUpsertFHIR({
                 s3FileName: file.key,
                 s3BucketName: file.bucket,
                 requestId,
+                source: MedicalDataSource.COMMONWELL,
               });
             } catch (err) {
               // don't fail/throw or send to Sentry here, we already did that on the convertCDAToFHIR function
@@ -662,7 +660,7 @@ export async function downloadDocsAndUpsertFHIR({
         } finally {
           // TODO: eventually we will have to update this to support multiple HIEs
           try {
-            await appendDocQueryProgress({
+            await appendDocQueryProgressWithSource({
               patient: { id: patient.id, cxId: patient.cxId },
               downloadProgress: {
                 status: "processing",
@@ -670,6 +668,7 @@ export async function downloadDocsAndUpsertFHIR({
                 errors: errorCount,
               },
               requestId,
+              source: MedicalDataSource.COMMONWELL,
             });
           } catch (error) {
             const msg = `Failed to append doc query progress`;
@@ -692,7 +691,7 @@ export async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  const updatedPatient = await appendDocQueryProgress({
+  await appendDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0
@@ -706,34 +705,8 @@ export async function downloadDocsAndUpsertFHIR({
     convertibleDownloadErrors: errorCountConvertible,
     increaseCountConvertible,
     requestId,
+    source: MedicalDataSource.COMMONWELL,
   });
-  // send webhook to CXs when docs are done downloading
-  processPatientDocumentRequest(
-    cxId,
-    patient.id,
-    "medical.document-download",
-    MAPIWebhookStatus.completed,
-    toDTO(docsNewLocation)
-  );
-  // send webhook to CXs if docs are done converting (at this point only if no conversions to be done)
-  const patientFromDB = await getPatientOrFail({ cxId: patient.cxId, id: patient.id });
-  const conversionStatusFromDB = patientFromDB.data.documentQueryProgress?.convert?.status;
-  const conversionStatusFromAppend = updatedPatient.data.documentQueryProgress?.convert?.status;
-  if (conversionStatusFromAppend === "completed" || conversionStatusFromDB === "completed") {
-    processPatientDocumentRequest(
-      cxId,
-      patient.id,
-      "medical.document-conversion",
-      MAPIWebhookStatus.completed
-    );
-    if (conversionStatusFromAppend !== conversionStatusFromDB) {
-      log(
-        `Conversion status from DB and append are different! ` +
-          `fromAppend: ${conversionStatusFromAppend}, ` +
-          `fromDB: ${conversionStatusFromDB}`
-      );
-    }
-  }
 
   return docsNewLocation;
 }
@@ -849,13 +822,4 @@ async function ingestIntoSearchEngine(
     });
     // intentionally not throwing here, we don't want to fail b/c of search ingestion
   }
-}
-
-function reportDocQueryUsage(patient: Patient, docQuery = true): void {
-  reportUsage({
-    cxId: patient.cxId,
-    entityId: patient.id,
-    product: Product.medical,
-    docQuery,
-  });
 }

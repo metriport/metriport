@@ -1,5 +1,5 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { Product } from "../../../domain/product";
 import { errorToString } from "../../../shared/log";
 import { capture } from "@metriport/core/util/capture";

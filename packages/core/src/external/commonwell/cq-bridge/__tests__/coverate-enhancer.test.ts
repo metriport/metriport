@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { fakerEN_US as faker } from "@faker-js/faker";
 import { USState } from "../../../../domain/geographic-locations";
-import { PatientLoaderMetriportAPI } from "../../../../domain/patient/patient-loader-metriport-api";
+import { PatientLoaderMetriportAPI } from "../../../../command/patient-loader-metriport-api";
 import { CoverageEnhancer, defaultMaxOrgsToProcess } from "../coverage-enhancer";
 import { CQOrgHydrated, isLowPrio, isMediumPrio, OrgPrio } from "../get-orgs";
 import { makeSimpleOrg } from "./cq-orgs";

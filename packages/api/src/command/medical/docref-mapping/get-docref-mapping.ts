@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Op } from "sequelize";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { DocRefMappingModel } from "../../../models/medical/docref-mapping";
 
 export const getDocRefMapping = async (id: string): Promise<DocRefMapping | undefined> => {
@@ -9,14 +9,35 @@ export const getDocRefMapping = async (id: string): Promise<DocRefMapping | unde
   return docRef ?? undefined;
 };
 
+export const getAllDocRefMapping = async ({
+  requestId,
+  patientId,
+  cxId,
+}: {
+  requestId: string;
+  patientId?: string;
+  cxId?: string;
+}): Promise<DocRefMapping[]> => {
+  const docRefs = await DocRefMappingModel.findAll({
+    where: {
+      requestId,
+      ...(patientId && { patientId }),
+      ...(cxId && { cxId }),
+    },
+  });
+  return docRefs;
+};
+
 export const getOrCreateDocRefMapping = async ({
   cxId,
   patientId,
+  requestId,
   externalId,
   source,
 }: {
   cxId: string;
   patientId: string;
+  requestId: string;
   externalId: string;
   source: MedicalDataSource;
 }): Promise<DocRefMapping> => {
@@ -25,9 +46,11 @@ export const getOrCreateDocRefMapping = async ({
     where: docRef,
     defaults: {
       id: uuidv7(),
+      requestId,
       ...docRef,
     },
   });
+
   return res;
 };
 

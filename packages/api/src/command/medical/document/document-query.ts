@@ -6,8 +6,8 @@ import {
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientModel } from "../../../models/medical/patient";
@@ -17,6 +17,7 @@ import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-d
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
+import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -34,7 +35,6 @@ export function isDocumentQueryProgressEqual(
   return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
 }
 
-// TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
@@ -78,6 +78,11 @@ export async function queryDocumentsAcrossHIEs({
     facilityId,
     forceDownload: override,
     forceQuery,
+    requestId,
+  }).catch(emptyFunction);
+
+  getDocumentsFromCQ({
+    patient,
     requestId,
   }).catch(emptyFunction);
 

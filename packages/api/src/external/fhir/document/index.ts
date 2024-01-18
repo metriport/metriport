@@ -27,14 +27,14 @@ import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
-import { joinName, Patient, splitName } from "../../../domain/medical/patient";
+import { joinName, Patient, splitName } from "@metriport/core/domain/patient";
 import MetriportError from "../../../errors/metriport-error";
 import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
-import { toFHIRSubject } from "../patient";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 dayjs.extend(isToday);
 
 export const MAX_FHIR_DOC_ID_LENGTH = 64;

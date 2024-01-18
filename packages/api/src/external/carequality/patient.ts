@@ -2,12 +2,12 @@ import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Patient } from "../../domain/medical/patient";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { Product } from "../../domain/product";
 import { EventTypes, analytics } from "../../shared/analytics";
 import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
-import { toFHIR } from "../fhir/patient";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
 import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
@@ -17,11 +17,20 @@ import {
   getPatientDiscoveryResults,
 } from "./command/patient-discovery-result/get-patient-discovery-result";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
-import { CQLink } from "./domain/cq-patient-data";
-import { PatientDiscoveryResult } from "./domain/patient-discovery-result";
+import { CQLink } from "./cq-patient-data";
+import { PatientDiscoveryResult } from "./patient-discovery-result";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { PatientDataCarequality } from "./patient-shared";
 
 dayjs.extend(duration);
+
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
+}
 
 const createContext = "cq.patient.discover";
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });

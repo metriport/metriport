@@ -14,8 +14,9 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { intersectionBy, minBy } from "lodash";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 import { Facility } from "../../domain/medical/facility";
-import { Organization } from "../../domain/medical/organization";
-import { Patient, PatientExternalDataEntry } from "../../domain/medical/patient";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "@metriport/core/util/capture";
@@ -34,7 +35,8 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus
+    public cqLinkStatus?: CQLinkStatus,
+    public documentQueryProgress?: DocumentQueryProgress
   ) {
     super();
   }

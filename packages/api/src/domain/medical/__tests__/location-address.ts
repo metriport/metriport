@@ -1,5 +1,5 @@
 import { fakerEN_US as faker } from "@faker-js/faker";
-import { AddressStrict } from "../location-address";
+import { AddressStrict } from "@metriport/core/domain/location-address";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
 export const makeAddressStrict = (): AddressStrict => {
