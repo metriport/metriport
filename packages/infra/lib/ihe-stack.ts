@@ -1,5 +1,6 @@
 import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -54,13 +55,25 @@ export class IHEStack extends Stack {
       props.config.iheGateway.certArn
     );
 
-    // add domain cert + record
+    // get the truststore from S3
+    const bucket = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway?.trustStoreBucketName
+    );
+
+    // add domain cert + record + mTLS trust bundle
     const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
     api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
       securityPolicy: apig.SecurityPolicy.TLS_1_2,
+      mtls: {
+        bucket: bucket,
+        key: props.config.iheGateway?.trustStoreKey,
+      },
     });
+
     new r53.ARecord(this, "IHEAPIDomainRecord", {
       recordName: iheApiUrl,
       zone: publicZone,

@@ -100,6 +100,8 @@ export type EnvConfig = {
     certArn: string;
     subdomain: string; // Subdomain for IHE integrations
     snsTopicArn?: string;
+    trustStoreBucketName: string;
+    trustStoreKey: string;
   };
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;

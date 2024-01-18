@@ -46,6 +46,8 @@ export const config: EnvConfig = {
     certArn: "<your-cert-arn>",
     subdomain: "ihe",
     snsTopicArn: "<your-sns-topic-arn>",
+    trustStoreBucketName: "<your-trust-store-bucket-name>",
+    trustStoreKey: "<your-trust-store-key>",
   },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
