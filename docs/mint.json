@@ -364,6 +364,7 @@
         "medical-api/more-info/general-info",
         "medical-api/more-info/webhooks",
         "medical-api/more-info/sdk",
+        "medical-api/more-info/medical-record-summary",
         "medical-api/more-info/sandbox",
         "medical-api/more-info/etag"
       ]
