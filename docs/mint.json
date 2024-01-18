@@ -144,7 +144,8 @@
             "medical-api/api-reference/fhir/consolidated-data-query-get",
             "medical-api/api-reference/fhir/consolidated-data-count",
             "medical-api/api-reference/fhir/create-patient-consolidated",
-            "medical-api/api-reference/fhir/get-medical-record-summary"
+            "medical-api/api-reference/fhir/get-medical-record-summary",
+            "medical-api/api-reference/fhir/get-medical-record-summary-info"
           ]
         }
       ]
