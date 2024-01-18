@@ -1,4 +1,4 @@
-import { BaseDomain, BaseDomainCreate } from "../../domain/base-domain";
+import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 
 export type CQExternalPatient = {
   patientId: string;

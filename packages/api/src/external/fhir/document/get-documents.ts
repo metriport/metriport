@@ -2,7 +2,10 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { chunk } from "lodash";
 import { capture } from "../../../shared/notifications";
 import { makeFhirApi } from "../api/api-factory";
-import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
+import {
+  isoDateToFHIRDateQueryFrom,
+  isoDateToFHIRDateQueryTo,
+} from "@metriport/core/external/fhir/shared/index";
 
 export async function getDocuments({
   cxId,

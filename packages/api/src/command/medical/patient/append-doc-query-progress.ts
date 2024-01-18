@@ -1,9 +1,9 @@
 import {
+  getStatusFromProgress,
   Progress,
   DocumentQueryProgress,
-  getStatusFromProgress,
-} from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";

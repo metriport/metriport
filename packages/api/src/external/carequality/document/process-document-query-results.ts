@@ -9,7 +9,7 @@ import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { isConvertible } from "../../fhir-converter/converter";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 
 const region = Config.getAWSRegion();

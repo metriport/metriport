@@ -1,4 +1,4 @@
-import { MedicalDataSource } from ".";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 export type LinkStatus = "completed" | "processing" | "failed";
 

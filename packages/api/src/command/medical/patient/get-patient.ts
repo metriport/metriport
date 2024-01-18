@@ -1,16 +1,15 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
-import { intersectionWith, isEqual, uniq } from "lodash";
+import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
+import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { getStatesFromAddresses, Patient, PatientData } from "../../../domain/medical/patient";
+import { getStatesFromAddresses, Patient, PatientData } from "@metriport/core/domain/patient";
 import NotFoundError from "../../../errors/not-found";
+import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
 import { FacilityModel } from "../../../models/medical/facility";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
-import { isMatchingDemographics } from "./calculate-patient-similarity";
 
 export const getPatients = async ({
   facilityId,
@@ -61,62 +60,22 @@ export const getPatientIds = async ({
   return patients.map(p => p.id);
 };
 
+/**
+ * Retrieves a patient based on their demographic information. Utilizes functions
+ * imported from the MPI core module: normalization, finding(blocking), matching, merging
+ * @param cxId - The ID of the patient in the external system.
+ * @param demo - The demographic information of the patient.
+ * @returns The matched patient object if found, otherwise undefined.
+ */
 export const getPatientByDemo = async ({
-  facilityId,
   cxId,
   demo,
 }: {
-  facilityId: string;
   cxId: string;
   demo: PatientData;
-}): Promise<Patient | null> => {
-  const { log } = Util.out(`getPatientByDemo - cxId ${cxId}`);
-
-  const patients = await PatientModel.findAll({
-    where: {
-      cxId,
-      facilityIds: {
-        [Op.contains]: [facilityId],
-      },
-      data: {
-        dob: demo.dob,
-        genderAtBirth: demo.genderAtBirth,
-      },
-    },
-  });
-
-  const matchingPatients = patients.filter(patient => {
-    // First, check for an ID match - if it's a match, don't bother checking for demo
-    if (
-      demo.personalIdentifiers &&
-      demo.personalIdentifiers.length > 0 &&
-      intersectionWith(patient.data.personalIdentifiers, demo.personalIdentifiers, isEqual).length >
-        0
-    ) {
-      return true;
-    }
-
-    if (isMatchingDemographics(patient.data, demo)) return true;
-  });
-  if (matchingPatients.length === 0) return null;
-  if (matchingPatients.length === 1) return matchingPatients[0];
-
-  const chosenOne = matchingPatients[0];
-
-  const msg = `Found more than one patient with the same demo`;
-  log(
-    `${msg}, chose ${chosenOne.id} - list ${matchingPatients.map(p => p.id).join(", ")} - demo: `,
-    demo
-  );
-  capture.message(msg, {
-    extra: {
-      chosenOne: chosenOne.id,
-      demographics: demo,
-      patients: matchingPatients.map(p => ({ id: p.id, data: p.data })),
-    },
-  });
-
-  return chosenOne;
+}): Promise<Patient | undefined> => {
+  const patientLoader = new PatientLoaderLocal();
+  return getPatientByDemoMPI({ cxId, demo, patientLoader });
 };
 
 export type GetPatient = {

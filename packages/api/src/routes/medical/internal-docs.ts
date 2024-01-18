@@ -21,8 +21,8 @@ import {
 } from "../../command/medical/document/document-webhook";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { BulkGetDocUrlStatus } from "../../domain/medical/bulk-get-document-url";
-import { convertResult } from "../../domain/medical/document-query";
+import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
+import { convertResult } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -41,7 +41,7 @@ import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
 import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
 import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
-import { isMedicalDataSource } from "../../external";
+import { isMedicalDataSource } from "@metriport/core/external/index";
 
 const router = Router();
 const upload = multer();
