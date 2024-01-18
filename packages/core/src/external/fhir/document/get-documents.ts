@@ -30,7 +30,7 @@ export async function getDocuments({
     };
 
     if (documentIds && documentIds.length > 1) {
-      const chunksDocIds = chunk(documentIds, 200);
+      const chunksDocIds = chunk(documentIds, 150);
 
       for (const docIds of chunksDocIds) {
         const filtersAsStr = getFilters({ ...defaultFilters, documentIds: docIds });
