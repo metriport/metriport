@@ -1,5 +1,5 @@
 import { errorToString } from "@metriport/core/util/error/index";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { out } from "@metriport/core/util/log";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";

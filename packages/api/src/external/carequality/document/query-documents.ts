@@ -1,6 +1,6 @@
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/index";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Patient } from "@metriport/core/domain/patient";
 import { Config } from "../../../shared/config";
 import { createCQDocumentQueryRequests } from "./document-query-request";
