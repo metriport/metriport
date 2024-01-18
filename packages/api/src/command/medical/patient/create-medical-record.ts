@@ -62,10 +62,17 @@ export async function getExistingMedicalRecord({
   patientId: string;
   cxId: string;
   conversionType: "pdf" | "html";
-}): Promise<string> {
-  const extension =
-    conversionType === "html" ? HTML_FILE_EXTENSION : `${HTML_FILE_EXTENSION}${PDF_FILE_EXTENSION}`;
-  const s3FileKey = createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}${extension}`);
-  const url = await s3Utils.getSignedUrl({ bucketName, fileName: s3FileKey });
-  return url;
+}): Promise<string | undefined> {
+  const { pdfExists, htmlExists } = await getExistingMedicalRecordInfo({ patientId, cxId });
+
+  if ((conversionType === "pdf" && pdfExists) || (conversionType === "html" && htmlExists)) {
+    const extension =
+      conversionType === "html"
+        ? HTML_FILE_EXTENSION
+        : `${HTML_FILE_EXTENSION}${PDF_FILE_EXTENSION}`;
+    const s3FileKey = createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}${extension}`);
+    const url = await s3Utils.getSignedUrl({ bucketName, fileName: s3FileKey });
+    return url;
+  }
+  return;
 }
