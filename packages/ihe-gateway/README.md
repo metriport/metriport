@@ -60,7 +60,7 @@ Make sure to have the `.env` file initialized. See `.env.example` for more detai
 
 Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
 backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (SSL/Java keystore certificates).
+information (e.g., SSL/Java keystore private key).
 
 :warning: The commands below will overwrite the destination (either local config files or server
 configs).
