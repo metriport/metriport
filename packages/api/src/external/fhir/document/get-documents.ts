@@ -23,14 +23,31 @@ export async function getDocuments({
   try {
     const api = makeFhirApi(cxId);
     const docs: DocumentReference[] = [];
-    const chunksDocIds = chunk(documentIds, 200);
 
-    for (const docIds of chunksDocIds) {
-      const filtersAsStr = getFilters({ patientId, documentIds: docIds, from, to });
+    const defaultFilters = {
+      patientId,
+      from,
+      to,
+      documentIds,
+    };
+
+    if (documentIds && documentIds.length > 1) {
+      const chunksDocIds = chunk(documentIds, 200);
+
+      for (const docIds of chunksDocIds) {
+        const filtersAsStr = getFilters({ ...defaultFilters, documentIds: docIds });
+        for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
+          docs.push(...page);
+        }
+      }
+    } else {
+      const filtersAsStr = getFilters(defaultFilters);
+
       for await (const page of api.searchResourcePages("DocumentReference", filtersAsStr)) {
         docs.push(...page);
       }
     }
+
     return docs;
   } catch (error) {
     const msg = `Error getting documents from FHIR server`;
