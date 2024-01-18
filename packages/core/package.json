@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.9.0-alpha.0",
+  "version": "1.9.0",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
