@@ -3,8 +3,8 @@ import * as s3 from "aws-cdk-lib/aws-s3";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as r53 from "aws-cdk-lib/aws-route53";
-import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+// import * as r53 from "aws-cdk-lib/aws-route53";
+// import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -37,9 +37,9 @@ export class IHEStack extends Stack {
     }
 
     // get the public zone
-    const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
-      domainName: props.config.host,
-    });
+    // const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
+    //   domainName: props.config.host,
+    // });
 
     // get the certificate from ACM
     const certificate = cert.Certificate.fromCertificateArn(
@@ -88,17 +88,17 @@ export class IHEStack extends Stack {
       disableExecuteApiEndpoint: true,
     });
 
-    // v2
-    new r53.ARecord(this, "IHEAPIDomainRecordv2", {
-      recordName: iheApiUrl,
-      zone: publicZone,
-      target: r53.RecordTarget.fromAlias(
-        new r53_targets.ApiGatewayv2DomainProperties(
-          domainName.regionalDomainName,
-          domainName.regionalHostedZoneId
-        )
-      ),
-    });
+    // commenting out so CFN deletes
+    // new r53.ARecord(this, "IHEAPIDomainRecordv2", {
+    //   recordName: iheApiUrl,
+    //   zone: publicZone,
+    //   target: r53.RecordTarget.fromAlias(
+    //     new r53_targets.ApiGatewayv2DomainProperties(
+    //       domainName.regionalDomainName,
+    //       domainName.regionalHostedZoneId
+    //     )
+    //   ),
+    // });
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
