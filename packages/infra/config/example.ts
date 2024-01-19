@@ -44,6 +44,7 @@ export const config: EnvConfig = {
   iheGateway: {
     vpcId: "<your-vpc-id>",
     certArn: "<your-cert-arn>",
+    ownershipVerificationCertArn: "<your-ownership-verification-cert-arn>",
     subdomain: "ihe",
     snsTopicArn: "<your-sns-topic-arn>",
     trustStoreBucketName: "<your-trust-store-bucket-name>",

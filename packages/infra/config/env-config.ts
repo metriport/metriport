@@ -98,6 +98,7 @@ export type EnvConfig = {
   iheGateway?: {
     vpcId: string;
     certArn: string;
+    ownershipVerificationCertArn: string;
     subdomain: string; // Subdomain for IHE integrations
     snsTopicArn?: string;
     trustStoreBucketName: string;
