@@ -18,6 +18,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
+import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -71,6 +72,12 @@ export async function queryDocumentsAcrossHIEs({
     documentQueryProgress: { download: { status: "processing" } },
     requestId,
     cxDocumentRequestMetadata,
+  });
+
+  await appendDocQueryProgressWithSource({
+    patient: updatedPatient,
+    requestId,
+    reset: true,
   });
 
   getDocumentsFromCW({
