@@ -7,9 +7,18 @@ Ticket: #_[ticket-number]_
 
 ### Description
 
+_[Regular PRs:]_
+
 _[Document your changes, give context for reviewers, add images/videos of UI changes]_
 
+_[Release PRs:]_
+
+- ...
+- ...
+
 ### Testing
+
+_[Regular PRs:]_
 
 - Local
   - [x] _[Indicate how you tested this, on local or staging]_
@@ -17,9 +26,16 @@ _[Document your changes, give context for reviewers, add images/videos of UI cha
 - Staging
   - [ ] _testing step 1_
   - [ ] _testing step 2_
+- Sandbox
+  - [ ] _testing step 1_
+  - [ ] _testing step 2_
 - Production
   - [ ] _testing step 1_
   - [ ] _testing step 2_
+
+_[Release PRs:]_
+
+Check each PR.
 
 ### Release Plan
 
@@ -36,7 +52,7 @@ _[Add and remove items below accordingly]_
   - [ ] _step2_
 - [ ] Added to [monthly product update](https://www.notion.so/metriport/Customer-Updates-21b4e9d3ad5f4fd68db587a11db28cff?pvs=4) (deprecates a feature that needs to be communicated with customers)
 - [ ] Added to [monthly product update](https://www.notion.so/metriport/Customer-Updates-21b4e9d3ad5f4fd68db587a11db28cff?pvs=4) (introduce a feature that would be useful customers)
-- [ ] Upstream dependencies are met
+- [ ] Upstream dependencies are met/released
 - [ ] Release NPM packages
 - [ ] _[action n-1]_
 - [ ] _[action n]_

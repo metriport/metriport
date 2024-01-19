@@ -1,3 +1,4 @@
+import { Address } from "@metriport/core/domain/address";
 import {
   GeocodingResult,
   parseSuggestedAddress,
@@ -5,7 +6,6 @@ import {
   makeLocationClient,
 } from "@metriport/core/external/aws/location";
 import * as AWS from "aws-sdk";
-import { Address } from "../../domain/medical/address";
 import { Config } from "../../shared/config";
 
 export type AddressGeocodingResult = {

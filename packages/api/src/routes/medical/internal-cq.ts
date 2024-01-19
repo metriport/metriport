@@ -25,6 +25,7 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 
 dayjs.extend(duration);
 const router = Router();
@@ -149,6 +150,20 @@ router.post(
       type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
       response: dqResponse,
     });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-query/results
+ *
+ * Receives Document Query results from the doc query results lambda
+ */
+router.post(
+  "/document-query/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    await processDocumentQueryResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

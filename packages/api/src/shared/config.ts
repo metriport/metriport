@@ -255,6 +255,10 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
+  static getDocQueryResultsLambdaName(): string {
+    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
+  }
+
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
@@ -294,5 +298,8 @@ export class Config {
   }
   static getCxsWithEnhancedCoverageFeatureFlagName(): string {
     return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
+  }
+  static getCxsWithCQDirectFeatureFlagName(): string {
+    return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
   }
 }

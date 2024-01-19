@@ -42,7 +42,7 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
 
      ```
      -----BEGIN CERTIFICATE-----
-     ABCDEFG...
+     ABCDEFGH...
      -----END CERTIFICATE-----
      ```
 

@@ -63,8 +63,11 @@ export type DocumentQueryRequestIncoming = z.infer<typeof documentQueryRequestIn
 export type DocumentQueryResponseOutgoing =
   | (BaseResponse & {
       documentReference: DocumentReference[];
+      operationOutcome?: never;
     })
-  | BaseErrorResponse;
+  | (BaseErrorResponse & {
+      documentReference?: never;
+    });
 
 export function isDocumentQueryResponse(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

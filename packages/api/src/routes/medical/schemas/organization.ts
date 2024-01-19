@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { OrgType } from "../../../domain/medical/organization";
+import { OrgType } from "@metriport/core/domain/organization";
 import { AddressStrictSchema } from "./address";
 
 export const orgTypeSchema = z.nativeEnum(OrgType);

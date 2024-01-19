@@ -1,6 +1,7 @@
 import { capture } from "../../shared/notifications";
-import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
+import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { makeSidechainFHIRConverterConnector } from "./connector-factory";
+import { MedicalDataSource } from "@metriport/core/external/index";
 
 const connector = makeSidechainFHIRConverterConnector();
 
@@ -10,6 +11,7 @@ export async function sidechainConvertCDAToFHIR(params: {
   s3FileName: string;
   s3BucketName: string;
   requestId: string;
+  source?: MedicalDataSource;
 }): Promise<void> {
   const {
     patient,
@@ -17,6 +19,7 @@ export async function sidechainConvertCDAToFHIR(params: {
     s3FileName,
     s3BucketName,
     requestId,
+    source,
   } = params;
   // Build an extension to be added to all resources created by this conversion
   // so we can get the original doc ref from the resource
@@ -28,6 +31,7 @@ export async function sidechainConvertCDAToFHIR(params: {
       documentId: documentId,
       payload: JSON.stringify({ s3FileName, s3BucketName, documentExtension }),
       requestId,
+      source,
     });
   } catch (error) {
     console.log(

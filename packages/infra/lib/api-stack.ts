@@ -5,6 +5,7 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
@@ -107,8 +108,12 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const { appConfigAppId, appConfigConfigId, cxsWithEnhancedCoverageFeatureFlag } =
-      createAppConfigStack(this, { config: props.config });
+    const {
+      appConfigAppId,
+      appConfigConfigId,
+      cxsWithEnhancedCoverageFeatureFlag,
+      cxsWithCQDirectFeatureFlag,
+    } = createAppConfigStack(this, { config: props.config });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -333,6 +338,15 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
@@ -382,6 +396,7 @@ export class APIStack extends Stack {
       sidechainFHIRConverterDLQ,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      documentQueryResultsLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       ccdaSearchQueue,
@@ -392,6 +407,7 @@ export class APIStack extends Stack {
         appId: appConfigAppId,
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
+        cxsWithCQDirectFeatureFlag,
       },
       cookieStore
     );
@@ -463,6 +479,12 @@ export class APIStack extends Stack {
           dynamoDBSidechainKeysTable,
         })
       : undefined;
+
+    // Add ENV after apiserivce is created
+    documentQueryResultsLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
 
     // Access grant for medical documents bucket
     sandboxSeedDataBucket &&
@@ -1078,6 +1100,35 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupDocumentQueryResults(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const documentQueryResultsLambda = createLambda({
+      stack: this,
+      name: "DocumentQueryResults",
+      entry: "document-query-results",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return documentQueryResultsLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
