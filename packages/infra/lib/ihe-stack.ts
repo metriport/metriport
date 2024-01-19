@@ -11,6 +11,9 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -39,15 +42,6 @@ export class IHEStack extends Stack {
       domainName: props.config.host,
     });
 
-    // Create the API Gateway
-    const api = new apig.RestApi(this, "IHEAPIGateway", {
-      description: "Metriport IHE Gateway",
-      defaultCorsPreflightOptions: {
-        allowOrigins: ["*"],
-        allowHeaders: ["*"],
-      },
-    });
-
     // get the certificate form ACM
     const certificate = cert.Certificate.fromCertificateArn(
       this,
@@ -62,8 +56,26 @@ export class IHEStack extends Stack {
       props.config.iheGateway?.trustStoreBucketName
     );
 
-    // add domain cert + record + mTLS trust bundle
+    // get the ownership Certificate. v2. TODO make it actual
+    const ownershipCertificate = cert.Certificate.fromCertificateArn(
+      this,
+      "IHECertificate",
+      props.config.iheGateway.certArn
+    );
+
     const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
+
+    // Create the API Gateway. v1
+    const api = new apig.RestApi(this, "IHEAPIGateway", {
+      description: "Metriport IHE Gateway",
+      defaultCorsPreflightOptions: {
+        allowOrigins: ["*"],
+        allowHeaders: ["*"],
+      },
+      disableExecuteApiEndpoint: true,
+    });
+
+    // add domain cert + record + mTLS trust bundle
     api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
@@ -74,46 +86,93 @@ export class IHEStack extends Stack {
       },
     });
 
+    // Create the API Gateway. v2
+    const domainName = new apigwv2.DomainName(this, "IHEAPIDomainv2", {
+      domainName: iheApiUrl,
+      certificate: certificate,
+      mtls: {
+        bucket: bucket,
+        key: props.config.iheGateway?.trustStoreKey,
+      },
+      // this ownsership cert is the whole point of this entire migration.
+      ownershipCertificate: ownershipCertificate,
+      securityPolicy: apigwv2.SecurityPolicy.TLS_1_2,
+    });
+
+    // v2
+    const apigw2 = new apigwv2.HttpApi(this, "IHEAPIGatewayv2", {
+      // https://${dn.domainName}/foo goes to prodApi $default stage
+      defaultDomainMapping: {
+        domainName: domainName,
+        mappingKey: "foo",
+      },
+      disableExecuteApiEndpoint: true,
+    });
+
+    // v1
     new r53.ARecord(this, "IHEAPIDomainRecord", {
       recordName: iheApiUrl,
       zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
     });
 
+    // v2
+    new r53.ARecord(this, "IHEAPIDomainRecordv2", {
+      recordName: iheApiUrl,
+      zone: publicZone,
+      target: r53.RecordTarget.fromAlias(
+        new r53_targets.ApiGatewayv2DomainProperties(
+          domainName.regionalDomainName,
+          domainName.regionalHostedZoneId
+        )
+      ),
+    });
+
     const lambdaLayers = setupLambdasLayers(this, true);
-
-    const iheLambda = createLambda({
-      stack: this,
-      name: "IHE",
-      entry: "ihe",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-    });
-
-    const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
-      parent: api.root,
-      anyMethod: false,
-      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
-    });
-    proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-    });
 
     // Create lambdas
     const xcaResource = api.root.addResource("xca");
     const xcpdResource = api.root.addResource("xcpd");
 
     // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
-    this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
-    this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
-    this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
+    const dqLambda = this.setupDocumentQueryLambda(
+      props,
+      lambdaLayers,
+      xcaResource,
+      vpc,
+      alarmSnsAction
+    );
+    const drLambda = this.setupDocumentRetrievalLambda(
+      props,
+      lambdaLayers,
+      xcaResource,
+      vpc,
+      alarmSnsAction
+    );
+    const pdLambda = this.setupPatientDiscoveryLambda(
+      props,
+      lambdaLayers,
+      xcpdResource,
+      vpc,
+      alarmSnsAction
+    );
+
+    apigw2.addRoutes({
+      path: "/xca",
+      methods: [apigwv2.HttpMethod.ANY],
+      integration: new HttpLambdaIntegration("xca/dq/v2", dqLambda),
+    });
+    apigw2.addRoutes({
+      path: "/xca",
+      methods: [apigwv2.HttpMethod.ANY],
+      integration: new HttpLambdaIntegration("xca/dr/v2", drLambda),
+    });
+
+    apigw2.addRoutes({
+      path: "/xcpd",
+      methods: [apigwv2.HttpMethod.ANY],
+      integration: new HttpLambdaIntegration("pd/v2", pdLambda),
+    });
 
     //-------------------------------------------
     // Output
@@ -138,7 +197,7 @@ export class IHEStack extends Stack {
     xcaResource: apig.Resource,
     vpc: ec2.IVpc,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "DocumentQuery",
@@ -155,6 +214,7 @@ export class IHEStack extends Stack {
 
     const documentQueryResource = xcaResource.addResource("document-query");
     documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
+    return documentQueryLambda;
   }
 
   private setupDocumentRetrievalLambda(
@@ -163,7 +223,7 @@ export class IHEStack extends Stack {
     xcaResource: apig.Resource,
     vpc: ec2.IVpc,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "DocumentRetrieval",
@@ -180,6 +240,7 @@ export class IHEStack extends Stack {
 
     const documentRetrievalResource = xcaResource.addResource("document-retrieve");
     documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
+    return documentRetrievalLambda;
   }
 
   private setupPatientDiscoveryLambda(
@@ -188,7 +249,7 @@ export class IHEStack extends Stack {
     apiResource: apig.Resource,
     vpc: ec2.IVpc,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "PatientDiscovery",
@@ -205,6 +266,7 @@ export class IHEStack extends Stack {
     });
 
     apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
+    return patientDiscoveryLambda;
   }
 }
 
