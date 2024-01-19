@@ -1073,6 +1073,7 @@ export class APIStack extends Stack {
       entry: "document-downloader",
       envType,
       envVars: {
+        TEST_ENV: "TEST",
         CW_ORG_CERTIFICATE: cwOrgCertificate,
         CW_ORG_PRIVATE_KEY: cwOrgPrivateKey,
         ...(bucketName && {
