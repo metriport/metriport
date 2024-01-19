@@ -109,20 +109,20 @@ export class IHEStack extends Stack {
 
     // v2
     apigw2.addRoutes({
-      path: "/xca",
+      path: "/xca/dq",
       methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("xca/dq/v2", dqLambda),
+      integration: new HttpLambdaIntegration("dqIntegration", dqLambda),
     });
     apigw2.addRoutes({
-      path: "/xca",
+      path: "/xca/dr",
       methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("xca/dr/v2", drLambda),
+      integration: new HttpLambdaIntegration("drIntegration", drLambda),
     });
 
     apigw2.addRoutes({
-      path: "/xcpd",
+      path: "/pd",
       methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("pd/v2", pdLambda),
+      integration: new HttpLambdaIntegration("pdIntegration", pdLambda),
     });
 
     //-------------------------------------------
