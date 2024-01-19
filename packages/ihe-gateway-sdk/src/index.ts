@@ -1,30 +1,45 @@
 export { IHEGateway, APIMode } from "./client/ihe-gateway";
 export {
-  PatientDiscoveryRequestOutgoing,
-  PatientDiscoveryResponseIncoming,
-  PatientDiscoveryResponseOutgoing,
-  PatientDiscoveryRequestIncoming,
-  patientDiscoveryResponseIncomingSchema,
-  XCPDGateways,
-} from "./models/patient-discovery";
+  patientDiscoveryReqToExternalGWSchema,
+  patientDiscoveryReqFromExternalGatewaySchema,
+  PatientDiscoveryReqFromExternalGW,
+  PatientDiscoveryReqToExternalGW,
+} from "./models/patient-discovery/patient-discovery-requests";
 export {
-  DocumentQueryRequestOutgoing,
-  DocumentQueryResponseIncoming,
-  DocumentQueryResponseOutgoing,
-  DocumentQueryRequestIncoming,
-  documentQueryRequestIncomingSchema,
-  documentQueryResponseIncomingSchema,
+  patientDiscoveryRespToExternalGWSchema,
+  patientDiscoveryRespFromExternalGWSchema,
+  PatientDiscoveryRespFromExternalGW,
+  PatientDiscoveryRespToExternalGW,
+} from "./models/patient-discovery/patient-discovery-responses";
+
+export {
+  documentQueryReqToExternalGWSchema,
+  documentQueryReqFromExternalGWSchema,
+  DocumentQueryReqFromExternalGW,
+  DocumentQueryReqToExternalGW,
+} from "./models/document-query/document-query-requests";
+export {
+  documentQueryRespToExternalGWSchema,
+  documentQueryRespFromExternalGWSchema,
+  DocumentQueryRespFromExternalGW,
+  DocumentQueryRespToExternalGW,
   isDocumentQueryResponse,
-} from "./models/document-query";
+} from "./models/document-query/document-query-responses";
+
 export {
-  DocumentRetrievalRequestOutgoing,
-  DocumentRetrievalResponseIncoming,
-  DocumentRetrievalResponseOutgoing,
-  DocumentRetrievalRequestIncoming,
-  documentRetrievalRequestIncomingSchema,
-  documentRetrievalResponseIncomingSchema,
+  documentRetrievalReqToExternalGWSchema,
+  documentRetrievalReqFromExternalGWSchema,
+  DocumentRetrievalReqFromExternalGW,
+  DocumentRetrievalReqToExternalGW,
+} from "./models/document-retrieval/document-retrieval-requests";
+export {
+  documentRetrievalRespToExternalGWSchema,
+  documentRetrievalRespFromExternalGWSchema,
+  DocumentRetrievalRespFromExternalGW,
+  DocumentRetrievalRespToExternalGW,
   isDocumentRetrievalResponse,
-} from "./models/document-retrieval";
+} from "./models/document-retrieval/document-retrieval-responses";
+
 export {
   npiStringSchema,
   NPIString,
@@ -37,5 +52,7 @@ export {
   OperationOutcome,
   BaseResponse,
   XCAGateway,
+  XCPDGateway,
+  XCPDGateways,
   isBaseErrorResponse,
 } from "./models/shared";
