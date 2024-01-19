@@ -21,10 +21,12 @@ const patientDiscoveryRespToExternalGWSuccessfulSchema =
 
 const patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema = baseResponseSchema.extend({
   patientMatch: z.literal(false),
+  xcpdHomeCommunityId: z.string(),
 });
 
 const patientDiscoveryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
   patientMatch: z.literal(null),
+  xcpdHomeCommunityId: z.string(),
 });
 
 export const patientDiscoveryRespToExternalGWSchema = z.union([

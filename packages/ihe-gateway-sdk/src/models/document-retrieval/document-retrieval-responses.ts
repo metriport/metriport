@@ -13,9 +13,15 @@ const documentRetrievalRespToExternalGWSuccessfulSchema = baseResponseSchema.ext
   documentReference: z.array(documentReferenceSchema),
 });
 
-const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
-  documentReference: z.never(),
-});
+export type DocumentRetrievalRespToExternalGWSuccessful = z.infer<
+  typeof documentRetrievalRespToExternalGWSuccessfulSchema
+>;
+
+const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema;
+
+export type DocumentRetrievalRespToExternalGWFault = z.infer<
+  typeof documentRetrievalRespToExternalGWFaultSchema
+>;
 
 export const documentRetrievalRespToExternalGWSchema = z.union([
   documentRetrievalRespToExternalGWSuccessfulSchema,

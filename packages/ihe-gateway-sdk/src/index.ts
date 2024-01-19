@@ -24,6 +24,8 @@ export {
   DocumentQueryRespFromExternalGW,
   DocumentQueryRespToExternalGW,
   isDocumentQueryResponse,
+  DocumentQueryRespToExternalGWSuccessful,
+  DocumentQueryRespToExternalGWFault,
 } from "./models/document-query/document-query-responses";
 
 export {
@@ -38,6 +40,8 @@ export {
   DocumentRetrievalRespFromExternalGW,
   DocumentRetrievalRespToExternalGW,
   isDocumentRetrievalResponse,
+  DocumentRetrievalRespToExternalGWSuccessful,
+  DocumentRetrievalRespToExternalGWFault,
 } from "./models/document-retrieval/document-retrieval-responses";
 
 export {

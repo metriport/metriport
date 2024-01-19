@@ -13,9 +13,15 @@ const documentQueryRespToExternalGWSuccessfulSchema = baseResponseSchema.extend(
   extrinsicObjectXmls: z.array(z.string()),
 });
 
-const documentQueryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
-  extrinsicObjectXmls: z.never(),
-});
+export type DocumentQueryRespToExternalGWSuccessful = z.infer<
+  typeof documentQueryRespToExternalGWSuccessfulSchema
+>;
+
+const documentQueryRespToExternalGWFaultSchema = baseErrorResponseSchema;
+
+export type DocumentQueryRespToExternalGWFault = z.infer<
+  typeof documentQueryRespToExternalGWFaultSchema
+>;
 
 export const documentQueryRespToExternalGWSchema = z.union([
   documentQueryRespToExternalGWSuccessfulSchema,

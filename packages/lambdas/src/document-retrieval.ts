@@ -4,6 +4,8 @@ import {
   DocumentRetrievalReqFromExternalGW,
   documentRetrievalReqFromExternalGWSchema,
   DocumentRetrievalRespToExternalGW,
+  DocumentRetrievalRespToExternalGWSuccessful,
+  DocumentRetrievalRespToExternalGWFault,
 } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 
@@ -28,7 +30,7 @@ async function processRequest(
 // Function to construct error response
 function constructErrorResponse(
   payload: DocumentRetrievalReqFromExternalGW
-): DocumentRetrievalRespToExternalGW {
+): DocumentRetrievalRespToExternalGWFault {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -50,7 +52,7 @@ function constructErrorResponse(
 // Function to construct success response
 function constructSuccessResponse(
   payload: DocumentRetrievalReqFromExternalGW
-): DocumentRetrievalRespToExternalGW {
+): DocumentRetrievalRespToExternalGWSuccessful {
   const documentReference: DocumentReference = {
     homeCommunityId: "1.2.3.4.5.6.7.8.9",
     docUniqueId: "123456789",
