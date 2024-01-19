@@ -306,7 +306,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         };
 
         if (!payloadClean.trim().length) {
-          console.log("XML document is empty, skipping....");
+          console.log("XML document is empty, skipping...");
           capture.message("XML document is empty", {
             extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
             level: "warning",

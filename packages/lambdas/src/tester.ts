@@ -11,7 +11,7 @@ const url = "http://Stagi-APIFa-L2I135INABM3-e3a33dd4470439f2.elb.us-east-2.amaz
 
 // Test lambda, to validate/test stuff on the cloud env
 export const handler = Sentry.AWSLambda.wrapHandler(async () => {
-  console.log(`Running, calling ${url}...`);
+  console.log(`Running, calling ${url}....`);
   const res = await api.get(url);
   console.log(`Success! Response status: ${res.status}, body: ${JSON.stringify(res.data)}`);
 
