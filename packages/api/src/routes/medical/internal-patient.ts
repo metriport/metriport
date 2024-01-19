@@ -535,15 +535,26 @@ router.get(
   })
 );
 
+/**
+ * POST /internal/patient/trigger-update
+ *
+ * Triggers an update for all of a cx's patients. The point of this is to add coordinates to the patient's addresses.
+ *
+ * @param req.query.cxId The customer ID.
+ *
+ */
 router.post(
   "/trigger-update",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patients = await getPatients({ cxId });
     const chunks = chunk(patients, patientChunkSize);
+    const { log } = out(`Patient trigger update - cx ${cxId}`);
+    log(`Will update ${patients.length} patients in ${chunks.length} chunks`);
 
+    let totalUpdated = 0;
     for (const chunk of chunks) {
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         chunk.map(async patient => {
           const updateInfo: PatientUpdateCmd = {
             id: patient.id,
@@ -553,9 +564,14 @@ router.post(
           await updatePatient(updateInfo, false);
         })
       );
+      const successful = results.filter(r => r.status === "fulfilled").length;
+      totalUpdated += successful;
+
+      log(`Updated ${successful} patients in this chunk`);
       await sleep(SLEEP_TIME.asMilliseconds());
     }
 
+    log(`Finished updating ${totalUpdated} patients`);
     return res.sendStatus(status.OK);
   })
 );
