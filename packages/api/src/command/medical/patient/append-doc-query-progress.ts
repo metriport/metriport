@@ -1,30 +1,33 @@
 import {
+  getStatusFromProgress,
   Progress,
   DocumentQueryProgress,
-  getStatusFromProgress,
-} from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
-export type SetDocQueryProgress = {
+export type SetDocQueryProgressBase = {
   patient: Pick<Patient, "id" | "cxId">;
   convertibleDownloadErrors?: number;
   increaseCountConvertible?: number;
   requestId: string;
-} & (
-  | {
-      downloadProgress?: Progress | undefined | null;
-      convertProgress?: Progress | undefined | null;
-      reset?: false | undefined;
-    }
-  | {
-      downloadProgress: Progress;
-      convertProgress?: never;
-      reset?: true;
-    }
-);
+};
+
+export type SetDocQueryProgress = SetDocQueryProgressBase &
+  (
+    | {
+        downloadProgress?: Progress | undefined | null;
+        convertProgress?: Progress | undefined | null;
+        reset?: false | undefined;
+      }
+    | {
+        downloadProgress: Progress;
+        convertProgress?: never;
+        reset?: true;
+      }
+  );
 
 /**
  * Appends the given properties of a patient's document query progress.

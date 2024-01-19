@@ -5,8 +5,8 @@ import {
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { Organization } from "../../../domain/medical/organization";
-import { Patient } from "../../../domain/medical/patient";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";

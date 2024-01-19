@@ -1,13 +1,14 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { PatientModel } from "../../../models/medical/patient";
@@ -18,6 +19,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
+import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -71,6 +73,13 @@ export async function queryDocumentsAcrossHIEs({
     documentQueryProgress: { download: { status: "processing" } },
     requestId,
     cxDocumentRequestMetadata,
+  });
+
+  await appendDocQueryProgressWithSource({
+    source: MedicalDataSource.ALL,
+    patient: updatedPatient,
+    requestId,
+    reset: true,
   });
 
   getDocumentsFromCW({

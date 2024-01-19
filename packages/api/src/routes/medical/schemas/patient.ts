@@ -1,6 +1,6 @@
 import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
 import { z } from "zod";
-import { driversLicenseType, generalTypes } from "../../../domain/medical/patient";
+import { driversLicenseType, generalTypes } from "@metriport/core/domain/patient";
 import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
 
 export const basePersonalIdentifierSchema = z.object({

@@ -1,32 +1,34 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import {
   patientDiscoveryRespFromExternalGWSchema,
   documentQueryRespFromExternalGWSchema,
   documentRetrievalRespFromExternalGWSchema,
 } from "@metriport/ihe-gateway-sdk";
-import NotFoundError from "@metriport/core/util/error/not-found";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { handleIHEResponse } from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
-import { IHEResultType } from "../../external/carequality/command/ihe-result/create-ihe-result";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
-import { processDocumentRetrievalResults } from "../../external/carequality/document/process-document-retrieval-results";
 import {
   DEFAULT_RADIUS_IN_MILES,
-  searchNearbyCQOrganizations,
+  searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import {
+  IHEResultType,
+  handleIHEResponse,
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
+import { processDocumentRetrievalResults } from "../../external/carequality/document/process-document-retrieval-results";
 
 dayjs.extend(duration);
-
 const router = Router();
 
 /**
@@ -106,7 +108,11 @@ router.get(
     const radiusQuery = getFrom("query").optional("radius", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
-    const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const orgs = await searchCQDirectoriesAroundPatientAddresses({
+      patient,
+      radiusInMiles: radius,
+    });
 
     return res.status(httpStatus.OK).json(orgs);
   })

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<xs:schema xmlns="urn:hl7-org:v3" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           xmlns:mif="urn:hl7-org:v3/mif"
+           targetNamespace="urn:hl7-org:v3"
+           elementFormDefault="qualified">
+   <xs:annotation>
+      <xs:documentation>Source Information
+     Rendered by: RoseTree 4.2.7
+     Rendered on: 
+This document was rendered into XML using software provided to HL7 by Beeler Consulting LLC.
+ PubDB to MIF Transform: $RCSfile: PubDbXmlToMIF.xsl,v $ $Revision: 1.11 $ $Date: 2007/10/19 05:55:13 $
+  Fix names transform: $Id: FixMifNames.xsl,v 1.8 2007/03/20 02:48:49 wbeeler Exp $
+  HTML to MIF Markup transform: $Id: HtmlToMIFMarkup.xsl,v 1.4 2007/03/20 02:48:49 wbeeler Exp $
+  Base transform: $Id: ConvertBase.xsl,v 1.5 2007/10/19 05:55:13 wbeeler Exp $
+  Package Id Conversion: $Id: TransformPackageIds.xsl,v 1.6 2007/03/20 02:48:49 wbeeler Exp $
+ Generated using schema builder version: 3.1.6 and DynamicMifToXSD.xsl version: 1.4
+ Dynamic MIF to Schema Transform: $Id: DynamicMifToXsd.xsl,v 1.12 2007/10/19 05:55:13 wbeeler Exp $
+  Static MIF to Schema Transform: $Id: StaticMifToXsd.xsl,v 1.30 2007/12/06 05:50:08 wbeeler Exp $
+  Package Id Conversion: $Id: TransformPackageIds.xsl,v 1.6 2007/03/20 02:48:49 wbeeler Exp $</xs:documentation>
+   </xs:annotation>
+   <xs:include schemaLocation="../coreschemas/infrastructureRoot.xsd"/>
+   <xs:include schemaLocation="MCCI_MT000300UV01.xsd"/>
+   <xs:include schemaLocation="MFMI_MT700711UV01.xsd"/>
+   <xs:include schemaLocation="PRPA_MT201310UV02.xsd"/>
+   <xs:include schemaLocation="PRPA_MT201306UV02.xsd"/>
+   <xs:element name="PRPA_IN201306UV02">
+      <xs:complexType>
+         <xs:complexContent>
+            <xs:extension base="PRPA_IN201306UV02.MCCI_MT000300UV01.Message">
+               <xs:attribute name="ITSVersion" type="xs:string" use="required" fixed="XML_1.0"/>
+            </xs:extension>
+         </xs:complexContent>
+      </xs:complexType>
+   </xs:element>
+   <xs:complexType name="PRPA_IN201306UV02.MCCI_MT000300UV01.Message">
+      <xs:sequence>
+         <xs:group ref="InfrastructureRootElements"/>
+         <xs:element name="id" type="II" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="creationTime" type="TS" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="securityText" type="ST" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="versionCode" type="CS" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="interactionId" type="II" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="profileId" type="II" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="processingCode" type="CS" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="processingModeCode" type="CS" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="acceptAckCode" type="CS" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="attachmentText" type="ED" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="receiver" type="MCCI_MT000300UV01.Receiver" minOccurs="1"
+                     maxOccurs="unbounded"/>
+         <xs:element name="respondTo" type="MCCI_MT000300UV01.RespondTo" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="sender" type="MCCI_MT000300UV01.Sender" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="attentionLine" type="MCCI_MT000300UV01.AttentionLine" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="acknowledgement" type="MCCI_MT000300UV01.Acknowledgement" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="controlActProcess"
+                     type="PRPA_IN201306UV02.MFMI_MT700711UV01.ControlActProcess"
+                     minOccurs="1"
+                     maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfrastructureRootAttributes"/>
+      <xs:attribute name="nullFlavor" type="NullFlavor" use="optional"/>
+   </xs:complexType>
+   <xs:complexType name="PRPA_IN201306UV02.MFMI_MT700711UV01.ControlActProcess">
+      <xs:sequence>
+         <xs:group ref="InfrastructureRootElements"/>
+         <xs:element name="id" type="II" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="code" type="CD" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="text" type="ED" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="effectiveTime" type="IVL_TS" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="priorityCode" type="CE" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="reasonCode" type="CE" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="languageCode" type="CE" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="overseer" type="MFMI_MT700711UV01.Overseer" nillable="true" minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="authorOrPerformer" type="MFMI_MT700711UV01.AuthorOrPerformer"
+                     nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="dataEnterer" type="MFMI_MT700711UV01.DataEnterer" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="informationRecipient" type="MFMI_MT700711UV01.InformationRecipient"
+                     nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="subject" type="PRPA_IN201306UV02.MFMI_MT700711UV01.Subject1"
+                     nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="reasonOf" type="MFMI_MT700711UV01.Reason" nillable="true" minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="queryAck" type="MFMI_MT700711UV01.QueryAck" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="queryByParameter" type="PRPA_MT201306UV02.QueryByParameter"
+                     nillable="true"
+                     minOccurs="0"
+                     maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfrastructureRootAttributes"/>
+      <xs:attribute name="nullFlavor" type="NullFlavor" use="optional"/>
+      <xs:attribute name="classCode" type="ActClassControlAct" use="required"/>
+      <xs:attribute name="moodCode" type="x_ActMoodIntentEvent" use="required"/>
+   </xs:complexType>
+   <xs:complexType name="PRPA_IN201306UV02.MFMI_MT700711UV01.Subject1">
+      <xs:sequence>
+         <xs:group ref="InfrastructureRootElements"/>
+         <xs:element name="registrationEvent"
+                     type="PRPA_IN201306UV02.MFMI_MT700711UV01.RegistrationEvent"
+                     nillable="true"
+                     minOccurs="1"
+                     maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfrastructureRootAttributes"/>
+      <xs:attribute name="nullFlavor" type="NullFlavor" use="optional"/>
+      <xs:attribute name="typeCode" type="ActRelationshipType" use="required" fixed="SUBJ"/>
+      <xs:attribute name="contextConductionInd" type="bl" use="optional" default="false"/>
+   </xs:complexType>
+   <xs:complexType name="PRPA_IN201306UV02.MFMI_MT700711UV01.RegistrationEvent">
+      <xs:sequence>
+         <xs:group ref="InfrastructureRootElements"/>
+         <xs:element name="id" type="II" minOccurs="0" maxOccurs="unbounded"/>
+         <xs:element name="statusCode" type="CS" minOccurs="1" maxOccurs="1"/>
+         <xs:element name="effectiveTime" type="IVL_TS" minOccurs="0" maxOccurs="1"/>
+         <xs:element name="subject1" type="PRPA_IN201306UV02.MFMI_MT700711UV01.Subject2"
+                     minOccurs="1"
+                     maxOccurs="1"/>
+         <xs:element name="author" type="MFMI_MT700711UV01.Author2" nillable="true" minOccurs="0"
+                     maxOccurs="1"/>
+         <xs:element name="custodian" type="MFMI_MT700711UV01.Custodian" nillable="true"
+                     minOccurs="1"
+                     maxOccurs="1"/>
+         <xs:element name="inFulfillmentOf" type="MFMI_MT700711UV01.InFulfillmentOf" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="definition" type="MFMI_MT700711UV01.Definition" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+         <xs:element name="replacementOf" type="MFMI_MT700711UV01.ReplacementOf" nillable="true"
+                     minOccurs="0"
+                     maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfrastructureRootAttributes"/>
+      <xs:attribute name="nullFlavor" type="NullFlavor" use="optional"/>
+      <xs:attribute name="classCode" type="ActClass" use="required" fixed="REG"/>
+      <xs:attribute name="moodCode" type="ActMood" use="required" fixed="EVN"/>
+   </xs:complexType>
+   <xs:complexType name="PRPA_IN201306UV02.MFMI_MT700711UV01.Subject2">
+      <xs:sequence>
+         <xs:group ref="InfrastructureRootElements"/>
+         <xs:element name="patient" type="PRPA_MT201310UV02.Patient" nillable="true" minOccurs="1"
+                     maxOccurs="1"/>
+      </xs:sequence>
+      <xs:attributeGroup ref="InfrastructureRootAttributes"/>
+      <xs:attribute name="nullFlavor" type="NullFlavor" use="optional"/>
+      <xs:attribute name="typeCode" type="ParticipationTargetSubject" use="required"/>
+   </xs:complexType>
+</xs:schema>

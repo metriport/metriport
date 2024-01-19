@@ -1,4 +1,4 @@
-import { Progress } from "../../../domain/medical/document-query";
+import { Progress } from "@metriport/core/domain/document-query";
 
 export type MainProgressProps = keyof Pick<Progress, "total" | "status">;
 

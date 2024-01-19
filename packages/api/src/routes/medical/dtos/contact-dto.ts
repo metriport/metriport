@@ -1,3 +1,3 @@
-import { Contact } from "../../../domain/medical/contact";
+import { Contact } from "@metriport/core/domain/contact";
 
 export type ContactDTO = Contact;

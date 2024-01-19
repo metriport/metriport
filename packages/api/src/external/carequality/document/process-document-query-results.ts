@@ -6,7 +6,7 @@ import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { DocumentQueryResult } from "../document-query-result";
 import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
-import { MedicalDataSource } from "../../../external";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";

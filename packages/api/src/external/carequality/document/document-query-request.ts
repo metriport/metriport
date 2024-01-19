@@ -1,7 +1,7 @@
 import { PurposeOfUse } from "@metriport/shared";
 import { DocumentQueryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import { Organization } from "../../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { CQLink } from "../cq-patient-data";
 
 const SUBJECT_ROLE_CODE = "106331006";

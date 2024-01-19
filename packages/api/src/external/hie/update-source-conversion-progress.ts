@@ -1,7 +1,7 @@
-import { Progress } from "../../domain/medical/document-query";
-import { Patient } from "../../domain/medical/patient";
+import { Progress } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { tallyDocQueryProgress, ConvertResult } from "../../domain/medical/conversion-progress";
-import { MedicalDataSource } from "..";
 import { HIEPatientData } from "./append-doc-query-progress-with-source";
 
 export const updateSourceConversionProgress = ({

@@ -1,4 +1,4 @@
-import { BaseDomainCreate } from "../base-domain";
+import { BaseDomainCreate } from "@metriport/core/domain/base-domain";
 
 type Base = Omit<BaseDomainCreate, "id">;
 
