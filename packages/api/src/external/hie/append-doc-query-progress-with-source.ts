@@ -20,7 +20,7 @@ import { getCQData } from "../carequality/patient";
 export type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
 
 export type SetDocQueryProgressWithSource = {
-  source?: MedicalDataSource;
+  source: MedicalDataSource;
 } & SetDocQueryProgressBase &
   (
     | {
@@ -176,7 +176,7 @@ export function setExternalData(
   patient: PatientModel,
   downloadProgress: Progress | undefined | null,
   convertProgress: Progress | undefined | null,
-  source: MedicalDataSource | undefined,
+  source: MedicalDataSource,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): PatientExternalData {
@@ -195,8 +195,6 @@ export function setExternalData(
       },
     };
   }
-
-  if (!source) return externalData;
 
   const sourceData = externalData[source] as HIEPatientData;
 

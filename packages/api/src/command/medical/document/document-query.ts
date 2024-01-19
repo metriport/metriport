@@ -1,5 +1,6 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
@@ -75,6 +76,7 @@ export async function queryDocumentsAcrossHIEs({
   });
 
   await appendDocQueryProgressWithSource({
+    source: MedicalDataSource.ALL,
     patient: updatedPatient,
     requestId,
     reset: true,
