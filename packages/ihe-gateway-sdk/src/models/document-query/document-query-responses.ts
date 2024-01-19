@@ -5,7 +5,6 @@ import {
   baseErrorResponseSchema,
   xcaGatewaySchema,
   documentReferenceSchema,
-  operationOutcomeSchema,
   DocumentReference,
 } from "../shared";
 
@@ -14,9 +13,13 @@ const documentQueryRespToExternalGWSuccessfulSchema = baseResponseSchema.extend(
   extrinsicObjectXmls: z.array(z.string()),
 });
 
+const documentQueryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
+  extrinsicObjectXmls: z.never(),
+});
+
 export const documentQueryRespToExternalGWSchema = z.union([
   documentQueryRespToExternalGWSuccessfulSchema,
-  baseErrorResponseSchema,
+  documentQueryRespToExternalGWFaultSchema,
 ]);
 
 export type DocumentQueryRespToExternalGW = z.infer<typeof documentQueryRespToExternalGWSchema>;
@@ -25,7 +28,6 @@ export type DocumentQueryRespToExternalGW = z.infer<typeof documentQueryRespToEx
 const documentQueryRespFromExternalSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
   gateway: xcaGatewaySchema,
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
 const documentQueryRespFromExternalFaultSchema = baseErrorResponseSchema.extend({

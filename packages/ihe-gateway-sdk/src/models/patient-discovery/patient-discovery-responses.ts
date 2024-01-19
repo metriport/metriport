@@ -2,7 +2,6 @@ import * as z from "zod";
 import {
   baseResponseSchema,
   baseErrorResponseSchema,
-  operationOutcomeSchema,
   externalGatewayPatientSchema,
   XCPDGatewaySchema,
 } from "../shared";
@@ -20,13 +19,17 @@ const patientDiscoveryRespToExternalGWSuccessfulSchema =
     externalGatewayPatient: externalGatewayPatientSchema,
   });
 
+const patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema = baseResponseSchema.extend({
+  patientMatch: z.literal(false),
+});
+
 const patientDiscoveryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
-  patientMatch: z.literal(false).or(z.literal(null)),
-  xcpdHomeCommunityId: z.string().optional(),
+  patientMatch: z.literal(null),
 });
 
 export const patientDiscoveryRespToExternalGWSchema = z.union([
   patientDiscoveryRespToExternalGWSuccessfulSchema,
+  patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema,
   patientDiscoveryRespToExternalGWFaultSchema,
 ]);
 
@@ -47,8 +50,7 @@ const patientDiscoveryRespFromExternalGWSuccessfulSchema =
 
 const patientDiscoveryRespFromExternalGWFaultSchema =
   patientDiscoveryRespFromExternalGWDefaultSchema.extend({
-    patientMatch: z.literal(false),
-    operationOutcome: operationOutcomeSchema.optional(),
+    patientMatch: z.literal(false).or(z.literal(null)),
   });
 
 export const patientDiscoveryRespFromExternalGWSchema = z.union([

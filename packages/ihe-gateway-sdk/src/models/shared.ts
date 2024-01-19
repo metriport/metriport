@@ -79,6 +79,7 @@ export const baseResponseSchema = z.object({
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
   patientId: z.string().optional(),
+  operationOutcomeSchema: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 

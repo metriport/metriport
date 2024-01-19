@@ -4,7 +4,6 @@ import {
   documentReferenceSchema,
   baseResponseSchema,
   baseErrorResponseSchema,
-  operationOutcomeSchema,
   xcaGatewaySchema,
   DocumentReference,
 } from "../shared";
@@ -12,10 +11,11 @@ import {
 // TO EXTERNAL GATEWAY
 const documentRetrievalRespToExternalGWSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
-const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema;
+const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
+  documentReference: z.never(),
+});
 
 export const documentRetrievalRespToExternalGWSchema = z.union([
   documentRetrievalRespToExternalGWSuccessfulSchema,
@@ -30,7 +30,6 @@ export type DocumentRetrievalRespToExternalGW = z.infer<
 const documentRetrievalRespFromExternalGWSuccessfulSchema = baseResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.array(documentReferenceSchema),
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
 const documentRetrievalRespFromExternalGWFaultSchema = baseErrorResponseSchema.extend({
