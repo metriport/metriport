@@ -7,7 +7,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
-  SetDocQueryProgress,
+  SetDocQueryProgressBase,
   setDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -19,9 +19,21 @@ import { getCQData } from "../carequality/patient";
 
 export type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
 
-type SetDocQueryProgressWithSource = SetDocQueryProgress & {
+export type SetDocQueryProgressWithSource = {
   source: MedicalDataSource;
-};
+} & SetDocQueryProgressBase &
+  (
+    | {
+        downloadProgress?: Progress | undefined | null;
+        convertProgress?: Progress | undefined | null;
+        reset?: false | undefined;
+      }
+    | {
+        downloadProgress?: never;
+        convertProgress?: never;
+        reset?: true;
+      }
+  );
 
 /**
  * Appends the given properties of a patient's document query progress.
@@ -31,12 +43,12 @@ type SetDocQueryProgressWithSource = SetDocQueryProgress & {
  */
 export async function appendDocQueryProgressWithSource({
   patient,
+  requestId,
   downloadProgress,
   convertProgress,
   convertibleDownloadErrors,
   increaseCountConvertible,
   reset,
-  requestId,
   source,
 }: SetDocQueryProgressWithSource): Promise<Patient> {
   const patientFilter = {
@@ -51,10 +63,9 @@ export async function appendDocQueryProgressWithSource({
       transaction,
     });
 
-    const documentQueryProgress =
-      reset || !existingPatient.data.documentQueryProgress
-        ? {}
-        : existingPatient.data.documentQueryProgress;
+    const documentQueryProgress = !existingPatient.data.documentQueryProgress
+      ? {}
+      : existingPatient.data.documentQueryProgress;
 
     // Set the doc query progress for the given hie
     const externalData = setExternalData(
