@@ -10,7 +10,7 @@ import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
-import { postToConverter } from "./shared/converter";
+// import { postToConverter } from "./shared/converter";
 import { Binary, Bundle } from "@medplum/fhirtypes";
 
 // Keep this as early on the file as possible
@@ -33,9 +33,9 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
 const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
-const sidechainKeysTableName = isSidechainConnector()
-  ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME")
-  : undefined;
+// const sidechainKeysTableName = isSidechainConnector()
+//   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME")
+//   : undefined;
 
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
@@ -319,23 +319,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const conversionStart = Date.now();
         let conversionResult: FHIRBundle;
         if (isSidechainConnector()) {
-          if (!sidechainKeysTableName) {
-            throw new Error(
-              `Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`
-            );
-          }
+          // if (!sidechainKeysTableName) {
+          //   throw new Error(
+          //     `Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`
+          //   );
+          // }
 
-          const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
-          const res = await postToConverter({
-            url: sidechainUrl,
-            payload: payloadClean,
-            axiosTimeoutSeconds,
-            converterKeysTableName: sidechainKeysTableName,
-            log,
-            contentType: "application/xml",
-            conversionType: "fhir",
-          });
-          conversionResult = res.data;
+          // const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
+          // const res = await postToConverter({
+          //   url: sidechainUrl,
+          //   payload: payloadClean,
+          //   axiosTimeoutSeconds,
+          //   converterKeysTableName: sidechainKeysTableName,
+          //   log,
+          //   contentType: "application/xml",
+          //   conversionType: "fhir",
+          // });
+          // conversionResult = res.data;
+          conversionResult = { resourceType: "Bundle", type: "batch", entry: [] };
+          log(`Skipping sidechain conversion`);
         } else {
           const converterUrl = attrib.serverUrl?.stringValue;
           if (!converterUrl) throw new Error(`Missing converterUrl`);
@@ -516,7 +518,7 @@ async function sendConversionResult(
     })
     .promise();
 
-  if (isSidechainConnector()) {
+  if (!isSidechainConnector()) {
     log(`Sending result info to queue`);
     const queuePayload = JSON.stringify({
       s3BucketName: conversionResultBucketName,
