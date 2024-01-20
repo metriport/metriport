@@ -128,7 +128,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           payload = JSON.parse(placeholderUpdated);
           log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
         } else {
-          payload = JSON.parse(payloadRaw);
+          payload = JSON.parse(idsReplaced);
         }
 
         // light validation to make sure it's a bundle
