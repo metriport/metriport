@@ -13,7 +13,7 @@
     "pretest": "node --experimental-worker src/init-service.js",
     "posttest": "eslint {src,test}/**/*.js",
     "prestart": "node --experimental-worker src/init-service.js",
-    "start": "node --experimental-worker src/index.js",
+    "start": "nodemon --experimental-worker src/index.js",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint {src,test}/**/*.js"
   },
@@ -108,6 +108,7 @@
     "memory-cache": "^0.2.0",
     "ncp": "^2.0.0",
     "nodegit": "^0.27.0",
+    "nodemon": "^3.0.3",
     "promise": "^8.0.3",
     "pushover-giting": "0.0.3",
     "swagger-jsdoc": "^6.1.0",
