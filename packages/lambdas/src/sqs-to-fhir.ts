@@ -121,9 +121,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         log(`Converting payload to JSON, length ${payloadRaw.length}`);
         let payload: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+        const idsReplaced = replaceIds(payloadRaw);
+        log(`IDs replaced, length: ${idsReplaced.length}`);
         if (isSandbox()) {
-          const idsReplaced = replaceIds(payloadRaw);
-          log(`IDs replaced, length: ${idsReplaced.length}`);
           const placeholderUpdated = idsReplaced.replace(placeholderReplaceRegex, patientId);
           payload = JSON.parse(placeholderUpdated);
           log(`Payload to FHIR (length ${placeholderUpdated.length}): ${JSON.stringify(payload)}`);
