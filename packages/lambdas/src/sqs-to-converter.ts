@@ -57,6 +57,30 @@ function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
 }
 
+function replaceIDs(fhirBundle: FHIRBundle): FHIRBundle {
+  const stringsToReplace: { old: string; new: string }[] = [];
+  for (const bundleEntry of fhirBundle.entry) {
+    const idToUse = bundleEntry.resource.id;
+    const newId = uuid.v4();
+    bundleEntry.resource.id = newId;
+    stringsToReplace.push({ old: idToUse, new: newId });
+    // replace meta's source and profile
+    bundleEntry.resource.meta = {
+      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+      source: sourceUrl,
+    };
+  }
+  let fhirBundleStr = JSON.stringify(fhirBundle);
+  for (const stringToReplace of stringsToReplace) {
+    // doing this is apparently more efficient than just using replace
+    const regex = new RegExp(stringToReplace.old, "g");
+    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
+  }
+
+  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
+  return JSON.parse(fhirBundleStr);
+}
+
 function postProcessSidechainFHIRBundle(
   fhirBundle: FHIRBundle,
   extension: FHIRExtension,
@@ -375,6 +399,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             });
           }
         } else {
+          conversionResult = replaceIDs(conversionResult);
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
           addMissingRequests(conversionResult);
