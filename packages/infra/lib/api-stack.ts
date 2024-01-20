@@ -312,7 +312,7 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       stack: this,
       vpc: this.vpc,
-      fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+      fhirConverterBucket: sandboxSeedDataBucket ?? fhirConverterBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
     });
