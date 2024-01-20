@@ -429,7 +429,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           });
           await sqsUtils.sendToDLQ(message);
 
-          if (isSidechainConnector()) {
+          if (!isSidechainConnector()) {
             await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
           }
         }
