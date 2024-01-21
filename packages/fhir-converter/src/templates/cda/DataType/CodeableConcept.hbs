@@ -5,12 +5,12 @@
 	"coding": 
     [
 		{{>DataType/Coding.hbs code=code}},
-		{{#with (elementAt (toArray code.translation) 0)}}
-			{{>DataType/Coding.hbs code=this}},
+		{{#if code.translation.code}}
+			{{>DataType/Coding.hbs code=code.translation}},
 		{{else}}
 			{{#each code.translation}}
-			{{>DataType/Coding.hbs code=this}},
+				{{>DataType/Coding.hbs code=this}},
 			{{/each}}
-		{{/with}}
+		{{/if}}
 	],
 }
