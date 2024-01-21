@@ -15,9 +15,11 @@
             "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
             "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
         },
+        {{!-- https://www.hl7.org/fhir/R4/dosage.html#Dosage --}}
         "dosage":
         [
             {
+                "text":"{{medicationStatement.text._}}",
                 "doseAndRate": [
                 {
                     "doseQuantity":
@@ -28,7 +30,7 @@
                 },
                 ],
             },
-        ]
+        ],
     },
     "request":{
         "method":"PUT",
