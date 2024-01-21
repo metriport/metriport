@@ -825,6 +825,13 @@ module.exports.external = [
     },
   },
   {
+    name: "toJsonStringPrettier",
+    description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
+    func: function (o) {
+      return JSON.stringify(o, null, 2);
+    },
+  },
+  {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
     func: function (o) {
