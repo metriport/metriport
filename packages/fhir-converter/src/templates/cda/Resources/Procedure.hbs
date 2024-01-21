@@ -21,6 +21,11 @@
         {{else}}
             "performedPeriod": {{>DataType/Period.hbs period=procedureEntry.effectiveTime}},
         {{/if}}
+        {{#if procedureEntry.text._}}
+            "annotation": [
+                {{procedureEntry.text._}}",
+            ]
+        {{/if}}
         "bodySite":
         [
             {{>DataType/CodeableConcept.hbs code=procedureEntry.targetSiteCode}},
