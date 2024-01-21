@@ -20,6 +20,7 @@
         [
             {
                 "text":"{{medicationStatement.text._}}",
+                "routeCode":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                 {
                     "doseQuantity":
@@ -31,6 +32,7 @@
                 ],
             },
         ],
+        {{!-- not mapping precondition from CDA --}}
     },
     "request":{
         "method":"PUT",
