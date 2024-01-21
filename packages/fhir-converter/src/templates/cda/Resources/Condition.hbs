@@ -17,15 +17,7 @@
                 {{/if}}
           {{/each}}
         ],  
-        "code":
-            {{#if conditionEntry.value.translation}}
-                {{#with (elementAt (toArray conditionEntry.value.translation) 0)}}
-                    {{>DataType/CodeableConcept.hbs code=this}},
-                {{/with}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
-            {{/if}}
-            
+        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
         {{#if conditionEntry.effectiveTime.low.value}} 
             "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
         {{else}}

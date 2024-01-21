@@ -15,12 +15,7 @@
             {{/each}}
         ],
         "status":{{>ValueSet/EventStatus.hbs code=procedureEntry.statusCode.code}},
-        "code":
-            {{#if procedureEntry.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=procedureEntry.code.translation}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
-            {{/if}}
+        "code":{{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
         {{#if procedureEntry.effectiveTime.value}}
             "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
         {{else}}

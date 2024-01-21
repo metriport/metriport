@@ -10,12 +10,7 @@
             {{/each}}
         ],
         "status":"completed"
-        "relationship":
-            {{#if familyEntry.subject.relatedSubject.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code.translation}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code}},
-            {{/if}}
+        "relationship":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code}},
         "sex":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.subject.administrativeGenderCode}},
         "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",
         "condition":
