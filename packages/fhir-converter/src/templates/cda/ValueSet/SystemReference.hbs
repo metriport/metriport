@@ -1,8 +1,8 @@
 {{#if code}}
     {{#if (startsWith code '1.2.840.114350')}}
-        "https://fhir.epic.com"
+        "http://fhir.epic.com"
     {{else if (startsWith code '2.16.840.1.113883.3.247')}}
-        "https://terminology.hl7.org/CodeSystem-IMO.html"
+        "http://terminology.hl7.org/CodeSystem-IMO.html"
     {{else if (eq code '2.16.840.1.113883.6.1')}}
         "http://loinc.org"
     {{else if (eq code '2.16.840.1.113883.6.96')}}
@@ -25,10 +25,14 @@
         "http://hl7.org/fhir/sid/us-mbi"  
     {{else if (eq code '2.16.840.1.113883.12.292')}}
         "http://hl7.org/fhir/sid/cvx"
+    {{else if (eq code '2.16.840.1.113883.6.59')}}
+        "http://hl7.org/fhir/sid/cvx"
+    {{else if (eq code '2.16.840.1.113883.6.59')}}
+        "http://terminology.hl7.org/2.1.0/CodeSystem-CVX"
     {{else if (eq code '2.16.840.1.113883.6.101')}}
         "http://nucc.org/provider-taxonomy"
     {{else if (eq code '2.16.840.1.113883.2.20.5.1')}}
-        "https://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD"
+        "http://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD"
     {{else if (eq code '2.16.840.1.113883.6.8')}}
         "http://unitsofmeasure.org"
     {{else if (eq code '2.16.840.1.113883.6.12')}}
@@ -50,7 +54,7 @@
     {{else if (eq code '2.16.840.1.113883.6.4')}}
         "http://www.cms.gov/Medicare/Coding/ICD10"
     {{else if (eq code '2.16.840.1.113883.6.238')}}
-        "https://terminology.hl7.org/CodeSystem-CDCREC.html"
+        "http://terminology.hl7.org/CodeSystem-CDCREC.html"
     {{else if (eq code '2.16.840.1.113883.6.208')}}
         "http://terminology.hl7.org/CodeSystem/nddf"
     {{else if (eq code '2.16.840.1.113883.5.4')}}
