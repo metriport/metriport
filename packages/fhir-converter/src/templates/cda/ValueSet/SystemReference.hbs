@@ -1,7 +1,5 @@
 {{#if code}}
-    {{#if (startsWith code '1.2.840.114350')}}
-        "http://fhir.epic.com"
-    {{else if (startsWith code '2.16.840.1.113883.3.247')}}
+    {{#if (startsWith code '2.16.840.1.113883.3.247')}}
         "http://terminology.hl7.org/CodeSystem-IMO.html"
     {{else if (eq code '2.16.840.1.113883.6.1')}}
         "http://loinc.org"
