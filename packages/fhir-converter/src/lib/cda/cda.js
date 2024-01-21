@@ -59,8 +59,9 @@ module.exports = class cda extends dataHandler {
   findAndReplaceAllReferencesWithTextValues(cdaJSON) {
     const textProp = "text";
     const originalTextProp = "originaltext";
+    const valueProp = "value";
     this.populateIDValueMap(cdaJSON);
-    this.findAndReplacePropsWithIdValue(cdaJSON, [textProp, originalTextProp]);
+    this.findAndReplacePropsWithIdValue(cdaJSON, [textProp, originalTextProp, valueProp]);
   }
 
   parseSrcData(data) {
