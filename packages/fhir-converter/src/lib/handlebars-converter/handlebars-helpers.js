@@ -571,7 +571,6 @@ module.exports.external = [
           //-1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-
             if (
               sectionObj.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
@@ -822,7 +821,6 @@ module.exports.external = [
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
     func: function (o) {
-      // console.log(o);
       return JSON.stringify(o);
     },
   },
