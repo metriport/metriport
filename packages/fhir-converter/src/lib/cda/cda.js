@@ -36,11 +36,14 @@ module.exports = class cda extends dataHandler {
       for (const key of Object.keys(obj)) {
         if (propNames.includes(key.toLowerCase())) {
           let value = obj[key];
-          // we found the prop, change it's value to the
+          let existingText = value["_"];
+          // we found the prop, change it's value to the reference text
           if (value.reference && value.reference.value) {
             const id = value.reference.value.substring(1);
-            if (this.idToValueMap[id]) {
-              obj[key] = { _: this.idToValueMap[id] };
+            const foundText = this.idToValueMap[id];
+            if (foundText) {
+              const newText = existingText ? `${existingText} - ${foundText}` : foundText;
+              obj[key] = { _: newText };
             }
           }
         }
