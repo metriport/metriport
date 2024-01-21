@@ -960,4 +960,11 @@ module.exports.external = [
       return Number(x) / Number(y);
     },
   },
+  {
+    name: "startsWith",
+    description: "Checks if a string starts with a given substring: startsWith string substring",
+    func: function (str, substr) {
+      return str.startsWith(substr);
+    },
+  },
 ];
