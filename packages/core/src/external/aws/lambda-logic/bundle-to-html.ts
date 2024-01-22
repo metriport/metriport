@@ -874,21 +874,15 @@ function createMedicationSection(
     const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
     const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
 
-    return (
-      aDate === bDate && a.medicationCodeableConcept?.text === b.medicationCodeableConcept?.text
-    );
+    return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
   });
 
-  const completedMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status === "completed"
+  const otherMedications = removeDuplicate.filter(
+    medicationStatement => medicationStatement.status !== ("active" || "unknown")
   );
 
   const activeMedications = removeDuplicate.filter(
     medicationStatement => medicationStatement.status === "active"
-  );
-
-  const stoppedMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status === "stopped"
   );
 
   const emptyMedications = removeDuplicate.filter(
@@ -909,8 +903,8 @@ function createMedicationSection(
 
   const completedMedicationsSection = createSectionInMedications(
     mappedMedications,
-    [...completedMedications, ...stoppedMedications],
-    "Historical Medications"
+    otherMedications,
+    "Other Status Medications"
   );
 
   const medicalTableContents = `
@@ -1002,15 +996,19 @@ function createConditionSection(conditions: Condition[]) {
     return aDate === bDate && a.code?.text === b.code?.text;
   })
     .reduce((acc, condition) => {
-      const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
-      const name = condition.code?.text ?? "";
+      const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
+      const idc10Code = condition.code?.coding?.find(code =>
+        code.system?.toLowerCase().includes(ICD_10_CODE)
+      );
+
+      const name = idc10Code?.display ?? "";
       const onsetDateTime = condition.onsetDateTime ?? "";
       const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code ?? "";
       const onsetStartTime = condition.onsetPeriod?.start;
       const onsetEndTime = condition.onsetPeriod?.end;
 
       const newCondition: RenderCondition = {
-        code,
+        code: codeName,
         name,
         firstSeen: onsetStartTime ?? onsetDateTime,
         lastSeen: onsetEndTime ?? onsetDateTime,
