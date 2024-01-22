@@ -510,6 +510,22 @@ module.exports.external = [
     },
   },
   {
+    name: "multipleToArray",
+    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
+    func: function (...vals) {
+        var combinedArr = [];
+        vals.forEach(function(val) {
+            if (Array.isArray(val)) {
+                combinedArr.push(...val);
+            } else if (val) {
+                combinedArr.push(val);
+            }
+        });
+
+        return combinedArr;
+    },
+  },
+  {
     name: "getFirstCdaSections",
     description:
       "Returns first instance (non-alphanumeric chars replace by '_' in name) of the sections e.g. getFirstCdaSections msg 'Allergies' 'Medication': getFirstCdaSections message section1 section2 …",
