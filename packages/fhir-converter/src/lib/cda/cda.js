@@ -4,9 +4,11 @@
 // -------------------------------------------------------------------------------------------------
 
 let parseString = require("xml2js").parseString;
+let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
 const fs = require("fs");
 let minifyXML = require("minify-xml");
+// const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
 
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
@@ -17,10 +19,15 @@ module.exports = class cda extends dataHandler {
   populateIDValueMap(obj) {
     if (typeof obj === "object" && obj !== null) {
       for (const key of Object.keys(obj)) {
-        if (key.toLowerCase() == "id" && obj["_"]) {
+        if (key.toLowerCase() == "id") {
           const id = obj[key];
           const idValue = obj["_"];
-          this.idToValueMap[id] = idValue;
+          if (idValue) {
+            this.idToValueMap[id] = idValue;
+          } else {
+            const xmlString = new Builder({ headless: true }).buildObject(obj);
+            this.idToValueMap[id] = Buffer.from(xmlString, "utf-8").toString("base64");
+          }
         }
         this.populateIDValueMap(obj[key]);
       }
@@ -42,7 +49,10 @@ module.exports = class cda extends dataHandler {
             const id = value.reference.value.substring(1);
             const foundText = this.idToValueMap[id];
             if (foundText) {
-              const newText = existingText ? `${existingText} - ${foundText}` : foundText;
+              const newText =
+                existingText && existingText !== foundText
+                  ? `${existingText} - ${foundText}`
+                  : foundText;
               obj[key] = { _: newText };
             }
           }
@@ -81,19 +91,58 @@ module.exports = class cda extends dataHandler {
         shortenNamespaces: true,
         ignoreCData: true,
       });
-      parseString(
-        minifiedData,
-        { trim: true, explicitCharkey: true, mergeAttrs: true, explicitArray: false },
-        (err, result) => {
-          if (err) {
-            reject(err);
-          }
+      // TODO: this just replaces it with spaces, which makes the dr note formatting not ideal,
+      // need to figure out a smart way to preserve them in the original note
+      for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
+        // doing this is apparently more efficient than just using replace
+        const regex = new RegExp(stringToReplace, "g");
+        minifiedData = minifiedData.replace(regex, " ");
+      }
+      // fs.writeFileSync(`../../minified.xml`, JSON.stringify(minifiedData, null, 2));
+      const parseOptions = {
+        trim: true,
+        explicitCharkey: true,
+        mergeAttrs: true,
+        explicitArray: false,
+      };
+      parseString(minifiedData, parseOptions, (err, result) => {
+        if (err) {
+          // if parsing throws an error on minified data, try on original
+          parseString(data, parseOptions, (err, result) => {
+            if (err) {
+              // if still throwing an error, give up
+              reject(err);
+            }
+            this.findAndReplaceAllReferencesWithTextValues(result);
+            result._originalData = data;
+            fulfill(result);
+          });
+        } else {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
-          // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
         }
-      );
+        // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+      });
+
+      // ----- example of using fast-xml-parser, couldn't get this to work properly
+
+      // const options = {
+      //   ignoreAttributes: false,
+      //   textNodeName: "_",
+      //   alwaysCreateTextNode: true,
+      //   trimValues: true,
+      //   parseTagValue: true,
+      //   attributeNamePrefix: "",
+      //   // TODO: this doesn't work to skip all <br> tags
+      //   // updateTag(tagName, jPath, attrs) {
+      //   //   if (tagName === "br" || tagName === "br ") return false;
+      //   // },
+      // };
+      // const parser = new XMLParser(options);
+      // let result = parser.parse(minifiedData);
+      // fulfill(result);
+      // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
     });
   }
 

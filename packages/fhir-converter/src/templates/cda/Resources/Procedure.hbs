@@ -15,16 +15,20 @@
             {{/each}}
         ],
         "status":{{>ValueSet/EventStatus.hbs code=procedureEntry.statusCode.code}},
-        "code":{{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
+        "text": "{{procedureEntry.code.originalText._}}",
+        "code":
+          {{#each (toArray procedureEntry.entryRelationship)}}
+          {{>DataType/CodeableConcept.hbs code= this.observation.value}},
+          {{/each}},
         {{#if procedureEntry.effectiveTime.value}}
             "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
         {{else}}
             "performedPeriod": {{>DataType/Period.hbs period=procedureEntry.effectiveTime}},
         {{/if}}
         {{#if procedureEntry.text._}}
-            "annotation": [
-                {{procedureEntry.text._}}",
-            ]
+            "note": {
+                "text": "{{procedureEntry.text._}}",
+            },
         {{/if}}
         "bodySite":
         [
