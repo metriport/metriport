@@ -4,9 +4,11 @@
 // -------------------------------------------------------------------------------------------------
 
 let parseString = require("xml2js").parseString;
+let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
 const fs = require("fs");
 let minifyXML = require("minify-xml");
+const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
 
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
@@ -17,10 +19,17 @@ module.exports = class cda extends dataHandler {
   populateIDValueMap(obj) {
     if (typeof obj === "object" && obj !== null) {
       for (const key of Object.keys(obj)) {
-        if (key.toLowerCase() == "id" && obj["_"]) {
+        if (key.toLowerCase() == "id") {
           const id = obj[key];
           const idValue = obj["_"];
-          this.idToValueMap[id] = idValue;
+          if (idValue) {
+            this.idToValueMap[id] = idValue;
+          } else {
+            this.idToValueMap[id] = Buffer.from(new Builder().buildObject(obj), "utf-8").toString(
+              "base64"
+            );
+            // this.idToValueMap[id] = "test";
+          }
         }
         this.populateIDValueMap(obj[key]);
       }
@@ -91,9 +100,29 @@ module.exports = class cda extends dataHandler {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
-          // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+          fs.writeFileSync(`../../JSON2.json`, JSON.stringify(result, null, 2));
         }
       );
+
+
+      // ----- example of using fast-xml-parser, couldn't get this to work properly
+      
+      // const options = {
+      //   ignoreAttributes: false,
+      //   textNodeName: "_",
+      //   alwaysCreateTextNode: true,
+      //   trimValues: true,
+      //   parseTagValue: true,
+      //   attributeNamePrefix: "",
+      //   // TODO: this doesn't work to skip all <br> tags
+      //   // updateTag(tagName, jPath, attrs) {
+      //   //   if (tagName === "br" || tagName === "br ") return false;
+      //   // },
+      // };
+      // const parser = new XMLParser(options);
+      // let result = parser.parse(minifiedData);
+      // fulfill(result);
+      // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
     });
   }
 
