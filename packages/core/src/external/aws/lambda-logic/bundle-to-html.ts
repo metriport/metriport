@@ -1764,12 +1764,16 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
             SNOMED_CODE,
           ]);
 
+          const deceasedFamilyMember = familyMemberHistory.condition?.find(condition => {
+            return condition.contributedToDeath === true;
+          });
+
           return `
             <tr>
               <td>${familyMemberHistory.relationship?.coding?.[0]?.display ?? ""}</td>
               <td>${renderAdministrativeGender(familyMemberHistory) ?? ""}</td>
               <td>${renderFamilyHistoryConditions(familyMemberHistory)?.join(", ") ?? ""}</td>
-              <td>${familyMemberHistory.deceasedBoolean ?? ""}</td>
+              <td>${deceasedFamilyMember ? "yes" : "no"}</td>
               <td>${code ?? ""}</td>
             </tr>
           `;
