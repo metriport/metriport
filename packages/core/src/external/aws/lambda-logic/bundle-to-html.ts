@@ -6,6 +6,7 @@ import {
   Condition,
   AllergyIntolerance,
   Coding,
+  Location,
   Procedure,
   Observation,
   Encounter,
@@ -39,6 +40,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     medicationStatements,
     conditions,
     allergies,
+    locations,
     procedures,
     observationOther,
     observationSocialHistory,
@@ -243,7 +245,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createRelatedPersonSection(relatedPersons)}
           ${createTaskSection(tasks)}
           ${createCoverageSection(coverages)}
-          ${createEncountersSection(encounters)}
+          ${createEncountersSection(encounters, locations)}
         </div>
       </body>
     </html>
@@ -264,6 +266,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   medicationStatements: MedicationStatement[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
+  locations: Location[];
   procedures: Procedure[];
   observationSocialHistory: Observation[];
   observationVitals: Observation[];
@@ -283,6 +286,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const medications: Medication[] = [];
   const conditions: Condition[] = [];
   const allergies: AllergyIntolerance[] = [];
+  const locations: Location[] = [];
   const procedures: Procedure[] = [];
   const observationSocialHistory: Observation[] = [];
   const observationVitals: Observation[] = [];
@@ -306,6 +310,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         medications.push(resource as Medication);
       } else if (resource?.resourceType === "Condition") {
         conditions.push(resource as Condition);
+      } else if (resource?.resourceType === "Location") {
+        locations.push(resource as Location);
       } else if (resource?.resourceType === "AllergyIntolerance") {
         allergies.push(resource as AllergyIntolerance);
       } else if (resource?.resourceType === "Procedure") {
@@ -360,6 +366,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     medicationStatements,
     conditions,
     allergies,
+    locations,
     procedures,
     observationSocialHistory,
     observationVitals,
@@ -1960,7 +1967,9 @@ function createTaskSection(tasks: Task[]) {
   return createSection("Tasks", taskTableContents);
 }
 
-function createEncountersSection(encounters: Encounter[]) {
+function createEncountersSection(encounters: Encounter[], locations: Location[]) {
+  const mappedLocations = mapResourceToId<Location>(locations);
+
   if (!encounters) {
     return "";
   }
@@ -1993,10 +2002,15 @@ function createEncountersSection(encounters: Encounter[]) {
     <tbody>
       ${removeDuplicate
         .map(encounter => {
+          const locationId = encounter.location?.[0]?.location?.reference?.split("/")?.[1];
           return `
             <tr>
-              <td>${encounter.reasonCode?.[0]?.text ?? ""}</td>
-              <td>${encounter.location?.[0]?.location?.display ?? ""}</td>
+              <td>${
+                encounter.reasonCode?.[0]?.text ??
+                encounter.reasonCode?.[0]?.coding?.[0]?.display ??
+                ""
+              }</td>
+              <td>${(locationId && mappedLocations[locationId]?.name) ?? ""}</td>
               <td>${renderClassDisplay(encounter)}</td>
               <td>${formatDateForDisplay(encounter.period?.start)}</td>
               <td>${formatDateForDisplay(encounter.period?.end)}</td>

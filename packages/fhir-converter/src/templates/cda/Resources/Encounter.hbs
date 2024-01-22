@@ -9,6 +9,13 @@
         {{else}}
             "status":"unknown",
         {{/if}}
+
+        {{#if encounter.code}}
+            "reasonCode":
+            [
+                {{>DataType/CodeableConcept.hbs code=encounter.code}}
+            ],
+        {{/if}}
         
         "class":{{>DataType/Coding.hbs code=encounter.code}},
         
