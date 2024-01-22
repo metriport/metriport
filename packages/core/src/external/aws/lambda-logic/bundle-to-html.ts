@@ -30,6 +30,7 @@ const SNOMED_CODE = "snomed";
 const ICD_10_CODE = "icd-10";
 const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
+const CPT_CODE = "cpt";
 
 export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
@@ -1232,12 +1233,16 @@ function createProcedureSection(procedures: Procedure[]) {
     <tbody>
       ${removeDuplicate
         .map(procedure => {
-          const code = getSpecificCode(procedure.code?.coding ?? [], [SNOMED_CODE, MEDICARE_CODE]);
+          const code = getSpecificCode(procedure.code?.coding ?? [], [
+            SNOMED_CODE,
+            MEDICARE_CODE,
+            CPT_CODE,
+          ]);
 
           // TODO: ADD PERFORMER FROM PRACTITIONER
           return `
             <tr>
-              <td>${procedure?.text ?? ""}</td>
+              <td>${procedure?.code?.text ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${formatDateForDisplay(procedure.performedDateTime)}</td>
               <td>${procedure.status ?? ""}</td>

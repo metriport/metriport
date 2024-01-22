@@ -15,11 +15,14 @@
             {{/each}}
         ],
         "status":{{>ValueSet/EventStatus.hbs code=procedureEntry.statusCode.code}},
-        "text": "{{procedureEntry.code.originalText._}}",
         "code":
-          {{#each (toArray procedureEntry.entryRelationship)}}
-          {{>DataType/CodeableConcept.hbs code= this.observation.value}},
-          {{/each}},
+            {{#if procedureEntry.entryRelationship}}
+                {{#each (toArray procedureEntry.entryRelationship)}}
+                    {{>DataType/CodeableConcept.hbs code=this.observation.value}},
+                {{/each}},
+            {{else}}
+                {{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
+            {{/if}}
         {{#if procedureEntry.effectiveTime.value}}
             "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
         {{else}}
