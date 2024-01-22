@@ -8,9 +8,7 @@ let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
 const fs = require("fs");
 let minifyXML = require("minify-xml");
-const base64url = require("base64url");
 // const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
-// const lineBreakPlaceholderStr = "LINE_BREAK";
 
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
