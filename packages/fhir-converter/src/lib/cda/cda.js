@@ -10,6 +10,11 @@ const fs = require("fs");
 let minifyXML = require("minify-xml");
 // const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
 
+const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
+const elementTime00010101Replacement = "";
+const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
+const valueTime00010101Replacement = 'nullFlavor="NI" />';
+
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
   constructor() {
@@ -74,6 +79,20 @@ module.exports = class cda extends dataHandler {
     this.findAndReplacePropsWithIdValue(cdaJSON, [textProp, originalTextProp, valueProp]);
   }
 
+  preProcessData(data) {
+    let res = data;
+    // TODO: this just replaces it with spaces, which makes the dr note formatting not ideal,
+    // need to figure out a smart way to preserve them in the original note
+    for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
+      // doing this is apparently more efficient than just using replace
+      const regex = new RegExp(stringToReplace, "g");
+      res = res.replace(regex, " ");
+    }
+    res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
+    res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
+    return res;
+  }
+
   parseSrcData(data) {
     return new Promise((fulfill, reject) => {
       let minifiedData = minifyXML.minify(data, {
@@ -91,13 +110,7 @@ module.exports = class cda extends dataHandler {
         shortenNamespaces: true,
         ignoreCData: true,
       });
-      // TODO: this just replaces it with spaces, which makes the dr note formatting not ideal,
-      // need to figure out a smart way to preserve them in the original note
-      for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
-        // doing this is apparently more efficient than just using replace
-        const regex = new RegExp(stringToReplace, "g");
-        minifiedData = minifiedData.replace(regex, " ");
-      }
+      minifiedData = this.preProcessData(minifiedData);
       // fs.writeFileSync(`../../minified.xml`, JSON.stringify(minifiedData, null, 2));
       const parseOptions = {
         trim: true,
