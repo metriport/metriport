@@ -1,6 +1,7 @@
 import {
   Bundle,
-  MedicationRequest,
+  MedicationStatement,
+  Medication,
   Patient,
   Condition,
   AllergyIntolerance,
@@ -35,6 +36,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     practitioners,
     diagnosticReports,
     medications,
+    medicationStatements,
     conditions,
     allergies,
     procedures,
@@ -227,7 +229,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         <div class="divider"></div>
         <div id="mr-sections">
           ${createAWESection(encounters, diagnosticReports, practitioners, aweVisits)}
-          ${createMedicationSection(medications)}
+          ${createMedicationSection(medications, medicationStatements)}
           ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners, aweVisits)}
           ${createConditionSection(conditions)}
           ${createAllergySection(allergies)}
@@ -258,7 +260,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   diagnosticReports: DiagnosticReport[];
   patient?: Patient | undefined;
   practitioners: Practitioner[];
-  medications: MedicationRequest[];
+  medications: Medication[];
+  medicationStatements: MedicationStatement[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
   procedures: Procedure[];
@@ -276,7 +279,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
   const diagnosticReports: DiagnosticReport[] = [];
-  const medications: MedicationRequest[] = [];
+  const medicationStatements: MedicationStatement[] = [];
+  const medications: Medication[] = [];
   const conditions: Condition[] = [];
   const allergies: AllergyIntolerance[] = [];
   const procedures: Procedure[] = [];
@@ -296,8 +300,10 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
       const resource = entry.resource;
       if (resource?.resourceType === "Patient") {
         patient = resource as Patient;
-      } else if (resource?.resourceType === "MedicationRequest") {
-        medications.push(resource as MedicationRequest);
+      } else if (resource?.resourceType === "MedicationStatement") {
+        medicationStatements.push(resource as MedicationStatement);
+      } else if (resource?.resourceType === "Medication") {
+        medications.push(resource as Medication);
       } else if (resource?.resourceType === "Condition") {
         conditions.push(resource as Condition);
       } else if (resource?.resourceType === "AllergyIntolerance") {
@@ -351,6 +357,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     practitioners,
     diagnosticReports,
     medications,
+    medicationStatements,
     conditions,
     allergies,
     procedures,
@@ -842,18 +849,23 @@ function createWhatWasDocumentedFromDiagnosticReports(
   </div>`;
 }
 
-function createMedicationSection(medicationRequests: MedicationRequest[]) {
-  if (!medicationRequests) {
+function createMedicationSection(
+  medications: Medication[],
+  medicationStatements: MedicationStatement[]
+) {
+  if (!medicationStatements) {
     return "";
   }
 
-  const medicationsSortedByDate = medicationRequests.sort((a, b) => {
-    return dayjs(a.authoredOn).isBefore(dayjs(b.authoredOn)) ? 1 : -1;
+  const mappedMedications = mapResourceToId<Medication>(medications);
+
+  const medicationsSortedByDate = medicationStatements.sort((a, b) => {
+    return dayjs(a.effectivePeriod?.start).isBefore(dayjs(b.effectivePeriod?.start)) ? 1 : -1;
   });
 
   const removeDuplicate = uniqWith(medicationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.authoredOn).format(ISO_DATE);
-    const bDate = dayjs(b.authoredOn).format(ISO_DATE);
+    const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
+    const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
 
     return (
       aDate === bDate && a.medicationCodeableConcept?.text === b.medicationCodeableConcept?.text
@@ -861,32 +873,35 @@ function createMedicationSection(medicationRequests: MedicationRequest[]) {
   });
 
   const completedMedications = removeDuplicate.filter(
-    medicationRequest => medicationRequest.status === "completed"
+    medicationStatement => medicationStatement.status === "completed"
   );
 
   const activeMedications = removeDuplicate.filter(
-    medicationRequest => medicationRequest.status === "active"
+    medicationStatement => medicationStatement.status === "active"
   );
 
   const stoppedMedications = removeDuplicate.filter(
-    medicationRequest => medicationRequest.status === "stopped"
+    medicationStatement => medicationStatement.status === "stopped"
   );
 
   const emptyMedications = removeDuplicate.filter(
-    medicationRequest => !medicationRequest.status || medicationRequest.status === "unknown"
+    medicationStatement => !medicationStatement.status || medicationStatement.status === "unknown"
   );
 
   const activeMedicationsSection = createSectionInMedications(
+    mappedMedications,
     activeMedications,
     "Active Medications"
   );
 
   const emptyMedicationsSection = createSectionInMedications(
+    mappedMedications,
     emptyMedications,
     "Unknown Status Medications"
   );
 
   const completedMedicationsSection = createSectionInMedications(
+    mappedMedications,
     [...completedMedications, ...stoppedMedications],
     "Historical Medications"
   );
@@ -900,9 +915,13 @@ function createMedicationSection(medicationRequests: MedicationRequest[]) {
   return createSection("Medications", medicalTableContents);
 }
 
-function createSectionInMedications(medicationRequests: MedicationRequest[], title: string) {
+function createSectionInMedications(
+  mappedMedications: Record<string, Medication>,
+  medicationStatements: MedicationStatement[],
+  title: string
+) {
   const medicalTableContents =
-    medicationRequests.length > 0
+    medicationStatements.length > 0
       ? `
       <h4>${title}</h4>
       <table>
@@ -912,8 +931,6 @@ function createSectionInMedications(medicationRequests: MedicationRequest[], tit
         <th style="width: 25%">Instructions</th>
         <div style="width: 50%">
           <th>Dosage</th>
-          <th>Quantity</th>
-          <th>Refills</th>
           <th>Status</th>
           <th>Code</th>
           <th>Date</th>
@@ -921,40 +938,31 @@ function createSectionInMedications(medicationRequests: MedicationRequest[], tit
       </tr>
     </thead>
     <tbody>
-      ${medicationRequests
-        .map(medicationRequest => {
-          const code = getSpecificCode(medicationRequest.medicationCodeableConcept?.coding ?? [], [
-            RX_NORM_CODE,
-            NDC_CODE,
-          ]);
+      ${medicationStatements
+        .map(medicationStatement => {
+          const medicationRefId = medicationStatement.medicationReference?.reference?.split("/")[1];
+          const medication = mappedMedications[medicationRefId ?? ""];
+
+          const code = getSpecificCode(medication?.code?.coding ?? [], [RX_NORM_CODE, NDC_CODE]);
           const blacklistInstructions = ["not defined"];
 
           const blacklistedInstruction = blacklistInstructions.find(instruction => {
-            return medicationRequest.dosageInstruction?.[0]?.text
-              ?.toLowerCase()
-              .includes(instruction);
+            return medicationStatement.dosage?.[0]?.text?.toLowerCase().includes(instruction);
           });
 
           return `
             <tr>
-              <td>${medicationRequest.medicationCodeableConcept?.text ?? ""}</td>
-              <td>${
-                blacklistedInstruction ? "" : medicationRequest.dosageInstruction?.[0]?.text ?? ""
-              }</td>
-              <td>${
-                medicationRequest.dosageInstruction?.[0]?.doseAndRate?.[0]?.doseRange?.low?.value ??
-                ""
-              } ${
-            medicationRequest.dosageInstruction?.[0]?.doseAndRate?.[0]?.doseRange?.low?.unit?.replace(
+              <td>${medication?.code?.text ?? ""}</td>
+              <td>${blacklistedInstruction ? "" : medicationStatement.dosage?.[0]?.text ?? ""}</td>
+              <td>${medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value ?? ""} ${
+            medicationStatement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.unit?.replace(
               /[{()}]/g,
               ""
             ) ?? ""
           }</td>
-              <td>${medicationRequest.dispenseRequest?.quantity?.value ?? ""}</td>
-              <td>${medicationRequest.dispenseRequest?.numberOfRepeatsAllowed ?? ""}</td>
-              <td>${medicationRequest.status ?? ""}</td>
+              <td>${medicationStatement.status ?? ""}</td>
               <td>${code ?? ""}</td>
-              <td>${formatDateForDisplay(medicationRequest.authoredOn)}</td>
+              <td>${formatDateForDisplay(medicationStatement.effectivePeriod?.start)}</td>
             </tr>
           `;
         })
