@@ -12,6 +12,7 @@ import { parseS3FileName } from "@metriport/core/external/aws/s3";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/shared";
+import { errorToString } from "@metriport/shared/common/error";
 import { randomInt } from "@metriport/shared/common/numbers";
 import Axios from "axios";
 import { Command } from "commander";
@@ -48,7 +49,7 @@ const cdaLocation = ``;
 
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8888";
-const parallelConversions = 4;
+const parallelConversions = 6;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
 const parallelUpsertsIntoFHIRServer = 1;
@@ -131,15 +132,19 @@ export async function main() {
 
 async function convertCDAsToFHIR(fileNames: string[]) {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
-  await executeAsynchronously(
+  const res = await executeAsynchronously(
     fileNames,
     async fileName => {
       await convert(fileName);
     },
-    { numberOfParallelExecutions: parallelConversions }
+    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true }
   );
+  const successful = res.filter(r => r.status === "fulfilled");
+  const failed = res.filter(r => r.status === "rejected");
+  const reportFailure = failed.length ? ` [${failed.length} failed]` : "";
+
   const conversionDuration = Date.now() - startedAt;
-  console.log(`Converted ${fileNames.length} files in ${conversionDuration} ms.`);
+  console.log(`Converted ${successful.length} files in ${conversionDuration} ms.${reportFailure}`);
 }
 
 async function convert(fileName: string) {
@@ -161,7 +166,7 @@ async function convert(fileName: string) {
     writeFileContents(destFileName, JSON.stringify(conversionResult));
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(`Error converting ${fileName}: `, error.response);
+    console.log(`Error converting ${fileName}: ${errorToString(error)}`);
     throw error;
   }
 }
@@ -202,31 +207,37 @@ async function insertBundlesIntoFHIRServer(fileNames: string[]) {
     { numberOfParallelExecutions: parallelUpsertsIntoFHIRServer, keepExecutingOnError: true }
   );
 
+  const successful = res.filter(r => r.status === "fulfilled");
   const failed = res.filter(r => r.status === "rejected");
   const reportFailure = failed.length ? ` [${failed.length} failed]` : "";
 
   const insertDuration = Date.now() - startedAt;
-  console.log(`Inserted ${fileNames.length} files in ${insertDuration} ms.${reportFailure}`);
+  console.log(`Inserted ${successful.length} files in ${insertDuration} ms.${reportFailure}`);
 }
 
 async function insertSingleBundle(fileName: string) {
   const fileContents = getFileContents(fileName);
   const payload = JSON.parse(fileContents ?? "");
-
-  const response = await fhirApi.executeBatch(payload);
-  const errors = getErrorsFromReponse(response);
   try {
-    const shortFileName = fileName.replace(cdaLocation, "");
-    createDirIfNeeded(shortFileName, logsFolderName);
-    const filePrefix = `${logsFolderName}${shortFileName}`;
-    writeFileContents(`${filePrefix}.response.json`, JSON.stringify(response));
-  } catch (error) {
-    console.log(`>>> Error writing results to ${fileName}.response.json: `, error);
-  }
+    const response = await fhirApi.executeBatch(payload);
+    const errors = getErrorsFromReponse(response);
+    try {
+      const shortFileName = fileName.replace(cdaLocation, "");
+      createDirIfNeeded(shortFileName, logsFolderName);
+      const filePrefix = `${logsFolderName}${shortFileName}`;
+      writeFileContents(`${filePrefix}.response.json`, JSON.stringify(response));
+    } catch (error) {
+      console.log(`>>> Error writing results to ${fileName}.response.json: `, error);
+    }
 
-  if (errors.length > 0) {
-    console.log(`>>> Errors: `, JSON.stringify(errors));
-    throw new Error(`Got ${errors.length} errors from FHIR`);
+    if (errors.length > 0) {
+      console.log(`>>> Errors: `, JSON.stringify(errors));
+      throw new Error(`Got ${errors.length} errors from FHIR`);
+    }
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.log(`Error inserting ${fileName}: ${errorToString(error)}`);
+    throw error;
   }
 }
 
