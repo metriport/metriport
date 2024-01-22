@@ -312,8 +312,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         procedures.push(resource as Procedure);
       } else if (resource?.resourceType === "Observation") {
         const observation = resource as Observation;
-        const isVitalSigns = observation.extension?.find(
-          ext => ext.valueCodeableConcept?.coding?.[0]?.code?.toLowerCase() === "ccd vitals"
+        const isVitalSigns = observation.category?.find(
+          ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
         );
         const isSocialHistory = observation.extension?.find(
           ext => ext.valueCodeableConcept?.coding?.[0]?.code?.toLowerCase() === "ccd social history"
@@ -1388,7 +1388,12 @@ function createObservationVitalsSection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
   });
 
   const observationTableContents =
@@ -1438,7 +1443,7 @@ function createVitalsByDate(observations: Observation[]): string {
 
           return `
             <tr>
-              <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+              <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
               <td>${renderVitalsValue(observation)}</td>
               <td>${code ?? ""}</td>
             </tr>
