@@ -8,7 +8,9 @@ let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
 const fs = require("fs");
 let minifyXML = require("minify-xml");
-const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
+const base64url = require("base64url");
+// const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
+// const lineBreakPlaceholderStr = "LINE_BREAK";
 
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
@@ -25,10 +27,8 @@ module.exports = class cda extends dataHandler {
           if (idValue) {
             this.idToValueMap[id] = idValue;
           } else {
-            this.idToValueMap[id] = Buffer.from(new Builder().buildObject(obj), "utf-8").toString(
-              "base64"
-            );
-            // this.idToValueMap[id] = "test";
+            let xmlString = new Builder({ headless: true }).buildObject(obj);
+            this.idToValueMap[id] = base64url(xmlString);
           }
         }
         this.populateIDValueMap(obj[key]);
@@ -51,7 +51,10 @@ module.exports = class cda extends dataHandler {
             const id = value.reference.value.substring(1);
             const foundText = this.idToValueMap[id];
             if (foundText) {
-              const newText = existingText ? `${existingText} - ${foundText}` : foundText;
+              const newText =
+                existingText && existingText !== foundText
+                  ? `${existingText} - ${foundText}`
+                  : foundText;
               obj[key] = { _: newText };
             }
           }
@@ -90,6 +93,14 @@ module.exports = class cda extends dataHandler {
         shortenNamespaces: true,
         ignoreCData: true,
       });
+      // TODO: this just replaces it with spaces, which makes the dr note formatting not ideal,
+      // need to figure out a smart way to preserve them in the original note
+      for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
+        // doing this is apparently more efficient than just using replace
+        const regex = new RegExp(stringToReplace, "g");
+        minifiedData = minifiedData.replace(regex, " ");
+      }
+      // fs.writeFileSync(`../../minified.xml`, JSON.stringify(minifiedData, null, 2));
       parseString(
         minifiedData,
         { trim: true, explicitCharkey: true, mergeAttrs: true, explicitArray: false },
@@ -100,13 +111,12 @@ module.exports = class cda extends dataHandler {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
-          fs.writeFileSync(`../../JSON2.json`, JSON.stringify(result, null, 2));
+          fs.writeFileSync(`../../JSON1.json`, JSON.stringify(result, null, 2));
         }
       );
 
-
       // ----- example of using fast-xml-parser, couldn't get this to work properly
-      
+
       // const options = {
       //   ignoreAttributes: false,
       //   textNodeName: "_",

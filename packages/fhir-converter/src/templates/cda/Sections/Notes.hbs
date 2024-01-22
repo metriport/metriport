@@ -1,13 +1,15 @@
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.65')}}
-            {{#each (toArray 2_16_840_1_113883_10_20_22_2_65.entry) as |note|}}
-                {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
-                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                	{{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.subject)) REF=(concat 'Patient/' patientId.Id)}},
-                {{/with}}
+    {{#with (getAllCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.65') as |sections|}}
+            {{#each sections}}
+                {{#each (toArray 2_16_840_1_113883_10_20_22_2_65.entry) as |note|}}
+                    {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.subject)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
 
-                {{!-- TODO need to add references, author, etc --}}
+                    {{!-- TODO need to add references, author, etc --}}
 
+                {{/each}}
             {{/each}}
         {{/with}}
 {{/if}}

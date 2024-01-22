@@ -587,6 +587,34 @@ module.exports.external = [
     },
   },
   {
+    name: "getAllCdaSectionsByTemplateId",
+    description:
+      "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
+    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          //-1 because templateIds includes the full message at the end
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              var item = {};
+              item[normalizeSectionName(templateIds[t])] = sectionObj;
+              ret.push(item);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsByTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
     name: "getFieldRepeats",
     description: "Returns repeat list for a field: getFieldRepeats fieldData",
     func: function getFieldRepeats(fieldData) {
