@@ -18,6 +18,7 @@ import {
   DiagnosticReport,
   Resource,
   Practitioner,
+  Organization,
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
@@ -53,6 +54,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     relatedPersons,
     tasks,
     coverages,
+    organizations,
   } = extractFhirTypesFromBundle(fhirBundle);
 
   if (!patient) {
@@ -245,7 +247,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createFamilyHistorySection(familyMemberHistories)}
           ${createRelatedPersonSection(relatedPersons)}
           ${createTaskSection(tasks)}
-          ${createCoverageSection(coverages)}
+          ${createCoverageSection(coverages, organizations)}
           ${createEncountersSection(encounters, locations)}
         </div>
       </body>
@@ -279,6 +281,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   relatedPersons: RelatedPerson[];
   tasks: Task[];
   coverages: Coverage[];
+  organizations: Organization[];
 } {
   let patient: Patient | undefined;
   const practitioners: Practitioner[] = [];
@@ -299,6 +302,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const relatedPersons: RelatedPerson[] = [];
   const tasks: Task[] = [];
   const coverages: Coverage[] = [];
+  const organizations: Organization[] = [];
 
   if (bundle.entry) {
     for (const entry of bundle.entry) {
@@ -355,6 +359,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         diagnosticReports.push(resource as DiagnosticReport);
       } else if (resource?.resourceType === "Practitioner") {
         practitioners.push(resource as Practitioner);
+      } else if (resource?.resourceType === "Organization") {
+        organizations.push(resource as Organization);
       }
     }
   }
@@ -379,6 +385,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     relatedPersons,
     tasks,
     coverages,
+    organizations,
   };
 }
 
@@ -2036,10 +2043,12 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
   return createSection("Encounters", encounterTableContents);
 }
 
-function createCoverageSection(coverages: Coverage[]) {
+function createCoverageSection(coverages: Coverage[], organizations: Organization[]) {
   if (!coverages) {
     return "";
   }
+
+  const mappedOrganizations = mapResourceToId<Organization>(organizations);
 
   const coveragesSortedByDate = coverages.sort((a, b) => {
     return dayjs(a.period?.start).isBefore(dayjs(b.period?.start)) ? 1 : -1;
@@ -2068,9 +2077,12 @@ function createCoverageSection(coverages: Coverage[]) {
     <tbody>
       ${removeDuplicate
         .map(coverage => {
+          const payorRef = coverage.payor?.[0]?.reference?.split("/")?.[1];
+          const organization = mappedOrganizations[payorRef ?? ""];
+
           return `
             <tr>
-              <td>${coverage.class?.[0]?.value ?? ""}</td>
+              <td>${organization?.name ?? ""}</td>
               <td>${coverage.identifier?.[0]?.value ?? ""}</td>
               <td>${coverage.status ?? ""}</td>
               <td>${formatDateForDisplay(coverage.period?.start)}</td>
