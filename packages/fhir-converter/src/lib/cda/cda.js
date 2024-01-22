@@ -28,7 +28,7 @@ module.exports = class cda extends dataHandler {
             this.idToValueMap[id] = idValue;
           } else {
             let xmlString = new Builder({ headless: true }).buildObject(obj);
-            this.idToValueMap[id] = base64url(xmlString);
+            this.idToValueMap[id] = Buffer.from(xmlString, "utf-8").toString("base64");
           }
         }
         this.populateIDValueMap(obj[key]);
