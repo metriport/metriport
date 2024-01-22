@@ -1002,7 +1002,7 @@ function createConditionSection(conditions: Condition[]) {
         code.system?.toLowerCase().includes(ICD_10_CODE)
       );
 
-      const name = idc10Code?.display ?? "";
+      const name = idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? "";
       const onsetDateTime = condition.onsetDateTime ?? "";
       const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code ?? "";
       const onsetStartTime = condition.onsetPeriod?.start;
@@ -1580,10 +1580,7 @@ function createObservationsByDate(observations: Observation[]): string {
               <tr>
                 <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
-                <td>${
-                  observation.interpretation?.[0]?.text ??
-                  ""
-                }</td>
+                <td>${observation.interpretation?.[0]?.text ?? ""}</td>
                 <td>${
                   blacklistReferenceRange
                     ? ""
