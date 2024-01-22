@@ -1,4 +1,8 @@
 {
-    "start":"{{formatAsDateTime period.low.value}}",
-    "end":"{{formatAsDateTime period.high.value}}",
+    {{#if or (period.low period.high)}}
+        "start":"{{formatAsDateTime period.low.value}}",
+        "end":"{{formatAsDateTime period.high.value}}",
+    {{else}}
+        "start":"{{formatAsDateTime period.value}}",
+    {{/if}}
 },
