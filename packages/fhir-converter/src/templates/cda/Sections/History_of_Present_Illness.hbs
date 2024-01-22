@@ -7,7 +7,14 @@
                 {{/with}}
 
                 {{!-- TODO need to add references, author, etc --}}
-
+                {{#if note.act.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=note.act.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=note.act.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                    {{>Resources/Organization.hbs org=note.act.author.assignedAuthor.representedOrganization ID=(generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization))}},
+                    {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Organization/' (generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization)))}},
+                {{/if}}   
             {{/each}}
         {{/with}}
 {{/if}}
