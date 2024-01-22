@@ -1,5 +1,7 @@
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
+import { parseS3FileName } from "@metriport/core/external/aws/s3";
 import { getFileContentsAsync, getFileNames } from "../shared/fs";
+import { uuidv7 } from "../shared/uuid-v7";
 
 export function countResourcesPerType(bundle: Bundle<Resource>) {
   if (!bundle || !bundle.entry) {
@@ -55,4 +57,10 @@ export async function getResourceCountByFile(fileName: string) {
   const countPerType = countResourcesPerType(bundle);
   const resources = bundle.entry?.flatMap(entry => entry.resource ?? []);
   return { total: resources.length, countPerType };
+}
+
+export function getPatientIdFromFileName(fileName: string) {
+  const parts = parseS3FileName(fileName);
+  if (!parts) return uuidv7();
+  return parts.patientId;
 }

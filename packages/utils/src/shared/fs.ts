@@ -5,6 +5,10 @@ export function isDirectory(path: string): boolean {
   return fs.statSync(path).isDirectory();
 }
 
+export function fileExists(path: string): boolean {
+  return fs.openSync(path, "r") !== undefined;
+}
+
 export function getFileNames({
   folder,
   recursive = false,
