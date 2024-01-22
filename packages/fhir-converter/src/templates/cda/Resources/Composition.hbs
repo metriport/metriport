@@ -6,13 +6,14 @@
         "identifier":
   		{
   			"use":"official",
+            {{! Missing use mapping }}
 			"value":"{{composition.id.root}}",
         },
 		"status":"final",
+        {{! Missing status mapping }}
         {{#with (elementAt (toArray composition.code) 0)}}
             "type":{{>DataType/CodeableConcept.hbs code=this}},
         {{/with}}
-
         "date":"{{formatAsDateTime composition.effectiveTime.value}}",
         "title":"{{composition.title._}}",
         "confidentiality":"{{composition.confidentialityCode.code}}",
