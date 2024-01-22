@@ -129,6 +129,7 @@ module.exports = class cda extends dataHandler {
             this.findAndReplaceAllReferencesWithTextValues(result);
             result._originalData = data;
             fulfill(result);
+            // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
           });
         } else {
           this.findAndReplaceAllReferencesWithTextValues(result);

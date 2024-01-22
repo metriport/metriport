@@ -1580,7 +1580,10 @@ function createObservationsByDate(observations: Observation[]): string {
               <tr>
                 <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
-                <td>${observation.interpretation?.[0]?.text ?? ""}</td>
+                <td>${
+                  observation.interpretation?.[0]?.text ??
+                  ""
+                }</td>
                 <td>${
                   blacklistReferenceRange
                     ? ""
