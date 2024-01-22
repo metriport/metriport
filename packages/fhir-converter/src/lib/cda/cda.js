@@ -43,6 +43,10 @@ module.exports = class cda extends dataHandler {
     }
   }
 
+  removeLineBreaks(text) {
+    return text.replace(/(\r\n|\n|\r)/gm, " ");
+  }
+
   findAndReplacePropsWithIdValue(obj, propNames) {
     if (typeof obj === "object" && obj !== null) {
       for (const key of Object.keys(obj)) {
@@ -58,7 +62,7 @@ module.exports = class cda extends dataHandler {
                 existingText && existingText !== foundText
                   ? `${existingText} - ${foundText}`
                   : foundText;
-              obj[key] = { _: newText };
+              obj[key] = { _: this.removeLineBreaks(newText) };
             }
           }
         }
