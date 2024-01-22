@@ -1,5 +1,5 @@
 {
-    {{#if or (period.low period.high)}}
+    {{#if (or period.low period.high)}}
         "start":"{{formatAsDateTime period.low.value}}",
         "end":"{{formatAsDateTime period.high.value}}",
     {{else}}
