@@ -319,7 +319,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
           ext => ext.coding?.[0]?.code?.toLowerCase() === "social-history"
         );
         const isLaboratory = observation.category?.find(
-          category => category.text?.toLowerCase() === "laboratory"
+          category => category.coding?.[0]?.code?.toLowerCase() === "laboratory"
         );
         const stringifyResource = JSON.stringify(resource);
 
@@ -1495,7 +1495,12 @@ function createObservationLaboratorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
   });
 
   const observationTableContents =
@@ -1544,18 +1549,28 @@ function createObservationsByDate(observations: Observation[]): string {
       <tbody>
         ${tables.observations
           .map(observation => {
-            const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE]);
+            const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE, LOINC_CODE]);
             const blacklistReferenceRange = blacklistReferenceRangeText.find(referenceRange => {
               return observation.referenceRange?.[0]?.text?.toLowerCase().includes(referenceRange);
             });
 
+            const constructedReferenceRange = blacklistReferenceRange
+              ? ""
+              : `${observation.referenceRange?.[0]?.low?.value ?? ""} ${
+                  observation.referenceRange?.[0]?.low?.unit ?? ""
+                } - ${observation.referenceRange?.[0]?.high?.value ?? ""} ${
+                  observation.referenceRange?.[0]?.high?.unit ?? ""
+                }`;
+
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${observation.interpretation?.[0]?.text ?? ""}</td>
                 <td>${
-                  blacklistReferenceRange ? "" : observation.referenceRange?.[0]?.text ?? ""
+                  blacklistReferenceRange
+                    ? ""
+                    : observation.referenceRange?.[0]?.text ?? constructedReferenceRange ?? ""
                 }</td>
                 <td>${code ?? ""}</td>
               </tr>
@@ -1646,7 +1661,7 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
