@@ -99,19 +99,31 @@ module.exports = class cda extends dataHandler {
         minifiedData = minifiedData.replace(regex, " ");
       }
       // fs.writeFileSync(`../../minified.xml`, JSON.stringify(minifiedData, null, 2));
-      parseString(
-        minifiedData,
-        { trim: true, explicitCharkey: true, mergeAttrs: true, explicitArray: false },
-        (err, result) => {
-          if (err) {
-            reject(err);
-          }
+      const parseOptions = {
+        trim: true,
+        explicitCharkey: true,
+        mergeAttrs: true,
+        explicitArray: false,
+      };
+      parseString(minifiedData, parseOptions, (err, result) => {
+        if (err) {
+          // if parsing throws an error on minified data, try on original
+          parseString(data, parseOptions, (err, result) => {
+            if (err) {
+              // if still throwing an error, give up
+              reject(err);
+            }
+            this.findAndReplaceAllReferencesWithTextValues(result);
+            result._originalData = data;
+            fulfill(result);
+          });
+        } else {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
-          // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
         }
-      );
+        // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+      });
 
       // ----- example of using fast-xml-parser, couldn't get this to work properly
 
