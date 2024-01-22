@@ -233,9 +233,9 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createAWESection(encounters, diagnosticReports, practitioners, aweVisits)}
+          ${createAWESection(diagnosticReports, practitioners, aweVisits)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(encounters, diagnosticReports, practitioners, aweVisits)}
+          ${createDiagnosticReportsSection(diagnosticReports, practitioners, aweVisits)}
           ${createConditionSection(conditions)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -517,23 +517,17 @@ type EncounterSection = {
 };
 
 function createAWESection(
-  encounters: Encounter[],
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[]
 ) {
-  const mappedEncounters = mapResourceToId<Encounter>(encounters);
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
 
   if (!diagnosticReports) {
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections(
-    {},
-    mappedEncounters,
-    diagnosticReports
-  );
+  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
 
   const AWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, true);
 
@@ -557,23 +551,17 @@ function createAWESection(
 }
 
 function createDiagnosticReportsSection(
-  encounters: Encounter[],
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[]
 ) {
-  const mappedEncounters = mapResourceToId<Encounter>(encounters);
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
 
   if (!diagnosticReports) {
     return "";
   }
 
-  const encounterSections: EncounterSection = buildEncounterSections(
-    {},
-    mappedEncounters,
-    diagnosticReports
-  );
+  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
 
   const nonAWEreports = buildReports(encounterSections, mappedPractitioners, aweVisits, false);
 
@@ -598,89 +586,80 @@ function createDiagnosticReportsSection(
 
 function buildEncounterSections(
   encounterSections: EncounterSection,
-  mappedEncounters: Record<string, Encounter>,
   diagnosticReports: DiagnosticReport[]
 ): EncounterSection {
   for (const report of diagnosticReports) {
-    const encounterRefId = report.encounter?.reference?.split("/")[1];
+    const formattedDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
 
-    if (encounterRefId) {
-      const encounterDate = mappedEncounters[encounterRefId]?.period?.start;
-      const formattedDate = formatDateForDisplay(encounterDate);
+    if (formattedDate) {
+      if (!encounterSections[formattedDate]) {
+        encounterSections[formattedDate] = {};
+      }
 
-      if (formattedDate) {
-        if (!encounterSections[formattedDate]) {
-          encounterSections[formattedDate] = {};
-        }
+      let diagnosticReportsType: EncounterTypes | undefined;
 
-        let diagnosticReportsType: EncounterTypes | undefined;
-
-        if (report?.code?.coding) {
-          for (const iterator of report.code.coding) {
-            if (iterator.display?.toLowerCase() === "progress note") {
-              diagnosticReportsType = "progressNotes";
-            } else if (iterator.display?.toLowerCase() === "patient education") {
-              diagnosticReportsType = "afterInstructions";
-            } else if (iterator.display?.toLowerCase().includes("reason for visit")) {
-              diagnosticReportsType = "reasonForVisit";
-            } else if (
-              iterator.display?.toLowerCase() === "assessments" ||
-              iterator.display?.toLowerCase() === "eval note"
-            ) {
-              diagnosticReportsType = "documentation";
-            }
+      if (report?.code?.coding) {
+        for (const iterator of report.code.coding) {
+          if (iterator.display?.toLowerCase() === "progress note") {
+            diagnosticReportsType = "progressNotes";
+          } else if (iterator.display?.toLowerCase() === "patient education") {
+            diagnosticReportsType = "afterInstructions";
+          } else if (iterator.display?.toLowerCase().includes("reason for visit")) {
+            diagnosticReportsType = "reasonForVisit";
+          } else if (
+            iterator.display?.toLowerCase() === "assessments" ||
+            iterator.display?.toLowerCase() === "eval note"
+          ) {
+            diagnosticReportsType = "documentation";
           }
         }
+      }
 
-        if (report.category) {
-          for (const iterator of report.category) {
-            if (iterator.text?.toLowerCase() === "lab") {
-              diagnosticReportsType = "labs";
+      if (report.category) {
+        for (const iterator of report.category) {
+          if (iterator.text?.toLowerCase() === "lab") {
+            diagnosticReportsType = "labs";
+          }
+        }
+      }
+
+      if (diagnosticReportsType) {
+        const reportDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
+        let isReportDuplicate = false;
+
+        if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
+          const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
+            reportInside => {
+              const reportInsideDate = dayjs(reportInside.effectiveDateTime).format(ISO_DATE) ?? "";
+              const isDuplicate = reportInsideDate === reportDate;
+
+              return isDuplicate;
             }
+          );
+
+          isReportDuplicate = !!isDuplicate;
+        }
+
+        if (!encounterSections?.[formattedDate]?.[diagnosticReportsType]) {
+          encounterSections[formattedDate] = {
+            ...encounterSections[formattedDate],
+            [diagnosticReportsType]: [],
+          };
+        }
+
+        if (diagnosticReportsType === "documentation") {
+          const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
+          const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
+          const blackListNote = "Not on file";
+          const noteIsBlacklisted = decodeNote.toLowerCase().includes(blackListNote.toLowerCase());
+
+          if (noteIsBlacklisted) {
+            continue;
           }
         }
 
-        if (diagnosticReportsType) {
-          const reportDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
-          let isReportDuplicate = false;
-
-          if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
-            const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
-              reportInside => {
-                const reportInsideDate =
-                  dayjs(reportInside.effectiveDateTime).format(ISO_DATE) ?? "";
-                const isDuplicate = reportInsideDate === reportDate;
-
-                return isDuplicate;
-              }
-            );
-
-            isReportDuplicate = !!isDuplicate;
-          }
-
-          if (!encounterSections?.[formattedDate]?.[diagnosticReportsType]) {
-            encounterSections[formattedDate] = {
-              ...encounterSections[formattedDate],
-              [diagnosticReportsType]: [],
-            };
-          }
-
-          if (diagnosticReportsType === "documentation") {
-            const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
-            const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
-            const blackListNote = "Not on file";
-            const noteIsBlacklisted = decodeNote
-              .toLowerCase()
-              .includes(blackListNote.toLowerCase());
-
-            if (noteIsBlacklisted) {
-              continue;
-            }
-          }
-
-          if (!isReportDuplicate) {
-            encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
-          }
+        if (!isReportDuplicate) {
+          encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
         }
       }
     }
@@ -788,7 +767,7 @@ function createProgressNotesFromDiagnosticReports(
       const practitionerRefId = progressNote.performer?.[0]?.reference?.split("/")[1] ?? "";
       const practitioner = mappedPractitioners[practitionerRefId];
       const practitionerName =
-        practitioner?.name?.[0]?.given?.[0] ?? "" + " " + practitioner?.name?.[0]?.family ?? "";
+        (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
 
       return `
         <div>
@@ -817,7 +796,7 @@ function createReasonForVisitFromDiagnosticReports(
       const practitionerRefId = reason.performer?.[0]?.reference?.split("/")[1] ?? "";
       const practitioner = mappedPractitioners[practitionerRefId];
       const practitionerName =
-        practitioner?.name?.[0]?.given?.[0] ?? "" + " " + practitioner?.name?.[0]?.family ?? "";
+        (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
 
       return `
         <div>
@@ -847,7 +826,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
       const practitionerRefId = documentation.performer?.[0]?.reference?.split("/")[1] ?? "";
       const practitioner = mappedPractitioners[practitionerRefId];
       const practitionerName =
-        practitioner?.name?.[0]?.given?.[0] ?? "" + " " + practitioner?.name?.[0]?.family ?? "";
+        (practitioner?.name?.[0]?.given?.[0] ?? "") + " " + (practitioner?.name?.[0]?.family ?? "");
 
       return `
         <div>
