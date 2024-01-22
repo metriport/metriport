@@ -1,40 +1,36 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { Bundle } from "@medplum/fhirtypes";
-import { getFileContents } from "../shared/fs";
-import { countResourcesPerType } from "./shared";
+import { isDirectory } from "../shared/fs";
+import { countResourcesPerDirectory, getResourceCountByFile } from "./shared";
 
 /**
  * Outputs the number of resources in a FHIR bundle. Expects one
  * argument which is the path to the a JSON file containing a
- * FHIR bundle.
+ * FHIR bundle or a directory containing such files (will search
+ * recursively).
  *
  * Usage:
- * > ts-node src/fhir-converter/count-resources.ts <file.json>
+ * > ts-node src/fhir-converter/count-resources.ts <file/folder.json>
  */
 
 export async function main() {
   const fileName = process.argv[2];
   if (!fileName) {
-    console.log(`Usage: ts-node src/fhir-converter/count-resources.ts <file.json>`);
+    console.log(`Usage: ts-node src/fhir-converter/count-resources.ts <file/folder.json>`);
     process.exit(1);
   }
 
-  const contents = getFileContents(fileName);
-  const bundleTmp = JSON.parse(contents);
-  const bundle = (bundleTmp.fhirResource ? bundleTmp.fhirResource : bundleTmp) as
-    | Bundle
-    | undefined;
-  if (!bundle || !bundle.entry) {
-    throw new Error("Invalid bundle");
+  if (isDirectory(fileName)) {
+    const consolidated = await countResourcesPerDirectory(fileName);
+    console.log(`Resources: ${JSON.stringify(consolidated.countPerType, null, 2)}`);
+    console.log(`Total: ${consolidated.total}`);
+    return;
   }
 
-  const countPerType = countResourcesPerType(bundle);
+  const { total, countPerType } = await getResourceCountByFile(fileName);
   console.log(`Resources: ${JSON.stringify(countPerType, null, 2)}`);
-
-  const resources = bundle.entry?.flatMap(entry => entry.resource ?? []);
-  console.log(`Total: ${resources.length}`);
+  console.log(`Total: ${total}`);
 
   return;
 }

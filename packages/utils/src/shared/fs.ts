@@ -38,6 +38,14 @@ export function getFileNames({
 export function getFileContents(fileName: string): string {
   return fs.readFileSync(fileName, "utf8");
 }
+export function getFileContentsAsync(fileName: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fs.readFile(fileName, "utf8", (err, data) => {
+      if (err) reject(err);
+      else resolve(data);
+    });
+  });
+}
 
 export function writeFileContents(fileName: string, contents: string): void {
   fs.writeFileSync(fileName, contents);

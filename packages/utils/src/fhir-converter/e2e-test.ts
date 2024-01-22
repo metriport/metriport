@@ -21,21 +21,26 @@ import duration from "dayjs/plugin/duration";
 import path from "path";
 import { getFileContents, getFileNames, makeDir, writeFileContents } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
+import { countResourcesPerDirectory } from "./shared";
 
 dayjs.extend(duration);
 
 /**
- * End-to-end test for the FHIR Converter. Requires a folder wiith C-CDA XML files. It can contain subfolders.
+ * End-to-end test for the FHIR Converter. Requires a folder with C-CDA XML files. It can contain subfolders.
  *
- * IMPORTANT: This script will remove all partitions from the FHIR server! Create a backup before running it!
+ * IMPORTANT: This script will remove all partitions from the FHIR server if used with the `--use-fhir-server`
+ * option! Create a backup before running it!
  * See: https://smilecdr.com/docs/fhir_repository/deleting_data.html#drop-all-data
  * Could not make it be partition/tenant aware.
  *
  * It will:
  * - convert those XMLs by calling the FHIR converter;
  * - store the conversion result as JSON files in the original folder, with a timestamp in the name;
- * - create a tenant on the FHIR server;
- * - load the JSON files resulting from the conversion into the FHIR server;
+ * - if `--use-fhir-server` is set, it will:
+ *   - create a tenant on the FHIR server;
+ *   - load the JSON files resulting from the conversion into the FHIR server;
+ * - otherwise, it will:
+ *   - count the resources in the JSON files resulting from the conversion;
  * - display statistics (count total and by resource);
  * - stats and logs are stored in a folder with a timestamp in the name (under ./runs/fhir-converter-e2e/).
  *
@@ -49,7 +54,7 @@ const cdaLocation = ``;
 
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8888";
-const parallelConversions = 6;
+const parallelConversions = 4;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
 const parallelUpsertsIntoFHIRServer = 1;
@@ -65,14 +70,17 @@ let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
 const fhirExtension = `__${timestamp}.json`;
 const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
+let countNonXMLBody = 0;
 
 type Params = {
   cleanup?: boolean;
+  useFhirServer?: boolean;
 };
 const program = new Command();
 program
   .name("e2e-test")
   .description("End-to-end test for the FHIR Converter")
+  .option(`--use-fhir-server`, "Insert the result of the conversion on the FHIR server")
   .option(
     `--cleanup`,
     "Cleanup the FHIR server at the end. WARNING: THIS WILL REMOVE ALL PARTITIONS! Backup your data first!"
@@ -83,10 +91,10 @@ program
 export async function main() {
   await sleep(100);
   startedAt = Date.now();
-  const { cleanup } = program.opts<Params>();
+  const { cleanup, useFhirServer } = program.opts<Params>();
 
   console.log(
-    `Running End-to-End tests for the FHIR Converter (cleanup: ${cleanup}) - started at ${new Date().toISOString()}`
+    `Running End-to-End tests for the FHIR Converter (useFhirServer: ${useFhirServer}, cleanup: ${cleanup}) - started at ${new Date().toISOString()}`
   );
   console.log(`Log folder: ${logsFolderName}`);
   makeDir(logsFolderName);
@@ -101,6 +109,17 @@ export async function main() {
 
   // Convert them into JSON files
   await convertCDAsToFHIR(ccdaFileNames);
+  if (countNonXMLBody > 0) {
+    console.log(`>>> ${countNonXMLBody} files were skipped because they have nonXMLBody`);
+  }
+
+  if (!useFhirServer) {
+    const stats = await countResourcesPerDirectory(cdaLocation, fhirExtension);
+    console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
+    console.log(`Total: ${stats.total}`);
+    storeStats(stats);
+    return;
+  }
 
   if (cleanup) await removeAllPartitionsFromFHIRServer();
 
@@ -121,7 +140,7 @@ export async function main() {
   const stats = await getStatusFromFHIRServer();
   console.log(`Resources: `, stats.resources);
   console.log(`Total resources: ${stats.total}`);
-  writeFileContents(`${logsFolderName}/stats.json`, JSON.stringify(stats, null, 2));
+  storeStats(stats);
 
   const duration = Date.now() - startedAt;
   const durationMin = dayjs.duration(duration).asMinutes();
@@ -130,30 +149,58 @@ export async function main() {
   return;
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+function storeStats(stats: any) {
+  writeFileContents(
+    `${logsFolderName}/stats.json`,
+    JSON.stringify(
+      {
+        cdaLocation,
+        ...stats,
+      },
+      null,
+      2
+    )
+  );
+}
+
 async function convertCDAsToFHIR(fileNames: string[]) {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
+  let errCount = 0;
   const res = await executeAsynchronously(
     fileNames,
     async fileName => {
-      await convert(fileName);
+      try {
+        await convert(fileName);
+      } catch (error) {
+        errCount++;
+        throw error;
+      }
     },
-    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true }
+    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true, verbose: false }
   );
-  const successful = res.filter(r => r.status === "fulfilled");
   const failed = res.filter(r => r.status === "rejected");
-  const reportFailure = failed.length ? ` [${failed.length} failed]` : "";
+  const reportFailure = errCount > 0 ? ` [${errCount} in ${failed.length} promises]` : "";
 
   const conversionDuration = Date.now() - startedAt;
-  console.log(`Converted ${successful.length} files in ${conversionDuration} ms.${reportFailure}`);
+  console.log(
+    `Converted ${fileNames.length - errCount} files in ${conversionDuration} ms.${reportFailure}`
+  );
 }
 
 async function convert(fileName: string) {
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(fileName);
+  if (fileContents.includes("nonXMLBody")) {
+    countNonXMLBody++;
+    console.log(`Skipping ${fileName} because it has nonXMLBody`);
+    return;
+  }
+
   try {
     const unusedSegments = false;
     const invalidAccess = false;
-    const params = { patientId, fileName: "anything", unusedSegments, invalidAccess };
+    const params = { patientId, fileName, unusedSegments, invalidAccess };
     const url = `/api/convert/cda/ccd.hbs`;
     const payload = (fileContents ?? "").trim();
     const res = await converterApi.post(url, payload, {
@@ -199,20 +246,26 @@ async function removeAllPartitionsFromFHIRServer() {
 
 async function insertBundlesIntoFHIRServer(fileNames: string[]) {
   console.log(`Inserting ${fileNames.length} files, ${parallelUpsertsIntoFHIRServer} at a time...`);
+  let errCount = 0;
   const res = await executeAsynchronously(
     fileNames,
     async fileName => {
-      await insertSingleBundle(fileName);
+      try {
+        await insertSingleBundle(fileName);
+      } catch (error) {
+        errCount++;
+        throw error;
+      }
     },
     { numberOfParallelExecutions: parallelUpsertsIntoFHIRServer, keepExecutingOnError: true }
   );
 
-  const successful = res.filter(r => r.status === "fulfilled");
   const failed = res.filter(r => r.status === "rejected");
-  const reportFailure = failed.length ? ` [${failed.length} failed]` : "";
+  const reportFailure = errCount > 0 ? ` [${errCount} in ${failed.length} promises]` : "";
 
   const insertDuration = Date.now() - startedAt;
-  console.log(`Inserted ${successful.length} files in ${insertDuration} ms.${reportFailure}`);
+  // Fhir Bundles are processed partially, so don't subtract the errors from the total
+  console.log(`Inserted ${fileNames.length} files in ${insertDuration} ms.${reportFailure}`);
 }
 
 async function insertSingleBundle(fileName: string) {
