@@ -142,14 +142,14 @@ module.exports = class cda extends dataHandler {
             this.findAndReplaceAllReferencesWithTextValues(result);
             result._originalData = data;
             fulfill(result);
-            fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+            // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
           });
         } else {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
         }
-        fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+        // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
       });
 
       // ----- example of using fast-xml-parser, couldn't get this to work properly
