@@ -25,7 +25,7 @@ module.exports = class cda extends dataHandler {
           if (idValue) {
             this.idToValueMap[id] = idValue;
           } else {
-            let xmlString = new Builder({ headless: true }).buildObject(obj);
+            const xmlString = new Builder({ headless: true }).buildObject(obj);
             this.idToValueMap[id] = Buffer.from(xmlString, "utf-8").toString("base64");
           }
         }
@@ -109,7 +109,7 @@ module.exports = class cda extends dataHandler {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
-          fs.writeFileSync(`../../JSON1.json`, JSON.stringify(result, null, 2));
+          // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
         }
       );
 

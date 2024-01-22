@@ -593,11 +593,10 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = [];
-
+        // -1 because templateIds includes the full message at the end
         for (var t = 0; t < templateIds.length - 1; t++) {
-          //-1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
-            let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
               sectionObj.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
