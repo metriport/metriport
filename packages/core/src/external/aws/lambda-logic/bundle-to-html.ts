@@ -1208,7 +1208,7 @@ function createProcedureSection(procedures: Procedure[]) {
   const removeDuplicate = uniqWith(proceduresSortedByDate, (a, b) => {
     const aDate = dayjs(a.performedDateTime).format(ISO_DATE);
     const bDate = dayjs(b.performedDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    return aDate === bDate && a?.text === b?.text;
   });
 
   const procedureTableContents =
@@ -1232,7 +1232,7 @@ function createProcedureSection(procedures: Procedure[]) {
           // TODO: ADD PERFORMER FROM PRACTITIONER
           return `
             <tr>
-              <td>${procedure.code?.text ?? ""}</td>
+              <td>${procedure?.text ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${formatDateForDisplay(procedure.performedDateTime)}</td>
               <td>${procedure.status ?? ""}</td>
