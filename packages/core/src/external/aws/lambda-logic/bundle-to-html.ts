@@ -1380,7 +1380,6 @@ function createObservationVitalsSection(observations: Observation[]) {
   if (!observations) {
     return "";
   }
-  console.log("observations", JSON.stringify(observations, null, 2));
 
   const observationsSortedByDate = observations.sort((a, b) => {
     return dayjs(a.effectiveDateTime).isBefore(dayjs(b.effectiveDateTime)) ? 1 : -1;
