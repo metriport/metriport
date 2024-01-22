@@ -1648,7 +1648,7 @@ function createOtherObservationsByDate(observations: Observation[]): string {
 
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? ""}</td>
+                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${code ?? ""}</td>
               </tr>
