@@ -1326,7 +1326,11 @@ function createObservationSocialHistorySection(observations: Observation[]) {
 
       acc.push({
         display,
-        code: getSpecificCode(observation.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]),
+        code: getSpecificCode(observation.code?.coding ?? [], [
+          ICD_10_CODE,
+          SNOMED_CODE,
+          LOINC_CODE,
+        ]),
         value,
         firstDate: observationDate,
         lastDate: observationDate,
