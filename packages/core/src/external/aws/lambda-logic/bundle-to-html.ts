@@ -315,8 +315,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         const isVitalSigns = observation.category?.find(
           ext => ext.coding?.[0]?.code?.toLowerCase() === "vital-signs"
         );
-        const isSocialHistory = observation.extension?.find(
-          ext => ext.valueCodeableConcept?.coding?.[0]?.code?.toLowerCase() === "ccd social history"
+        const isSocialHistory = observation.category?.find(
+          ext => ext.coding?.[0]?.code?.toLowerCase() === "social-history"
         );
         const isLaboratory = observation.category?.find(
           category => category.text?.toLowerCase() === "laboratory"
@@ -1271,7 +1271,12 @@ function createObservationSocialHistorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
   })
     .filter(observation => {
       const value = renderSocialHistoryValue(observation) ?? "";
@@ -1370,7 +1375,10 @@ function renderSocialHistoryValue(observation: Observation) {
 
     return `${value} ${unit}`;
   } else if (observation.valueCodeableConcept) {
-    return observation.valueCodeableConcept?.text;
+    return (
+      observation.valueCodeableConcept?.text ??
+      observation.valueCodeableConcept.coding?.[0]?.display
+    );
   } else {
     return "";
   }
