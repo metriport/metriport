@@ -1,6 +1,7 @@
 {
     "fullUrl":"urn:oid:{{ID}}",
     "resource":{
+        {{!-- Missing providerOrganization > managingOrganization --}}
         "resourceType": "Patient",
         "meta": {
             "profile": [
@@ -26,6 +27,7 @@
             {{>Extensions/Race.hbs patient=patientRole.patient}},
             {{>Extensions/Ethnicity.hbs patient=patientRole.patient}},
         ],
+        "maritalStatus":{{>DataType/CodeableConcept.hbs code=patientRole.patient.maritalStatusCode}},
         "address":
         [
         	{{#each (toArray patientRole.addr)}}

@@ -30,11 +30,26 @@
         {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        {{#if observationEntry.code.translation.code}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code.translation}},
-        {{else}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code}},
-        {{/if}}
+        "code": {
+            {{#if observationEntry.code.originalText}}
+                "text":"{{{observationEntry.code.originalText._}}}",
+            {{else if observationEntry.text._}}
+                "text":"{{{observationEntry.text._}}}",
+            {{/if}}
+            {{#if observationEntry.code}}
+                "coding": 
+                [
+                    {{>DataType/Coding.hbs code=observationEntry.code}},
+                    {{#if observationEntry.code.translation.code}}
+                        {{>DataType/Coding.hbs code=observationEntry.code.translation}},
+                    {{else}}
+                        {{#each observationEntry.code.translation}}
+                            {{>DataType/Coding.hbs code=this}},
+                        {{/each}}
+                    {{/if}}
+                ],
+            {{/if}}
+        },
         
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
@@ -65,12 +80,12 @@
           {
             "low":
                 {
-                    "value":{{observationEntry.referenceRange.observationRange.value.low.value}},
+                    "value":"{{observationEntry.referenceRange.observationRange.value.low.value}}",
                     "unit":"{{observationEntry.referenceRange.observationRange.value.low.unit}}",
                 }
            "high":
                {
-                   "value":{{observationEntry.referenceRange.observationRange.value.high.value}},
+                   "value":"{{observationEntry.referenceRange.observationRange.value.high.value}}",
                    "unit":"{{observationEntry.referenceRange.observationRange.value.high.unit}}",
                }
           },

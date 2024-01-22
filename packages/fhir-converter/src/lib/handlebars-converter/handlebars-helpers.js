@@ -510,6 +510,22 @@ module.exports.external = [
     },
   },
   {
+    name: "multipleToArray",
+    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
+    func: function (...vals) {
+        var combinedArr = [];
+        vals.forEach(function(val) {
+            if (Array.isArray(val)) {
+                combinedArr.push(...val);
+            } else if (val) {
+                combinedArr.push(val);
+            }
+        });
+
+        return combinedArr;
+    },
+  },
+  {
     name: "getFirstCdaSections",
     description:
       "Returns first instance (non-alphanumeric chars replace by '_' in name) of the sections e.g. getFirstCdaSections msg 'Allergies' 'Medication': getFirstCdaSections message section1 section2 …",
@@ -571,7 +587,6 @@ module.exports.external = [
           //-1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-
             if (
               sectionObj.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
@@ -584,6 +599,33 @@ module.exports.external = [
         return ret;
       } catch (err) {
         throw `helper "getFirstCdaSectionsByTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
+    name: "getAllCdaSectionsByTemplateId",
+    description:
+      "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
+    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+        // -1 because templateIds includes the full message at the end
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              var item = {};
+              item[normalizeSectionName(templateIds[t])] = sectionObj;
+              ret.push(item);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsByTemplateId" : ${err}`;
       }
     },
   },
@@ -822,8 +864,14 @@ module.exports.external = [
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
     func: function (o) {
-      // console.log(o);
       return JSON.stringify(o);
+    },
+  },
+  {
+    name: "toJsonStringPrettier",
+    description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
+    func: function (o) {
+      return JSON.stringify(o, null, 2);
     },
   },
   {
@@ -960,6 +1008,13 @@ module.exports.external = [
     description: "divide first number by the second number: / number1 number2",
     func: function (x, y) {
       return Number(x) / Number(y);
+    },
+  },
+  {
+    name: "startsWith",
+    description: "Checks if a string starts with a given substring: startsWith string substring",
+    func: function (str, substr) {
+      return str.startsWith(substr);
     },
   },
 ];

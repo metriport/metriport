@@ -15,9 +15,12 @@
             "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
             "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
         },
+        {{!-- https://www.hl7.org/fhir/R4/dosage.html#Dosage --}}
         "dosage":
         [
             {
+                "text":"{{medicationStatement.text._}}",
+                "routeCode":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                 {
                     "doseQuantity":
@@ -28,7 +31,8 @@
                 },
                 ],
             },
-        ]
+        ],
+        {{!-- not mapping precondition from CDA --}}
     },
     "request":{
         "method":"PUT",

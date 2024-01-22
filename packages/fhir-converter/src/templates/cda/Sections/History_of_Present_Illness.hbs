@@ -1,0 +1,20 @@
+{{#if (contains (toString (toJsonString msg)) '1.3.6.1.4.1.19376.1.5.3.1.3.4')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '1.3.6.1.4.1.19376.1.5.3.1.3.4')}}
+            {{#each (toArray 1_3_6_1_4_1_19376_1_5_3_1_3_4.entry) as |note|}}
+                {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                	{{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.subject)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+
+                {{!-- TODO need to add references, author, etc --}}
+                {{#if note.act.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=note.act.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=note.act.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                    {{>Resources/Organization.hbs org=note.act.author.assignedAuthor.representedOrganization ID=(generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization))}},
+                    {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Organization/' (generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization)))}},
+                {{/if}}   
+            {{/each}}
+        {{/with}}
+{{/if}}
