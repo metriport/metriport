@@ -22,9 +22,9 @@
             "performedPeriod": {{>DataType/Period.hbs period=procedureEntry.effectiveTime}},
         {{/if}}
         {{#if procedureEntry.text._}}
-            "annotation": [
-                {{procedureEntry.text._}}",
-            ]
+            "note": {
+                "text": "{{procedureEntry.text._}}",
+            },
         {{/if}}
         "bodySite":
         [

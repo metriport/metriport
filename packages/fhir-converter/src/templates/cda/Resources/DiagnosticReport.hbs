@@ -18,6 +18,11 @@
         },
         
         "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
+        {{#if diagReport.text._}}
+            "presentedForm": {
+                "data": "{{{diagReport.text._}}}",
+            },
+        {{/if}}
 
     },
     "request":{
