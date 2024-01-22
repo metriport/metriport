@@ -17,6 +17,7 @@ const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
 module.exports = class cda extends dataHandler {
   idToValueMap = {};
+  idToB64ValueMap = {};
   constructor() {
     super("cda");
   }
@@ -31,7 +32,7 @@ module.exports = class cda extends dataHandler {
             this.idToValueMap[id] = idValue;
           } else {
             const xmlString = new Builder({ headless: true }).buildObject(obj);
-            this.idToValueMap[id] = Buffer.from(xmlString, "utf-8").toString("base64");
+            this.idToB64ValueMap[id] = Buffer.from(xmlString, "utf-8").toString("base64");
           }
         }
         this.populateIDValueMap(obj[key]);
@@ -66,7 +67,11 @@ module.exports = class cda extends dataHandler {
           else if (value.reference && value.reference.value) {
             const id = value.reference.value.substring(1);
             const foundText = this.idToValueMap[id];
-            if (foundText) {
+            const foundB64 = this.idToB64ValueMap[id];
+            if (foundB64) {
+              // if we found b64, just use it, we shouldn't mix this with any existing text
+              obj[key] = { _b64: this.removeLineBreaks(foundB64) };
+            } else if (foundText) {
               const newText =
                 existingText && existingText !== foundText
                   ? `${existingText} - ${foundText}`
