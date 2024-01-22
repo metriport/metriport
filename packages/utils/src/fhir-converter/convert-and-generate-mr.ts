@@ -31,7 +31,6 @@ dayjs.extend(duration);
  */
 
 const folder = "";
-const reuseExisting = false;
 
 const converterBaseUrl = "http://localhost:8777";
 const parallelConversions = 10;
@@ -40,7 +39,7 @@ const converterApi = Axios.create({ baseURL: converterBaseUrl });
 
 let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
-const fhirExtension = reuseExisting ? ".json" : `__${timestamp}.json`;
+const fhirExtension = `__${timestamp}.json`;
 const logsFolderName = `runs/convert-and-generate-mr/${timestamp}`;
 
 export async function main() {
@@ -68,8 +67,7 @@ export async function main() {
     startedAt,
     converterApi,
     fhirExtension,
-    logsFolderName,
-    reuseExisting
+    logsFolderName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
@@ -78,14 +76,15 @@ export async function main() {
   // Consolidate all bundles' resources into a single bundle
   const resources = await getResourcesPerDirectory(folder, fhirExtension);
   const bundleFileName = `${logsFolderName}/bundle.json`;
-  writeFileContents(bundleFileName, JSON.stringify(resources));
+  const bundle: Bundle<Resource> = {
+    resourceType: "Bundle",
+    entry: resources,
+  };
+  writeFileContents(bundleFileName, JSON.stringify(bundle));
 
   // Generate MR summary
   console.log(`Generating MR summary...`);
-  const html = bundleToHtml({
-    resourceType: "Bundle",
-    entry: resources,
-  });
+  const html = bundleToHtml(bundle);
   const htmlFileName = `${logsFolderName}/bundle.html`;
   console.log(`Generated, writing it to ${htmlFileName}...`);
   writeFileContents(htmlFileName, html);

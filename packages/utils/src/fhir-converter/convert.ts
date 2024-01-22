@@ -1,6 +1,6 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
-import { fileExists, getFileContents, writeFileContents } from "../shared/fs";
+import { getFileContents, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 
 export async function convertCDAsToFHIR(
@@ -9,8 +9,7 @@ export async function convertCDAsToFHIR(
   startedAt: number,
   api: AxiosInstance,
   fhirExtension: string,
-  logsFolderName: string,
-  useExisting = false
+  logsFolderName: string
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
@@ -19,7 +18,7 @@ export async function convertCDAsToFHIR(
     fileNames,
     async fileName => {
       try {
-        await convert(fileName, api, fhirExtension, useExisting);
+        await convert(fileName, api, fhirExtension);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error.message.includes("File has nonXMLBody")) {
@@ -45,15 +44,7 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-async function convert(
-  fileName: string,
-  api: AxiosInstance,
-  fhirExtension: string,
-  useExisting: boolean
-) {
-  const destFileName = fileName.replace(".xml", fhirExtension);
-  if (useExisting && fileExists(destFileName)) return;
-
+async function convert(fileName: string, api: AxiosInstance, fhirExtension: string) {
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(fileName);
   if (fileContents.includes("nonXMLBody")) {
@@ -72,6 +63,7 @@ async function convert(
   });
   const conversionResult = res.data.fhirResource;
 
+  const destFileName = fileName.replace(".xml", fhirExtension);
   writeFileContents(destFileName, JSON.stringify(conversionResult));
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
 }
