@@ -1096,7 +1096,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
   const removeDuplicate = uniqWith(allergies, (a, b) => {
     const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
     const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    return aDate === bDate && a.reaction?.[0]?.substance?.text === b.reaction?.[0]?.substance?.text;
   })
     .reduce((acc, allergy) => {
       const code = getSpecificCode(allergy.code?.coding ?? [], [
@@ -1104,7 +1104,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         ICD_10_CODE,
         RX_NORM_CODE,
       ]);
-      const name = allergy.code?.text ?? "";
+      const name = allergy.reaction?.[0]?.substance?.text ?? "";
       const manifestation = allergy.reaction?.[0]?.manifestation?.[0]?.text ?? "";
       const onsetDateTime = allergy.onsetDateTime
         ? allergy.onsetDateTime
@@ -1152,7 +1152,7 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
   const blacklistManifestationText = ["info not available", "other"];
 
   const filterBlacklistText = removeDuplicate.filter(allergy => {
-    const codeText = allergy.code?.toLowerCase();
+    const codeText = allergy.name?.toLowerCase();
 
     return codeText && !blacklistCodeText.includes(codeText);
   });
