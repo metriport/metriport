@@ -19,9 +19,11 @@
         
         "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
         {{#if diagReport.text._b64}}
-            "presentedForm": {
-                "data": "{{{diagReport.text._b64}}}",
-            },
+            "presentedForm": [
+                {
+                    "data": "{{{diagReport.text._b64}}}",
+                }
+            ],
         {{/if}}
 
     },
