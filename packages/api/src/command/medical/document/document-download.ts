@@ -45,9 +45,11 @@ const getConversionUrl = async ({
   bucketName,
 }: ConvertDocInput): Promise<string> => {
   const convertedFileName = fileName.concat(`.${conversionType}`);
-  const { exists } = await doesObjExist({ fileName: convertedFileName });
+  const { exists, bucketName: bucketContainingObj } = await doesObjExist({
+    fileName: convertedFileName,
+  });
 
-  if (exists) return getSignedURL({ fileName: convertedFileName });
+  if (exists) return getSignedURL({ fileName: convertedFileName, bucketName: bucketContainingObj });
   else return convertDoc({ fileName, conversionType, bucketName });
 };
 
@@ -96,7 +98,7 @@ const doesObjExist = async ({
       };
     } catch (error) {
       console.log(
-        `Could not find seed file ${fileName} in the ${Config.getSandboxSeedBucketName()} bucket - trying medical documents bucket`
+        `Could not find seed file ${fileName} in the ${Config.getSandboxSeedBucketName()} bucket - trying ${Config.getMedicalDocumentsBucketName()}`
       );
     }
   }
@@ -120,15 +122,22 @@ const doesObjExist = async ({
   }
 };
 
-export const getSignedURL = async ({ fileName }: { fileName: string }): Promise<string> => {
+export const getSignedURL = async ({
+  fileName,
+  bucketName,
+}: {
+  fileName: string;
+  bucketName?: string;
+}): Promise<string> => {
   const urlExpirationSeconds = URL_EXPIRATION_TIME.asSeconds();
 
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
-    Bucket: Config.isSandbox()
-      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        Config.getSandboxSeedBucketName()!
-      : Config.getMedicalDocumentsBucketName(),
+    Bucket:
+      bucketName ?? Config.isSandbox()
+        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          Config.getSandboxSeedBucketName()!
+        : Config.getMedicalDocumentsBucketName(),
     Key: fileName,
     Expires: urlExpirationSeconds,
   });
