@@ -1267,12 +1267,14 @@ function createObservationSocialHistorySection(observations: Observation[]) {
   const removeDuplicate = uniqWith(observationsSortedByDate, (a, b) => {
     const aDate = dayjs(a.effectiveDateTime).format(ISO_DATE);
     const bDate = dayjs(b.effectiveDateTime).format(ISO_DATE);
-    const aText = a.code?.text;
-    const bText = b.code?.text;
+    const aText = a.code?.text ?? a.code?.coding?.[0]?.display;
+    const bText = b.code?.text ?? b.code?.coding?.[0]?.display;
+    const aValue = renderSocialHistoryValue(a) ?? "";
+    const bValue = renderSocialHistoryValue(b) ?? "";
     if (aText === undefined || bText === undefined) {
       return false;
     }
-    return aDate === bDate && aText === bText;
+    return aDate === bDate && aText === bText && aValue === bValue;
   })
     .filter(observation => {
       const value = renderSocialHistoryValue(observation) ?? "";
