@@ -130,15 +130,15 @@ export const getSignedURL = async ({
   bucketName?: string;
 }): Promise<string> => {
   const urlExpirationSeconds = URL_EXPIRATION_TIME.asSeconds();
+  const bucket =
+    bucketName ??
+    (Config.isSandbox()
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        Config.getSandboxSeedBucketName()!
+      : Config.getMedicalDocumentsBucketName());
 
   const url = s3client.getSignedUrl("getObject", {
-    // TODO 760 Fix this
-    Bucket:
-      bucketName ??
-      (Config.isSandbox()
-        ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          Config.getSandboxSeedBucketName()!
-        : Config.getMedicalDocumentsBucketName()),
+    Bucket: bucket,
     Key: fileName,
     Expires: urlExpirationSeconds,
   });
