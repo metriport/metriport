@@ -1,24 +1,24 @@
 import {
-  Bundle,
-  MedicationStatement,
-  Medication,
-  Patient,
-  Condition,
   AllergyIntolerance,
+  Bundle,
   Coding,
-  Location,
-  Procedure,
-  Observation,
-  Encounter,
-  Immunization,
-  FamilyMemberHistory,
-  RelatedPerson,
-  Task,
+  Condition,
   Coverage,
   DiagnosticReport,
-  Resource,
-  Practitioner,
+  Encounter,
+  FamilyMemberHistory,
+  Immunization,
+  Location,
+  Medication,
+  MedicationStatement,
+  Observation,
   Organization,
+  Patient,
+  Practitioner,
+  Procedure,
+  RelatedPerson,
+  Resource,
+  Task,
 } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { uniqWith } from "lodash";
@@ -903,14 +903,28 @@ function createMedicationSection(
   return createSection("Medications", medicalTableContents);
 }
 
+function getDateFormMedicationStatement(v: MedicationStatement): string | undefined {
+  return v.effectivePeriod?.start;
+}
+
 function createSectionInMedications(
   mappedMedications: Record<string, Medication>,
   medicationStatements: MedicationStatement[],
   title: string
 ) {
-  const medicalTableContents =
-    medicationStatements.length > 0
-      ? `
+  if (medicationStatements.length <= 0) {
+    const noMedFound = "No medication info found";
+    return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
+  }
+  const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
+    const aDate = getDateFormMedicationStatement(a);
+    const bDate = getDateFormMedicationStatement(b);
+    if (!aDate && !bDate) return 0;
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    return dayjs(aDate).isBefore(dayjs(bDate)) ? 1 : -1;
+  });
+  const medicalTableContents = `
       <h4>${title}</h4>
       <table>
     <thead>
@@ -926,7 +940,7 @@ function createSectionInMedications(
       </tr>
     </thead>
     <tbody>
-      ${medicationStatements
+      ${medicationStatementsSortedByDate
         .map(medicationStatement => {
           const medicationRefId = medicationStatement.medicationReference?.reference?.split("/")[1];
           const medication = mappedMedications[medicationRefId ?? ""];
@@ -950,17 +964,14 @@ function createSectionInMedications(
           }</td>
               <td>${medicationStatement.status ?? ""}</td>
               <td>${code ?? ""}</td>
-              <td>${formatDateForDisplay(medicationStatement.effectivePeriod?.start)}</td>
+              <td>${formatDateForDisplay(getDateFormMedicationStatement(medicationStatement))}</td>
             </tr>
           `;
         })
         .join("")}
     </tbody>
   </table>
-  `
-      : ` <h4>${title}</h4>       <table>
-      <tbody><tr><td>No medication info found</td></tr></tbody>   </table>`;
-
+  `;
   return medicalTableContents;
 }
 
