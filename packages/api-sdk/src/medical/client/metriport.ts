@@ -293,7 +293,7 @@ export class MetriportMedicalApi {
    * @param conversionType Optional to indicate how the medical record should be rendered.
    * @return The URL for the medical record summary.
    */
-  async getMedicalRecord(
+  async getMedicalRecordSummary(
     patientId: string,
     conversionType: "html" | "pdf"
   ): Promise<{ url: string }> {
@@ -308,11 +308,11 @@ export class MetriportMedicalApi {
   /**
    * Checks for the existence of a medical record summary in either PDF or HTML format, and the date they were created.
    *
-   * @param patientId The ID of the patient whose data is to be returned.
+   * @param patientId The ID of the patient to check the medical record summary for.
    * @return An object with date and boolean values for PDF and HTML versions of the medical record summary.
    */
-  async getMedicalRecordInfo(patientId: string): Promise<MedicalRecordDateAndFormat> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-info`);
+  async getMedicalRecordSummaryStatus(patientId: string): Promise<MedicalRecordDateAndFormat> {
+    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-status`);
     return resp.data;
   }
 

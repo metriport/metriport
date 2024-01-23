@@ -28,7 +28,7 @@ export type ConsolidatedQueryParams = {
   cxConsolidatedRequestMetadata?: unknown;
 } & GetConsolidatedFilters;
 
-export async function getExistingMedicalRecordInfo({
+export async function getMedicalRecordSummaryStatus({
   patientId,
   cxId,
 }: {
@@ -54,7 +54,7 @@ export async function getExistingMedicalRecordInfo({
   };
 }
 
-export async function getExistingMedicalRecord({
+export async function getMedicalRecordSummary({
   patientId,
   cxId,
   conversionType,
@@ -63,7 +63,7 @@ export async function getExistingMedicalRecord({
   cxId: string;
   conversionType: "pdf" | "html";
 }): Promise<string | undefined> {
-  const { pdfExists, htmlExists } = await getExistingMedicalRecordInfo({ patientId, cxId });
+  const { pdfExists, htmlExists } = await getMedicalRecordSummaryStatus({ patientId, cxId });
 
   if ((conversionType === "pdf" && pdfExists) || (conversionType === "html" && htmlExists)) {
     const extension =

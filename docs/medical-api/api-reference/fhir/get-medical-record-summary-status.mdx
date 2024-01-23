@@ -1,7 +1,7 @@
 ---
-title: "Get Medical Record Summary Info"
+title: "Get Medical Record Summary Status"
 description: "Check if a Medical Record Summary for a patient already exists, and when it was generated."
-api: "GET /patient/:id/medical-record-info"
+api: "GET /patient/:id/medical-record-status"
 ---
 
 This endpoint checks whether the patient's Medical Record Summary already exists in the PDF and HTML formats.
@@ -25,7 +25,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const info = await metriport.getMedicalRecordInfo(
+const info = await metriport.getMedicalRecordSummaryStatus(
   "018a80c4-292a-7486-a223-6dcbc636c44c"
 );
 ```

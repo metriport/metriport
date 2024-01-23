@@ -12,8 +12,8 @@ import {
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
 import {
-  getExistingMedicalRecord,
-  getExistingMedicalRecordInfo,
+  getMedicalRecordSummary,
+  getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
@@ -331,13 +331,13 @@ router.get(
     const type = getFrom("query").orFail("conversionType", req);
     const conversionType = consolidationConversionTypeSchema.parse(type);
 
-    const url = await getExistingMedicalRecord({ patientId, cxId, conversionType });
+    const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
     return res.json({ url });
   })
 );
 
 /**
- * GET /patient/:id/medical-record-info
+ * GET /patient/:id/medical-record-status
  *
  * Checks if a patient's medical record summary exists in either PDF or HTML format and the date it was created.
  *
@@ -345,12 +345,12 @@ router.get(
  * @param req.param.id The ID of the patient whose data is to be returned.
  */
 router.get(
-  "/:id/medical-record-info",
+  "/:id/medical-record-status",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
-    const info = await getExistingMedicalRecordInfo({ patientId, cxId });
-    return res.json(info);
+    const status = await getMedicalRecordSummaryStatus({ patientId, cxId });
+    return res.json(status);
   })
 );
 

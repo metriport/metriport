@@ -3,36 +3,39 @@ title: "Medical Record Summary"
 description: "Consolidate Medical Records Into a Single Document"
 ---
 
-This guide will teach you how to generate a Medical Record Summary, which condenses all of patients' medical records into a single document. 
+This guide will teach you how to generate a Medical Record Summary, which condenses all of patients' medical records into a single document.
 
-To do this, Metriport extracts FHIR resources across all available CDA documents for a patient and de-duplicates them, resulting in a set of unique medical records, which are then written into HTML and PDF files, making them extremely easy to navigate. 
+To do this, Metriport extracts FHIR resources across all available CDA documents for a patient and de-duplicates them, resulting in a set of unique medical records, which are then written into HTML and PDF files, making them extremely easy to navigate.
 
-Here's the title page of an example Medical Record Summary: 
+Here's the title page of an example Medical Record Summary:
 
 <img className="h-100" src="/images/example-medical-record.png" />
 
 ## Generate using API
 
-To generate a Medical Record Summary using Metriport API, you need to follow these steps: 
+To generate a Medical Record Summary using Metriport API, you need to follow these steps:
 
 1. Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose what [FHIR resources](/medical-api/fhir/overview) and what date range you want to include into the summary. When this query completes, a [webhook](/medical-api/more-info/webhooks) with a JSON payload containing all these resources will be sent to you.
 
 <Tip>
-  Once the query is kicked off, you can monitor its status using the [Get Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
-</Tip> 
+  Once the query is kicked off, you can monitor its status using the [Get Consolidated Data Query
+  Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
+</Tip>{" "}
 
 2. Download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
 
-<Tip> 
-  Prior to creating or downloading a new Medical Record Summary, you can check when it was created, and whether it's available in either PDF or HTML format using the [Get Medical Record Summary Info](/medical-api/api-reference/fhir/get-medical-record-summary-info) endpoint.
+<Tip>
+  Prior to creating or downloading a new Medical Record Summary, you can check when it was created,
+  and whether it's available in either PDF or HTML format using the [Get Medical Record Summary
+  Status](/medical-api/api-reference/fhir/get-medical-record-summary-status) endpoint.
 </Tip>
 
 ## Generate using the Dashboard
 
-To generate a Medical Record Summary from the dashboard, you need to navigate to the patient's document section as follows: 
+To generate a Medical Record Summary from the dashboard, you need to navigate to the patient's document section as follows:
 
 <img className="h-100" src="/images/dashboard-patient.png" />
 
-Then, select whether you want to download a new or a previously-generated (if such is available) Medical Record Summary, and click the button with the desired format to initiate the download. 
+Then, select whether you want to download a new or a previously-generated (if such is available) Medical Record Summary, and click the button with the desired format to initiate the download.
 
 <img className="h-100" src="/images/dashboard-documents.png" />
