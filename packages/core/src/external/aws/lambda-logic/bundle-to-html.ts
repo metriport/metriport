@@ -980,14 +980,16 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
   const conditionDateDict = getConditionDatesFromEncounters(encounter);
 
   const removeDuplicate = uniqWith(conditions, (a, b) => {
-    const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
-    const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
     const aText = a.code?.text;
     const bText = b.code?.text;
 
-    if (aText === undefined || bText === undefined) {
+    if (aText == undefined || bText == undefined) {
       return false;
     }
+
+    const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
+    const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
+
     return aDate === bDate && aText === bText;
   })
     .reduce((acc, condition) => {
@@ -1007,7 +1009,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         onsetStartTime = conditionDateDict[condition.id]?.start ?? "";
       }
       if (!onsetEndTime && condition.id) {
-        onsetEndTime = condition.onsetPeriod?.end ?? conditionDateDict[condition.id]?.end ?? "";
+        onsetEndTime = conditionDateDict[condition.id]?.end ?? "";
       }
 
       const newCondition: RenderCondition = {
@@ -1044,12 +1046,12 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       const conditionCode = condition.code;
       const conditionDate = condition.firstSeen;
 
-      if (conditionText === undefined || conditionCode === undefined) {
+      if (conditionText == undefined || conditionCode == undefined) {
         return acc;
       }
 
       const existingCondition = acc.find(existingCondition => {
-        const existingConditionText = existingCondition?.name;
+        const existingConditionText = existingCondition.name;
         const existingConditionCode = existingCondition.code;
 
         return existingConditionText === conditionText && existingConditionCode === conditionCode;
