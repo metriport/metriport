@@ -1834,7 +1834,7 @@ function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]
 
 function renderFamilyHistoryConditions(familyMemberHistory: FamilyMemberHistory) {
   return familyMemberHistory.condition?.map(condition => {
-    return condition.code?.text;
+    return condition.code?.text ?? condition.code?.coding?.[0]?.display;
   });
 }
 
