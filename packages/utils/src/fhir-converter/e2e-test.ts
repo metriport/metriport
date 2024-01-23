@@ -8,7 +8,6 @@ import {
   resourcesSearchableBySubject,
   ResourceTypeForConsolidation,
 } from "@metriport/api-sdk";
-import { parseS3FileName } from "@metriport/core/external/aws/s3";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/shared";
@@ -21,6 +20,7 @@ import duration from "dayjs/plugin/duration";
 import path from "path";
 import { getFileContents, getFileNames, makeDir, writeFileContents } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
+import { convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 
 dayjs.extend(duration);
@@ -70,7 +70,6 @@ let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
 const fhirExtension = `__${timestamp}.json`;
 const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
-let countNonXMLBody = 0;
 
 type Params = {
   cleanup?: boolean;
@@ -108,9 +107,16 @@ export async function main() {
   console.log(`Found ${ccdaFileNames.length} XML files.`);
 
   // Convert them into JSON files
-  await convertCDAsToFHIR(ccdaFileNames);
-  if (countNonXMLBody > 0) {
-    console.log(`>>> ${countNonXMLBody} files were skipped because they have nonXMLBody`);
+  const { nonXMLBodyCount } = await convertCDAsToFHIR(
+    ccdaFileNames,
+    parallelConversions,
+    startedAt,
+    converterApi,
+    fhirExtension,
+    logsFolderName
+  );
+  if (nonXMLBodyCount > 0) {
+    console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
   }
 
   if (!useFhirServer) {
@@ -162,66 +168,6 @@ function storeStats(stats: any) {
       2
     )
   );
-}
-
-async function convertCDAsToFHIR(fileNames: string[]) {
-  console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
-  let errCount = 0;
-  const res = await executeAsynchronously(
-    fileNames,
-    async fileName => {
-      try {
-        await convert(fileName);
-      } catch (error) {
-        errCount++;
-        throw error;
-      }
-    },
-    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true, verbose: false }
-  );
-  const failed = res.filter(r => r.status === "rejected");
-  const reportFailure = errCount > 0 ? ` [${errCount} in ${failed.length} promises]` : "";
-
-  const conversionDuration = Date.now() - startedAt;
-  console.log(
-    `Converted ${fileNames.length - errCount} files in ${conversionDuration} ms.${reportFailure}`
-  );
-}
-
-async function convert(fileName: string) {
-  const patientId = getPatientIdFromFileName(fileName);
-  const fileContents = getFileContents(fileName);
-  if (fileContents.includes("nonXMLBody")) {
-    countNonXMLBody++;
-    console.log(`Skipping ${fileName} because it has nonXMLBody`);
-    return;
-  }
-
-  try {
-    const unusedSegments = false;
-    const invalidAccess = false;
-    const params = { patientId, fileName, unusedSegments, invalidAccess };
-    const url = `/api/convert/cda/ccd.hbs`;
-    const payload = (fileContents ?? "").trim();
-    const res = await converterApi.post(url, payload, {
-      params,
-      headers: { "Content-Type": "text/plain" },
-    });
-    const conversionResult = res.data.fhirResource;
-
-    const destFileName = fileName.replace(".xml", fhirExtension);
-    writeFileContents(destFileName, JSON.stringify(conversionResult));
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.log(`Error converting ${fileName}: ${errorToString(error)}`);
-    throw error;
-  }
-}
-
-function getPatientIdFromFileName(fileName: string) {
-  const parts = parseS3FileName(fileName);
-  if (!parts) return uuidv7();
-  return parts.patientId;
 }
 
 async function createTenant() {

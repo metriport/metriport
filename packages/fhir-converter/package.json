@@ -5,14 +5,14 @@
   "main": "src/index.js",
   "private": true,
   "scripts": {
-    "test": "node --experimental-worker node_modules/mocha/bin/_mocha --reporter-options configFile=mocha.config.json --exit",
-    "coverage": "nyc run test",
+    "test": "nyc node --experimental-worker node_modules/mocha/bin/_mocha --reporter-options configFile=mocha.config.json --exit",
     "build": "npm install",
     "pretest": "node --experimental-worker src/init-service.js",
     "posttest": "eslint {src,test}/**/*.js",
     "prestart": "node --experimental-worker src/init-service.js",
+    "dev": "PORT=8777 nodemon --experimental-worker src/index.js",
     "start": "node --experimental-worker src/index.js",
-    "start-dev": "nodemon --experimental-worker src/index.js 8777",
+    "start-dev": "npm run dev",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint {src,test}/**/*.js"
   },
