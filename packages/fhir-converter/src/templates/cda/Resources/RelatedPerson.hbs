@@ -15,9 +15,14 @@
         ],
         "name":
         [
-        	{{#each (toArray relatedPerson.guardianPerson.name)}}
-        		{{>DataType/HumanName.hbs name=this}},
-            {{/each}}
+            {{#if relatedPerson.guardianPerson}}
+                {{#each (toArray relatedPerson.guardianPerson.name)}}
+                    {{>DataType/HumanName.hbs name=this}},
+                {{/each}}
+            {{/if}}
+            {{#if relatedPerson.associatedPerson}}
+                {{>DataType/HumanName.hbs name=relatedPerson.associatedPerson.name}},
+            {{/if}}
         ],
         "telecom":
         [

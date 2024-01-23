@@ -1844,11 +1844,20 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
     return "";
   }
 
-  const removeDuplicate = uniqWith(relatedPersons, (a, b) => {
+  function getName(relatedPerson: RelatedPerson) {
+    return relatedPerson.name?.[0]?.text ?? "";
+  }
+
+  function getRelationship(relatedPerson: RelatedPerson) {
     return (
-      a.name?.[0]?.family === b.name?.[0]?.family &&
-      a.relationship?.[0]?.coding?.[0]?.display === b.relationship?.[0]?.coding?.[0]?.display
+      relatedPerson.relationship?.[0]?.text ??
+      relatedPerson.relationship?.[0]?.coding?.[0]?.display ??
+      ""
     );
+  }
+
+  const removeDuplicate = uniqWith(relatedPersons, (a, b) => {
+    return getName(a) === getName(b) && getRelationship(a) === getRelationship(b);
   });
 
   const relatedPersonTableContents =
@@ -1869,8 +1878,8 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
         .map(relatedPerson => {
           return `
             <tr>
-              <td>${relatedPerson.name?.[0]?.family ?? ""}</td>
-              <td>${relatedPerson.relationship?.[0]?.coding?.[0]?.display ?? ""}</td>
+              <td>${getName(relatedPerson)}</td>
+              <td>${getRelationship(relatedPerson)}</td>
               <td>${renderRelatedPersonContacts(relatedPerson)?.join(", ") ?? ""}</td>
               <td>${renderRelatedPersonAddresses(relatedPerson)?.join(", ") ?? ""}</td>
             </tr>
