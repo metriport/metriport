@@ -1,7 +1,7 @@
 {
     {{#if patient.religiousAffiliationCode}}
 
-        "url" : "http://hl7.org/fhir/us/core/StructureDefinition/us-core-religion",
+        "url" : "http://hl7.org/fhir/StructureDefinition/patient-religion",
         "valueCodeableConcept": {{>DataType/CodeableConcept.hbs code=patient.religiousAffiliationCode}}
     {{/if}}
 }
