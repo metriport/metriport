@@ -26,7 +26,7 @@
 
         {{#each participant}}
             {{#if this}}
-                {{>Resources/RelatedPerson.hbs relatedPerson=this.associatedEntity ID=(generateUUID (toJsonString this))}},
+                {{>Resources/RelatedPerson.hbs relatedPerson=this.associatedEntity ID=(generateUUID (toJsonString this.associatedEntity))}},
                 {{>References/Patient/link.other.hbs ID=(generateUUID (toJsonString this)) REF=(concat 'RelatedPerson/' (generateUUID (toJsonString this.associatedEntity)))}},
             {{/if}}
         {{/each}}
