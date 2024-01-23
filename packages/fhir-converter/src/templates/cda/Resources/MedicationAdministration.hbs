@@ -9,7 +9,7 @@
             	{{>DataType/Identifier.hbs id=this}}
             {{/each}}
         ],
-        "status":"{{medicationAdministration.statusCode.code}}",
+        "status":{{>ValueSet/MedicationAdministrationStatus.hbs code=medicationAdministration.statusCode.code}},
         "effectivePeriod":
         	{"start":"{{formatAsDateTime medicationAdministration.effectiveTime.low.value}}",
             "end":"{{formatAsDateTime medicationAdministration.effectiveTime.high.value}}"
