@@ -36,7 +36,7 @@ export const downloadDocument = async ({
   if (conversionType && validConversionTypes.includes(conversionType) && bucketName) {
     return getConversionUrl({ fileName, conversionType, bucketName });
   }
-  return getSignedURL({ fileName });
+  return getSignedURL({ fileName, bucketName });
 };
 
 const getConversionUrl = async ({
@@ -134,10 +134,11 @@ export const getSignedURL = async ({
   const url = s3client.getSignedUrl("getObject", {
     // TODO 760 Fix this
     Bucket:
-      bucketName ?? Config.isSandbox()
+      bucketName ??
+      (Config.isSandbox()
         ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           Config.getSandboxSeedBucketName()!
-        : Config.getMedicalDocumentsBucketName(),
+        : Config.getMedicalDocumentsBucketName()),
     Key: fileName,
     Expires: urlExpirationSeconds,
   });
