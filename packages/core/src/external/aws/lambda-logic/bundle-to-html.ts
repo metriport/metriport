@@ -236,7 +236,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createAWESection(diagnosticReports, practitioners, aweVisits)}
           ${createMedicationSection(medications, medicationStatements)}
           ${createDiagnosticReportsSection(diagnosticReports, practitioners, aweVisits)}
-          ${createConditionSection(conditions)}
+          ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
           ${createObservationSocialHistorySection(observationSocialHistory)}
@@ -972,15 +972,23 @@ type RenderCondition = {
   clinicalStatus: string;
 };
 
-function createConditionSection(conditions: Condition[]) {
+function createConditionSection(conditions: Condition[], encounter: Encounter[]) {
   if (!conditions) {
     return "";
   }
 
+  const conditionDateDict = getConditionDatesFromEncounters(encounter);
+
   const removeDuplicate = uniqWith(conditions, (a, b) => {
     const aDate = dayjs(a.onsetDateTime).format(ISO_DATE);
     const bDate = dayjs(b.onsetDateTime).format(ISO_DATE);
-    return aDate === bDate && a.code?.text === b.code?.text;
+    const aText = a.code?.text;
+    const bText = b.code?.text;
+
+    if (aText === undefined || bText === undefined) {
+      return false;
+    }
+    return aDate === bDate && aText === bText;
   })
     .reduce((acc, condition) => {
       const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
@@ -988,11 +996,19 @@ function createConditionSection(conditions: Condition[]) {
         code.system?.toLowerCase().includes(ICD_10_CODE)
       );
 
-      const name = idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? "";
+      const name =
+        idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? condition.code?.text ?? "";
       const onsetDateTime = condition.onsetDateTime ?? "";
       const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code ?? "";
-      const onsetStartTime = condition.onsetPeriod?.start;
-      const onsetEndTime = condition.onsetPeriod?.end;
+      let onsetStartTime = condition.onsetPeriod?.start ?? "";
+      let onsetEndTime = condition.onsetPeriod?.end ?? "";
+
+      if (!onsetStartTime && condition.id) {
+        onsetStartTime = conditionDateDict[condition.id]?.start ?? "";
+      }
+      if (!onsetEndTime && condition.id) {
+        onsetEndTime = condition.onsetPeriod?.end ?? conditionDateDict[condition.id]?.end ?? "";
+      }
 
       const newCondition: RenderCondition = {
         code: codeName,
@@ -1020,6 +1036,34 @@ function createConditionSection(conditions: Condition[]) {
 
       acc.push(newCondition);
 
+      return acc;
+    }, [] as RenderCondition[])
+    // logic to filter out conditions that are duplictates in all but date, and throw away the ones that dont have dates.
+    .reduce((acc, condition) => {
+      const conditionText = condition.name;
+      const conditionCode = condition.code;
+      const conditionDate = condition.firstSeen;
+
+      if (conditionText === undefined || conditionCode === undefined) {
+        return acc;
+      }
+
+      const existingCondition = acc.find(existingCondition => {
+        const existingConditionText = existingCondition?.name;
+        const existingConditionCode = existingCondition.code;
+
+        return existingConditionText === conditionText && existingConditionCode === conditionCode;
+      });
+
+      if (existingCondition) {
+        // If the existing condition doesn't have a date but the new one does, replace it
+        if (!existingCondition.firstSeen && conditionDate) {
+          const index = acc.indexOf(existingCondition);
+          acc[index] = condition;
+        }
+      } else {
+        acc.push(condition);
+      }
       return acc;
     }, [] as RenderCondition[])
     .sort((a, b) => {
@@ -2100,6 +2144,30 @@ function getSpecificCode(coding: Coding[], systemsList: string[]): string | null
   }
 
   return specifiedCode;
+}
+
+function getConditionDatesFromEncounters(
+  encounters: Encounter[]
+): Record<string, { start: string; end: string }> {
+  const conditionDates: Record<string, { start: string; end: string }> = {};
+
+  encounters.forEach(encounter => {
+    if (encounter.diagnosis) {
+      encounter.diagnosis.forEach(diagnosis => {
+        if (diagnosis.condition && diagnosis.condition.reference) {
+          const conditionId = diagnosis.condition.reference.split("/")[1];
+          if (encounter.period && conditionId) {
+            conditionDates[conditionId] = {
+              start: encounter.period.start ?? "",
+              end: encounter.period.end ?? "",
+            };
+          }
+        }
+      });
+    }
+  });
+
+  return conditionDates;
 }
 
 function createSection(title: string, tableContents: string) {
