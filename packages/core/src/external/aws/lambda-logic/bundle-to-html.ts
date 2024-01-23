@@ -1083,7 +1083,7 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       const name =
         idc10Code?.display ?? condition.code?.coding?.[0]?.display ?? condition.code?.text ?? "";
       const onsetDateTime = condition.onsetDateTime ?? "";
-      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code ?? "";
+      const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.display ?? "";
       let onsetStartTime = condition.onsetPeriod?.start ?? "";
       let onsetEndTime = condition.onsetPeriod?.end ?? "";
 
