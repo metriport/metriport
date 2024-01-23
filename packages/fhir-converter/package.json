@@ -4,9 +4,6 @@
   "description": "FHIR converter",
   "main": "src/index.js",
   "private": true,
-  "engines": {
-    "node": ">=14.0 <15.0"
-  },
   "scripts": {
     "test": "nyc node --experimental-worker node_modules/mocha/bin/_mocha --reporter-options configFile=mocha.config.json --exit",
     "build": "npm install",
@@ -14,6 +11,7 @@
     "posttest": "eslint {src,test}/**/*.js",
     "prestart": "node --experimental-worker src/init-service.js",
     "start": "node --experimental-worker src/index.js",
+    "start-dev": "nodemon --experimental-worker src/index.js 8777",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint {src,test}/**/*.js"
   },
@@ -90,33 +88,36 @@
     "mocha-junit-reporter": "^1.23.0",
     "mocha-multi-reporters": "^1.1.7",
     "nyc": "^14.1.1",
+    "openapi-types": "^12.1.3",
     "supertest": "^4.0.2",
     "validator": "^13.7.0"
   },
   "dependencies": {
-    "antlr4": "^4.9.2",
+    "antlr4": "4.9.2",
     "applicationinsights": "^1.4.1",
     "body-parser": "^1.19.0",
     "codemirror": "^5.62.0",
     "cookie-parser": "^1.4.4",
     "deepmerge": "^4.2.2",
     "express": "^4.16.4",
+    "fast-xml-parser": "^4.3.3",
     "fhir": "^4.7.9",
     "fs-extra": "^8.1.0",
     "handlebars": ">= 4.7.7",
     "lodash": "^4.17.21",
     "memory-cache": "^0.2.0",
+    "minify-xml": "3.5.0",
+    "minimist": ">= 1.2.6",
     "ncp": "^2.0.0",
-    "nodegit": "^0.27.0",
+    "nodemon": "^3.0.3",
     "promise": "^8.0.3",
     "pushover-giting": "0.0.3",
     "swagger-jsdoc": "^6.1.0",
-    "swagger-ui-express": "^4.2.0",
     "swagger-ui-dist": ">= 4.1.3",
+    "swagger-ui-express": "^4.2.0",
     "underscore": "^1.13.1",
     "uuid": "^3.3.2",
-    "xml2js": "^0.4.23",
-    "minimist": ">= 1.2.6"
+    "xml2js": "^0.4.23"
   },
   "license": "MIT"
 }

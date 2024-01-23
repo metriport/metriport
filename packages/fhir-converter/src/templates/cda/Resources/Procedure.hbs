@@ -16,13 +16,23 @@
         ],
         "status":{{>ValueSet/EventStatus.hbs code=procedureEntry.statusCode.code}},
         "code":
-            {{#if procedureEntry.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=procedureEntry.code.translation}},
+            {{#if procedureEntry.entryRelationship}}
+                {{#each (toArray procedureEntry.entryRelationship)}}
+                    {{>DataType/CodeableConcept.hbs code=this.observation.value}},
+                {{/each}},
             {{else}}
                 {{>DataType/CodeableConcept.hbs code=procedureEntry.code}},
             {{/if}}
- 
-        "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
+        {{#if procedureEntry.effectiveTime.value}}
+            "performedDateTime":"{{formatAsDateTime procedureEntry.effectiveTime.value}}",
+        {{else}}
+            "performedPeriod": {{>DataType/Period.hbs period=procedureEntry.effectiveTime}},
+        {{/if}}
+        {{#if procedureEntry.text._}}
+            "note": {
+                "text": "{{procedureEntry.text._}}",
+            },
+        {{/if}}
         "bodySite":
         [
             {{>DataType/CodeableConcept.hbs code=procedureEntry.targetSiteCode}},

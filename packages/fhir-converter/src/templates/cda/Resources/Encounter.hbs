@@ -9,14 +9,15 @@
         {{else}}
             "status":"unknown",
         {{/if}}
-        
-        {{#if (elementAt (toArray encounter.code.translation) 0)}}
-            {{#with (elementAt (toArray encounter.code.translation) 0)}}
-                "class":{{>DataType/Coding.hbs code=this}},
-            {{/with}}
-        {{else}}
-            "class":{{>DataType/Coding.hbs code=encounter.code}},     
+
+        {{#if encounter.code}}
+            "reasonCode":
+            [
+                {{>DataType/CodeableConcept.hbs code=encounter.code}}
+            ],
         {{/if}}
+        
+        "class":{{>DataType/Coding.hbs code=encounter.code}},
         
         "type":
         [
