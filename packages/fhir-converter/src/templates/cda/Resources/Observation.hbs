@@ -72,7 +72,7 @@
                 "unit":"{{observationEntry.value.unit}}",
             }, 
         {{else}}
-            "valueString":"{{observationEntry.value._}}",
+            "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
