@@ -7,6 +7,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { addCoordinatesToAddresses } from "./add-coordinates";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -36,6 +37,11 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     externalId,
     data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   };
+  patientCreate.data.address = await addCoordinatesToAddresses({
+    addresses: patientCreate.data.address,
+    patient: patientCreate,
+    reportRelevance: true,
+  });
   const newPatient = await PatientModel.create(patientCreate);
 
   // TODO: #393 declarative, event-based integration

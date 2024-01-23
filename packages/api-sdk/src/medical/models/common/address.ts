@@ -3,6 +3,12 @@ import { usStateSchema } from "./us-data";
 import { defaultOptionalString, defaultString, stripNonNumericChars } from "../../../shared";
 
 const zipLength = 5;
+
+export const geoCoordinateSchema = z.object({
+  lat: z.number(),
+  lon: z.number(),
+});
+
 export const addressSchema = z.object({
   addressLine1: defaultString.min(1, { message: "Address line must be specified." }),
   addressLine2: defaultOptionalString,
@@ -14,6 +20,7 @@ export const addressSchema = z.object({
     .refine(zip => zip.length === zipLength, {
       message: `Zip must be a string consisting of ${zipLength} numbers.`,
     }),
+  coordinates: geoCoordinateSchema.optional(),
   country: z.literal("USA").optional().default("USA"),
 });
 
