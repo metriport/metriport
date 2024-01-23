@@ -1019,9 +1019,9 @@ module.exports.external = [
   },
   {
     name: "parseReferenceData",
-    description: "Escapes new line and other special chars when parsing ._ fields",
+    description: "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
     func: function (referenceData) {
-      if (referenceData === undefined) {
+      if (referenceData == undefined) {
         return "";
       }
       return JSON.stringify(referenceData).slice(1, -1);
