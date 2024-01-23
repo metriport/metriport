@@ -2,6 +2,7 @@
     "fullUrl":"urn:oid:{{ID}}",
     "resource":{
         {{!-- Missing providerOrganization > managingOrganization --}}
+        {{log (toJsonStringPrettier patientRole)}}
         "resourceType": "Patient",
         "meta": {
             "profile": [
@@ -22,6 +23,7 @@
             {{/each}}
         ],
         "birthDate":"{{addHyphensDate patientRole.patient.birthTime.value}}",
+        "deceased":"{{patientRole.patient.s:deceasedInd.value}}",
         {{#with patientRole.patient.administrativeGenderCode}}
             {{#if this.displayName}}
                 "gender":{{>ValueSet/AdministrativeGender.hbs code=this.displayName}},
@@ -32,6 +34,7 @@
         "extension" : [
             {{>Extensions/Race.hbs patient=patientRole.patient}},
             {{>Extensions/Ethnicity.hbs patient=patientRole.patient}},
+            {{>Extensions/Religion.hbs patient=patientRole.patient}}
         ],
         "maritalStatus":{{>DataType/CodeableConcept.hbs code=patientRole.patient.maritalStatusCode}},
         "address":
