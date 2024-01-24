@@ -32,7 +32,7 @@ export async function convertCDAsToFHIR(
         }
       }
     },
-    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true, verbose: false }
+    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true }
   );
   const reportFailure = errorCount > 0 ? ` [${errorCount} errors]` : "";
 
