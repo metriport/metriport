@@ -97,6 +97,7 @@ export async function convertCDAToFHIR(params: {
       unusedSegments: `${keepUnusedSegments}`,
       invalidAccess: `${keepInvalidAccess}`,
       requestId,
+      source,
     });
   } catch (error) {
     log(`Error requesting CDA to FHIR conversion: ${error}`, params);
