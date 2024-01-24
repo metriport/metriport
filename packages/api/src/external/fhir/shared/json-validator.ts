@@ -7,7 +7,7 @@ import BadRequestError from "../../../errors/bad-request";
 
 type Error = {
   resourceType: string;
-  errors: ErrorObject[] | null | undefined;
+  errors: ErrorObject[] | null | undefined | string[];
 };
 
 const ajv = new Ajv({
@@ -25,6 +25,9 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
   const errors: Error[] = [];
 
   for (const entry of bundle.entry) {
+    if (!entry.resource) {
+      throw new BadRequestError(`Missing FHIR resource top level object`);
+    }
     const resourceType = entry.resource.resourceType;
 
     const isValid = validate(entry.resource);
