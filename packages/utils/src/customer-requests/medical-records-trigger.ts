@@ -12,9 +12,13 @@ import { formatNumber } from "@metriport/shared/common/numbers";
 dayjs.extend(duration);
 
 /**
- * WIP
+ * Script to trigger the generation of consolidated medical records for a list of patients.
  *
- * To run this script, set the env vars, the date range, system/exam code, and the list of patient IDs below.
+ * To run this script, set:
+ * - the list of patient IDs
+ * - the env vars
+ * - the date range (if needed)
+ * - the resources to include (if needed, default is all)
  */
 
 const patientIds: string[] = [];
@@ -48,7 +52,7 @@ async function main() {
   const startedAt = Date.now();
 
   for (const patientId of patientIds) {
-    console.log(`Callig for patient ${patientId}...`);
+    console.log(`Calling for patient ${patientId}...`);
     await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
       params: { resources: resources && resources.join(","), fromDate, toDate, conversionType },
     });
