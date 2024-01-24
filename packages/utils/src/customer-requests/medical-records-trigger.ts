@@ -7,10 +7,9 @@ import axios, { CreateAxiosDefaults } from "axios";
 import base64url from "base64url";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import isBetween from "dayjs/plugin/isBetween";
+import { formatNumber } from "@metriport/shared/common/numbers";
 
 dayjs.extend(duration);
-dayjs.extend(isBetween);
 
 /**
  * WIP
@@ -18,7 +17,6 @@ dayjs.extend(isBetween);
  * To run this script, set the env vars, the date range, system/exam code, and the list of patient IDs below.
  */
 
-const cxId = "";
 const patientIds: string[] = [];
 
 // The date range is inclusive on both ends
@@ -28,10 +26,10 @@ const toDate = undefined;
 const resources: string[] | undefined = undefined;
 const conversionType = "pdf";
 
-const timeBetweenPatients = 5_000;
-
+const cxId = getEnvVarOrFail("CX_ID");
 const apiUrl = getEnvVarOrFail("API_URL");
 
+const timeBetweenPatients = 2_000;
 const axiosConfig: CreateAxiosDefaults = {
   timeout: 120_000,
   baseURL: apiUrl,
@@ -42,10 +40,15 @@ const axiosConfig: CreateAxiosDefaults = {
 const api = axios.create(axiosConfig);
 
 async function main() {
-  console.log(`########################## Running... - started at ${new Date().toISOString()}`);
+  console.log(
+    `########################## Running for cx ${cxId}, ${
+      patientIds.length
+    } patients... - started at ${new Date().toISOString()}`
+  );
   const startedAt = Date.now();
 
   for (const patientId of patientIds) {
+    console.log(`Callig for patient ${patientId}...`);
     await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
       params: { resources: resources && resources.join(","), fromDate, toDate, conversionType },
     });
@@ -53,7 +56,7 @@ async function main() {
   }
 
   const duration = Date.now() - startedAt;
-  const durationMin = dayjs.duration(duration).asMinutes();
+  const durationMin = formatNumber(dayjs.duration(duration).asMinutes());
   console.log(`########################## Total time: ${duration} ms / ${durationMin} min`);
 }
 
