@@ -39,8 +39,9 @@ const converterApi = Axios.create({ baseURL: converterBaseUrl });
 
 let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
-const fhirExtension = `__${timestamp}.json`;
+const fhirExtension = `.json`;
 const logsFolderName = `runs/convert-and-generate-mr/${timestamp}`;
+const outputFolderName = `${logsFolderName}/output`;
 
 export async function main() {
   await sleep(100);
@@ -51,23 +52,27 @@ export async function main() {
   );
   console.log(`Log folder: ${logsFolderName}`);
   makeDir(logsFolderName);
+  makeDir(outputFolderName);
 
   // Get XML files
   const ccdaFileNames = getFileNames({
-    folder: folder,
+    folder,
     recursive: true,
     extension: "xml",
   });
   console.log(`Found ${ccdaFileNames.length} XML files.`);
 
+  const relativeFileNames = ccdaFileNames.map(f => f.replace(folder, ""));
+
   // Convert them into JSON files
   const { nonXMLBodyCount } = await convertCDAsToFHIR(
-    ccdaFileNames,
+    folder,
+    relativeFileNames,
     parallelConversions,
     startedAt,
     converterApi,
     fhirExtension,
-    logsFolderName
+    outputFolderName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
@@ -75,7 +80,7 @@ export async function main() {
 
   // Consolidate all bundles' resources into a single bundle
   const resources = await getResourcesPerDirectory(folder, fhirExtension);
-  const bundleFileName = `${logsFolderName}/bundle.json`;
+  const bundleFileName = `${outputFolderName}/bundle.json`;
   const bundle: Bundle<Resource> = {
     resourceType: "Bundle",
     entry: resources,
@@ -85,7 +90,7 @@ export async function main() {
   // Generate MR summary
   console.log(`Generating MR summary...`);
   const html = bundleToHtml(bundle);
-  const htmlFileName = `${logsFolderName}/bundle.html`;
+  const htmlFileName = `${outputFolderName}/bundle.html`;
   console.log(`Generated, writing it to ${htmlFileName}...`);
   writeFileContents(htmlFileName, html);
 

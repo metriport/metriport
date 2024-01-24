@@ -58,3 +58,9 @@ export function writeFileContents(fileName: string, contents: string): void {
 export function makeDir(dir: string): void {
   fs.mkdirSync(dir, { recursive: true });
 }
+
+export function makeDirIfNeeded(fileName: string, base = "") {
+  if (!fileName.includes("/")) return;
+  const dirName = fileName.split("/").slice(0, -1).join("/");
+  makeDir(path.join(base, dirName));
+}
