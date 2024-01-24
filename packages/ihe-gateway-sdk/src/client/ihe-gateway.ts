@@ -1,9 +1,9 @@
 import axios, { AxiosInstance } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { PatientDiscoveryRequestOutgoing } from "../models/patient-discovery";
-import { DocumentQueryRequestOutgoing } from "../models/document-query";
-import { DocumentRetrievalRequestOutgoing } from "../models/document-retrieval";
+import { PatientDiscoveryReqToExternalGW } from "../models/patient-discovery/patient-discovery-requests";
+import { DocumentQueryReqToExternalGW } from "../models/document-query/document-query-requests";
+import { DocumentRetrievalReqToExternalGW } from "../models/document-retrieval/document-retrieval-requests";
 
 dayjs.extend(duration);
 
@@ -41,42 +41,42 @@ export class IHEGateway {
    * Patient Discovery (XCPD ITI-55) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-55.html
    *
-   * @param PatientDiscoveryRequestOutgoing A patient discovery transaction request to IHE Gateway.
+   * @param patientDiscoveryReqToExternalGW A patient discovery transaction request to IHE Gateway.
    *
    */
   async startPatientDiscovery(
-    patientDiscoveryRequestOutgoing: PatientDiscoveryRequestOutgoing
+    patientDiscoveryReqToExternalGW: PatientDiscoveryReqToExternalGW
   ): Promise<void> {
-    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryRequestOutgoing);
+    await this.api.post(IHEGateway.PATIENT_DISCOVERY_ENDPOINT, patientDiscoveryReqToExternalGW);
   }
 
   /**
    * Query Documents (XCA-ITI-38) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-38.html
    *
-   * @param DocumentQueryRequestOutgoing An array of document query transaction requests.
+   * @param documentQueryReqToExternalGW An array of document query transaction requests.
    *
    */
   async startDocumentsQuery({
-    documentQueryRequestOutgoing,
+    documentQueryReqToExternalGW,
   }: {
-    documentQueryRequestOutgoing: DocumentQueryRequestOutgoing[];
+    documentQueryReqToExternalGW: DocumentQueryReqToExternalGW[];
   }): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryRequestOutgoing);
+    await this.api.post(IHEGateway.DOCUMENT_QUERY_ENDPOINT, documentQueryReqToExternalGW);
   }
 
   /**
    * Retrieve Documents (XCA-ITI-39) request.
    * https://profiles.ihe.net/ITI/TF/Volume2/ITI-39.html
    *
-   * @param documentRetrieval An array of document retrieval transaction requests.
+   * @param documentRetrievalReqToExternalGW An array of document retrieval transaction requests.
    *
    */
   async startDocumentsRetrieval({
-    documentRetrievalRequestOutgoing,
+    documentRetrievalReqToExternalGW,
   }: {
-    documentRetrievalRequestOutgoing: DocumentRetrievalRequestOutgoing[];
+    documentRetrievalReqToExternalGW: DocumentRetrievalReqToExternalGW[];
   }): Promise<void> {
-    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalRequestOutgoing);
+    await this.api.post(IHEGateway.DOCUMENT_RETRIEVAL_ENDPOINT, documentRetrievalReqToExternalGW);
   }
 }

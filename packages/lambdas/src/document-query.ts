@@ -1,9 +1,10 @@
 import { getEnvVar } from "@metriport/core/util/env-var";
 import {
-  DocumentQueryRequestIncoming,
-  documentQueryRequestIncomingSchema,
-  DocumentQueryResponseOutgoing,
-  DocumentReference,
+  DocumentQueryReqFromExternalGW,
+  documentQueryReqFromExternalGWSchema,
+  DocumentQueryRespToExternalGW,
+  DocumentQueryRespToExternalGWSuccessful,
+  DocumentQueryRespToExternalGWFault,
 } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 
@@ -13,12 +14,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
 // Function to extract necessary fields and construct the responses.
 async function processRequest(
-  payload: DocumentQueryRequestIncoming
-): Promise<DocumentQueryResponseOutgoing> {
+  payload: DocumentQueryReqFromExternalGW
+): Promise<DocumentQueryRespToExternalGW> {
   console.log(`Running with payload: ${JSON.stringify(payload)}; version: ${version}`);
 
   // Randomly return error or success response
-  const xca = documentQueryRequestIncomingSchema.parse(payload);
+  const xca = documentQueryReqFromExternalGWSchema.parse(payload);
   if (Math.random() > 0.5) {
     return constructErrorResponse(xca);
   }
@@ -27,8 +28,8 @@ async function processRequest(
 
 // Function to construct error response.
 function constructErrorResponse(
-  payload: DocumentQueryRequestIncoming
-): DocumentQueryResponseOutgoing {
+  payload: DocumentQueryReqFromExternalGW
+): DocumentQueryRespToExternalGWFault {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -49,21 +50,12 @@ function constructErrorResponse(
 
 // Function to construct success response.
 function constructSuccessResponse(
-  payload: DocumentQueryRequestIncoming
-): DocumentQueryResponseOutgoing {
-  const documentReference: DocumentReference = {
-    homeCommunityId: "1.2.3.4.5.6.7.8.9",
-    docUniqueId: "123456789",
-    urn: "urn:oid:1.2.3.4.5.6.7.8.9",
-    repositoryUniqueId: "123456789",
-    contentType: "application/pdf",
-    url: "http://example.com/document.pdf",
-  };
-
+  payload: DocumentQueryReqFromExternalGW
+): DocumentQueryRespToExternalGWSuccessful {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
-    documentReference: [documentReference],
+    extrinsicObjectXmls: [""],
   };
 }
