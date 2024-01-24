@@ -20,12 +20,12 @@
         [
             {
                 "text":"{{medicationStatement.text._}}",
-                "routeCode":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
+                "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                 {
                     "doseQuantity":
                     {
-                        "value":{{medicationStatement.doseQuantity.value}},
+                        "value":"{{medicationStatement.doseQuantity.value}}",
                         "unit":"{{medicationStatement.doseQuantity.unit}}"
                     }
                 },

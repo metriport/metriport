@@ -68,11 +68,11 @@
         {{else if observationEntry.value.value}}
             "valueQuantity":
             {
-                "value":{{observationEntry.value.value}},
+                "value":"{{observationEntry.value.value}}",
                 "unit":"{{observationEntry.value.unit}}",
             }, 
         {{else}}
-            "valueString":"{{observationEntry.value._}}",
+            "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
