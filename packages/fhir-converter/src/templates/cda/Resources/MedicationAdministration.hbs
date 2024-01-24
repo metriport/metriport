@@ -20,12 +20,12 @@
                 "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}}
                 "dose":
                 {
-                    "value":{{medicationAdministration.doseQuantity.value}},
+                    "value":"{{medicationAdministration.doseQuantity.value}}",
                     "unit":"{{medicationAdministration.doseQuantity.unit}}"
                 }
                 "rateQuantity":
                 {
-                    "value":{{medicationAdministration.rateQuantity.value}}
+                    "value":"{{medicationAdministration.rateQuantity.value}}",
                     "unit":"{{medicationAdministration.rateQuantity.unit}}"
                 }
 
