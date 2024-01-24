@@ -2,11 +2,12 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
 import { sleep } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { uniq } from "lodash";
+import { uniqBy } from "lodash";
 import { getFileContentsAsync, getFileNames } from "../shared/fs";
 
 dayjs.extend(duration);
@@ -15,7 +16,7 @@ dayjs.extend(duration);
  * Script to count the number of resources and references, including missing ones, in FHIR bundles.
  */
 
-const folderName = ``;
+const folderName: string = ``; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 // keep empty to include all references
 const referencesToInclude: ResourceType[] = [];
@@ -28,15 +29,18 @@ const referencesToInclude: ResourceType[] = [];
 //   "Medication",
 // ];
 
-const referenceRegex = new RegExp(/"reference":\s*"(.+?)"/g);
-
 let totalResources = 0;
 let totalReferences = 0;
 let totalMissingReferences = 0;
 
-export async function main() {
+async function main() {
   await sleep(100);
   const startedAt = Date.now();
+
+  if (!folderName || folderName.trim().length <= 0) {
+    console.log(`Missing folder name`);
+    process.exit(1);
+  }
 
   console.log(`Running  - started at ${new Date().toISOString()}`);
 
@@ -66,7 +70,7 @@ export async function main() {
 
 async function executeForFile(fileName: string) {
   console.log(`File ${fileName}`);
-  const { resources, raw } = await getResources(fileName);
+  const { resources } = await getResources(fileName);
   for (const resource of resources) {
     const resId = resource.id;
     if (!resId) {
@@ -74,25 +78,23 @@ async function executeForFile(fileName: string) {
       return;
     }
   }
-  const resourceIds = resources.flatMap(r => r.id ?? []);
-  const references = getReferencesFromRaw(raw);
-  const refIds = references.map(r => r.id);
-  const missingRefs: string[] = [];
-  for (const ref of references) {
-    if (!resourceIds.includes(ref.id)) {
-      missingRefs.push(ref.resourceType);
-    }
-  }
-  const uniqueRefs = uniq(missingRefs);
+
+  const { references, missingReferences } = getReferencesFromResources({
+    resources,
+    referencesToInclude,
+  });
 
   totalResources += resources.length;
-  totalReferences += refIds.length;
-  totalMissingReferences += missingRefs.length;
+  totalReferences += references.length;
+  totalMissingReferences += missingReferences.length;
 
   console.log(
-    `... ${resources.length} resources, ${refIds.length} refs, ${missingRefs.length} missing refs`
+    `... ${resources.length} resources, ${references.length} refs, ${missingReferences.length} missing refs`
   );
-  console.log(`... ... Missing refs: ${uniqueRefs.length ? uniqueRefs.join(", ") : "none"}`);
+  const missingRefTypes = uniqBy(missingReferences, r => r.type).map(r => r.type);
+  console.log(
+    `... ... Missing refs: ${missingRefTypes.length ? missingRefTypes.join(", ") : "none"}`
+  );
 }
 
 async function getResources(fileName: string): Promise<{ resources: Resource[]; raw: string }> {
@@ -106,22 +108,6 @@ async function getResources(fileName: string): Promise<{ resources: Resource[]; 
   }
   const entries = bundle.entry ?? [];
   return { resources: entries.flatMap(e => e.resource ?? []) ?? [], raw: contents };
-}
-
-function getReferencesFromRaw(rawContents: string) {
-  const matches = rawContents.matchAll(referenceRegex);
-  const references = [];
-  for (const match of matches) {
-    const ref = match[1];
-    if (ref) references.push(ref);
-  }
-  const uniqueRefs = uniq(references);
-  const preResult = uniqueRefs.map(r => {
-    const parts = r.split("/");
-    return { resourceType: parts[0], id: parts[1], reference: r };
-  });
-  if (referencesToInclude.length === 0) return preResult;
-  return preResult.filter(r => referencesToInclude.includes(r.resourceType as ResourceType));
 }
 
 main().then(() => {
