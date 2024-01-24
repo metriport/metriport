@@ -4,14 +4,38 @@
   {{#if normalizedCode}}
     {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
       "stopped"
-    {{else if (eq normalizedCode "ordered")}}
+    {{else if (eq normalizedCode "stopped")}}
+      "stopped"
+    {{else if (eq normalizedCode "failed")}}
+      "stopped"
+    {{else if (eq normalizedCode "active")}}
       "active"
+    {{else if (eq normalizedCode "intended")}}
+      "intended"
+    {{else if (eq normalizedCode "planned")}}
+      "intended"
+    {{else if (eq normalizedCode "ordered")}}
+      "intended"
+    {{else if (eq normalizedCode "entered-in-error")}}
+      "entered-in-error"
     {{else if (eq normalizedCode "nullified")}}
       "entered-in-error"
+    {{else if (eq normalizedCode "error")}}
+      "entered-in-error"
+    {{else if (eq normalizedCode "on-hold")}}
+      "on-hold"
     {{else if (eq normalizedCode "suspended")}}
       "on-hold"
+    {{else if (eq normalizedCode "not-taken")}}
+      "not-taken"
+    {{else if (eq normalizedCode "not-done")}}
+      "not-taken"
+    {{else if (eq normalizedCode "complete")}}
+      "completed"
+    {{else if (eq normalizedCode "completed")}}
+      "completed"
     {{else}}
-      "{{normalizedCode}}"
+      "unknown"
     {{/if}}
   {{/if}}
 {{/with}}
