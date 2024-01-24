@@ -57,9 +57,10 @@ function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
 }
 
-function replaceIDs(fhirBundle: FHIRBundle): FHIRBundle {
+function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
+    if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -399,7 +400,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             });
           }
         } else {
-          conversionResult = replaceIDs(conversionResult);
+          conversionResult = replaceIDs(conversionResult, patientId);
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
           addMissingRequests(conversionResult);
