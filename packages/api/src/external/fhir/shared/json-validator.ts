@@ -7,7 +7,7 @@ import BadRequestError from "../../../errors/bad-request";
 
 type Error = {
   resourceType: string;
-  errors: ErrorObject[] | null | undefined | string[];
+  errors: ErrorObject[] | null | undefined;
 };
 
 const ajv = new Ajv({
