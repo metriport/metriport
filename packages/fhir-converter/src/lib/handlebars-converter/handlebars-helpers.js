@@ -849,7 +849,7 @@ module.exports.external = [
       try {
         return getDateTime(dateTimeString);
       } catch (err) {
-        throw `helper "formatAsDateTime" : ${err}`;
+        console.log(`helper "formatAsDateTime" : ${err}`);
       }
     },
   },
