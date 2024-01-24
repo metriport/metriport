@@ -49,7 +49,6 @@ export const documentQueryRespFromExternalGWSchema = z.union([
 export type DocumentQueryRespFromExternalGW = z.infer<typeof documentQueryRespFromExternalGWSchema>;
 
 export function isDocumentQueryResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj: BaseResponse
 ): obj is DocumentQueryRespFromExternalGW & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;

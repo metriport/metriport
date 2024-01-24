@@ -53,7 +53,6 @@ export type DocumentRetrievalRespFromExternalGW = z.infer<
 >;
 
 export function isDocumentRetrievalResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj: BaseResponse
 ): obj is DocumentRetrievalRespFromExternalGW & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
