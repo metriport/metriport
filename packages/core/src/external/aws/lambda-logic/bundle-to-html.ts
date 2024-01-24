@@ -1599,6 +1599,15 @@ function createObservationsByDate(observations: Observation[]): string {
       </thead>
       <tbody>
         ${tables.observations
+          .filter(observation => {
+            const observationDisplay = observation.code?.coding?.find(coding => {
+              return coding.display
+            })
+
+            const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
+
+            return !!hasDisplayValue;
+          })
           .map(observation => {
             const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE, LOINC_CODE]);
             const blacklistReferenceRange = blacklistReferenceRangeText.find(referenceRange => {
@@ -1613,9 +1622,13 @@ function createObservationsByDate(observations: Observation[]): string {
                   observation.referenceRange?.[0]?.high?.unit ?? ""
                 }`;
 
+            const observationDisplay = observation.code?.coding?.find(coding => {
+              return coding.display
+            })
+
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${observationDisplay?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${observation.interpretation?.[0]?.text ?? ""}</td>
                 <td>${
