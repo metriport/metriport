@@ -25,10 +25,12 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
   const errors: Error[] = [];
 
   for (const entry of bundle.entry) {
-    if (!entry.resource) {
-      throw new BadRequestError(`Missing FHIR resource top level object`);
-    }
     const resourceType = entry.resource.resourceType;
+    if (typeof resourceType !== "string") {
+      throw new BadRequestError("Resource type must be a string", undefined, {
+        actualType: typeof resourceType,
+      });
+    }
 
     const isValid = validate(entry.resource);
 
