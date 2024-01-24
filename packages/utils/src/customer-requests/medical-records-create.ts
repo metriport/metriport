@@ -3,10 +3,16 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, DocumentReference } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { errorToString } from "@metriport/shared/common/error";
+import { formatNumber } from "@metriport/shared/common/numbers";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import https from "https";
-import { getCxData } from "./shared/get-cx-data";
+import { getCxData } from "../shared/get-cx-data";
+
+dayjs.extend(duration);
 
 /**
  * Utility to generate Medical Records for a subset of a customer's patients.
@@ -31,34 +37,44 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
-const getDirName = (orgName: string) => `./runs/${orgName?.replaceAll(" ", "-")}_MR-Summaries`;
+const getDirName = (orgName: string) =>
+  `./runs/MR-Summaries/${orgName?.replaceAll(" ", "-")}_${new Date().toISOString()}`;
 
 async function main() {
+  console.log(
+    `########################## Running for cx ${cxId}, ${
+      patientIds.length
+    } patients... - started at ${new Date().toISOString()}`
+  );
   const startedAt = Date.now();
 
   const { orgName } = await getCxData(cxId, undefined, false);
   const dirName = getDirName(orgName);
   fs.mkdirSync(`./${dirName}`, { recursive: true });
+  console.log(`Storing files on dir ${dirName}`);
 
-  console.log(`>>> Starting with ${patientIds.length} patient IDs...`);
   for (const patientId of patientIds) {
+    const log = (msg: string) => console.log(`${new Date().toISOString()} [${patientId}] ${msg}`);
+    const patientStartedAt = Date.now();
     try {
-      console.log(`>>> Getting MR for patient ${patientId}...`);
+      log(`>>> Generating MR...`);
       const url = await getMedicalRecordURL(patientId);
       if (!url) {
-        console.log(`No Medical Record URL for patient ${patientId}, skipping...`);
+        log(`No Medical Record URL, skipping...`);
         continue;
       }
-
-      console.log(`>>> Downloading the MR file of ${patientId}...`);
+      const timeToMakeMR = Date.now() - patientStartedAt;
+      log(`... Got MR URL in ${timeToMakeMR} ms, downloading the MR file...`);
       await downloadFile(url, patientId, dirName);
 
-      console.log(">>> Completed patient ", patientId);
+      log("... Patient is done.");
     } catch (error) {
-      console.log(`Error downloading MR for patient ${patientId}: ${error}`);
+      log(`Error downloading MR: ${errorToString(error)}`);
     }
   }
-  console.log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+  const duration = Date.now() - startedAt;
+  const durationMin = formatNumber(dayjs.duration(duration).asMinutes());
+  console.log(`>>> Done all patients in ${Date.now() - startedAt} ms / ${durationMin} min`);
 }
 
 async function getMedicalRecordURL(patientId: string): Promise<string | undefined> {
