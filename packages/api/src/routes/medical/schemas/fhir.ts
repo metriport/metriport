@@ -9,7 +9,7 @@ const typeSchema = z.enum(["collection"]);
 
 const bundleEntrySchema = z.array(
   z.object({
-    resource: z.object({}).nonstrict(),
+    resource: z.any().refine(value => value !== undefined, { message: "Resource is required" }),
   })
 );
 
