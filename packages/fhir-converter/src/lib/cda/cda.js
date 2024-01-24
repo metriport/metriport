@@ -61,7 +61,7 @@ module.exports = class cda extends dataHandler {
 
           if (existingIsB64) {
             // if we already have a b64 string, just use it, as the reference will be a dup
-            obj[key] = { _: this.removeLineBreaks(existingText) };
+            obj[key] = { _b64: this.removeLineBreaks(existingText) };
           }
           // we found the prop, change it's value to the reference text
           else if (value.reference && value.reference.value) {
@@ -147,14 +147,14 @@ module.exports = class cda extends dataHandler {
             this.findAndReplaceAllReferencesWithTextValues(result);
             result._originalData = data;
             fulfill(result);
-            // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+            fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
           });
         } else {
           this.findAndReplaceAllReferencesWithTextValues(result);
           result._originalData = minifiedData;
           fulfill(result);
         }
-        // fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
+        fs.writeFileSync(`../../JSON.json`, JSON.stringify(result, null, 2));
       });
 
       // ----- example of using fast-xml-parser, couldn't get this to work properly
