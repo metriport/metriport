@@ -8,9 +8,7 @@ import {
   METRIPORT_REPOSITORY_UNIQUE_ID,
   createPatientUniqueId,
 } from "../../carequality/shared";
-import { Config } from "../../../util/config";
 
-const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const api = axios.create();
 
 const UPLOADS_FOLDER = "uploads";
@@ -92,6 +90,7 @@ export async function documentUploaderHandler(
         size: stringSize,
         docRef,
         s3MetadataFileName,
+        destinationBucket,
       });
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
@@ -134,6 +133,7 @@ async function createAndUploadMetadataFile({
   size,
   docRef,
   s3MetadataFileName,
+  destinationBucket,
 }: {
   s3Utils: S3Utils;
   cxId: string;
@@ -143,6 +143,7 @@ async function createAndUploadMetadataFile({
   size: string;
   docRef: DocumentReference;
   s3MetadataFileName: string;
+  destinationBucket: string;
 }): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -166,9 +167,5 @@ async function createAndUploadMetadataFile({
   });
 
   console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
-  await s3Utils.uploadFile(
-    medicalDocumentsBucketName,
-    s3MetadataFileName,
-    Buffer.from(extrinsicObjectXml)
-  );
+  await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
 }
