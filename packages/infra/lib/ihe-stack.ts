@@ -143,8 +143,6 @@ export class IHEStack extends Stack {
     });
   }
 
-  // aws region, medical documents bucket name
-
   private setupDocumentQueryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
