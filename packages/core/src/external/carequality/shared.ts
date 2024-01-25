@@ -2,7 +2,7 @@ import {
   DocumentQueryReqFromExternalGW,
   DocumentRetrievalReqFromExternalGW,
 } from "@metriport/ihe-gateway-sdk";
-import { XDSMissingHomeCommunityId, XDSRegistryError, XDSUnknownCommunity } from "./error";
+import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
 
 /*
@@ -84,6 +84,17 @@ export function createPatientUniqueId(internalId: string, patientId: string): st
   return btoa(`${internalId}/${patientId}`);
 }
 
+export function extractPatientUniqueId(patientId: string): string {
+  return atob(patientId);
+}
+
+export function createDocumentUniqueId(documentId: string): string {
+  return btoa(documentId);
+}
+export function extractDocumentUniqueId(documentId: string): string {
+  return atob(documentId);
+}
+
 export function validateBasePayload(
   payload: DocumentQueryReqFromExternalGW | DocumentRetrievalReqFromExternalGW
 ): void {
@@ -97,9 +108,5 @@ export function validateBasePayload(
 
   if (!payload.samlAttributes.homeCommunityId) {
     throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
-  }
-
-  if (payload.samlAttributes.homeCommunityId !== METRIPORT_HOME_COMMUNITY_ID) {
-    throw new XDSUnknownCommunity("Unknown Home Community ID");
   }
 }

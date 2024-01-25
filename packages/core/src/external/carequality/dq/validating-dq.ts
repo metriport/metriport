@@ -2,13 +2,13 @@ import { DocumentQueryReqFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
 import { XDSUnknownPatientId } from "../error";
-import { validateBasePayload } from "../shared";
+import { validateBasePayload, extractPatientUniqueId } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
 export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
   try {
-    const decodedString = atob(patientIdB64);
+    const decodedString = extractPatientUniqueId(patientIdB64);
     const [cxId, id] = decodedString.split("/");
 
     if (!cxId || !id) {

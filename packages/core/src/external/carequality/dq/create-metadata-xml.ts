@@ -13,6 +13,8 @@ import {
   DEFAULT_PRACTICE_SETTING_CODE_DISPLAY,
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE,
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
+  METRIPORT_HOME_COMMUNITY_ID,
+  createDocumentUniqueId,
 } from "../shared";
 
 export function createExtrinsicObjectXml({
@@ -34,10 +36,10 @@ export function createExtrinsicObjectXml({
   homeCommunityId: string;
   size: string;
   patientId: string;
-  documentUniqueId: string;
   classCode?: CodeableConcept | undefined;
   practiceSettingCode?: CodeableConcept | undefined;
   healthcareFacilityTypeCode?: CodeableConcept | undefined;
+  documentUniqueId: string;
   title?: string | undefined;
 }) {
   const documentUUID = uuidv4();
@@ -57,7 +59,7 @@ export function createExtrinsicObjectXml({
     healthcareFacilityTypeCode?.text ||
     DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY;
 
-  const metadataXml = `<ExtrinsicObject home="{Metriport OID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+  const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
     <Slot name="creationTime">
       <ValueList>
@@ -172,7 +174,9 @@ export function createExtrinsicObjectXml({
     </ExternalIdentifier>
     
     <!-- (IHE) REQUIRED - DocumentEntry.uniqueId - Globally unique identifier assigned to the document by its creator -->
-    <ExternalIdentifier id="${uuidv4()}" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${documentUniqueId}">
+    <ExternalIdentifier id="${uuidv4()}" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${createDocumentUniqueId(
+    documentUniqueId
+  )}">
       <Name>
         <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
       </Name>

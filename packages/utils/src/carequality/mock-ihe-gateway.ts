@@ -18,7 +18,6 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.post("/pd/v1", async (req: Request, res: Response) => {
   try {
-    console.log("req.body", req.body);
     const response = await processIncomingPdRequest(req.body, mpi);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
@@ -30,7 +29,6 @@ app.post("/pd/v1", async (req: Request, res: Response) => {
 
 app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
-    console.log("req.body", req.body);
     const response = await processIncomingDqRequest(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
@@ -42,7 +40,6 @@ app.post("/dq/v1", async (req: Request, res: Response) => {
 
 app.post("/dr/v1", async (req: Request, res: Response) => {
   try {
-    console.log("req.body", req.body);
     const response = await processIncomingDrRequest(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });

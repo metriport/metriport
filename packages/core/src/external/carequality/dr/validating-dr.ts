@@ -3,6 +3,7 @@ import {
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_REPOSITORY_UNIQUE_ID,
   validateBasePayload,
+  extractDocumentUniqueId,
 } from "../shared";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
@@ -49,7 +50,7 @@ function extractDocumentIds(payload: DocumentRetrievalReqFromExternalGW): string
   const documentIds: string[] = [];
 
   for (const documentReference of payload.documentReference) {
-    documentIds.push(documentReference.docUniqueId);
+    documentIds.push(extractDocumentUniqueId(documentReference.docUniqueId));
   }
   return documentIds;
 }
