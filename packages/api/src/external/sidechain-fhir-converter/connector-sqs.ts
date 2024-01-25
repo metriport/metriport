@@ -13,6 +13,7 @@ export class SidechainFHIRConverterConnectorSQS implements SidechainFHIRConverte
     documentId,
     payload,
     requestId,
+    source,
   }: SidechainFHIRConverterRequest): Promise<void> {
     const queueUrl = Config.getSidechainFHIRConverterQueueURL();
     if (!queueUrl) {
@@ -28,6 +29,7 @@ export class SidechainFHIRConverterConnectorSQS implements SidechainFHIRConverte
         patientId,
         jobId: `${requestId}_${documentId}`,
         startedAt: dayjs.utc().toISOString(),
+        ...(source && { source }),
       },
     });
   }

@@ -4,11 +4,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import {
-  DocumentQueryProgress,
-  DocumentQueryStatus,
-  Progress,
-} from "@metriport/core/domain/document-query";
+import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/domain/document-query";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -209,10 +205,9 @@ function getQuery(patientIds: string[] = []): string {
   const successful: keyof Pick<Progress, "successful"> = "successful";
   const errors: keyof Pick<Progress, "errors"> = "errors";
   const processing: DocumentQueryStatus = "processing";
-  type PropName = keyof Pick<DocumentQueryProgress, "convert" | "download">;
   // END
 
-  const property = (propertyName: PropName) =>
+  const property = (propertyName: ProgressType) =>
     `${data}->'${documentQueryProgress}'->'${propertyName}'`;
   const convert = property("convert");
   const download = property("download");

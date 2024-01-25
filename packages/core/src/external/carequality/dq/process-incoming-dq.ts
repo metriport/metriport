@@ -1,6 +1,6 @@
 import {
-  DocumentQueryRequestIncoming,
-  DocumentQueryResponseOutgoing,
+  DocumentQueryReqFromExternalGW,
+  DocumentQueryRespToExternalGW,
 } from "@metriport/ihe-gateway-sdk";
 import {
   XDSUnknownPatientId,
@@ -12,11 +12,11 @@ import {
 import { CODE_SYSTEM_REQUIRED_ERROR as DQ_CODE_SYSTEM_REQUIRED_ERROR } from "../shared";
 
 function constructErrorResponse(
-  payload: DocumentQueryRequestIncoming,
+  payload: DocumentQueryReqFromExternalGW,
   codingSystem: string,
   code: string,
   error: string
-): DocumentQueryResponseOutgoing {
+): DocumentQueryRespToExternalGW {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -39,14 +39,14 @@ function constructErrorResponse(
 }
 
 export async function processIncomingRequest(
-  payload: DocumentQueryRequestIncoming
-): Promise<DocumentQueryResponseOutgoing> {
+  payload: DocumentQueryReqFromExternalGW
+): Promise<DocumentQueryRespToExternalGW> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
     const documentContents = await validateDQ(payload);
 
     // construct response
-    const response: DocumentQueryResponseOutgoing = {
+    const response: DocumentQueryRespToExternalGW = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),

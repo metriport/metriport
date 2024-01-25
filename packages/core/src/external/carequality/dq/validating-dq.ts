@@ -1,4 +1,4 @@
-import { DocumentQueryRequestIncoming } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryReqFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
 
@@ -44,7 +44,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
   return { cxId, id };
 }
 
-export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise<string[]> {
+export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promise<string[]> {
   if (!payload.id) {
     throw new XDSRegistryError("Request id is not defined");
   }
@@ -57,7 +57,7 @@ export async function validateDQ(payload: DocumentQueryRequestIncoming): Promise
     throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
   }
 
-  const id_pair = decodePatientId(payload.xcpdPatientId.id);
+  const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
   if (!id_pair) {
     throw new XDSUnknownPatientId("Patient ID is not valid");

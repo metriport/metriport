@@ -1,0 +1,70 @@
+version: "3"
+services:
+  ihe-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ARTIFACT: "${ARTIFACT_URL}"
+        STOREPASS: "${STOREPASS}"
+        KEYSTOREPASS: "${KEYSTOREPASS}"
+        KEYSTORENAME: "${KEYSTORENAME}"
+        ZULUKEY: "${ZULUKEY}"
+      x-bake:
+        platforms:
+          - linux/amd64    
+          - linux/arm64
+    volumes:
+      - ./config/custom-extensions:/opt/connect/custom-extensions
+    depends_on:
+      ihe-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE: "postgres"
+      DATABASE_USERNAME: "${DB_USERNAME}"
+      DATABASE_PASSWORD: "${DB_PASSWORD}"
+      DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
+      VMOPTIONS: "-Xmx3072m"
+      LICENSE_KEY: ${LICENSE_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY} 
+    restart: on-failure
+    ports:
+      - "8443:8443"
+      - "8081:8081"
+      - "8082:8082"
+      - "8083:8083"
+      - "8084:8084"
+      - "8085:8085"
+      - "8086:8086"
+      - "9091:9091"
+      - "9092:9092"
+      - "8100:8100"
+      - "23067:23067"
+      - "16850:16850"
+      - "16852:16852"
+      - "16853:16853"
+    secrets:
+      - mirth_properties
+  ihe-postgres:
+    image: postgres:14.4-alpine
+    container_name: ihe-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: "db"
+      POSTGRES_USER: "${DB_USERNAME}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    ports:
+      - "5436:5432"
+    volumes:
+      - ihe-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 2s
+      timeout: 2s
+      retries: 2
+volumes:
+  ihe-postgres:
+secrets:
+  mirth_properties:
+    file: ./secret.properties

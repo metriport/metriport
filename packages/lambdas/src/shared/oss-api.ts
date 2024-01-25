@@ -12,6 +12,7 @@ export type NotificationParams = {
   status: "success" | "failed";
   details?: string;
   jobId?: string;
+  source?: string;
 };
 
 export function apiClient(apiURL: string) {

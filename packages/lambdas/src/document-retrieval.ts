@@ -1,9 +1,11 @@
 import { getEnvVar } from "@metriport/core/util/env-var";
 import {
   DocumentReference,
-  DocumentRetrievalRequestIncoming,
-  documentRetrievalRequestIncomingSchema,
-  DocumentRetrievalResponseOutgoing,
+  DocumentRetrievalReqFromExternalGW,
+  documentRetrievalReqFromExternalGWSchema,
+  DocumentRetrievalRespToExternalGW,
+  DocumentRetrievalRespToExternalGWSuccessful,
+  DocumentRetrievalRespToExternalGWFault,
 } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 
@@ -13,12 +15,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(processRequest);
 
 // Function to extract necessary fields and construct the responses
 async function processRequest(
-  payload: DocumentRetrievalRequestIncoming
-): Promise<DocumentRetrievalResponseOutgoing> {
+  payload: DocumentRetrievalReqFromExternalGW
+): Promise<DocumentRetrievalRespToExternalGW> {
   console.log(`Running with patientId: ${payload.patientId}; version: ${version}`);
 
   // validate with zod schema
-  const xca = documentRetrievalRequestIncomingSchema.parse(payload);
+  const xca = documentRetrievalReqFromExternalGWSchema.parse(payload);
   if (Math.random() > 0.5) {
     return constructErrorResponse(xca);
   }
@@ -27,8 +29,8 @@ async function processRequest(
 
 // Function to construct error response
 function constructErrorResponse(
-  payload: DocumentRetrievalRequestIncoming
-): DocumentRetrievalResponseOutgoing {
+  payload: DocumentRetrievalReqFromExternalGW
+): DocumentRetrievalRespToExternalGWFault {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -49,8 +51,8 @@ function constructErrorResponse(
 
 // Function to construct success response
 function constructSuccessResponse(
-  payload: DocumentRetrievalRequestIncoming
-): DocumentRetrievalResponseOutgoing {
+  payload: DocumentRetrievalReqFromExternalGW
+): DocumentRetrievalRespToExternalGWSuccessful {
   const documentReference: DocumentReference = {
     homeCommunityId: "1.2.3.4.5.6.7.8.9",
     docUniqueId: "123456789",

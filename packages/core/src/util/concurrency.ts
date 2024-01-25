@@ -1,4 +1,4 @@
-import { chunk } from "lodash";
+import { errorToString } from "./error";
 import { sleep } from "./sleep";
 
 export type ExecuteInChunksOptions = {
@@ -21,6 +21,10 @@ export type ExecuteInChunksOptions = {
    * means some might finish execution when the error happens - non-deterministic.
    */
   keepExecutingOnError?: boolean;
+  /**
+   * Where to log. Defaults to no logging.
+   */
+  log?: typeof console.log;
 };
 
 export type FunctionType<T> = (
@@ -29,6 +33,8 @@ export type FunctionType<T> = (
   promiseIndex: number,
   promiseCount: number
 ) => Promise<void>;
+
+const emptyString = "";
 
 /**
  * Process an array or items asynchronously. It doesn't throw if one of the promises fails
@@ -64,6 +70,7 @@ export async function executeAsynchronously<T>(
     maxJitterMillis = 0,
     minJitterMillis = 0,
     keepExecutingOnError = false,
+    log,
   }: ExecuteInChunksOptions = {}
 ): Promise<PromiseSettledResult<void>[]> {
   if (minJitterMillis < 0) throw new Error("minJitterMillis must be >= 0");
@@ -72,31 +79,60 @@ export async function executeAsynchronously<T>(
     throw new Error("minJitterMillis must be <= maxJitterMillis");
   }
 
-  const numItemsPerRun = Math.min(collection.length, numberOfParallelExecutions);
-  const asyncRuns = chunk(collection, Math.ceil(collection.length / numItemsPerRun));
-  const amountOfPromises = asyncRuns.length;
+  // Copy the array so that we don't mutate the original (this only copies the references)
+  const itemsToProcess = collection.slice();
 
-  const promises = asyncRuns.map(async (itemsOfPromise, promiseIndex) => {
+  const amountOfPromises = Math.max(Math.min(collection.length, numberOfParallelExecutions), 1);
+
+  const promises = new Array(amountOfPromises).fill(0).map(async (_, promiseIndex) => {
     // possible jitter before each run so that they don't start at the same time
     const jitter = Math.max(minJitterMillis, Math.random() * maxJitterMillis);
     await sleep(jitter);
 
-    await executeSynchronously(itemsOfPromise, fn, promiseIndex, amountOfPromises);
+    await executeSynchronously(
+      itemsToProcess,
+      fn,
+      promiseIndex,
+      amountOfPromises,
+      keepExecutingOnError,
+      log
+    );
   });
+
   if (keepExecutingOnError) {
     return await Promise.allSettled(promises);
   }
   return (await Promise.all(promises)).map(p => ({ status: "fulfilled", value: p }));
 }
 
-export async function executeSynchronously<T>(
-  itemsOfPromise: T[],
+/**
+ * Document properly before exposing this
+ */
+async function executeSynchronously<T>(
+  itemsToProcess: T[],
   fn: FunctionType<T>,
   promiseIndex: number,
-  amountOfPromises: number
+  amountOfPromises: number,
+  keepExecutingOnError: boolean,
+  log?: typeof console.log | undefined
 ): Promise<void> {
+  const tabs = log ? "\t".repeat(promiseIndex) : emptyString;
   let itemIndex = 0;
-  for (const item of itemsOfPromise) {
-    await fn(item, itemIndex++, promiseIndex, amountOfPromises);
+  let item;
+  while ((item = itemsToProcess.pop())) {
+    log &&
+      log(
+        `... ${tabs}... promise ${promiseIndex} item ${itemIndex} remaining ${itemsToProcess.length}...`
+      );
+    try {
+      await fn(item, itemIndex++, promiseIndex, amountOfPromises);
+    } catch (error) {
+      if (keepExecutingOnError) {
+        log &&
+          log(`Error on item ${itemIndex} of promise ${promiseIndex}: ${errorToString(error)}`);
+      } else {
+        throw error;
+      }
+    }
   }
 }

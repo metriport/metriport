@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
+  <id>c209459e-8282-4ac7-88cb-42cdeec33805</id>
+  <name>Common Library</name>
+  <revision>5</revision>
+  <lastModified>
+    <time>1704310828244</time>
+    <timezone>GMT</timezone>
+  </lastModified>
+  <description>Common library for all channels
+
+Last updated: Dec 27 2023</description>
+  <includeNewChannels>false</includeNewChannels>
+  <enabledChannelIds>
+    <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
+    <string>c1b69481-12ef-4e81-9a4d-e7b362cf6c5d</string>
+    <string>c240418b-26ef-4836-a857-01c74fb07963</string>
+    <string>8af32eb7-1153-4c8f-be64-db8cb45ceb1b</string>
+    <string>cbd49d4a-24fa-40b6-aa12-d59d64168dd1</string>
+    <string>3d78b44c-d132-485a-8423-f5a6c681f249</string>
+    <string>c7b1fb54-6dce-410c-a16a-e3ba6b6c6722</string>
+    <string>6cdb6776-3488-47c6-8c90-2015ea051f93</string>
+    <string>f6899f98-6671-44f9-a764-d5f7c1858f02</string>
+    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a0</string>
+    <string>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</string>
+    <string>1f09811d-57b1-4219-9427-09f0d63a77a6</string>
+    <string>574e7271-1b21-4b79-82c3-fead249fc450</string>
+    <string>ce8aa1cf-5df6-4825-82c9-b51d5b2dfcfa</string>
+    <string>ed739638-6120-4aee-bcb2-acc661f2b12b</string>
+    <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
+  </enabledChannelIds>
+  <disabledChannelIds>
+    <string>2c8dca0f-5798-481b-8598-4547e319e031</string>
+    <string>bd17ccd3-bad0-4214-a034-6cda769113f6</string>
+    <string>10379c95-0f8f-4c0e-8e63-de0f307f7ccc</string>
+  </disabledChannelIds>
+  <codeTemplates>
+    <codeTemplate version="4.4.2">
+      <id>dd5052fa-e683-4ae9-9ff0-dafda0079bda</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>d455b692-51d1-45bb-ab95-ccec79c3290c</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>8888071d-0759-44fa-b489-229e4669aaf7</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>5501992d-a439-4278-b045-a1d40ac62a0a</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>89616855-fabf-43a1-af2f-85af3f4dfa8a</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>c7938c31-8309-4dae-b6d6-329e81e307e5</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>0dbb568c-4c8b-40cc-8a95-2012fac9ed4d</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>0ad796be-24b6-4519-94f9-61449d4a7703</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>34300954-fc44-4e15-82c7-ed96ac02f8c2</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>9f662a05-8a40-4419-8b19-3ad5593952e1</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>8ea54297-2fbb-4766-b396-fdda473d9035</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>bca8155d-5506-43e8-ae34-63d50714dd0e</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>c53ae4ba-023d-42f7-a9a9-20d875536b39</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>8fc64a0f-98d9-41c4-a370-20e247476631</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>b9697713-d517-4288-a2a8-bd6923b0bf6d</id>
+    </codeTemplate>
+  </codeTemplates>
+</codeTemplateLibrary>

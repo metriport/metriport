@@ -5,3 +5,5 @@ export const documentQueryProgressSchema = z.object({
   download: progressSchema.optional(),
   convert: progressSchema.optional(),
 });
+
+export const sourceSchema = z.enum(["commonwell", "carequality"]);
