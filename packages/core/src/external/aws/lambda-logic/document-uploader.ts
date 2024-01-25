@@ -143,7 +143,7 @@ async function createAndUploadMetadataFile(
 
   const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
 
-  console.log("Uploading metadata to S3 with key:", s3KMetadataFileName);
+  console.log(`Uploading metadata to S3 with key: ${s3KMetadataFileName}`);
   await s3Utils.uploadFile(
     medicalDocumentsBucketName,
     s3KMetadataFileName,

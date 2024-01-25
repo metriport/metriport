@@ -7,6 +7,8 @@ import status from "http-status";
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { asyncHandler, getFrom } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
+import { createPatientUniqueId } from "@metriport/core/external/carequality/shared";
+import { Patient } from "@metriport/core/domain/patient";
 
 dayjs.extend(duration);
 
@@ -42,7 +44,17 @@ router.get(
         lastNameInitial,
       },
     });
-    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
+    const patientsWithUniqueId = foundPatients.map(patient => {
+      const uniqueId = createPatientUniqueId(patient.cxId, patient.id);
+      const updatedPatient: Patient = {
+        ...patient,
+        id: uniqueId,
+        data: patient.data,
+      };
+      return updatedPatient; // return a new object with the updated id
+    });
+
+    return res.status(status.OK).json(patientsWithUniqueId.map(dtoFromModel));
   })
 );
 

@@ -34,14 +34,17 @@ export class XDSRegistryError extends Error {
 }
 
 export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
-  const decodedString = atob(patientIdB64);
-  const [cxId, id] = decodedString.split("/");
+  try {
+    const decodedString = atob(patientIdB64);
+    const [cxId, id] = decodedString.split("/");
 
-  if (!cxId || !id) {
-    return undefined;
+    if (!cxId || !id) {
+      throw new XDSUnknownPatientId("Patient ID is not valid");
+    }
+    return { cxId, id };
+  } catch (error) {
+    throw new XDSUnknownPatientId("Patient ID is not valid");
   }
-
-  return { cxId, id };
 }
 
 export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promise<string[]> {
@@ -63,7 +66,6 @@ export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promi
     throw new XDSUnknownPatientId("Patient ID is not valid");
   }
   const { cxId, id } = id_pair;
-  console.log(`cxId: ${cxId}, id: ${id}`);
 
   const s3Utils = new S3Utils(region);
   const documentContents = await s3Utils.retrieveDocumentIdsFromS3(

@@ -10,6 +10,7 @@ import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
 import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
+import { v4 as uuidv4 } from "uuid";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
@@ -19,7 +20,7 @@ export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
 export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   return {
     resourceType: "Patient",
-    id: patient.id,
+    id: uuidv4(),
     identifier: patient.data.personalIdentifiers
       ? convertDriversLicenseToIdentifier(patient.data.personalIdentifiers)
       : [],

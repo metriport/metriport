@@ -11,7 +11,6 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
-    console.log("req.body", req.body);
     const response = await processIncomingRequest(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
