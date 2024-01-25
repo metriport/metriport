@@ -1,11 +1,11 @@
 // error-response.ts
 import {
-  DocumentQueryRequestIncoming,
-  DocumentQueryResponseOutgoing,
-  DocumentRetrievalRequestIncoming,
-  DocumentRetrievalResponseOutgoing,
-  PatientDiscoveryRequestIncoming,
-  PatientDiscoveryResponseOutgoing,
+  DocumentQueryReqFromExternalGW,
+  DocumentQueryRespToExternalGW,
+  DocumentRetrievalReqFromExternalGW,
+  DocumentRetrievalRespToExternalGW,
+  PatientDiscoveryReqFromExternalGW,
+  PatientDiscoveryRespToExternalGW,
   BaseErrorResponse,
 } from "@metriport/ihe-gateway-sdk";
 import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
@@ -71,9 +71,9 @@ export class XDSUnknownCommunity extends IHEGatewayError {
 
 function constructBaseErrorResponse(
   payload:
-    | DocumentQueryRequestIncoming
-    | DocumentRetrievalRequestIncoming
-    | PatientDiscoveryRequestIncoming,
+    | DocumentQueryReqFromExternalGW
+    | DocumentRetrievalReqFromExternalGW
+    | PatientDiscoveryReqFromExternalGW,
   error?: IHEGatewayError
 ) {
   const baseResponse: BaseErrorResponse = {
@@ -101,26 +101,26 @@ function constructBaseErrorResponse(
 }
 
 export function constructDQErrorResponse(
-  payload: DocumentQueryRequestIncoming,
+  payload: DocumentQueryReqFromExternalGW,
   error: IHEGatewayError
-): DocumentQueryResponseOutgoing {
+): DocumentQueryRespToExternalGW {
   return {
     ...constructBaseErrorResponse(payload, error),
   };
 }
 
 export function constructDRErrorResponse(
-  payload: DocumentRetrievalRequestIncoming,
+  payload: DocumentRetrievalReqFromExternalGW,
   error: IHEGatewayError
-): DocumentRetrievalResponseOutgoing {
+): DocumentRetrievalRespToExternalGW {
   return {
     ...constructBaseErrorResponse(payload, error),
   };
 }
 
 export function constructPDNoMatchResponse(
-  payload: PatientDiscoveryRequestIncoming
-): PatientDiscoveryResponseOutgoing {
+  payload: PatientDiscoveryReqFromExternalGW
+): PatientDiscoveryRespToExternalGW {
   return {
     ...constructBaseErrorResponse(payload),
     patientMatch: false,
@@ -129,9 +129,9 @@ export function constructPDNoMatchResponse(
 }
 
 export function constructPDErrorResponse(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   error: IHEGatewayError
-): PatientDiscoveryResponseOutgoing {
+): PatientDiscoveryRespToExternalGW {
   return {
     ...constructBaseErrorResponse(payload, error),
     patientMatch: null,

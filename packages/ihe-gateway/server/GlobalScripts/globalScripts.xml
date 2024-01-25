@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><map>
+  <entry>
+    <string>Undeploy</string>
+    <string msync-fileref="Undeploy.js"/>
+  </entry>
+  <entry>
+    <string>Postprocessor</string>
+    <string msync-fileref="Postprocessor.js"/>
+  </entry>
+  <entry>
+    <string>Deploy</string>
+    <string msync-fileref="Deploy.js"/>
+  </entry>
+  <entry>
+    <string>Preprocessor</string>
+    <string msync-fileref="Preprocessor.js"/>
+  </entry>
+</map>

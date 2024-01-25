@@ -12,16 +12,18 @@ export const createS3FileName = (cxId: string, patientId: string, fileName: stri
 export const mapDocRefToMetriport = async ({
   cxId,
   patientId,
+  requestId,
   document,
   source,
 }: {
   cxId: string;
   patientId: string;
+  requestId: string;
   document: Document;
   source: MedicalDataSource;
 }): Promise<{ originalId: string; metriportId: string }> => {
   const id = document.content?.masterIdentifier?.value || document.id;
-  const docRef = { cxId, patientId, externalId: id, source };
+  const docRef = { cxId, patientId, requestId, externalId: id, source };
   const existingDocRef = await getOrCreateDocRefMapping(docRef);
   return { originalId: id, metriportId: existingDocRef.id };
 };

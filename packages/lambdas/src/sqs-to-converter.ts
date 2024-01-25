@@ -10,7 +10,7 @@ import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
-import { postToConverter } from "./shared/converter";
+// import { postToConverter } from "./shared/converter";
 import { Binary, Bundle } from "@medplum/fhirtypes";
 
 // Keep this as early on the file as possible
@@ -33,9 +33,9 @@ const conversionResultBucketName = getEnvOrFail("CONVERSION_RESULT_BUCKET_NAME")
 const sidechainFHIRConverterUrl = getEnv("SIDECHAIN_FHIR_CONVERTER_URL");
 const sidechainFHIRConverterUrlBlacklist = getEnv("SIDECHAIN_FHIR_CONVERTER_URL_BLACKLIST");
 const sidechainWordsToRemove = getEnv("SIDECHAIN_FHIR_CONVERTER_WORDS_TO_REMOVE");
-const sidechainKeysTableName = isSidechainConnector()
-  ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME")
-  : undefined;
+// const sidechainKeysTableName = isSidechainConnector()
+//   ? getEnvOrFail("SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME")
+//   : undefined;
 
 const baseReplaceUrl = "https://public.metriport.com";
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
@@ -55,6 +55,31 @@ const ossApi = apiClient(apiURL);
 
 function isSidechainConnector() {
   return sidechainFHIRConverterUrl ? true : false;
+}
+
+function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
+  const stringsToReplace: { old: string; new: string }[] = [];
+  for (const bundleEntry of fhirBundle.entry) {
+    if (bundleEntry.resource.id === patientId) continue;
+    const idToUse = bundleEntry.resource.id;
+    const newId = uuid.v4();
+    bundleEntry.resource.id = newId;
+    stringsToReplace.push({ old: idToUse, new: newId });
+    // replace meta's source and profile
+    bundleEntry.resource.meta = {
+      lastUpdated: bundleEntry.resource.meta?.lastUpdated ?? new Date().toISOString(),
+      source: sourceUrl,
+    };
+  }
+  let fhirBundleStr = JSON.stringify(fhirBundle);
+  for (const stringToReplace of stringsToReplace) {
+    // doing this is apparently more efficient than just using replace
+    const regex = new RegExp(stringToReplace.old, "g");
+    fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
+  }
+
+  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
+  return JSON.parse(fhirBundleStr);
 }
 
 function postProcessSidechainFHIRBundle(
@@ -285,6 +310,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
+      const source = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -310,7 +336,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
             level: "warning",
           });
-          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
           return;
         }
 
@@ -318,23 +344,25 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         const conversionStart = Date.now();
         let conversionResult: FHIRBundle;
         if (isSidechainConnector()) {
-          if (!sidechainKeysTableName) {
-            throw new Error(
-              `Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`
-            );
-          }
+          // if (!sidechainKeysTableName) {
+          //   throw new Error(
+          //     `Programming error - SIDECHAIN_FHIR_CONVERTER_KEYS_TABLE_NAME is not set`
+          //   );
+          // }
 
-          const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
-          const res = await postToConverter({
-            url: sidechainUrl,
-            payload: payloadClean,
-            axiosTimeoutSeconds,
-            converterKeysTableName: sidechainKeysTableName,
-            log,
-            contentType: "application/xml",
-            conversionType: "fhir",
-          });
-          conversionResult = res.data;
+          // const sidechainUrl = `${sidechainFHIRConverterUrl}/${patientId}`;
+          // const res = await postToConverter({
+          //   url: sidechainUrl,
+          //   payload: payloadClean,
+          //   axiosTimeoutSeconds,
+          //   converterKeysTableName: sidechainKeysTableName,
+          //   log,
+          //   contentType: "application/xml",
+          //   conversionType: "fhir",
+          // });
+          // conversionResult = res.data;
+          conversionResult = { resourceType: "Bundle", type: "batch", entry: [] };
+          log(`Skipping sidechain conversion`);
         } else {
           const converterUrl = attrib.serverUrl?.stringValue;
           if (!converterUrl) throw new Error(`Missing converterUrl`);
@@ -372,6 +400,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
             });
           }
         } else {
+          conversionResult = replaceIDs(conversionResult, patientId);
           addExtensionToConversion(conversionResult, documentExtension);
           removePatientFromConversion(conversionResult);
           addMissingRequests(conversionResult);
@@ -389,6 +418,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           conversionResult,
           jobStartedAt,
           jobId,
+          source,
           log
         );
 
@@ -425,8 +455,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           });
           await sqsUtils.sendToDLQ(message);
 
-          if (isSidechainConnector()) {
-            await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId }, log);
+          if (!isSidechainConnector()) {
+            await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
           }
         }
       }
@@ -500,6 +530,7 @@ async function sendConversionResult(
   conversionPayload: FHIRBundle,
   jobStartedAt: string | undefined,
   jobId: string | undefined,
+  source: string | undefined,
   log: Log
 ) {
   const fileName = `${sourceFileName}.json`;
@@ -513,7 +544,7 @@ async function sendConversionResult(
     })
     .promise();
 
-  if (isSidechainConnector()) {
+  if (!isSidechainConnector()) {
     log(`Sending result info to queue`);
     const queuePayload = JSON.stringify({
       s3BucketName: conversionResultBucketName,
@@ -528,6 +559,7 @@ async function sendConversionResult(
         ...sqsUtils.singleAttributeToSend("patientId", patientId),
         ...(jobStartedAt ? sqsUtils.singleAttributeToSend("jobStartedAt", jobStartedAt) : {}),
         ...(jobId ? sqsUtils.singleAttributeToSend("jobId", jobId) : {}),
+        ...(source ? sqsUtils.singleAttributeToSend("source", source) : {}),
       },
     };
     await sqsUtils.sqs.sendMessage(sendParams).promise();

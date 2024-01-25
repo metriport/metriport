@@ -1,11 +1,11 @@
-import { PatientDiscoveryResponseIncoming } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { PatientDiscoveryResultModel } from "../../models/patient-discovery-result";
 import { DefaultPayload } from "./shared";
 
 export type CreatePatientDiscoverPayload = {
   defaultPayload: DefaultPayload;
   status: string;
-  response: PatientDiscoveryResponseIncoming;
+  response: PatientDiscoveryRespFromExternalGW;
 };
 
 export async function createPatientDiscoveryResult(

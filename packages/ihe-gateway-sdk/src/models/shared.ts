@@ -30,6 +30,7 @@ export const SamlAttributesSchema = z.object({
 
 export const baseRequestSchema = z.object({
   id: z.string(),
+  cxId: z.string(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string().optional(),
@@ -65,27 +66,26 @@ export const operationOutcomeSchema = z.object({
 });
 export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
-export const xcpdPatientIdSchema = z.object({
+export const externalGatewayPatientSchema = z.object({
   id: z.string(),
   system: z.string(),
 });
-export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
+export type XCPDPatientId = z.infer<typeof externalGatewayPatientSchema>;
 
 export const baseResponseSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
-  externalGatewayPatient: xcpdPatientIdSchema.optional(),
+  cxId: z.string().optional(),
+  externalGatewayPatient: externalGatewayPatientSchema.optional(),
   patientId: z.string().optional(),
+  operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 
-export const baseErrorResponseSchema = z.intersection(
-  baseResponseSchema,
-  z.object({
-    operationOutcome: operationOutcomeSchema.optional(),
-  })
-);
+export const baseErrorResponseSchema = baseResponseSchema.extend({
+  operationOutcome: operationOutcomeSchema.optional(),
+});
 export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
 
 export function isBaseErrorResponse(obj: unknown): obj is BaseErrorResponse {
@@ -99,11 +99,25 @@ export const xcaGatewaySchema = z.object({
 });
 export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
+export const XCPDGatewaySchema = z.object({
+  oid: z.string(),
+  url: z.string(),
+  id: z.string().optional(),
+});
+export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
+
+export type XCPDGateways = XCPDGateway[];
+
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
   docUniqueId: z.string(),
-  urn: z.string(),
   repositoryUniqueId: z.string(),
+  fileName: z.string().nullish(),
+  bucketName: z.string().nullish(),
+  isNew: z.boolean().nullish(),
+  size: z.number().nullish(),
+  urn: z.string().nullish(),
+  metriportId: z.string().nullish(),
   newRepositoryUniqueId: z.string().nullish(),
   newDocumentUniqueId: z.string().nullish(),
   contentType: z.string().nullish(),

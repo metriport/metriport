@@ -4,7 +4,7 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import {
   baseRequestSchema,
   BaseRequest,
-  PatientDiscoveryRequestIncoming,
+  PatientDiscoveryReqFromExternalGW,
 } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { APIGatewayProxyEvent } from "aws-lambda";
@@ -17,7 +17,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
     return buildResponse(400, { message: "Request body is missing" });
   }
 
-  let payload: PatientDiscoveryRequestIncoming;
+  let payload: PatientDiscoveryReqFromExternalGW;
   try {
     payload = JSON.parse(event.body);
   } catch (err) {
@@ -36,7 +36,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   } catch (err: any) {
     return buildResponse(400, err.message);
   }
-  const fullRequest: PatientDiscoveryRequestIncoming = {
+  const fullRequest: PatientDiscoveryReqFromExternalGW = {
     ...baseRequest,
     patientResource: payload.patientResource,
   };

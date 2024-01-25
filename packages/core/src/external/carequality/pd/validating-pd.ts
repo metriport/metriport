@@ -1,5 +1,5 @@
 import { Address as FHIRAddress, ContactPoint, Identifier } from "@medplum/fhirtypes";
-import { PatientDiscoveryRequestIncoming } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryReqFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
@@ -13,7 +13,7 @@ import {
 import { STATE_MAPPINGS } from "../shared";
 
 export function validateFHIRAndExtractPatient(
-  payload: PatientDiscoveryRequestIncoming
+  payload: PatientDiscoveryReqFromExternalGW
 ): PatientData {
   const patient = payload.patientResource;
   const firstName = patient.name?.[0]?.given?.[0]; // TODO we are taking the first index here but there might be multiple given names
@@ -90,7 +90,9 @@ export function validateFHIRAndExtractPatient(
       }
       return undefined;
     })
-    .filter((item): item is PersonalIdentifier => item !== undefined);
+    .filter(
+      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item !== undefined
+    );
 
   const convertedPatient: PatientData = {
     firstName: firstName,

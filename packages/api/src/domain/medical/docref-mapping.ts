@@ -5,6 +5,7 @@ export interface DocRefMappingCreate extends Omit<BaseDomainCreate, "id"> {
   externalId: string;
   cxId: string;
   patientId: string;
+  requestId: string;
   source: MedicalDataSource;
 }
 

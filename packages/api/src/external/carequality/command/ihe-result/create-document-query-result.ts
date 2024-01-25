@@ -1,11 +1,11 @@
-import { DocumentQueryResponseIncoming } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResultModel } from "../../../../models/medical/document-query-result";
+import { DocumentQueryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryResultModel } from "../../models/document-query-result";
 import { DefaultPayload } from "./shared";
 
 export type CreateDocumentQueryPayload = {
   defaultPayload: DefaultPayload;
   status: string;
-  response: DocumentQueryResponseIncoming;
+  response: DocumentQueryRespFromExternalGW;
 };
 
 export async function createDocumentQueryResult(

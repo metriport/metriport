@@ -1,6 +1,7 @@
 {
     "fullUrl":"urn:oid:{{ID}}",
     "resource":{
+        {{!-- Missing providerOrganization > managingOrganization --}}
         "resourceType": "Patient",
         "meta": {
             "profile": [
@@ -21,11 +22,18 @@
             {{/each}}
         ],
         "birthDate":"{{addHyphensDate patientRole.patient.birthTime.value}}",
-        "gender":{{>ValueSet/AdministrativeGender.hbs code=patientRole.patient.administrativeGenderCode.displayName}},
+        {{#with patientRole.patient.administrativeGenderCode}}
+            {{#if this.displayName}}
+                "gender":{{>ValueSet/AdministrativeGender.hbs code=this.displayName}},
+            {{else}}
+                "gender":{{>ValueSet/AdministrativeGender.hbs code=this.code}},
+            {{/if}}
+        {{/with}}
         "extension" : [
             {{>Extensions/Race.hbs patient=patientRole.patient}},
             {{>Extensions/Ethnicity.hbs patient=patientRole.patient}},
         ],
+        "maritalStatus":{{>DataType/CodeableConcept.hbs code=patientRole.patient.maritalStatusCode}},
         "address":
         [
         	{{#each (toArray patientRole.addr)}}
@@ -53,7 +61,7 @@
                             },
                         ],
                     },           
-                	"preferred":{{this.preferenceInd.value}},
+                	"preferred":"{{this.preferenceInd.value}}",
                 },
             {{/each}}         
         ],

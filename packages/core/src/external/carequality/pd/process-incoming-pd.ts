@@ -1,6 +1,6 @@
 import {
-  PatientDiscoveryRequestIncoming,
-  PatientDiscoveryResponseOutgoing,
+  PatientDiscoveryReqFromExternalGW,
+  PatientDiscoveryRespToExternalGW,
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
@@ -16,9 +16,9 @@ import {
 import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 
 function constructMatchResponse(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   patient: Pick<Patient, "id" | "data">
-): PatientDiscoveryResponseOutgoing {
+): PatientDiscoveryRespToExternalGW {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -34,9 +34,9 @@ function constructMatchResponse(
 }
 
 export async function processIncomingRequest(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   mpi: MPI
-): Promise<PatientDiscoveryResponseOutgoing> {
+): Promise<PatientDiscoveryRespToExternalGW> {
   try {
     const patient = validateFHIRAndExtractPatient(payload);
     const matchingPatient = await mpi.findMatchingPatient(patient);

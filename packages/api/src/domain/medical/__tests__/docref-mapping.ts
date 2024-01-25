@@ -11,6 +11,7 @@ export const makeDocRefMappingCreate = (
     cxId: params.cxId ?? faker.string.uuid(),
     patientId: params.patientId ?? uuidv7(),
     externalId: params.externalId ?? faker.string.uuid(),
+    requestId: params.requestId ?? uuidv7(),
     source: params.source ?? faker.helpers.arrayElement(Object.values(MedicalDataSource)),
   };
 };

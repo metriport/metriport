@@ -1,4 +1,4 @@
-import { DocumentRetrievalRequestIncoming, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { DocumentRetrievalReqFromExternalGW, DocumentReference } from "@metriport/ihe-gateway-sdk";
 import {
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_REPOSITORY_UNIQUE_ID,
@@ -12,7 +12,7 @@ const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
 export async function validateDR(
-  payload: DocumentRetrievalRequestIncoming
+  payload: DocumentRetrievalReqFromExternalGW
 ): Promise<DocumentReference[]> {
   validateBasePayload(payload);
 
@@ -45,7 +45,7 @@ async function retrievePreSignedUrls(documentIds: string[]): Promise<DocumentRef
   return documentReferences;
 }
 
-function extractDocumentIds(payload: DocumentRetrievalRequestIncoming): string[] {
+function extractDocumentIds(payload: DocumentRetrievalReqFromExternalGW): string[] {
   const documentIds: string[] = [];
 
   for (const documentReference of payload.documentReference) {

@@ -17,7 +17,7 @@ services:
     ports:
       - "8777:8080"
       - "9277:9229"
-    # volumes:
-    #   - ./src:/usr/src/app/src
+    volumes:
+      - ./src:/app/src
     extra_hosts:
       - "host.docker.internal:host-gateway"

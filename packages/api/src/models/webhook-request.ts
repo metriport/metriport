@@ -7,6 +7,7 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
   static NAME = "webhook_request";
   declare id: string;
   declare cxId: string;
+  declare requestId?: string;
   declare type: string; // intentionally 'string' to avoid circular dependency and coupling
   declare payload: object;
   declare status: WebhookRequestStatus;
@@ -17,6 +18,10 @@ export class WebhookRequest extends BaseModel<WebhookRequest> {
         ...BaseModel.attributes(),
         cxId: {
           type: DataTypes.STRING,
+        },
+        requestId: {
+          type: DataTypes.STRING,
+          allowNull: true,
         },
         type: {
           type: DataTypes.STRING,

@@ -18,14 +18,7 @@
               }
             ]
         }
-        "category":
-        [
-            {{#if consentEntry.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=consentEntry.code.translation}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=consentEntry.code}},
-            {{/if}}
-        ],
+        "category":[{{>DataType/CodeableConcept.hbs code=consentEntry.code}}],    
         "dateTime":"{{formatAsDateTime consentEntry.component.observation.effectiveTime.low.value}}",
         "provision":
         {
