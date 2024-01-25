@@ -51,7 +51,7 @@ router.get(
         id: uniqueId,
         data: patient.data,
       };
-      return updatedPatient; // return a new object with the updated id
+      return updatedPatient;
     });
 
     return res.status(status.OK).json(patientsWithUniqueId.map(dtoFromModel));
