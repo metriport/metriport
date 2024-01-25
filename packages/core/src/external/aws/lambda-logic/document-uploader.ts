@@ -8,9 +8,7 @@ import {
   METRIPORT_REPOSITORY_UNIQUE_ID,
   createPatientUniqueId,
 } from "../../carequality/shared";
-import { Config } from "../../../util/config";
 
-const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const api = axios.create();
 
 const UPLOADS_FOLDER = "uploads";
@@ -79,7 +77,16 @@ export async function documentUploaderHandler(
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadMetadataFile(s3Utils, cxId, patientId, docId, hash, stringSize, docRef);
+      await createAndUploadMetadataFile(
+        s3Utils,
+        cxId,
+        patientId,
+        docId,
+        hash,
+        stringSize,
+        docRef,
+        destinationBucket
+      );
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
@@ -119,7 +126,8 @@ async function createAndUploadMetadataFile(
   docId: string,
   hash: string,
   size: string,
-  docRef: DocumentReference
+  docRef: DocumentReference,
+  destinationBucket: string
 ): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -141,12 +149,8 @@ async function createAndUploadMetadataFile(
     title,
   });
 
-  const s3KMetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
+  const s3MetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
 
-  console.log(`Uploading metadata to S3 with key: ${s3KMetadataFileName}`);
-  await s3Utils.uploadFile(
-    medicalDocumentsBucketName,
-    s3KMetadataFileName,
-    Buffer.from(extrinsicObjectXml)
-  );
+  console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
+  await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
 }
