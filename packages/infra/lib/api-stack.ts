@@ -312,7 +312,7 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       stack: this,
       vpc: this.vpc,
-      fhirConverterBucket: sandboxSeedDataBucket ?? sidechainFHIRConverterBucket,
+      fhirConverterBucket: sandboxSeedDataBucket ?? fhirConverterBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
     });
@@ -1088,6 +1088,7 @@ export class APIStack extends Stack {
       entry: "document-downloader",
       envType,
       envVars: {
+        TEST_ENV: "TEST",
         CW_ORG_CERTIFICATE: cwOrgCertificate,
         CW_ORG_PRIVATE_KEY: cwOrgPrivateKey,
         ...(bucketName && {

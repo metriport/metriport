@@ -1,7 +1,7 @@
-import { XCPDGateway, PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateways, PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
 
 export const generatePatient = (
-  xcpdGateways: XCPDGateway[],
+  xcpdGateways: XCPDGateways,
   orgOid: string,
   orgName: string
 ): PatientDiscoveryReqToExternalGW => {

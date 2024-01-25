@@ -45,7 +45,7 @@ export function createCQDocumentQueryRequests({
         homeCommunityId: systemId,
         url: url,
       },
-      xcpdPatientId: {
+      externalGatewayPatient: {
         id: patientId,
         system: systemId,
       },

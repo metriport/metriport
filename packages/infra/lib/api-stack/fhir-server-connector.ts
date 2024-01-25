@@ -17,14 +17,14 @@ function settings() {
   const prod = isProd(config);
   // How long can the lambda run for, max is 900 seconds (15 minutes)
   // It SHOULD be slightly less than the ALB timeout of the FHIR server
-  const lambdaTimeout = Duration.minutes(10); // https://github.com/metriport/metriport-internal/issues/740
+  const lambdaTimeout = Duration.minutes(15).minus(Duration.seconds(30)); // https://github.com/metriport/metriport-internal/issues/740
   return {
     connectorName: "FHIRServer",
-    lambdaMemory: 512,
+    lambdaMemory: 1024,
     // Number of messages the lambda pull from SQS at once
     lambdaBatchSize: 1,
     // Max number of concurrent instances of the lambda that an Amazon SQS event source can invoke [2 - 1000].
-    maxConcurrency: prod ? 4 : 2,
+    maxConcurrency: prod ? 32 : 4,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
     // Number of times we want to retry a message, this includes throttles!

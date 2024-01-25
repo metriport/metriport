@@ -9,17 +9,29 @@
            	{{/with}},
         "date":"{{formatAsDateTime (now)}}",
         "status":"current",
+        {{! Missing status mapping }}
         "content":
         [
             {
                 "attachment":
                 {
                     "contentType":"text/plain",
+                    {{! Missing contentType mapping }}
                     "data":"{{{gzip docref._originalData 'utf8' 'base64'}}}",
                     "hash":"{{{base64Encode (sha1Hash (gzip docref._originalData 'utf8' 'base64')) 'hex'}}}",
                 },
             },
         ],
+
+        {{! Missing docStatus }}
+        {{! Missing type }}
+        {{! Missing category }}
+        {{! Missing subject reference }}
+        {{! Missing author}}
+        {{! Missing authenticator }}
+        {{! Missing custodian }}
+        {{! Missing description }}
+        {{! Missing context }}
     },
     "request":{
         "method":"PUT",

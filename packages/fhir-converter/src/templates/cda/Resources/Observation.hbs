@@ -16,25 +16,44 @@
             {{/each}}
         ],
         
-        {{#if observationCategory}}
-             "category": [
-                  {
-                      "coding": [
-                          {
-                            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                            "code": "{{observationCategory}}"
-                          }
-                    ]
-                  }
-            ],
-        {{/if}}
+            {{#if observationCategory}}
+                {{#with (evaluate 'Utils/ObservationCategoryDisplayFromCode.hbs' code=observationCategory) as |respObj|}}
+                    "category": [
+                        {
+                            "coding": [
+                                {
+                                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                                    "code": "{{../observationCategory}}",
+                                    "display": "{{respObj.display}}"
+                                }
+                            ],
+                            "text": "{{respObj.display}}"
+                        }
+                    ],
+                {{/with}}
+            {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        {{#if observationEntry.code.translation.code}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code.translation}},
-        {{else}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code}},
-        {{/if}}
+        "code": {
+            {{#if observationEntry.code.originalText}}
+                "text":"{{{observationEntry.code.originalText._}}}",
+            {{else if observationEntry.text._}}
+                "text":"{{{observationEntry.text._}}}",
+            {{/if}}
+            {{#if observationEntry.code}}
+                "coding": 
+                [
+                    {{>DataType/Coding.hbs code=observationEntry.code}},
+                    {{#if observationEntry.code.translation.code}}
+                        {{>DataType/Coding.hbs code=observationEntry.code.translation}},
+                    {{else}}
+                        {{#each observationEntry.code.translation}}
+                            {{>DataType/Coding.hbs code=this}},
+                        {{/each}}
+                    {{/if}}
+                ],
+            {{/if}}
+        },
         
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
@@ -53,11 +72,11 @@
         {{else if observationEntry.value.value}}
             "valueQuantity":
             {
-                "value":{{observationEntry.value.value}},
+                "value":"{{observationEntry.value.value}}",
                 "unit":"{{observationEntry.value.unit}}",
             }, 
         {{else}}
-            "valueString":"{{observationEntry.value._}}",
+            "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
@@ -65,12 +84,12 @@
           {
             "low":
                 {
-                    "value":{{observationEntry.referenceRange.observationRange.value.low.value}},
+                    "value":"{{observationEntry.referenceRange.observationRange.value.low.value}}",
                     "unit":"{{observationEntry.referenceRange.observationRange.value.low.unit}}",
                 }
            "high":
                {
-                   "value":{{observationEntry.referenceRange.observationRange.value.high.value}},
+                   "value":"{{observationEntry.referenceRange.observationRange.value.high.value}}",
                    "unit":"{{observationEntry.referenceRange.observationRange.value.high.unit}}",
                }
           },

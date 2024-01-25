@@ -1,6 +1,6 @@
 import {
-  PatientDiscoveryRequestIncoming,
-  PatientDiscoveryResponseOutgoing,
+  PatientDiscoveryReqFromExternalGW,
+  PatientDiscoveryRespToExternalGW,
 } from "@metriport/ihe-gateway-sdk";
 import { Patient } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
@@ -11,9 +11,9 @@ import { XDSRegistryError, validateFHIRAndExtractPatient, IHEGatewayError } from
 const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
 function constructErrorResponse(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   error: IHEGatewayError
-): PatientDiscoveryResponseOutgoing {
+): PatientDiscoveryRespToExternalGW {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -40,8 +40,8 @@ function constructErrorResponse(
 }
 
 function constructNoMatchResponse(
-  payload: PatientDiscoveryRequestIncoming
-): PatientDiscoveryResponseOutgoing {
+  payload: PatientDiscoveryReqFromExternalGW
+): PatientDiscoveryRespToExternalGW {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -65,9 +65,9 @@ function constructNoMatchResponse(
 }
 
 function constructMatchResponse(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   patient: Pick<Patient, "id" | "data">
-): PatientDiscoveryResponseOutgoing {
+): PatientDiscoveryRespToExternalGW {
   return {
     id: payload.id,
     timestamp: payload.timestamp,
@@ -83,9 +83,9 @@ function constructMatchResponse(
 }
 
 export async function processIncomingRequest(
-  payload: PatientDiscoveryRequestIncoming,
+  payload: PatientDiscoveryReqFromExternalGW,
   mpi: MPI
-): Promise<PatientDiscoveryResponseOutgoing> {
+): Promise<PatientDiscoveryRespToExternalGW> {
   try {
     const patient = validateFHIRAndExtractPatient(payload.patientResource);
     const matchingPatient = await mpi.findMatchingPatient(patient);

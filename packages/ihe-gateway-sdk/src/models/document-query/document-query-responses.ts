@@ -5,7 +5,6 @@ import {
   baseErrorResponseSchema,
   xcaGatewaySchema,
   documentReferenceSchema,
-  operationOutcomeSchema,
   DocumentReference,
 } from "../shared";
 
@@ -14,9 +13,19 @@ const documentQueryRespToExternalGWSuccessfulSchema = baseResponseSchema.extend(
   extrinsicObjectXmls: z.array(z.string()),
 });
 
+export type DocumentQueryRespToExternalGWSuccessful = z.infer<
+  typeof documentQueryRespToExternalGWSuccessfulSchema
+>;
+
+const documentQueryRespToExternalGWFaultSchema = baseErrorResponseSchema;
+
+export type DocumentQueryRespToExternalGWFault = z.infer<
+  typeof documentQueryRespToExternalGWFaultSchema
+>;
+
 export const documentQueryRespToExternalGWSchema = z.union([
   documentQueryRespToExternalGWSuccessfulSchema,
-  baseErrorResponseSchema,
+  documentQueryRespToExternalGWFaultSchema,
 ]);
 
 export type DocumentQueryRespToExternalGW = z.infer<typeof documentQueryRespToExternalGWSchema>;
@@ -25,7 +34,6 @@ export type DocumentQueryRespToExternalGW = z.infer<typeof documentQueryRespToEx
 const documentQueryRespFromExternalSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
   gateway: xcaGatewaySchema,
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
 const documentQueryRespFromExternalFaultSchema = baseErrorResponseSchema.extend({
@@ -41,7 +49,6 @@ export const documentQueryRespFromExternalGWSchema = z.union([
 export type DocumentQueryRespFromExternalGW = z.infer<typeof documentQueryRespFromExternalGWSchema>;
 
 export function isDocumentQueryResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj: BaseResponse
 ): obj is DocumentQueryRespFromExternalGW & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;

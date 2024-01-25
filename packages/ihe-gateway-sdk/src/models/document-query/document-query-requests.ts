@@ -1,5 +1,10 @@
 import * as z from "zod";
-import { xcpdPatientIdSchema, baseRequestSchema, codeSchema, xcaGatewaySchema } from "../shared";
+import {
+  externalGatewayPatientSchema,
+  baseRequestSchema,
+  codeSchema,
+  xcaGatewaySchema,
+} from "../shared";
 
 export const dateRangeSchema = z.object({
   dateFrom: z.string(),
@@ -9,7 +14,7 @@ export const dateRangeSchema = z.object({
 export type DateRange = z.infer<typeof dateRangeSchema>;
 
 const documentQueryDefaultReqSchema = baseRequestSchema.extend({
-  xcpdPatientId: xcpdPatientIdSchema,
+  externalGatewayPatient: externalGatewayPatientSchema,
   classCode: codeSchema.optional(),
   practiceSettingCode: codeSchema.optional(),
   facilityTypeCode: codeSchema.optional(),

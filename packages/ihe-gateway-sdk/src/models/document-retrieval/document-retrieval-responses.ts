@@ -4,7 +4,6 @@ import {
   documentReferenceSchema,
   baseResponseSchema,
   baseErrorResponseSchema,
-  operationOutcomeSchema,
   xcaGatewaySchema,
   DocumentReference,
 } from "../shared";
@@ -12,10 +11,17 @@ import {
 // TO EXTERNAL GATEWAY
 const documentRetrievalRespToExternalGWSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
+export type DocumentRetrievalRespToExternalGWSuccessful = z.infer<
+  typeof documentRetrievalRespToExternalGWSuccessfulSchema
+>;
+
 const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema;
+
+export type DocumentRetrievalRespToExternalGWFault = z.infer<
+  typeof documentRetrievalRespToExternalGWFaultSchema
+>;
 
 export const documentRetrievalRespToExternalGWSchema = z.union([
   documentRetrievalRespToExternalGWSuccessfulSchema,
@@ -30,7 +36,6 @@ export type DocumentRetrievalRespToExternalGW = z.infer<
 const documentRetrievalRespFromExternalGWSuccessfulSchema = baseResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.array(documentReferenceSchema),
-  operationOutcome: operationOutcomeSchema.optional(),
 });
 
 const documentRetrievalRespFromExternalGWFaultSchema = baseErrorResponseSchema.extend({
@@ -48,7 +53,6 @@ export type DocumentRetrievalRespFromExternalGW = z.infer<
 >;
 
 export function isDocumentRetrievalResponse(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   obj: BaseResponse
 ): obj is DocumentRetrievalRespFromExternalGW & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;

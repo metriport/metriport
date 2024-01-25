@@ -2,7 +2,7 @@ import * as z from "zod";
 import { baseRequestSchema, XCPDGatewaySchema } from "../shared";
 
 const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
-  patientResource: z.object({}),
+  patientResource: z.any(),
 });
 
 // TO EXTERNAL GATEWAY

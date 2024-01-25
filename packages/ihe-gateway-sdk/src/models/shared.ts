@@ -66,19 +66,20 @@ export const operationOutcomeSchema = z.object({
 });
 export type OperationOutcome = z.infer<typeof operationOutcomeSchema>;
 
-export const xcpdPatientIdSchema = z.object({
+export const externalGatewayPatientSchema = z.object({
   id: z.string(),
   system: z.string(),
 });
-export type XCPDPatientId = z.infer<typeof xcpdPatientIdSchema>;
+export type XCPDPatientId = z.infer<typeof externalGatewayPatientSchema>;
 
 export const baseResponseSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   responseTimestamp: z.string(),
   cxId: z.string().optional(),
-  externalGatewayPatient: xcpdPatientIdSchema.optional(),
+  externalGatewayPatient: externalGatewayPatientSchema.optional(),
   patientId: z.string().optional(),
+  operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 
@@ -111,10 +112,10 @@ export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
   docUniqueId: z.string(),
   repositoryUniqueId: z.string(),
-  fileName: z.string().optional(),
-  bucketName: z.string().optional(),
-  isNew: z.boolean().optional(),
-  size: z.number().optional(),
+  fileName: z.string().nullish(),
+  bucketName: z.string().nullish(),
+  isNew: z.boolean().nullish(),
+  size: z.number().nullish(),
   urn: z.string().nullish(),
   metriportId: z.string().nullish(),
   newRepositoryUniqueId: z.string().nullish(),
