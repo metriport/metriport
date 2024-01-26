@@ -6,7 +6,7 @@ import { validateBasePayload, extractPatientUniqueId } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
-export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
+export function decodePatientId(patientIdB64: string): { cxId: string; id: string } {
   try {
     const decodedString = extractPatientUniqueId(patientIdB64);
     const [cxId, id] = decodedString.split("/");
@@ -30,14 +30,12 @@ export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promi
   const { cxId, id } = id_pair;
 
   const s3Utils = new S3Utils(region);
-  const documentContents = await s3Utils.retrieveDocumentIdsFromS3(
-    cxId,
-    id,
-    medicalDocumentsBucketName
+  const prefix = `${cxId}/${id}/uploads/`;
+  const endsWith = "_metadata.xml";
+  const documentContents = await s3Utils.retrieveDocumentContentFromS3(
+    medicalDocumentsBucketName,
+    prefix,
+    endsWith
   );
-
-  if (!documentContents) {
-    throw new XDSUnknownPatientId("Patient ID is not valid");
-  }
   return documentContents;
 }

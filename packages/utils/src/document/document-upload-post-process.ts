@@ -9,6 +9,10 @@ const destinationBucket = getEnvVarOrFail("DESTINATION_BUCKET");
 const region = getEnvVarOrFail("AWS_REGION");
 const apiUrl = getEnvVarOrFail("API_URL");
 
+/**
+This script takes a document from a source bucket and uploads it to a destination bucket, and generates a metadata xml file for the document
+*/
+
 async function main() {
   const apiServerURL = `${apiUrl}/internal/docs/doc-ref`;
   try {

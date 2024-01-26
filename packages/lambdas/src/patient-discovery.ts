@@ -17,6 +17,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
     id: payload.id,
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,
+    patientResource: payload.patientResource,
   });
   const result = await processIncomingRequest(baseRequest, mpi);
   return buildResponse(200, result);

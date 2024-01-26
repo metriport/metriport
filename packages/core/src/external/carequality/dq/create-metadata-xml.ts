@@ -13,6 +13,15 @@ import {
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE,
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
   METRIPORT_HOME_COMMUNITY_ID,
+  ON_DEMAND_OBJECT_TYPE,
+  CLASS_CODE_CLASSIFICATION_SCHEME,
+  CONDIDENTIALITY_CODE_CLASSIFICATION_SCHEME,
+  FORMAT_CODE_CLASSIFICATION_SCHEME,
+  PRACTICE_SETTING_CODE_CLASSIFICATION_SCHEME,
+  HEALTHCARE_FACILITY_TYPE_CODE_CLASSIFICATION_SCHEME,
+  TYPE_CODE_CLASSIFICATION_SCHEME,
+  PATIENT_ID_CLASSIFICATION_SCHEME,
+  DOCUMENT_ENTRY_CLASSIFICATION_SCHEME,
   createDocumentUniqueId,
 } from "../shared";
 import { uuidv7 } from "../../../util/uuid-v7";
@@ -59,7 +68,10 @@ export function createExtrinsicObjectXml({
     healthcareFacilityTypeCode?.text ||
     DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY;
 
-  const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+  const objectTypeClassification =
+    "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification";
+
+  const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="${ON_DEMAND_OBJECT_TYPE}" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
     <Slot name="creationTime">
       <ValueList>
@@ -101,7 +113,7 @@ export function createExtrinsicObjectXml({
       <LocalizedString charset="UTF-8" value="${title}"/>
     </Name>
     
-    <Classification classificationScheme="urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${classCodeNode}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${CLASS_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${classCodeNode}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${LOINC_CODE}</Value>
@@ -112,7 +124,7 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <Classification classificationScheme="urn:uuid:f4f85eac-e6cb-4883-b524-f2705394840f" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${DEFAULT_CONFIDENTIALITY_CODE}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${CONDIDENTIALITY_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${DEFAULT_CONFIDENTIALITY_CODE}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${CONFIDENTIALITY_CODE_SYSTEM}</Value>
@@ -123,7 +135,7 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <Classification classificationScheme="urn:uuid:a09d5840-386c-46f2-b5ad-9c3699a4309d" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${DEFAULT_FORMAT_CODE_NODE}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${FORMAT_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${DEFAULT_FORMAT_CODE_NODE}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${DEFAULT_FORMAT_CODE_SYSTEM}</Value>
@@ -134,7 +146,7 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <Classification classificationScheme="urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${practiceSettingCodeNode}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${PRACTICE_SETTING_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${practiceSettingCodeNode}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${SNOMED_CODE}</Value>
@@ -145,7 +157,7 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <Classification classificationScheme="urn:uuid:f0306f51-975f-434e-a61c-c59651d33983" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${classCodeNode}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${TYPE_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${classCodeNode}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${LOINC_CODE}</Value>
@@ -156,7 +168,7 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <Classification classificationScheme="urn:uuid:f33fb8ac-18af-42cc-ae0e-ed0b0bdb91e1" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${healthcareFacilityTypeCodeNode}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+    <Classification classificationScheme="${HEALTHCARE_FACILITY_TYPE_CODE_CLASSIFICATION_SCHEME}" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${healthcareFacilityTypeCodeNode}" objectType="${objectTypeClassification}">
       <Slot name="codingScheme">
         <ValueList>
           <Value>${SNOMED_CODE}</Value>
@@ -167,14 +179,14 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <ExternalIdentifier id="${uuidv7()}" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${patientId}^^^&amp;${homeCommunityId}&amp;ISO">
+    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${PATIENT_ID_CLASSIFICATION_SCHEME}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${patientId}^^^&amp;${homeCommunityId}&amp;ISO">
       <Name>
         <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
       </Name>
     </ExternalIdentifier>
     
     <!-- (IHE) REQUIRED - DocumentEntry.uniqueId - Globally unique identifier assigned to the document by its creator -->
-    <ExternalIdentifier id="${uuidv7()}" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${createDocumentUniqueId(
+    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${DOCUMENT_ENTRY_CLASSIFICATION_SCHEME}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${createDocumentUniqueId(
     documentUniqueId
   )}">
       <Name>
