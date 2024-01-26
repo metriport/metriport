@@ -30,7 +30,7 @@ export const SamlAttributesSchema = z.object({
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string(),
+  cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string().optional(),
