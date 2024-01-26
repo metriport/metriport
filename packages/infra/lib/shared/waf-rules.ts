@@ -22,6 +22,7 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
     },
   },
   // Blocks requests from services that permit the obfuscation of viewer identity. These include requests from VPNs, proxies, Tor nodes, and web hosting providers.
+  // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-ip-rep.html#aws-managed-rule-groups-ip-rep-anonymous
   {
     name: "AWS-AWSManagedRulesAnonymousIpList",
     priority: 15,
@@ -134,12 +135,12 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
   // Blocks attacks targeting LFI (Local File Injection) for Linux systems.
   // https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-use-case.html#aws-managed-rule-groups-use-case-linux-os
   {
-    name: "AWS-AWSManagedRuleLinux",
+    name: "AWS-AWSManagedRulesLinuxRuleSet",
     priority: 60,
     visibilityConfig: {
       sampledRequestsEnabled: true,
       cloudWatchMetricsEnabled: true,
-      metricName: "AWSManagedRuleLinux",
+      metricName: "AWSManagedRulesLinuxRuleSet",
     },
     overrideAction: {
       none: {},
