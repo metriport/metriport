@@ -1,5 +1,5 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { DocumentQueryRequestOutgoing } from "@metriport/ihe-gateway-sdk";
+import { DocumentQueryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "@metriport/core/domain/organization";
 import { CQLink } from "../cq-patient-data";
@@ -17,7 +17,7 @@ export function createCQDocumentQueryRequests({
   cxId: string;
   organization: Organization;
   cqLinks: CQLink[];
-}): DocumentQueryRequestOutgoing[] {
+}): DocumentQueryReqToExternalGW[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
@@ -45,7 +45,7 @@ export function createCQDocumentQueryRequests({
         homeCommunityId: systemId,
         url: url,
       },
-      xcpdPatientId: {
+      externalGatewayPatient: {
         id: patientId,
         system: systemId,
       },

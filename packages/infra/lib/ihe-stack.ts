@@ -64,6 +64,13 @@ export class IHEStack extends Stack {
 
     const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
 
+    // get the medical documents bucket
+    const medicalDocumentsBucket = s3.Bucket.fromBucketName(
+      this,
+      "ImportedMedicalDocumentsBucket",
+      props.config.medicalDocumentsBucketName
+    );
+
     // Create the API Gateway.
     const domainName = new apigwv2.DomainName(this, "IHEAPIDomainv2", {
       domainName: iheApiUrl,
@@ -103,8 +110,20 @@ export class IHEStack extends Stack {
     const lambdaLayers = setupLambdasLayers(this, true);
 
     // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
-    const dqLambda = this.setupDocumentQueryLambda(props, lambdaLayers, vpc, alarmSnsAction);
-    const drLambda = this.setupDocumentRetrievalLambda(props, lambdaLayers, vpc, alarmSnsAction);
+    const dqLambda = this.setupDocumentQueryLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      alarmSnsAction
+    );
+    const drLambda = this.setupDocumentRetrievalLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      alarmSnsAction
+    );
     const pdLambda = this.setupPatientDiscoveryLambda(props, lambdaLayers, vpc, alarmSnsAction);
 
     // v2
@@ -142,6 +161,7 @@ export class IHEStack extends Stack {
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
     vpc: ec2.IVpc,
+    medicalDocumentsBucket: s3.IBucket,
     alarmSnsAction?: SnsAction | undefined
   ): Lambda {
     const documentQueryLambda = createLambda({
@@ -151,13 +171,14 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
       alarmSnsAction,
       version: props.version,
     });
-
+    medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
     return documentQueryLambda;
   }
 
@@ -165,6 +186,7 @@ export class IHEStack extends Stack {
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
     vpc: ec2.IVpc,
+    medicalDocumentsBucket: s3.IBucket,
     alarmSnsAction?: SnsAction | undefined
   ): Lambda {
     const documentRetrievalLambda = createLambda({
@@ -174,12 +196,14 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
       alarmSnsAction,
       version: props.version,
     });
+    medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
 
@@ -196,7 +220,7 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
-        API_URL: `${props.config.subdomain}.${props.config.domain}`,
+        API_URL: props.config.loadBalancerDnsName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,

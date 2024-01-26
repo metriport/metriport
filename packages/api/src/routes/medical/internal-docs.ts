@@ -346,12 +346,12 @@ router.post(
 
     const fileData = documentDataSchema.parse(req.body);
 
-    await updateDocumentReference({
+    const docRef = await updateDocumentReference({
       cxId,
       fileData,
     });
 
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json(docRef);
   })
 );
 

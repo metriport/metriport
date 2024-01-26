@@ -49,20 +49,25 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
   }
 
   async findBySimilarityAcrossAllCxs({ data }: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
-    const response = await axios.get(`${this.apiUrl}/internal/mpi/patient`, {
-      params: {
-        dob: data?.dob,
-        genderAtBirth: data?.genderAtBirth,
-        firstNameInitial: data?.firstNameInitial,
-        lastNameInitial: data?.lastNameInitial,
-      },
-    });
-    // call convertToDomainObject(response) here
-    const patients: Patient[] = response.data.map((patient: PatientDTO) =>
-      getDomainFromDTO(patient)
-    );
-    patients.forEach(validatePatient);
-    return patients;
+    try {
+      const response = await axios.get(`${this.apiUrl}/internal/mpi/patient`, {
+        params: {
+          dob: data?.dob,
+          genderAtBirth: data?.genderAtBirth,
+          firstNameInitial: data?.firstNameInitial,
+          lastNameInitial: data?.lastNameInitial,
+        },
+      });
+      // call convertToDomainObject(response) here
+      const patients: Patient[] = response.data.map((patient: PatientDTO) =>
+        getDomainFromDTO(patient)
+      );
+      patients.forEach(validatePatient);
+      return patients;
+    } catch (error) {
+      console.log("Failing on request to internal endpoint", error);
+      throw error;
+    }
   }
 }
 

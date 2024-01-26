@@ -9,23 +9,19 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        "clinicalStatus":
-        [ 
-            {{#each (toArray conditionEntry.entryRelationship)}}
-                {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.5')}} 
-                    {{>DataType/CodeableConcept.hbs code=this.observation.value}},
-                {{/if}}
-          {{/each}}
-        ],  
-        "code":
-            {{#if conditionEntry.value.translation}}
-                {{#with (elementAt (toArray conditionEntry.value.translation) 0)}}
-                    {{>DataType/CodeableConcept.hbs code=this}},
-                {{/with}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
-            {{/if}}
-            
+        "clinicalStatus": {
+            "coding": 
+            [
+              {{#each (toArray conditionEntry.entryRelationship)}}
+                  {{#each (toArray this.observation.templateId)}}
+                      {{#if (eq this.root '2.16.840.1.113883.10.20.22.4.6')}} 
+                          {{>DataType/Coding.hbs code=../this.observation.value}},
+                      {{/if}}
+                  {{/each}}
+              {{/each}}
+            ]
+        },
+        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
         {{#if conditionEntry.effectiveTime.low.value}} 
             "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
         {{else}}
@@ -38,6 +34,12 @@
                 {{/each}}
             ],
         {{/if}}
+
+        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.entryRelationship.observation.code}}],
+
+        {{! Missing meta}}
+        {{! Missing extension}}
+        {{! Missing recordedDate}}
     },
     "request":{
         "method":"PUT",

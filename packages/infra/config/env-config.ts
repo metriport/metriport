@@ -24,7 +24,7 @@ export type EnvConfig = {
   authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
-  loadBalancerDnsName?: string;
+  loadBalancerDnsName: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;

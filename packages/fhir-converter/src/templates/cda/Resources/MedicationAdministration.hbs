@@ -9,7 +9,7 @@
             	{{>DataType/Identifier.hbs id=this}}
             {{/each}}
         ],
-        "status":"{{medicationAdministration.statusCode.code}}",
+        "status":{{>ValueSet/MedicationAdministrationStatus.hbs code=medicationAdministration.statusCode.code}},
         "effectivePeriod":
         	{"start":"{{formatAsDateTime medicationAdministration.effectiveTime.low.value}}",
             "end":"{{formatAsDateTime medicationAdministration.effectiveTime.high.value}}"
@@ -20,12 +20,12 @@
                 "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}}
                 "dose":
                 {
-                    "value":{{medicationAdministration.doseQuantity.value}},
+                    "value":"{{medicationAdministration.doseQuantity.value}}",
                     "unit":"{{medicationAdministration.doseQuantity.unit}}"
                 }
                 "rateQuantity":
                 {
-                    "value":{{medicationAdministration.rateQuantity.value}}
+                    "value":"{{medicationAdministration.rateQuantity.value}}",
                     "unit":"{{medicationAdministration.rateQuantity.unit}}"
                 }
 
