@@ -10,6 +10,7 @@ on:
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
       - "packages/core/**"
+      - "packages/fhir-converter/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
@@ -24,6 +25,7 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
     steps:
       - name: Login to Docker Hub
@@ -47,6 +49,15 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
+            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
+            fhir-converter:
+              - "packages/fhir-converter/Dockerfile"
+              - "packages/fhir-converter/docker-entrypoint.sh"
+              - "packages/fhir-converter/package*.json"
+              - "packages/fhir-converter/mocha-config.json"
+              - "packages/fhir-converter/src/**"
+              - "packages/fhir-converter/test/**"
+              - "packages/fhir-converter/deploy/**"
             infra-lambdas:
               - "packages/shared/**"
               - "packages/core/**"
@@ -91,7 +102,7 @@ jobs:
 
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
     needs: files-changed
     with:
       deploy_env: "production"
