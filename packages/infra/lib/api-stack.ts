@@ -52,6 +52,7 @@ export class APIStack extends Stack {
   public readonly vpc: ec2.IVpc;
   public readonly alarmAction: SnsAction | undefined;
   public readonly taskRole: IGrantable;
+  public readonly loadBalancerAddress: string;
 
   constructor(scope: Construct, id: string, props: APIStackProps) {
     super(scope, id, props);
@@ -414,8 +415,9 @@ export class APIStack extends Stack {
       cookieStore
     );
 
-    // create a role for accessing the apiService that can be passed to the IHE stack
+    // create a role and load balancer address for accessing the apiService that can be passed to the IHE stack
     this.taskRole = apiService.service.taskDefinition.taskRole;
+    this.loadBalancerAddress = apiLoadBalancerAddress;
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);

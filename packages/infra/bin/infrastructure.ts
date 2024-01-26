@@ -53,6 +53,7 @@ async function deploy(config: EnvConfig) {
       config: config,
       version,
       taskRole: apiStack.taskRole,
+      loadBalancerAddress: apiStack.loadBalancerAddress,
     });
   }
   //---------------------------------------------------------------------------------
