@@ -246,28 +246,28 @@ Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
 The aforementioned FHIR resources are generated from all available CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, you can follow these steps:
 
-- kick off a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+- Kick off a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
 
 This route allows you to choose what FHIR resources and what date range you want to include into the summary. When this query completes, a webhook with a JSON payload containing all these resources will be sent to you.
 
-- monitor the status of the query using the [Get Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
+- Monitor the status of the query using the [Get Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
 
-- check when the Medical Record Summary was created in either PDF or HTML format using the [Get Medical Record Summary Status](/medical-api/api-reference/fhir/get-medical-record-summary-status) endpoint.
+- Check when the Medical Record Summary was created in either PDF or HTML format using the [Get Medical Record Summary Status](/medical-api/api-reference/fhir/get-medical-record-summary-status) endpoint.
 
-- download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
+- Download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
 
 ## 10. Share Medical Data with the Networks 🚀🚀🚀
 
 To uphold data quality in the networks, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
 
-- remote patient monitoring observations such as weight and blood pressure;
-- clinical progress notes from patient encounters;
-- lab results
+- Remote patient monitoring observations such as weight and blood pressure;
+- Clinical progress notes from patient encounters;
+- Lab results
 
 Metriport makes it easy to share this data back with the networks - you can:
 
-- upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
-- upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
+- Upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
+- Upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
 
 ## Wrapping up
 
