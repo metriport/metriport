@@ -1601,8 +1601,8 @@ function createObservationsByDate(observations: Observation[]): string {
         ${tables.observations
           .filter(observation => {
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display
-            })
+              return coding.display;
+            });
 
             const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
 
@@ -1623,8 +1623,8 @@ function createObservationsByDate(observations: Observation[]): string {
                 }`;
 
             const observationDisplay = observation.code?.coding?.find(coding => {
-              return coding.display
-            })
+              return coding.display;
+            });
 
             return `
               <tr>
