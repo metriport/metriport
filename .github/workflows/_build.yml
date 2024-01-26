@@ -93,11 +93,6 @@ jobs:
           npm run build:cloud
         working-directory: ${{ inputs.path }}
 
-      - name: Install playwright
-        if: ${{ inputs.path == 'packages/connect-widget'}}
-        run: npx playwright install && npx playwright install-deps
-        working-directory: ${{ inputs.path }}
-
       - name: Run Tests
         run: npm run test
         working-directory: ${{ inputs.path }}

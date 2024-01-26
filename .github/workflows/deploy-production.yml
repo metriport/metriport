@@ -9,7 +9,6 @@ on:
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
-      - "packages/connect-widget/**"
       - "packages/core/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
@@ -26,7 +25,6 @@ jobs:
     outputs:
       api: ${{ steps.changes.outputs.api }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
-      widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -55,27 +53,6 @@ jobs:
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "package*.json"
-            widget:
-              - "packages/connect-widget/**"
-              - "package*.json"
-
-  widget:
-    if: needs.files-changed.outputs.widget == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy_widget.yml
-    with:
-      build_env: "production"
-      deploy_env: "production"
-      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
-      S3_BUCKET: ${{ vars.S3_BUCKET_PRODUCTION }}
-      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_PRODUCTION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api-prod:
     if: needs.files-changed.outputs.api == 'true'
@@ -148,31 +125,14 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  infra-widget:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    with:
-      deploy_env: "production"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_PRODUCTION }}
-      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [widget, api-sandbox, infra-api-lambdas-sandbox, infra-widget]
+    needs: [api-sandbox, infra-api-lambdas-sandbox]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.infra-widget.result == 'success') }}
+    if: ${{ !failure() && (needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success') }}
     secrets: inherit
 
   e2e-tests:
@@ -181,12 +141,11 @@ jobs:
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
+    if: ${{ !failure() && (needs.api-prod.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
     with:
       deploy_env: "production"
       api_url: ${{ vars.API_URL_PRODUCTION }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
-      widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
