@@ -212,7 +212,7 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   };
 
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
-  if (res.pong && res.pong === ping) return true;
+  if (res && res.pong && res.pong === ping) return true;
   return false;
 };
 
