@@ -17,6 +17,7 @@ interface IHEStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
   taskRole: IGrantable;
+  loadBalancerAddress: string;
 }
 
 export class IHEStack extends Stack {
@@ -212,7 +213,7 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
-        API_URL: `${props.config.subdomain}.${props.config.domain}`,
+        API_URL: props.loadBalancerAddress,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
