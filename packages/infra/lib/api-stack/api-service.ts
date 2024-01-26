@@ -13,6 +13,7 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
+import { aws_wafv2 as wafv2 } from "aws-cdk-lib";
 import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
@@ -21,6 +22,7 @@ import { DnsZones } from "../shared/dns";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
+import { wafRules } from "../shared/waf-rules";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -75,6 +77,19 @@ export function createAPIService(
   new CfnOutput(stack, "APIECRRepoURI", {
     description: "API ECR repository URI",
     value: ecrRepo.repositoryUri,
+  });
+
+  // Web application firewall for enhanced security
+  const waf = new wafv2.CfnWebACL(stack, "APIWAF", {
+    defaultAction: { allow: {} },
+    scope: "REGIONAL",
+    name: `APIWAF`,
+    rules: wafRules,
+    visibilityConfig: {
+      cloudWatchMetricsEnabled: true,
+      metricName: `APIWAF-Metric`,
+      sampledRequestsEnabled: false,
+    },
   });
 
   const connectWidgetUrlEnvVar =
@@ -187,6 +202,12 @@ export function createAPIService(
     target: r53.RecordTarget.fromAlias(
       new r53_targets.LoadBalancerTarget(fargateService.loadBalancer)
     ),
+  });
+
+  // Hookup the LB to the WAF
+  new wafv2.CfnWebACLAssociation(stack, "APIWAFLBAssociation", {
+    resourceArn: fargateService.loadBalancer.loadBalancerArn,
+    webAclArn: waf.attrArn,
   });
 
   // Access grant for Aurora DB's secret
