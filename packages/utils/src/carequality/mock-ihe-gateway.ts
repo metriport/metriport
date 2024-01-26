@@ -1,5 +1,4 @@
 import express from "express";
-import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
 import {
   generateITI39,
   generateITI39MTOM,
@@ -11,17 +10,6 @@ import bodyParser from "body-parser";
 const app = express();
 
 app.use(bodyParser.text({ type: "application/soap+xml" }));
-
-app.post("/iti38/v1", async (req, res) => {
-  try {
-    const iti38 = await generateITI38(req.body);
-    res.set("Content-Type", "application/soap+xml; charset=utf-8");
-    res.send(iti38);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (err: any) {
-    res.status(400).send(err.message);
-  }
-});
 
 app.post("/iti39/v1", async (req, res) => {
   try {

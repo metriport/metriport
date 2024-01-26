@@ -15,6 +15,7 @@
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
     "mock-pd": "ts-node src/carequality/mock-pd",
+    "mock-dq": "ts-node src/carequality/mock-dq",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
