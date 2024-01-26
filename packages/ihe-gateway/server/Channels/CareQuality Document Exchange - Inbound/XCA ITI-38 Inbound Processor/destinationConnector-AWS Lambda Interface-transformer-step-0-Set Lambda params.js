@@ -1,4 +1,10 @@
 // Set the parameters required for the AWS Lambda
-channelMap.put('URL', configurationMap.get('INBOUND.XCA38'));
+var inboundDQUrl = Config.getInboundDqUrl();
 
-channelMap.put('DEST_ID', 'd' + connectorMessage.getDestinationIdMap().get('AWS Lambda Interface'));
+if (inboundDQUrl) {
+  channelMap.put("URL", inboundDQUrl);
+} else {
+  logger.error("INBOUND_XCA38_URL environment variable is not set");
+}
+
+channelMap.put("DEST_ID", "d" + connectorMessage.getDestinationIdMap().get("AWS Lambda Interface"));
