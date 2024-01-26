@@ -12,6 +12,7 @@ export const config: EnvConfig = {
   authSubdomain: "auth",
   dbName: "my_db",
   dbUsername: "my_db_user",
+  loadBalancerDnsName: "<your-load-balancer-dns-name>",
   fhirServerUrl: "http://localhost:8888",
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: "CRONOMETER_CLIENT_ID",

@@ -1,11 +1,11 @@
-import { DocumentRetrievalResponseIncoming } from "@metriport/ihe-gateway-sdk";
-import { DocumentRetrievalResultModel } from "../../../../models/medical/document-retrieval-result";
+import { DocumentRetrievalRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { DocumentRetrievalResultModel } from "../../models/document-retrieval-result";
 import { DefaultPayload } from "./shared";
 
 export type CreateDocumentRetrievalPayload = {
   defaultPayload: DefaultPayload;
   status: string;
-  response: DocumentRetrievalResponseIncoming;
+  response: DocumentRetrievalRespFromExternalGW;
 };
 
 export async function createDocumentRetrievalResult(

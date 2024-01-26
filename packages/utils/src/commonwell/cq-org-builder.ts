@@ -10,10 +10,11 @@ import {
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { executeWithRetries } from "@metriport/shared";
+import { errorToString } from "@metriport/shared/common/error";
 import axios from "axios";
 import { Command } from "commander";
 import fs from "fs";
-import { uniqBy } from "lodash";
+import { uniq } from "lodash";
 import { uuidv4 } from "../shared/uuid-v7";
 import { priorityOrgs } from "./cq-org-list-by-prio";
 import originalPayloadFromCW from "./cq-org-list-original.json";
@@ -80,25 +81,32 @@ export async function main() {
     const orgs: OrgWithGateway[] = gateway.Organizations.map(o => {
       return { id: o.Id, name: o.Name, gateway: gateway.Name };
     });
-    const res = await executeAsynchronously(
+    const success: string[] = [];
+    const failed: string[] = [];
+    await executeAsynchronously(
       orgs,
       async org => {
-        const states: string[] = isLocal
-          ? await getStatesFromCurrent(org.id)
-          : await getOrgStatesFromSequoia(org.id);
-        flatOrgs.push({ ...org, states: states, prio: getPrio(org) });
+        try {
+          const states: string[] = isLocal
+            ? await getStatesFromCurrent(org.id)
+            : await getOrgStatesFromSequoia(org.id);
+          flatOrgs.push({ ...org, states: states, prio: getPrio(org) });
+          success.push(org.id);
+        } catch (error) {
+          console.log(`Error processing org ${org.id}: ${error}`);
+          failed.push(errorToString(error));
+          throw error;
+        }
       },
       { numberOfParallelExecutions: 100, keepExecutingOnError: true }
     );
-    const failed = res.flatMap(r => (r.status === "rejected" ? r.reason : []));
-    const success = res.flatMap(r => (r.status === "fulfilled" ? "ok" : []));
     console.log(
       `--------------> Done w/ orgs of GW ${gateway.Name}: ${success.length} succeeded, ${failed.length} failed`
     );
     if (failed.length) {
       fs.appendFileSync(outputFailedFilename, JSON.stringify(failed, null, 2));
-      const errorsOnThisGW = uniqBy(failed, f => f.reason);
-      totalFailed.push(...errorsOnThisGW.map(f => ({ gateway: gateway.Name, reason: f.reason })));
+      const errorsOnThisGW = uniq(failed);
+      totalFailed.push(...errorsOnThisGW.map(err => ({ gateway: gateway.Name, reason: err })));
     }
   }
   fs.writeFileSync(resultFilename, JSON.stringify(flatOrgs, null, 2));

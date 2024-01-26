@@ -215,10 +215,10 @@ export class MetriportMedicalApi {
    * Updates a patient at Metriport and at HIEs the patient is linked to.
    *
    * @param patient The patient data to be updated.
-   * @param facilityId The facility providing the NPI to support this operation.
+   * @param facilityId Optional. The facility providing the NPI to support this operation. If not provided and the patient has only one facility, that one will be used. If not provided and the patient has multiple facilities, an error will be thrown.
    * @return The updated patient.
    */
-  async updatePatient(patient: PatientUpdate, facilityId: string): Promise<PatientDTO> {
+  async updatePatient(patient: PatientUpdate, facilityId?: string): Promise<PatientDTO> {
     type FieldsToOmit = "id";
     const payload: Omit<PatientUpdate, FieldsToOmit> & Record<FieldsToOmit, undefined> = {
       ...patient,

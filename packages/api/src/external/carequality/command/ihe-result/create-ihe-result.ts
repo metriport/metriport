@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  PatientDiscoveryResponseIncoming,
-  DocumentQueryResponseIncoming,
-  DocumentRetrievalResponseIncoming,
+  PatientDiscoveryRespFromExternalGW,
+  DocumentQueryRespFromExternalGW,
+  DocumentRetrievalRespFromExternalGW,
   isBaseErrorResponse,
   isDocumentQueryResponse,
   isDocumentRetrievalResponse,
@@ -14,23 +14,23 @@ import { createDocumentQueryResult } from "./create-document-query-result";
 import { createDocumentRetrievalResult } from "./create-document-retrieval-result";
 
 export enum IHEResultType {
-  INCOMING_PATIENT_DISCOVERY_RESPONSE = "patient-discovery",
-  INCOMING_DOCUMENT_QUERY_RESPONSE = "document-query",
-  INCOMING_DOCUMENT_RETRIEVAL_RESPONSE = "document-retrieval",
+  PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW = "patient-discovery",
+  DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW = "document-query",
+  DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW = "document-retrieval",
 }
 
 type IHEResult =
   | {
-      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE;
-      response: DocumentQueryResponseIncoming;
+      type: IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW;
+      response: DocumentQueryRespFromExternalGW;
     }
   | {
-      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE;
-      response: PatientDiscoveryResponseIncoming;
+      type: IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW;
+      response: PatientDiscoveryRespFromExternalGW;
     }
   | {
-      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE;
-      response: DocumentRetrievalResponseIncoming;
+      type: IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW;
+      response: DocumentRetrievalRespFromExternalGW;
     };
 
 export async function handleIHEResponse({ type, response }: IHEResult): Promise<void> {
@@ -38,12 +38,12 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   let status = "failure";
 
   // Check if response is a BaseErrorResponse
-  if (isBaseErrorResponse(response)) {
-    status = "failure";
-  } else if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
+  if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
     status = getIheResultStatus({
       docRefLength: response.documentReference?.length,
     });
+  } else if (isBaseErrorResponse(response)) {
+    status = "failure";
   }
 
   const defaultPayload: DefaultPayload = {
@@ -53,16 +53,16 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   };
 
   switch (type) {
-    case IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE: {
+    case IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW: {
       status = getIheResultStatus({ patientMatch: response.patientMatch });
       await createPatientDiscoveryResult({ defaultPayload, status, response });
       return;
     }
-    case IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE: {
+    case IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW: {
       await createDocumentQueryResult({ defaultPayload, status, response });
       return;
     }
-    case IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE: {
+    case IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW: {
       await createDocumentRetrievalResult({ defaultPayload, status, response });
       return;
     }

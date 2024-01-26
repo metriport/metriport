@@ -6,9 +6,16 @@
                 	{{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
                 {{#if drEntry.organizer.performer}}
-                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer) as |practitionerId|}}
-                        {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}}
-                    {{/with}}
+                     {{#if drEntry.organizer.performer.assignedEntity}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=drEntry.organizer.performer.assignedEntity ID=practitionerId.Id}},
+                            {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}}
+                        {{/with}}
+                         {{#if drEntry.organizer.performer.assignedEntity.representedOrganization}}
+                            {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=(generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization))}},
+                            {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Organization/' (generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization)))}}
+                         {{/if}}
+                    {{/if}}
                 {{/if}}
 
                 {{#each (toArray this.organizer.component) as |obsEntry|}}

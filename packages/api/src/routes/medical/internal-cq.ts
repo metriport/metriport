@@ -1,31 +1,33 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
-import {
-  patientDiscoveryResponseIncomingSchema,
-  documentQueryResponseIncomingSchema,
-  documentRetrievalResponseIncomingSchema,
-} from "@metriport/ihe-gateway-sdk";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import {
+  patientDiscoveryRespFromExternalGWSchema,
+  documentQueryRespFromExternalGWSchema,
+  documentRetrievalRespFromExternalGWSchema,
+} from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { handleIHEResponse } from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
-import { IHEResultType } from "../../external/carequality/command/ihe-result/create-ihe-result";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 import {
   DEFAULT_RADIUS_IN_MILES,
-  searchNearbyCQOrganizations,
+  searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import {
+  IHEResultType,
+  handleIHEResponse,
+} from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 
 dayjs.extend(duration);
-
 const router = Router();
 
 /**
@@ -105,7 +107,11 @@ router.get(
     const radiusQuery = getFrom("query").optional("radius", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
-    const orgs = await searchNearbyCQOrganizations({ cxId, patientId, radiusInMiles: radius });
+    const patient = await getPatientOrFail({ cxId, id: patientId });
+    const orgs = await searchCQDirectoriesAroundPatientAddresses({
+      patient,
+      radiusInMiles: radius,
+    });
 
     return res.status(httpStatus.OK).json(orgs);
   })
@@ -121,9 +127,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = patientDiscoveryResponseIncomingSchema.parse(req.body);
+    const pdResponse = patientDiscoveryRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_PATIENT_DISCOVERY_RESPONSE,
+      type: IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW,
       response: pdResponse,
     });
 
@@ -139,9 +145,9 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const dqResponse = documentQueryResponseIncomingSchema.parse(req.body);
+    const dqResponse = documentQueryRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_DOCUMENT_QUERY_RESPONSE,
+      type: IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW,
       response: dqResponse,
     });
 
@@ -171,9 +177,9 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const drResponse = documentRetrievalResponseIncomingSchema.parse(req.body);
+    const drResponse = documentRetrievalRespFromExternalGWSchema.parse(req.body);
     await handleIHEResponse({
-      type: IHEResultType.INCOMING_DOCUMENT_RETRIEVAL_RESPONSE,
+      type: IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW,
       response: drResponse,
     });
 

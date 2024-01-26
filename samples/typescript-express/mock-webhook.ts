@@ -93,7 +93,7 @@ app.post("/", async (req: Request, res: Response) => {
 
 const port = 8088;
 app.listen(port, "0.0.0.0", async () => {
-  console.log(`[server]: Webhook mock server is running on port ${8088}`);
+  console.log(`[server]: Webhook mock server is running on port ${port}`);
 });
 
 async function downloadFile(url: string, fileName: string, conversionType: string) {
