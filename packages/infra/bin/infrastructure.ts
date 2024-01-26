@@ -42,7 +42,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 3. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
-  const apiStack = new APIStack(app, config.stackName, { env, config, version });
+  new APIStack(app, config.stackName, { env, config, version });
 
   //---------------------------------------------------------------------------------
   // 4. Deploy the IHE stack. Contains Mirth, Lambdas for IHE Inbound, and IHE API Gateway.
@@ -52,8 +52,6 @@ async function deploy(config: EnvConfig) {
       env,
       config: config,
       version,
-      taskRole: apiStack.taskRole,
-      loadBalancerAddress: apiStack.loadBalancerAddress,
     });
   }
   //---------------------------------------------------------------------------------

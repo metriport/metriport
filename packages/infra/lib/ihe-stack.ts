@@ -10,14 +10,11 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { IGrantable } from "aws-cdk-lib/aws-iam";
 import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
   version: string | undefined;
-  taskRole: IGrantable;
-  loadBalancerAddress: string;
 }
 
 export class IHEStack extends Stack {
@@ -213,7 +210,7 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
-        API_URL: props.loadBalancerAddress,
+        API_URL: props.config.loadBalancerDnsName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
@@ -222,7 +219,6 @@ export class IHEStack extends Stack {
     });
 
     apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
-    patientDiscoveryLambda.grantInvoke(props.taskRole);
   }
 }
 
