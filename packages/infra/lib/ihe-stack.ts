@@ -95,12 +95,12 @@ export class IHEStack extends Stack {
 
     // Create lambdas
     const xcaResource = api.root.addResource("xca");
-    const xcpdResource = api.root.addResource("xcpd");
+    // const xcpdResource = api.root.addResource("xcpd");
 
     // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
     this.setupDocumentQueryLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
     this.setupDocumentRetrievalLambda(props, lambdaLayers, xcaResource, vpc, alarmSnsAction);
-    this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
+    // this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
 
     //-------------------------------------------
     // Output
@@ -169,30 +169,30 @@ export class IHEStack extends Stack {
     documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
   }
 
-  private setupPatientDiscoveryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    apiResource: apig.Resource,
-    vpc: ec2.IVpc,
-    alarmSnsAction?: SnsAction | undefined
-  ) {
-    const patientDiscoveryLambda = createLambda({
-      stack: this,
-      name: "PatientDiscovery",
-      entry: "patient-discovery",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        API_URL: `${props.config.subdomain}.${props.config.domain}`,
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-      version: props.version,
-    });
+  // private setupPatientDiscoveryLambda(
+  //   props: IHEStackProps,
+  //   lambdaLayers: LambdaLayers,
+  //   apiResource: apig.Resource,
+  //   vpc: ec2.IVpc,
+  //   alarmSnsAction?: SnsAction | undefined
+  // ) {
+  //   const patientDiscoveryLambda = createLambda({
+  //     stack: this,
+  //     name: "PatientDiscovery",
+  //     entry: "patient-discovery",
+  //     layers: [lambdaLayers.shared],
+  //     envType: props.config.environmentType,
+  //     envVars: {
+  //       API_URL: `${props.config.subdomain}.${props.config.domain}`,
+  //       ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+  //     },
+  //     vpc,
+  //     alarmSnsAction,
+  //     version: props.version,
+  //   });
 
-    apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
-  }
+  //   apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
+  // }
 }
 
 function setupSlackNotifSnsTopic(stack: Stack, config: EnvConfig): SnsAction | undefined {
