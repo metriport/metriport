@@ -77,30 +77,6 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    const iheLambda = createLambda({
-      stack: this,
-      name: "IHE",
-      entry: "ihe",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-    });
-
-    const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
-      parent: api.root,
-      anyMethod: false,
-      defaultCorsPreflightOptions: { allowOrigins: ["*"] },
-    });
-    proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
-      requestParameters: {
-        "method.request.path.proxy": true,
-      },
-    });
-
     // Create lambdas
     const xcaResource = api.root.addResource("xca");
     const xcpdResource = api.root.addResource("xcpd");
@@ -184,6 +160,7 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,

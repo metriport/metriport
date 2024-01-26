@@ -1,41 +1,14 @@
 import { DocumentQueryReqFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
-
+import { XDSUnknownPatientId } from "../error";
+import { validateBasePayload, extractPatientUniqueId } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
-export class XDSUnknownPatientId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownPatientId";
-  }
-}
-
-export class XDSUnknownCommunity extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSUnknownCommunity";
-  }
-}
-
-export class XDSMissingHomeCommunityId extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSMissingHomeCommunityId";
-  }
-}
-
-export class XDSRegistryError extends Error {
-  constructor(message?: string) {
-    super(message);
-    this.name = "XDSRegistryError";
-  }
-}
-
 export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
   try {
-    const decodedString = atob(patientIdB64);
+    const decodedString = extractPatientUniqueId(patientIdB64);
     const [cxId, id] = decodedString.split("/");
 
     if (!cxId || !id) {
@@ -48,18 +21,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
 }
 
 export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promise<string[]> {
-  if (!payload.id) {
-    throw new XDSRegistryError("Request id is not defined");
-  }
-
-  if (!payload.timestamp) {
-    throw new XDSRegistryError("Timestamp is not defined");
-  }
-
-  if (!payload.samlAttributes.homeCommunityId) {
-    throw new XDSMissingHomeCommunityId("Home Community ID is not defined");
-  }
-
+  validateBasePayload(payload);
   const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
   if (!id_pair) {

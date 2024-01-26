@@ -9,7 +9,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   }
   const payload = JSON.parse(event.body);
   const baseRequest = documentQueryReqFromExternalGWSchema.parse({
-    cxId: payload.cxId,
     id: payload.id,
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,

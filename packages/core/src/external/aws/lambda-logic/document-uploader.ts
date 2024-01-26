@@ -49,6 +49,9 @@ export async function documentUploaderHandler(
   // Make a copy of the file to the general medical documents bucket
   try {
     await s3Utils.s3.copyObject(params).promise();
+    console.log(
+      `Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`
+    );
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
     console.log(`${message}: ${error}`);
@@ -77,16 +80,18 @@ export async function documentUploaderHandler(
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadMetadataFile(
+      const s3MetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
+      await createAndUploadMetadataFile({
         s3Utils,
         cxId,
         patientId,
-        docId,
+        docId: destinationKey,
         hash,
-        stringSize,
+        size: stringSize,
         docRef,
-        destinationBucket
-      );
+        s3MetadataFileName,
+        destinationBucket,
+      });
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
@@ -119,22 +124,34 @@ function buildDestinationKey(cxId: string, patientId: string, docId: string): st
   return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}`;
 }
 
-async function createAndUploadMetadataFile(
-  s3Utils: S3Utils,
-  cxId: string,
-  patientId: string,
-  docId: string,
-  hash: string,
-  size: string,
-  docRef: DocumentReference,
-  destinationBucket: string
-): Promise<void> {
+async function createAndUploadMetadataFile({
+  s3Utils,
+  cxId,
+  patientId,
+  docId,
+  hash,
+  size,
+  docRef,
+  s3MetadataFileName,
+  destinationBucket,
+}: {
+  s3Utils: S3Utils;
+  cxId: string;
+  patientId: string;
+  docId: string;
+  hash: string;
+  size: string;
+  docRef: DocumentReference;
+  s3MetadataFileName: string;
+  destinationBucket: string;
+}): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
   const title = docRef.description;
   const classCode = docRef.type;
   const practiceSettingCode = docRef.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef.context?.facilityType;
+  console.log(`Creating metadata file for docId: ${docId}`);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
     hash,
@@ -148,8 +165,6 @@ async function createAndUploadMetadataFile(
     documentUniqueId: docId,
     title,
   });
-
-  const s3MetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
 
   console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
   await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
