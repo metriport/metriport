@@ -16,13 +16,9 @@ function setSAMLAttributes(msg) {
     } catch (ex) {}
 
   var homeCommunityId = Config.getSamlHomeCommunityId();
+  // The value SHALL be the Home Community ID (an Object Identifier) assigned to the NHIO that is initiating the request, using the urn format
+  channelMap.put("HomeCommunityId", homeCommunityId);
 
-  if (homeCommunityId) {
-    // The value SHALL be the Home Community ID (an Object Identifier) assigned to the NHIO that is initiating the request, using the urn format
-    channelMap.put("HomeCommunityId", homeCommunityId);
-  } else {
-    logger.error("SAML_HOME_COMMUNITY_ID environment variable is not set");
-  }
   if (
     msg.samlAttributes.hasOwnProperty("homeCommunityId") &&
     msg.samlAttributes.homeCommunityId.toString().length > 0
@@ -31,7 +27,7 @@ function setSAMLAttributes(msg) {
       var homeCommunityId = msg.samlAttributes.homeCommunityId.toString().startsWith("urn:oid:")
         ? msg.samlAttributes.homeCommunityId.toString().replace("urn:oid:", "")
         : msg.samlAttributes.homeCommunityId.toString();
-      channelMap.put("HomeCommunityId", homeCommunityId.toString());
+      channelMap.put("HomeCommunityId", homeCommunityId);
     } catch (ex) {}
 
   // This element SHALL contain the coded representation of the reason for the request

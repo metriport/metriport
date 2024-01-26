@@ -1,24 +1,33 @@
 /**
- * Provides a standardized way to access environment variables.
+ * This module provides a standardized way to access environment variables.
  */
+
+function getEnvVar(name) {
+  const value = java.lang.String(Packages.java.lang.System.getenv(name));
+  if (value == null) {
+    throw new Error(`Environment variable ${name} is not defined.`);
+  }
+  return value;
+}
+
 const Config = {
   getSamlHomeCommunityId: function () {
-    return java.lang.String(Packages.java.lang.System.getenv("SAML_HOME_COMMUNITY_ID"));
+    return getEnvVar("SAML_HOME_COMMUNITY_ID");
   },
 
   getInboundXcpdUrl: function () {
-    return java.lang.String(Packages.java.lang.System.getenv("INBOUND_XCPD_URL"));
+    return getEnvVar("INBOUND_XCPD_URL");
   },
 
   getInboundDqUrl: function () {
-    return java.lang.String(Packages.java.lang.System.getenv("INBOUND_XCA38_URL"));
+    return getEnvVar("INBOUND_XCA38_URL");
   },
 
   getInboundDrUrl: function () {
-    return java.lang.String(Packages.java.lang.System.getenv("INBOUND_XCA39_URL"));
+    return getEnvVar("INBOUND_XCA39_URL");
   },
 
   getS3BucketName: function () {
-    return java.lang.String(Packages.java.lang.System.getenv("S3_BUCKET_NAME"));
+    return getEnvVar("S3_BUCKET_NAME");
   },
 };
