@@ -1,13 +1,13 @@
+import { DocumentQueryStatus, Progress, ProgressType } from "@metriport/core/domain/document-query";
+import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import stringify from "json-stringify-safe";
 import { QueryTypes } from "sequelize";
-import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/domain/document-query";
-import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { out } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";

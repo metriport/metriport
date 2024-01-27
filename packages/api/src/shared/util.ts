@@ -1,9 +1,9 @@
 import { Sample } from "@metriport/api-sdk/devices/models/common/sample";
-import { debug as coreDebug, log as coreLog } from "@metriport/core/util/log";
 import convert from "convert-units";
 import crypto from "crypto";
 import { mean } from "lodash";
 import { Stream } from "stream";
+import { debug as _debug, log as _log } from "./log";
 
 export interface MinMaxItem {
   min_item: number;
@@ -73,15 +73,15 @@ export class Util {
   };
 
   /**
-   * @deprecated Use @metriport/core instead
+   * @deprecated Use shared/log.ts instead
    */
-  static log = coreLog;
+  static log = _log;
   /**
-   * @deprecated Use @metriport/core instead
+   * @deprecated Use shared/log.ts instead
    */
-  static debug = coreDebug;
+  static debug = _debug;
   /**
-   * @deprecated Use @metriport/core instead
+   * @deprecated Use shared/log.ts instead
    */
   static out = (prefix: string, suffix?: string) => ({
     log: Util.log(prefix, suffix),

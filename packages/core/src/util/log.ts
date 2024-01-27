@@ -4,11 +4,14 @@ import { Config } from "./config";
 type LogParamBasic = string | number | boolean | unknown | null | undefined;
 export type LogParam = LogParamBasic | (() => LogParamBasic);
 
-export function log(prefix?: string, suffix?: string) {
+export function log(prefix?: string, suffix?: string, systemPrefix?: string) {
   return (msg: string, ...optionalParams: LogParam[]): void => {
+    const actualSystemPrefix = systemPrefix ? `${systemPrefix} ` : ``;
+    const actualPrefix = prefix ? `[${prefix}] ` : ``;
+
     const actualParams = (optionalParams ?? []).map(p => (typeof p === "function" ? p() : p));
     return console.log(
-      `${prefix ? `[${prefix}] ` : ``}${msg}`,
+      `${actualSystemPrefix}${actualPrefix}${msg}`,
       ...[...actualParams, ...(suffix ? [suffix] : [])]
     );
   };

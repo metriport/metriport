@@ -1,16 +1,16 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
-import { out } from "@metriport/core/util/log";
+import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
+import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
-import { DocumentQueryResult } from "../document-query-result";
 import { Config } from "../../../shared/config";
+import { out } from "../../../shared/log";
+import { isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { isConvertible } from "../../fhir-converter/converter";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
+import { DocumentQueryResult } from "../document-query-result";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);

@@ -1,10 +1,10 @@
+import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { TriggerAndQueryDocRefsLocal } from "../../../command/medical/document/trigger-and-query-local";
-import { Patient } from "@metriport/core/domain/patient";
+import { out } from "../../../shared/log";
 import { CQLinkStatus } from "../patient-shared";
 import { setCQLinkStatus } from "./cq-link-status";
 import { ECUpdaterLocal } from "./ec-updater-local";

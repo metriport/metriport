@@ -1,22 +1,34 @@
+import { log as coreLog } from "@metriport/core/util/log";
+import { emptyFunction } from "@metriport/shared";
 import { inspect } from "node:util";
 import { ZodError } from "zod";
 import { Config } from "./config";
+import { getLocalStorage } from "./local-storage";
 
-/**
- * @deprecated Use @metriport/core instead
- */
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function debug(msg: string, ...optionalParams: any[]): void {
-  if (Config.isCloudEnv()) return;
-  if (optionalParams) {
-    if (typeof optionalParams[0] === typeof Function) {
-      console.log(msg, optionalParams[0](), ...optionalParams.slice(1));
-    } else {
-      console.log(msg, ...optionalParams);
-    }
-  } else {
-    console.log(msg);
-  }
+const asyncLocalStorage = getLocalStorage("reqId");
+
+type LogParamBasic = string | number | boolean | unknown | null | undefined;
+export type LogParam = LogParamBasic | (() => LogParamBasic);
+
+export function log(prefix?: string, suffix?: string) {
+  return (msg: string, ...optionalParams: LogParam[]): void => {
+    const reqId = asyncLocalStorage.getStore();
+    const reqPrefix = reqId ? reqId : "";
+    const coreLogFn = coreLog(prefix, suffix, reqPrefix);
+    return coreLogFn(msg, ...optionalParams);
+  };
+}
+
+export function debug(prefix: string, suffix?: string) {
+  if (Config.isCloudEnv()) return emptyFunction;
+  return log(prefix, suffix);
+}
+
+export function out(prefix: string, suffix?: string) {
+  return {
+    log: log(prefix, suffix),
+    debug: debug(prefix, suffix),
+  };
 }
 
 export type ErrorToStringOptions = { detailed: boolean };
