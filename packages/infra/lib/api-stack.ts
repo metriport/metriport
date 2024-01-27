@@ -17,6 +17,7 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
+import { aws_wafv2 as wafv2 } from "aws-cdk-lib";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -38,6 +39,7 @@ import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { wafRules } from "./shared/waf-rules";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -104,6 +106,19 @@ export class APIStack extends Stack {
       "APICertificateCertificateRequestorFunctionAlarm",
       slackNotification?.alarmAction
     );
+
+    // Web application firewall for enhanced security
+    const waf = new wafv2.CfnWebACL(this, "APIWAF", {
+      defaultAction: { allow: {} },
+      scope: "REGIONAL",
+      name: `APIWAF`,
+      rules: wafRules,
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `APIWAF-Metric`,
+        sampledRequestsEnabled: false,
+      },
+    });
 
     //-------------------------------------------
     // Application-wide feature flags
@@ -555,6 +570,12 @@ export class APIStack extends Stack {
         limit: this.isProd(props) ? 10000 : 500,
         period: apig.Period.DAY,
       },
+    });
+
+    // Hookup the API GW to the WAF
+    new wafv2.CfnWebACLAssociation(this, "APIWAFAssociation", {
+      resourceArn: api.deploymentStage.stageArn,
+      webAclArn: waf.attrArn,
     });
 
     // create the proxy to the fargate service
