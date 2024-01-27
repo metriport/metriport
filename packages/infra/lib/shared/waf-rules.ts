@@ -116,20 +116,20 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
   {
     name: "AWS-AWSManagedRulesSQLiRuleSet",
     priority: 50,
-    visibilityConfig: {
-      sampledRequestsEnabled: true,
-      cloudWatchMetricsEnabled: true,
-      metricName: "AWSManagedRulesSQLiRuleSet",
+    statement: {
+      managedRuleGroupStatement: {
+        vendorName: "AWS",
+        name: "AWSManagedRulesSQLiRuleSet",
+        excludedRules: [],
+      },
     },
     overrideAction: {
       none: {},
     },
-    statement: {
-      managedRuleGroupStatement: {
-        vendorName: "AWS",
-        name: "AWS-AWSManagedRulesSQLiRuleSet",
-        excludedRules: [],
-      },
+    visibilityConfig: {
+      sampledRequestsEnabled: true,
+      cloudWatchMetricsEnabled: true,
+      metricName: "AWS-AWSManagedRulesSQLiRuleSet",
     },
   },
   // Blocks attacks targeting LFI (Local File Injection) for Linux systems.
@@ -137,20 +137,20 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
   {
     name: "AWS-AWSManagedRulesLinuxRuleSet",
     priority: 60,
-    visibilityConfig: {
-      sampledRequestsEnabled: true,
-      cloudWatchMetricsEnabled: true,
-      metricName: "AWSManagedRulesLinuxRuleSet",
+    statement: {
+      managedRuleGroupStatement: {
+        vendorName: "AWS",
+        name: "AWSManagedRulesLinuxRuleSet",
+        excludedRules: [],
+      },
     },
     overrideAction: {
       none: {},
     },
-    statement: {
-      managedRuleGroupStatement: {
-        vendorName: "AWS",
-        name: "AWS-AWSManagedRulesLinuxRuleSet",
-        excludedRules: [],
-      },
+    visibilityConfig: {
+      sampledRequestsEnabled: true,
+      cloudWatchMetricsEnabled: true,
+      metricName: "AWS-AWSManagedRulesLinuxRuleSet",
     },
   },
   // Blocks request patterns associated with the exploitation of vulnerabilities specific to POSIX and POSIX-like operating systems;
@@ -159,20 +159,20 @@ export const wafRules: wafv2.CfnWebACL.RuleProperty[] = [
   {
     name: "AWS-AWSManagedRulesUnixRuleSet",
     priority: 70,
-    visibilityConfig: {
-      sampledRequestsEnabled: true,
-      cloudWatchMetricsEnabled: true,
-      metricName: "AWSManagedRulesUnixRuleSet",
+    statement: {
+      managedRuleGroupStatement: {
+        vendorName: "AWS",
+        name: "AWSManagedRulesUnixRuleSet",
+        excludedRules: [],
+      },
     },
     overrideAction: {
       none: {},
     },
-    statement: {
-      managedRuleGroupStatement: {
-        vendorName: "AWS",
-        name: "AWS-AWSManagedRulesUnixRulesSet",
-        excludedRules: [],
-      },
+    visibilityConfig: {
+      sampledRequestsEnabled: true,
+      cloudWatchMetricsEnabled: true,
+      metricName: "AWS-AWSManagedRulesUnixRuleSet",
     },
   },
 ];
