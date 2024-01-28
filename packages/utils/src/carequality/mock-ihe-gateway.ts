@@ -6,6 +6,12 @@ import { processIncomingRequest as processIncomingPdRequest } from "@metriport/c
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
+/* 
+This is a mock IHE gateway for Carequality interfaces to handle patient discovery (PD),
+document query (DQ), and document retrieval (DR) requests. Use it for testing logic in 
+@metriport/core
+*/
+
 import express, { Application, Request, Response } from "express";
 
 const apiUrl = getEnvVarOrFail("API_URL");

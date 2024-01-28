@@ -30,6 +30,8 @@ export const documentQueryReqToExternalGWSchema = documentQueryDefaultReqSchema.
 export type DocumentQueryReqToExternalGW = z.infer<typeof documentQueryReqToExternalGWSchema>;
 
 // FROM EXTERNAL GATEWAY
-export const documentQueryReqFromExternalGWSchema = documentQueryDefaultReqSchema;
+export const documentQueryReqFromExternalGWSchema = documentQueryDefaultReqSchema.omit({
+  cxId: true,
+});
 
 export type DocumentQueryReqFromExternalGW = z.infer<typeof documentQueryReqFromExternalGWSchema>;

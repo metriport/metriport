@@ -58,14 +58,17 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
           lastNameInitial: data?.lastNameInitial,
         },
       });
-      // call convertToDomainObject(response) here
+      if (!response.data) {
+        console.log(`No patients found for ${JSON.stringify(data)}`);
+        throw new Error();
+      }
       const patients: Patient[] = response.data.map((patient: PatientDTO) =>
         getDomainFromDTO(patient)
       );
       patients.forEach(validatePatient);
       return patients;
     } catch (error) {
-      console.log("Failing on request to internal endpoint", error);
+      console.log(`Failing on request to internal endpoint  ${JSON.stringify(error)}`);
       throw error;
     }
   }

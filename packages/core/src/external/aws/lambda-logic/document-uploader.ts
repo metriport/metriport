@@ -1,6 +1,8 @@
 import axios from "axios";
 import { MetriportError } from "../../../util/error/metriport-error";
-import { S3Utils, parseS3FileName, buildDestinationKeyMetadata } from "../s3";
+import { S3Utils } from "../s3";
+import { buildDestinationKeyMetadata } from "../../carequality/dq/utils";
+import { parseS3FileName } from "../../../domain/utils";
 import { DocumentReference } from "@medplum/fhirtypes";
 import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
 import {
@@ -59,10 +61,16 @@ export async function documentUploaderHandler(
   }
 
   // Get file info from the copied file
-  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(
+  const { exists, size, contentType, eTag } = await s3Utils.getFileInfoFromS3(
     destinationKey,
     destinationBucket
   );
+
+  if (!exists) {
+    const message = `Failed to get file info from the copied file for cxId: ${cxId}, patientId: ${patientId}, docId: ${docId}`;
+    console.log(message);
+    throw new MetriportError(message, null, { destinationBucket, destinationKey });
+  }
 
   const fileData: FileData = {
     mimeType: contentType,
@@ -74,8 +82,8 @@ export async function documentUploaderHandler(
 
   try {
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
-    const stringSize = size ? size.toString() : "";
-    const hash = eTag ? eTag : "";
+    const stringSize = size.toString();
+    const hash = eTag;
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
@@ -166,6 +174,8 @@ async function createAndUploadMetadataFile({
     title,
   });
 
-  console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
+  console.log(
+    `Uploading metadata to S3 with key: ${s3MetadataFileName}, cxId: ${cxId}, patientId: ${patientId}`
+  );
   await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
 }

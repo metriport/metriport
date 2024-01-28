@@ -3,13 +3,7 @@ import {
   DocumentQueryRespToExternalGW,
 } from "@metriport/ihe-gateway-sdk";
 import { validateDQ } from "./validating-dq";
-import {
-  XDSUnknownPatientId,
-  XDSUnknownCommunity,
-  XDSMissingHomeCommunityId,
-  XDSRegistryError,
-  constructDQErrorResponse,
-} from "../error";
+import { IHEGatewayError, XDSRegistryError, constructDQErrorResponse } from "../error";
 
 export async function processIncomingRequest(
   payload: DocumentQueryReqFromExternalGW
@@ -28,12 +22,7 @@ export async function processIncomingRequest(
 
     return response;
   } catch (error) {
-    if (
-      error instanceof XDSUnknownPatientId ||
-      error instanceof XDSUnknownCommunity ||
-      error instanceof XDSMissingHomeCommunityId ||
-      error instanceof XDSRegistryError
-    ) {
+    if (error instanceof IHEGatewayError) {
       return constructDQErrorResponse(payload, error);
     } else {
       return constructDQErrorResponse(payload, new XDSRegistryError());

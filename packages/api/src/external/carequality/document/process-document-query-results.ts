@@ -1,4 +1,5 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { createS3FileName } from "@metriport/core/domain/utils";
 import { out } from "@metriport/core/util/log";
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";

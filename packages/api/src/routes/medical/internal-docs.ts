@@ -1,4 +1,5 @@
-import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { createS3FileName } from "@metriport/core/domain/utils";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";

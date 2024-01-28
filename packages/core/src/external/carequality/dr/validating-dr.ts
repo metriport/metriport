@@ -12,7 +12,7 @@ import { XDSRegistryError } from "../error";
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
-export async function validateDR(
+export async function validateDRAndRetrievePresignedUrls(
   payload: DocumentRetrievalReqFromExternalGW
 ): Promise<DocumentReference[]> {
   validateBasePayload(payload);
@@ -27,21 +27,26 @@ export async function validateDR(
 
 async function retrievePreSignedUrls(documentIds: string[]): Promise<DocumentReference[]> {
   const s3Utils = new S3Utils(region);
-  const documentReferences: DocumentReference[] = [];
 
-  for (const id of documentIds) {
-    const url = await s3Utils.getSignedUrl({
-      bucketName: medicalDocumentsBucketName,
-      fileName: id,
-    });
-    const documentReference: DocumentReference = {
-      homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-      repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-      docUniqueId: id,
-      urn: url,
-    };
-    documentReferences.push(documentReference);
-  }
+  const promises = documentIds.map(id =>
+    s3Utils
+      .getSignedUrl({
+        bucketName: medicalDocumentsBucketName,
+        fileName: id,
+      })
+      .then(url => ({
+        homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+        repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
+        docUniqueId: id,
+        urn: url,
+      }))
+  );
+
+  const results = await Promise.allSettled(promises);
+
+  const documentReferences = results
+    .filter(result => result.status === "fulfilled")
+    .map(result => (result as PromiseFulfilledResult<DocumentReference>).value);
 
   return documentReferences;
 }

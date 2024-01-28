@@ -26,6 +26,19 @@ export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
 
+export const ON_DEMAND_OBJECT_TYPE = "urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248";
+export const CLASS_CODE_CLASSIFICATION_SCHEME = "urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a";
+export const CONDIDENTIALITY_CODE_CLASSIFICATION_SCHEME =
+  "urn:uuid:f4f85eac-e6cb-4883-b524-f2705394840f";
+export const FORMAT_CODE_CLASSIFICATION_SCHEME = "urn:uuid:a09d5840-386c-46f2-b5ad-9c3699a4309d";
+export const PRACTICE_SETTING_CODE_CLASSIFICATION_SCHEME =
+  "urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead";
+export const HEALTHCARE_FACILITY_TYPE_CODE_CLASSIFICATION_SCHEME =
+  "urn:uuid:f33fb8ac-18af-42cc-ae0e-ed0b0bdb91e1";
+export const TYPE_CODE_CLASSIFICATION_SCHEME = "urn:uuid:f0306f51-975f-434e-a61c-c59651d33983";
+export const PATIENT_ID_CLASSIFICATION_SCHEME = "urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427";
+export const DOCUMENT_ENTRY_CLASSIFICATION_SCHEME = "urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab";
+
 export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.2": USState.AK, // Alaska Driver's License
   "urn:oid:2.16.840.1.113883.4.3.1": USState.AL, // Alabama Driver's License
