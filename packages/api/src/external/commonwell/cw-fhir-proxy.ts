@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { downloadedFromCW } from "@metriport/core/external/fhir/shared/index";
+import { out } from "@metriport/core/util/log";
 import { Request, Response } from "express";
 import proxy from "express-http-proxy";
 import Router from "express-promise-router";
@@ -7,8 +9,9 @@ import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
 import { asyncHandler } from "../../routes/util";
 import { Config } from "../../shared/config";
-import { downloadedFromCW } from "@metriport/core/external/fhir/shared/index";
 import { getOrgOrFail } from "./cw-fhir-proxy-helpers";
+
+const { log } = out(`CW FHIR proxy`);
 
 const fhirServerUrl = Config.getFHIRServerUrl();
 const pathSeparator = "/";
@@ -73,8 +76,7 @@ export async function process(path: string, queryString?: string): Promise<MainT
  * Processes the request before sending it the FHIR server.
  */
 export async function proxyReqPathResolver(req: Request) {
-  console.log(`ORIGINAL HEADERS: `, JSON.stringify(req.headers));
-  console.log(`ORIGINAL URL: `, req.url);
+  log(`ORIGINAL URL: ${req.url}, HEADERS: ${JSON.stringify(req.headers)}`);
   const parts = req.url.split("?");
   const path = parts[0];
   const queryString = parts[1];
@@ -84,7 +86,7 @@ export async function proxyReqPathResolver(req: Request) {
 
   const updatedURL =
     `/fhir` + (tenant ? `/${tenant}` : "") + updatedPath + (updatedQuery ? "?" + updatedQuery : "");
-  console.log(`UPDATED URL: `, updatedURL);
+  log(`UPDATED URL: ${updatedURL}`);
   return updatedURL;
 }
 
@@ -98,9 +100,9 @@ export async function userResDecorator(
   userRes: Response // eslint-disable-line @typescript-eslint/no-unused-vars
 ) {
   try {
+    const cxPatientId = userReq?.query["patient.identifier"];
     const payloadString = proxyResData.toString("utf8");
-    const updatedPayload = payloadString;
-    const payload = JSON.parse(updatedPayload);
+    const payload = JSON.parse(payloadString);
     // Filter out CW data while we don't manage to do it with FHIR query
     if (payload.entry) {
       payload.entry = payload.entry.filter((entry: any) => {
@@ -108,10 +110,12 @@ export async function userResDecorator(
       });
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
     }
-    return JSON.stringify(payload);
+    const response = JSON.stringify(payload);
+    log(`Responing to CW (cxPatientId ${cxPatientId}): ${response}`);
+    return response;
   } catch (err) {
-    console.log(`Error parsing/transforming response: `, err);
-    console.log(`RAW, ORIGINAL RESPONSE: `, proxyResData);
+    log(`Error parsing/transforming response: `, err);
+    log(`RAW, ORIGINAL RESPONSE: `, proxyResData);
     return proxyResData;
   }
 }
