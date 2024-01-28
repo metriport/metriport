@@ -5,7 +5,7 @@ import {
 import { Patient } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
+import { toFHIR as convertPatientToFHIR } from "../../fhir/patient/index";
 import { validateFHIRAndExtractPatient } from "./validating-pd";
 import {
   XDSRegistryError,

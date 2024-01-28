@@ -225,7 +225,7 @@ export class S3Utils {
   ): Promise<string[]> {
     const params = {
       Bucket: bucketName,
-      prefix: prefix,
+      Prefix: prefix,
     };
 
     try {
