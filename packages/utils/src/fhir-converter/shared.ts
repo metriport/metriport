@@ -1,5 +1,5 @@
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
-import { parseS3FileName } from "@metriport/core/external/aws/s3";
+import { parseS3FileName } from "@metriport/core/domain/utils";
 import { getFileContentsAsync, getFileNames } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
 

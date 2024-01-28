@@ -174,6 +174,8 @@ async function createAndUploadMetadataFile({
     title,
   });
 
-  console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
+  console.log(
+    `Uploading metadata to S3 with key: ${s3MetadataFileName}, cxId: ${cxId}, patientId: ${patientId}`
+  );
   await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
 }

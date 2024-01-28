@@ -2,7 +2,7 @@ import {
   DocumentRetrievalReqFromExternalGW,
   DocumentRetrievalRespToExternalGW,
 } from "@metriport/ihe-gateway-sdk";
-import { validateDR } from "./validating-dr";
+import { validateDRAndRetrievePresignedUrls } from "./validating-dr";
 import { IHEGatewayError, constructDRErrorResponse, XDSRegistryError } from "../error";
 
 export async function processIncomingRequest(
@@ -10,7 +10,7 @@ export async function processIncomingRequest(
 ): Promise<DocumentRetrievalRespToExternalGW> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
-    const documents = await validateDR(payload);
+    const documents = await validateDRAndRetrievePresignedUrls(payload);
 
     // construct response
     const response: DocumentRetrievalRespToExternalGW = {

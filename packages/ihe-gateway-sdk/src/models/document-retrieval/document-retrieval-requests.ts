@@ -15,7 +15,9 @@ export type DocumentRetrievalReqToExternalGW = z.infer<
 >;
 
 // FROM EXTERNAL GATEWAY
-export const documentRetrievalReqFromExternalGWSchema = documentRetrievalReqDefaultSchema;
+export const documentRetrievalReqFromExternalGWSchema = documentRetrievalReqDefaultSchema.omit({
+  cxId: true,
+});
 
 export type DocumentRetrievalReqFromExternalGW = z.infer<
   typeof documentRetrievalReqFromExternalGWSchema

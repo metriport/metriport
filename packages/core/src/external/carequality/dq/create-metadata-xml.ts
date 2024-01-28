@@ -70,6 +70,8 @@ export function createExtrinsicObjectXml({
 
   const objectTypeClassification =
     "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification";
+  const externalIdentifierClassification =
+    "urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier";
 
   const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="${ON_DEMAND_OBJECT_TYPE}" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
@@ -179,14 +181,14 @@ export function createExtrinsicObjectXml({
       </Name>
     </Classification>
     
-    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${PATIENT_ID_CLASSIFICATION_SCHEME}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${patientId}^^^&amp;${homeCommunityId}&amp;ISO">
+    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${PATIENT_ID_CLASSIFICATION_SCHEME}" objectType=""${externalIdentifierClassification}"}" registryObject="${documentUUID}" value="${patientId}^^^&amp;${homeCommunityId}&amp;ISO">
       <Name>
         <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
       </Name>
     </ExternalIdentifier>
     
     <!-- (IHE) REQUIRED - DocumentEntry.uniqueId - Globally unique identifier assigned to the document by its creator -->
-    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${DOCUMENT_ENTRY_CLASSIFICATION_SCHEME}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="${documentUUID}" value="${createDocumentUniqueId(
+    <ExternalIdentifier id="${uuidv7()}" identificationScheme="${DOCUMENT_ENTRY_CLASSIFICATION_SCHEME}" objectType=""${externalIdentifierClassification}"}" registryObject="${documentUUID}" value="${createDocumentUniqueId(
     documentUniqueId
   )}">
       <Name>
