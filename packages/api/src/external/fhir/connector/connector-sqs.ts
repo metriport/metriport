@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Config } from "../../../shared/config";
 import { sendMessageToQueue } from "../../aws/sqs";
-import { FHIRServerConnector, FHIRServerRequest } from "./connector";
+import { FHIRServerConnector, FHIRServerRequest, makeJobId } from "./connector";
 
 dayjs.extend(utc);
 
@@ -20,7 +20,7 @@ export class FHIRServerConnectorSQS implements FHIRServerConnector {
       messageAttributes: {
         cxId,
         patientId,
-        jobId: `${requestId}_${documentId}`,
+        jobId: makeJobId(requestId, documentId),
         startedAt: dayjs.utc().toISOString(),
       },
     });

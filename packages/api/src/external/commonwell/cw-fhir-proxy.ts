@@ -111,7 +111,7 @@ export async function userResDecorator(
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
     }
     const response = JSON.stringify(payload);
-    log(`Responing to CW (cxPatientId ${cxPatientId}): ${response}`);
+    log(`Responding to CW (cxPatientId ${cxPatientId}): ${response}`);
     return response;
   } catch (err) {
     log(`Error parsing/transforming response: `, err);
