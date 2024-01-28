@@ -13,6 +13,7 @@ import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
+import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
 import {
   getDocToFileFunction,
   getS3Info,
@@ -553,6 +554,13 @@ export async function downloadDocsAndUpsertFHIR({
             }
             file = await uploadToS3();
           } catch (error) {
+            // Remove the doc ref mapping we created early in this function
+            try {
+              await removeDocRefMapping({ cxId, docRefMappingId: doc.id });
+            } catch (error2) {
+              log(`Error removing docRefMapping (${doc.id}): ${errorToString(error2)}`);
+            }
+
             if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
 
             const isZeroLength = doc.content.size === 0;
