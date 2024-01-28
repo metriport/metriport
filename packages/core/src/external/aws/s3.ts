@@ -218,7 +218,7 @@ export class S3Utils {
     }
   }
 
-  async retrieveDocumentContentFromS3(
+  async retrieveDocumentsContentFromS3(
     bucketName: string,
     prefix: string,
     endsWith: string

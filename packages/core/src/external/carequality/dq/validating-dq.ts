@@ -32,7 +32,7 @@ export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promi
   const s3Utils = new S3Utils(region);
   const prefix = `${cxId}/${id}/uploads/`;
   const endsWith = "_metadata.xml";
-  const documentContents = await s3Utils.retrieveDocumentContentFromS3(
+  const documentContents = await s3Utils.retrieveDocumentsContentFromS3(
     medicalDocumentsBucketName,
     prefix,
     endsWith

@@ -67,7 +67,7 @@ export async function documentUploaderHandler(
   );
 
   if (!exists) {
-    const message = "Failed to get file info from the copied file";
+    const message = `Failed to get file info from the copied file for cxId: ${cxId}, patientId: ${patientId}, docId: ${docId}`;
     console.log(message);
     throw new MetriportError(message, null, { destinationBucket, destinationKey });
   }
