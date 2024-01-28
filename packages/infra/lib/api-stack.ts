@@ -1,4 +1,12 @@
-import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import {
+  Aspects,
+  aws_wafv2 as wafv2,
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+} from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -17,7 +25,6 @@ import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
-import { aws_wafv2 as wafv2 } from "aws-cdk-lib";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
@@ -26,6 +33,7 @@ import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
+import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -686,6 +694,12 @@ export class APIStack extends Stack {
     });
 
     createScheduledAPIQuotaChecker({
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+    });
+    createScheduledDBMaintenance({
       stack: this,
       lambdaLayers,
       vpc: this.vpc,
