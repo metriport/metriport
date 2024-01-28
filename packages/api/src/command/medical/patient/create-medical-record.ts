@@ -1,10 +1,9 @@
-import { MedicalRecordDateAndFormat, ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
-import { HTML_FILE_EXTENSION, PDF_FILE_EXTENSION } from "@metriport/core/util/mime";
+import { S3Utils, createMRSummaryFileName } from "@metriport/core/external/aws/s3";
 import { Config } from "../../../shared/config";
-import { MEDICAL_RECORD_KEY } from "./convert-fhir-bundle";
+import { MedicalRecordsStatusDTO } from "../../../routes/medical/dtos/medical-record-summary-dto";
 
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
@@ -34,13 +33,9 @@ export async function getMedicalRecordSummaryStatus({
 }: {
   patientId: string;
   cxId: string;
-}): Promise<MedicalRecordDateAndFormat> {
-  const s3FileKey = createS3FileName(
-    cxId,
-    patientId,
-    `${MEDICAL_RECORD_KEY}${HTML_FILE_EXTENSION}`
-  );
-  const s3PdfFileKey = `${s3FileKey}${PDF_FILE_EXTENSION}`;
+}): Promise<MedicalRecordsStatusDTO> {
+  const s3FileKey = createMRSummaryFileName(cxId, patientId, "html");
+  const s3PdfFileKey = createMRSummaryFileName(cxId, patientId, "pdf");
 
   const [htmlMRInfo, pdfMRInfo] = await Promise.all([
     s3Utils.getFileInfoFromS3(s3FileKey, bucketName),
@@ -48,9 +43,14 @@ export async function getMedicalRecordSummaryStatus({
   ]);
 
   return {
-    htmlExists: htmlMRInfo.exists,
-    pdfExists: pdfMRInfo.exists,
-    date: htmlMRInfo.dateCreated ?? pdfMRInfo.dateCreated,
+    html: {
+      exists: htmlMRInfo.exists,
+      createdAt: htmlMRInfo.createdAt,
+    },
+    pdf: {
+      exists: pdfMRInfo.exists,
+      createdAt: pdfMRInfo.createdAt,
+    },
   };
 }
 
@@ -63,14 +63,10 @@ export async function getMedicalRecordSummary({
   cxId: string;
   conversionType: "pdf" | "html";
 }): Promise<string | undefined> {
-  const { pdfExists, htmlExists } = await getMedicalRecordSummaryStatus({ patientId, cxId });
+  const { pdf, html } = await getMedicalRecordSummaryStatus({ patientId, cxId });
 
-  if ((conversionType === "pdf" && pdfExists) || (conversionType === "html" && htmlExists)) {
-    const extension =
-      conversionType === "html"
-        ? HTML_FILE_EXTENSION
-        : `${HTML_FILE_EXTENSION}${PDF_FILE_EXTENSION}`;
-    const s3FileKey = createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}${extension}`);
+  if ((conversionType === "pdf" && pdf.exists) || (conversionType === "html" && html.exists)) {
+    const s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);
     const url = await s3Utils.getSignedUrl({ bucketName, fileName: s3FileKey });
     return url;
   }

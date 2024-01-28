@@ -99,8 +99,8 @@ function getDomainFromDTO(dto: PatientDTO): Patient {
     id: dto.id,
     eTag: dto.eTag ?? "",
     cxId: "",
-    createdAt: dto.dateCreated ?? new Date(),
-    updatedAt: dto.dateCreated ?? new Date(),
+    createdAt: dto.createdAt ?? new Date(),
+    updatedAt: dto.createdAt ?? new Date(),
     facilityIds: dto.facilityIds,
     externalId: dto.externalId ?? "",
     data: {

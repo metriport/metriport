@@ -10,7 +10,7 @@ export type PatientDTO = {
   personalIdentifiers?: PersonalIdentifier[];
   facilityIds: string[];
   externalId?: string;
-  dateCreated?: Date;
+  createdAt?: Date;
   address: Address | Address[];
   contact?: Contact | Contact[];
 };

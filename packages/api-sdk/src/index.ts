@@ -33,8 +33,8 @@ export {
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  MedicalRecordDateAndFormat,
 } from "./medical/models/document";
+export { MedicalRecordsStatus } from "./medical/models/medicalRecordStatus";
 export {
   Facility,
   FacilityCreate,
