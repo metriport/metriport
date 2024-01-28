@@ -14,10 +14,8 @@ export type SetBulkGetDocUrlProgress = {
   requestId?: string;
 };
 
-export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
-  status: BulkGetDocumentsUrlProgress["status"];
-  requestId: string;
-};
+export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer &
+  Required<Pick<SetBulkGetDocUrlProgress, "status" | "requestId">>;
 
 /**
  * The function `appendBulkGetDocUrlProgress` updates the progress of a BulkGetDocumentsUrl query to a patient's data.
@@ -41,7 +39,7 @@ export async function appendBulkGetDocUrlProgress({
     });
 
     const bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress = existingPatient.data
-      ?.bulkGetDocumentsUrlProgress ?? { status: BulkGetDocUrlStatus.processing };
+      ?.bulkGetDocumentsUrlProgress ?? { status: "processing" };
 
     if (status) {
       bulkGetDocumentsUrlProgress.status = status;

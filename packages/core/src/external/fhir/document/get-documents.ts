@@ -12,7 +12,7 @@ export async function getDocuments({
   documentIds = [],
 }: {
   cxId: string;
-  patientId?: string;
+  patientId?: string | string[];
   from?: string | undefined;
   to?: string | undefined;
   documentIds?: string[];

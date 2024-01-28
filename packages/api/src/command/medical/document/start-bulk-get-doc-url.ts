@@ -46,11 +46,11 @@ export const startBulkGetDocumentUrls = async (
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
+  if (bulkGetDocUrlProgress && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
-    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, patient);
+    return createBulkGetDocumentUrlQueryResponse(bulkGetDocUrlProgress.status, patient);
   }
 
   const requestId = getOrGenerateRequestId(bulkGetDocUrlProgress);
@@ -58,7 +58,7 @@ export const startBulkGetDocumentUrls = async (
   const updatedPatient = await storeBulkGetDocumentUrlQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    status: BulkGetDocUrlStatus.processing,
+    status: "processing",
     requestId,
   });
 
@@ -71,11 +71,11 @@ export const startBulkGetDocumentUrls = async (
   const documentBulkSigner = makeDocumentBulkSigner();
   try {
     await documentBulkSigner.sign(payload);
-    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.processing, updatedPatient);
+    return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
   } catch (error) {
     appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId: cxId },
-      status: BulkGetDocUrlStatus.failed,
+      status: "failed",
       requestId: requestId,
     });
     const msg = "Error in startBulkGetDocumentUrls";
@@ -86,7 +86,7 @@ export const startBulkGetDocumentUrls = async (
         error,
       },
     });
-    return createBulkGetDocumentUrlQueryResponse(BulkGetDocUrlStatus.failed, updatedPatient);
+    return createBulkGetDocumentUrlQueryResponse("failed", updatedPatient);
   }
 };
 
@@ -100,7 +100,7 @@ export function getOrGenerateRequestId(
   bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress | undefined
 ): string {
   if (
-    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress?.status) &&
+    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress) &&
     bulkGetDocumentsUrlProgress?.requestId
   ) {
     return bulkGetDocumentsUrlProgress.requestId;

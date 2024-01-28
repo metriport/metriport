@@ -18,7 +18,6 @@ import {
 import { processPatientDocumentRequest } from "../../command/medical/document/document-webhook";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
@@ -423,7 +422,7 @@ router.post(
     const status = documents.length > 0 ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
-      status: status === "completed" ? BulkGetDocUrlStatus.completed : BulkGetDocUrlStatus.failed,
+      status: status === "completed" ? "completed" : "failed",
       requestId: requestId,
     });
 
@@ -432,7 +431,7 @@ router.post(
       cxId,
       patientId,
       "medical.document-bulk-download-urls",
-      status as MAPIWebhookStatus,
+      status,
       requestId
     );
 

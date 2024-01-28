@@ -63,16 +63,15 @@ export async function signUrlsAndSendToApi(
   }
 }
 
-function processDocuments(
+async function processDocuments(
   documents: DocumentReference[],
   s3Utils: S3Utils,
   bucketName: string
 ): Promise<DocumentFromBulkSignerLambda[]> {
-  const results: DocumentFromBulkSignerLambda[] = [];
-  return Promise.all(
+  const results = await Promise.all(
     documents.map(async doc => {
       const attachment = doc?.content?.[0]?.attachment;
-      if (!attachment || !attachment.title) return;
+      if (!attachment || !attachment.title) return undefined;
 
       const fileName = attachment.title;
       const signedUrl = await s3Utils.getSignedUrl({
@@ -81,7 +80,7 @@ function processDocuments(
         durationSeconds: SIGNED_URL_DURATION.asSeconds(),
       });
 
-      results.push({
+      return {
         id: doc.id || "",
         fileName: fileName,
         description: doc.description,
@@ -91,9 +90,10 @@ function processDocuments(
         status: doc.status,
         indexed: attachment.creation,
         type: doc.type,
-      });
+      };
     })
-  ).then(() => results);
+  );
+  return results.flatMap(d => d ?? []);
 }
 
 export function makeApiClientTriggerBulkSignerCompletion(apiURL: string) {

@@ -1,3 +1,3 @@
-import { DocumentReference } from "@metriport/api-sdk/medical/models/document";
+import { DocumentReference } from "@medplum/fhirtypes";
 
 export type DocumentFromBulkSignerLambda = DocumentReference & { url: string };
