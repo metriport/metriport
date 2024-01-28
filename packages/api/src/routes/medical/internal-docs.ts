@@ -1,4 +1,11 @@
+import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
+import {
+  DocumentBulkSignerLambdaResponse,
+  DocumentBulkSignerLambdaResponseArraySchema,
+} from "@metriport/core/domain/document-bulk-signer-response";
+import { convertResult } from "@metriport/core/domain/document-query";
 import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
+import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -13,18 +20,23 @@ import { checkDocumentQueries } from "../../command/medical/document/check-doc-q
 import {
   isDocumentQueryProgressEqual,
   queryDocumentsAcrossHIEs,
-  updateDocQuery,
+  updateConversionProgress,
 } from "../../command/medical/document/document-query";
+import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
+import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
-import { convertResult } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
+import { decomposeJobId } from "../../external/fhir/connector/connector";
+import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
+import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
 import { Config } from "../../shared/config";
+import { parseISODate } from "../../shared/date";
+import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
@@ -32,16 +44,6 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import {
-  DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
-import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
-import { parseISODate } from "../../shared/date";
-import { errorToString } from "../../shared/log";
-import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
-import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
-import { isMedicalDataSource } from "@metriport/core/external/index";
 
 const router = Router();
 const upload = multer();
@@ -136,9 +138,11 @@ router.post(
     const convertResult = convertResultSchema.parse(status);
     const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
 
-    const requestId = jobId?.split("_")[0] ?? "";
-    const docId = jobId?.split("_")[1] ?? "";
-
+    // keeping the old logic for now, but we should avoid having these optional parameters that can
+    // lead to empty string or `undefined` being used as IDs
+    const decomposed = jobId ? decomposeJobId(jobId) : { requestId: "", documentId: "" };
+    const requestId = decomposed?.requestId ?? "";
+    const docId = decomposed?.documentId ?? "";
     const hasSource = isMedicalDataSource(source);
 
     log(`Converted document ${docId} with status ${convertResult}, details: ${details}`);
@@ -161,7 +165,7 @@ router.post(
         source,
       });
     } else {
-      let expectedPatient = await updateDocQuery({
+      let expectedPatient = await updateConversionProgress({
         patient: { id: patientId, cxId },
         convertResult,
       });
@@ -181,7 +185,7 @@ router.post(
           )
         ) {
           log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
-          expectedPatient = await updateDocQuery({
+          expectedPatient = await updateConversionProgress({
             patient: { id: patientId, cxId },
             convertResult,
           });
@@ -231,7 +235,7 @@ router.post(
     }
     const patient = await getPatientOrFail({ cxId, id: patientId });
 
-    const updatedPatient = await updateDocQuery({
+    const updatedPatient = await appendDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,

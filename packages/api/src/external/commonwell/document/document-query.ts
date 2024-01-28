@@ -414,7 +414,7 @@ function addMetriportDocRefId({
  * CW for them (optional) - defaults to `false`
  * @returns Document References as they were stored on the FHIR server
  */
-export async function downloadDocsAndUpsertFHIR({
+async function downloadDocsAndUpsertFHIR({
   patient,
   facilityId,
   documents,
