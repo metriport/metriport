@@ -2,27 +2,17 @@
 import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { makeDocumentReference } from "@metriport/core/external/fhir/__tests__/document-reference";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
-import { sendNotification } from "@metriport/core/external/slack/index";
-import { base64ToString } from "@metriport/core/util/base64";
 import { AxiosResponse } from "axios";
-import { api, testApiKey } from "../../../../__tests__/shared";
+import { api, baseURL } from "../../../../__tests__/shared";
 
 jest.setTimeout(15000);
 
 const binary = makeBinary();
 const patient = makePatient();
-const document = makeDocumentReference({ patient, binary });
+const document = makeDocumentReference({ patient, binary, baseURL });
 
 beforeAll(async () => {
   await api.put(`/fhir/R4/Patient/${patient.id}`, patient);
-
-  // TODO remove this
-  const decodedKey = base64ToString(testApiKey);
-  const [, cxId] = decodedKey.split(":");
-  sendNotification({
-    message: cxId,
-    subject: "@Raf - `cxId` for e2e testing",
-  });
 });
 afterAll(async () => {
   await api.delete(`/fhir/R4/Patient/${patient.id}`);
@@ -45,7 +35,6 @@ describe("Integration FHIR Document", () => {
 
   describe("Document Reference", () => {
     test("create document", async () => {
-      console.log(`Creating document (id ${document.id}): ${JSON.stringify(document)}`);
       const res = await api.put(`/fhir/R4/DocumentReference/${document.id}`, document);
       expect(res.status).toBe(201);
       expect(res.data).toBeTruthy();
