@@ -9,6 +9,20 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
+        "extension":
+        [
+            {
+                "valueCodeableConcept":
+                {
+                    "coding":
+                    [
+                        {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=relatedPerson.classCode) as |respObj|}}
+                            {{>DataType/Coding.hbs code=respObj.code}},
+                        {{/with}}
+                    ],
+                },
+            },
+        ],
         "relationship":
         [
             {
@@ -19,7 +33,6 @@
                 [
                     {{>DataType/Coding.hbs code=relatedPerson.code}},
                     {{#with (evaluate 'Utils/RelatedPersonCodeFromText.hbs' text=(toLower relatedPerson.code.originalText._)) as |respObj|}}
-                        {{log respObj }}
                         {{>DataType/Coding.hbs code=respObj.code}}
                     {{/with}}
                 ]
