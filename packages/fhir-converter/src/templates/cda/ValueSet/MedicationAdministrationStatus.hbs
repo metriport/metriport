@@ -1,0 +1,35 @@
+{{! https://build.fhir.org/ig/HL7/ccda-on-fhir/branches/master/ConceptMap-CF-MedicationStatus.html }}
+{{!https://www.hl7.org/fhir/R4/valueset-medication-admin-status.html }}
+{{#with (toLower code) as |normalizedCode|}}
+  {{#if normalizedCode}}
+    {{#if (or (eq normalizedCode "aborted") (eq normalizedCode "discontinued"))}}
+      "stopped"
+    {{else if (eq normalizedCode "stopped")}}
+      "stopped"
+    {{else if (eq normalizedCode "failed")}}
+      "stopped"
+    {{else if (eq normalizedCode "in-progress")}}
+      "in-progress"
+    {{else if (eq normalizedCode "active")}}
+      "in-progress"
+    {{else if (eq normalizedCode "not-done")}}
+      "not-done"
+    {{else if (eq normalizedCode "entered-in-error")}}
+      "entered-in-error"
+    {{else if (eq normalizedCode "error")}}
+      "entered-in-error"
+    {{else if (eq normalizedCode "nullified")}}
+      "entered-in-error"
+    {{else if (eq normalizedCode "on-hold")}}
+      "on-hold"
+    {{else if (eq normalizedCode "suspended")}}
+      "on-hold"
+    {{else if (eq normalizedCode "complete")}}
+      "completed"
+    {{else if (eq normalizedCode "completed")}}
+      "completed"
+    {{else}}
+      "unknown"
+    {{/if}}
+  {{/if}}
+{{/with}}

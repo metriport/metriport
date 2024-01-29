@@ -1,13 +1,15 @@
 import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
-import { stringToBoolean } from "@metriport/shared";
+import { sleep, stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import stringify from "json-stringify-safe";
+import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
@@ -16,13 +18,14 @@ import {
   getPatientIds,
   getPatientOrFail,
   getPatientStates,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
-  getCxsWithEnhancedCoverageFeatureFlagValue,
   getCxsWithCQDirectFeatureFlagValue,
+  getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -48,14 +51,16 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { dtoFromModel } from "./dtos/patientDTO";
 
 dayjs.extend(duration);
 
 const router = Router();
+const patientChunkSize = 25;
+const SLEEP_TIME = dayjs.duration({ seconds: 5 });
 const patientLoader = new PatientLoaderLocal();
 
 /** ---------------------------------------------------------------------------
@@ -527,6 +532,47 @@ router.get(
       conversionType,
     });
     return res.json(data);
+  })
+);
+
+/**
+ * POST /internal/patient/trigger-update
+ *
+ * Triggers an update for all of a cx's patients. The point of this is to add coordinates to the patient's addresses.
+ *
+ * @param req.query.cxId The customer ID.
+ *
+ */
+router.post(
+  "/trigger-update",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patients = await getPatients({ cxId });
+    const chunks = chunk(patients, patientChunkSize);
+    const { log } = out(`Patient trigger update - cx ${cxId}`);
+    log(`Will update ${patients.length} patients in ${chunks.length} chunks`);
+
+    let totalUpdated = 0;
+    for (const chunk of chunks) {
+      const results = await Promise.allSettled(
+        chunk.map(async patient => {
+          const updateInfo: PatientUpdateCmd = {
+            id: patient.id,
+            cxId: patient.cxId,
+            ...patient.data,
+          };
+          await updatePatient(updateInfo, false);
+        })
+      );
+      const successful = results.filter(r => r.status === "fulfilled").length;
+      totalUpdated += successful;
+
+      log(`Updated ${successful} patients in this chunk`);
+      await sleep(SLEEP_TIME.asMilliseconds());
+    }
+
+    log(`Finished updating ${totalUpdated} patients`);
+    return res.sendStatus(status.OK);
   })
 );
 

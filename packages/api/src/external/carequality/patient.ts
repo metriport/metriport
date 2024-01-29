@@ -1,3 +1,4 @@
+import { PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
 import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -9,7 +10,7 @@ import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
-import { searchNearbyCQOrganizations } from "./command/cq-directory/search-cq-directory";
+import { searchCQDirectoriesAroundPatientAddresses } from "./command/cq-directory/search-cq-directory";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import {
@@ -43,26 +44,9 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const iheGateway = makeIheGatewayAPI();
     if (!iheGateway) return;
 
-    const { id, cxId } = patient;
-    const organization = await getOrganizationOrFail({ cxId });
-
-    const fhirPatient = toFHIR(patient);
-
-    const nearbyCQOrgs = await searchNearbyCQOrganizations({
-      cxId,
-      patientId: id,
-    });
-    const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
-    const numGateways = xcpdGateways.length;
-
-    const pdRequest = createPatientDiscoveryRequest({
-      patient: fhirPatient,
-      cxId: patient.cxId,
-      xcpdGateways,
-      facilityNPI,
-      orgName: organization.data.name,
-      orgOid: organization.oid,
-    });
+    const { cxId } = patient;
+    const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI);
+    const numGateways = pdRequest.gateways.length;
 
     log(`Kicking off patient discovery. RequestID: ${pdRequest.id}`);
     // Intentionally asynchronous - we will be checking for the results in the database
@@ -115,6 +99,30 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
 export async function remove(patient: Patient): Promise<void> {
   console.log(`Deleting CQ data - M patientId ${patient.id}`);
   await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
+}
+
+export async function prepareForPatientDiscovery(
+  patient: Patient,
+  facilityNPI: string
+): Promise<PatientDiscoveryReqToExternalGW> {
+  const { cxId } = patient;
+  const fhirPatient = toFHIR(patient);
+  const [organization, nearbyCQOrgs] = await Promise.all([
+    getOrganizationOrFail({ cxId }),
+    searchCQDirectoriesAroundPatientAddresses({ patient }),
+  ]);
+
+  const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
+
+  const pdRequest = createPatientDiscoveryRequest({
+    patient: fhirPatient,
+    cxId: patient.cxId,
+    xcpdGateways,
+    facilityNPI,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+  });
+  return pdRequest;
 }
 
 export async function handlePatientDiscoveryResults(

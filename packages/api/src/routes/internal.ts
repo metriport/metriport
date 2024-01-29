@@ -1,3 +1,5 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { checkApiQuota } from "../command/medical/admin/api";
@@ -12,7 +14,9 @@ import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-acces
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import BadRequestError from "../errors/bad-request";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
+import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
+import { getReferencesFromFHIR } from "../external/fhir/references/get-references";
 import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
@@ -228,6 +232,28 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxsWithLowQuota = await checkApiQuota();
     return res.status(httpStatus.OK).json({ cxsWithLowQuota });
+  })
+);
+
+/**
+ * TODO Remove or repurpose this after tests are done.
+ *
+ * Built for testing purposes
+ */
+router.post(
+  "/references-from-fhir",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+
+    const bundle = req.body as Bundle<Resource>;
+    const resources = (bundle.entry ?? []).flatMap(e => e.resource ?? []);
+
+    const fhir = makeFhirApi(cxId);
+    const { missingReferences } = getReferencesFromResources({ resources });
+
+    const result = await getReferencesFromFHIR(missingReferences, fhir, console.log);
+
+    return res.status(httpStatus.OK).json(result);
   })
 );
 

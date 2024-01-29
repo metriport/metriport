@@ -1,49 +1,48 @@
-import express from "express";
-import { generateITI38 } from "@metriport/core/external/carequality/dq/dq-parsing";
-import {
-  generateITI39,
-  generateITI39MTOM,
-} from "@metriport/core/external/carequality/dr/dr-parsing";
-import bodyParser from "body-parser";
+import * as dotenv from "dotenv";
+dotenv.config();
+import { processIncomingRequest as processIncomingDrRequest } from "@metriport/core/external/carequality/dr/process-incoming-dr";
+import { processIncomingRequest as processIncomingDqRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
+import { processIncomingRequest as processIncomingPdRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
+import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
-// TODO whole file should be migrated into mirth replacement module once we pass verification with testing partners.
+import express, { Application, Request, Response } from "express";
 
-const app = express();
+const apiUrl = getEnvVarOrFail("API_URL");
+const mpi = new MPIMetriportAPI(apiUrl);
 
-app.use(bodyParser.text({ type: "application/soap+xml" }));
+const app: Application = express();
 
-app.post("/iti38/v1", async (req, res) => {
+app.use(express.json({ limit: "2mb" }));
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+
+app.post("/pd/v1", async (req: Request, res: Response) => {
   try {
-    const iti38 = await generateITI38(req.body);
-    res.set("Content-Type", "application/soap+xml; charset=utf-8");
-    res.send(iti38);
+    const response = await processIncomingPdRequest(req.body, mpi);
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     res.status(400).send(err.message);
   }
 });
 
-app.post("/iti39/v1", async (req, res) => {
+app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
-    // const iti39 = await generateITI39(req.body);
-    console.log("req.header", req.headers["content-type"]);
+    const response = await processIncomingDqRequest(req.body);
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.send({ response });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (err: any) {
+    res.status(400).send(err.message);
+  }
+});
 
-    if (
-      req.headers &&
-      req.headers["content-type"] &&
-      req.headers["content-type"].includes("multipart/related")
-    ) {
-      const iti39 = await generateITI39MTOM(req.body);
-      res.set(
-        "Content-Type",
-        'multipart/related; boundary=--MIMEBoundary782a6cafc4cf4aab9dbf291522804454; charset=UTF-8; type="application/soap+xml"'
-      );
-      res.send(iti39);
-    } else {
-      const iti39 = await generateITI39(req.body);
-      res.set("Content-Type", "application/soap+xml; charset=utf-8");
-      res.send(iti39);
-    }
+app.post("/dr/v1", async (req: Request, res: Response) => {
+  try {
+    const response = await processIncomingDrRequest(req.body);
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (err: any) {
     res.status(400).send(err.message);

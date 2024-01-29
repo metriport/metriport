@@ -9,9 +9,10 @@ import {
 } from "@medplum/fhirtypes";
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { emptyFunction } from "@metriport/shared";
 import { Patient } from "@metriport/core/domain/patient";
 import { QueryProgress } from "@metriport/core/domain/query-status";
+import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import { emptyFunction } from "@metriport/shared";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
@@ -19,6 +20,7 @@ import {
 } from "../../../external/fhir/patient/resource-filter";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { capture } from "@metriport/core/util/capture";
+import { getReferencesFromFHIR } from "../../../external/fhir/references/get-references";
 import { Util } from "../../../shared/util";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
@@ -242,7 +244,15 @@ export async function getConsolidatedPatientData({
 
   const filtered = filterByDocumentIds(success, documentIds, log);
 
-  const entry: BundleEntry[] = filtered.map(r => ({ resource: r }));
+  const { missingReferences } = getReferencesFromResources({
+    resources: filtered,
+    referencesToExclude: ["Patient"],
+  });
+  const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
+
+  const grouped = [...filtered, ...missingRefsOnFHIR];
+
+  const entry: BundleEntry[] = grouped.map(r => ({ resource: r }));
   return buildResponse(entry);
 }
 

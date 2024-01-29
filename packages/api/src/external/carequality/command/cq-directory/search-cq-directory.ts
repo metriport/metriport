@@ -1,9 +1,8 @@
+import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
-import { geocodeAddresses } from "../../../aws/address";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { getPatientOrFail } from "../../../../command/medical/patient/get-patient";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
 
@@ -18,26 +17,24 @@ export type CQOrgBasicDetails = {
 };
 
 /**
- * Searches the Carequality Directory for organizations within a specified radius of a patient's addresses.
- * @param cxId The ID of the customer organization.
- * @param patientId The ID of the patient.
+ * Searches the Carequality Directory for organizations within a specified radius of all patient's addresses.
+ *
+ * @param patient The patient whose addresses to search around.
  * @param radiusInMiles Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
  *
- * @returns Returns the details of organizations within the specified radius of the patient's address.
+ * @returns Returns the details of organizations within the specified radius of the patient's addresses.
  */
-export async function searchNearbyCQOrganizations({
-  cxId,
-  patientId,
+export async function searchCQDirectoriesAroundPatientAddresses({
+  patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
 }: {
-  cxId: string;
-  patientId: string;
+  patient: Patient;
   radiusInMiles?: number;
 }): Promise<CQOrgBasicDetails[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
-  const patient = await getPatientOrFail({ id: patientId, cxId });
-  const coordinates = await geocodeAddresses(patient.data.address);
+  const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
+  if (!coordinates.length) throw new Error("Failed to get patient coordinates");
 
   const orgs = await searchCQDirectoriesByRadius({
     coordinates,

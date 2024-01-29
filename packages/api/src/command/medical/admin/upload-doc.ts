@@ -1,5 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { FileData } from "@metriport/core/domain/lambda-logic/document-uploader";
+import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import dayjs from "dayjs";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
@@ -137,19 +137,20 @@ export async function updateDocumentReference({
 }: {
   cxId: string;
   fileData: FileData;
-}): Promise<void> {
+}): Promise<DocumentReference | undefined> {
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
     const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
-    await fhirApi.updateResource(updatedDocumentReference);
-    return;
+    const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
+    return docRefFinal;
   } catch (error) {
     const message = "Failed to update the document reference for a CX-uploaded file";
     console.log(message);
     capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
+    return undefined;
   }
 }
 

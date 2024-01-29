@@ -11,7 +11,7 @@ var errorCodes = require("./lib/error/error").errorCodes;
 var errorMessage = require("./lib/error/error").errorMessage;
 var fs = require("fs");
 var fse = require("fs-extra");
-var gfs = require("./lib/git-filesystem/git-filesystem")(constants.TEMPLATE_FILES_LOCATION);
+// var gfs = require("./lib/git-filesystem/git-filesystem")(constants.TEMPLATE_FILES_LOCATION);
 var path = require("path");
 var bodyParser = require("body-parser");
 var swaggerUi = require("swagger-ui-express");
@@ -44,7 +44,7 @@ module.exports = function (app) {
   // access function for constants  (test instrumentation)
   app.setConstants = function (c) {
     constants = c;
-    gfs.setRepoPath(c.TEMPLATE_FILES_LOCATION);
+    // gfs.setRepoPath(c.TEMPLATE_FILES_LOCATION);
     templateCache = new fileSystemCache(c.TEMPLATE_FILES_LOCATION);
     messageCache = new fileSystemCache(c.SAMPLE_DATA_LOCATION);
     workerPool.broadcast({ type: "constantsUpdated", data: JSON.stringify(c) });
