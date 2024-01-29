@@ -1026,5 +1026,12 @@ module.exports.external = [
       }
       return JSON.stringify(referenceData).slice(1, -1);
     }
-  }
+  },
+  {
+    name: "personalRelationshipRoleTypeCodeSystem",
+    description: "Returns the code system for the related person relationship code",
+    func: function () {
+      return "2.16.840.1.113883.1.11.19563";
+    },
+  },
 ];

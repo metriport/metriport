@@ -61,6 +61,8 @@
         "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
     {{else if (eq code '2.16.840.1.113883.5.1')}}
         "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
+    {{else if (eq code '2.16.840.1.113883.1.11.19563')}}
+        "https://www.hl7.org/fhir/R4/v3/PersonalRelationshipRoleType/vs.html"
     {{else if (eq (length (match code '[0123456789.]+')) 1)}}
         "urn:oid:{{code}}"
     {{else}}
