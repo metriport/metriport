@@ -3,7 +3,7 @@ import { DocumentBulkSignerLocal } from "@metriport/core/domain/document-signing
 import { DocumentBulkSigner } from "@metriport/core/domain/document-signing/document-bulk-signer";
 import { Config } from "../../shared/config";
 
-const bulkSigningLambdaName = "BulkUrlSigningLambda";
+const bulkSigningLambdaName = Config.getDocumentSignerLambdaName();
 
 export function makeDocumentBulkSigner(): DocumentBulkSigner {
   const region = Config.getAWSRegion();

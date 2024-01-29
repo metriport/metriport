@@ -66,8 +66,4 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
-
-  static getDocumentSignerLambdaName(): string {
-    return getEnvVarOrFail("DOCUMENT_SIGNER_LAMBDA_NAME");
-  }
 }
