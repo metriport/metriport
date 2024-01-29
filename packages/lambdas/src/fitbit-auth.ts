@@ -4,11 +4,7 @@ import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
 import { createHmac } from "crypto";
 import status from "http-status";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
@@ -42,9 +38,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     return forwardCallToServer(event);
   }
 
-  capture.message("Fitbit webhooks authentication fail", {
-    extra: { context: "webhook.fitbit.fitbitAuthLambda" },
-  });
   return buildResponse(status.NOT_FOUND);
 });
 

@@ -1,11 +1,7 @@
 import * as Sentry from "@sentry/serverless";
 import { DynamoDB } from "aws-sdk";
 import axios from "axios";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const tableName = getEnvOrFail("TOKEN_TABLE_NAME");

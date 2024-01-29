@@ -3,11 +3,7 @@ import * as Sentry from "@sentry/serverless";
 import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
 import status from "http-status";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const tenoviAuthHeader = getEnvOrFail("TENOVI_AUTH_HEADER");
@@ -38,9 +34,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     return forwardCallToServer(event);
   }
 
-  capture.message("Tenovi webhooks authentication fail", {
-    extra: { context: "webhook.tenovi.tenoviAuthLambda" },
-  });
   return buildResponse(status.NOT_FOUND);
 });
 

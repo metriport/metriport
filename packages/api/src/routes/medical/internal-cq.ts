@@ -1,9 +1,9 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import {
-  patientDiscoveryRespFromExternalGWSchema,
   documentQueryRespFromExternalGWSchema,
   documentRetrievalRespFromExternalGWSchema,
+  patientDiscoveryRespFromExternalGWSchema,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -21,11 +21,10 @@ import {
   IHEResultType,
   handleIHEResponse,
 } from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 
 dayjs.extend(duration);
 const router = Router();
@@ -64,9 +63,6 @@ router.get(
     if (org.length > 1) {
       const msg = "More than one organization with the same OID found in the CQ directory";
       console.log(msg, oid);
-      capture.message(msg, {
-        extra: { context: `carequality.directory`, oid, organizations: org, level: "info" },
-      });
     }
 
     const matchingOrg = org[0];

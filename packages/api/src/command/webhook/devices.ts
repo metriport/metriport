@@ -4,7 +4,6 @@ import { Product } from "../../domain/product";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "./webhook";
@@ -79,15 +78,6 @@ export const sendProviderConnected = async (
         `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
         `error: ${errorToString(error)}`
     );
-    capture.error(error, {
-      extra: {
-        userId: connectedUser.id,
-        provider,
-        deviceIds,
-        context: `webhook.sendProviderConnected`,
-        error,
-      },
-    });
   }
 };
 
@@ -123,14 +113,6 @@ export const sendProviderDisconnected = async (
         `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
         `error: ${error}`
     );
-    capture.error(error, {
-      extra: {
-        userId: connectedUser.id,
-        providers: disconnectedProviders,
-        context: `webhook.sendProviderDiconnected`,
-        error,
-      },
-    });
   }
 };
 

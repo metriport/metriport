@@ -2,11 +2,7 @@ import * as Sentry from "@sentry/serverless";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import axios from "axios";
 import { exec } from "child_process";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 

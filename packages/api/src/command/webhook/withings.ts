@@ -2,7 +2,6 @@ import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { ConnectedUser } from "../../models/connected-user";
 import { Constants } from "../../shared/constants";
-import { capture } from "../../shared/notifications";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportDevicesUsage, WebhookUserDataPayload } from "./devices";
@@ -52,9 +51,7 @@ export const processData = async (data: WithingsWebhook) => {
     await processRequest(webhookRequest, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
-    capture.error(error, {
-      extra: { data, context: `webhook.withings.processData` },
-    });
+    console.log(`Error on processWithingsData: ${error}`);
   }
 };
 

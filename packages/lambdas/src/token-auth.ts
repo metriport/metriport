@@ -1,11 +1,7 @@
 import * as Sentry from "@sentry/serverless";
 import * as lambda from "aws-lambda";
 import { DynamoDB } from "aws-sdk";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const tableName = getEnvOrFail("TOKEN_TABLE_NAME");
 

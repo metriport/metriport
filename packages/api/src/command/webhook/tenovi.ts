@@ -4,8 +4,8 @@ import convert from "convert-units";
 import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
 import {
-  updateBiometricsWithBloodGluc,
   updateBiometricsWithBP,
+  updateBiometricsWithBloodGluc,
   updateBiometricsWithForcedExpVol,
   updateBiometricsWithHR,
   updateBiometricsWithPeakFlow,
@@ -15,16 +15,15 @@ import {
 } from "../../mappings/tenovi/biometrics";
 import { TenoviMetricTypes, tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { analytics, EventTypes } from "../../shared/analytics";
+import { EventTypes, analytics } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import {
-  reportDevicesUsage,
   WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
   WebhookUserPayload,
+  reportDevicesUsage,
 } from "./devices";
 import { processRequest } from "./webhook";
 import { createWebhookRequest } from "./webhook-request";
@@ -47,9 +46,6 @@ export const processMeasurementData = async (data: TenoviMeasurement): Promise<v
     if (userData) createAndSendPayload(connectedUsers, userData);
   } catch (error) {
     console.log(`Failed to process Tenovi WH - error: ${errorToString(error)}`);
-    capture.error(error, {
-      extra: { context: `webhook.processMeasurementData`, error, data },
-    });
   }
 };
 
@@ -93,14 +89,6 @@ export function mapData(data: TenoviMeasurement): WebhookUserDataPayload | undef
   } else if (!tenoviMetricTypes.includes(metric as TenoviMetricTypes)) {
     const msg = `Tenovi webhook sent a new metric type`;
     console.log(`${msg} - ${metric}: ${JSON.stringify(data)}`);
-    capture.message(msg, {
-      extra: {
-        content: `webhook.tenovi.mapData`,
-        data,
-        metric,
-      },
-      level: "warning",
-    });
     return;
   }
 
@@ -147,9 +135,6 @@ async function createAndSendPayload(
         reportDevicesUsage(cxId, [userId]);
       } catch (error) {
         console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${errorToString(error)}`);
-        capture.error(error, {
-          extra: { user, context: `webhook.createAndSendPayload`, error, data, userId },
-        });
       }
     })
   );

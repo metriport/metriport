@@ -1,12 +1,8 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import * as Sentry from "@sentry/serverless";
-import status from "http-status";
-import { capture } from "./shared/capture";
-import { getEnvOrFail } from "./shared/env";
 import { APIGatewayEvent } from "aws-lambda";
-
-// Keep this as early on the file as possible
-capture.init();
+import status from "http-status";
+import { getEnvOrFail } from "./shared/env";
 
 const fitbitSubscriberVerificationCode = getEnvOrFail("FITBIT_SUBSCRIBER_VERIFICATION_CODE");
 
@@ -35,8 +31,5 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     }
   }
 
-  capture.message("Fitbit subscriber verification fail", {
-    extra: { context: "webhook.fitbit.fitbitSubscriberVerificationLambda" },
-  });
   return buildResponse(status.NOT_FOUND);
 });

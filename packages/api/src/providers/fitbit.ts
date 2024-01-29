@@ -48,13 +48,12 @@ import { mapToNutrition } from "../mappings/fitbit/nutrition";
 import { mapToSleep } from "../mappings/fitbit/sleep";
 import { mapToUser } from "../mappings/fitbit/user";
 import { ConnectedUser } from "../models/connected-user";
-import { analytics, EventTypes } from "../shared/analytics";
+import { EventTypes, analytics } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { PROVIDER_FITBIT } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { ExtraType, executeAndReportAnalytics } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";
 import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
@@ -523,9 +522,6 @@ export class Fitbit extends Provider implements OAuth2 {
           currentUser.id
         }, Error: ${JSON.stringify(rejected)}`
       );
-      capture.message(`Failed to revoke the token or delete WH subscriptions of a Fitbit user.`, {
-        extra: { rejected, fitbitUserId, currentUser },
-      });
       if (throwOnError) {
         throw new FitbitPostAuthError(
           "Failed to revoke the token or delete WH subscriptions of a Fitbit user.",
@@ -604,9 +600,6 @@ export class Fitbit extends Provider implements OAuth2 {
 
     if (rejected.length > 0) {
       console.log(`Failed to get active Fitbit WH subscriptions.`, rejected);
-      capture.message(`Failed to get active Fitbit WH subscriptions.`, {
-        extra: { context: `fitbit.getActiveSubscriptions`, rejected },
-      });
     }
     const activeSubs = activeSubscriptions.flat();
     return activeSubs;
@@ -640,7 +633,6 @@ export class Fitbit extends Provider implements OAuth2 {
 
     if (rejected.length > 0) {
       console.log(`Failed to create Fitbit WH subscriptions. Error: ${JSON.stringify(rejected)}`);
-      capture.message(`Failed to create Fitbit WH subscriptions.`, { extra: { rejected } });
       if (throwOnError) {
         throw new FitbitPostAuthError("Failed to create Fitbit WH subscriptions.", rejected);
       }

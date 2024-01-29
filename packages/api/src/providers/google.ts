@@ -15,9 +15,8 @@ import { mapToSleep } from "../mappings/google/sleep";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_GOOGLE } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { ExtraType, executeAndReportAnalytics } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";
 import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
@@ -157,17 +156,8 @@ export class Google extends Provider implements OAuth2 {
     });
 
     const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
-    if (resSessions.status === "rejected") {
-      capture.error("Google activity sessions promise was rejected", {
-        extra: { context: `google.fetch.sessions`, reason: resSessions.reason },
-      });
-    }
+
     const data = resData.status === "fulfilled" ? resData.value : undefined;
-    if (resData.status === "rejected") {
-      capture.error("Google activity data promise was rejected", {
-        extra: { context: `google.fetch.data`, reason: resData.reason },
-      });
-    }
 
     if (!sessions && !data) {
       throw new Error("All Requests failed");
