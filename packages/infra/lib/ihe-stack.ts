@@ -14,9 +14,6 @@ import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import * as s3 from "aws-cdk-lib/aws-s3";
-import { aws_wafv2 as wafv2 } from "aws-cdk-lib";
-import { wafRules } from "./shared/waf-rules";
-import * as cdk from "aws-cdk-lib";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -88,18 +85,6 @@ export class IHEStack extends Stack {
       securityPolicy: apigwv2.SecurityPolicy.TLS_1_2,
     });
 
-    const waf = new wafv2.CfnWebACL(this, "IHEGatewayWAF", {
-      defaultAction: { allow: {} },
-      scope: "REGIONAL",
-      name: `IHEGatewayWAF`,
-      rules: wafRules,
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: `IHEGatewayWAF-Metric`,
-        sampledRequestsEnabled: false,
-      },
-    });
-
     const apigw2 = new apigwv2.HttpApi(this, "IHEAPIGatewayv2", {
       defaultDomainMapping: {
         domainName: domainName,
@@ -109,19 +94,6 @@ export class IHEStack extends Stack {
         allowHeaders: ["*"],
       },
       disableExecuteApiEndpoint: true,
-    });
-
-    const apiGatewayArn = cdk.Stack.of(this).formatArn({
-      service: "apigateway",
-      resource: "apis",
-      resourceName: apigw2.httpApiId,
-      region: cdk.Stack.of(this).region,
-      account: cdk.Stack.of(this).account,
-    });
-
-    new wafv2.CfnWebACLAssociation(this, "APIWAFAssociation", {
-      resourceArn: apiGatewayArn,
-      webAclArn: waf.attrArn,
     });
 
     // commenting out so CFN deletes
