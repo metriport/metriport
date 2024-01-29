@@ -31,7 +31,7 @@ import { appendDocQueryProgress } from "../../command/medical/patient/append-doc
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
-import { decomposeJobId } from "../../external/fhir/connector/connector";
+import { parseJobId } from "../../external/fhir/connector/connector";
 import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
 import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
 import { Config } from "../../shared/config";
@@ -140,7 +140,7 @@ router.post(
 
     // keeping the old logic for now, but we should avoid having these optional parameters that can
     // lead to empty string or `undefined` being used as IDs
-    const decomposed = jobId ? decomposeJobId(jobId) : { requestId: "", documentId: "" };
+    const decomposed = jobId ? parseJobId(jobId) : { requestId: "", documentId: "" };
     const requestId = decomposed?.requestId ?? "";
     const docId = decomposed?.documentId ?? "";
     const hasSource = isMedicalDataSource(source);

@@ -11,11 +11,11 @@ export interface FHIRServerConnector {
 }
 
 // TODO try to make `requestId` required
-export function makeJobId(requestId: string | undefined, documentId: string): string {
+export function createJobId(requestId: string | undefined, documentId: string): string {
   return `${requestId}_${documentId}`;
 }
 
-export function decomposeJobId(
+export function parseJobId(
   jobId?: string
 ): { requestId?: string; documentId?: string } | undefined {
   if (!jobId) return undefined;
