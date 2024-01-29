@@ -1,10 +1,10 @@
 export type MedicalRecordsStatusDTO = {
   html: {
     exists: boolean;
-    createdAt?: Date;
+    createdAt?: string;
   };
   pdf: {
     exists: boolean;
-    createdAt?: Date;
+    createdAt?: string;
   };
 };

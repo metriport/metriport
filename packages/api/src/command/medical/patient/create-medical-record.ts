@@ -45,11 +45,11 @@ export async function getMedicalRecordSummaryStatus({
   return {
     html: {
       exists: htmlMRInfo.exists,
-      createdAt: htmlMRInfo.createdAt,
+      createdAt: htmlMRInfo.createdAt?.toString(),
     },
     pdf: {
       exists: pdfMRInfo.exists,
-      createdAt: pdfMRInfo.createdAt,
+      createdAt: pdfMRInfo.createdAt?.toString(),
     },
   };
 }

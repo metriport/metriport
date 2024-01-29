@@ -1,10 +1,10 @@
 export type MedicalRecordsStatus = {
   html: {
     exists: boolean;
-    createdAt?: Date;
+    createdAt?: string;
   };
   pdf: {
     exists: boolean;
-    createdAt?: Date;
+    createdAt?: string;
   };
 };

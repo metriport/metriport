@@ -306,10 +306,10 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Checks for the existence of a medical record summary. Indicates whether the summary exists in PDF and HTML formats, as well as the date when they were generated.
+   * Checks for the existence of a medical record summary. Indicates whether the summary exists in PDF and HTML formats and when they were generated.
    *
    * @param patientId The ID of the patient to check the medical record summary for.
-   * @return An object containing the booleans for the existence of the Medical Record Summary in PDF and HTML formats, as well as the date when they were generated.
+   * @return An object containing the booleans for the existence and dates of the Medical Record Summary in PDF and HTML formats.
    */
   async getMedicalRecordSummaryStatus(patientId: string): Promise<MedicalRecordsStatus> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-status`);
