@@ -12,7 +12,9 @@ export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 
 const decodedKey = base64ToString(testApiKey);
 const [, cxId] = decodedKey.split(":");
-console.log(`Using cxId for e2e tests: ${cxId}`);
+console.log(
+  `Using cxId for e2e tests (dashes replaced by comma+space): ${cxId?.replaceAll("-", ", ")}`
+);
 
 export const baseURL = getEnvVarOrFail("API_URL");
 
