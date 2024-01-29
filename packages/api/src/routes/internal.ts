@@ -3,12 +3,10 @@ import { getReferencesFromResources } from "@metriport/core/external/fhir/shared
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { checkApiQuota } from "../command/medical/admin/api";
-import { peekIntoSidechainDLQ } from "../command/medical/admin/peek-dlq";
 import {
   populateFhirServer,
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
-import { redriveSidechainDLQ } from "../command/medical/admin/redrive-dlq";
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
@@ -117,39 +115,6 @@ router.post(
       });
       result[org.cxId] = orgRes;
     }
-    return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * POST /internal/redrive-sidechain-dlq
- *
- * Pull messages from the sidechain DLQ, unique, and reprocess them.
- *
- * @param req.query.maxNumberOfMessages - The maximum number of messages to pull. Defaults to all (-1).
- * @return 200 When successful, including the original and unique counts.
- */
-router.post(
-  "/redrive-sidechain-dlq",
-  asyncHandler(async (req: Request, res: Response) => {
-    const maxNumberOfMessagesRaw = getFrom("query").optional("maxNumberOfMessages", req);
-    const maxNumberOfMessages = maxNumberOfMessagesRaw ? parseInt(maxNumberOfMessagesRaw) : -1;
-
-    const result = await redriveSidechainDLQ(maxNumberOfMessages);
-    return res.json(result);
-  })
-);
-
-/** ---------------------------------------------------------------------------
- * GET /internal/peek-sidechain-dlq
- *
- * Read the first 10 messages from the sidechain DLQ without removing them, and return a link
- * to download the files they point to.
- */
-router.get(
-  "/peek-sidechain-dlq",
-  asyncHandler(async (req: Request, res: Response) => {
-    const result = await peekIntoSidechainDLQ();
     return res.json(result);
   })
 );

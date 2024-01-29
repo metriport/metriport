@@ -5,9 +5,9 @@ import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -31,7 +31,6 @@ import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
-import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -201,23 +200,6 @@ export class APIStack extends Stack {
       dynamoConstructName,
       slackNotification?.alarmAction
     );
-    // table for sidechain FHIR converter key management
-    const dynamoSidechainKeysConstructName = "SidechainFHIRConverterKeys";
-    let dynamoDBSidechainKeysTable: dynamodb.Table | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      dynamoDBSidechainKeysTable = new dynamodb.Table(this, dynamoSidechainKeysConstructName, {
-        partitionKey: { name: "apiKey", type: dynamodb.AttributeType.STRING },
-        replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
-        replicationTimeout: Duration.hours(3),
-        encryption: dynamodb.TableEncryption.AWS_MANAGED,
-        pointInTimeRecovery: true,
-      });
-      this.addDynamoPerformanceAlarms(
-        dynamoDBSidechainKeysTable,
-        dynamoSidechainKeysConstructName,
-        slackNotification?.alarmAction
-      );
-    }
 
     //-------------------------------------------
     // Multi-purpose bucket
@@ -289,18 +271,6 @@ export class APIStack extends Stack {
       dlq: fhirConverterDLQ,
       bucket: fhirConverterBucket,
     } = fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    // sidechain FHIR converter queue
-    const {
-      queue: sidechainFHIRConverterQueue,
-      dlq: sidechainFHIRConverterDLQ,
-      bucket: sidechainFHIRConverterBucket,
-    } = sidechainFHIRConverterConnector.createQueueAndBucket({
       stack: this,
       lambdaLayers,
       envType: props.config.environmentType,
@@ -394,38 +364,36 @@ export class APIStack extends Stack {
       service: apiService,
       loadBalancerAddress: apiLoadBalancerAddress,
       serverAddress: apiServerUrl,
-    } = createAPIService(
-      this,
+    } = createAPIService({
+      stack: this,
       props,
       secrets,
-      this.vpc,
+      vpc: this.vpc,
       dbCredsSecret,
       dynamoDBTokenTable,
-      slackNotification?.alarmAction,
+      alarmAction: slackNotification?.alarmAction,
       dnsZones,
-      props.config.fhirServerUrl,
-      fhirServerQueue?.queueUrl,
-      fhirConverterQueue.queueUrl,
-      fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRConverterQueue,
-      sidechainFHIRConverterDLQ,
+      fhirServerUrl: props.config.fhirServerUrl,
+      fhirServerQueueUrl: fhirServerQueue?.queueUrl,
+      fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
+      fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       documentQueryResultsLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
-      ccdaSearchQueue,
-      ccdaSearchDomain.domainEndpoint,
-      { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
-      ccdaSearchIndexName,
-      {
+      searchIngestionQueue: ccdaSearchQueue,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
+      searchIndexName: ccdaSearchIndexName,
+      appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
         cxsWithCQDirectFeatureFlag,
       },
-      cookieStore
-    );
+      cookieStore,
+    });
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
@@ -478,23 +446,6 @@ export class APIStack extends Stack {
         })
       : undefined;
 
-    // sidechain FHIR converter
-    const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-      ? sidechainFHIRConverterConnector.createLambda({
-          envType: props.config.environmentType,
-          stack: this,
-          lambdaLayers,
-          vpc: this.vpc,
-          sourceQueue: sidechainFHIRConverterQueue,
-          destinationQueue: fhirServerQueue,
-          dlq: sidechainFHIRConverterDLQ,
-          fhirConverterBucket: sidechainFHIRConverterBucket,
-          apiServiceDnsAddress: apiLoadBalancerAddress,
-          alarmSnsAction: slackNotification?.alarmAction,
-          dynamoDBSidechainKeysTable,
-        })
-      : undefined;
-
     // Add ENV after apiserivce is created
     documentQueryResultsLambda.addEnvironment(
       "API_URL",
@@ -507,7 +458,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
     createDocQueryChecker({
       lambdaLayers,
