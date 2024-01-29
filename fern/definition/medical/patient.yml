@@ -107,7 +107,59 @@ service:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
 
+    getMedicalRecordSummary:
+      display-name: Get Medical Record Summary
+      docs: |
+        Returns the URL for a medical record summary
+      method: GET
+      path: /{patientId}/medical-record
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      request:
+        name: MedicalRecordSummaryRequest
+        query-parameters:
+          conversionType:
+            type: string
+            docs: The type of conversion to perform. "html" or "pdf"
+      response: 
+        type: string
+        docs: The URL for the medical record summary
+
+    getMedicalRecordSummaryStatus:
+      display-name: Get Medical Record Summary Status
+      docs: |
+        Returns the status of a medical record summary
+      method: GET
+      path: /{patientId}/medical-record-status
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      response: 
+        type: MedicalRecordStatus
+        docs: the status of the medical record summary
+
 types:
+  MedicalRecordStatus:
+    properties:
+      html: 
+        type: RecordStatus
+        docs: The status of the html conversion
+      pdf:
+        type: RecordStatus
+        docs: The status of the pdf conversion
+    
+  RecordStatus:
+    properties:
+      exists:
+        type: boolean
+        docs: Whether or not the record exists 
+      createdAt:
+        type: optional<string>
+        docs: The date the record was created
+
   PersonalIdentifier:
     union:
       driversLicense: DriversLicense
