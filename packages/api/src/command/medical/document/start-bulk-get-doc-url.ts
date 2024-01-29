@@ -70,7 +70,7 @@ export const startBulkGetDocumentUrls = async (
 
   const documentBulkSigner = makeDocumentBulkSigner();
   try {
-    await documentBulkSigner.sign(payload);
+    documentBulkSigner.sign(payload);
     return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
   } catch (error) {
     appendBulkGetDocUrlProgress({

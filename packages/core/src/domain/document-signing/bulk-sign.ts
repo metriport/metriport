@@ -4,8 +4,10 @@ import duration from "dayjs/plugin/duration";
 import { DocumentReference } from "@medplum/fhirtypes";
 import { capture } from "../../util/capture";
 import { S3Utils } from "../../external/aws/s3";
-import { DocumentFromBulkSignerLambda } from "./document-bulk-signer-response";
+import { DocumentReferenceWithURL } from "../document-bulk-signer-response";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
+import { MetriportError } from "../../util/error/metriport-error";
+import { BulkGetDocUrlStatus } from "../bulk-get-document-url";
 
 const ossApi = axios.create();
 dayjs.extend(duration);
@@ -16,7 +18,8 @@ export type BulkDownloadWebhookParams = {
   cxId: string;
   patientId: string;
   requestId: string;
-  documents?: DocumentFromBulkSignerLambda[];
+  documents?: DocumentReferenceWithURL[];
+  status: BulkGetDocUrlStatus;
 };
 
 // Proposed fix with const, no let, try/catch, and sending error to callInternalEndpoint
@@ -29,36 +32,42 @@ export async function signUrlsAndSendToApi(
   apiURL: string
 ): Promise<void> {
   const s3Utils = new S3Utils(region);
-  const ossApiClient = makeApiClientTriggerBulkSignerCompletion(apiURL);
+  const callInternalEndpoint = makeApiClientTriggerBulkSignerCompletion(apiURL);
   try {
     const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
-    const documentsAndUrl: DocumentFromBulkSignerLambda[] = await processDocuments(
+    const documentsAndUrl: DocumentReferenceWithURL[] = await processDocuments(
       documents,
       s3Utils,
       bucketName
     );
 
-    await ossApiClient.callInternalEndpoint({
+    await callInternalEndpoint({
       cxId,
       patientId,
       requestId,
       documents: documentsAndUrl,
+      status: "completed",
     });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    const msg = "Error in bulkUrlSigningLambda.signUrlsAndSendToApi";
+  } catch (error) {
+    const msg = "Failed to sign doc URL and send to API";
     const extra = {
-      patientId: patientId,
-      context: `bulkUrlSigningLambda.signUrlsAndSendToApi`,
+      cxId,
+      patientId,
+      requestId,
+      bucketName,
+      region,
+      apiURL,
+      context: `signUrlsAndSendToApi`,
       error,
     };
     console.log(`${msg}, ${JSON.stringify(extra)}`);
     capture.message(msg, { extra, level: "error" });
-    await ossApiClient.callInternalEndpoint({
+    await callInternalEndpoint({
       cxId,
       patientId,
       requestId,
       documents: [],
+      status: "failed",
     });
   }
 }
@@ -67,7 +76,7 @@ async function processDocuments(
   documents: DocumentReference[],
   s3Utils: S3Utils,
   bucketName: string
-): Promise<DocumentFromBulkSignerLambda[]> {
+): Promise<DocumentReferenceWithURL[]> {
   const results = await Promise.all(
     documents.map(async doc => {
       const attachment = doc?.content?.[0]?.attachment;
@@ -99,27 +108,29 @@ async function processDocuments(
 export function makeApiClientTriggerBulkSignerCompletion(apiURL: string) {
   const sendBulkDownloadUrl = `${apiURL}/internal/docs/bulk-signer-completion`;
 
-  return {
-    callInternalEndpoint: async function (params: BulkDownloadWebhookParams) {
-      try {
-        await ossApi.post(sendBulkDownloadUrl, params.documents, {
-          params: {
-            cxId: params.cxId,
-            patientId: params.patientId,
-            requestId: params.requestId,
-          },
-        });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        const msg = "Error notifying API";
-        const extra = {
-          url: sendBulkDownloadUrl,
-          statusCode: error.response?.status,
-          error,
-        };
-        console.log(`${msg}, ${JSON.stringify(extra)}`);
-        capture.message(msg, { extra, level: "info" });
-      }
-    },
+  return async function (params: BulkDownloadWebhookParams) {
+    try {
+      await ossApi.post(sendBulkDownloadUrl, params.documents, {
+        params: {
+          cxId: params.cxId,
+          patientId: params.patientId,
+          requestId: params.requestId,
+          status: params.status,
+        },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      const msg = "Error notifying API";
+      const extra = {
+        url: sendBulkDownloadUrl,
+        statusCode: error.response?.status,
+        error,
+      };
+      capture.message(msg, { extra, level: "info" });
+      throw new MetriportError(msg, undefined, {
+        url: sendBulkDownloadUrl,
+        statusCode: error.response?.status,
+      });
+    }
   };
 }

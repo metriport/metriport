@@ -13,6 +13,31 @@ export type ApiCapture = Capture & {
   setExtra: (extra: Record<string, unknown>) => void;
 };
 
+export type Capture = {
+  /**
+   * Captures an exception event and sends it to Sentry.
+   *
+   * @param error — An Error object.
+   * @param captureContext — Additional scope data to apply to exception event.
+   * @returns — The generated eventId.
+   */
+  error: (error: unknown, captureContext?: Partial<ScopeContext>) => string;
+
+  /**
+   * Captures an exception event and sends it to Sentry.
+   *
+   * @param message The message to send to Sentry.
+   * @param captureContext — Additional scope data to apply to exception event.
+   * @returns — The generated eventId.
+   */
+  message: (message: string, captureContext?: Partial<ScopeContext>) => string;
+};
+
+export const emptyCapture: Capture = {
+  error: () => "",
+  message: () => "",
+};
+
 export const capture: ApiCapture = {
   setUser: (user: UserData): void => {
     Sentry.setUser(user);
@@ -72,28 +97,3 @@ export function stringifyExtra(captureContext: Partial<ScopeContext>): Extras {
     {}
   );
 }
-
-export type Capture = {
-  /**
-   * Captures an exception event and sends it to Sentry.
-   *
-   * @param error — An Error object.
-   * @param captureContext — Additional scope data to apply to exception event.
-   * @returns — The generated eventId.
-   */
-  error: (error: unknown, captureContext?: Partial<ScopeContext>) => string;
-
-  /**
-   * Captures an exception event and sends it to Sentry.
-   *
-   * @param message The message to send to Sentry.
-   * @param captureContext — Additional scope data to apply to exception event.
-   * @returns — The generated eventId.
-   */
-  message: (message: string, captureContext?: Partial<ScopeContext>) => string;
-};
-
-export const emptyCapture: Capture = {
-  error: () => "",
-  message: () => "",
-};

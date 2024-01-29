@@ -347,6 +347,21 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
+    const bulkUrlSigningLambda = this.setupDocumentBulkSignerLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      fhirServerUrl: props.config.fhirServerUrl,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchIndex: ccdaSearchIndexName,
+      searchUserName: ccdaSearchUserName,
+      searchSecretName: ccdaSearchSecret.secretName,
+      loadBalancerDnsName: props.config.loadBalancerDnsName,
+    });
+
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
     if (!isSandbox(props.config)) {
       fhirToMedicalRecordLambda = this.setupFhirToMedicalRecordLambda({
@@ -397,6 +412,7 @@ export class APIStack extends Stack {
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       documentQueryResultsLambda,
+      bulkUrlSigningLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       ccdaSearchQueue,
@@ -613,21 +629,6 @@ export class APIStack extends Stack {
       medicalDocumentsBucket,
       medicalDocumentsUploadBucket,
       sentryDsn: props.config.lambdasSentryDSN,
-    });
-
-    this.setupDocumentBulkSignerLambda({
-      lambdaLayers,
-      vpc: this.vpc,
-      medicalDocumentsBucket: medicalDocumentsBucket,
-      fhirServerUrl: props.config.fhirServerUrl,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-      alarmAction: slackNotification?.alarmAction,
-      searchEndpoint: ccdaSearchDomain.domainEndpoint,
-      searchIndex: ccdaSearchIndexName,
-      searchUserName: ccdaSearchUserName,
-      searchSecretName: ccdaSearchSecret.secretName,
-      apiService: apiService,
     });
 
     this.setupGarminWebhookAuth({
@@ -1143,7 +1144,7 @@ export class APIStack extends Stack {
     searchIndex: string;
     searchUserName: string;
     searchSecretName: string;
-    apiService: ecs_patterns.NetworkLoadBalancedFargateService;
+    loadBalancerDnsName: string;
   }): Lambda {
     const {
       lambdaLayers,
@@ -1157,7 +1158,7 @@ export class APIStack extends Stack {
       searchIndex,
       searchUserName,
       searchSecretName,
-      apiService,
+      loadBalancerDnsName,
     } = ownProps;
 
     const bulkUrlSigningLambda = createLambda({
@@ -1172,7 +1173,7 @@ export class APIStack extends Stack {
         SEARCH_INDEX: searchIndex,
         SEARCH_USERNAME: searchUserName,
         SEARCH_SECRET_NAME: searchSecretName,
-        API_URL: `http://${apiService.loadBalancer.loadBalancerDnsName}`,
+        API_URL: `http://${loadBalancerDnsName}`,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -1183,8 +1184,6 @@ export class APIStack extends Stack {
     });
 
     medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
-    bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
-
     return bulkUrlSigningLambda;
   }
 

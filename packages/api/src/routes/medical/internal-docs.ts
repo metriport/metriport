@@ -28,8 +28,10 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { documentFromBulkSignerLambdaResponseArraySchema } from "./schemas/document-bulk-signer-response";
-import { DocumentFromBulkSignerLambda } from "@metriport/core/domain/document-signing/document-bulk-signer-response";
+import {
+  DocumentReferenceWithURL,
+  documentReferenceWithURLArraySchema,
+} from "@metriport/core/domain/document-bulk-signer-response";
 import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
@@ -407,7 +409,7 @@ router.post(
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
  * @param req.query.requestId - The ID of the request.
- * @param req.body The DocumentBulkSignerLambdaResponse object.
+ * @param req.body The DocumentReferenceWithURL object.
  * @return Updated bulk download query progress.
  */
 router.post(
@@ -416,10 +418,13 @@ router.post(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
-    const documents: DocumentFromBulkSignerLambda[] =
-      documentFromBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const status = getFrom("query").orFail("status", req);
+    const documents: DocumentReferenceWithURL[] = documentReferenceWithURLArraySchema.parse(
+      req.body
+    );
 
-    const status = documents.length > 0 ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
+    const mapiWebhookStatus =
+      status === "completed" ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
       status: status === "completed" ? "completed" : "failed",
@@ -431,8 +436,9 @@ router.post(
       cxId,
       patientId,
       "medical.document-bulk-download-urls",
-      status,
-      requestId
+      mapiWebhookStatus,
+      requestId,
+      documents
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
