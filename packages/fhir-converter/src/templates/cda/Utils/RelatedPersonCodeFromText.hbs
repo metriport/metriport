@@ -1,0 +1,552 @@
+{{#if (eq text "family member")}}
+    {
+        "code": "FAMMEMB",
+        "display": "family member"
+    }
+{{else if (eq text "child")}}
+    {
+        "code": "CHILD",
+        "display": "child"
+    }
+{{else if (eq text "adopted child")}}
+    {
+        "code": "CHLDADOPT",
+        "display": "adopted child"
+    }
+{{else if (eq text "adopted daughter")}}
+    {
+        "code": "DAUADOPT",
+        "display": "adopted daughter"
+    }
+{{else if (eq text "adopted son")}}
+    {
+        "code": "SONADOPT",
+        "display": "adopted son"
+    }
+{{else if (eq text "foster child")}}
+    {
+        "code": "CHLDFOST",
+        "display": "foster child"
+    }
+{{else if (eq text "foster daughter")}}
+    {
+        "code": "DAUFOST",
+        "display": "foster daughter"
+    }
+{{else if (eq text "foster son")}}
+    {
+        "code": "SONFOST",
+        "display": "foster son"
+    }
+{{else if (eq text "daughter")}}
+    {
+        "code": "DAUC",
+        "display": "daughter"
+    }
+{{else if (eq text "natural daughter")}}
+    {
+        "code": "DAU",
+        "display": "natural daughter"
+    }
+{{else if (eq text "stepdaughter")}}
+    {
+        "code": "STPDAU",
+        "display": "stepdaughter"
+    }
+{{else if (eq text "natural child")}}
+    {
+        "code": "NCHILD",
+        "display": "natural child"
+    }
+{{else if (eq text "natural son")}}
+    {
+        "code": "SON",
+        "display": "natural son"
+    }
+{{else if (eq text "son")}}
+    {
+        "code": "SONC",
+        "display": "son"
+    }
+{{else if (eq text "stepson")}}
+    {
+        "code": "STPSON",
+        "display": "stepson"
+    }
+{{else if (eq text "step child")}}
+    {
+        "code": "STPCHLD",
+        "display": "step child"
+    }
+
+{{else if (eq text "extended family member")}}
+    {
+        "code": "EXT",
+        "display": "extended family member"
+    }
+{{else if (eq text "aunt")}}
+    {
+        "code": "AUNT",
+        "display": "aunt"
+    }
+{{else if (eq text "maternal aunt")}}
+    {
+        "code": "MAUNT",
+        "display": "maternal aunt"
+    }
+{{else if (eq text "paternal aunt")}}
+    {
+        "code": "PAUNT",
+        "display": "paternal aunt"
+    }
+{{else if (eq text "cousin")}}
+    {
+        "code": "COUSN",
+        "display": "cousin"
+    }
+{{else if (eq text "maternal cousin")}}
+    {
+        "code": "MCOUSN",
+        "display": "maternal cousin"
+    }
+{{else if (eq text "paternal cousin")}}
+    {
+        "code": "PCOUSN",
+        "display": "paternal cousin"
+    }
+{{else if (eq text "great grandparent")}}
+    {
+        "code": "GGRPRN",
+        "display": "great grandparent"
+    }
+{{else if (eq text "great grandfather")}}
+    {
+        "code": "GGRFTH",
+        "display": "great grandfather"
+    }
+{{else if (eq text "maternal great-grandfather")}}
+    {
+        "code": "MGGRFTH",
+        "display": "maternal great-grandfather"
+    }
+{{else if (eq text "paternal great-grandfather")}}
+    {
+        "code": "PGGRFTH",
+        "display": "paternal great-grandfather"
+    }
+{{else if (eq text "great grandmother")}}
+    {
+        "code": "GGRMTH",
+        "display": "great grandmother"
+    }
+{{else if (eq text "maternal great-grandmother")}}
+    {
+        "code": "MGGRMTH",
+        "display": "maternal great-grandmother"
+    }
+{{else if (eq text "paternal great-grandmother")}}
+    {
+        "code": "PGGRMTH",
+        "display": "paternal great-grandmother"
+    }
+{{else if (eq text "maternal great-grandparent")}}
+    {
+        "code": "MGGRPRN",
+        "display": "maternal great-grandparent"
+    }
+{{else if (eq text "paternal great-grandparent")}}
+    {
+        "code": "PGGRPRN",
+        "display": "paternal great-grandparent"
+    }
+{{else if (eq text "grandchild")}}
+    {
+        "code": "GRNDCHILD",
+        "display": "grandchild"
+    }
+{{else if (eq text "granddaughter")}}
+    {
+        "code": "GRNDDAU",
+        "display": "granddaughter"
+    }
+{{else if (eq text "grandson")}}
+    {
+        "code": "GRNDSON",
+        "display": "grandson"
+    }
+{{else if (eq text "grandparent")}}
+    {
+        "code": "GRPRN",
+        "display": "grandparent"
+    }
+{{else if (eq text "grandfather")}}
+    {
+        "code": "GRFTH",
+        "display": "grandfather"
+    }
+{{else if (eq text "maternal grandfather")}}
+    {
+        "code": "MGRFTH",
+        "display": "maternal grandfather"
+    }
+{{else if (eq text "paternal grandfather")}}
+    {
+        "code": "PGRFTH",
+        "display": "paternal grandfather"
+    }
+{{else if (eq text "grandmother")}}
+    {
+        "code": "GRMTH",
+        "display": "grandmother"
+    }
+{{else if (eq text "maternal grandmother")}}
+    {
+        "code": "MGRMTH",
+        "display": "maternal grandmother"
+    }
+{{else if (eq text "paternal grandmother")}}
+    {
+        "code": "PGRMTH",
+        "display": "paternal grandmother"
+    }
+{{else if (eq text "maternal grandparent")}}
+    {
+        "code": "MGRPRN",
+        "display": "maternal grandparent"
+    }
+{{else if (eq text "paternal grandparent")}}
+    {
+        "code": "PGRPRN",
+        "display": "paternal grandparent"
+    }
+{{else if (eq text "inlaw")}}
+    {
+        "code": "INLAW",
+        "display": "inlaw"
+    }
+{{else if (eq text "child-in-law")}}
+    {
+        "code": "CHLDINLAW",
+        "display": "child-in-law"
+    }
+{{else if (eq text "daughter in-law")}}
+    {
+        "code": "DAUINLAW",
+        "display": "daughter in-law"
+    }
+{{else if (eq text "son in-law")}}
+    {
+        "code": "SONINLAW",
+        "display": "son in-law"
+    }
+{{else if (eq text "parent in-law")}}
+    {
+        "code": "PRNINLAW",
+        "display": "parent in-law"
+    }
+{{else if (eq text "father-in-law")}}
+    {
+        "code": "FTHINLAW",
+        "display": "father-in-law"
+    }
+{{else if (eq text "mother-in-law")}}
+    {
+        "code": "MTHINLAW",
+        "display": "mother-in-law"
+    }
+{{else if (eq text "sibling in-law")}}
+    {
+        "code": "SIBINLAW",
+        "display": "sibling in-law"
+    }
+{{else if (eq text "brother-in-law")}}
+    {
+        "code": "BROINLAW",
+        "display": "brother-in-law"
+    }
+{{else if (eq text "sister-in-law")}}
+    {
+        "code": "SISINLAW",
+        "display": "sister-in-law"
+    }
+{{else if (eq text "niece/nephew")}}
+    {
+        "code": "NIENEPH",
+        "display": "niece/nephew"
+    }
+{{else if (eq text "nephew")}}
+    {
+        "code": "NEPHEW",
+        "display": "nephew"
+    }
+{{else if (eq text "niece")}}
+    {
+        "code": "NIECE",
+        "display": "niece"
+    }
+{{else if (eq text "uncle")}}
+    {
+        "code": "UNCLE",
+        "display": "uncle"
+    }
+{{else if (eq text "maternal uncle")}}
+    {
+        "code": "MUNCLE",
+        "display": "maternal uncle"
+    }
+{{else if (eq text "paternal uncle")}}
+    {
+        "code": "PUNCLE",
+        "display": "paternal uncle"
+    }
+{{else if (eq text "parent")}}
+    {
+        "code": "PRN",
+        "display": "parent"
+    }
+{{else if (eq text "adoptive parent")}}
+    {
+        "code": "ADOPTP",
+        "display": "adoptive parent"
+    }
+{{else if (eq text "adoptive father")}}
+    {
+        "code": "ADOPTF",
+        "display": "adoptive father"
+    }
+{{else if (eq text "adoptive mother")}}
+    {
+        "code": "ADOPTM",
+        "display": "adoptive mother"
+    }
+{{else if (eq text "father")}}
+    {
+        "code": "FTH",
+        "display": "father"
+    }
+{{else if (eq text "foster father")}}
+    {
+        "code": "FTHFOST",
+        "display": "foster father"
+    }
+{{else if (eq text "natural father")}}
+    {
+        "code": "NFTH",
+        "display": "natural father"
+    }
+{{else if (eq text "natural father of fetus")}}
+    {
+        "code": "NFTHF",
+        "display": "natural father of fetus"
+    }
+{{else if (eq text "stepfather")}}
+    {
+        "code": "STPFTH",
+        "display": "stepfather"
+    }
+{{else if (eq text "mother")}}
+    {
+        "code": "MTH",
+        "display": "mother"
+    }
+{{else if (eq text "gestational mother")}}
+    {
+        "code": "GESTM",
+        "display": "gestational mother"
+    }
+{{else if (eq text "foster mother")}}
+    {
+        "code": "MTHFOST",
+        "display": "foster mother"
+    }
+{{else if (eq text "natural mother")}}
+    {
+        "code": "NMTH",
+        "display": "natural mother"
+    }
+{{else if (eq text "natural mother of fetus")}}
+    {
+        "code": "NMTHF",
+        "display": "natural mother of fetus"
+    }
+{{else if (eq text "stepmother")}}
+    {
+        "code": "STPMTH
+        "display": "stepmother"
+    }
+{{#if (eq text "natural parent")}}
+    {
+        "code": "NPRN",
+        "display": "natural parent"
+    }
+{{else if (eq text "foster parent")}}
+    {
+        "code": "PRNFOST",
+        "display": "foster parent"
+    }
+{{else if (eq text "step parent")}}
+    {
+        "code": "STPPRN",
+        "display": "step parent"
+    }
+{{else if (eq text "sibling")}}
+    {
+        "code": "SIB",
+        "display": "sibling"
+    }
+{{else if (eq text "brother")}}
+    {
+        "code": "BRO",
+        "display": "brother"
+    }
+{{else if (eq text "half-brother")}}
+    {
+        "code": "HBRO",
+        "display": "half-brother"
+    }
+{{else if (eq text "natural brother")}}
+    {
+        "code": "NBRO",
+        "display": "natural brother"
+    }
+{{else if (eq text "twin brother")}}
+    {
+        "code": "TWINBRO",
+        "display": "twin brother"
+    }
+{{else if (eq text "fraternal twin brother")}}
+    {
+        "code": "FTWINBRO",
+        "display": "fraternal twin brother"
+    }
+{{else if (eq text "identical twin brother")}}
+    {
+        "code": "ITWINBRO",
+        "display": "identical twin brother"
+    }
+{{else if (eq text "stepbrother")}}
+    {
+        "code": "STPBRO",
+        "display": "stepbrother"
+    }
+{{else if (eq text "half-sibling")}}
+    {
+        "code": "HSIB",
+        "display": "half-sibling"
+    }
+{{else if (eq text "half-sister")}}
+    {
+        "code": "HSIS",
+        "display": "half-sister"
+    }
+{{else if (eq text "natural sibling")}}
+    {
+        "code": "NSIB",
+        "display": "natural sibling"
+    }
+{{else if (eq text "natural sister")}}
+    {
+        "code": "NSIS",
+        "display": "natural sister"
+    }
+{{else if (eq text "twin sister")}}
+    {
+        "code": "TWINSIS",
+        "display": "twin sister"
+    }
+{{else if (eq text "fraternal twin sister")}}
+    {
+        "code": "FTWINSIS",
+        "display": "fraternal twin sister"
+    }
+{{else if (eq text "identical twin sister")}}
+    {
+        "code": "ITWINSIS",
+        "display": "identical twin sister"
+    }
+{{else if (eq text "twin")}}
+    {
+        "code": "TWIN",
+        "display": "twin"
+    }
+{{else if (eq text "fraternal twin")}}
+    {
+        "code": "FTWIN",
+        "display": "fraternal twin"
+    }
+{{else if (eq text "identical twin")}}
+    {
+        "code": "ITWIN",
+        "display": "identical twin"
+    }
+{{else if (eq text "sister")}}
+    {
+        "code": "SIS",
+        "display": "sister"
+    }
+{{else if (eq text "stepsister")}}
+    {
+        "code": "STPSIS",
+        "display": "stepsister"
+    }
+{{else if (eq text "step sibling")}}
+    {
+        "code": "STPSIB",
+        "display": "step sibling"
+    }
+{{else if (eq text "significant other")}}
+    {
+        "code": "SIGOTHR",
+        "display": "significant other"
+    }
+{{else if (eq text "domestic partner")}}
+    {
+        "code": "DOMPART",
+        "display": "domestic partner"
+    }
+{{else if (eq text "former spouse")}}
+    {
+        "code": "FMRSPS",
+        "display": "former spouse"
+    }
+{{else if (eq text "spouse")}}
+    {
+        "code": "SPS",
+        "display": "spouse"
+    }
+{{else if (eq text "husband")}}
+    {
+        "code": "HUSB",
+        "display": "husband"
+    }
+{{else if (eq text "wife")}}
+    {
+        "code": "WIFE",
+        "display": "wife"
+    }
+{{else if (eq text "unrelated friend")}}
+    {
+        "code": "FRND",
+        "display": "unrelated friend"
+    }
+{{else if (eq text "neighbor")}}
+    {
+        "code": "NBOR",
+        "display": "neighbor"
+    }
+{{else if (eq text "self")}}
+    {
+        "code": "ONESELF",
+        "display": "self"
+    }
+{{else if (eq text "Roommate")}}
+    {
+        "code": "ROOM",
+        "display": "Roommate"
+    }
+{{else}}
+    {
+        "code": "",
+        "display": ""
+    }
+{{/if}}
