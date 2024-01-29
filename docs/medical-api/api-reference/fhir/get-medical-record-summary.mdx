@@ -39,16 +39,7 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const url = await metriport.getMedicalRecord(
-  "018a80c4-292a-7486-a223-6dcbc636c44c", 
-  "pdf"
-);
+const url = await metriport.getMedicalRecord("018a80c4-292a-7486-a223-6dcbc636c44c", "pdf");
 ```
 
 </ResponseExample>
-
-```json
-{
-  "url": URL to the Medical Record Summary
-}
-```

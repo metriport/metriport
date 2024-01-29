@@ -16,7 +16,7 @@ To create a Medical Record Summary, you need to use the [Start Consolidated Data
 
 ## Response
 
-Returns a JSON containing the booleans for the existence of the Medical Record Summary in PDF and HTML formats, as well as the date when they were generated.
+Returns a JSON containing the booleans for the existence of the Medical Record Summary in PDF and HTML formats, as well as the dates when they were generated.
 
 <ResponseExample>
 
@@ -25,28 +25,30 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const info = await metriport.getMedicalRecordSummaryStatus(
+const status = await metriport.getMedicalRecordSummaryStatus(
   "018a80c4-292a-7486-a223-6dcbc636c44c"
 );
 ```
+
 </ResponseExample>
 
-<ResponseField name="pdfExists" type="boolean" required>
-  Indicates whether a PDF Medical Record Summary already exists for the patient.
+<ResponseField name="pdf" type="boolean" required>
+  <Snippet file="medical-record-status.mdx" />
 </ResponseField>
 
-<ResponseField name="htmlExists" type="boolean" required>
-  Indicates whether an HTML Medical Record Summary already exists for the patient.
-</ResponseField>
-
-<ResponseField name="date" type="Date">
-  Date when these Medical Record Summaries were generated.
+<ResponseField name="html" type="boolean" required>
+  <Snippet file="medical-record-status.mdx" />
 </ResponseField>
 
 ```json
 {
-  "pdfExists": true,
-  "htmlExists": true,
-  "date": "2024-01-18T00:26:54.000Z"
+  "pdf": {
+    "exists": true,
+    "date": "2024-01-18T00:27:16.000Z"
+  },
+  "html": {
+    "exists": true,
+    "date": "2024-01-18T00:26:54.000Z"
+  }
 }
 ```

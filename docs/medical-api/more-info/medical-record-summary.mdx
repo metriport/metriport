@@ -15,14 +15,14 @@ Here's the title page of an example Medical Record Summary:
 
 To generate a Medical Record Summary using Metriport API, you need to follow these steps:
 
-1. Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose what [FHIR resources](/medical-api/fhir/overview) and what date range you want to include into the summary. When this query completes, a [webhook](/medical-api/more-info/webhooks) with a JSON payload containing all these resources will be sent to you.
+1. Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose [FHIR resources](/medical-api/fhir/overview), date range, and rendering (`PDF` or `HTML`) for your Medical Record Summary. When this query completes, a [webhook](/medical-api/more-info/webhooks) with a JSON payload containing all these resources will be sent to you.
 
 <Tip>
   Once the query is kicked off, you can monitor its status using the [Get Consolidated Data Query
   Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
 </Tip>
 
-2. Download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
+2. In addition to webhooks, you can download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
 
 <Tip>
   Prior to creating or downloading a new Medical Record Summary, you can check when it was created,
