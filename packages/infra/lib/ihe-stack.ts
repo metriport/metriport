@@ -113,7 +113,8 @@ export class IHEStack extends Stack {
 
     const apiGatewayArn = cdk.Stack.of(this).formatArn({
       service: "apigateway",
-      resource: apigw2.apiId,
+      resource: "apis",
+      resourceName: apigw2.httpApiId,
       region: cdk.Stack.of(this).region,
       account: cdk.Stack.of(this).account,
     });
