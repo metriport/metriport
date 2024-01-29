@@ -1,4 +1,4 @@
-import { documentUploaderHandler } from "@metriport/core/domain/lambda-logic/document-uploader";
+import { documentUploaderHandler } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { S3Event } from "aws-lambda";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
