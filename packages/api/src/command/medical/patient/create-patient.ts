@@ -37,11 +37,13 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
     externalId,
     data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
   };
-  patientCreate.data.address = await addCoordinatesToAddresses({
+  const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
     patient: patientCreate,
     reportRelevance: true,
   });
+  if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
+
   const newPatient = await PatientModel.create(patientCreate);
 
   // TODO: #393 declarative, event-based integration
