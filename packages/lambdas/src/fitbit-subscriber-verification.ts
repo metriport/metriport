@@ -1,5 +1,4 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import * as Sentry from "@sentry/serverless";
 import { APIGatewayEvent } from "aws-lambda";
 import status from "http-status";
 import { getEnvOrFail } from "./shared/env";
@@ -11,7 +10,7 @@ const buildResponse = (status: number, body?: unknown) => ({
   body,
 });
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
+export const handler = async (event: APIGatewayEvent) => {
   const verificationCode: string = (await getSecret(fitbitSubscriberVerificationCode)) as string;
   if (!verificationCode) {
     throw new Error(`Config error - FITBIT_SUBSCRIBER_VERIFICATION_CODE doesn't exist`);
@@ -32,4 +31,4 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
   }
 
   return buildResponse(status.NOT_FOUND);
-});
+};

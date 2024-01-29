@@ -1,5 +1,4 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import * as Sentry from "@sentry/serverless";
 import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
 import status from "http-status";
@@ -17,7 +16,7 @@ const buildResponse = (status: number, body?: unknown) => ({
 
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
+export const handler = async (event: APIGatewayEvent) => {
   if (!event.body) {
     console.log("Event has no body - will not be forwarded to the API");
     return defaultResponse();
@@ -35,7 +34,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
   }
 
   return buildResponse(status.NOT_FOUND);
-});
+};
 
 async function forwardCallToServer(event: APIGatewayEvent) {
   console.log(`Verified! Calling server...`);
