@@ -8,13 +8,27 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
-import { makeLambdaClient } from "../../../external/aws/lambda";
-import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { DocumentBulkSignerRequest } from "@metriport/core/domain/document-signing/document-bulk-signer";
+import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 
-const lambdaClient = makeLambdaClient();
-const bulkSigningLambdaName = "BulkUrlSigningLambda";
+/**
+ * The function creates a response object for a bulk get documents URLs query with a given status and patient
+ * information.
+ * @param status - The status of the bulk get documents URLs.
+ * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
+ * @returns a BulkGetDocumentsUrlProgress object.
+ */
+export const createBulkGetDocumentUrlQueryResponse = (
+  status: BulkGetDocUrlStatus,
+  patient: Patient
+): BulkGetDocumentsUrlProgress => {
+  return {
+    status,
+    requestId: patient.data.bulkGetDocumentsUrlProgress?.requestId,
+  };
+};
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
@@ -28,16 +42,15 @@ export const startBulkGetDocumentUrls = async (
   patientId: string
 ): Promise<BulkGetDocumentsUrlProgress> => {
   const { log } = Util.out(`startBulkGetDocumentUrls - M patient ${patientId}`);
-  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
 
-  if (isBulkGetDocUrlProcessing(bulkGetDocUrlProgress?.status)) {
+  if (bulkGetDocUrlProgress && isBulkGetDocUrlProcessing(bulkGetDocUrlProgress)) {
     log(
       `Patient ${patientId}, Request ${bulkGetDocUrlProgress?.requestId}, bulkGetDocUrlProgress is already 'processing', skipping...`
     );
-    return createBulkGetDocumentUrlQueryResponse("processing", patient);
+    return createBulkGetDocumentUrlQueryResponse(bulkGetDocUrlProgress.status, patient);
   }
 
   const requestId = getOrGenerateRequestId(bulkGetDocUrlProgress);
@@ -45,37 +58,36 @@ export const startBulkGetDocumentUrls = async (
   const updatedPatient = await storeBulkGetDocumentUrlQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    bulkGetDocumentsUrlProgress: { status: "processing" },
+    status: "processing",
     requestId,
   });
 
-  const payload: DocumentBulkSignerLambdaRequest = {
+  const payload: DocumentBulkSignerRequest = {
     patientId: patientId,
     cxId: cxId,
     requestId: requestId,
   };
 
+  const documentBulkSigner = makeDocumentBulkSigner();
   try {
-    lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
+    documentBulkSigner.sign(payload);
+    return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
   } catch (error) {
     appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId: cxId },
       status: "failed",
       requestId: requestId,
     });
-    capture.error(error, {
-      extra: { patientId, context: `startBulkGetDocumentUrls`, error },
+    const msg = "Error in startBulkGetDocumentUrls";
+    capture.error(msg, {
+      extra: {
+        patientId: patientId,
+        context: `startBulkGetDocumentUrls`,
+        error,
+      },
     });
     return createBulkGetDocumentUrlQueryResponse("failed", updatedPatient);
   }
-
-  return createBulkGetDocumentUrlQueryResponse("processing", updatedPatient);
 };
 
 /**
@@ -88,7 +100,7 @@ export function getOrGenerateRequestId(
   bulkGetDocumentsUrlProgress: BulkGetDocumentsUrlProgress | undefined
 ): string {
   if (
-    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress?.status) &&
+    isBulkGetDocUrlProcessing(bulkGetDocumentsUrlProgress) &&
     bulkGetDocumentsUrlProgress?.requestId
   ) {
     return bulkGetDocumentsUrlProgress.requestId;
@@ -98,20 +110,3 @@ export function getOrGenerateRequestId(
 }
 
 const generateRequestId = (): string => uuidv7();
-
-/**
- * The function creates a response object for a bulk get documents URLs query with a given status and patient
- * information.
- * @param status - The status of the bulk get documents URLs.
- * @param patient - The patient for whom the `BulkGetDocumentsUrlProgress` is being created.
- * @returns a BulkGetDocumentsUrlProgress object.
- */
-export const createBulkGetDocumentUrlQueryResponse = (
-  status: BulkGetDocUrlStatus,
-  patient?: Patient
-): BulkGetDocumentsUrlProgress => {
-  return {
-    status,
-    requestId: patient?.data.bulkGetDocumentsUrlProgress?.requestId,
-  };
-};

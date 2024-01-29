@@ -1,6 +1,6 @@
 import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { capture } from "@metriport/core/util/capture";
 import { Patient } from "@metriport/core/domain/patient";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { makeFhirApi } from "../api/api-factory";
 import { fullDateQueryForResource, getPatientFilter } from "./resource-filter";

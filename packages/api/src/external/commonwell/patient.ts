@@ -14,7 +14,7 @@ import { Facility } from "../../domain/medical/facility";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import MetriportError from "../../errors/metriport-error";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";

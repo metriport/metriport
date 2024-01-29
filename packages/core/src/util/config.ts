@@ -44,8 +44,9 @@ export class Config {
   static getSearchUsername(): string {
     return getEnvVarOrFail("SEARCH_USERNAME");
   }
-  static getSearchPassword(): string {
-    return getEnvVarOrFail("SEARCH_PASSWORD");
+
+  static getSearchSecretName(): string {
+    return getEnvVarOrFail("SEARCH_SECRET_NAME");
   }
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
@@ -58,7 +59,11 @@ export class Config {
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
+
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
+  }
+  static getApiUrl(): string {
+    return getEnvVarOrFail("API_URL");
   }
 }

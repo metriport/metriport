@@ -1,14 +1,14 @@
 import { z } from "zod";
 
-export type DocumentBulkSignerLambdaResponse = {
+export type DocumentReferenceWithURL = {
   id: string;
   fileName: string;
-  description?: string;
-  status?: string;
-  indexed?: string; // ISO-8601
-  mimeType?: string;
-  size?: number; // bytes
-  type?: CodeableConcept;
+  description?: string | undefined;
+  status?: string | undefined;
+  indexed?: string | undefined; // ISO-8601
+  mimeType?: string | undefined;
+  size?: number | undefined; // bytes
+  type?: CodeableConcept | undefined;
   url: string;
 };
 
@@ -23,7 +23,7 @@ type CodeableConcept = {
   text?: string;
 };
 
-export const DocumentBulkSignerLambdaResponseSchema = z.object({
+export const documentReferenceWithURLSchema = z.object({
   id: z.string(),
   fileName: z.string(),
   description: z.string().optional(),
@@ -48,6 +48,4 @@ export const DocumentBulkSignerLambdaResponseSchema = z.object({
     .optional(),
 });
 
-export const DocumentBulkSignerLambdaResponseArraySchema = z.array(
-  DocumentBulkSignerLambdaResponseSchema
-);
+export const documentReferenceWithURLArraySchema = z.array(documentReferenceWithURLSchema);

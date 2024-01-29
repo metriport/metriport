@@ -4,7 +4,7 @@ import { OrganizationData } from "@metriport/core/domain/organization";
 import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { OrganizationModel } from "../../../models/medical/organization";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";

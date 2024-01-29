@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { capture } from "../../../util/capture";
 import { chunk } from "lodash";
-import { capture } from "../../../util/notifications";
 import { makeFhirApi } from "../api/api-factory";
 import { isoDateToFHIRDateQueryFrom, isoDateToFHIRDateQueryTo } from "../shared";
 import { Config } from "../../../util/config";
@@ -13,7 +13,7 @@ export async function getDocuments({
   documentIds = [],
 }: {
   cxId: string;
-  patientId: string;
+  patientId?: string | string[];
   from?: string | undefined;
   to?: string | undefined;
   documentIds?: string[];
@@ -39,19 +39,23 @@ export async function getDocuments({
 }
 
 export function getFilters({
-  patientId,
+  patientId: patientIdParam,
   documentIds = [],
   from,
   to,
 }: {
-  patientId?: string;
-  documentIds?: string[];
+  patientId?: string | string[] | undefined;
+  documentIds?: string[] | undefined;
   from?: string | undefined;
   to?: string | undefined;
 } = {}) {
   const filters = new URLSearchParams();
-  patientId && filters.append("patient", patientId);
-  documentIds.length && filters.append(`_ids`, documentIds.join(","));
+  const patientIds = Array.isArray(patientIdParam) ? patientIdParam : [patientIdParam];
+  const patientIdsFiltered = patientIds.flatMap(id =>
+    id && id.trim().length > 0 ? id.trim() : []
+  );
+  patientIdsFiltered.length && filters.append("patient", patientIdsFiltered.join(","));
+  documentIds.length && filters.append(`_id`, documentIds.join(","));
   from && filters.append("date", isoDateToFHIRDateQueryFrom(from));
   to && filters.append("date", isoDateToFHIRDateQueryTo(to));
   const filtersAsStr = filters.toString();

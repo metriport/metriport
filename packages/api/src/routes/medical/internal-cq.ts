@@ -23,7 +23,7 @@ import {
 } from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { asyncHandler, getFrom } from "../util";
 import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 

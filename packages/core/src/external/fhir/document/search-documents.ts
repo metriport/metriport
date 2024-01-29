@@ -1,11 +1,11 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
-import { Config } from "../../util/config";
-import { capture } from "../../util/notifications";
-import { isCommonwellExtension } from "../commonwell/extension";
-import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
-import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
-import { getDocuments } from "../fhir/document/get-documents";
+import { Config } from "../../../util/config";
+import { capture } from "../../../util/capture";
+import { isCommonwellExtension } from "../../commonwell/extension";
+import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
+import { isMetriportExtension } from "../shared/extensions/metriport";
+import { getDocuments } from "./get-documents";
 
 export async function searchDocuments({
   cxId,
@@ -65,7 +65,7 @@ async function searchOnCCDAFiles(
   contentFilter?: string
 ): Promise<DocumentReference[]> {
   if (!contentFilter) return [];
-  const searchService = makeSearchServiceQuery();
+  const searchService = await makeSearchServiceQuery();
   const searchResult = await searchService.search({ query: contentFilter, cxId, patientId });
   const searchResultIds = searchResult.map(r => r.entryId);
   // only return documents that match both the search result and the documents we got from the FHIR server (using date filter)

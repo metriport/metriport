@@ -268,9 +268,7 @@ export class Config {
   static getSearchUsername(): string {
     return getEnvVarOrFail("SEARCH_USERNAME");
   }
-  static getSearchPassword(): string {
-    return getEnvVarOrFail("SEARCH_PASSWORD");
-  }
+
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
   }
@@ -301,5 +299,8 @@ export class Config {
   }
   static getCxsWithCQDirectFeatureFlagName(): string {
     return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
+  }
+  static getDocumentSignerLambdaName(): string {
+    return getEnvVarOrFail("DOCUMENT_SIGNER_LAMBDA_NAME");
   }
 }

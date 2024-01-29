@@ -19,7 +19,7 @@ import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patien
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";

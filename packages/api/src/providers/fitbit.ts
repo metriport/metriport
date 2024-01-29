@@ -51,7 +51,7 @@ import { ConnectedUser } from "../models/connected-user";
 import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { PROVIDER_FITBIT } from "../shared/constants";
-import { capture } from "../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";

@@ -8,7 +8,7 @@ import { ProgressType, DocumentQueryStatus, Progress } from "@metriport/core/dom
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { getPatientOrFail } from "../patient/get-patient";
 import { sendWHNotifications } from "./check-doc-queries-notification";
 import {

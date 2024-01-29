@@ -9,7 +9,7 @@ import { chunk, flatten } from "lodash";
 import { Patient } from "@metriport/core/domain/patient";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { getConsolidatedPatientData } from "./consolidated-get";
 

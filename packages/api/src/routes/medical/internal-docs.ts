@@ -15,17 +15,13 @@ import {
   queryDocumentsAcrossHIEs,
   updateDocQuery,
 } from "../../command/medical/document/document-query";
-import {
-  MAPIWebhookStatus,
-  processPatientDocumentRequest,
-} from "../../command/medical/document/document-webhook";
+import { processPatientDocumentRequest } from "../../command/medical/document/document-webhook";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import { convertResult } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -33,9 +29,10 @@ import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } fro
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import {
-  DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
+  DocumentReferenceWithURL,
+  documentReferenceWithURLArraySchema,
 } from "@metriport/core/domain/document-bulk-signer-response";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
@@ -405,32 +402,32 @@ router.post(
     return res.status(httpStatus.OK).json(docQueryProgress);
   })
 );
-
-export default router;
-
 /**
- * POST /internal/docs/triggerBulkDownloadWebhook
+ * POST /internal/docs/bulk-signer-completion
  *
  * Endpoint called by the bulk signer lambda to trigger the webhook.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
  * @param req.query.requestId - The ID of the request.
- * @param req.body The DocumentBulkSignerLambdaResponse object.
+ * @param req.body The DocumentReferenceWithURL object.
  * @return Updated bulk download query progress.
  */
 router.post(
-  "/triggerBulkDownloadWebhook",
+  "/bulk-signer-completion",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
-    const dtos: DocumentBulkSignerLambdaResponse[] =
-      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+    const documents: DocumentReferenceWithURL[] = documentReferenceWithURLArraySchema.parse(
+      req.body
+    );
 
+    const mapiWebhookStatus =
+      status === "completed" ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
-      status: status as BulkGetDocUrlStatus,
+      status: status === "completed" ? "completed" : "failed",
       requestId: requestId,
     });
 
@@ -439,11 +436,13 @@ router.post(
       cxId,
       patientId,
       "medical.document-bulk-download-urls",
-      status as MAPIWebhookStatus,
+      mapiWebhookStatus,
       requestId,
-      dtos
+      documents
     );
 
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })
 );
+
+export default router;

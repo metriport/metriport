@@ -10,7 +10,7 @@ import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/index";
-import { capture } from "@metriport/core/util/notifications";
+import { capture } from "@metriport/core/util/capture";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import {
@@ -36,7 +36,7 @@ import { DocumentReferenceWithId, toFHIR as toFHIRDocRef } from "../../fhir/docu
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { groupFHIRErrors, tryDetermineFhirError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
-import { makeSearchServiceIngest } from "../../opensearch/file-search-connector-factory";
+import { makeSearchServiceIngest } from "@metriport/core/external/opensearch/file-search-connector-factory";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
@@ -791,7 +791,7 @@ async function ingestIntoSearchEngine(
   requestId: string,
   log = console.log
 ): Promise<void> {
-  const openSearch = makeSearchServiceIngest();
+  const openSearch = await makeSearchServiceIngest();
   if (!openSearch.isIngestible({ contentType: file.contentType, fileName: file.key })) {
     log(
       `Skipping ingestion of doc ${fhirDoc.id} / file ${file.key} into OpenSearch: not ingestible`

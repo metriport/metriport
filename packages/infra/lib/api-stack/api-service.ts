@@ -46,6 +46,7 @@ export function createAPIService(
   cdaToVisualizationLambda: ILambda,
   documentDownloaderLambda: ILambda,
   documentQueryResultsLambda: ILambda,
+  bulkUrlSigningLambda: ILambda,
   medicalDocumentsUploadBucket: s3.Bucket,
   fhirToMedicalRecordLambda: ILambda | undefined,
   searchIngestionQueue: IQueue,
@@ -129,6 +130,7 @@ export function createAPIService(
           ...(props.config.sandboxSeedDataBucketName && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
+          DOCUMENT_SIGNER_LAMBDA_NAME: bulkUrlSigningLambda.functionName,
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
@@ -196,6 +198,7 @@ export function createAPIService(
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  bulkUrlSigningLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

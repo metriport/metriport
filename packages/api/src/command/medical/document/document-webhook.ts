@@ -2,20 +2,15 @@ import { Product } from "../../../domain/product";
 import { MAPIWebhookType } from "../../../domain/webhook";
 import { DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { DocumentBulkUrlDTO } from "../../../routes/medical/dtos/document-bulk-downloadDTO";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
+import { MAPIWebhookStatus } from "@metriport/core/domain/webhook/index";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
 import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
-
 const log = Util.log(`Document Webhook`);
-
-export enum MAPIWebhookStatus {
-  completed = "completed",
-  failed = "failed",
-}
 
 type WebhookDocumentDataPayload = {
   documents?: DocumentReferenceDTO[] | DocumentBulkUrlDTO[];

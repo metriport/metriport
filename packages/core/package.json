@@ -58,7 +58,9 @@
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
   },
   "dependencies": {
+    "@aws-lambda-powertools/parameters": "^1.17.0",
     "@aws-sdk/client-s3": "^3.435.0",
+    "@aws-sdk/client-secrets-manager": "^3.474.0",
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",

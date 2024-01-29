@@ -4,7 +4,7 @@ import { chunk, groupBy } from "lodash";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../../shared/util";
 import { getCWAccessForPatient } from "./shared";
 

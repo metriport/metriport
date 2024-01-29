@@ -6,6 +6,6 @@ export type BulkGetDocumentsUrlProgress = {
   requestId?: string;
 };
 
-export function isBulkGetDocUrlProcessing(status?: BulkGetDocUrlStatus | undefined): boolean {
-  return status === "processing";
+export function isBulkGetDocUrlProcessing(progress: BulkGetDocumentsUrlProgress | undefined) {
+  return progress?.status === "processing";
 }

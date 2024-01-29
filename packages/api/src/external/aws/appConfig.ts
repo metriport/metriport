@@ -1,7 +1,7 @@
 import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { Config } from "../../shared/config";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { Util } from "../../shared/util";
 
 const log = Util.log(`App Config`);

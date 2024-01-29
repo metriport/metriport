@@ -1,4 +1,4 @@
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
 import { makeSidechainFHIRConverterConnector } from "./connector-factory";
 import { MedicalDataSource } from "@metriport/core/external/index";

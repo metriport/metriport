@@ -5,7 +5,7 @@ import { ZodError } from "zod";
 import MetriportError from "../../errors/metriport-error";
 import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
 import { isClientError } from "../../shared/http";
-import { capture } from "../../shared/notifications";
+import { capture } from "@metriport/core/util/capture";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
 
