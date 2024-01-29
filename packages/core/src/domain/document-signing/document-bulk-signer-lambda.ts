@@ -32,7 +32,7 @@ export class DocumentBulkSignerLambda extends DocumentBulkSigner {
             error
           )}. The lambda name is likely wrong`
         );
-        throw error; // Rethrow the error after logging it
+        throw error;
       });
   }
 }
