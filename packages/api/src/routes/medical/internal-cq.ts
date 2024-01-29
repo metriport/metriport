@@ -1,5 +1,6 @@
 import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { capture } from "@metriport/core/util/notifications";
 import {
   documentQueryRespFromExternalGWSchema,
   documentRetrievalRespFromExternalGWSchema,
@@ -63,6 +64,9 @@ router.get(
     if (org.length > 1) {
       const msg = "More than one organization with the same OID found in the CQ directory";
       console.log(msg, oid);
+      capture.message(msg, {
+        extra: { context: `carequality.directory`, oid, organizations: org, level: "info" },
+      });
     }
 
     const matchingOrg = org[0];
