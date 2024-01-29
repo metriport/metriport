@@ -35,6 +35,7 @@ describe("Integration FHIR Document", () => {
 
   describe("Document Reference", () => {
     test("create document", async () => {
+      console.log(`Creating document (id ${document.id}): ${JSON.stringify(document)}`);
       const res = await api.put(`/fhir/R4/DocumentReference/${document.id}`, document);
       expect(res.status).toBe(201);
       expect(res.data).toBeTruthy();
