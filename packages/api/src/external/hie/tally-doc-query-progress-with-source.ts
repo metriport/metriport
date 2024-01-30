@@ -70,7 +70,7 @@ export async function tallyDocQueryProgressWithSource({
   });
 
   await handleWebhookBeingSent({
-    patient: result,
+    patient: result.dataValues,
     requestId,
   });
 
