@@ -65,7 +65,6 @@ jobs:
         run: |
           pwd
           npm run build:cloud
-        # build from root because of dependencies
         working-directory: "./"
       # run even when treat-as-package is false b/c of inter-package dependencies
       - name: Build/compile on root STAGING
@@ -74,28 +73,12 @@ jobs:
           pwd
           npm run build:staging
         working-directory: "./"
-      # build commonly used packages
-      - name: Build/compile common dependencies
-        if: ${{ inputs.treat-as-package == false }}
-        run: |
-          pwd
-          npm run build:cloud -w packages/shared
-          npm run build:cloud -w packages/commonwell-sdk
-          npm run build:cloud -w packages/api-sdk
-          npm run build:cloud -w packages/ihe-gateway-sdk
-          npm run build:cloud -w packages/carequality-sdk
-          npm run build:cloud -w packages/core
-        working-directory: "./"
+
       - name: Build/compile on sub-folder/package
         if: ${{ inputs.treat-as-package == false }}
         run: |
           pwd
           npm run build:cloud
-        working-directory: ${{ inputs.path }}
-
-      - name: Install playwright
-        if: ${{ inputs.path == 'packages/connect-widget'}}
-        run: npx playwright install && npx playwright install-deps
         working-directory: ${{ inputs.path }}
 
       - name: Run Tests

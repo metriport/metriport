@@ -133,7 +133,7 @@ jobs:
       - name: Install root dependencies
         run: npm run install-deps
         working-directory: "metriport/"
-      # ideally would only build what's needed, the connect-widget for one takes a long time and its not used by the lambdas nor infra
+      # ideally would only build what's needed, for now need this as the lambdas rely on the build folder of some shared packages
       - name: Build root dependencies
         run: npm run build:cloud
         working-directory: "metriport/"
