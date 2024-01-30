@@ -15,7 +15,7 @@
         "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",
         "condition":
         [
-            {{#each familyEntry.component}}
+            {{#each (toArray familyEntry.component)}}
                 {
                     "code":{{>DataType/CodeableConcept.hbs code=this.observation.value}},
                         {{#each (toArray this.observation.entryRelationship)}}
