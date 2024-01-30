@@ -1,5 +1,5 @@
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 
 export function processFhirAndSearchResponse(
   patient: Pick<Patient, "id">,

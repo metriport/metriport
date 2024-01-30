@@ -3,7 +3,7 @@ import { DocumentRetrievalReqToExternalGW, DocumentReference } from "@metriport/
 import dayjs from "dayjs";
 import { DocumentWithMetriportId } from "./shared";
 import { DocumentQueryResult } from "../document-query-result";
-import { Organization } from "../../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";

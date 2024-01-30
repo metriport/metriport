@@ -28,33 +28,6 @@ interface ApiServiceProps extends StackProps {
 }
 
 // TODO move these parameters to object properties
-<<<<<<< HEAD
-export function createAPIService(
-  stack: Construct,
-  props: ApiServiceProps,
-  secrets: Secrets,
-  vpc: ec2.IVpc,
-  dbCredsSecret: secret.ISecret,
-  dynamoDBTokenTable: dynamodb.Table,
-  alarmAction: SnsAction | undefined,
-  dnsZones: DnsZones,
-  fhirServerUrl: string,
-  fhirServerQueueUrl: string | undefined,
-  fhirConverterQueueUrl: string | undefined,
-  fhirConverterServiceUrl: string | undefined,
-  sidechainFHIRConverterQueue: IQueue | undefined,
-  sidechainFHIRConverterDLQ: IQueue | undefined,
-  cdaToVisualizationLambda: ILambda,
-  documentDownloaderLambda: ILambda,
-  documentQueryResultsLambda: ILambda,
-  documentRetrievalResultsLambda: ILambda,
-  medicalDocumentsUploadBucket: s3.Bucket,
-  fhirToMedicalRecordLambda: ILambda | undefined,
-  searchIngestionQueue: IQueue,
-  searchEndpoint: string,
-  searchAuth: { userName: string; secret: ISecret },
-  searchIndexName: string,
-=======
 export function createAPIService({
   stack,
   props,
@@ -71,6 +44,7 @@ export function createAPIService({
   cdaToVisualizationLambda,
   documentDownloaderLambda,
   documentQueryResultsLambda,
+  documentRetrievalResultsLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -95,13 +69,13 @@ export function createAPIService({
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
   documentQueryResultsLambda: ILambda;
+  documentRetrievalResultsLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
   searchEndpoint: string;
   searchAuth: { userName: string; secret: ISecret };
   searchIndexName: string;
->>>>>>> develop
   appConfigEnvVars: {
     appId: string;
     configId: string;

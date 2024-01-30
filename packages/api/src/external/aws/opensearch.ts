@@ -1,6 +1,6 @@
 import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
-import { Patient } from "../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { DocumentReferenceWithId } from "../fhir/document";
 import { makeSearchServiceIngest } from "../opensearch/file-search-connector-factory";
 
