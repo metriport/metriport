@@ -62,7 +62,7 @@ export function createAppConfigStack({
           [cxsWithIncreasedSandboxLimitFeatureFlag]: {
             name: cxsWithIncreasedSandboxLimitFeatureFlag,
             attributes: {
-              cxIdsAndLimits: {
+              cxIds: {
                 type: "string[]",
               },
             },
@@ -79,7 +79,7 @@ export function createAppConfigStack({
           },
           [cxsWithIncreasedSandboxLimitFeatureFlag]: {
             enabled: true,
-            cxWithIncreasedLimits: [],
+            cxIds: [],
           },
         },
       }),
