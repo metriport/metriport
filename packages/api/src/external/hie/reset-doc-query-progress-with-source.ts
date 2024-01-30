@@ -5,8 +5,9 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
 /**
- * Reset the doc query progress for the given hie
- * @returns the updated patient
+ * Resets the doc query progress for the given HIE
+ *
+ * @returns
  */
 export async function resetDocQueryProgressWithSource({
   patient,
@@ -52,9 +53,15 @@ export async function resetDocQueryProgressWithSource({
       };
     }
 
-    existingPatient.data.externalData = resetExternalData;
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        externalData: resetExternalData,
+      },
+    };
 
-    await PatientModel.update(existingPatient, {
+    await PatientModel.update(updatedPatient, {
       where: patientFilter,
       transaction,
     });
