@@ -1,12 +1,13 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { errorToString } from "@metriport/core/util/error";
+import { capture } from "@metriport/core/util/notifications";
 import { randomInt } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
-import { capture } from "../../../shared/notifications";
 import { getPatientOrFail } from "../patient/get-patient";
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
@@ -145,9 +146,9 @@ export async function updateDocumentReference({
     const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
     return docRefFinal;
   } catch (error) {
-    const message = "Failed to update the document reference for a CX-uploaded file";
-    console.log(message);
-    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
+    const msg = "Failed to update the document reference for a CX-uploaded file";
+    console.log(`${msg} - error ${errorToString(error)}`);
+    capture.error(msg, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
     return undefined;
   }
 }
