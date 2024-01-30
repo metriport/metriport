@@ -86,7 +86,7 @@ export async function setDocQueryProgressWithSource({
   });
 
   await handleWebhookBeingSent({
-    patient: result,
+    patient: result.dataValues,
     requestId,
   });
 
