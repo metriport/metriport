@@ -48,7 +48,7 @@ export async function tallyDocQueryProgressWithSource({
       transaction,
     });
 
-    // Set the doc query progress for the given hie
+    // Set the doc query progress for the chosen hie
     const externalData = setHieTallyCount(
       existingPatient,
       downloadProgress,
