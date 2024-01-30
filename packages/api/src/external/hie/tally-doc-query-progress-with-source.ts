@@ -8,34 +8,32 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { handleWebhookBeingSent } from "../../command/medical/document/process-doc-query-webhook";
-import { PatientDataCommonwell } from "../commonwell/patient-shared";
-import { PatientDataCarequality } from "../carequality/patient-shared";
-import { aggregateAndSetHieProgresses } from "./set-doc-query-progress-with-source";
-
-export type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
+import { aggregateAndSetHIEProgresses, HIEPatientData } from "./set-doc-query-progress-with-source";
 
 type DynamicProgress = Pick<Progress, "successful" | "errors">;
 
-export type SetDocQueryProgressWithSource = {
+export type TallyDocQueryProgressWithSource = {
   source: MedicalDataSource;
-  downloadProgress?: DynamicProgress | undefined | null;
-  convertProgress?: DynamicProgress | undefined | null;
   patient: Pick<Patient, "id" | "cxId">;
+  type: ProgressType;
+  progress: DynamicProgress;
   requestId: string;
 };
 
 /**
- * Updates the successful and error count for the given hie which is then aggregated
- * to the patient's document query progress.
+ * Updates the successful and error count for the given HIE which is then aggregated
+ * to the patient's document query progress. setDocQueryProgressWithSource to update
+ * the total and status.
+ *
  * @returns
  */
 export async function tallyDocQueryProgressWithSource({
   patient,
   requestId,
-  downloadProgress,
-  convertProgress,
+  progress,
+  type,
   source,
-}: SetDocQueryProgressWithSource): Promise<Patient> {
+}: TallyDocQueryProgressWithSource): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
@@ -49,14 +47,19 @@ export async function tallyDocQueryProgressWithSource({
     });
 
     // Set the doc query progress for the chosen hie
-    const externalData = setHieTallyCount(
-      existingPatient,
-      downloadProgress,
-      convertProgress,
-      source
-    );
+    const externalData = setHIETallyCount(existingPatient, progress, type, source);
 
-    const updatedPatient = aggregateAndSetHieProgresses(existingPatient, externalData, requestId);
+    const aggregatedDocProgresses = aggregateAndSetHIEProgresses(existingPatient, externalData);
+
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        requestId,
+        externalData,
+        documentQueryProgress: aggregatedDocProgresses,
+      },
+    };
 
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
@@ -66,7 +69,7 @@ export async function tallyDocQueryProgressWithSource({
     return updatedPatient;
   });
 
-  handleWebhookBeingSent({
+  await handleWebhookBeingSent({
     patient: result,
     requestId,
   });
@@ -74,44 +77,29 @@ export async function tallyDocQueryProgressWithSource({
   return result;
 }
 
-export function setHieTallyCount(
+export function setHIETallyCount(
   patient: PatientModel,
-  downloadProgress: DynamicProgress | undefined | null,
-  convertProgress: DynamicProgress | undefined | null,
+  progress: DynamicProgress,
+  type: ProgressType,
   source: MedicalDataSource
 ): PatientExternalData {
   const externalData = patient.data.externalData ?? {};
-  let tallyType: ProgressType | undefined;
-  let tallySuccessful = 0;
-  let tallyErrors = 0;
-
-  if (downloadProgress) {
-    tallyType = "download";
-    tallySuccessful = downloadProgress.successful ?? 0;
-    tallyErrors = downloadProgress.errors ?? 0;
-  } else if (convertProgress) {
-    tallyType = "convert";
-    tallySuccessful = convertProgress.successful ?? 0;
-    tallyErrors = convertProgress.errors ?? 0;
-  }
-
-  if (!tallyType) {
-    throw new Error("Either downloadProgress or convertProgress must be provided");
-  }
+  const tallySuccessful = progress.successful ?? 0;
+  const tallyErrors = progress.errors ?? 0;
 
   const sourceData = externalData[source] as HIEPatientData;
   const sourceProgress = sourceData?.documentQueryProgress ?? {};
-  const sourceTotal = sourceProgress[tallyType]?.total ?? 0;
-  const sourceSuccessful = sourceProgress[tallyType]?.successful ?? 0;
-  const sourceErrors = sourceProgress[tallyType]?.errors ?? 0;
+  const sourceTotal = sourceProgress[type]?.total ?? 0;
+  const sourceSuccessful = sourceProgress[type]?.successful ?? 0;
+  const sourceErrors = sourceProgress[type]?.errors ?? 0;
 
   const totalSuccessful = sourceSuccessful + tallySuccessful;
   const totalErrors = sourceErrors + tallyErrors;
 
   const docQueryProgress: DocumentQueryProgress = {
     ...sourceProgress,
-    [tallyType]: {
-      ...sourceProgress[tallyType],
+    [type]: {
+      ...sourceProgress[type],
       successful: sourceSuccessful + tallySuccessful,
       errors: sourceErrors + tallyErrors,
       status: getStatusFromProgress({

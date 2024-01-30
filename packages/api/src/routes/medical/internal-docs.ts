@@ -153,7 +153,8 @@ router.post(
     if (hasSource) {
       tallyDocQueryProgressWithSource({
         patient: patient,
-        convertProgress: {
+        type: "convert",
+        progress: {
           ...(status === "completed" ? { successful: 1 } : { errors: 1 }),
         },
         requestId,

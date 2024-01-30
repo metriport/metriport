@@ -646,9 +646,10 @@ async function downloadDocsAndUpsertFHIR({
 
           await tallyDocQueryProgressWithSource({
             patient: { id: patient.id, cxId: patient.cxId },
-            downloadProgress: {
+            progress: {
               successful: 1,
             },
+            type: "download",
             requestId,
             source: MedicalDataSource.COMMONWELL,
           });
@@ -657,9 +658,10 @@ async function downloadDocsAndUpsertFHIR({
         } catch (error) {
           await tallyDocQueryProgressWithSource({
             patient: { id: patient.id, cxId: patient.cxId },
-            downloadProgress: {
+            progress: {
               errors: 1,
             },
+            type: "download",
             requestId,
             source: MedicalDataSource.COMMONWELL,
           });
