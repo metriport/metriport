@@ -712,22 +712,22 @@ export class APIStack extends Stack {
     // Backups
     //-------------------------------------------
     if (this.isProd(props)) {
-      // create a daily backup plan for the API DB
       new Backup(this, "APIDBBackup", {
         backupPlanName: "APIDBBackupPlan",
         resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
+        backupRate: Duration.days(1),
       });
-      // create a daily backup plan for the Medical Docs S3 bucket
       new Backup(this, "APIMedicalDocsBucketBackup", {
         backupPlanName: "APIMedicalDocsBucketBackupPlan",
         resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
+        backupRate: Duration.days(1),
       });
     }
     if (isSandbox(props.config) && sandboxSeedDataBucket) {
-      // create a daily backup plan for the Sandbox Seed Data S3 bucket
       new Backup(this, "APISandboxSeedDataBucketBackup", {
         backupPlanName: "APISandboxSeedDataBucketBackupPlan",
         resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
+        backupRate: Duration.days(7),
       });
     }
 

@@ -48,11 +48,10 @@ export interface BackupProps {
   readonly moveBackupToColdStorageAfter?: Duration;
 
   /**
-   * How frequently backup jobs would be started.
+   * How frequently backup jobs would be started, in hours.
    *
-   * @default - 24 hours
    */
-  readonly backupRateHour?: number;
+  readonly backupRate: Duration;
 }
 
 /**
@@ -61,6 +60,10 @@ export interface BackupProps {
  * @stability stable
  */
 export class Backup extends Construct {
+  // runs by default at 8:30am UTC (12:30pm PST)
+  CRON_UTC_HOUR = 8;
+  CRON_MINUTE = 30;
+
   /**
    * Backup plan
    */
@@ -74,7 +77,12 @@ export class Backup extends Construct {
   constructor(scope: Construct, id: string, props: BackupProps) {
     super(scope, id);
 
-    const hourlyRate = `0/${props.backupRateHour || 24}`;
+    const backupRateHour = props.backupRate.toHours();
+    if (backupRateHour < 1) {
+      throw Error("Backup rate must be at least hourly");
+    }
+
+    const hourlyRate = `${this.CRON_UTC_HOUR}/${backupRateHour}`;
 
     const completionWindow = props.backupCompletionWindow || Duration.hours(3);
     const startWindow = props.backupStartWindow || Duration.hours(completionWindow.toHours() - 1);
@@ -91,7 +99,7 @@ export class Backup extends Construct {
       deleteAfter: props.deleteBackupAfter || Duration.days(30),
       // Only cron expressions are supported
       scheduleExpression: events.Schedule.cron({
-        minute: "0",
+        minute: `${this.CRON_MINUTE}`,
         hour: hourlyRate,
       }),
       moveToColdStorageAfter: props.moveBackupToColdStorageAfter,
