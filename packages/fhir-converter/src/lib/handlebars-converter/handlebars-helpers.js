@@ -12,6 +12,8 @@ var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 
+const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
+
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
@@ -921,8 +923,8 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function(str) {
-      return isNaN(str);
+    func: function(o) {
+      return isNaN(o);
     },
   },
   {
@@ -1053,7 +1055,7 @@ module.exports.external = [
     name: "personalRelationshipRoleTypeCodeSystem",
     description: "Returns the code system for the related person relationship code",
     func: function () {
-      return "2.16.840.1.113883.1.11.19563";
+      return PERSONAL_RELATIONSHIP_TYPE_CODE;
     },
   },
 ];
