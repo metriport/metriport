@@ -86,12 +86,12 @@ export const processDocQueryProgressWebhook = async ({
       });
     }
   } catch (error) {
-    const msg = `Error on processDocQueryDownloadProgressWebhook`;
+    const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
       requestId,
       patientId,
       msg,
-      context: `webhook.processDocQueryDownloadProgressWebhook`,
+      context: `webhook.processDocQueryProgressWebhook`,
       error,
     };
 
