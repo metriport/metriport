@@ -17,8 +17,8 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -51,7 +51,7 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
 } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -402,10 +402,10 @@ router.post(
       const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
 
       if (filteredCxIds.length < 1 && cxIds.length == 1) {
-        console.log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
+        log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       } else if (filteredCxIds.length < 1) {
-        console.log(`No customers to Enhanced Coverage, skipping...`);
+        log(`No customers to Enhanced Coverage, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       }
       log(`Using these cxIds: ${cxIds.join(", ")}`);

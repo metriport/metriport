@@ -12,7 +12,8 @@ capture.init();
 const lambdaName = getEnv("AWS_LAMBDA_FUNCTION_NAME");
 // Set by us
 const url = getEnvOrFail("URL");
-const timeoutMillis = Number(getEnvOrFail("TIMEOUT_MILLIS"));
+const timeoutRaw = getEnv("TIMEOUT_MILLIS");
+const timeoutMillis = timeoutRaw != undefined ? Number(timeoutRaw) : undefined;
 
 /**
  * Lambda that just triggers an endpoint, it doesn't wait for the response.

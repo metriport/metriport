@@ -31,11 +31,14 @@ export const updatePatient = async (
       lock: true,
       transaction,
     });
-    patientUpdate.address = await addCoordinatesToAddresses({
+
+    const addressWithCoordinates = await addCoordinatesToAddresses({
       addresses: patientUpdate.address,
       patient: patientUpdate,
       reportRelevance: true,
     });
+
+    if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
 
     validateVersionForUpdate(patient, eTag);
 

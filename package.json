@@ -44,7 +44,6 @@
     "packages/carequality-cert-runner",
     "packages/react-native-sdk",
     "packages/api",
-    "packages/connect-widget",
     "packages/infra",
     "packages/utils",
     "packages/tester-node"

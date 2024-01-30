@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
-import NotFoundError from "../../../errors/not-found";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { processBinary, processDocReference } from "../cw-fhir-proxy";
-import * as helper from "../cw-fhir-proxy-helpers";
+import NotFoundError from "../../../../errors/not-found";
+import * as helper from "../get-org-or-fail";
+import { processBinary, processDocReference } from "../process-inbound";
 
 describe("cw-fhir-proxy", () => {
   // Couldn't get this to work within the timebox

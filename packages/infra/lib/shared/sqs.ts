@@ -7,7 +7,7 @@ import { ILayerVersion } from "aws-cdk-lib/aws-lambda";
 import { IQueue, Queue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs/lib/construct";
 import { EnvType } from "../env-type";
-import { DEFAULT_LAMBDA_TIMEOUT, createRetryLambda } from "./lambda";
+import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT } from "./lambda";
 
 /**
  * ...set the source queue's visibility timeout to at least six times the timeout that
@@ -21,6 +21,8 @@ import { DEFAULT_LAMBDA_TIMEOUT, createRetryLambda } from "./lambda";
  * throttled lambda is about to keep processing it after its unthrottled.
  */
 const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
+
+const DEFAULT_MAX_RECEIVE_COUNT = 5;
 
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
   dlq?: never;
@@ -105,7 +107,9 @@ function createStandardQueue(props: StandardQueueProps): Queue {
     deadLetterQueue: props.dlq
       ? {
           maxReceiveCount:
-            props.maxReceiveCount && props.maxReceiveCount > 0 ? props.maxReceiveCount : 1,
+            props.maxReceiveCount && props.maxReceiveCount > 0
+              ? props.maxReceiveCount
+              : DEFAULT_MAX_RECEIVE_COUNT,
           queue: props.dlq,
         }
       : undefined,
@@ -133,7 +137,9 @@ function createFifoQueue(props: FifoQueueProps): Queue {
     deadLetterQueue: props.dlq
       ? {
           maxReceiveCount:
-            props.maxReceiveCount && props.maxReceiveCount > 0 ? props.maxReceiveCount : 1,
+            props.maxReceiveCount && props.maxReceiveCount > 0
+              ? props.maxReceiveCount
+              : DEFAULT_MAX_RECEIVE_COUNT,
           queue: props.dlq,
         }
       : undefined,

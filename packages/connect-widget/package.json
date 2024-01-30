@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "clean": "rimraf build && rimraf node_modules",
+    "install-deps": "npm ci --ignore-scripts --no-fund",
     "start": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` craco start",
     "build": "REACT_APP_GIT_SHA=`git rev-parse --short HEAD` craco build",
     "build:cloud": "if [ \"$ENV_TYPE\" = \"staging\" ]; then REACT_APP_GIT_SHA=`git rev-parse --short HEAD` env-cmd -f .env.staging craco build; else npm run build; fi",
+    "build:staging": "ENV_TYPE='staging' npm run build:cloud",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint src/**/*.ts src/**/*.tsx",
     "lint-fix": "npm run lint --fix",
