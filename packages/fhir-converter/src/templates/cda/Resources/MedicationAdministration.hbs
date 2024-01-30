@@ -18,14 +18,15 @@
         {
 
                 "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}}
+                {{!-- dose and rateQuantity are type SimpleQuantity --}}
                 "dose":
                 {
-                    "value":"{{medicationAdministration.doseQuantity.value}}",
+                    "value":"{{removeNonNumeric (decodeHtmlEntities medicationAdministration.doseQuantity.value)}}",
                     "unit":"{{medicationAdministration.doseQuantity.unit}}"
                 }
                 "rateQuantity":
                 {
-                    "value":"{{medicationAdministration.rateQuantity.value}}",
+                    "value":"{{removeNonNumeric (decodeHtmlEntities medicationAdministration.rateQuantity.value)}}",
                     "unit":"{{medicationAdministration.rateQuantity.unit}}"
                 }
 

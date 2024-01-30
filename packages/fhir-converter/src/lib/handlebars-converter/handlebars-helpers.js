@@ -11,6 +11,8 @@ var crypto = require("crypto");
 var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
+const he = require('he');
+
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 
@@ -1056,6 +1058,27 @@ module.exports.external = [
     description: "Returns the code system for the related person relationship code",
     func: function () {
       return PERSONAL_RELATIONSHIP_TYPE_CODE;
+    },
+  },
+  {
+    name: "decodeHtmlEntities",
+    description: "Decodes html strings",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return "";
+      }
+      const result = he.decode(str);
+      return result;
+    },
+  },
+  {
+    name: "removeNonNumeric",
+    description: "Removes all non-numeric characters from a string, keeping decimal points",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return "";
+      }
+      return str.replace(/[^0-9.]/g, '');
     },
   },
 ];
