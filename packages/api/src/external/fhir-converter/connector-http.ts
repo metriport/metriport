@@ -17,6 +17,7 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
     template,
     unusedSegments,
     invalidAccess,
+    source,
   }: FHIRConverterRequest): Promise<void> {
     const fhirConverterUrl = Config.getFHIRConverterServerURL();
     if (!fhirConverterUrl) {
@@ -48,6 +49,7 @@ export class FHIRConverterConnectorHTTP implements FHIRConverterConnector {
         patientId,
         unusedSegments,
         invalidAccess,
+        source,
       },
       headers: { "Content-Type": "text/plain" },
     });

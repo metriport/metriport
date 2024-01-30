@@ -1,3 +1,4 @@
+import { errorToString } from "./error/shared";
 import { sleep } from "./sleep";
 
 export type ExecuteInChunksOptions = {
@@ -21,11 +22,7 @@ export type ExecuteInChunksOptions = {
    */
   keepExecutingOnError?: boolean;
   /**
-   * If set to true will result in each call to the function to be logged. Defaults to false.
-   */
-  verbose?: boolean;
-  /**
-   * Where to log if `verbose` is true. Defaults to `console.log`.
+   * Where to log. Defaults to no logging.
    */
   log?: typeof console.log;
 };
@@ -73,8 +70,7 @@ export async function executeAsynchronously<T>(
     maxJitterMillis = 0,
     minJitterMillis = 0,
     keepExecutingOnError = false,
-    verbose = false,
-    log = console.log,
+    log,
   }: ExecuteInChunksOptions = {}
 ): Promise<PromiseSettledResult<void>[]> {
   if (minJitterMillis < 0) throw new Error("minJitterMillis must be >= 0");
@@ -93,7 +89,14 @@ export async function executeAsynchronously<T>(
     const jitter = Math.max(minJitterMillis, Math.random() * maxJitterMillis);
     await sleep(jitter);
 
-    await executeSynchronously(itemsToProcess, fn, promiseIndex, amountOfPromises, verbose, log);
+    await executeSynchronously(
+      itemsToProcess,
+      fn,
+      promiseIndex,
+      amountOfPromises,
+      keepExecutingOnError,
+      log
+    );
   });
 
   if (keepExecutingOnError) {
@@ -110,17 +113,26 @@ async function executeSynchronously<T>(
   fn: FunctionType<T>,
   promiseIndex: number,
   amountOfPromises: number,
-  verbose: boolean,
-  log: typeof console.log
+  keepExecutingOnError: boolean,
+  log?: typeof console.log | undefined
 ): Promise<void> {
-  const tabs = verbose ? "\t".repeat(promiseIndex) : emptyString;
+  const tabs = log ? "\t".repeat(promiseIndex) : emptyString;
   let itemIndex = 0;
   let item;
   while ((item = itemsToProcess.pop())) {
-    verbose &&
+    log &&
       log(
         `... ${tabs}... promise ${promiseIndex} item ${itemIndex} remaining ${itemsToProcess.length}...`
       );
-    await fn(item, itemIndex++, promiseIndex, amountOfPromises);
+    try {
+      await fn(item, itemIndex++, promiseIndex, amountOfPromises);
+    } catch (error) {
+      if (keepExecutingOnError) {
+        log &&
+          log(`Error on item ${itemIndex} of promise ${promiseIndex}: ${errorToString(error)}`);
+      } else {
+        throw error;
+      }
+    }
   }
 }

@@ -12,6 +12,7 @@ import * as stream from "stream";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
+const UPLOADS_FOLDER = "uploads";
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
 export function makeS3Client(region: string): AWS.S3 {
@@ -97,8 +98,8 @@ export class S3Utils {
     key: string,
     bucket: string
   ): Promise<
-    | { exists: true; size: number; contentType: string }
-    | { exists: false; size?: never; contentType?: never }
+    | { exists: true; size: number; contentType: string; eTag?: string }
+    | { exists: false; size?: never; contentType?: never; eTag?: never }
   > {
     try {
       const head = await this.s3
@@ -107,7 +108,12 @@ export class S3Utils {
           Key: key,
         })
         .promise();
-      return { exists: true, size: head.ContentLength ?? 0, contentType: head.ContentType ?? "" };
+      return {
+        exists: true,
+        size: head.ContentLength ?? 0,
+        contentType: head.ContentType ?? "",
+        eTag: head.ETag ?? "",
+      };
     } catch (err) {
       return { exists: false };
     }
@@ -209,4 +215,75 @@ export class S3Utils {
 
     return newKey;
   }
+  async uploadFile(
+    bucket: string,
+    key: string,
+    file: Buffer
+  ): Promise<AWS.S3.ManagedUpload.SendData> {
+    return new Promise((resolve, reject) => {
+      this._s3.upload(
+        {
+          Bucket: bucket,
+          Key: key,
+          Body: file,
+        },
+        (err, data) => {
+          if (err) {
+            console.error("Error during upload:", err);
+            reject(err);
+          } else {
+            console.log("Upload successful");
+            resolve(data);
+          }
+        }
+      );
+    });
+  }
+  async retrieveDocumentIdsFromS3(
+    cxId: string,
+    patientId: string,
+    bucketName: string
+  ): Promise<string[] | undefined> {
+    const Prefix = `${cxId}/${patientId}/uploads/`;
+
+    const params = {
+      Bucket: bucketName,
+      Prefix,
+    };
+
+    try {
+      const data = await this._s3.listObjectsV2(params).promise();
+      const documentContents = (
+        await Promise.all(
+          data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
+            async item => {
+              if (item.Key) {
+                const params = {
+                  Bucket: bucketName,
+                  Key: item.Key,
+                };
+
+                const data = await this._s3.getObject(params).promise();
+                return data.Body?.toString();
+              }
+              return undefined;
+            }
+          ) || []
+        )
+      ).filter((item): item is string => Boolean(item));
+
+      return documentContents;
+    } catch (error) {
+      console.error(`Error retrieving document IDs from S3: ${error}`);
+      return undefined;
+    }
+  }
+}
+
+export function buildDestinationKeyMetadata(
+  cxId: string,
+  patientId: string,
+  docId: string
+): string {
+  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}_metadata.xml`;
 }

@@ -12,6 +12,8 @@ var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 
+const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
+
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
@@ -856,30 +858,52 @@ module.exports.external = [
   {
     name: "toString",
     description: "Converts to string: toString object",
-    func: function (o) {
-      return o.toString();
+    func: function(str) {
+      return str.toString();
     },
   },
   {
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
-    func: function (o) {
-      return JSON.stringify(o);
+    func: function(str) {
+      return JSON.stringify(str);
     },
   },
   {
     name: "toJsonStringPrettier",
     description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
-    func: function (o) {
-      return JSON.stringify(o, null, 2);
+    func: function(str) {
+      return JSON.stringify(str, null, 2);
     },
   },
   {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toLowerCase();
+        return str.toString().toLowerCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
+    name: "trimAndLower",
+    description: "Trims and converts string to lower case: trimAndLower string",
+    func: function(str) {
+      try {
+        return str.toString().trim().toLowerCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
+    name: "trimAndUpper",
+    description: "Trims and converts string to upper case: trimAndUpper string",
+    func: function(str) {
+      try {
+        return str.toString().trim().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -888,9 +912,9 @@ module.exports.external = [
   {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toUpperCase();
+        return str.toString().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -899,7 +923,7 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function (o) {
+    func: function(o) {
       return isNaN(o);
     },
   },
@@ -1015,6 +1039,23 @@ module.exports.external = [
     description: "Checks if a string starts with a given substring: startsWith string substring",
     func: function (str, substr) {
       return str.startsWith(substr);
+    },
+  },
+  {
+    name: "parseReferenceData",
+    description: "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
+    func: function (referenceData) {
+      if (referenceData == undefined) {
+        return "";
+      }
+      return JSON.stringify(referenceData).slice(1, -1);
+    }
+  },
+  {
+    name: "personalRelationshipRoleTypeCodeSystem",
+    description: "Returns the code system for the related person relationship code",
+    func: function () {
+      return PERSONAL_RELATIONSHIP_TYPE_CODE;
     },
   },
 ];

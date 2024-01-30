@@ -12,7 +12,7 @@ export function getIheResultStatus({
   patientMatch,
   docRefLength,
 }: {
-  patientMatch?: boolean;
+  patientMatch?: boolean | null;
   docRefLength?: number;
 }): IHEResultStatus {
   // explicitly checking for a boolean value for patientMatch because it can be undefined

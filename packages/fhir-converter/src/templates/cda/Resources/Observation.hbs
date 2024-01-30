@@ -16,18 +16,22 @@
             {{/each}}
         ],
         
-        {{#if observationCategory}}
-             "category": [
-                  {
-                      "coding": [
-                          {
-                            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                            "code": "{{observationCategory}}"
-                          }
-                    ]
-                  }
-            ],
-        {{/if}}
+            {{#if observationCategory}}
+                {{#with (evaluate 'Utils/ObservationCategoryDisplayFromCode.hbs' code=observationCategory) as |respObj|}}
+                    "category": [
+                        {
+                            "coding": [
+                                {
+                                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                                    "code": "{{../observationCategory}}",
+                                    "display": "{{respObj.display}}"
+                                }
+                            ],
+                            "text": "{{respObj.display}}"
+                        }
+                    ],
+                {{/with}}
+            {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
         "code": {
@@ -68,11 +72,11 @@
         {{else if observationEntry.value.value}}
             "valueQuantity":
             {
-                "value":{{observationEntry.value.value}},
+                "value":"{{observationEntry.value.value}}",
                 "unit":"{{observationEntry.value.unit}}",
             }, 
         {{else}}
-            "valueString":"{{observationEntry.value._}}",
+            "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":

@@ -11,7 +11,26 @@
         ],
         "relationship":
         [
-            {{>DataType/CodeableConcept.hbs code=relatedPerson.code}},
+            {
+                {{#if relatedPerson.code.originalText}}
+                    "text":"{{{relatedPerson.code.originalText._}}}",
+                {{/if}}
+                "coding": 
+                [
+                    {{>DataType/Coding.hbs code=relatedPerson.code}},
+                    
+                    {{#unless relatedPerson.code.code}}
+                        {{#unless relatedPerson.code.displayName}}
+                            {{#with (evaluate 'Utils/RelatedPersonCodeFromText.hbs' text=(trimAndLower relatedPerson.code.originalText._)) as |respObj|}}
+                                {{>DataType/Coding.hbs code=respObj.code}},
+                            {{/with}}
+                        {{/unless}}
+                    {{/unless}}
+                    {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=(trimAndUpper relatedPerson.classCode)) as |respObj|}}
+                        {{>DataType/Coding.hbs code=respObj.code}},
+                    {{/with}}
+                ]
+            }
         ],
         "name":
         [

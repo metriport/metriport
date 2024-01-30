@@ -119,17 +119,6 @@ Backend for the Metriport API.
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
 
-<!-- ### **Connect Widget**
-
-Pre-built app that you can embed your own app! Use it to allow your users to authenticate with various data sources, allowing you to pull their health data from those sources.
-
-<div align="left">
-   <img width="50%" alt="connect widget" src="https://i.ibb.co/mNgMwyd/Screenshot-2022-12-20-at-3-51-47-PM.png">
-</div>
-
-- Dir: [`/connect-widget`](/connect-widget)
-- URL: [https://connect.metriport.com/](https://connect.metriport.com/?token=demo) -->
-
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
@@ -154,18 +143,6 @@ Our npm packages are available in [`/packages`](/packages):
 - [Metriport API](/packages/api-sdk/): contains the Metriport data models, and a convenient API client wrapper.
 - [CommonWell JWT Maker](/packages/commonwell-jwt-maker/): CLI to create a JWT for use in [CommonWell](https://www.commonwellalliance.org/) queries.
 - [CommonWell SDK](/packages/commonwell-sdk/): SDK to simplify CommonWell API integration.
-
-<!-- #### **iOS**
-
-Our iOS packages are available in our [`iOS repo`](https://github.com/metriport/metriport-ios-sdk):
-
-- [Metriport iOS](https://github.com/metriport/metriport-ios-sdk): SDK to integrate with the Metriport Connect Widget and Apple Health on iOS.
-
-### **Code Examples**
-
-Some example projects that serve as examples for how to integrate with Metriport on various platforms - such as iOS and Android.
-
-- Dir: [`/examples`](/examples) -->
 
 ---
 
@@ -269,30 +246,6 @@ Commitizen will retry the last commit message you prepared previously. More abou
 ### **API Server**
 
 First, create a local environment file to define your developer keys, and local dev URLs:
-
-<!-- ```shell
-$ touch packages/api/.env
-$ echo "LOCAL_ACCOUNT_CXID=<YOUR-TESTING-ACCOUNT-ID>" >> packages/api/.env
-$ echo "API_URL=http://localhost:8080" >> packages/api/.env
-$ echo "CONNECT_WIDGET_URL=http://localhost:3001/" >> packages/api/.env
-$ echo "CRONOMETER_CLIENT_ID=<YOUR-ID>" >> packages/api/.env
-$ echo "CRONOMETER_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "DEXCOM_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
-$ echo "DEXCOM_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "FITBIT_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
-$ echo "FITBIT_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "GARMIN_CONSUMER_KEY=<YOUR-KEY>" >> packages/api/.env
-$ echo "GARMIN_CONSUMER_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "GOOGLE_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
-$ echo "GOOGLE_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "OURA_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
-$ echo "OURA_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "WHOOP_CLIENT_ID=<YOUR-KEY>" >> packages/api/.env
-$ echo "WHOOP_CLIENT_SECRET=<YOUR-KEY>" >> packages/api/.env
-$ echo "WITHINGS_CLIENT_ID=<YOUR-SECRET>" >> packages/api/.env
-$ echo "WITHINGS_CLIENT_SECRET=<YOUR-SECRET>" >> packages/api/.env
-$ echo "FHIR_SERVER_URL=<FHIR-SERVER-URL>" >> packages/api/.env # optional
-``` -->
 
 ```shell
 $ touch packages/api/.env
@@ -455,23 +408,6 @@ $ docker-compose -f docker-compose.dev.yml down
 
 To debug the backend, you can attach a debugger to the running Docker container by launching the `Docker: Attach to Node` configuration in VS Code. Note that this will support hot reloads 🔥🔥!
 
-<!-- ### **Connect Widget**
-
-To run the Connect Widget:
-
-```shell
-$ cd packages/connect-widget
-$ npm run start # available on port 3001 by default
-```
-
-...or, from the root folder...
-
-```shell
-$ npm run start -w connect-widget
-```
-
-To debug the Connect Widget, you can run a Chrome window by launching the `Run Chrome` configuration in VS Code. -->
-
 ### Utils
 
 The `./packages/utils` folder contains utilities that help with the development of this and other opensource Metriport projects:
@@ -576,21 +512,6 @@ where:
 - ECS_SERVICE: The ARN of the ECS service to be restarted upon deployment
 
 After deployment, the API will be available at the configured subdomain + domain.
-
-<!-- 5. Finally, to self-host the Connect widget, run the following:
-
-```shell
-$ ./packages/scripts/deploy-infra.sh -e "production" -s "<config.connectWidget.stackName>"
-```
-
-This will create the infrastructure to run the Connect Widget, including the S3 Bucket to host the files and the CloudFront distribution. Take note of that to populate
-the environment variables `S3_BUCKET` and `CF_DISTRIB_ID`.
-
-6. And the following, to deploy the Connect Widget's files on S3 and invalidate the cache on CloudFront:
-
-```shell
-$ S3_BUCKET=xxx CF_DISTRIB_ID=xxx ./packages/scripts/deploy-widget.sh
-``` -->
 
 Note: if you need help with the `deploy-infra.sh` script at any time, you can run:
 

@@ -1,5 +1,5 @@
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "@metriport/core/domain/patient";
 import { Config } from "../../../shared/config";
@@ -38,7 +38,7 @@ export async function getDocumentsFromCQ({
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    await iheGateway.startDocumentsQuery({ documentQueryRequestOutgoing: documentQueryRequests });
+    await iheGateway.startDocumentsQuery({ documentQueryReqToExternalGW: documentQueryRequests });
 
     // We invoke the lambda that will start polling for the results
     // from the IHE Gateway and process them

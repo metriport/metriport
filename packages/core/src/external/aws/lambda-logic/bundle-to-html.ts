@@ -610,31 +610,15 @@ function buildEncounterSections(
   diagnosticReports: DiagnosticReport[]
 ): EncounterSection {
   for (const report of diagnosticReports) {
-    const formattedDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
+    const time = report.effectiveDateTime ?? report.effectivePeriod?.start;
+    const formattedDate = dayjs(time).format(ISO_DATE) ?? "";
 
     if (formattedDate) {
       if (!encounterSections[formattedDate]) {
         encounterSections[formattedDate] = {};
       }
 
-      let diagnosticReportsType: EncounterTypes | undefined;
-
-      if (report?.code?.coding) {
-        for (const iterator of report.code.coding) {
-          if (iterator.display?.toLowerCase() === "progress note") {
-            diagnosticReportsType = "progressNotes";
-          } else if (iterator.display?.toLowerCase() === "patient education") {
-            diagnosticReportsType = "afterInstructions";
-          } else if (iterator.display?.toLowerCase().includes("reason for visit")) {
-            diagnosticReportsType = "reasonForVisit";
-          } else if (
-            iterator.display?.toLowerCase() === "assessments" ||
-            iterator.display?.toLowerCase() === "eval note"
-          ) {
-            diagnosticReportsType = "documentation";
-          }
-        }
-      }
+      let diagnosticReportsType: EncounterTypes | undefined = "documentation";
 
       if (report.category) {
         for (const iterator of report.category) {
@@ -645,13 +629,15 @@ function buildEncounterSections(
       }
 
       if (diagnosticReportsType) {
-        const reportDate = dayjs(report.effectiveDateTime).format(ISO_DATE) ?? "";
+        const reportDate = dayjs(time).format(ISO_DATE) ?? "";
         let isReportDuplicate = false;
 
         if (encounterSections[formattedDate]?.[diagnosticReportsType]) {
           const isDuplicate = encounterSections[formattedDate]?.[diagnosticReportsType]?.find(
             reportInside => {
-              const reportInsideDate = dayjs(reportInside.effectiveDateTime).format(ISO_DATE) ?? "";
+              const reportInsideTime =
+                reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
+              const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
               const isDuplicate = reportInsideDate === reportDate;
 
               return isDuplicate;
@@ -721,18 +707,22 @@ function buildReports(
 
         return onlyAWE ? aweVisit : !aweVisit;
       })
+      .filter(([, value]) => {
+        const documentation = value.documentation;
+        const note = documentation?.[0]?.presentedForm?.[0]?.data ?? "";
+
+        const noNote = !note || note.length === 0;
+
+        return noNote ? false : true;
+      })
       .map(([key, value]) => {
         const labs = value.labs;
-        const progressNotes = value.progressNotes;
-        const reasonForVisit = value.reasonForVisit;
         const documentation = value.documentation;
 
         const hasNoLabs = !labs || labs?.length === 0;
-        const hasNoProgressNotes = !progressNotes || progressNotes?.length === 0;
-        const hasNoReasonForVisit = !reasonForVisit || reasonForVisit?.length === 0;
         const hasNoDocumentation = !documentation || documentation?.length === 0;
 
-        if (hasNoLabs && hasNoProgressNotes && hasNoReasonForVisit && hasNoDocumentation) {
+        if (hasNoLabs && hasNoDocumentation) {
           return "";
         }
 
@@ -743,24 +733,6 @@ function buildReports(
             <span>Date: ${formatDateForDisplay(key) ?? ""}</span>
           </div>
           <div>
-          ${
-            progressNotes && progressNotes.length > 0
-              ? createProgressNotesFromDiagnosticReports(
-                  progressNotes,
-                  mappedPractitioners,
-                  mappedOrganizations
-                )
-              : ""
-          }
-            ${
-              reasonForVisit && reasonForVisit.length > 0
-                ? createReasonForVisitFromDiagnosticReports(
-                    reasonForVisit,
-                    mappedPractitioners,
-                    mappedOrganizations
-                  )
-                : ""
-            }
             ${
               documentation && documentation.length > 0
                 ? createWhatWasDocumentedFromDiagnosticReports(
@@ -791,66 +763,6 @@ function buildReports(
 
 const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
 
-function createProgressNotesFromDiagnosticReports(
-  progressNotes: DiagnosticReport[],
-  mappedPractitioners: Record<string, Practitioner>,
-  mappedOrganizations: Record<string, Organization>
-) {
-  const notes = progressNotes
-    .map(progressNote => {
-      const note = progressNote.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("binary");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
-
-      const practitionerField = createPractionerField(progressNote, mappedPractitioners);
-      const organizationField = createOrganiztionField(progressNote, mappedOrganizations);
-
-      return `
-        <div>
-          ${practitionerField}
-          ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
-      `;
-    })
-    .join("");
-
-  return `<div>
-    <h4>Progress Notes</h4>
-    ${notes}
-  </div>`;
-}
-
-function createReasonForVisitFromDiagnosticReports(
-  reasonForVisit: DiagnosticReport[],
-  mappedPractitioners: Record<string, Practitioner>,
-  mappedOrganizations: Record<string, Organization>
-) {
-  const reasons = reasonForVisit
-    .map(reason => {
-      const note = reason.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("binary");
-      const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
-
-      const practitionerField = createPractionerField(reason, mappedPractitioners);
-      const organizationField = createOrganiztionField(reason, mappedOrganizations);
-
-      return `
-        <div>
-          ${practitionerField}
-          ${organizationField}
-          <p style="margin-bottom: 10px; line-height: 25px; white-space: pre-line;">${cleanNote}</p>
-        </div>
-      `;
-    })
-    .join("");
-
-  return `<div class="reason-for-visit">
-    <h4>Reason For Visit</h4>
-    ${reasons}
-  </div>`;
-}
-
 function createWhatWasDocumentedFromDiagnosticReports(
   documentation: DiagnosticReport[],
   mappedPractitioners: Record<string, Practitioner>,
@@ -876,7 +788,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
     .join("");
 
   return `<div class="documentation">
-    <h4>Documentation</h4>
+    <h4>Notes</h4>
     ${documentations}
   </div>`;
 }
@@ -1687,6 +1599,15 @@ function createObservationsByDate(observations: Observation[]): string {
       </thead>
       <tbody>
         ${tables.observations
+          .filter(observation => {
+            const observationDisplay = observation.code?.coding?.find(coding => {
+              return coding.display;
+            });
+
+            const hasDisplayValue = observationDisplay?.display ?? observation.code?.text;
+
+            return !!hasDisplayValue;
+          })
           .map(observation => {
             const code = getSpecificCode(observation.code?.coding ?? [], [SNOMED_CODE, LOINC_CODE]);
             const blacklistReferenceRange = blacklistReferenceRangeText.find(referenceRange => {
@@ -1701,9 +1622,13 @@ function createObservationsByDate(observations: Observation[]): string {
                   observation.referenceRange?.[0]?.high?.unit ?? ""
                 }`;
 
+            const observationDisplay = observation.code?.coding?.find(coding => {
+              return coding.display;
+            });
+
             return `
               <tr>
-                <td>${observation.code?.coding?.[0]?.display ?? observation.code?.text ?? ""}</td>
+                <td>${observationDisplay?.display ?? observation.code?.text ?? ""}</td>
                 <td>${observation.valueQuantity?.value ?? observation.valueString ?? ""}</td>
                 <td>${observation.interpretation?.[0]?.text ?? ""}</td>
                 <td>${

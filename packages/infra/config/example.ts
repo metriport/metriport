@@ -12,6 +12,7 @@ export const config: EnvConfig = {
   authSubdomain: "auth",
   dbName: "my_db",
   dbUsername: "my_db_user",
+  loadBalancerDnsName: "<your-load-balancer-dns-name>",
   fhirServerUrl: "http://localhost:8888",
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: "CRONOMETER_CLIENT_ID",
@@ -84,6 +85,5 @@ export const config: EnvConfig = {
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   systemRootOID: "2.16.840.1.113883.3.999999",
-  fhirToCDAUrl: "https://converter-test.com",
 };
 export default config;

@@ -17,8 +17,13 @@ import Axios from "axios";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import path from "path";
-import { getFileContents, getFileNames, makeDir, writeFileContents } from "../shared/fs";
+import {
+  getFileContents,
+  getFileNames,
+  makeDir,
+  makeDirIfNeeded,
+  writeFileContents,
+} from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
 import { convertCDAsToFHIR } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
@@ -51,10 +56,9 @@ dayjs.extend(duration);
  */
 
 const cdaLocation = ``;
-
 const converterBaseUrl = "http://localhost:8777";
 const fhirBaseUrl = "http://localhost:8888";
-const parallelConversions = 4;
+const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
 const parallelUpsertsIntoFHIRServer = 1;
@@ -68,8 +72,9 @@ const fhirApiRaw = Axios.create({ baseURL: fhirBaseUrl });
 
 let startedAt = Date.now();
 const timestamp = dayjs().toISOString();
-const fhirExtension = `__${timestamp}.json`;
+const fhirExtension = `.json`;
 const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
+const outputFolderName = `${logsFolderName}/output`;
 
 type Params = {
   cleanup?: boolean;
@@ -97,6 +102,7 @@ export async function main() {
   );
   console.log(`Log folder: ${logsFolderName}`);
   makeDir(logsFolderName);
+  makeDir(outputFolderName);
 
   // Get XML files
   const ccdaFileNames = getFileNames({
@@ -106,14 +112,17 @@ export async function main() {
   });
   console.log(`Found ${ccdaFileNames.length} XML files.`);
 
+  const relativeFileNames = ccdaFileNames.map(f => f.replace(cdaLocation, ""));
+
   // Convert them into JSON files
   const { nonXMLBodyCount } = await convertCDAsToFHIR(
-    ccdaFileNames,
+    cdaLocation,
+    relativeFileNames,
     parallelConversions,
     startedAt,
     converterApi,
     fhirExtension,
-    logsFolderName
+    outputFolderName
   );
   if (nonXMLBodyCount > 0) {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
@@ -133,14 +142,16 @@ export async function main() {
   await createTenant();
 
   const fhirFileNames = getFileNames({
-    folder: cdaLocation,
+    folder: outputFolderName,
     recursive: true,
     extension: fhirExtension,
   });
   console.log(`Found ${fhirFileNames.length} JSON files.`);
 
+  const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
+
   // Insert JSON files into FHIR server
-  await insertBundlesIntoFHIRServer(fhirFileNames);
+  await insertBundlesIntoFHIRServer(relativeJSONFileNames);
 
   // Get stats from FHIR Server
   const stats = await getStatusFromFHIRServer();
@@ -161,7 +172,7 @@ function storeStats(stats: any) {
     `${logsFolderName}/stats.json`,
     JSON.stringify(
       {
-        cdaLocation,
+        cdaLocation: cdaLocation,
         ...stats,
       },
       null,
@@ -193,22 +204,20 @@ async function removeAllPartitionsFromFHIRServer() {
 async function insertBundlesIntoFHIRServer(fileNames: string[]) {
   console.log(`Inserting ${fileNames.length} files, ${parallelUpsertsIntoFHIRServer} at a time...`);
   let errCount = 0;
-  const res = await executeAsynchronously(
+  await executeAsynchronously(
     fileNames,
     async fileName => {
       try {
-        await insertSingleBundle(fileName);
-      } catch (error) {
+        await insertSingleBundle(outputFolderName + fileName);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.log(`Error inserting ${fileName}: ${error.message}`);
         errCount++;
-        throw error;
       }
     },
     { numberOfParallelExecutions: parallelUpsertsIntoFHIRServer, keepExecutingOnError: true }
   );
-
-  const failed = res.filter(r => r.status === "rejected");
-  const reportFailure = errCount > 0 ? ` [${errCount} in ${failed.length} promises]` : "";
-
+  const reportFailure = errCount > 0 ? ` [${errCount} errors]` : "";
   const insertDuration = Date.now() - startedAt;
   // Fhir Bundles are processed partially, so don't subtract the errors from the total
   console.log(`Inserted ${fileNames.length} files in ${insertDuration} ms.${reportFailure}`);
@@ -217,33 +226,35 @@ async function insertBundlesIntoFHIRServer(fileNames: string[]) {
 async function insertSingleBundle(fileName: string) {
   const fileContents = getFileContents(fileName);
   const payload = JSON.parse(fileContents ?? "");
+  let response;
   try {
-    const response = await fhirApi.executeBatch(payload);
-    const errors = getErrorsFromReponse(response);
-    try {
-      const shortFileName = fileName.replace(cdaLocation, "");
-      createDirIfNeeded(shortFileName, logsFolderName);
-      const filePrefix = `${logsFolderName}${shortFileName}`;
-      writeFileContents(`${filePrefix}.response.json`, JSON.stringify(response));
-    } catch (error) {
-      console.log(`>>> Error writing results to ${fileName}.response.json: `, error);
-    }
+    response = await fhirApi.executeBatch(payload);
 
+    const responseFileName = `${fileName}.response`;
+    try {
+      makeDirIfNeeded(responseFileName);
+      writeFileContents(responseFileName, JSON.stringify(response));
+    } catch (error) {
+      console.log(`>>> Error writing results to ${responseFileName}: `, error);
+    }
+    const errors = getErrorsFromReponse(response);
     if (errors.length > 0) {
       console.log(`>>> Errors: `, JSON.stringify(errors));
       throw new Error(`Got ${errors.length} errors from FHIR`);
     }
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(`Error inserting ${fileName}: ${errorToString(error)}`);
+    const errAsString = errorToString(error);
+    console.log(`Error inserting ${fileName}: ${errAsString}`);
+    const errorFileName = `${fileName}.error`;
+    try {
+      makeDirIfNeeded(errorFileName);
+      writeFileContents(errorFileName, errAsString);
+    } catch (error) {
+      console.log(`>>> Error writing results to ${errorFileName}: `, error);
+    }
     throw error;
   }
-}
-
-function createDirIfNeeded(fileName: string, base: string) {
-  if (!fileName.includes("/")) return;
-  const dirName = fileName.split("/").slice(0, -1).join("/");
-  makeDir(path.join(base, dirName));
 }
 
 function getErrorsFromReponse(response?: Bundle<Resource>) {
@@ -271,7 +282,6 @@ async function getStatusFromFHIRServer() {
       `>>> Amount of resources that failed to count: ${failed.length} (${succeeded.length} succeeded)`
     );
   }
-
   return {
     total,
     resources: countPerResource,

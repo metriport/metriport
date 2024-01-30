@@ -4,7 +4,7 @@
                 {{#each (toArray 2_16_840_1_113883_10_20_22_2_65.entry) as |note|}}
                     {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.subject)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
 
                     {{!-- TODO need to add references, author, etc --}}

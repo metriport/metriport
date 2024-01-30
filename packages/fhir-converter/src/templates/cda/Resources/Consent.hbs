@@ -18,7 +18,7 @@
               }
             ]
         }
-        "category":{{>DataType/CodeableConcept.hbs code=consentEntry.code}},    
+        "category":[{{>DataType/CodeableConcept.hbs code=consentEntry.code}}],    
         "dateTime":"{{formatAsDateTime consentEntry.component.observation.effectiveTime.low.value}}",
         "provision":
         {

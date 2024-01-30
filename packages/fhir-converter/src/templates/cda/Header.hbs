@@ -24,14 +24,13 @@
     		{{>References/Composition/custodian.hbs ID=(generateUUID (toJsonString this)) REF=(concat 'Organization/' (generateUUID (toJsonString this.custodian.assignedCustodian.representedCustodianOrganization)))}},            
         {{/if}}
 
-        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-            {{#each ../participant}}
-                {{#if this}}
-                    {{>Resources/RelatedPerson.hbs relatedPerson=this.associatedEntity ID=(generateUUID (toJsonString this.associatedEntity)) REF=(concat 'Patient/' patientId.Id)}},
-                    {{>References/Patient/link.other.hbs ID=(generateUUID (toJsonString this)) REF=(concat 'RelatedPerson/' (generateUUID (toJsonString this.associatedEntity)))}},
-                {{/if}}
-            {{/each}}
-        {{/with}}
+        {{#each (toArray this.participant)}}
+            {{#if this}}
+                {{>Resources/RelatedPerson.hbs relatedPerson=this.associatedEntity ID=(generateUUID (toJsonString this.associatedEntity))}},
+                {{>References/Patient/link.other.hbs ID=@metriportPatientId REF=(concat 'RelatedPerson/' (generateUUID (toJsonString this.associatedEntity)))}},
+                {{>References/RelatedPerson/patient.hbs ID=(generateUUID (toJsonString this.associatedEntity)) REF=(concat 'Patient/' @metriportPatientId)}},
+            {{/if}}
+        {{/each}}
 
 {{/with}}
     	
