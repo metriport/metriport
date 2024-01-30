@@ -727,7 +727,7 @@ export class APIStack extends Stack {
       new Backup(this, "APISandboxSeedDataBucketBackup", {
         backupPlanName: "APISandboxSeedDataBucketBackupPlan",
         resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
-        backupRate: Duration.days(7),
+        backupRate: Duration.days(1),
       });
     }
 
