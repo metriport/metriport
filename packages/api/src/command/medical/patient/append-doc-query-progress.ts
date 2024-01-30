@@ -2,6 +2,7 @@ import {
   getStatusFromProgress,
   Progress,
   DocumentQueryProgress,
+  ProgressType,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
@@ -85,6 +86,43 @@ export async function appendDocQueryProgress({
     });
 
     return updatedPatient;
+  });
+}
+
+export async function updateProgressWebhookSent(
+  patient: Pick<Patient, "id" | "cxId">,
+  type: ProgressType
+) {
+  const patientFilter = {
+    id: patient.id,
+    cxId: patient.cxId,
+  };
+
+  await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
+
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        documentQueryProgress: {
+          ...existingPatient.data.documentQueryProgress,
+          [type]: {
+            ...existingPatient.data.documentQueryProgress?.[type],
+            webhookSent: true,
+          },
+        },
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
   });
 }
 

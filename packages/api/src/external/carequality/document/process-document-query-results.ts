@@ -7,7 +7,6 @@ import { DocumentQueryResult } from "../document-query-result";
 import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
@@ -17,6 +16,7 @@ import { getPatientWithDependencies } from "../../../command/medical/patient/get
 import { combineDocRefs } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "../../fhir/document";
+import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
 
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
@@ -54,7 +54,7 @@ export async function processDocumentQueryResults({
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
-    await appendDocQueryProgressWithSource({
+    await setDocQueryProgressWithSource({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "processing",
@@ -85,7 +85,7 @@ export async function processDocumentQueryResults({
 
     // We invoke the lambda that will start polling for the results
     // from the IHE Gateway for document retrieval results and process them
-    lambdaClient
+    await lambdaClient
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "Event",
@@ -101,7 +101,7 @@ export async function processDocumentQueryResults({
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await appendDocQueryProgressWithSource({
+    await setDocQueryProgressWithSource({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
       requestId,

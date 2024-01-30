@@ -48,9 +48,10 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
-import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { processFhirAndSearchResponse } from "../../fhir/document/process-fhir-search-response";
+import { tallyDocQueryProgressWithSource } from "../../hie/tally-doc-query-progress-with-source";
+import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -155,7 +156,7 @@ export async function queryAndProcessDocuments({
     const msg = `Failed to query and process documents`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await appendDocQueryProgressWithSource({
+    await setDocQueryProgressWithSource({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
@@ -295,7 +296,7 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
-  return appendDocQueryProgressWithSource({
+  return setDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       status: "processing",
@@ -401,8 +402,6 @@ async function downloadDocsAndUpsertFHIR({
   const cxId = patient.cxId;
   const fhirApi = makeFhirApi(patient.cxId);
   const docsNewLocation: DocumentReference[] = [];
-  let completedCount = 0;
-  let errorCount = 0;
   let errorCountConvertible = 0;
   let increaseCountConvertible = 0;
   const shouldUpsertFHIR = !ignoreFhirConversionAndUpsert;
@@ -624,11 +623,28 @@ async function downloadDocsAndUpsertFHIR({
             processFhirAndSearchResponse(patient, doc.id, fhir);
           }
 
-          completedCount++;
+          await tallyDocQueryProgressWithSource({
+            patient: { id: patient.id, cxId: patient.cxId },
+            progress: {
+              successful: 1,
+            },
+            type: "download",
+            requestId,
+            source: MedicalDataSource.COMMONWELL,
+          });
 
           return FHIRDocRef;
         } catch (error) {
-          errorCount++;
+          await tallyDocQueryProgressWithSource({
+            patient: { id: patient.id, cxId: patient.cxId },
+            progress: {
+              errors: 1,
+            },
+            type: "download",
+            requestId,
+            source: MedicalDataSource.COMMONWELL,
+          });
+
           const msg = `Error processing doc from CW`;
           log(`${msg}: ${error}; doc ${JSON.stringify(doc)}`);
           if (!errorReported && !(error instanceof NotFoundError)) {
@@ -644,27 +660,6 @@ async function downloadDocsAndUpsertFHIR({
             });
           }
           throw error;
-        } finally {
-          // TODO: eventually we will have to update this to support multiple HIEs
-          try {
-            await appendDocQueryProgressWithSource({
-              patient: { id: patient.id, cxId: patient.cxId },
-              downloadProgress: {
-                status: "processing",
-                successful: completedCount,
-                errors: errorCount,
-              },
-              requestId,
-              source: MedicalDataSource.COMMONWELL,
-            });
-          } catch (error) {
-            const msg = `Failed to append doc query progress`;
-            console.log(`${msg}. Cause: ${error}`);
-            capture.message(msg, {
-              extra: { context: `cw.downloadDocsAndUpsertFHIR`, patient, requestId, error },
-              level: "error",
-            });
-          }
         }
       })
     );
@@ -678,7 +673,7 @@ async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  await appendDocQueryProgressWithSource({
+  await setDocQueryProgressWithSource({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0

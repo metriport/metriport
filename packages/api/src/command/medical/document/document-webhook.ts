@@ -9,6 +9,8 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
+import { DOWNLOAD_WEBHOOK_TYPE, CONVERSION_WEBHOOK_TYPE } from "./process-doc-query-webhook";
+import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
 
 const log = Util.log(`Document Webhook`);
 
@@ -89,6 +91,18 @@ export const processPatientDocumentRequest = async (
         requestId,
         status: "success",
       });
+    }
+
+    if (whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE) {
+      const progressType = whType === DOWNLOAD_WEBHOOK_TYPE ? "download" : "convert";
+
+      await updateProgressWebhookSent(
+        {
+          id: patientId,
+          cxId,
+        },
+        progressType
+      );
     }
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
