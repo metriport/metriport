@@ -3,13 +3,20 @@ import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { makeDocumentReference } from "@metriport/core/external/fhir/__tests__/document-reference";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
-import { api } from "../../../../__tests__/shared";
+import { api, baseURL } from "../../../../__tests__/shared";
 
 jest.setTimeout(15000);
 
 const binary = makeBinary();
 const patient = makePatient();
-const document = makeDocumentReference({ patient, binary });
+const document = makeDocumentReference({ patient, binary, baseURL });
+
+beforeAll(async () => {
+  await api.put(`/fhir/R4/Patient/${patient.id}`, patient);
+});
+afterAll(async () => {
+  await api.delete(`/fhir/R4/Patient/${patient.id}`);
+});
 
 describe("Integration FHIR Document", () => {
   test("Binary upload", async () => {
@@ -28,9 +35,6 @@ describe("Integration FHIR Document", () => {
 
   describe("Document Reference", () => {
     test("create document", async () => {
-      const resPatient = await api.put(`/fhir/R4/Patient/${patient.id}`, patient);
-      expect(resPatient.status).toBe(201);
-
       const res = await api.put(`/fhir/R4/DocumentReference/${document.id}`, document);
       expect(res.status).toBe(201);
       expect(res.data).toBeTruthy();
