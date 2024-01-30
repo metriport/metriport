@@ -856,30 +856,30 @@ module.exports.external = [
   {
     name: "toString",
     description: "Converts to string: toString object",
-    func: function (o) {
-      return o.toString();
+    func: function(str) {
+      return str.toString();
     },
   },
   {
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
-    func: function (o) {
-      return JSON.stringify(o);
+    func: function(str) {
+      return JSON.stringify(str);
     },
   },
   {
     name: "toJsonStringPrettier",
     description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
-    func: function (o) {
-      return JSON.stringify(o, null, 2);
+    func: function(str) {
+      return JSON.stringify(str, null, 2);
     },
   },
   {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toLowerCase();
+        return str.toString().toLowerCase();
       } catch (err) {
         return "";
       }
@@ -888,9 +888,9 @@ module.exports.external = [
   {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().trim().toLowerCase();
+        return str.toString().trim().toLowerCase();
       } catch (err) {
         return "";
       }
@@ -899,9 +899,9 @@ module.exports.external = [
   {
     name: "trimAndUpper",
     description: "Trims and converts string to upper case: trimAndUpper string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().trim().toUpperCase();
+        return str.toString().trim().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -910,9 +910,9 @@ module.exports.external = [
   {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toUpperCase();
+        return str.toString().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -921,8 +921,8 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function (o) {
-      return isNaN(o);
+    func: function(str) {
+      return isNaN(str);
     },
   },
   {

@@ -1,663 +1,665 @@
- "code":
-    {{#if (eq text "family member")}}
+{{#with (personalRelationshipRoleTypeCodeSystem) as |codeSystem|}}
+    "code":
+    {{#if (eq ../text "family member")}}
         {
             "code": "FAMMEMB",
             "displayName": "family member",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "child")}}
+    {{else if (eq ../text "child")}}
         {
             "code": "CHILD",
             "displayName": "child",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adopted child")}}
+    {{else if (eq ../text "adopted child")}}
         {
             "code": "CHLDADOPT",
             "displayName": "adopted child",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adopted daughter")}}
+    {{else if (eq ../text "adopted daughter")}}
         {
             "code": "DAUADOPT",
             "displayName": "adopted daughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adopted son")}}
+    {{else if (eq ../text "adopted son")}}
         {
             "code": "SONADOPT",
             "displayName": "adopted son",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster child")}}
+    {{else if (eq ../text "foster child")}}
         {
             "code": "CHLDFOST",
             "displayName": "foster child",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster daughter")}}
+    {{else if (eq ../text "foster daughter")}}
         {
             "code": "DAUFOST",
             "displayName": "foster daughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster son")}}
+    {{else if (eq ../text "foster son")}}
         {
             "code": "SONFOST",
             "displayName": "foster son",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "daughter")}}
+    {{else if (eq ../text "daughter")}}
         {
             "code": "DAUC",
             "displayName": "daughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural daughter")}}
+    {{else if (eq ../text "natural daughter")}}
         {
             "code": "DAU",
             "displayName": "natural daughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepdaughter")}}
+    {{else if (eq ../text "stepdaughter")}}
         {
             "code": "STPDAU",
             "displayName": "stepdaughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural child")}}
+    {{else if (eq ../text "natural child")}}
         {
             "code": "NCHILD",
             "displayName": "natural child",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural son")}}
+    {{else if (eq ../text "natural son")}}
         {
             "code": "SON",
             "displayName": "natural son",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "son")}}
+    {{else if (eq ../text "son")}}
         {
             "code": "SONC",
             "displayName": "son",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepson")}}
+    {{else if (eq ../text "stepson")}}
         {
             "code": "STPSON",
             "displayName": "stepson",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "step child")}}
+    {{else if (eq ../text "step child")}}
         {
             "code": "STPCHLD",
             "displayName": "step child",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
 
-    {{else if (eq text "extended family member")}}
+    {{else if (eq ../text "extended family member")}}
         {
             "code": "EXT",
             "displayName": "extended family member",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "aunt")}}
+    {{else if (eq ../text "aunt")}}
         {
             "code": "AUNT",
             "displayName": "aunt",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal aunt")}}
+    {{else if (eq ../text "maternal aunt")}}
         {
             "code": "MAUNT",
             "displayName": "maternal aunt",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal aunt")}}
+    {{else if (eq ../text "paternal aunt")}}
         {
             "code": "PAUNT",
             "displayName": "paternal aunt",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "cousin")}}
+    {{else if (eq ../text "cousin")}}
         {
             "code": "COUSN",
             "displayName": "cousin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal cousin")}}
+    {{else if (eq ../text "maternal cousin")}}
         {
             "code": "MCOUSN",
             "displayName": "maternal cousin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal cousin")}}
+    {{else if (eq ../text "paternal cousin")}}
         {
             "code": "PCOUSN",
             "displayName": "paternal cousin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "great grandparent")}}
+    {{else if (eq ../text "great grandparent")}}
         {
             "code": "GGRPRN",
             "displayName": "great grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "great grandfather")}}
+    {{else if (eq ../text "great grandfather")}}
         {
             "code": "GGRFTH",
             "displayName": "great grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal great-grandfather")}}
+    {{else if (eq ../text "maternal great-grandfather")}}
         {
             "code": "MGGRFTH",
             "displayName": "maternal great-grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal great-grandfather")}}
+    {{else if (eq ../text "paternal great-grandfather")}}
         {
             "code": "PGGRFTH",
             "displayName": "paternal great-grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "great grandmother")}}
+    {{else if (eq ../text "great grandmother")}}
         {
             "code": "GGRMTH",
             "displayName": "great grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal great-grandmother")}}
+    {{else if (eq ../text "maternal great-grandmother")}}
         {
             "code": "MGGRMTH",
             "displayName": "maternal great-grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal great-grandmother")}}
+    {{else if (eq ../text "paternal great-grandmother")}}
         {
             "code": "PGGRMTH",
             "displayName": "paternal great-grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal great-grandparent")}}
+    {{else if (eq ../text "maternal great-grandparent")}}
         {
             "code": "MGGRPRN",
             "displayName": "maternal great-grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal great-grandparent")}}
+    {{else if (eq ../text "paternal great-grandparent")}}
         {
             "code": "PGGRPRN",
             "displayName": "paternal great-grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "grandchild")}}
+    {{else if (eq ../text "grandchild")}}
         {
             "code": "GRNDCHILD",
             "displayName": "grandchild",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "granddaughter")}}
+    {{else if (eq ../text "granddaughter")}}
         {
             "code": "GRNDDAU",
             "displayName": "granddaughter",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "grandson")}}
+    {{else if (eq ../text "grandson")}}
         {
             "code": "GRNDSON",
             "displayName": "grandson",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "grandparent")}}
+    {{else if (eq ../text "grandparent")}}
         {
             "code": "GRPRN",
             "displayName": "grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "grandfather")}}
+    {{else if (eq ../text "grandfather")}}
         {
             "code": "GRFTH",
             "displayName": "grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal grandfather")}}
+    {{else if (eq ../text "maternal grandfather")}}
         {
             "code": "MGRFTH",
             "displayName": "maternal grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal grandfather")}}
+    {{else if (eq ../text "paternal grandfather")}}
         {
             "code": "PGRFTH",
             "displayName": "paternal grandfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "grandmother")}}
+    {{else if (eq ../text "grandmother")}}
         {
             "code": "GRMTH",
             "displayName": "grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal grandmother")}}
+    {{else if (eq ../text "maternal grandmother")}}
         {
             "code": "MGRMTH",
             "displayName": "maternal grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal grandmother")}}
+    {{else if (eq ../text "paternal grandmother")}}
         {
             "code": "PGRMTH",
             "displayName": "paternal grandmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal grandparent")}}
+    {{else if (eq ../text "maternal grandparent")}}
         {
             "code": "MGRPRN",
             "displayName": "maternal grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal grandparent")}}
+    {{else if (eq ../text "paternal grandparent")}}
         {
             "code": "PGRPRN",
             "displayName": "paternal grandparent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "inlaw")}}
+    {{else if (eq ../text "inlaw")}}
         {
             "code": "INLAW",
             "displayName": "inlaw",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "child-in-law")}}
+    {{else if (eq ../text "child-in-law")}}
         {
             "code": "CHLDINLAW",
             "displayName": "child-in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "daughter in-law")}}
+    {{else if (eq ../text "daughter in-law")}}
         {
             "code": "DAUINLAW",
             "displayName": "daughter in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "son in-law")}}
+    {{else if (eq ../text "son in-law")}}
         {
             "code": "SONINLAW",
             "displayName": "son in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "parent in-law")}}
+    {{else if (eq ../text "parent in-law")}}
         {
             "code": "PRNINLAW",
             "displayName": "parent in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "father-in-law")}}
+    {{else if (eq ../text "father-in-law")}}
         {
             "code": "FTHINLAW",
             "displayName": "father-in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "mother-in-law")}}
+    {{else if (eq ../text "mother-in-law")}}
         {
             "code": "MTHINLAW",
             "displayName": "mother-in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "sibling in-law")}}
+    {{else if (eq ../text "sibling in-law")}}
         {
             "code": "SIBINLAW",
             "displayName": "sibling in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "brother-in-law")}}
+    {{else if (eq ../text "brother-in-law")}}
         {
             "code": "BROINLAW",
             "displayName": "brother-in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "sister-in-law")}}
+    {{else if (eq ../text "sister-in-law")}}
         {
             "code": "SISINLAW",
             "displayName": "sister-in-law",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "niece/nephew")}}
+    {{else if (eq ../text "niece/nephew")}}
         {
             "code": "NIENEPH",
             "displayName": "niece/nephew",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "nephew")}}
+    {{else if (eq ../text "nephew")}}
         {
             "code": "NEPHEW",
             "displayName": "nephew",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "niece")}}
+    {{else if (eq ../text "niece")}}
         {
             "code": "NIECE",
             "displayName": "niece",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "uncle")}}
+    {{else if (eq ../text "uncle")}}
         {
             "code": "UNCLE",
             "displayName": "uncle",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "maternal uncle")}}
+    {{else if (eq ../text "maternal uncle")}}
         {
             "code": "MUNCLE",
             "displayName": "maternal uncle",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "paternal uncle")}}
+    {{else if (eq ../text "paternal uncle")}}
         {
             "code": "PUNCLE",
             "displayName": "paternal uncle",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "parent")}}
+    {{else if (eq ../text "parent")}}
         {
             "code": "PRN",
             "displayName": "parent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adoptive parent")}}
+    {{else if (eq ../text "adoptive parent")}}
         {
             "code": "ADOPTP",
             "displayName": "adoptive parent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adoptive father")}}
+    {{else if (eq ../text "adoptive father")}}
         {
             "code": "ADOPTF",
             "displayName": "adoptive father",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "adoptive mother")}}
+    {{else if (eq ../text "adoptive mother")}}
         {
             "code": "ADOPTM",
             "displayName": "adoptive mother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "father")}}
+    {{else if (eq ../text "father")}}
         {
             "code": "FTH",
             "displayName": "father",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster father")}}
+    {{else if (eq ../text "foster father")}}
         {
             "code": "FTHFOST",
             "displayName": "foster father",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural father")}}
+    {{else if (eq ../text "natural father")}}
         {
             "code": "NFTH",
             "displayName": "natural father",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural father of fetus")}}
+    {{else if (eq ../text "natural father of fetus")}}
         {
             "code": "NFTHF",
             "displayName": "natural father of fetus",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepfather")}}
+    {{else if (eq ../text "stepfather")}}
         {
             "code": "STPFTH",
             "displayName": "stepfather",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "mother")}}
+    {{else if (eq ../text "mother")}}
         {
             "code": "MTH",
             "displayName": "mother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "gestational mother")}}
+    {{else if (eq ../text "gestational mother")}}
         {
             "code": "GESTM",
             "displayName": "gestational mother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster mother")}}
+    {{else if (eq ../text "foster mother")}}
         {
             "code": "MTHFOST",
             "displayName": "foster mother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural mother")}}
+    {{else if (eq ../text "natural mother")}}
         {
             "code": "NMTH",
             "displayName": "natural mother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural mother of fetus")}}
+    {{else if (eq ../text "natural mother of fetus")}}
         {
             "code": "NMTHF",
             "displayName": "natural mother of fetus",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepmother")}}
+    {{else if (eq ../text "stepmother")}}
         {
             "code": "STPMTH
             "displayName": "stepmother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural parent")}}
+    {{else if (eq ../text "natural parent")}}
         {
             "code": "NPRN",
             "displayName": "natural parent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "foster parent")}}
+    {{else if (eq ../text "foster parent")}}
         {
             "code": "PRNFOST",
             "displayName": "foster parent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "step parent")}}
+    {{else if (eq ../text "step parent")}}
         {
             "code": "STPPRN",
             "displayName": "step parent",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "sibling")}}
+    {{else if (eq ../text "sibling")}}
         {
             "code": "SIB",
             "displayName": "sibling",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "brother")}}
+    {{else if (eq ../text "brother")}}
         {
             "code": "BRO",
             "displayName": "brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "half-brother")}}
+    {{else if (eq ../text "half-brother")}}
         {
             "code": "HBRO",
             "displayName": "half-brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural brother")}}
+    {{else if (eq ../text "natural brother")}}
         {
             "code": "NBRO",
             "displayName": "natural brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "twin brother")}}
+    {{else if (eq ../text "twin brother")}}
         {
             "code": "TWINBRO",
             "displayName": "twin brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "fraternal twin brother")}}
+    {{else if (eq ../text "fraternal twin brother")}}
         {
             "code": "FTWINBRO",
             "displayName": "fraternal twin brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "identical twin brother")}}
+    {{else if (eq ../text "identical twin brother")}}
         {
             "code": "ITWINBRO",
             "displayName": "identical twin brother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepbrother")}}
+    {{else if (eq ../text "stepbrother")}}
         {
             "code": "STPBRO",
             "displayName": "stepbrother",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "half-sibling")}}
+    {{else if (eq ../text "half-sibling")}}
         {
             "code": "HSIB",
             "displayName": "half-sibling",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "half-sister")}}
+    {{else if (eq ../text "half-sister")}}
         {
             "code": "HSIS",
             "displayName": "half-sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural sibling")}}
+    {{else if (eq ../text "natural sibling")}}
         {
             "code": "NSIB",
             "displayName": "natural sibling",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "natural sister")}}
+    {{else if (eq ../text "natural sister")}}
         {
             "code": "NSIS",
             "displayName": "natural sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "twin sister")}}
+    {{else if (eq ../text "twin sister")}}
         {
             "code": "TWINSIS",
             "displayName": "twin sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "fraternal twin sister")}}
+    {{else if (eq ../text "fraternal twin sister")}}
         {
             "code": "FTWINSIS",
             "displayName": "fraternal twin sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "identical twin sister")}}
+    {{else if (eq ../text "identical twin sister")}}
         {
             "code": "ITWINSIS",
             "displayName": "identical twin sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "twin")}}
+    {{else if (eq ../text "twin")}}
         {
             "code": "TWIN",
             "displayName": "twin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "fraternal twin")}}
+    {{else if (eq ../text "fraternal twin")}}
         {
             "code": "FTWIN",
             "displayName": "fraternal twin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "identical twin")}}
+    {{else if (eq ../text "identical twin")}}
         {
             "code": "ITWIN",
             "displayName": "identical twin",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "sister")}}
+    {{else if (eq ../text "sister")}}
         {
             "code": "SIS",
             "displayName": "sister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "stepsister")}}
+    {{else if (eq ../text "stepsister")}}
         {
             "code": "STPSIS",
             "displayName": "stepsister",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "step sibling")}}
+    {{else if (eq ../text "step sibling")}}
         {
             "code": "STPSIB",
             "displayName": "step sibling",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "significant other")}}
+    {{else if (eq ../text "significant other")}}
         {
             "code": "SIGOTHR",
             "displayName": "significant other",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "domestic partner")}}
+    {{else if (eq ../text "domestic partner")}}
         {
             "code": "DOMPART",
             "displayName": "domestic partner",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "former spouse")}}
+    {{else if (eq ../text "former spouse")}}
         {
             "code": "FMRSPS",
             "displayName": "former spouse",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "spouse")}}
+    {{else if (eq ../text "spouse")}}
         {
             "code": "SPS",
             "displayName": "spouse",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}",
+            "codeSystem": "{{codeSystem}}",
         }
-    {{else if (eq text "husband")}}
+    {{else if (eq ../text "husband")}}
         {
             "code": "HUSB",
             "displayName": "husband",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "wife")}}
+    {{else if (eq ../text "wife")}}
         {
             "code": "WIFE",
             "displayName": "wife",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "unrelated friend")}}
+    {{else if (eq ../text "unrelated friend")}}
         {
             "code": "FRND",
             "displayName": "unrelated friend",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "neighbor")}}
+    {{else if (eq ../text "neighbor")}}
         {
             "code": "NBOR",
             "displayName": "neighbor",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "self")}}
+    {{else if (eq ../text "self")}}
         {
             "code": "ONESELF",
             "displayName": "self",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
-    {{else if (eq text "Roommate")}}
+    {{else if (eq ../text "Roommate")}}
         {
             "code": "ROOM",
             "displayName": "Roommate",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
     {{else}}
         {
             "code": "O",
             "displayName": "Other",
-            "codeSystem": "{{personalRelationshipRoleTypeCodeSystem}}"
+            "codeSystem": "{{codeSystem}}"
         }
     {{/if}}
+{{/with}}
