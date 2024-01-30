@@ -6,6 +6,11 @@ import { proxyRequest } from "./process-inbound";
 import { processResponse } from "./process-outbound";
 import { fhirServerUrl } from "./shared";
 
+const proxyToFHIRServer = proxy(fhirServerUrl, {
+  proxyReqPathResolver: proxyRequest,
+  userResDecorator: processResponse,
+});
+
 const dummyRouter = Router();
 dummyRouter.all(
   "/*",
@@ -14,11 +19,6 @@ dummyRouter.all(
   })
 );
 
-const router = fhirServerUrl
-  ? proxy(fhirServerUrl, {
-      proxyReqPathResolver: proxyRequest,
-      userResDecorator: processResponse,
-    })
-  : dummyRouter;
+const router = fhirServerUrl ? proxyToFHIRServer : dummyRouter;
 
 export default router;
