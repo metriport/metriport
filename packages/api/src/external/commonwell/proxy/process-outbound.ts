@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { DocumentReference } from "@medplum/fhirtypes";
+import { BundleEntry, DocumentReference } from "@medplum/fhirtypes";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -45,36 +45,43 @@ export async function processResponse(
   }
 }
 
-function filterDataForCW(entries: DocumentReference[]): any {
-  return entries.filter((entry: any) => {
-    return entry.resource ? isUploadedByCustomer(entry.resource) : false;
+function filterDataForCW(
+  entries: BundleEntry<DocumentReference>[]
+): BundleEntry<DocumentReference>[] {
+  return entries.filter(entry => {
+    return entry?.resource ? isUploadedByCustomer(entry.resource) : false;
   });
 }
 
-function adjustAttachmentURLs(entries: DocumentReference[]): any {
+function adjustAttachmentURLs(
+  entries: BundleEntry<DocumentReference>[]
+): BundleEntry<DocumentReference>[] {
   return entries.map(entry => {
     return {
       ...entry,
-      content: entry.content
-        ? entry.content.map(content => {
-            return {
-              ...content,
-              attachment: content.attachment
-                ? {
-                    ...content.attachment,
-                    url: content.attachment.url
-                      ? replaceAttachmentURL(content.attachment.url)
-                      : undefined,
-                  }
-                : undefined,
-            };
-          })
+      resource: entry.resource
+        ? {
+            ...entry.resource,
+            content: entry.resource?.content?.map(content => {
+              return {
+                ...content,
+                attachment: {
+                  ...content.attachment,
+                  url: content.attachment?.url
+                    ? replaceAttachmentURL(content.attachment.url)
+                    : undefined,
+                },
+              };
+            }),
+          }
         : undefined,
     };
   });
 }
 
-function replaceAttachmentURL(url: string): any {
+function replaceAttachmentURL(url: string): string {
   const theURL = new URL(url);
-  return `${docContributionURL}?${docContributionFileParam}=${theURL.pathname}`;
+  const params = new URLSearchParams();
+  params.append(docContributionFileParam, theURL.pathname);
+  return `${docContributionURL}?${params.toString()}`;
 }
