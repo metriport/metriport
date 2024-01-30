@@ -9,7 +9,7 @@ import {
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";

@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
-import { errorToString } from "@metriport/core/util/error";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { randomInt } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
