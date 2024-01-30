@@ -12,7 +12,7 @@ import { calculateConversionProgress } from "../../../domain/medical/conversion-
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
-import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
+import { resetDocQueryProgressWithSource } from "../../../external/hie/reset-doc-query-progress-with-source";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
@@ -74,11 +74,9 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  await appendDocQueryProgressWithSource({
+  await resetDocQueryProgressWithSource({
     source: MedicalDataSource.ALL,
     patient: updatedPatient,
-    requestId,
-    reset: true,
   });
 
   getDocumentsFromCW({

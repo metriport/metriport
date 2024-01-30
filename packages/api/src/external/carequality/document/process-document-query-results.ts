@@ -10,7 +10,7 @@ import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { isConvertible } from "../../fhir-converter/converter";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { appendDocQueryProgressWithSource } from "../../hie/append-doc-query-progress-with-source";
+import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -40,7 +40,7 @@ export async function processDocumentQueryResults({
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
-    await appendDocQueryProgressWithSource({
+    await setDocQueryProgressWithSource({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "processing",
@@ -61,7 +61,7 @@ export async function processDocumentQueryResults({
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await appendDocQueryProgressWithSource({
+    await setDocQueryProgressWithSource({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
       requestId,
