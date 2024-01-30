@@ -84,8 +84,8 @@ export class Backup extends Construct {
 
     const hourlyRate = `${this.CRON_UTC_HOUR}/${backupRateHour}`;
 
-    const completionWindow = props.backupCompletionWindow || Duration.hours(3);
-    const startWindow = props.backupStartWindow || Duration.hours(completionWindow.toHours() - 1);
+    const completionWindow = props.backupCompletionWindow ?? Duration.hours(3);
+    const startWindow = props.backupStartWindow ?? Duration.hours(completionWindow.toHours() - 1);
 
     if (completionWindow.toHours() - startWindow.toHours() < 1) {
       throw Error(
