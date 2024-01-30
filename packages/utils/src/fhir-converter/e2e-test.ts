@@ -56,8 +56,7 @@ dayjs.extend(duration);
  */
 
 const cdaLocation = ``;
-
-const converterBaseUrl = "http://localhost:8777";
+const converterBaseUrl = "http://localhost:8080";
 const fhirBaseUrl = "http://localhost:8888";
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
@@ -210,7 +209,9 @@ async function insertBundlesIntoFHIRServer(fileNames: string[]) {
     async fileName => {
       try {
         await insertSingleBundle(outputFolderName + fileName);
-      } catch (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.log(`Error inserting ${fileName}: ${error.message}`);
         errCount++;
       }
     },

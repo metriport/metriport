@@ -21,12 +21,12 @@
                     
                     {{#unless relatedPerson.code.code}}
                         {{#unless relatedPerson.code.displayName}}
-                            {{#with (evaluate 'Utils/RelatedPersonCodeFromText.hbs' text=(toLower relatedPerson.code.originalText._)) as |respObj|}}
+                            {{#with (evaluate 'Utils/RelatedPersonCodeFromText.hbs' text=(trimAndLower relatedPerson.code.originalText._)) as |respObj|}}
                                 {{>DataType/Coding.hbs code=respObj.code}},
                             {{/with}}
                         {{/unless}}
                     {{/unless}}
-                    {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=relatedPerson.classCode) as |respObj|}}
+                    {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=(trimAndUpper relatedPerson.classCode)) as |respObj|}}
                         {{>DataType/Coding.hbs code=respObj.code}},
                     {{/with}}
                 ]

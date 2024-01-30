@@ -886,6 +886,28 @@ module.exports.external = [
     },
   },
   {
+    name: "trimAndLower",
+    description: "Trims and converts string to lower case: trimAndLower string",
+    func: function (o) {
+      try {
+        return o.toString().trim().toLowerCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
+    name: "trimAndUpper",
+    description: "Trims and converts string to upper case: trimAndUpper string",
+    func: function (o) {
+      try {
+        return o.toString().trim().toUpperCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
     func: function (o) {
