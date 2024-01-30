@@ -11,24 +11,15 @@
         ],
         "status":{{>ValueSet/MedicationAdministrationStatus.hbs code=medicationAdministration.statusCode.code}},
         "effectivePeriod":
-        	{"start":"{{formatAsDateTime medicationAdministration.effectiveTime.low.value}}",
-            "end":"{{formatAsDateTime medicationAdministration.effectiveTime.high.value}}"
+        	{
+                "start":"{{formatAsDateTime medicationAdministration.effectiveTime.low.value}}",
+                "end":"{{formatAsDateTime medicationAdministration.effectiveTime.high.value}}"
         	},
         "dosage":
         {
-
-                "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}}
-                {{!-- dose and rateQuantity are type SimpleQuantity --}}
-                "dose":
-                {
-                    "value":"{{removeNonNumeric (decodeHtmlEntities medicationAdministration.doseQuantity.value)}}",
-                    "unit":"{{medicationAdministration.doseQuantity.unit}}"
-                }
-                "rateQuantity":
-                {
-                    "value":"{{removeNonNumeric (decodeHtmlEntities medicationAdministration.rateQuantity.value)}}",
-                    "unit":"{{medicationAdministration.rateQuantity.unit}}"
-                }
+                "route":{{>DataType/CodeableConcept.hbs code=medicationAdministration.routeCode}},
+                "dose": {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.doseQuantity}},
+                "rateQuantity": {{>DataType/SimpleQuantity.hbs quantity=medicationAdministration.rateQuantity}}
 
         }
     },

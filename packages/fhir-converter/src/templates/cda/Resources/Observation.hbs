@@ -70,30 +70,16 @@
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
-            {{!-- valueQuantity here is type Quantity: https://www.hl7.org/fhir/R4/datatypes.html#Quantity --}}
-            "valueQuantity":
-            {
-                "value":"{{removeNonNumeric (decodeHtmlEntities observationEntry.value.value)}}",
-                "unit":"{{observationEntry.value.unit}}",
-            }, 
+            "valueQuantity": {{>DataType/Quantity.hbs quantity=observationEntry.value}},
         {{else}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
         [
-        {{!-- values here are type SimpleQuantity: https://www.hl7.org/fhir/R4/datatypes.html#SimpleQuantity --}}
           {
-            "low":
-                {
-                    "value":"{{removeNonNumeric (decodeHtmlEntities observationEntry.referenceRange.observationRange.value.high.value)}}",
-                    "unit":"{{observationEntry.referenceRange.observationRange.value.low.unit}}",
-                }
-           "high":
-               {
-                   "value":"{{removeNonNumeric (decodeHtmlEntities observationEntry.referenceRange.observationRange.value.high.value)}}",
-                   "unit":"{{observationEntry.referenceRange.observationRange.value.high.unit}}",
-               }
+            "low": {{>DataType/SimpleQuantity.hbs quantity=observationEntry.referenceRange.observationRange.value.low}},
+            "high": {{>DataType/SimpleQuantity.hbs quantity=observationEntry.referenceRange.observationRange.value.high}}
           },
         ],
         "interpretation":

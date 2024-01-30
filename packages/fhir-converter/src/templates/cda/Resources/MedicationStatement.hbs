@@ -23,12 +23,8 @@
                 "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                 {
-                    {{!-- missing doseRange. doseQuantity is type SimpleQuantity --}}
-                    "doseQuantity":
-                    {
-                        "value":"{{removeNonNumeric (decodeHtmlEntities medicationStatement.doseQuantity.value)}}",
-                        "unit":"{{medicationStatement.doseQuantity.unit}}"
-                    }
+                    {{!-- missing doseRange}}
+                    "doseQuantity": {{>DataType/SimpleQuantity.hbs quantity=medicationStatement.doseQuantity}},
                 },
                 ],
             },
