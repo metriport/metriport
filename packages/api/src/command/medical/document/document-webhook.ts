@@ -82,18 +82,6 @@ export const processPatientDocumentRequest = async (
         undefined,
         patient.data.cxDocumentRequestMetadata
       );
-
-      if (whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE) {
-        const progressType = whType === DOWNLOAD_WEBHOOK_TYPE ? "download" : "convert";
-
-        await updateProgressWebhookSent(
-          {
-            id: patientId,
-            cxId,
-          },
-          progressType
-        );
-      }
     } else {
       // TODO 858 indicate this was not really sent to the customer
       await createWebhookRequest({
@@ -103,6 +91,18 @@ export const processPatientDocumentRequest = async (
         requestId,
         status: "success",
       });
+    }
+
+    if (whType === DOWNLOAD_WEBHOOK_TYPE || whType === CONVERSION_WEBHOOK_TYPE) {
+      const progressType = whType === DOWNLOAD_WEBHOOK_TYPE ? "download" : "convert";
+
+      await updateProgressWebhookSent(
+        {
+          id: patientId,
+          cxId,
+        },
+        progressType
+      );
     }
 
     reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
