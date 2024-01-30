@@ -5,7 +5,7 @@ import {
   getDocContributionURL,
 } from "@metriport/core/external/commonwell/document/document-contribution";
 import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
-import { errorToString } from "@metriport/core/util/error";
+import { errorToString } from "@metriport/core/util/error/index";
 import { capture } from "@metriport/core/util/notifications";
 import { Request, Response } from "express";
 import { IncomingMessage } from "http";

@@ -22,12 +22,14 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   file,
+  location,
   metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   file: Express.Multer.File;
+  location: string;
   metadata?: {
     description?: string;
     orgName?: string;
@@ -48,7 +50,7 @@ export async function createAndUploadDocReference({
     size: file.size,
     creation: refDate.toISOString(),
     fileName: file.originalname,
-    location: file.originalname,
+    location,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
