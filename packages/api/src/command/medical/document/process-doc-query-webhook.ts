@@ -1,7 +1,7 @@
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { ProgressType, DocumentQueryStatus } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
@@ -15,37 +15,86 @@ const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
 const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
 const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
+type WebhookType = typeof DOWNLOAD_WEBHOOK_TYPE | typeof CONVERSION_WEBHOOK_TYPE;
+
+export const handleWebhookBeingSent = async ({
+  patient,
+  requestId,
+}: {
+  patient: Patient;
+  requestId: string;
+}) => {
+  const downloadStatus = patient.data?.documentQueryProgress?.download?.status;
+  const convertStatus = patient.data?.documentQueryProgress?.convert?.status;
+
+  const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
+  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
+
+  if (isDownloadFinished) {
+    await processDocQueryProgressWebhook({
+      patient,
+      requestId,
+      progressType: "download",
+      status: downloadStatus,
+    });
+  } else if (isConvertFinished) {
+    await processDocQueryProgressWebhook({
+      patient,
+      requestId,
+      progressType: "convert",
+      status: convertStatus,
+    });
+  }
+};
 
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
  */
 export const processDocQueryProgressWebhook = async ({
   patient,
-  documentQueryProgress,
   requestId,
+  progressType,
+  status,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  documentQueryProgress: DocumentQueryProgress;
   requestId: string;
+  progressType: ProgressType;
+  status: DocumentQueryStatus;
 }): Promise<void> => {
   const { id: patientId } = patient;
 
   try {
     const webhooks = await getAllWebhookRequestByRequestId(requestId);
     const webhookSet = new Set(webhooks.map(webhook => webhook.type));
-    const downloadWebhookSent = webhookSet.has(DOWNLOAD_WEBHOOK_TYPE);
-    const convertWebhookSent = webhookSet.has(CONVERSION_WEBHOOK_TYPE);
 
-    await handleDownloadWebhook(downloadWebhookSent, patient, requestId, documentQueryProgress);
-    await handleConversionWebhook(convertWebhookSent, patient, requestId, documentQueryProgress);
+    if (progressType === "convert") {
+      handleWebhook({
+        patient,
+        requestId,
+        webhookType: CONVERSION_WEBHOOK_TYPE,
+        docQueryStatus: status,
+        webhookSent: webhookSet.has(CONVERSION_WEBHOOK_TYPE),
+      });
+    } else if (progressType === "download") {
+      if (!isSandbox) {
+        const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
+        handleWebhook({
+          patient,
+          requestId,
+          webhookType: DOWNLOAD_WEBHOOK_TYPE,
+          docQueryStatus: status,
+          webhookSent: webhookSet.has(DOWNLOAD_WEBHOOK_TYPE),
+          payload,
+        });
+      }
+    }
   } catch (error) {
-    const msg = `Error on processDocQueryProgressWebhook`;
+    const msg = `Error on processDocQueryDownloadProgressWebhook`;
     const extra = {
-      documentQueryProgress,
       requestId,
       patientId,
       msg,
-      context: `webhook.processDocQueryProgressWebhook`,
+      context: `webhook.processDocQueryDownloadProgressWebhook`,
       error,
     };
 
@@ -54,54 +103,35 @@ export const processDocQueryProgressWebhook = async ({
   }
 };
 
-const handleDownloadWebhook = async (
-  webhookSent: boolean,
-  patient: Pick<Patient, "id" | "cxId" | "externalId">,
-  requestId: string,
-  documentQueryProgress: DocumentQueryProgress
-): Promise<void> => {
-  const downloadStatus = documentQueryProgress.download?.status;
-  const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
-
-  const canProcessRequest = isDownloadFinished && !webhookSent;
-
-  if (canProcessRequest && !isSandbox) {
-    const downloadIsCompleted = downloadStatus === "completed";
-    const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
-
-    processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
-      DOWNLOAD_WEBHOOK_TYPE,
-      downloadIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
-      requestId,
-      downloadIsCompleted ? payload : undefined
-    );
+const handleWebhook = async ({
+  patient,
+  requestId,
+  webhookType,
+  docQueryStatus,
+  webhookSent,
+  payload,
+}: {
+  patient: Pick<Patient, "id" | "cxId" | "externalId">;
+  requestId: string;
+  docQueryStatus: DocumentQueryStatus;
+  webhookType: WebhookType;
+  webhookSent: boolean;
+  payload?: DocumentReferenceDTO[];
+}) => {
+  if (webhookSent) {
+    return;
   }
-};
 
-const handleConversionWebhook = async (
-  webhookSent: boolean,
-  patient: Pick<Patient, "id" | "cxId" | "externalId">,
-  requestId: string,
-  documentQueryProgress: DocumentQueryProgress
-): Promise<void> => {
-  const convertStatus = documentQueryProgress.convert?.status;
-  const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
+  const isComplete = docQueryStatus === "completed";
 
-  const canProcessRequest = isConvertFinished && !webhookSent;
-
-  if (canProcessRequest) {
-    const convertIsCompleted = convertStatus === "completed";
-
-    processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
-      CONVERSION_WEBHOOK_TYPE,
-      convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
-      requestId
-    );
-  }
+  processPatientDocumentRequest(
+    patient.cxId,
+    patient.id,
+    webhookType,
+    isComplete ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+    requestId,
+    isComplete && payload ? payload : undefined
+  );
 };
 
 export const composeDocRefPayload = async (
