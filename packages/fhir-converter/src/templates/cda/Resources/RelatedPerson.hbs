@@ -50,6 +50,10 @@
             {{/each}}
         ],
         "birthDate":"{{addHyphensDate relatedPerson.guardianPerson.birthTime.value}}",
+        "patient":
+        {
+            "reference":"{{REF}}"
+        },
         "gender":{{>ValueSet/AdministrativeGender.hbs code=relatedPerson.guardianPerson.administrativeGenderCode.displayName}},
         "address":
         [
