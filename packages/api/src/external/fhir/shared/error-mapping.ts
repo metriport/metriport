@@ -7,6 +7,9 @@ import ConversionError from "../../../errors/conversion-error";
 
 const timeoutCodes = ["UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT"];
 
+// HAPI specific regex
+const conversionRegex = /(element=[\\"]+(\w+)[\\"].+)?Unknown (\w+) code '(\w+)'/;
+
 export type FhirErrorMapping = {
   resourceType: string;
   element?: string;
@@ -33,12 +36,12 @@ export function tryDetermineFhirError(error: unknown): FhirError {
         .flatMap(e => (e.type === `mapping` && e.errors ? e.errors : [])),
     };
   }
+  const unknown = { type: "unknown" } as const;
   const errorString = String(error);
-  // HAPI specific regex
-  const conversionRegex = /(element=[\\"]+(\w+)[\\"].+)?Unknown (\w+) code '(\w+)'/;
   const matchedConversionErrors = errorString.match(conversionRegex);
   if (matchedConversionErrors) {
     const [, , element, resourceType, code] = matchedConversionErrors;
+    if (!resourceType || !code) return unknown;
     const resourceTypeParsed = element
       ? resourceType.replace(capitalize(element), "")
       : resourceType;
@@ -57,7 +60,7 @@ export function tryDetermineFhirError(error: unknown): FhirError {
   if (timeoutCodes.some(c => errorString.includes(c))) {
     return { type: "timeout" };
   }
-  return { type: "unknown" };
+  return unknown;
 }
 
 export function groupFHIRErrors(errors: FhirErrorMapping[]): FhirErrorGroup {

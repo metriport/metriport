@@ -1,6 +1,6 @@
 import { out } from "@metriport/core/util/log";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { DocumentQueryResult } from "../document-query-result";

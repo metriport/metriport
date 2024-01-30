@@ -38,12 +38,12 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
   let status = "failure";
 
   // Check if response is a BaseErrorResponse
-  if (isBaseErrorResponse(response)) {
-    status = "failure";
-  } else if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
+  if (isDocumentQueryResponse(response) || isDocumentRetrievalResponse(response)) {
     status = getIheResultStatus({
       docRefLength: response.documentReference?.length,
     });
+  } else if (isBaseErrorResponse(response)) {
+    status = "failure";
   }
 
   const defaultPayload: DefaultPayload = {

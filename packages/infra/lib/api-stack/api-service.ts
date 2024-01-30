@@ -28,6 +28,7 @@ interface ApiServiceProps extends StackProps {
 }
 
 // TODO move these parameters to object properties
+<<<<<<< HEAD
 export function createAPIService(
   stack: Construct,
   props: ApiServiceProps,
@@ -53,14 +54,62 @@ export function createAPIService(
   searchEndpoint: string,
   searchAuth: { userName: string; secret: ISecret },
   searchIndexName: string,
+=======
+export function createAPIService({
+  stack,
+  props,
+  secrets,
+  vpc,
+  dbCredsSecret,
+  dynamoDBTokenTable,
+  alarmAction,
+  dnsZones,
+  fhirServerUrl,
+  fhirServerQueueUrl,
+  fhirConverterQueueUrl,
+  fhirConverterServiceUrl,
+  cdaToVisualizationLambda,
+  documentDownloaderLambda,
+  documentQueryResultsLambda,
+  medicalDocumentsUploadBucket,
+  fhirToMedicalRecordLambda,
+  searchIngestionQueue,
+  searchEndpoint,
+  searchAuth,
+  searchIndexName,
+  appConfigEnvVars,
+  cookieStore,
+}: {
+  stack: Construct;
+  props: ApiServiceProps;
+  secrets: Secrets;
+  vpc: ec2.IVpc;
+  dbCredsSecret: secret.ISecret;
+  dynamoDBTokenTable: dynamodb.Table;
+  alarmAction: SnsAction | undefined;
+  dnsZones: DnsZones;
+  fhirServerUrl: string;
+  fhirServerQueueUrl: string | undefined;
+  fhirConverterQueueUrl: string | undefined;
+  fhirConverterServiceUrl: string | undefined;
+  cdaToVisualizationLambda: ILambda;
+  documentDownloaderLambda: ILambda;
+  documentQueryResultsLambda: ILambda;
+  medicalDocumentsUploadBucket: s3.Bucket;
+  fhirToMedicalRecordLambda: ILambda | undefined;
+  searchIngestionQueue: IQueue;
+  searchEndpoint: string;
+  searchAuth: { userName: string; secret: ISecret };
+  searchIndexName: string;
+>>>>>>> develop
   appConfigEnvVars: {
     appId: string;
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
     cxsWithCQDirectFeatureFlag: string;
-  },
-  cookieStore: secret.ISecret | undefined
-): {
+  };
+  cookieStore: secret.ISecret | undefined;
+}): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
   serverAddress: string;
@@ -147,12 +196,6 @@ export function createAPIService(
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
-          ...(sidechainFHIRConverterQueue && {
-            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueue.queueUrl,
-          }),
-          ...(sidechainFHIRConverterDLQ && {
-            SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
-          }),
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
@@ -160,8 +203,10 @@ export function createAPIService(
           ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
             CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
           }),
-          PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
-          PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
+          ...(props.config.locationService && {
+            PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
+            PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
@@ -208,18 +253,6 @@ export function createAPIService(
     cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
   }
 
-  sidechainFHIRConverterQueue &&
-    provideAccessToQueue({
-      accessType: "send",
-      queue: sidechainFHIRConverterQueue,
-      resource: fargateService.service.taskDefinition.taskRole,
-    });
-  sidechainFHIRConverterDLQ &&
-    provideAccessToQueue({
-      accessType: "both",
-      queue: sidechainFHIRConverterDLQ,
-      resource: fargateService.service.taskDefinition.taskRole,
-    });
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);

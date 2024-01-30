@@ -6,7 +6,7 @@ import {
 } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
-import { errorToString } from "@metriport/core/util/error";
+import { errorToString } from "@metriport/core/util/error/shared";
 
 // Keep this as early on the file as possible
 capture.init();

@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
-import { errorToString } from "../../../../util/error";
+import { errorToString } from "../../../../util/error/shared";
 
 const REQUEST_ID_COLUMN = "request_id";
 

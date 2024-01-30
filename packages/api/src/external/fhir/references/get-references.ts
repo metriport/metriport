@@ -17,7 +17,7 @@ export async function getReferencesFromFHIR(
   const chunks = Object.values(refByType).flatMap(r => chunk(r, MAX_IDS_PER_REQUEST));
   // transform the chunks into array of resource type and ids for each chunk
   const consolidated: { type: ResourceType; ids: string[] }[] = chunks.flatMap(chunk => {
-    const type = chunk[0].type as ResourceType | undefined;
+    const type = chunk[0]?.type as ResourceType | undefined;
     const ids = chunk.flatMap(c => c.id ?? []);
     if (!type || ids.length <= 0) return [];
     return { type, ids };
