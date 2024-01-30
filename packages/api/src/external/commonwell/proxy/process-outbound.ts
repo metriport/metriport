@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { BundleEntry, DocumentReference } from "@medplum/fhirtypes";
+import { BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
 import {
   docContributionFileParam,
   getDocContributionURL,
@@ -9,6 +9,7 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { Request, Response } from "express";
 import { IncomingMessage } from "http";
+import { partition } from "lodash";
 import { Config } from "../../../shared/config";
 import { log } from "./shared";
 
@@ -30,8 +31,10 @@ export async function processResponse(
     const payload = JSON.parse(payloadString);
     // Filter out CW data while we don't manage to do it with FHIR query
     if (payload.entry) {
-      payload.entry = filterDataForCW(payload.entry);
-      payload.entry = adjustAttachmentURLs(payload.entry);
+      const { docRefResources, otherResources } = splitResources(payload.entry);
+      const docRefs = filterDataForCW(docRefResources);
+      const updatedDocRefs = adjustAttachmentURLs(docRefs);
+      payload.entry = [...updatedDocRefs, ...otherResources];
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
     }
     const response = JSON.stringify(payload);
@@ -43,6 +46,18 @@ export async function processResponse(
     capture.error(msg, { extra: { error, proxyResData } });
     throw new Error("Error processing requeest");
   }
+}
+
+function splitResources(entries: BundleEntry<Resource>[]): {
+  docRefResources: BundleEntry<DocumentReference>[];
+  otherResources: BundleEntry<Resource>[];
+} {
+  const [docRefResources, otherResources] = partition(
+    entries,
+    (entry: BundleEntry<Resource>): entry is BundleEntry<DocumentReference> =>
+      entry.resource?.resourceType === "DocumentReference"
+  );
+  return { docRefResources, otherResources };
 }
 
 function filterDataForCW(

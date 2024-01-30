@@ -17,12 +17,13 @@ const SIGNED_URL_DURATION_SECONDS = 60;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
-    const fileName = event.queryStringParameters?.[docContributionFileParam];
+    const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
+    const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
 
     if (fileName) {
-      const url = await s3Utils.s3.getSignedUrl("getObject", {
+      const url = s3Utils.s3.getSignedUrl("getObject", {
         Bucket: bucketName,
-        Key: fileName,
+        Key: key,
         Expires: SIGNED_URL_DURATION_SECONDS,
       });
 
