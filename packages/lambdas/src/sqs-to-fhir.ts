@@ -152,7 +152,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           const errors = getErrorsFromReponse(response);
           if (errors.length <= 0) break;
           retry = count < maxRetries;
-          log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
+          log(
+            `Got ${errors.length} errors from FHIR, ${
+              retry ? "" : "NOT "
+            }trying again... errors: ${JSON.stringify(errors)}`
+          );
           if (!retry) {
             throw new MetriportError(`Too many errors from FHIR`, undefined, {
               count: count.toString(),

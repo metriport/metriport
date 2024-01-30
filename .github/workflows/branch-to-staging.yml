@@ -6,22 +6,6 @@ on:
   workflow_dispatch: # manually executed by a user
 
 jobs:
-  widget:
-    uses: ./.github/workflows/_deploy_widget.yml
-    with:
-      build_env: "staging"
-      deploy_env: "staging"
-      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
-      S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
-      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
   api:
     uses: ./.github/workflows/_deploy_api.yml
     with:
@@ -47,23 +31,6 @@ jobs:
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  infra-widget:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    with:
-      deploy_env: "staging"
-      is-branch-to-staging: true
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
-      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
       INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}

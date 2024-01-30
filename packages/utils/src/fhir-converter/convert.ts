@@ -1,24 +1,25 @@
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
-import { getFileContents, writeFileContents } from "../shared/fs";
+import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
 
 export async function convertCDAsToFHIR(
+  baseFolderName: string,
   fileNames: string[],
   parallelConversions: number,
   startedAt: number,
   api: AxiosInstance,
   fhirExtension: string,
-  logsFolderName: string
+  outputFolderName: string
 ): Promise<{ errorCount: number; nonXMLBodyCount: number }> {
   console.log(`Converting ${fileNames.length} files, ${parallelConversions} at a time...`);
   let errorCount = 0;
   let nonXMLBodyCount = 0;
-  const res = await executeAsynchronously(
+  await executeAsynchronously(
     fileNames,
     async fileName => {
       try {
-        await convert(fileName, api, fhirExtension);
+        await convert(baseFolderName, fileName, outputFolderName, api, fhirExtension);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error.message.includes("File has nonXMLBody")) {
@@ -26,16 +27,14 @@ export async function convertCDAsToFHIR(
         } else {
           const errorData = error.response?.data ?? error;
           errorCount++;
-          const errorFileName = `${logsFolderName}/error_${fileName.replace(/[/\\]/g, "_")}.json`;
+          const errorFileName = `${outputFolderName}/error_${fileName.replace(/[/\\]/g, "_")}.json`;
           writeFileContents(errorFileName, JSON.stringify(errorData, null, 2));
         }
-        throw error;
       }
     },
-    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true, verbose: false }
+    { numberOfParallelExecutions: parallelConversions, keepExecutingOnError: true }
   );
-  const failed = res.filter(r => r.status === "rejected");
-  const reportFailure = errorCount > 0 ? ` [${errorCount} in ${failed.length} promises]` : "";
+  const reportFailure = errorCount > 0 ? ` [${errorCount} errors]` : "";
 
   const conversionDuration = Date.now() - startedAt;
   console.log(
@@ -44,9 +43,15 @@ export async function convertCDAsToFHIR(
   return { errorCount, nonXMLBodyCount };
 }
 
-async function convert(fileName: string, api: AxiosInstance, fhirExtension: string) {
+async function convert(
+  baseFolderName: string,
+  fileName: string,
+  outputFolderName: string,
+  api: AxiosInstance,
+  fhirExtension: string
+) {
   const patientId = getPatientIdFromFileName(fileName);
-  const fileContents = getFileContents(fileName);
+  const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
     console.log(`Skipping ${fileName} because it has nonXMLBody`);
     throw new Error(`File has nonXMLBody`);
@@ -63,7 +68,7 @@ async function convert(fileName: string, api: AxiosInstance, fhirExtension: stri
   });
   const conversionResult = res.data.fhirResource;
 
-  const destFileName = fileName.replace(".xml", fhirExtension);
+  const destFileName = `${outputFolderName}${fileName.replace(".xml", fhirExtension)}`;
+  makeDirIfNeeded(destFileName);
   writeFileContents(destFileName, JSON.stringify(conversionResult));
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
 }

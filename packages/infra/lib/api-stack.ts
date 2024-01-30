@@ -1,13 +1,21 @@
-import { Aspects, CfnOutput, Duration, RemovalPolicy, Stack, StackProps } from "aws-cdk-lib";
+import {
+  Aspects,
+  aws_wafv2 as wafv2,
+  CfnOutput,
+  Duration,
+  RemovalPolicy,
+  Stack,
+  StackProps,
+} from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
+import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -25,12 +33,12 @@ import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
+import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
 import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
-import * as sidechainFHIRConverterConnector from "./api-stack/sidechain-fhir-converter-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -38,6 +46,7 @@ import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { wafRules } from "./shared/waf-rules";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -104,6 +113,19 @@ export class APIStack extends Stack {
       "APICertificateCertificateRequestorFunctionAlarm",
       slackNotification?.alarmAction
     );
+
+    // Web application firewall for enhanced security
+    const waf = new wafv2.CfnWebACL(this, "APIWAF", {
+      defaultAction: { allow: {} },
+      scope: "REGIONAL",
+      name: `APIWAF`,
+      rules: wafRules,
+      visibilityConfig: {
+        cloudWatchMetricsEnabled: true,
+        metricName: `APIWAF-Metric`,
+        sampledRequestsEnabled: false,
+      },
+    });
 
     //-------------------------------------------
     // Application-wide feature flags
@@ -186,23 +208,6 @@ export class APIStack extends Stack {
       dynamoConstructName,
       slackNotification?.alarmAction
     );
-    // table for sidechain FHIR converter key management
-    const dynamoSidechainKeysConstructName = "SidechainFHIRConverterKeys";
-    let dynamoDBSidechainKeysTable: dynamodb.Table | undefined = undefined;
-    if (!isSandbox(props.config)) {
-      dynamoDBSidechainKeysTable = new dynamodb.Table(this, dynamoSidechainKeysConstructName, {
-        partitionKey: { name: "apiKey", type: dynamodb.AttributeType.STRING },
-        replicationRegions: this.isProd(props) ? ["us-east-1"] : ["ca-central-1"],
-        replicationTimeout: Duration.hours(3),
-        encryption: dynamodb.TableEncryption.AWS_MANAGED,
-        pointInTimeRecovery: true,
-      });
-      this.addDynamoPerformanceAlarms(
-        dynamoDBSidechainKeysTable,
-        dynamoSidechainKeysConstructName,
-        slackNotification?.alarmAction
-      );
-    }
 
     //-------------------------------------------
     // Multi-purpose bucket
@@ -274,18 +279,6 @@ export class APIStack extends Stack {
       dlq: fhirConverterDLQ,
       bucket: fhirConverterBucket,
     } = fhirConverterConnector.createQueueAndBucket({
-      stack: this,
-      lambdaLayers,
-      envType: props.config.environmentType,
-      alarmSnsAction: slackNotification?.alarmAction,
-    });
-
-    // sidechain FHIR converter queue
-    const {
-      queue: sidechainFHIRConverterQueue,
-      dlq: sidechainFHIRConverterDLQ,
-      bucket: sidechainFHIRConverterBucket,
-    } = sidechainFHIRConverterConnector.createQueueAndBucket({
       stack: this,
       lambdaLayers,
       envType: props.config.environmentType,
@@ -379,38 +372,36 @@ export class APIStack extends Stack {
       service: apiService,
       loadBalancerAddress: apiLoadBalancerAddress,
       serverAddress: apiServerUrl,
-    } = createAPIService(
-      this,
+    } = createAPIService({
+      stack: this,
       props,
       secrets,
-      this.vpc,
+      vpc: this.vpc,
       dbCredsSecret,
       dynamoDBTokenTable,
-      slackNotification?.alarmAction,
+      alarmAction: slackNotification?.alarmAction,
       dnsZones,
-      props.config.fhirServerUrl,
-      fhirServerQueue?.queueUrl,
-      fhirConverterQueue.queueUrl,
-      fhirConverter ? `http://${fhirConverter.address}` : undefined,
-      sidechainFHIRConverterQueue,
-      sidechainFHIRConverterDLQ,
+      fhirServerUrl: props.config.fhirServerUrl,
+      fhirServerQueueUrl: fhirServerQueue?.queueUrl,
+      fhirConverterQueueUrl: fhirConverterQueue.queueUrl,
+      fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
       documentQueryResultsLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
-      ccdaSearchQueue,
-      ccdaSearchDomain.domainEndpoint,
-      { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
-      ccdaSearchIndexName,
-      {
+      searchIngestionQueue: ccdaSearchQueue,
+      searchEndpoint: ccdaSearchDomain.domainEndpoint,
+      searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
+      searchIndexName: ccdaSearchIndexName,
+      appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
         cxsWithCQDirectFeatureFlag,
       },
-      cookieStore
-    );
+      cookieStore,
+    });
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
@@ -463,23 +454,6 @@ export class APIStack extends Stack {
         })
       : undefined;
 
-    // sidechain FHIR converter
-    const sidechainFHIRConverterLambda = fhirServerQueue?.queueUrl
-      ? sidechainFHIRConverterConnector.createLambda({
-          envType: props.config.environmentType,
-          stack: this,
-          lambdaLayers,
-          vpc: this.vpc,
-          sourceQueue: sidechainFHIRConverterQueue,
-          destinationQueue: fhirServerQueue,
-          dlq: sidechainFHIRConverterDLQ,
-          fhirConverterBucket: sidechainFHIRConverterBucket,
-          apiServiceDnsAddress: apiLoadBalancerAddress,
-          alarmSnsAction: slackNotification?.alarmAction,
-          dynamoDBSidechainKeysTable,
-        })
-      : undefined;
-
     // Add ENV after apiserivce is created
     documentQueryResultsLambda.addEnvironment(
       "API_URL",
@@ -492,7 +466,6 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(apiService.taskDefinition.taskRole);
     medicalDocumentsBucket.grantReadWrite(documentDownloaderLambda);
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
-    sidechainFHIRConverterLambda && medicalDocumentsBucket.grantRead(sidechainFHIRConverterLambda);
 
     createDocQueryChecker({
       lambdaLayers,
@@ -555,6 +528,12 @@ export class APIStack extends Stack {
         limit: this.isProd(props) ? 10000 : 500,
         period: apig.Period.DAY,
       },
+    });
+
+    // Hookup the API GW to the WAF
+    new wafv2.CfnWebACLAssociation(this, "APIWAFAssociation", {
+      resourceArn: api.deploymentStage.stageArn,
+      webAclArn: waf.attrArn,
     });
 
     // create the proxy to the fargate service
@@ -715,6 +694,12 @@ export class APIStack extends Stack {
     });
 
     createScheduledAPIQuotaChecker({
+      stack: this,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+    });
+    createScheduledDBMaintenance({
       stack: this,
       lambdaLayers,
       vpc: this.vpc,
