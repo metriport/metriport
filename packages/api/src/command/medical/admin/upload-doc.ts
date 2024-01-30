@@ -1,17 +1,13 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { randomInt } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
+import { cloneDeep } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
-import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
-import { randomInt } from "@metriport/shared/common/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
-import { cloneDeep } from "lodash";
-
-const apiUrl = Config.getApiUrl();
-const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
@@ -26,12 +22,14 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   file,
+  location,
   metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   file: Express.Multer.File;
+  location: string;
   metadata?: {
     description?: string;
     orgName?: string;
@@ -52,7 +50,7 @@ export async function createAndUploadDocReference({
     size: file.size,
     creation: refDate.toISOString(),
     fileName: file.originalname,
-    location: `${docContributionUrl}?fileName=${file.originalname}`,
+    location,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
