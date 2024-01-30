@@ -3,6 +3,7 @@ import { getReferencesFromResources } from "@metriport/core/external/fhir/shared
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { checkApiQuota } from "../command/medical/admin/api";
+import { dbMaintenance } from "../command/medical/admin/db-maintenance";
 import {
   populateFhirServer,
   PopulateFhirServerResponse,
@@ -197,6 +198,19 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxsWithLowQuota = await checkApiQuota();
     return res.status(httpStatus.OK).json({ cxsWithLowQuota });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/db-maintenance
+ *
+ * Perform regular DB Maintenance.
+ */
+router.post(
+  "/db-maintenance",
+  asyncHandler(async (req: Request, res: Response) => {
+    const result = await dbMaintenance();
+    return res.status(httpStatus.OK).json(result);
   })
 );
 
