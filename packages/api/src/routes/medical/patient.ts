@@ -42,6 +42,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { getPatientLimitForCx } from "../../external/aws/appConfig";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -67,7 +68,8 @@ router.post(
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
       const numPatients = await Patient.count({ where: { cxId } });
-      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+      const patientLimit = await getPatientLimitForCx(cxId);
+      if (numPatients >= patientLimit) {
         return res.status(status.BAD_REQUEST).json({
           message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
         });

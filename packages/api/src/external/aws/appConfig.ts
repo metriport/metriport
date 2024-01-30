@@ -1,7 +1,7 @@
 import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
-import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 
 const log = Util.log(`App Config`);
@@ -41,6 +41,10 @@ export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
 }
 
+export async function getCxsWithIncreasedPatientLimitFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagValue(Config.getCxsWithIncreasedPatientLimitFeatureFlagValue());
+}
+
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
@@ -49,4 +53,20 @@ export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<bool
 export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
+}
+
+export async function getPatientLimitForCx(cxId: string): Promise<number> {
+  const cxIdsWithIncreasedSandboxPatientVolumeEnabled =
+    await getCxsWithIncreasedPatientLimitFeatureFlagValue();
+  const cxLimit = cxIdsWithIncreasedSandboxPatientVolumeEnabled.find(i => i.includes(cxId));
+  return cxLimit ? parseCxIdAndLimit(cxLimit).patientLimit : Config.SANDBOX_PATIENT_LIMIT;
+}
+
+function parseCxIdAndLimit(increasedPatientLimitFeatureFlagValue: string): {
+  id: string;
+  patientLimit: number;
+} {
+  const cxIdAndLimit = increasedPatientLimitFeatureFlagValue.split(":");
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return { id: cxIdAndLimit[0]!, patientLimit: parseInt(cxIdAndLimit[1]!) };
 }
