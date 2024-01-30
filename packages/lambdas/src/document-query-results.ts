@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/serverless";
 import { sendDocumentQueryResults } from "@metriport/core/external/carequality/command/documents/send-doc-query-results";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 
 // Keep this as early on the file as possible
 capture.init();
