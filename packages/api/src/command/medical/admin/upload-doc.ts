@@ -6,12 +6,8 @@ import { cloneDeep } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
 import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
-import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { getPatientOrFail } from "../patient/get-patient";
-
-const apiUrl = Config.getApiUrl();
-const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
@@ -52,7 +48,7 @@ export async function createAndUploadDocReference({
     size: file.size,
     creation: refDate.toISOString(),
     fileName: file.originalname,
-    location: `${docContributionUrl}?fileName=${file.originalname}`,
+    location: file.originalname,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
