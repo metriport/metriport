@@ -1,8 +1,9 @@
+import { docContributionFileParam } from "@metriport/core/external/commonwell/document/document-contribution";
 import * as Sentry from "@sentry/serverless";
-import { capture } from "./shared/capture";
 import * as lambda from "aws-lambda";
-import { S3Utils } from "./shared/s3";
+import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
+import { S3Utils } from "./shared/s3";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -16,12 +17,13 @@ const SIGNED_URL_DURATION_SECONDS = 60;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
-    const fileName = event.queryStringParameters?.fileName;
+    const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
+    const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
 
     if (fileName) {
-      const url = await s3Utils.s3.getSignedUrl("getObject", {
+      const url = s3Utils.s3.getSignedUrl("getObject", {
         Bucket: bucketName,
-        Key: fileName,
+        Key: key,
         Expires: SIGNED_URL_DURATION_SECONDS,
       });
 

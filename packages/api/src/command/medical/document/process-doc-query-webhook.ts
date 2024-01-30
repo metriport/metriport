@@ -1,4 +1,4 @@
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { ProgressType, DocumentQueryStatus } from "@metriport/core/domain/document-query";

@@ -268,7 +268,7 @@ router.post(
     const docRefId = uuidv7();
     const fileName = createS3FileName(cxId, patientId, docRefId);
 
-    await s3Utils.s3
+    const uploadRes = await s3Utils.s3
       .upload({
         Bucket: bucketName,
         Key: fileName,
@@ -291,6 +291,7 @@ router.post(
         ...file,
         originalname: fileName,
       },
+      location: uploadRes.Location,
       metadata,
     });
 
