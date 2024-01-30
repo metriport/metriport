@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { downloadedFromCW } from "@metriport/core/external/fhir/shared/index";
+import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
 import { Request, Response } from "express";
 import { IncomingMessage } from "http";
 import { log } from "./shared";
@@ -20,7 +20,7 @@ export async function processResponse(
     // Filter out CW data while we don't manage to do it with FHIR query
     if (payload.entry) {
       payload.entry = payload.entry.filter((entry: any) => {
-        return entry.resource ? !downloadedFromCW(entry.resource) : true;
+        return entry.resource ? isUploadedByCustomer(entry.resource) : false;
       });
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
     }
