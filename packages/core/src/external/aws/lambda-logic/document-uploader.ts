@@ -116,7 +116,7 @@ async function forwardCallToServer(
 
   const resp = await api.post(encodedUrl, fileData);
   console.log(`Server response - status: ${resp.status}`);
-  console.log(`Server response - body: ${resp.data}`);
+  console.log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;
 }
 

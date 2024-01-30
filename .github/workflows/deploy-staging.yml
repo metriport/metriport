@@ -9,8 +9,8 @@ on:
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
-      - "packages/connect-widget/**"
       - "packages/core/**"
+      - "packages/fhir-converter/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
@@ -25,8 +25,8 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
-      widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -48,33 +48,21 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
+            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
+            fhir-converter:
+              - "packages/fhir-converter/Dockerfile"
+              - "packages/fhir-converter/docker-entrypoint.sh"
+              - "packages/fhir-converter/package*.json"
+              - "packages/fhir-converter/mocha-config.json"
+              - "packages/fhir-converter/src/**"
+              - "packages/fhir-converter/test/**"
+              - "packages/fhir-converter/deploy/**"
             infra-lambdas:
               - "packages/shared/**"
               - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "package*.json"
-            widget:
-              - "packages/connect-widget/**"
-              - "package*.json"
-
-  widget:
-    if: needs.files-changed.outputs.widget == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy_widget.yml
-    with:
-      build_env: "staging"
-      deploy_env: "staging"
-      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
-      S3_BUCKET: ${{ vars.S3_BUCKET_STAGING }}
-      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_STAGING }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api:
     if: needs.files-changed.outputs.api == 'true'
@@ -96,7 +84,7 @@ jobs:
 
   infra-api-lambdas:
     uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
     needs: files-changed
     with:
       deploy_env: "staging"
@@ -113,31 +101,14 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  infra-widget:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    with:
-      deploy_env: "staging"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_STAGING }}
-      AWS_REGION: ${{ vars.WIDGET_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [widget, api, infra-api-lambdas, infra-widget]
+    needs: [api, infra-api-lambdas]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
     secrets: inherit
 
   e2e-tests:
@@ -146,12 +117,11 @@ jobs:
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_STAGING }}
-      widget_url: ${{ vars.WIDGET_URL_STAGING }}
       test_patient_id: ${{ vars.TEST_PATIENT_ID }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

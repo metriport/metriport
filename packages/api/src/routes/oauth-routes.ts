@@ -1,5 +1,5 @@
 import { Router } from "express";
-import fhirProxy from "../external/commonwell/cw-fhir-proxy";
+import fhirProxy from "../external/commonwell/proxy/cw-fhir-proxy";
 
 const router = Router();
 
