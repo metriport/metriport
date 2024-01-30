@@ -45,7 +45,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 2,
+            "y": 10,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -285,7 +285,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 10,
+            "y": 18,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -397,9 +397,13 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5 minutes",
-                            "value": 300000,
+                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5min",
+                            "value": 800000,
                             "yAxis": "right"
+                        },
+                        {
+                            "label": "VolumeReadIOPs >= 1_000_000 for 1 datapoints within 5min",
+                            "value": 1000000
                         }
                     ]
                 }
@@ -514,7 +518,15 @@
                 "stat": "Average",
                 "period": 300,
                 "title": "DB - ACU Utilization",
-                "liveData": false
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACU Utilization >= 80%",
+                            "value": 80
+                        }
+                    ]
+                }
             }
         },
         {
@@ -715,7 +727,7 @@
             "height": 8,
             "width": 10,
             "y": 18,
-            "x": 5,
+            "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -858,6 +870,19 @@
                 "period": 60,
                 "title": "OpenSearch - Searches",
                 "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 2,
+            "x": 14,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
+                "region": "us-west-1",
+                "title": "API Server - Memory by TaskId",
+                "view": "table"
             }
         }
     ]

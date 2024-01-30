@@ -1,23 +1,8 @@
 import { inspect } from "node:util";
 import { ZodError } from "zod";
-import { Config } from "./config";
 
-/**
- * @deprecated Use @metriport/core instead
- */
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function debug(msg: string, ...optionalParams: any[]): void {
-  if (Config.isCloudEnv()) return;
-  if (optionalParams) {
-    if (typeof optionalParams[0] === typeof Function) {
-      console.log(msg, optionalParams[0](), ...optionalParams.slice(1));
-    } else {
-      console.log(msg, ...optionalParams);
-    }
-  } else {
-    console.log(msg);
-  }
-}
+type LogParamBasic = string | number | boolean | unknown | null | undefined;
+export type LogParam = LogParamBasic | (() => LogParamBasic);
 
 export type ErrorToStringOptions = { detailed: boolean };
 
