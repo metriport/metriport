@@ -14,7 +14,7 @@ var zlib = require("zlib");
 const he = require('he');
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
-const decimal_regex = /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/;
+const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
