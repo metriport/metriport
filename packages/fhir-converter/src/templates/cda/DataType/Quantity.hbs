@@ -20,7 +20,7 @@
             {{#if numberAndUnit.isValid}}
               {
                 "value": "{{numberAndUnit.value}}",
-                "unit": "{{#if ../../../../quantity.unit}}{{../../../../../quantity.unit}}{{else}}{{numberAndUnit.unit}}{{/if}}",
+                "unit": "{{#if ../../../../quantity.unit}}{{../../../../quantity.unit}}{{else}}{{numberAndUnit.unit}}{{/if}}",
                 "system": "http://unitsofmeasure.org"
               }
             {{else}}
