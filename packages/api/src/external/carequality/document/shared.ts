@@ -9,7 +9,6 @@ export type DocumentWithMetriportId = DocumentReference & {
 
 type IHEResults = DocumentQueryResult | DocumentRetrievalResult;
 
-// NEED TO FIX BECUASE THIS DOES NOT HANDLE ERRORS
 // Create a single array of all the document references from all the document query results
 export function combineDocRefs(documentQueryResults: IHEResults[]): DocumentReference[] {
   return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
