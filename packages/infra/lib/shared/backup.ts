@@ -48,10 +48,17 @@ export interface BackupProps {
   readonly moveBackupToColdStorageAfter?: Duration;
 
   /**
-   * How frequently backup jobs would be started, in hours.
+   * At what minute in the hour the backup will be ran.
    *
+   * @default 15
    */
-  readonly backupRate: Duration;
+  readonly cronMinute?: number;
+  /**
+   * At what hour in the day the backup will be ran.
+   *
+   * @default 9 - will be 9AM UTC, or 1AM PST
+   */
+  readonly cronHour?: number;
 }
 
 /**
@@ -59,10 +66,11 @@ export interface BackupProps {
  *
  * @stability stable
  */
-export class Backup extends Construct {
-  // runs by default at 8:30am UTC (12:30pm PST)
-  CRON_UTC_HOUR = 8;
-  CRON_MINUTE = 30;
+export class DailyBackup extends Construct {
+  // runs by default at 9:15am UTC (1:00am PST)
+  DEFAULT_CRON_UTC_HOUR = "9";
+  DEFAULT_CRON_MINUTE = "15";
+  DEFAULT_BACKUP_COMPLETION_WINDOW = Duration.hours(3);
 
   /**
    * Backup plan
@@ -77,14 +85,16 @@ export class Backup extends Construct {
   constructor(scope: Construct, id: string, props: BackupProps) {
     super(scope, id);
 
-    const backupRateHour = props.backupRate.toHours();
-    if (backupRateHour < 1) {
-      throw Error("Backup rate must be at least hourly");
+    const cronHour = props.cronHour ?? this.DEFAULT_CRON_UTC_HOUR;
+    if (cronHour > 23 || cronHour < 0) {
+      throw Error("cronHour must be 0 - 23");
+    }
+    const cronMinute = props.cronMinute ?? this.DEFAULT_CRON_MINUTE;
+    if (cronMinute > 59 || cronMinute < 0) {
+      throw Error("cronHour must be 0 - 59");
     }
 
-    const hourlyRate = `${this.CRON_UTC_HOUR}/${backupRateHour}`;
-
-    const completionWindow = props.backupCompletionWindow ?? Duration.hours(3);
+    const completionWindow = props.backupCompletionWindow ?? this.DEFAULT_BACKUP_COMPLETION_WINDOW;
     const startWindow = props.backupStartWindow ?? Duration.hours(completionWindow.toHours() - 1);
 
     if (completionWindow.toHours() - startWindow.toHours() < 1) {
@@ -99,8 +109,8 @@ export class Backup extends Construct {
       deleteAfter: props.deleteBackupAfter || Duration.days(30),
       // Only cron expressions are supported
       scheduleExpression: events.Schedule.cron({
-        minute: `${this.CRON_MINUTE}`,
-        hour: hourlyRate,
+        minute: `${cronMinute}`,
+        hour: `${cronHour}`,
       }),
       moveToColdStorageAfter: props.moveBackupToColdStorageAfter,
     });
