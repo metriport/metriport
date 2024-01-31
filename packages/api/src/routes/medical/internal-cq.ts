@@ -164,7 +164,6 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
-    // DocumentQueryResponseIncoming
     await processDocumentQueryResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
@@ -197,7 +196,6 @@ router.post(
 router.post(
   "/document-retrieval/results",
   asyncHandler(async (req: Request, res: Response) => {
-    // DocumentRetrievalResponseIncoming
     await processDocumentRetrievalResults(req.body);
 
     return res.sendStatus(httpStatus.OK);
