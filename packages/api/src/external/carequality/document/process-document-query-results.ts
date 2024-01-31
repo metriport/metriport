@@ -85,7 +85,7 @@ export async function processDocumentQueryResults({
 
     // We invoke the lambda that will start polling for the results
     // from the IHE Gateway for document retrieval results and process them
-    await lambdaClient
+    lambdaClient
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "Event",
