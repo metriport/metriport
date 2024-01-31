@@ -1,4 +1,4 @@
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "@metriport/core/domain/patient";
 import { DocumentReferenceWithId } from "../fhir/document";
