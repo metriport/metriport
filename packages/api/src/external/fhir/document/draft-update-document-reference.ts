@@ -1,16 +1,27 @@
-import { Attachment, DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
-import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
-import BadRequestError from "../../../errors/bad-request";
-import { OrganizationModel } from "../../../models/medical/organization";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
-import { Config } from "../../../shared/config";
+import {
+  Attachment,
+  DocumentReference,
+  DocumentReferenceContent,
+  Extension,
+  Identifier,
+  Resource,
+} from "@medplum/fhirtypes";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { appendIdentifierOID, toFHIR } from "../organization";
-import { TEMPORARY } from "../../../shared/constants";
+import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
+import { IETF_URL } from "@metriport/core/external/fhir/shared/namespaces";
+import BadRequestError from "@metriport/core/util/error/bad-request";
 import { cloneDeep } from "lodash";
+import { OrganizationModel } from "../../../models/medical/organization";
+import { Config } from "../../../shared/config";
+import { TEMPORARY } from "../../../shared/constants";
+import { appendIdentifierOID, toFHIR } from "../organization";
+import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
+
+const temporaryExtension = cloneDeep(metriportDataSourceExtension);
+temporaryExtension.valueCoding.code = TEMPORARY;
 
 export function docRefCheck(docRef: DocumentReference) {
   if (!docRef.description) throw new BadRequestError(`Document Reference must have a description`);
@@ -19,56 +30,96 @@ export function docRefCheck(docRef: DocumentReference) {
 }
 
 /**
- *
- * @param prelimDocRef
- * @param organization
- * @param patientId
- * @param docRefId
- * @param s3Key
- * @param bucketName
- * @returns
+ * Create a Document Reference with a temporary status and a placeholder attachment
+ * to be used during the upload process.
  */
-export function composeDocumentReference(
-  prelimDocRef: DocumentReference,
-  organization: OrganizationModel,
-  patientId: string,
-  docRefId: string,
-  s3Key: string,
-  bucketName: string
-): DocumentReference {
-  const containedOrg = toFHIR(organization);
-  const containedOrgWithOID = appendIdentifierOID(organization, containedOrg);
-  const temporaryExtension = cloneDeep(metriportDataSourceExtension);
-  temporaryExtension.valueCoding.code = TEMPORARY;
-
+export function composeDocumentReference({
+  inputDocRef,
+  organization,
+  patientId,
+  docRefId,
+  s3Key,
+  s3BucketName,
+}: {
+  inputDocRef: DocumentReference;
+  organization: OrganizationModel;
+  patientId: string;
+  docRefId: string;
+  s3Key: string;
+  s3BucketName: string;
+}): DocumentReference {
+  const masterIdentifier = getMasterIdentifier(docRefId);
+  const identifier = getIdentifiers(inputDocRef);
+  const contained = getContained(inputDocRef, organization);
+  const extension = getExtensions(inputDocRef);
   const subject = toFHIRSubject(patientId);
-
-  const attachment: Attachment = {
-    title: "pre-upload placeholder",
-    url: s3Utils.buildFileUrl(bucketName, s3Key),
-  };
-
-  const content: DocumentReferenceContent[] = [{ attachment }];
-
+  const content = getContent(s3Key, s3BucketName);
   return {
     resourceType: "DocumentReference",
     id: docRefId,
-    contained: prelimDocRef.contained
-      ? [...prelimDocRef.contained, containedOrgWithOID]
-      : [containedOrgWithOID],
+    masterIdentifier,
+    identifier,
+    contained,
     status: "current",
     docStatus: "preliminary",
-    text: prelimDocRef.text ?? undefined,
-    extension: prelimDocRef.extension
-      ? [...prelimDocRef.extension, temporaryExtension]
-      : [temporaryExtension],
-    type: prelimDocRef.type,
-    category: prelimDocRef.category ?? undefined,
-    date: prelimDocRef.date ?? new Date().toISOString(),
-    author: prelimDocRef.author ?? undefined,
+    text: inputDocRef.text,
+    extension,
+    type: inputDocRef.type,
+    category: inputDocRef.category ?? undefined,
+    date: inputDocRef.date ?? new Date().toISOString(),
+    author: inputDocRef.author,
     subject,
-    description: prelimDocRef.description,
-    context: prelimDocRef.context,
+    description: inputDocRef.description,
+    context: inputDocRef.context,
     content,
   };
+}
+
+function getMasterIdentifier(docRefId: string): Identifier {
+  return {
+    system: IETF_URL,
+    value: docRefId,
+  };
+}
+
+function getIdentifiers(inputDocRef: DocumentReference): Identifier[] {
+  return [
+    ...(inputDocRef.masterIdentifier ? [inputDocRef.masterIdentifier] : []),
+    ...(inputDocRef.identifier ?? []),
+  ];
+}
+
+function getContained(inputDocRef: DocumentReference, organization: OrganizationModel): Resource[] {
+  const containedOrg = toFHIR(organization);
+  const containedOrgWithOID = appendIdentifierOID(organization, containedOrg);
+  return inputDocRef.contained
+    ? [...inputDocRef.contained, containedOrgWithOID]
+    : [containedOrgWithOID];
+}
+
+function getExtensions(inputDocRef: DocumentReference): Identifier[] {
+  if (!inputDocRef.extension) return [temporaryExtension];
+  const allowedExtensions = inputDocRef.extension.filter(isAllowedExtension);
+  return [...allowedExtensions, temporaryExtension];
+}
+
+function isAllowedExtension(e: Extension): boolean {
+  if (e.url && e.url.toUpperCase().includes(metriportDataSourceExtension.url)) return false;
+
+  if (!e.valueCoding) return true;
+
+  const system = e.valueCoding.system;
+  if (system && system.toUpperCase().includes(metriportDataSourceExtension.valueCoding.code)) {
+    return false;
+  }
+  return e.valueCoding.code !== metriportDataSourceExtension.valueCoding.code;
+}
+
+function getContent(s3Key: string, s3BucketName: string): DocumentReferenceContent[] {
+  const attachment: Attachment = {
+    title: "pre-upload placeholder",
+    url: s3Utils.buildFileUrl(s3BucketName, s3Key),
+  };
+  const content: DocumentReferenceContent[] = [{ attachment }];
+  return content;
 }

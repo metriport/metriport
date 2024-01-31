@@ -1,14 +1,11 @@
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { Document } from "@metriport/commonwell-sdk";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Patient } from "@metriport/core/domain/patient";
-import {
-  DocumentWithMetriportId,
-  getFileExtension,
-} from "../../../external/commonwell/document/shared";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { capture } from "@metriport/core/util/notifications";
+import { DocumentWithMetriportId } from "../../../external/commonwell/document/shared";
 import { Config } from "../../../shared/config";
 import { createS3FileName } from "../../../shared/external";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -35,8 +32,7 @@ type SimpleFile = {
 export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
   return async (doc: Document): Promise<SimpleFile> => {
-    const extension = getFileExtension(doc.content?.mimeType);
-    const docName = extension ? `${doc.id}${extension}` : doc.id;
+    const docName = doc.id;
     const fileName = createS3FileName(patient.cxId, patient.id, docName);
     return {
       docId: doc.id,
@@ -100,7 +96,7 @@ export async function getS3Info(
     const msg = `Errors getting info from S3`;
     const extra = { errors, patientId: patient.id };
     log(msg, extra);
-    capture.message(msg, { extra });
+    capture.error(msg, { extra });
   }
   const successful: S3Info[] = s3Info.flatMap(ref =>
     ref.status === "fulfilled" && ref.value ? ref.value : []

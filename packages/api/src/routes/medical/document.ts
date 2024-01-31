@@ -209,22 +209,22 @@ router.post(
 async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
   const cxId = getCxIdOrFail(req);
   const patientId = getFromQueryOrFail("patientId", req);
-  const docId = uuidv7();
-  const s3FileName = createS3FileName(cxId, patientId, docId);
+  const docRefId = uuidv7();
+  const s3FileName = createS3FileName(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
 
   const docRefDraft = req.body;
   docRefCheck(docRefDraft);
   // #1075 TODO: Validate FHIR Payloads
 
-  const docRef = composeDocumentReference(
-    docRefDraft,
+  const docRef = composeDocumentReference({
+    inputDocRef: docRefDraft,
     organization,
     patientId,
-    docId,
-    s3FileName,
-    medicalDocumentsUploadBucketName
-  );
+    docRefId,
+    s3Key: s3FileName,
+    s3BucketName: medicalDocumentsUploadBucketName,
+  });
 
   const url = await s3Utils.getPresignedUploadUrl({
     bucket: medicalDocumentsUploadBucketName,
@@ -235,7 +235,7 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
   console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
   await upsertDocumentToFHIRServer(cxId, docRef);
 
-  return { documentReferenceId: docId, uploadUrl: url };
+  return { documentReferenceId: docRefId, uploadUrl: url };
 }
 
 /**
