@@ -22,8 +22,15 @@
             ]
         },
         "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
+        {{!-- {{#if (eq conditionEntry.value.code 'Z00.00')}} 
+            {{ log conditionEntry.value }}
+            {{ log conditionEntry.effectiveTime }}
+        {{/if}}  --}}
+
         {{#if conditionEntry.effectiveTime.low.value}} 
             "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
+        {{else if conditionEntry.effectiveTime.value}} 
+            "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.value}}", 
         {{else}}
             "onsetAge":
             [
