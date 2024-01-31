@@ -91,7 +91,7 @@ export class DailyBackup extends Construct {
     }
     const cronMinute = props.cronMinute ?? this.DEFAULT_CRON_MINUTE;
     if (cronMinute > 59 || cronMinute < 0) {
-      throw Error("cronHour must be 0 - 59");
+      throw Error("cronMinute must be 0 - 59");
     }
 
     const completionWindow = props.backupCompletionWindow ?? this.DEFAULT_BACKUP_COMPLETION_WINDOW;
