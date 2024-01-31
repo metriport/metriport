@@ -22,10 +22,15 @@
                 "text":"{{medicationStatement.text._}}",
                 "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
-                {
-                    {{!-- missing doseRange}}
-                    "doseQuantity": {{>DataType/SimpleQuantity.hbs quantity=medicationStatement.doseQuantity}},
-                },
+                    {
+                        {{#with (extractRangeFromQuantity medicationStatement.doseQuantity) as |rangeObj|}}
+                            {{#if rangeObj.isValid}}
+                                "doseRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                            {{else}}
+                                "doseQuantity": {{>DataType/Quantity.hbs quantity=../medicationStatement.doseQuantity}},
+                            {{/if}}
+                        {{/with}}
+                    },
                 ],
             },
         ],

@@ -1,4 +1,29 @@
-{
-    "value":"{{removeNonNumeric (decodeHtmlEntities quantity.value)}}",
-    "unit":"{{quantity.unit}}",
-}
+{{#with (decodeHtmlEntities quantity.value) as |decodedValue|}}
+  {{#with (convertFeetAndInchesToCm decodedValue) as |feetAndInches|}}
+    {{#if feetAndInches.isValid}}
+      {
+        "value": "{{feetAndInches.value}}",
+        "unit": "cm",
+        "system": "http://unitsofmeasure.org"
+      }
+    {{else}}
+      {{#with (extractNumberAndUnit decodedValue) as |numberAndUnit|}}
+        {{#if numberAndUnit.isValid}}
+          {
+            "value": "{{numberAndUnit.value}}",
+            "unit": "{{numberAndUnit.unit}}",
+            "system": "http://unitsofmeasure.org"
+          }
+        {{else}}
+          {{#with (extractDecimal decodedValue) as |decimal|}}
+            {
+              "value": "{{decimal}}",
+              "unit": "{{../../../../quantity.unit}}",
+              "system": "http://unitsofmeasure.org"
+            }
+          {{/with}}
+        {{/if}}
+      {{/with}}
+    {{/if}}
+  {{/with}}
+{{/with}}

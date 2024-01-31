@@ -70,17 +70,20 @@
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
-            "valueQuantity": {{>DataType/Quantity.hbs quantity=observationEntry.value}},
+            {{#with (extractRangeFromQuantity observationEntry.value) as |rangeObj|}}
+                {{#if rangeObj.isValid}}
+                    "valueRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                {{else}}
+                    "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
+                {{/if}}
+            {{/with}}
         {{else}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
         [
-          {
-            "low": {{>DataType/SimpleQuantity.hbs quantity=observationEntry.referenceRange.observationRange.value.low}},
-            "high": {{>DataType/SimpleQuantity.hbs quantity=observationEntry.referenceRange.observationRange.value.high}}
-          },
+          {{>DataType/Range.hbs referenceRange=observationEntry.referenceRange.observationRange.value}}
         ],
         "interpretation":
         [

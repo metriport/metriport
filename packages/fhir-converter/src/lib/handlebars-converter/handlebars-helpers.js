@@ -1081,4 +1081,90 @@ module.exports.external = [
       return str.replace(/[^0-9.]/g, '');
     },
   },
+  {
+    name: "convertFeetAndInchesToCm",
+    description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return { isValid: false };
+      }
+      const match = str.match(/^(\d+(?:\.\d+)?) ft (\d+(?:\.\d+)?)( in)?$/);
+      if (match) {
+        const feet = parseFloat(match[1]);
+        const inches = parseFloat(match[2]);
+        const cm = (feet * 12 + inches) * 2.54;
+        return { isValid: true, value: cm, unit: 'cm' };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractNumberAndUnit",
+    description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return { isValid: false };
+      }
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/]+)$/);
+      if (match) {
+        return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractComparator",
+    description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return { isValid: false };
+      }
+      const match = str.match(/^([<>]=?)(\d+(?:\.\d+)?)$/);
+      if (match) {
+        return { isValid: true, comparator: match[1], number: parseFloat(match[2]) };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractRangeFromQuantity",
+    description: "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
+    func: function (obj) {
+      if (obj === undefined || obj === null || obj.value === undefined) {
+        return { isValid: false };
+      }
+      const match = obj.value.match(/^\s*(.+)\s*-\s*(.+)\s*$/);
+      if (match) {
+        return { 
+          isValid: true, 
+          range: {
+            low: {
+              value: match[1], 
+              unit: obj.unit || "",
+            },
+            high: {
+              value: match[2],
+              unit: obj.unit || "",
+            }
+          }
+        };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractDecimal",
+    description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
+    func: function (str) {
+      if (str === undefined || str === null) {
+        return "";
+      }
+      const match = str.match(/-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/);
+      return match ? match[0] : '';
+    },
+  },
 ];
