@@ -8,6 +8,7 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -41,14 +42,13 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
+import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-// import { Backup } from "./shared/backup";
-// import { BackupResource } from "aws-cdk-lib/aws-backup";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -711,26 +711,22 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Backups
     //-------------------------------------------
-    // TODO: #1466 temporarily remove the backup plan, add this back later
-    // if (this.isProd(props)) {
-    //   new Backup(this, "APIDBBackup", {
-    //     backupPlanName: "APIDBBackupPlan",
-    //     resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
-    //     backupRate: Duration.days(1),
-    //   });
-    //   new Backup(this, "APIMedicalDocsBucketBackup", {
-    //     backupPlanName: "APIMedicalDocsBucketBackupPlan",
-    //     resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
-    //     backupRate: Duration.days(1),
-    //   });
-    // }
-    // if (isSandbox(props.config) && sandboxSeedDataBucket) {
-    //   new Backup(this, "APISandboxSeedDataBucketBackup", {
-    //     backupPlanName: "APISandboxSeedDataBucketBackupPlan",
-    //     resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
-    //     backupRate: Duration.days(1),
-    //   });
-    // }
+    if (this.isProd(props)) {
+      new DailyBackup(this, "APIDBBackup", {
+        backupPlanName: "APIDB",
+        resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
+      });
+      new DailyBackup(this, "APIMedicalDocsBucketBackup", {
+        backupPlanName: "MedicalDocsBucket",
+        resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
+      });
+    }
+    if (isSandbox(props.config) && sandboxSeedDataBucket) {
+      new DailyBackup(this, "APISandboxSeedDataBucketBackup", {
+        backupPlanName: "SandboxSeedDataBucket",
+        resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
+      });
+    }
 
     //-------------------------------------------
     // Output
