@@ -713,17 +713,17 @@ export class APIStack extends Stack {
     //-------------------------------------------
     if (this.isProd(props)) {
       new DailyBackup(this, "APIDBBackup", {
-        backupPlanName: "APIDBBackupPlan",
+        backupPlanName: "APIDB",
         resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
       });
       new DailyBackup(this, "APIMedicalDocsBucketBackup", {
-        backupPlanName: "APIMedicalDocsBucketBackupPlan",
+        backupPlanName: "MedicalDocsBucket",
         resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
       });
     }
     if (isSandbox(props.config) && sandboxSeedDataBucket) {
       new DailyBackup(this, "APISandboxSeedDataBucketBackup", {
-        backupPlanName: "APISandboxSeedDataBucketBackupPlan",
+        backupPlanName: "SandboxSeedDataBucket",
         resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
       });
     }
