@@ -12,6 +12,8 @@ var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require('he');
+const convert = require("convert-units");
+
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
@@ -1081,10 +1083,10 @@ module.exports.external = [
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
       if (match) {
-        const feet = parseFloat(match[1]);
-        const inches = parseFloat(match[2]);
-        const cm = (feet * 12 + inches) * 2.54;
-        return { isValid: true, value: cm, unit: 'cm' };
+        const inches = (12 * parseFloat(match[1])) + parseFloat(match[2]);
+        const cm = convert(inches).from('in').to('cm');
+        const cmRounded = parseFloat(cm.toFixed(2));
+        return { isValid: true, value: cmRounded, unit: 'cm' };
       } else {
         return { isValid: false };
       }

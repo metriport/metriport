@@ -98,6 +98,7 @@
     "applicationinsights": "^1.4.1",
     "body-parser": "^1.19.0",
     "codemirror": "^5.62.0",
+    "convert-units": "^2.3.4",
     "cookie-parser": "^1.4.4",
     "deepmerge": "^4.2.2",
     "express": "^4.16.4",
