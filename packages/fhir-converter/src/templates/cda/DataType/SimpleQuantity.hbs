@@ -11,7 +11,7 @@
         {{#if numberAndUnit.isValid}}
           {
             "value": "{{numberAndUnit.value}}",
-            "unit": "{{numberAndUnit.unit}}",
+            "unit": "{{#if ../../../quantity.unit}}{{../../../quantity.unit}}{{else}}{{numberAndUnit.unit}}{{/if}}",
             "system": "http://unitsofmeasure.org"
           }
         {{else}}

@@ -12,7 +12,7 @@
           {
             "value": "{{comparator.number}}",
             "comparator": "{{{comparator.comparator}}}",
-            "unit": "{{quantity.unit}}",
+            "unit": "{{../../../quantity.unit}}",
             "system": "http://unitsofmeasure.org"
           }
         {{else}}
@@ -20,7 +20,7 @@
             {{#if numberAndUnit.isValid}}
               {
                 "value": "{{numberAndUnit.value}}",
-                "unit": "{{numberAndUnit.unit}}",
+                "unit": "{{#if ../../../../quantity.unit}}{{../../../../../quantity.unit}}{{else}}{{numberAndUnit.unit}}{{/if}}",
                 "system": "http://unitsofmeasure.org"
               }
             {{else}}

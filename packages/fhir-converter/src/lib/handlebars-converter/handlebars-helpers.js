@@ -13,8 +13,9 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require('he');
 
-
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
+const decimal_regex = /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/;
+const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -1072,23 +1073,13 @@ module.exports.external = [
     },
   },
   {
-    name: "removeNonNumeric",
-    description: "Removes all non-numeric characters from a string, keeping decimal points",
-    func: function (str) {
-      if (str === undefined || str === null) {
-        return "";
-      }
-      return str.replace(/[^0-9.]/g, '');
-    },
-  },
-  {
     name: "convertFeetAndInchesToCm",
     description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
     func: function (str) {
       if (str === undefined || str === null) {
         return { isValid: false };
       }
-      const match = str.match(/^(\d+(?:\.\d+)?) ft (\d+(?:\.\d+)?)( in)?$/);
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
       if (match) {
         const feet = parseFloat(match[1]);
         const inches = parseFloat(match[2]);
@@ -1106,7 +1097,7 @@ module.exports.external = [
       if (str === undefined || str === null) {
         return { isValid: false };
       }
-      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/]+)$/);
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
       if (match) {
         return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
       } else {
@@ -1121,7 +1112,7 @@ module.exports.external = [
       if (str === undefined || str === null) {
         return { isValid: false };
       }
-      const match = str.match(/^([<>]=?)(\d+(?:\.\d+)?)$/);
+      const match = str.match(new RegExp(`^([<>]=?)(${DECIMAL_REGEX_STR})$`));
       if (match) {
         return { isValid: true, comparator: match[1], number: parseFloat(match[2]) };
       } else {
@@ -1136,7 +1127,7 @@ module.exports.external = [
       if (obj === undefined || obj === null || obj.value === undefined) {
         return { isValid: false };
       }
-      const match = obj.value.match(/^\s*(.+)\s*-\s*(.+)\s*$/);
+      const match = obj.value.match(new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`));
       if (match) {
         return { 
           isValid: true, 
@@ -1163,7 +1154,7 @@ module.exports.external = [
       if (str === undefined || str === null) {
         return "";
       }
-      const match = str.match(/-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/);
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
       return match ? match[0] : '';
     },
   },
