@@ -1,6 +1,6 @@
 import { out } from "@metriport/core/util/log";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
-import { errorToString } from "@metriport/core/util/error/index";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { MedicalDataSource } from "@metriport/core/external/index";
