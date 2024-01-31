@@ -58,7 +58,7 @@ class Address(pydantic.BaseModel):
     state: str = pydantic.Field(min_length=1)
     zip: str = pydantic.Field(min_length=5, max_length=5)
 
-    @pydantic.validator("zip")
+    @pydantic.field_validator("zip")
     def check_zip_alphanumeric(cls, v):  # pylint: disable=no-self-argument
         int(v)
         return v
