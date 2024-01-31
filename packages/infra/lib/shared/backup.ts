@@ -67,7 +67,7 @@ export interface BackupProps {
  * @stability stable
  */
 export class DailyBackup extends Construct {
-  // runs by default at 9:15am UTC (1:00am PST)
+  // runs by default at 9:15am UTC (1:15am PST)
   DEFAULT_CRON_UTC_HOUR = "9";
   DEFAULT_CRON_MINUTE = "15";
   DEFAULT_BACKUP_COMPLETION_WINDOW = Duration.hours(3);
