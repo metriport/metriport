@@ -119,8 +119,8 @@ async function handleDocReferences(
             id: docRef.metriportId ?? "",
             content: { mimeType: docRef.contentType ?? "" },
           },
-          s3FileName: docRef.url ?? "",
-          s3BucketName: docRef.bucketName ?? "",
+          s3FileName: docRef.fileName ?? "",
+          s3BucketName: docRef.fileLocation ?? "",
           requestId,
           source: MedicalDataSource.CAREQUALITY,
         });
@@ -132,7 +132,6 @@ async function handleDocReferences(
         errorCountConvertible++;
       }
     }
-
     const currentFHIRDocRef = currentFHIRDocRefs.filter(
       fhirDocRef => fhirDocRef.id === docRef.metriportId
     );
@@ -143,7 +142,7 @@ async function handleDocReferences(
 
     const file = {
       key: docRef.url ?? "",
-      bucket: docRef.bucketName ?? "",
+      bucket: docRef.fileLocation ?? "",
       contentType: docRef.contentType ?? "",
     };
 
