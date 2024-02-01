@@ -1,7 +1,19 @@
+import { out } from "@metriport/core/util/log";
 import { Request } from "express";
 import BadRequestError from "../../../errors/bad-request";
 import { getOrgOrFail } from "./get-org-or-fail";
-import { binaryResourceName, docReferenceResourceName, log, pathSeparator } from "./shared";
+import { binaryResourceName, docReferenceResourceName, pathSeparator, proxyPrefix } from "./shared";
+
+export const { log } = out(`${proxyPrefix} proxyRequest`);
+
+const allowedQueryParams = [
+  "_include",
+  "patient",
+  "patient.identifier",
+  "status",
+  "subject",
+  "subject.id",
+];
 
 const updateDocumentReferenceQueryString = (params: string): string => {
   const decodedParams = decodeURIComponent(decodeURI(params));
@@ -54,15 +66,30 @@ async function processRequest(path: string, queryString?: string): Promise<MainT
  */
 export async function proxyRequest(req: Request) {
   log(`ORIGINAL URL: ${req.url}, HEADERS: ${JSON.stringify(req.headers)}`);
-  const parts = req.url.split("?");
-  const path = parts[0];
-  const queryString = parts[1];
+  const { path, queryString } = splitRequest(req);
   if (!path) throw new BadRequestError(`Missing path`);
+  const processedQueryString = processQueryString(queryString);
 
-  const { updatedPath, updatedQuery, tenant } = await processRequest(path, queryString);
+  const { updatedPath, updatedQuery, tenant } = await processRequest(path, processedQueryString);
 
   const updatedURL =
     `/fhir` + (tenant ? `/${tenant}` : "") + updatedPath + (updatedQuery ? "?" + updatedQuery : "");
   log(`UPDATED URL: ${updatedURL}`);
   return updatedURL;
+}
+
+function splitRequest(req: Request): { path: string | undefined; queryString: string | undefined } {
+  const parts = req.url.split("?");
+  const path = parts[0];
+  const queryString = parts[1];
+  return { path, queryString };
+}
+
+function processQueryString(queryString: string | undefined): string | undefined {
+  if (!queryString) return undefined;
+  const urlParams = new URLSearchParams(queryString);
+  for (const [param] of urlParams.entries()) {
+    if (!allowedQueryParams.includes(param)) urlParams.delete(param);
+  }
+  return urlParams.toString();
 }
