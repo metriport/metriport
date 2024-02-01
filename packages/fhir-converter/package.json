@@ -15,7 +15,6 @@
     "start-dev": "npm run dev",
     "start-docker-compose": "docker compose -f docker-compose.yml up",
     "eslint": "eslint {src,test}/**/*.js",
-    "postprocess-hbs-lint": "node postprocess-hbs-lint.js",
     "lint:hbs": "ember-template-lint src/templates/cda > lint-results.txt",
     "full-hbs-lint": "./full-hbs-lint.sh"
   },
