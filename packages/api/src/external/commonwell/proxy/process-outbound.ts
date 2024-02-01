@@ -12,12 +12,13 @@ import { Request, Response } from "express";
 import { IncomingMessage } from "http";
 import { partition } from "lodash";
 import { Config } from "../../../shared/config";
-import { proxyPrefix } from "./shared";
+import { defaultError, proxyPrefix } from "./shared";
 
 const apiURL = Config.getApiUrl();
 const docContributionURL = getDocContributionURL(apiURL);
 
-export const { log } = out(`${proxyPrefix} processResponse`);
+const context = "processResponse";
+export const { log } = out(`${proxyPrefix} ${context}`);
 
 /**
  * Processes the response from the FHIR server before sending it back to CW.
@@ -28,15 +29,17 @@ export async function processResponse(
   userReq: Request, // eslint-disable-line @typescript-eslint/no-unused-vars
   userRes: Response // eslint-disable-line @typescript-eslint/no-unused-vars
 ) {
+  const statusCode = proxyRes?.statusCode;
   try {
+    if (statusCode != undefined && (statusCode < 200 || statusCode > 299)) {
+      throw new Error(`Invalid status code from FHIR server`);
+    }
     if (!proxyResData) {
-      log(`Error, missing proxyResData`);
-      throw new Error();
+      throw new Error(`Missing proxyResData`);
     }
     const payloadString = proxyResData.toString("utf8");
     if (!payloadString) {
-      log(`Error, could not convert reponse to string`);
-      throw new Error();
+      throw new Error(`Could not convert reponse to string`);
     }
     const payload = JSON.parse(payloadString);
     // Filter out CW data while we don't manage to do it with FHIR query
@@ -49,15 +52,19 @@ export async function processResponse(
     } else {
       log(`Warn: missing 'entry', not processing the response`);
     }
+    // Force not having pagination
+    payload.link = undefined;
+
     const response = JSON.stringify(payload);
     const patientId = userReq?.query["patient.identifier"];
     log(`Responding to CW (patientId ${patientId}): ${response}`);
     return response;
   } catch (error) {
-    const msg = "Error parsing/transforming response";
+    const msg = `[${proxyPrefix}] Error parsing/transforming response from FHIR server`;
     log(`${msg}: ${errorToString(error)}`);
-    capture.error(msg, { extra: { error, proxyResData } });
-    throw new Error("Error processing requeest");
+    capture.error(msg, { extra: { error, proxyResData, statusCode, context } });
+    userRes.status(statusCode ?? 500);
+    return JSON.stringify(defaultError);
   }
 }
 
