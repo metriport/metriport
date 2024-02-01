@@ -6,6 +6,10 @@ import { binaryResourceName, docReferenceResourceName, pathSeparator, proxyPrefi
 
 export const { log } = out(`${proxyPrefix} proxyRequest`);
 
+const maxDocRefsToInclude = 500;
+
+const countParamName = "_count";
+
 const allowedQueryParams = [
   "_include",
   "patient",
@@ -15,7 +19,7 @@ const allowedQueryParams = [
   "subject.id",
 ];
 
-const updateDocumentReferenceQueryString = (params: string): string => {
+const updatePatientOnQueryString = (params: string): string => {
   const decodedParams = decodeURIComponent(decodeURI(params));
   return (
     decodedParams
@@ -24,9 +28,15 @@ const updateDocumentReferenceQueryString = (params: string): string => {
       .replace(/urn\:oid\:.+\|(2\.[\.\d]+)/g, "$1")
   );
 };
-const updateQueryString = (path: string, params: string): string | undefined => {
+const updateQueryString = (path: string, queryString: string): string | undefined => {
   if (path.toLocaleLowerCase().includes("documentreference")) {
-    return updateDocumentReferenceQueryString(params);
+    const updatedQueryString = updatePatientOnQueryString(queryString);
+
+    const urlParams = new URLSearchParams(updatedQueryString);
+    urlParams.delete(countParamName);
+    urlParams.append(countParamName, maxDocRefsToInclude.toString());
+
+    return urlParams.toString();
   }
   return undefined;
 };
@@ -65,7 +75,8 @@ async function processRequest(path: string, queryString?: string): Promise<MainT
  * Processes the request before sending it the FHIR server.
  */
 export async function proxyRequest(req: Request) {
-  log(`ORIGINAL URL: ${req.url}, HEADERS: ${JSON.stringify(req.headers)}`);
+  log(`HEADERS: ${JSON.stringify(req.headers)}`);
+  log(`ORIGINAL URL: ${req.url}`);
   const { path, queryString } = splitRequest(req);
   if (!path) throw new BadRequestError(`Missing path`);
   const processedQueryString = processQueryString(queryString);
