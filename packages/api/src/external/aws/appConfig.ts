@@ -15,7 +15,8 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
   try {
     const featureFlag = await getFeatureFlagValue<{
       enabled: boolean | undefined;
-      cxIds: string[] | undefined;
+      cxIds?: string[];
+      cxIdsAndLimits?: string[];
     }>(
       Config.getAWSRegion(),
       Config.getAppConfigAppId(),
@@ -23,7 +24,10 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
       Config.getEnvType(),
       featureFlagName
     );
-    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+    if (featureFlag?.enabled) {
+      if (featureFlag?.cxIds) return featureFlag.cxIds;
+      if (featureFlag?.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
+    }
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName };
@@ -41,8 +45,8 @@ export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
 }
 
-export async function getCxsWithIncreasedPatientLimitFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue(Config.getCxsWithIncreasedPatientLimitFeatureFlagValue());
+export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagValue(Config.getCxsWithIncreasedSandboxLimitFeatureFlagValue());
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
@@ -53,20 +57,4 @@ export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<bool
 export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
-}
-
-export async function getPatientLimitForCx(cxId: string): Promise<number> {
-  const cxIdsWithIncreasedSandboxPatientVolumeEnabled =
-    await getCxsWithIncreasedPatientLimitFeatureFlagValue();
-  const cxLimit = cxIdsWithIncreasedSandboxPatientVolumeEnabled.find(i => i.includes(cxId));
-  return cxLimit ? parseCxIdAndLimit(cxLimit).patientLimit : Config.SANDBOX_PATIENT_LIMIT;
-}
-
-function parseCxIdAndLimit(increasedPatientLimitFeatureFlagValue: string): {
-  id: string;
-  patientLimit: number;
-} {
-  const cxIdAndLimit = increasedPatientLimitFeatureFlagValue.split(":");
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return { id: cxIdAndLimit[0]!, patientLimit: parseInt(cxIdAndLimit[1]!) };
 }

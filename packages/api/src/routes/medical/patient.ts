@@ -42,7 +42,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { getPatientLimitForCx } from "../../external/aws/appConfig";
+import { getPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;

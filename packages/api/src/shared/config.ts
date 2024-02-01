@@ -295,7 +295,7 @@ export class Config {
   static getCxsWithCQDirectFeatureFlagName(): string {
     return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
   }
-  static getCxsWithIncreasedPatientLimitFeatureFlagValue(): string {
-    return getEnvVarOrFail("CXS_WITH_INCREASED_PATIENT_LIMIT_FEATURE_FLAG");
+  static getCxsWithIncreasedSandboxLimitFeatureFlagValue(): string {
+    return getEnvVarOrFail("CXS_WITH_INCREASED_SANDBOX_LIMIT_FEATURE_FLAG");
   }
 }

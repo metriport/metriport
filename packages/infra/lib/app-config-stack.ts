@@ -79,7 +79,7 @@ export function createAppConfigStack({
           },
           [cxsWithIncreasedSandboxLimitFeatureFlag]: {
             enabled: true,
-            cxIds: [],
+            cxIdsAndLimits: [],
           },
         },
       }),
