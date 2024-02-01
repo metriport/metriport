@@ -5,6 +5,7 @@ import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
 import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
 import { sleep } from "@metriport/shared";
 import { formatNumber } from "@metriport/shared/common/numbers";
+import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniqBy } from "lodash";
@@ -33,6 +34,16 @@ let totalResources = 0;
 let totalReferences = 0;
 let totalMissingReferences = 0;
 
+type Params = {
+  verbose?: boolean;
+};
+const program = new Command();
+program
+  .name("count-bundle-refs")
+  .option(`--verbose`, "Logs the missing refs in the console")
+  .parse()
+  .showHelpAfterError();
+
 async function main() {
   await sleep(100);
   const startedAt = Date.now();
@@ -41,6 +52,7 @@ async function main() {
     console.log(`Missing folder name`);
     process.exit(1);
   }
+  const { verbose } = program.opts<Params>();
 
   console.log(`Running  - started at ${new Date().toISOString()}`);
 
@@ -54,7 +66,7 @@ async function main() {
 
   console.log(`Reading ${filteredFileNames.length} files...`);
   for (const fileName of filteredFileNames) {
-    await executeForFile(fileName);
+    await executeForFile(fileName, !!verbose);
   }
 
   const duration = Date.now() - startedAt;
@@ -68,7 +80,7 @@ async function main() {
   return;
 }
 
-async function executeForFile(fileName: string) {
+async function executeForFile(fileName: string, verbose: boolean) {
   console.log(`File ${fileName}`);
   const { resources } = await getResources(fileName);
   for (const resource of resources) {
@@ -95,6 +107,11 @@ async function executeForFile(fileName: string) {
   console.log(
     `... ... Missing refs: ${missingRefTypes.length ? missingRefTypes.join(", ") : "none"}`
   );
+  if (verbose) {
+    for (const missingRef of missingReferences) {
+      console.log(`... ... ... ${JSON.stringify(missingRef)}`);
+    }
+  }
 }
 
 async function getResources(fileName: string): Promise<{ resources: Resource[]; raw: string }> {

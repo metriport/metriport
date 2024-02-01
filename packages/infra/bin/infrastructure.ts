@@ -34,10 +34,12 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 2. Deploy the location services stack to initialize all geo services.
   //---------------------------------------------------------------------------------
-  new LocationServicesStack(app, config.locationService.stackName, {
-    env: { ...env, region: config.locationService.placeIndexRegion },
-    config,
-  });
+  if (config.locationService) {
+    new LocationServicesStack(app, config.locationService.stackName, {
+      env: { ...env, region: config.locationService.placeIndexRegion },
+      config,
+    });
+  }
 
   //---------------------------------------------------------------------------------
   // 3. Deploy the API stack once all secrets are defined.

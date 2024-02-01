@@ -9,6 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
+import { isMetriportExtension } from "./extensions/metriport";
 
 export const SEPARATOR_ID = "/";
 export const SEPARATOR_REF = "#";
@@ -21,6 +22,9 @@ export function getDetailFromOutcomeError(err: OperationOutcomeError): string {
   return err.outcome.issue ? err.outcome.issue.map(operationOutcomeIssueToString).join(";") : "";
 }
 
+export function isUploadedByCustomer(doc: DocumentReference): boolean {
+  return doc.extension?.some(isMetriportExtension) ?? false;
+}
 export function downloadedFromCW(doc: DocumentReference): boolean {
   return doc.extension?.some(isCommonwellExtension) ?? false;
 }

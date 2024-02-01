@@ -1,7 +1,3 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
   DocumentQueryProgress,
@@ -9,17 +5,20 @@ import {
   Progress,
 } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
+import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
-import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -115,24 +114,6 @@ type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
 };
-
-type UpdateDocQueryParams =
-  | (SetDocQueryProgress & { convertResult?: never })
-  | (UpdateResult & {
-      downloadProgress?: never;
-      convertProgress?: never;
-      reset?: never;
-    });
-
-/**
- * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
- */
-export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
-  if (params.convertResult) {
-    return updateConversionProgress(params);
-  }
-  return appendDocQueryProgress(params);
-}
 
 export const updateConversionProgress = async ({
   patient,

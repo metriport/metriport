@@ -9,10 +9,44 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
-        "relationship":
-        [
-            {{>DataType/CodeableConcept.hbs code=relatedPerson.code}},
-        ],
+        {{#with (evaluate 'Utils/RelatedPersonCodeFromText.hbs' text=(trimAndLower relatedPerson.code.originalText._)) as |respObjRel|}}
+            "relationship":
+            [
+                {
+                    {{#if ../relatedPerson.code.originalText}}
+                        "text":"{{{../relatedPerson.code.originalText._}}}",
+                    {{/if}}
+                    "coding": 
+                    [
+                        {{>DataType/Coding.hbs code=../relatedPerson.code}},
+                        
+                        {{#unless ../relatedPerson.code.code}}
+                            {{#unless ../relatedPerson.code.displayName}}
+                                    {{>DataType/Coding.hbs code=respObjRel.code}},
+                            {{/unless}}
+                        {{/unless}}
+                    ]
+                },
+                {
+                    {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=(trimAndUpper ../relatedPerson.classCode)) as |respObjRole|}}
+                        "text":"{{{respObjRole.code.displayName}}}",
+                        "coding":
+                        [
+                                {{>DataType/Coding.hbs code=respObjRole.code}},
+                        ],
+                    {{/with}}
+
+                }
+
+            ],
+            "gender": {
+                {{#if ../relatedPerson.guardianPerson.administrativeGenderCode.displayName}}
+                    {{>ValueSet/AdministrativeGender.hbs code=../relatedPerson.guardianPerson.administrativeGenderCode.displayName}},
+                {{else}}
+                    {{>ValueSet/AdministrativeGender.hbs code=respObjRel.code.gender}},
+                {{/if}}
+            },
+        {{/with}}
         "name":
         [
             {{#if relatedPerson.guardianPerson}}
@@ -31,7 +65,6 @@
             {{/each}}
         ],
         "birthDate":"{{addHyphensDate relatedPerson.guardianPerson.birthTime.value}}",
-        "gender":{{>ValueSet/AdministrativeGender.hbs code=relatedPerson.guardianPerson.administrativeGenderCode.displayName}},
         "address":
         [
         	{{#each (toArray relatedPerson.addr)}}

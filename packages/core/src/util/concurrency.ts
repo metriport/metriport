@@ -1,4 +1,4 @@
-import { errorToString } from "./error";
+import { errorToString } from "./error/shared";
 import { sleep } from "./sleep";
 
 export type ExecuteInChunksOptions = {
