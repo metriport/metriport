@@ -66,24 +66,29 @@ export const processDocQueryProgressWebhook = async ({
   const { id: patientId } = patient;
 
   try {
+    const isComplete = status === "completed";
+
     if (progressType === "convert") {
-      await handleWebhook({
-        patient,
-        requestId,
-        webhookType: CONVERSION_WEBHOOK_TYPE,
-        docQueryStatus: status,
-      });
+      await processPatientDocumentRequest(
+        patient.cxId,
+        patient.id,
+        CONVERSION_WEBHOOK_TYPE,
+        isComplete ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+        requestId
+      );
     } else if (progressType === "download") {
       if (isSandbox) return;
 
       const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
-      await handleWebhook({
-        patient,
+
+      await processPatientDocumentRequest(
+        patient.cxId,
+        patient.id,
+        DOWNLOAD_WEBHOOK_TYPE,
+        isComplete ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
         requestId,
-        webhookType: DOWNLOAD_WEBHOOK_TYPE,
-        docQueryStatus: status,
-        payload,
-      });
+        isComplete && payload ? payload : undefined
+      );
     }
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
@@ -99,31 +104,6 @@ export const processDocQueryProgressWebhook = async ({
     capture.error(error, { extra });
   }
 };
-
-async function handleWebhook({
-  patient,
-  requestId,
-  webhookType,
-  docQueryStatus,
-  payload,
-}: {
-  patient: Pick<Patient, "id" | "cxId" | "externalId">;
-  requestId: string;
-  docQueryStatus: DocumentQueryStatus;
-  webhookType: WebhookType;
-  payload?: DocumentReferenceDTO[];
-}) {
-  const isComplete = docQueryStatus === "completed";
-
-  await processPatientDocumentRequest(
-    patient.cxId,
-    patient.id,
-    webhookType,
-    isComplete ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
-    requestId,
-    isComplete && payload ? payload : undefined
-  );
-}
 
 export const composeDocRefPayload = async (
   patientId: string,
