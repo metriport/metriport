@@ -6,6 +6,7 @@ LINT_RESULTS=$(node postprocess-hbs-lint.js)
 if [ ! -z "$LINT_RESULTS" ]; then
   echo "Linting issues found:"
   echo "$LINT_RESULTS"
+  echo -e
   rm lint-results.txt
   exit 1
 else
