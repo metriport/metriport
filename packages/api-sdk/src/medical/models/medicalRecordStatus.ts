@@ -1,4 +1,4 @@
-export type MedicalRecordsStatus = {
+export type MedicalRecordsStatusDTO = {
   html: {
     exists: boolean;
     createdAt?: string;

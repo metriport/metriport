@@ -20,7 +20,7 @@ import {
   documentQuerySchema,
   bulkGetDocumentUrlQuerySchema,
 } from "../models/document";
-import { MedicalRecordsStatus } from "../models/medicalRecordStatus";
+import { MedicalRecordsStatusDTO } from "../models/medicalRecordStatus";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
@@ -311,9 +311,9 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient to check the medical record summary for.
    * @return An object containing the booleans for the existence and dates of the Medical Record Summary in PDF and HTML formats.
    */
-  async getMedicalRecordSummaryStatus(patientId: string): Promise<MedicalRecordsStatus> {
+  async getMedicalRecordSummaryStatus(patientId: string): Promise<MedicalRecordsStatusDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-status`);
-    return resp.data;
+    return resp.data as MedicalRecordsStatusDTO;
   }
 
   /** ---------------------------------------------------------------------------

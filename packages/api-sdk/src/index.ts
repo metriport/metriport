@@ -34,7 +34,7 @@ export {
   ListDocumentResult,
   UploadDocumentResult,
 } from "./medical/models/document";
-export { MedicalRecordsStatus } from "./medical/models/medicalRecordStatus";
+export { MedicalRecordsStatusDTO } from "./medical/models/medicalRecordStatus";
 export {
   Facility,
   FacilityCreate,

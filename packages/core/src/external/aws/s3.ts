@@ -13,7 +13,6 @@ import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
 const UPLOADS_FOLDER = "uploads";
-export const MEDICAL_RECORD_KEY = "MR";
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
 export function makeS3Client(region: string): AWS.S3 {
@@ -22,17 +21,6 @@ export function makeS3Client(region: string): AWS.S3 {
 
 export const createS3FileName = (cxId: string, patientId: string, fileName: string): string => {
   return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
-};
-
-export const createMRSummaryFileName = (
-  cxId: string,
-  patientId: string,
-  extension: "pdf" | "html" | "json"
-): string => {
-  if (extension === "pdf") {
-    return createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}.html.pdf`);
-  }
-  return createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}.${extension}`);
 };
 
 export const parseS3FileName = (

@@ -1,9 +1,9 @@
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { S3Utils, createMRSummaryFileName } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { Config } from "../../../shared/config";
-import { MedicalRecordsStatusDTO } from "../../../routes/medical/dtos/medical-record-summary-dto";
 
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
@@ -27,13 +27,24 @@ export type ConsolidatedQueryParams = {
   cxConsolidatedRequestMetadata?: unknown;
 } & GetConsolidatedFilters;
 
+type MedicalRecordsStatus = {
+  html: {
+    exists: boolean;
+    createdAt?: string;
+  };
+  pdf: {
+    exists: boolean;
+    createdAt?: string;
+  };
+};
+
 export async function getMedicalRecordSummaryStatus({
   patientId,
   cxId,
 }: {
   patientId: string;
   cxId: string;
-}): Promise<MedicalRecordsStatusDTO> {
+}): Promise<MedicalRecordsStatus> {
   const s3FileKey = createMRSummaryFileName(cxId, patientId, "html");
   const s3PdfFileKey = createMRSummaryFileName(cxId, patientId, "pdf");
 

@@ -1,13 +1,14 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import {
   ConsolidationConversionType,
   Input as ConversionInput,
   Output as ConversionOutput,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { createMRSummaryFileName, makeS3Client } from "@metriport/core/external/aws/s3";
+import { makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";

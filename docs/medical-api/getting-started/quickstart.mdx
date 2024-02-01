@@ -202,7 +202,7 @@ To query for a Patient's available `Documents`, you can either:
 ### Query for Documents using the API
 
 1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs;
-1. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
+2. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
    have Webhooks configured, or poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get
    the available document references returned from HIEs.
 
@@ -244,17 +244,7 @@ Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
 ## 9. Generate Patient Medical Record Summary ⭐⭐⭐
 
-The aforementioned FHIR resources are generated from all available CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, you can follow these steps:
-
-- Kick off a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
-
-This route allows you to choose what FHIR resources and what date range you want to include into the summary. When this query completes, a webhook with a JSON payload containing all these resources will be sent to you.
-
-- Monitor the status of the query using the [Get Consolidated Data Query Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
-
-- Check when the Medical Record Summary was created in either PDF or HTML format using the [Get Medical Record Summary Status](/medical-api/api-reference/fhir/get-medical-record-summary-status) endpoint.
-
-- Download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
+The aforementioned FHIR resources are generated from all available CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, refer to the [Medical Record Summary](/medical-api/more-info/medical-record-summary) guide.
 
 ## 10. Share Medical Data with the Networks 🚀🚀🚀
 

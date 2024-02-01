@@ -24,9 +24,10 @@ Returns a JSON containing the booleans for the existence of the Medical Record S
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c"
 
 const status = await metriport.getMedicalRecordSummaryStatus(
-  "018a80c4-292a-7486-a223-6dcbc636c44c"
+  metriportPatientId
 );
 ```
 
@@ -44,11 +45,11 @@ const status = await metriport.getMedicalRecordSummaryStatus(
 {
   "pdf": {
     "exists": true,
-    "date": "2024-01-18T00:27:16.000Z"
+    "createdAt": "2024-01-18T00:27:16.000Z"
   },
   "html": {
     "exists": true,
-    "date": "2024-01-18T00:26:54.000Z"
+    "createdAt": "2024-01-18T00:26:54.000Z"
   }
 }
 ```

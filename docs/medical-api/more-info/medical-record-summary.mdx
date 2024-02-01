@@ -11,23 +11,15 @@ Here's the title page of an example Medical Record Summary:
 
 <img className="h-100" src="/images/example-medical-record.png" />
 
-## Generate using API
+## Generate using the API
 
-To generate a Medical Record Summary using Metriport API, you need to follow these steps:
+To generate a Medical Record Summary using Metriport API:
 
-1. Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose [FHIR resources](/medical-api/fhir/overview), date range, and rendering (`PDF` or `HTML`) for your Medical Record Summary. When this query completes, a [webhook](/medical-api/more-info/webhooks) with a JSON payload containing all these resources will be sent to you.
+Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose [FHIR resources](/medical-api/fhir/overview), date range, and rendering (`PDF` or `HTML`) for your Medical Record Summary. When this query completes, a [webhook](/medical-api/more-info/webhooks#medical-record) with a downloadable URL will be sent to you.
 
 <Tip>
   Once the query is kicked off, you can monitor its status using the [Get Consolidated Data Query
   Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
-</Tip>
-
-2. In addition to webhooks, you can download the Medical Record Summary in a PDF or HTML format using the [Get Medical Record Summary](/medical-api/api-reference/fhir/get-medical-record-summary) endpoint.
-
-<Tip>
-  Prior to creating or downloading a new Medical Record Summary, you can check when it was created,
-  and whether it's available in either PDF or HTML format using the [Get Medical Record Summary
-  Status](/medical-api/api-reference/fhir/get-medical-record-summary-status) endpoint.
 </Tip>
 
 ## Generate using the Dashboard
@@ -38,4 +30,12 @@ To generate a Medical Record Summary from the dashboard, you need to navigate to
 
 Then, select whether you want to download a new or a previously-generated (if such is available) Medical Record Summary, and click the button with the desired format to initiate the download.
 
+<Warning>
+  This process may take some time, depending on the number of documents for the patient.
+</Warning>
+
 <img className="h-100" src="/images/dashboard-documents.png" />
+
+<Warning>
+  Make sure to enable pop-ups on the website to allow download once the document is ready.
+</Warning>

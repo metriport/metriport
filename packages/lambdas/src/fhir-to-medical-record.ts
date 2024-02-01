@@ -1,10 +1,7 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
-import {
-  getSignedUrl as coreGetSignedUrl,
-  createMRSummaryFileName,
-  makeS3Client,
-} from "@metriport/core/external/aws/s3";
+import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/serverless";
 import chromium from "@sparticuz/chromium";
@@ -27,7 +24,7 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
-const PDFConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
+const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
 const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
@@ -129,7 +126,7 @@ const convertStoreAndReturnPdfUrl = async ({
 
   try {
     const puppeteerTimeoutInMillis =
-      parseInt(PDFConvertTimeout) - GRACEFUL_SHUTDOWN_ALLOWANCE.asMilliseconds();
+      parseInt(pdfConvertTimeout) - GRACEFUL_SHUTDOWN_ALLOWANCE.asMilliseconds();
     // Defines browser
     browser = await puppeteer.launch({
       pipe: true,
