@@ -40,7 +40,7 @@
 
             ],
             "gender": {
-                {#if ../relatedPerson.guardianPerson.administrativeGenderCode.displayName}}
+                {{#if ../relatedPerson.guardianPerson.administrativeGenderCode.displayName}}
                     {{>ValueSet/AdministrativeGender.hbs code=../relatedPerson.guardianPerson.administrativeGenderCode.displayName}},
                 {{else}}
                     {{>ValueSet/AdministrativeGender.hbs code=respObjRel.code.gender}},
