@@ -5,7 +5,7 @@ import { DemographicsDTO } from "./demographicsDTO";
 export type PatientDTO = {
   facilityIds: string[];
   externalId?: string;
-  createdAt?: Date;
+  dateCreated?: Date;
 } & DemographicsDTO;
 
 // the getDomainFromDTO function is in core in patient-loader-metriport-api.ts
@@ -16,7 +16,7 @@ export function dtoFromModel(patient: Patient): PatientDTO {
     ...toBaseDTO(patient),
     facilityIds: patient.facilityIds,
     externalId: patient.externalId,
-    createdAt: patient.createdAt,
+    dateCreated: patient.createdAt,
     firstName,
     lastName,
     dob,
