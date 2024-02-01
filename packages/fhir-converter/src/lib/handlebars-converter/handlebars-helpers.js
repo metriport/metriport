@@ -11,8 +11,13 @@ var crypto = require("crypto");
 var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
+const he = require('he');
+const convert = require("convert-units");
+
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
+const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
+const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -1056,6 +1061,103 @@ module.exports.external = [
     description: "Returns the code system for the related person relationship code",
     func: function () {
       return PERSONAL_RELATIONSHIP_TYPE_CODE;
+    },
+  },
+  {
+    name: "decodeHtmlEntities",
+    description: "Decodes html strings",
+    func: function (str) {
+      if (!str) {
+        return "";
+      }
+      const result = he.decode(str);
+      return result;
+    },
+  },
+  {
+    name: "convertFeetAndInchesToCm",
+    description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
+      if (match) {
+        const inches = (12 * parseFloat(match[1])) + parseFloat(match[2]);
+        const cm = convert(inches).from('in').to('cm');
+        const cmRounded = parseFloat(cm.toFixed(2));
+        return { isValid: true, value: cmRounded, unit: 'cm' };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractNumberAndUnit",
+    description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
+      if (match) {
+        return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractComparator",
+    description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(new RegExp(`^([<>]=?)(${DECIMAL_REGEX_STR})$`));
+      if (match) {
+        return { isValid: true, comparator: match[1], number: parseFloat(match[2]) };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractRangeFromQuantity",
+    description: "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
+    func: function (obj) {
+      if (obj === undefined || obj === null || obj.value === undefined) {
+        return { isValid: false };
+      }
+      const match = obj.value.match(new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`));
+      if (match) {
+        return { 
+          isValid: true, 
+          range: {
+            low: {
+              value: match[1], 
+              unit: obj.unit || "",
+            },
+            high: {
+              value: match[2],
+              unit: obj.unit || "",
+            }
+          }
+        };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractDecimal",
+    description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
+    func: function (str) {
+      if (!str) {
+        return "";
+      }
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
+      return match ? match[0] : '';
     },
   },
 ];
