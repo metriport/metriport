@@ -84,8 +84,6 @@ async function handleDocReferences(
   patientId: string,
   cxId: string
 ) {
-  // REMINDER: YOU NEED TO UPDATE MIRTH TO SEND THE ABOVE
-
   let errorCountConvertible = 0;
 
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
