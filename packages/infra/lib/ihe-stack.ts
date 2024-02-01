@@ -96,7 +96,6 @@ export class IHEStack extends Stack {
       disableExecuteApiEndpoint: true,
     });
 
-    // commenting out so CFN deletes
     new r53.ARecord(this, "IHEAPIDomainRecordv2", {
       recordName: iheApiUrl,
       zone: publicZone,
