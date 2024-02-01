@@ -154,7 +154,10 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+    if (!validUTCDateTime(dateTimeComposition)) 
+    {
+      console.log(`Invalid datetime: ${ds}`);
+    }
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
