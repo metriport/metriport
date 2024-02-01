@@ -1,3 +1,5 @@
+import { contentType, extension } from "mime-types";
+
 /**
  * Returns boolean indicating whether a given MIME type is XML.
  * This takes into consideration of our usage of XMLs, which based on "pure"
@@ -37,3 +39,12 @@ export const OCTET_MIME_TYPE = "application/octet-stream";
 export const OCTET_FILE_EXTENSION = ".bin";
 export const HTML_MIME_TYPE = "text/html";
 export const HTML_FILE_EXTENSION = ".html";
+
+/**
+ * Returns a file extension based on a given MIME type.
+ */
+export function getFileExtension(value: string | undefined): string {
+  if (!value || !contentType(value)) return "";
+  const fileExtension = extension(value);
+  return fileExtension ? `.${fileExtension}` : "";
+}

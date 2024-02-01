@@ -1,11 +1,11 @@
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { Document } from "@metriport/commonwell-sdk";
+import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentWithMetriportId } from "../../../external/commonwell/document/shared";
 import { Config } from "../../../shared/config";
-import { createS3FileName } from "../../../shared/external";
 import { Util } from "../../../shared/util";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
@@ -32,8 +32,12 @@ type SimpleFile = {
 export function getDocToFileFunction(patient: Pick<Patient, "cxId" | "id">) {
   // TODO convert the input from CW Document to a Metriport shape
   return async (doc: Document): Promise<SimpleFile> => {
-    const docName = doc.id;
-    const fileName = createS3FileName(patient.cxId, patient.id, docName);
+    const fileName = createDocumentFilePath(
+      patient.cxId,
+      patient.id,
+      doc.id,
+      doc.content?.mimeType
+    );
     return {
       docId: doc.id,
       fileName,

@@ -1,6 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
-import { IETF_URL } from "@metriport/core/external/fhir/shared/namespaces";
+import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { randomInt } from "@metriport/shared/common/numbers";
@@ -79,13 +79,13 @@ export async function createAndUploadDocReference({
       },
     ],
     masterIdentifier: {
-      system: IETF_URL,
+      system: IETF_URI,
       value: docId,
     },
     identifier: [
       {
         use: "official",
-        system: IETF_URL,
+        system: IETF_URI,
         value: docId,
       },
     ],

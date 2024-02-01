@@ -8,7 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
-import { IETF_URL } from "@metriport/core/external/fhir/shared/namespaces";
+import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { cloneDeep } from "lodash";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -77,7 +77,7 @@ export function composeDocumentReference({
 
 function getMasterIdentifier(docRefId: string): Identifier {
   return {
-    system: IETF_URL,
+    system: IETF_URI,
     value: docRefId,
   };
 }

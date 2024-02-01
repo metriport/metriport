@@ -1,8 +1,8 @@
 import {
-  PutObjectCommand,
-  S3Client,
   CopyObjectCommand,
   DeleteObjectCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as getPresignedUrl } from "@aws-sdk/s3-request-presigner";
 import * as AWS from "aws-sdk";
@@ -12,35 +12,15 @@ import * as stream from "stream";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
-const UPLOADS_FOLDER = "uploads";
+
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
 
+/**
+ * @deprecated Use S3Utils instead, adding functions as needed
+ */
 export function makeS3Client(region: string): AWS.S3 {
   return new AWS.S3({ signatureVersion: "v4", region });
 }
-
-export const createS3FileName = (cxId: string, patientId: string, fileName: string): string => {
-  return `${cxId}/${patientId}/${cxId}_${patientId}_${fileName}`;
-};
-
-export const parseS3FileName = (
-  fileKey: string
-): { cxId: string; patientId: string; docId: string } | undefined => {
-  if (fileKey.includes("/")) {
-    const keyParts = fileKey.split("/");
-    const docName = keyParts[keyParts.length - 1];
-    if (docName) {
-      const docNameParts = docName.split("_");
-      const cxId = docNameParts[0];
-      const patientId = docNameParts[1];
-      const docId = docNameParts[2];
-      if (cxId && patientId && docId) {
-        return { cxId, patientId, docId };
-      }
-    }
-  }
-  return;
-};
 
 /**
  * @deprecated Use `S3Utils.getSignedUrl()` instead
@@ -70,7 +50,7 @@ export class S3Utils {
   }
 
   /**
-   * @deprecated This is v2 of the S3 client. Use `s3` instead.
+   * @deprecated This is v2 of the S3 client. Use `s3Client` instead.
    */
   get s3(): AWS.S3 {
     return this._s3;
@@ -285,12 +265,4 @@ export class S3Utils {
       return undefined;
     }
   }
-}
-
-export function buildDestinationKeyMetadata(
-  cxId: string,
-  patientId: string,
-  docId: string
-): string {
-  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}_metadata.xml`;
 }

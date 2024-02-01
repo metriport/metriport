@@ -1,1 +1,1 @@
-export const IETF_URL = "urn:ietf:rfc:3986";
+export const IETF_URI = "urn:ietf:rfc:3986";
