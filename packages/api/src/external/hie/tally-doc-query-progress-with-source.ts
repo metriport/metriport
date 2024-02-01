@@ -23,7 +23,7 @@ export type TallyDocQueryProgressWithSource = {
 /**
  * Updates the successful and error count for the given HIE which is then aggregated
  * to the patient's document query progress. setDocQueryProgressWithSource to update
- * the total and status.
+ * the total and status. If the status is completed or failed, it will send the webhook
  *
  * @returns
  */
