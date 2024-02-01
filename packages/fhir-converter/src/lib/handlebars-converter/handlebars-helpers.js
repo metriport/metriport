@@ -1067,7 +1067,7 @@ module.exports.external = [
     name: "decodeHtmlEntities",
     description: "Decodes html strings",
     func: function (str) {
-      if (str === undefined || str === null) {
+      if (!str) {
         return "";
       }
       const result = he.decode(str);
@@ -1078,7 +1078,7 @@ module.exports.external = [
     name: "convertFeetAndInchesToCm",
     description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
     func: function (str) {
-      if (str === undefined || str === null) {
+      if (!str) {
         return { isValid: false };
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
@@ -1096,7 +1096,7 @@ module.exports.external = [
     name: "extractNumberAndUnit",
     description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
     func: function (str) {
-      if (str === undefined || str === null) {
+      if (!str) {
         return { isValid: false };
       }
       const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
@@ -1111,7 +1111,7 @@ module.exports.external = [
     name: "extractComparator",
     description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
     func: function (str) {
-      if (str === undefined || str === null) {
+      if (!str) {
         return { isValid: false };
       }
       const match = str.match(new RegExp(`^([<>]=?)(${DECIMAL_REGEX_STR})$`));
@@ -1153,7 +1153,7 @@ module.exports.external = [
     name: "extractDecimal",
     description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
-      if (str === undefined || str === null) {
+      if (!str) {
         return "";
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
