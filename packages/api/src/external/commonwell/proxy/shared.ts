@@ -1,7 +1,6 @@
-import { out } from "@metriport/core/util/log";
 import { Config } from "../../../shared/config";
 
-export const { log } = out(`CW FHIR proxy`);
+export const proxyPrefix = `CW FHIR proxy`;
 
 export const fhirServerUrl = Config.getFHIRServerUrl();
 export const pathSeparator = "/";

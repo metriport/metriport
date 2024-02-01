@@ -6,15 +6,18 @@ import {
 } from "@metriport/core/external/commonwell/document/document-contribution";
 import { isUploadedByCustomer } from "@metriport/core/external/fhir/shared/index";
 import { errorToString } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { Request, Response } from "express";
 import { IncomingMessage } from "http";
 import { partition } from "lodash";
 import { Config } from "../../../shared/config";
-import { log } from "./shared";
+import { proxyPrefix } from "./shared";
 
 const apiURL = Config.getApiUrl();
 const docContributionURL = getDocContributionURL(apiURL);
+
+export const { log } = out(`${proxyPrefix} processResponse`);
 
 /**
  * Processes the response from the FHIR server before sending it back to CW.
@@ -26,8 +29,15 @@ export async function processResponse(
   userRes: Response // eslint-disable-line @typescript-eslint/no-unused-vars
 ) {
   try {
-    const cxPatientId = userReq?.query["patient.identifier"];
+    if (!proxyResData) {
+      log(`Error, missing proxyResData`);
+      throw new Error();
+    }
     const payloadString = proxyResData.toString("utf8");
+    if (!payloadString) {
+      log(`Error, could not convert reponse to string`);
+      throw new Error();
+    }
     const payload = JSON.parse(payloadString);
     // Filter out CW data while we don't manage to do it with FHIR query
     if (payload.entry) {
@@ -36,9 +46,12 @@ export async function processResponse(
       const updatedDocRefs = adjustAttachmentURLs(docRefs);
       payload.entry = [...updatedDocRefs, ...otherResources];
       payload.total = payload.entry?.length != null ? payload.entry.length : undefined;
+    } else {
+      log(`Warn: missing 'entry', not processing the response`);
     }
     const response = JSON.stringify(payload);
-    log(`Responding to CW (cxPatientId ${cxPatientId}): ${response}`);
+    const patientId = userReq?.query["patient.identifier"];
+    log(`Responding to CW (patientId ${patientId}): ${response}`);
     return response;
   } catch (error) {
     const msg = "Error parsing/transforming response";
