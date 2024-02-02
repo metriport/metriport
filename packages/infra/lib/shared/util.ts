@@ -10,6 +10,9 @@ export function isProd(config: EnvConfig): boolean {
 export function isSandbox(config: EnvConfig): boolean {
   return config.environmentType === EnvType.sandbox;
 }
+export function isLocalEnvironment(): boolean {
+  return getEnvVar("LOCAL") !== undefined;
+}
 
 export function mbToBytes(mb: number): number {
   return mb * 1024 * 1024;

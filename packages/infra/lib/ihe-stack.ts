@@ -142,6 +142,7 @@ export class IHEStack extends Stack {
       ...props,
       config: props.config,
       vpc,
+      zoneName: props.config.host,
       apiResource: api.root,
       documentQueryLambda,
       documentRetrievalLambda,

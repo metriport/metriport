@@ -12,6 +12,7 @@ import IHEGatewayConstruct from "./ihe-gw-construct";
 interface IHEGatewayProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
+  zoneName: string;
   apiResource: apig.IResource;
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
@@ -28,11 +29,10 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
   const config = mainConfig.iheGateway;
   if (!config) throw new Error("Missing IHE Gateway config");
 
-  const privateZone = r53.PrivateHostedZone.fromHostedZoneId(
-    stack,
-    `${name}PrivateZone`,
-    config.privateZoneId
-  );
+  const privateZone = r53.PrivateHostedZone.fromHostedZoneAttributes(stack, `${name}PrivateZone`, {
+    hostedZoneId: config.privateZoneId,
+    zoneName: mainConfig.host,
+  });
 
   const db = new IHEDBConstruct(stack, {
     ...props,

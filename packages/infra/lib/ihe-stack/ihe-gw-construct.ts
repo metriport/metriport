@@ -1,19 +1,30 @@
-import { CfnOutput, Duration } from "aws-cdk-lib";
+import { CfnOutput, DockerBuildSecret, Duration } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
-import { ApplicationProtocol, Protocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import {
+  ApplicationProtocol,
+  ListenerAction,
+  Protocol,
+} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
+import fs from "fs";
+import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
-import { isProd } from "../shared/util";
+import { loadExternalDotEnv } from "../shared/dotenv";
+import { getEnvVarOrFail, isLocalEnvironment, isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
+// TODO 1377 update this
+// import { IHEGatewayProps, IHEGatewaySecretNames } from "../../config/ihe-gateway-config";
+// import { getIHEGatewaySecrets } from "./secrets";
 
 // export interface IHEGatewayAlarmThresholds {
 //   masterCpuUtilization?: number;
@@ -23,6 +34,9 @@ export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
   config: IHEGatewayProps;
   vpc: ec2.IVpc;
+  // TODO 1377 Implement this
+  // TODO 1377 Implement this
+  // TODO 1377 Implement this
   // alarmThresholds?: IHEGatewayAlarmThresholds;
   privateZone: r53.IPrivateHostedZone;
   db: IHEDBConstruct;
@@ -33,6 +47,7 @@ export interface IHEGatewayConstructProps {
 }
 
 const id = "IHEGateway";
+const iheGWDockerDir = path.resolve(process.cwd(), "../ihe-gateway");
 
 const mainPort = 8443;
 const additionalHTTPPorts = [
@@ -59,11 +74,64 @@ export default class IHEGatewayConstruct extends Construct {
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = db.server.clusterIdentifier;
 
+    const secrets = this.getSecrets(config, db.secret);
+    const environment = {
+      DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
+      DATABASE_USERNAME: config.rds.userName,
+      LAMBDA_PATIENT_DISCOVERY_ARN: patientDiscoveryLambda.functionArn,
+      LAMBDA_DOCUMENT_QUERY_ARN: documentQueryLambda.functionArn,
+      LAMBDA_DOCUMENT_RETRIEVE_ARN: documentRetrievalLambda.functionArn,
+    };
+
     const containerInsights = isProd(mainConfig) ? true : false;
     const cluster = new ecs.Cluster(scope, `${id}Cluster`, { vpc, containerInsights });
 
+    // Load the .env file for the IHE Gateway if running on local/developer environment
+    if (isLocalEnvironment()) loadLocalEnv();
+
+    const storePass = getEnvVarOrFail(`STOREPASS`);
+    const keyStorePass = getEnvVarOrFail(`KEYSTOREPASS`);
+    const license = getEnvVarOrFail(`LICENSE_KEY`);
+
+    // TODO 1377 remove these
+    // TODO 1377 remove these
+    // TODO 1377 remove these
+    console.log(`[cdk] STOREPASS: ${process.env.STOREPASS}`);
+    console.log(`[cdk] KEYSTOREPASS: ${process.env.KEYSTOREPASS}`);
+    console.log(`[cdk] LICENSE_KEY: ${process.env.LICENSE_KEY}`);
+    console.log(`......... __dirname: ${__dirname}`);
+    console.log(`......... cwd: ${process.cwd()}`);
+    console.log(`......... resolved path: ${path.resolve(iheGWDockerDir, "STOREPASS.secret")}`);
+    // TODO 1377 move this to a function
+    fs.writeFileSync(path.resolve(iheGWDockerDir, "STOREPASS.secret"), storePass);
+    fs.writeFileSync(path.resolve(iheGWDockerDir, "KEYSTOREPASS.secret"), keyStorePass);
+    fs.writeFileSync(path.resolve(iheGWDockerDir, "LICENSE_KEY.secret"), license);
+
+    const buildSecrets = {
+      // TODO 1377 Update this
+      // TODO 1377 Update this
+      // TODO 1377 Update this
+      // TODO 1377 Update this
+      // STOREPASS: "type=env",
+      // KEYSTOREPASS: "type=env",
+      // LICENSE_KEY: "type=env",
+      STOREPASS: DockerBuildSecret.fromSrc("STOREPASS.secret"),
+      KEYSTOREPASS: DockerBuildSecret.fromSrc("KEYSTOREPASS.secret"),
+      LICENSE_KEY: DockerBuildSecret.fromSrc("LICENSE_KEY.secret"),
+      // ARTIFACT: "type=env",
+      // KEYSTORENAME: "type=env",
+      // ZULUKEY: "type=env",
+    };
+    const buildArgs = {
+      ARTIFACT: config.artifactUrl,
+      KEYSTORENAME: config.keyStoreName,
+      ZULUKEY: config.zuluKey,
+    };
+
     const dockerImage = new ecr_assets.DockerImageAsset(this, `${id}DockerImage`, {
-      directory: "../ihe-gateway",
+      directory: iheGWDockerDir,
+      buildSecrets,
+      buildArgs,
     });
 
     // Why ALB:
@@ -86,16 +154,8 @@ export default class IHEGatewayConstruct extends Construct {
           // containerPort: mainPort,
           // certificate: httpsCert,
           containerName: `${id}-Server`,
-          secrets: {
-            DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
-          },
-          environment: {
-            DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
-            DATABASE_USERNAME: config.rds.userName,
-            LAMBDA_PATIENT_DISCOVERY_ARN: patientDiscoveryLambda.functionArn,
-            LAMBDA_DOCUMENT_QUERY_ARN: documentQueryLambda.functionArn,
-            LAMBDA_DOCUMENT_RETRIEVE_ARN: documentRetrievalLambda.functionArn,
-          },
+          secrets,
+          environment,
         },
         healthCheckGracePeriod: Duration.seconds(60),
         publicLoadBalancer: false,
@@ -127,11 +187,27 @@ export default class IHEGatewayConstruct extends Construct {
       port: 443,
       protocol: ApplicationProtocol.HTTPS,
       certificates: [httpsCert],
+      defaultAction: ListenerAction.forward([fargateService.targetGroup]),
+      // defaultTargetGroups: [
+      //   new ApplicationTargetGroup(this, `${id}TargetGroupSSL`, {
+      //     port: 443,
+      //     protocol: ApplicationProtocol.HTTPS,
+      //     vpc,
+      //   }),
+      // ],
     });
     additionalHTTPPorts.forEach(port => {
       fargateService.loadBalancer.addListener(`${id}Listener_${port}`, {
         port,
         protocol: ApplicationProtocol.HTTP,
+        defaultAction: ListenerAction.forward([fargateService.targetGroup]),
+        // defaultTargetGroups: [
+        //   new ApplicationTargetGroup(this, `${id}TargetGroup${port}`, {
+        //     port,
+        //     protocol: ApplicationProtocol.HTTP,
+        //     vpc,
+        //   }),
+        // ],
       });
     });
 
@@ -196,6 +272,21 @@ export default class IHEGatewayConstruct extends Construct {
     new CfnOutput(this, `${id}ECSClusterARN`, {
       value: cluster.clusterArn,
     });
+  }
+
+  private getSecrets(
+    config: IHEGatewayProps,
+    dbSecret: ISecret
+    // ): { DATABASE_PASSWORD: ecs.Secret } & Record<keyof IHEGatewaySecretNames, ecs.Secret> {
+  ): { DATABASE_PASSWORD: ecs.Secret } {
+    // const secretsFromConfig = getIHEGatewaySecrets(this, config);
+    const secrets = {
+      DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret),
+      // STOREPASS: ecs.Secret.fromSecretsManager(secretsFromConfig.STOREPASS),
+      // KEYSTOREPASS: ecs.Secret.fromSecretsManager(secretsFromConfig.KEYSTOREPASS),
+      // LICENSE_KEY: ecs.Secret.fromSecretsManager(secretsFromConfig.LICENSE_KEY),
+    };
+    return secrets;
   }
 
   // private createAlarms(
@@ -280,4 +371,11 @@ export default class IHEGatewayConstruct extends Construct {
   //     evaluationPeriods: 1,
   //   });
   // }
+}
+
+function loadLocalEnv() {
+  const cwd = process.cwd();
+  const dotEnvFile = path.resolve(cwd, ".env-ihe");
+  console.log(`>>>>>>>>>>>>>>>>>>>>> Loading .env from ${dotEnvFile}...`);
+  loadExternalDotEnv(dotEnvFile);
 }

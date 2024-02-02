@@ -233,7 +233,7 @@ jobs:
 
       # CDK DIFF
       - name: Diff CDK stack
-        uses: metriport/deploy-with-cdk@master
+        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
         if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
@@ -248,7 +248,7 @@ jobs:
 
       # DEPLOY
       - name: Deploy CDK stack
-        uses: metriport/deploy-with-cdk@master
+        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.87.0"

@@ -47,5 +47,23 @@ export type IHEGatewayProps = {
      */
     documentRetrieve?: number;
   };
+  artifactUrl: string;
+  keyStoreName: string;
+  zuluKey: string;
+  // TODO 1377 MOVE THIS TO SECRETS
+  // TODO 1377 MOVE THIS TO SECRETS
+  // TODO 1377 MOVE THIS TO SECRETS
+  // TODO 1377 MOVE THIS TO SECRETS
+  // TODO 1377 MOVE THIS TO SECRETS
+  // STOREPASS: string;
+  // KEYSTOREPASS: string;
+  // secretNames: IHEGatewaySecretNames;
   snsTopicArn?: string;
 };
+
+// TODO 1377 remove this
+// export type IHEGatewaySecretNames = {
+//   STOREPASS: string;
+//   KEYSTOREPASS: string;
+//   LICENSE_KEY: string;
+// };
