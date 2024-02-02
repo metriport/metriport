@@ -30,8 +30,15 @@
                                 {{>Resources/Practitioner.hbs practitioner=obsEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
                                 {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id )}},                           
                             {{/with}}
+                        {{!-- else should use author from top level --}}
+                        {{else if drEntry.organizer.performer.assignedEntity}}
+                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
+                                {{>Resources/Practitioner.hbs practitioner=drEntry.organizer.performer.assignedEntity ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}}
+                            {{/with}}
                         {{/if}}
                     {{/if}}
+                    {{!--  TODO I think we are missing obsEntry.procedure here --}}
                 {{/each}}
             {{/each}}
         {{/with}}

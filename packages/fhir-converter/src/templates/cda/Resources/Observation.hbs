@@ -77,8 +77,11 @@
                     "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
                 {{/if}}
             {{/with}}
-        {{else}}
+        {{else if observationEntry.value._}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
+        {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know         --}}
+        {{else if observationEntry.value._b64}}
+            "valueString":"{{observationEntry.value._b64}}",
         {{/if}}
         
         "referenceRange":
