@@ -1,23 +1,27 @@
 import { getCxsWithIncreasedSandboxLimitFeatureFlagValue } from "../../external/aws/appConfig";
 import { Config } from "../../shared/config";
+import { capture } from "../../shared/notifications";
 
-export async function getPatientLimitForCx(cxId: string): Promise<number> {
+export async function getSandboxPatientLimitForCx(cxId: string): Promise<number> {
   const cxIdsWithIncreasedSandboxPatientVolumeEnabled =
     await getCxsWithIncreasedSandboxLimitFeatureFlagValue();
+  if (!cxIdsWithIncreasedSandboxPatientVolumeEnabled) return Config.SANDBOX_PATIENT_LIMIT;
+
   const cxIdAndLimit = cxIdsWithIncreasedSandboxPatientVolumeEnabled.find(i => i.includes(cxId));
-  const limit = cxIdAndLimit ? parseCxIdAndLimit(cxIdAndLimit)?.patientLimit : undefined;
+  const limit = cxIdAndLimit ? parsePatientLimit(cxIdAndLimit) : undefined;
   return limit ?? Config.SANDBOX_PATIENT_LIMIT;
 }
 
-function parseCxIdAndLimit(increasedPatientLimitFeatureFlagValue: string):
-  | {
-      cxId: string;
-      patientLimit: number;
-    }
-  | undefined {
-  const cxIdsAndLimits = increasedPatientLimitFeatureFlagValue.split(":");
+function parsePatientLimit(increasedPatientLimitFeatureFlagValue: string): number | undefined {
+  const patientLimit = increasedPatientLimitFeatureFlagValue.split(":")[1];
 
-  if (cxIdsAndLimits[0] && cxIdsAndLimits[1])
-    return { cxId: cxIdsAndLimits[0], patientLimit: parseInt(cxIdsAndLimits[1]) };
-  return;
+  if (!patientLimit) {
+    const msg = "Failed to parse patient limit from increasedPatientLimitFeatureFlagValue";
+    console.error(`${msg} - ${increasedPatientLimitFeatureFlagValue}`);
+    capture.error(msg, {
+      extra: { increasedPatientLimitFeatureFlagValue, context: "parseCxIdAndLimit" },
+    });
+  }
+
+  return parseInt(patientLimit);
 }

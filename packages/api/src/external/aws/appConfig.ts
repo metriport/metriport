@@ -45,8 +45,12 @@ export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
 }
 
-export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue(Config.getCxsWithIncreasedSandboxLimitFeatureFlagValue());
+export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<
+  string[] | undefined
+> {
+  const featureFlagValue = Config.getCxsWithIncreasedSandboxLimitFeatureFlagValue();
+  if (!featureFlagValue) return;
+  return getCxsWithFeatureFlagValue(featureFlagValue);
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
