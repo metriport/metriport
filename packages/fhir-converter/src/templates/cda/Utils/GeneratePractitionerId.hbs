@@ -6,6 +6,8 @@
             {{else if FirstId.root}}
                 {{!--If only root is provided, it is supposed to be unique--}}
                 "{{generateUUID (toString FirstId.root)}}"
+            {{else}}
+                "{{generateUUID (toString ..)}}"
             {{/if}}
         {{/with}}
 }
