@@ -153,8 +153,7 @@ describe("processDocQueryProgressWebhook", () => {
         patient.id,
         "medical.document-conversion",
         convertProgress.status,
-        requestId,
-        undefined
+        requestId
       );
     });
 
@@ -225,8 +224,7 @@ describe("processDocQueryProgressWebhook", () => {
         patient.id,
         "medical.document-conversion",
         convertProgress.status,
-        requestId,
-        undefined
+        requestId
       );
     });
   });

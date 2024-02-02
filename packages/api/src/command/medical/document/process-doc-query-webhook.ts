@@ -86,7 +86,7 @@ export const processDocQueryProgressWebhook = async ({
         DOWNLOAD_WEBHOOK_TYPE,
         isComplete ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
         requestId,
-        isComplete && payload ? payload : undefined
+        isComplete ? payload : undefined
       );
     }
   } catch (error) {
