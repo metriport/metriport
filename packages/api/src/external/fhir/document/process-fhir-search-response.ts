@@ -6,10 +6,10 @@ export function processFhirAndSearchResponse(
   docId: string,
   fhir: PromiseSettledResult<void>
 ): void {
-  const base = { patientId: patient.id, docId: docId };
   if (fhir.status === "rejected") {
     throw new MetriportError("Error upserting to FHIR", undefined, {
-      ...base,
+      patientId: patient.id,
+      docId: docId,
       failed: fhir.reason,
     });
   }

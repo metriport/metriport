@@ -1,8 +1,8 @@
 import { Sequelize, QueryTypes } from "sequelize";
 import axios from "axios";
-import { sleep } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { RaceControl, checkIfRaceIsComplete, controlDuration } from "../../../../util/race-control";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
 import { errorToString } from "../../../../util/error/shared";
@@ -15,8 +15,6 @@ dayjs.extend(duration);
 
 export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 3 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
-
-type RaceControl = { isRaceInProgress: boolean };
 
 export const sendIHEGatewayResults = async <TableResult>({
   requestId,
@@ -42,8 +40,16 @@ export const sendIHEGatewayResults = async <TableResult>({
   try {
     // Run the table count until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
-      controlDuration(),
-      checkNumberOfResults(sequelize, raceControl, resultsTable, requestId, numOfGateways),
+      controlDuration(
+        CONTROL_TIMEOUT.asMilliseconds(),
+        `IHE gateway reached timeout after ${CONTROL_TIMEOUT.asMilliseconds()} ms`
+      ),
+      checkIfRaceIsComplete(
+        () => isIheGatewayResultsComplete(sequelize, resultsTable, requestId, numOfGateways),
+        raceControl,
+        `IHE gateway results came back in full (${numOfGateways} links).`,
+        CHECK_DB_INTERVAL.asMilliseconds()
+      ),
     ]);
 
     const iheGatewayResults = await queryIHEGatewayResults<TableResult>(
@@ -71,37 +77,6 @@ export const sendIHEGatewayResults = async <TableResult>({
     throw new MetriportError(msg, error, { requestId, patientId, cxId, numOfGateways });
   }
 };
-
-async function controlDuration(): Promise<string> {
-  const timeout = CONTROL_TIMEOUT.asMilliseconds();
-  await sleep(timeout);
-  return `IHE gateway reached timeout after ${timeout} ms`;
-}
-
-async function checkNumberOfResults(
-  sequelize: Sequelize,
-  raceControl: RaceControl,
-  resultsTable: string,
-  requestId: string,
-  numOfGateways: number
-): Promise<string> {
-  while (raceControl.isRaceInProgress) {
-    const isComplete = await isIheGatewayResultsComplete(
-      sequelize,
-      resultsTable,
-      requestId,
-      numOfGateways
-    );
-    if (isComplete) {
-      const msg = `IHE gateway results came back in full (${numOfGateways} links).`;
-
-      return msg;
-    }
-    await sleep(CHECK_DB_INTERVAL.asMilliseconds());
-  }
-
-  return "";
-}
 
 async function isIheGatewayResultsComplete(
   sequelize: Sequelize,

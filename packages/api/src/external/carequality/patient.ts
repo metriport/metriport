@@ -1,5 +1,9 @@
 import { PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
-import { sleep } from "@metriport/shared";
+import {
+  RaceControl,
+  checkIfRaceIsComplete,
+  controlDuration,
+} from "@metriport/core/util/race-control";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -36,7 +40,6 @@ export function getCQData(
 const createContext = "cq.patient.discover";
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
-type RaceControl = { isRaceInProgress: boolean };
 
 export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
   const { log } = Util.out(`CQ discover - M patientId ${patient.id}`);
@@ -55,8 +58,16 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const raceControl: RaceControl = { isRaceInProgress: true };
     // Run the patient discovery until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
-      controlDuration(),
-      checkNumberOfResults(raceControl, pdRequest.id, pdRequest.gateways.length), // TODO: #1372 - set up an event listener for XCPD completion instead of polling
+      controlDuration(
+        PATIENT_DISCOVERY_TIMEOUT.asMilliseconds(),
+        `Patient discovery reached timeout after ${PATIENT_DISCOVERY_TIMEOUT.asMilliseconds()} ms`
+      ),
+      checkIfRaceIsComplete(
+        () => isPDComplete(pdRequest.id, numGateways),
+        raceControl,
+        `Patient discovery results came back in full (${pdRequest.gateways.length} gateways). RequestID: ${pdRequest.id}`,
+        CHECK_DB_INTERVAL.asMilliseconds()
+      ),
     ]);
     const pdResults = await getPatientDiscoveryResults(pdRequest.id);
     if (raceResult) {
@@ -145,28 +156,6 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
       ...pd.data.gateway,
     };
   });
-}
-
-async function controlDuration(): Promise<string> {
-  const timeout = PATIENT_DISCOVERY_TIMEOUT.asMilliseconds();
-  await sleep(timeout);
-  return `Patient discovery reached timeout after ${timeout} ms`;
-}
-
-async function checkNumberOfResults(
-  raceControl: RaceControl,
-  requestId: string,
-  numberOfGateways: number
-): Promise<string | undefined> {
-  while (raceControl.isRaceInProgress) {
-    const isComplete = await isPDComplete(requestId, numberOfGateways);
-    if (isComplete) {
-      const msg = `Patient discovery results came back in full (${numberOfGateways} gateways). RequestID: ${requestId}`;
-      raceControl.isRaceInProgress = false;
-      return msg;
-    }
-    await sleep(CHECK_DB_INTERVAL.asMilliseconds());
-  }
 }
 
 async function isPDComplete(requestId: string, numGatewaysInRequest: number): Promise<boolean> {
