@@ -14,7 +14,6 @@ const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
 export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
 export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
-type WebhookType = typeof DOWNLOAD_WEBHOOK_TYPE | typeof CONVERSION_WEBHOOK_TYPE;
 
 export const handleWebhookBeingSent = async ({
   patient,
