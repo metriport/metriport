@@ -7,6 +7,7 @@
                 {{/with}}
                 {{#if drEntry.organizer.performer}}
                      {{#if drEntry.organizer.performer.assignedEntity}}
+                        {{!-- should we use author.assignedAuthor or performer.assignedEntity? Not sure which one is generally fuller  --}}
                         {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
                             {{>Resources/Practitioner.hbs practitioner=drEntry.organizer.performer.assignedEntity ID=practitionerId.Id}},
                             {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}}
