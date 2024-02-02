@@ -7,7 +7,8 @@
                 {{!--If only root is provided, it is supposed to be unique--}}
                 "{{generateUUID (toString FirstId.root)}}"
             {{else}}
-                "{{generateUUID (toString ..)}}"
+                {{!--Generate using obj if no root or id is available--}}
+                "{{generateUUID (toJsonString ../obj)}}"
             {{/if}}
         {{/with}}
 }
