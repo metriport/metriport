@@ -75,8 +75,10 @@ export async function getMedicalRecordSummary({
   conversionType: "pdf" | "html";
 }): Promise<string | undefined> {
   const { pdf, html } = await getMedicalRecordSummaryStatus({ patientId, cxId });
+  const pdfIsValid = conversionType === "pdf" && pdf.exists;
+  const htmlIsValid = conversionType === "html" && html.exists;
 
-  if ((conversionType === "pdf" && pdf.exists) || (conversionType === "html" && html.exists)) {
+  if (pdfIsValid || htmlIsValid) {
     const s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);
     const url = await s3Utils.getSignedUrl({ bucketName, fileName: s3FileKey });
     return url;

@@ -10,19 +10,19 @@ import {
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
 import {
-  DocumentQuery,
   BulkGetDocumentUrlQuery,
+  DocumentQuery,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
+  bulkGetDocumentUrlQuerySchema,
   documentListSchema,
   documentQuerySchema,
-  bulkGetDocumentUrlQuerySchema,
 } from "../models/document";
-import { MedicalRecordsStatusDTO } from "../models/medicalRecordStatus";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
+import { MedicalRecordsStatusDTO } from "../models/medicalRecordStatus";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
@@ -291,18 +291,22 @@ export class MetriportMedicalApi {
    *
    * @param patientId The ID of the patient whose data is to be returned.
    * @param conversionType Indicate how the medical record should be rendered. Can be "html" or "pdf".
-   * @return The URL for the medical record summary.
+   * @return The URL for the medical record summary, if it exists. Otherwise, returns undefined.
    */
   async getMedicalRecordSummary(
     patientId: string,
     conversionType: "html" | "pdf"
-  ): Promise<string> {
-    const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
-      params: {
-        conversionType,
-      },
-    });
-    return resp.data.url;
+  ): Promise<string | undefined> {
+    try {
+      const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
+        params: {
+          conversionType,
+        },
+      });
+      return resp.data.url;
+    } catch (error) {
+      return undefined;
+    }
   }
 
   /**

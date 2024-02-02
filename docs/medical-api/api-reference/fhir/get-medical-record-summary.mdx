@@ -26,7 +26,7 @@ To create a Medical Record Summary, you need to use the [Start Consolidated Data
 
 ## Response
 
-A JSON object containing the URL will be returned.
+If the Medical Record Summary exists, it will return a JSON object containing the downloadable URL. Otherwise, will throw a NotFoundError.
 
 <ResponseField name="url" type="string">
   The downloadable URL.
@@ -38,8 +38,12 @@ A JSON object containing the URL will be returned.
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c";
 
-const url = await metriport.getMedicalRecord("018a80c4-292a-7486-a223-6dcbc636c44c", "pdf");
+const url = await metriport.getMedicalRecordSummary(
+  metriportPatientId, 
+  "pdf"
+);
 ```
 
 </ResponseExample>

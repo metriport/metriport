@@ -2,6 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -322,6 +323,8 @@ router.post(
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
  * @param req.query.conversionType Indicates how the medical record summary should be rendered. Accepts "pdf" or "html".
+ * @return JSON containing the url to download the patient's medical record summary.
+ * @throws NotFoundError if the medical record summary does not exist.
  */
 router.get(
   "/:id/medical-record",
@@ -332,6 +335,7 @@ router.get(
     const conversionType = consolidationConversionTypeSchema.parse(type);
 
     const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
+    if (!url) throw new NotFoundError("Medical record summary not found");
     return res.json({ url });
   })
 );
@@ -343,6 +347,7 @@ router.get(
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
+ * @return JSON containing the status of the patient's medical record summary.
  */
 router.get(
   "/:id/medical-record-status",
