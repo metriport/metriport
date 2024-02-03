@@ -20,7 +20,7 @@ import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
 import { loadExternalDotEnv } from "../shared/dotenv";
-import { getEnvVarOrFail, isLocalEnvironment, isProd } from "../shared/util";
+import { getEnvVar, isLocalEnvironment, isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
 // TODO 1377 update this
 // import { IHEGatewayProps, IHEGatewaySecretNames } from "../../config/ihe-gateway-config";
@@ -89,38 +89,39 @@ export default class IHEGatewayConstruct extends Construct {
     // Load the .env file for the IHE Gateway if running on local/developer environment
     if (isLocalEnvironment()) loadLocalEnv();
 
-    const storePass = getEnvVarOrFail(`STOREPASS`);
-    const keyStorePass = getEnvVarOrFail(`KEYSTOREPASS`);
-    const license = getEnvVarOrFail(`LICENSE_KEY`);
+    const storePass = getEnvVar(`STOREPASS`) ?? "";
+    const keyStorePass = getEnvVar(`KEYSTOREPASS`) ?? "";
+    const license = getEnvVar(`LICENSE_KEY`) ?? "";
 
-    // TODO 1377 remove these
-    // TODO 1377 remove these
-    // TODO 1377 remove these
-    console.log(`[cdk] STOREPASS: ${process.env.STOREPASS}`);
-    console.log(`[cdk] KEYSTOREPASS: ${process.env.KEYSTOREPASS}`);
-    console.log(`[cdk] LICENSE_KEY: ${process.env.LICENSE_KEY}`);
-    console.log(`......... __dirname: ${__dirname}`);
-    console.log(`......... cwd: ${process.cwd()}`);
-    console.log(`......... resolved path: ${path.resolve(iheGWDockerDir, "STOREPASS.secret")}`);
+    const log = (content: string | undefined, name: string) => {
+      if (!content || content.trim().length <= 0) {
+        console.error(`HEADS UP! Environment variable ${name} is empty!`);
+      } else {
+        console.error(`Environment variable ${name}'s content lenght: ${content.length}`);
+      }
+    };
+    log(storePass, "STOREPASS");
+    log(keyStorePass, "KEYSTOREPASS");
+    log(license, "LICENSE_KEY");
+
     // TODO 1377 move this to a function
-    fs.writeFileSync(path.resolve(iheGWDockerDir, "STOREPASS.secret"), storePass);
-    fs.writeFileSync(path.resolve(iheGWDockerDir, "KEYSTOREPASS.secret"), keyStorePass);
-    fs.writeFileSync(path.resolve(iheGWDockerDir, "LICENSE_KEY.secret"), license);
+    const storePassSecretFilename = "STOREPASS.secret";
+    const storeKeyPassSecretFilename = "KEYSTOREPASS.secret";
+    const licenseKeyFilename = "LICENSE_KEY.secret";
+    // TODO 1377 remove the approach not workig below
+    // TODO 1377 storing on IHE GW's folder
+    fs.writeFileSync(path.resolve(iheGWDockerDir, storePassSecretFilename), storePass);
+    fs.writeFileSync(path.resolve(iheGWDockerDir, storeKeyPassSecretFilename), keyStorePass);
+    fs.writeFileSync(path.resolve(iheGWDockerDir, licenseKeyFilename), license);
+    // TODO 1377 storing on infra's folder
+    fs.writeFileSync(path.resolve(storePassSecretFilename), storePass);
+    fs.writeFileSync(path.resolve(storeKeyPassSecretFilename), keyStorePass);
+    fs.writeFileSync(path.resolve(licenseKeyFilename), license);
 
     const buildSecrets = {
-      // TODO 1377 Update this
-      // TODO 1377 Update this
-      // TODO 1377 Update this
-      // TODO 1377 Update this
-      // STOREPASS: "type=env",
-      // KEYSTOREPASS: "type=env",
-      // LICENSE_KEY: "type=env",
-      STOREPASS: DockerBuildSecret.fromSrc("STOREPASS.secret"),
-      KEYSTOREPASS: DockerBuildSecret.fromSrc("KEYSTOREPASS.secret"),
-      LICENSE_KEY: DockerBuildSecret.fromSrc("LICENSE_KEY.secret"),
-      // ARTIFACT: "type=env",
-      // KEYSTORENAME: "type=env",
-      // ZULUKEY: "type=env",
+      STOREPASS: DockerBuildSecret.fromSrc(storePassSecretFilename),
+      KEYSTOREPASS: DockerBuildSecret.fromSrc(storeKeyPassSecretFilename),
+      LICENSE_KEY: DockerBuildSecret.fromSrc(licenseKeyFilename),
     };
     const buildArgs = {
       ARTIFACT: config.artifactUrl,
@@ -373,9 +374,12 @@ export default class IHEGatewayConstruct extends Construct {
   // }
 }
 
+/**
+ * Don't use the .env file from the package/ihe-gateway to prevent deploying based on the wrong environment.
+ */
 function loadLocalEnv() {
   const cwd = process.cwd();
   const dotEnvFile = path.resolve(cwd, ".env-ihe");
-  console.log(`>>>>>>>>>>>>>>>>>>>>> Loading .env from ${dotEnvFile}...`);
+  console.log(`Loading .env from ${dotEnvFile}...`);
   loadExternalDotEnv(dotEnvFile);
 }

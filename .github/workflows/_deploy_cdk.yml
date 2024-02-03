@@ -37,7 +37,7 @@ on:
       AWS_REGION:
         required: true
         type: string
-      INFRA_CONFIG:
+      IHE_CONFIG_BUCKET_NAME:
         required: true
         type: string
     secrets:
@@ -54,6 +54,12 @@ on:
       DOCKERHUB_TOKEN:
         required: true
       SERVICE_PAT:
+        required: true
+      STOREPASS:
+        required: true
+      KEYSTOREPASS:
+        required: true
+      LICENSE_KEY:
         required: true
 
 jobs:
@@ -122,6 +128,10 @@ jobs:
           path: metriport-internal
           sparse-checkout: |
             config-oss/api-infra
+
+      # Needed for the IHE Stack, build docker image w/ secrets
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log Git Ref
         run: |
@@ -200,9 +210,18 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
 
+      # IHE Stack, init packages/ihe-gateway repo
+      - name: Init IHW GW Repo
+        run: |
+          ./scripts/init.sh
+        working-directory: "metriport/packages/ihe-gateway"
+        shell: bash
+        env:
+          CONFIG_BUCKET_NAME: ${{ inputs.IHE_CONFIG_BUCKET_NAME }}
+
       # IHE Stack CDK DIFF
       - name: Diff IHE CDK stack
-        uses: metriport/deploy-with-cdk@master
+        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "diff"
@@ -214,10 +233,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
-
+          STOREPASS: ${{ secrets.STOREPASS }}
+          KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
+          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
+          ENT_TYPE: ${{ inputs.deploy_env }}
+  
       # IHE Stack DEPLOY
       - name: Deploy IHE CDK stack
-        uses: metriport/deploy-with-cdk@master
+        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
@@ -230,10 +253,13 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
-
+          STOREPASS: ${{ secrets.STOREPASS }}
+          KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
+          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
+  
       # CDK DIFF
       - name: Diff CDK stack
-        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
+        uses: metriport/deploy-with-cdk@master
         if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
@@ -248,7 +274,7 @@ jobs:
 
       # DEPLOY
       - name: Deploy CDK stack
-        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
+        uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
           cdk_version: "2.87.0"

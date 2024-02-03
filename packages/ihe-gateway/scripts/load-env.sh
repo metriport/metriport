@@ -3,7 +3,7 @@
 # Fail on error
 set -e
 
-if [ ! -f ../.env ]; then
+if [ -f ../.env ]; then
     set -o allexport
     source .env
     set +o allexport

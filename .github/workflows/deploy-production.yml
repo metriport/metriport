@@ -109,7 +109,7 @@ jobs:
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
+      IHE_CONFIG_BUCKET_NAME: ${{ vars.IHE_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -118,6 +118,9 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      STOREPASS: ${{ secrets.STOREPASS }}
+      KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
+      LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
   infra-api-lambdas-sandbox:
     uses: ./.github/workflows/_deploy_cdk.yml
     needs: [infra-api-lambdas]
@@ -126,7 +129,7 @@ jobs:
       deploy_env: "sandbox"
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}
+      IHE_CONFIG_BUCKET_NAME: ${{ vars.IHE_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -135,6 +138,9 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      STOREPASS: ${{ secrets.STOREPASS }}
+      KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
+      LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
 
   release:
     uses: ./.github/workflows/_release.yml

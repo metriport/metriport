@@ -7,7 +7,7 @@ source ./scripts/load-env.sh
 
 if [ -z "${CONFIG_BUCKET_NAME}" ]; then
   echo "CONFIG_BUCKET_NAME is not set, skipping downloading certs and custom extensions."
-  exit 0
+  exit 1
 fi
 
 if [[ -z "${ENV_TYPE}" ]]; then
