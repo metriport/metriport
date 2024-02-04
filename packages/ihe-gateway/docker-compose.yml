@@ -6,14 +6,15 @@ services:
       dockerfile: Dockerfile
       args:
         ARTIFACT: "${ARTIFACT_URL}"
-        STOREPASS: "${STOREPASS}"
-        KEYSTOREPASS: "${KEYSTOREPASS}"
         KEYSTORENAME: "${KEYSTORENAME}"
         ZULUKEY: "${ZULUKEY}"
       x-bake:
         platforms:
           - linux/amd64    
           - linux/arm64
+      secrets:
+        - store_pass
+        - keystore_pass
     volumes:
       - ./config/custom-extensions:/opt/connect/custom-extensions
     depends_on:
@@ -47,6 +48,7 @@ services:
       - "16853:16853"
     secrets:
       - mirth_properties
+      - license_key
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
@@ -69,3 +71,9 @@ volumes:
 secrets:
   mirth_properties:
     file: ./secret.properties
+  store_pass:
+    file: ./store-pass.secret
+  keystore_pass:
+    file: ./keystore-pass.secret
+  license_key:
+    file: ./license-key.secret

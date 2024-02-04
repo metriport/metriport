@@ -210,18 +210,19 @@ jobs:
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
 
-      # IHE Stack, init packages/ihe-gateway repo
-      - name: Init IHW GW Repo
+      # IHE Stack
+      - name: Init IHE GW Repo
+        if: inputs.ihe_cdk_stack != null
         run: |
           ./scripts/init.sh
         working-directory: "metriport/packages/ihe-gateway"
         shell: bash
         env:
-          CONFIG_BUCKET_NAME: ${{ inputs.IHE_CONFIG_BUCKET_NAME }}
+          CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
 
       # IHE Stack CDK DIFF
-      - name: Diff IHE CDK stack
-        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
+      - name: Diff IHE Stack CDK
+        uses: metriport/deploy-with-cdk@master
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "diff"
@@ -233,14 +234,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
-          STOREPASS: ${{ secrets.STOREPASS }}
-          KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
-          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
-          ENT_TYPE: ${{ inputs.deploy_env }}
-  
-      # IHE Stack DEPLOY
-      - name: Deploy IHE CDK stack
-        uses: metriport/deploy-with-cdk@1377-secrets-as-env-vars
+          ENV_TYPE: ${{ inputs.deploy_env }}
+          IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+          IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+          IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
+      - name: Deploy IHE Stack CDK
+        uses: metriport/deploy-with-cdk@master
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
@@ -253,12 +252,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
           METRIPORT_VERSION: ${{ github.sha }}
-          STOREPASS: ${{ secrets.STOREPASS }}
-          KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
-          LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
-  
-      # CDK DIFF
-      - name: Diff CDK stack
+          IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+          IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+          IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
+
+      # API Stack
+      - name: Diff API Stack CDK
         uses: metriport/deploy-with-cdk@master
         if: inputs.location_services_cdk_stack != null
         with:
@@ -271,9 +270,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
-
-      # DEPLOY
-      - name: Deploy CDK stack
+      - name: Deploy API Stack CDK
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"

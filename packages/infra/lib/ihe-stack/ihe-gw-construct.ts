@@ -22,14 +22,12 @@ import { IHEGatewayProps } from "../../config/ihe-gateway-config";
 import { loadExternalDotEnv } from "../shared/dotenv";
 import { getEnvVar, isLocalEnvironment, isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
-// TODO 1377 update this
-// import { IHEGatewayProps, IHEGatewaySecretNames } from "../../config/ihe-gateway-config";
-// import { getIHEGatewaySecrets } from "./secrets";
 
-// export interface IHEGatewayAlarmThresholds {
-//   masterCpuUtilization?: number;
-//   cpuUtilization?: number;
-// }
+const storePassSecretFilename = "store-pass.secret";
+const storeKeyPassSecretFilename = "keystore-pass.secret";
+const licenseKeyFilename = "license-key.secret";
+const secretPropertiesFilename = "secret.properties";
+
 export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
   config: IHEGatewayProps;
@@ -74,7 +72,7 @@ export default class IHEGatewayConstruct extends Construct {
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = db.server.clusterIdentifier;
 
-    const secrets = this.getSecrets(config, db.secret);
+    const secrets = this.getSecrets(db.secret);
     const environment = {
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
@@ -86,42 +84,13 @@ export default class IHEGatewayConstruct extends Construct {
     const containerInsights = isProd(mainConfig) ? true : false;
     const cluster = new ecs.Cluster(scope, `${id}Cluster`, { vpc, containerInsights });
 
-    // Load the .env file for the IHE Gateway if running on local/developer environment
     if (isLocalEnvironment()) loadLocalEnv();
 
-    const storePass = getEnvVar(`STOREPASS`) ?? "";
-    const keyStorePass = getEnvVar(`KEYSTOREPASS`) ?? "";
-    const license = getEnvVar(`LICENSE_KEY`) ?? "";
-
-    const log = (content: string | undefined, name: string) => {
-      if (!content || content.trim().length <= 0) {
-        console.error(`HEADS UP! Environment variable ${name} is empty!`);
-      } else {
-        console.error(`Environment variable ${name}'s content lenght: ${content.length}`);
-      }
-    };
-    log(storePass, "STOREPASS");
-    log(keyStorePass, "KEYSTOREPASS");
-    log(license, "LICENSE_KEY");
-
-    // TODO 1377 move this to a function
-    const storePassSecretFilename = "STOREPASS.secret";
-    const storeKeyPassSecretFilename = "KEYSTOREPASS.secret";
-    const licenseKeyFilename = "LICENSE_KEY.secret";
-    // TODO 1377 remove the approach not workig below
-    // TODO 1377 storing on IHE GW's folder
-    fs.writeFileSync(path.resolve(iheGWDockerDir, storePassSecretFilename), storePass);
-    fs.writeFileSync(path.resolve(iheGWDockerDir, storeKeyPassSecretFilename), keyStorePass);
-    fs.writeFileSync(path.resolve(iheGWDockerDir, licenseKeyFilename), license);
-    // TODO 1377 storing on infra's folder
-    fs.writeFileSync(path.resolve(storePassSecretFilename), storePass);
-    fs.writeFileSync(path.resolve(storeKeyPassSecretFilename), keyStorePass);
-    fs.writeFileSync(path.resolve(licenseKeyFilename), license);
-
+    envVarsToSecretFiles();
     const buildSecrets = {
-      STOREPASS: DockerBuildSecret.fromSrc(storePassSecretFilename),
-      KEYSTOREPASS: DockerBuildSecret.fromSrc(storeKeyPassSecretFilename),
-      LICENSE_KEY: DockerBuildSecret.fromSrc(licenseKeyFilename),
+      store_pass: DockerBuildSecret.fromSrc(storePassSecretFilename),
+      keystore_pass: DockerBuildSecret.fromSrc(storeKeyPassSecretFilename),
+      license_key: DockerBuildSecret.fromSrc(licenseKeyFilename),
     };
     const buildArgs = {
       ARTIFACT: config.artifactUrl,
@@ -131,6 +100,7 @@ export default class IHEGatewayConstruct extends Construct {
 
     const dockerImage = new ecr_assets.DockerImageAsset(this, `${id}DockerImage`, {
       directory: iheGWDockerDir,
+      file: "Dockerfile",
       buildSecrets,
       buildArgs,
     });
@@ -275,17 +245,9 @@ export default class IHEGatewayConstruct extends Construct {
     });
   }
 
-  private getSecrets(
-    config: IHEGatewayProps,
-    dbSecret: ISecret
-    // ): { DATABASE_PASSWORD: ecs.Secret } & Record<keyof IHEGatewaySecretNames, ecs.Secret> {
-  ): { DATABASE_PASSWORD: ecs.Secret } {
-    // const secretsFromConfig = getIHEGatewaySecrets(this, config);
+  private getSecrets(dbSecret: ISecret): { DATABASE_PASSWORD: ecs.Secret } {
     const secrets = {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret),
-      // STOREPASS: ecs.Secret.fromSecretsManager(secretsFromConfig.STOREPASS),
-      // KEYSTOREPASS: ecs.Secret.fromSecretsManager(secretsFromConfig.KEYSTOREPASS),
-      // LICENSE_KEY: ecs.Secret.fromSecretsManager(secretsFromConfig.LICENSE_KEY),
     };
     return secrets;
   }
@@ -374,12 +336,28 @@ export default class IHEGatewayConstruct extends Construct {
   // }
 }
 
-/**
- * Don't use the .env file from the package/ihe-gateway to prevent deploying based on the wrong environment.
- */
 function loadLocalEnv() {
-  const cwd = process.cwd();
-  const dotEnvFile = path.resolve(cwd, ".env-ihe");
+  const dotEnvFile = path.resolve(iheGWDockerDir, ".env");
   console.log(`Loading .env from ${dotEnvFile}...`);
   loadExternalDotEnv(dotEnvFile);
+}
+
+function envVarsToSecretFiles() {
+  const storePass = getEnvVar(`STOREPASS`) ?? "";
+  const keyStorePass = getEnvVar(`KEYSTOREPASS`) ?? "";
+  const license = getEnvVar(`LICENSE_KEY`) ?? "";
+  const keystoreName = getEnvVar(`KEYSTORENAME`) ?? "";
+
+  fs.writeFileSync(path.resolve(iheGWDockerDir, storePassSecretFilename), storePass);
+  fs.writeFileSync(path.resolve(iheGWDockerDir, storeKeyPassSecretFilename), keyStorePass);
+  fs.writeFileSync(path.resolve(iheGWDockerDir, licenseKeyFilename), license);
+
+  // Intentionally setting the storepass using the value of keystorepass
+  // Also built on run-docker.sh
+  const secretProperties =
+    `keystore.path=\${dir.appdata}/${keystoreName}\n` +
+    `keystore.storepass=${keyStorePass}\n` +
+    `keystore.keypass=${keyStorePass}\n` +
+    `keystore.type=pkcs12\n`;
+  fs.writeFileSync(path.resolve(iheGWDockerDir, secretPropertiesFilename), secretProperties);
 }

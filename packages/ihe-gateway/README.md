@@ -29,6 +29,7 @@ IHE GW as well as a Postgres instance:
 
 ```shell
 $ docker-compose -f docker-compose.yml up --build
+$ ./scripts/run-docker.sh --build
 ```
 
 ### Custom Extensions
@@ -51,7 +52,7 @@ $ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 In subsequent runs, you can use docker-compose start - or just run it from Docker Desktop:
 
 ```shell
-$ docker-compose start
+$ ./scripts/run-docker.sh
 ```
 
 ### Development
