@@ -30,7 +30,7 @@
         {{/if}}
         {{#if procedureEntry.text._}}
             "note": {
-                "text": "{{procedureEntry.text._}}",
+                "text": "{{{parseReferenceData procedureEntry.text._}}}",
             },
         {{/if}}
         "bodySite":
