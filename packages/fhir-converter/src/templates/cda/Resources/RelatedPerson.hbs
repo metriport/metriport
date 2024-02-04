@@ -14,7 +14,7 @@
             [
                 {
                     {{#if ../relatedPerson.code.originalText}}
-                        "text":"{{../relatedPerson.code.originalText._}}",
+                        "text":"{{{ parseReferenceData ../relatedPerson.code.originalText._ }}}",
                     {{/if}}
                     "coding": 
                     [

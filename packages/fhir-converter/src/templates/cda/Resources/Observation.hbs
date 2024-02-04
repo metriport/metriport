@@ -34,26 +34,7 @@
             {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        "code": {
-            {{#if observationEntry.code.originalText}}
-                "text":"{{observationEntry.code.originalText._}}",
-            {{else if observationEntry.text._}}
-                "text":"{{observationEntry.text._}}",
-            {{/if}}
-            {{#if observationEntry.code}}
-                "coding": 
-                [
-                    {{>DataType/Coding.hbs code=observationEntry.code}},
-                    {{#if observationEntry.code.translation.code}}
-                        {{>DataType/Coding.hbs code=observationEntry.code.translation}},
-                    {{else}}
-                        {{#each observationEntry.code.translation}}
-                            {{>DataType/Coding.hbs code=this}},
-                        {{/each}}
-                    {{/if}}
-                ],
-            {{/if}}
-        },
+        "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._}},
         
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
