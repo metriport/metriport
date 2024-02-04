@@ -36,9 +36,9 @@
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
         "code": {
             {{#if observationEntry.code.originalText}}
-                "text":"{{{observationEntry.code.originalText._}}}",
+                "text":"{{observationEntry.code.originalText._}}",
             {{else if observationEntry.text._}}
-                "text":"{{{observationEntry.text._}}}",
+                "text":"{{observationEntry.text._}}",
             {{/if}}
             {{#if observationEntry.code}}
                 "coding": 
@@ -78,6 +78,7 @@
                 {{/if}}
             {{/with}}
         {{else}}
+            {{!-- okay since we control the input and escape all single quotes in parseReferenceData --}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
