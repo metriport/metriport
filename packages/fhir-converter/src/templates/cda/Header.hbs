@@ -12,6 +12,13 @@
     
         {{#if this.componentOf.encompassingEncounter}}
             {{>Resources/Encounter.hbs encounter=this.componentOf.encompassingEncounter ID=(generateUUID (toJsonString this.componentOf.encompassingEncounter))}},
+            
+            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=this.componentOf.encompassingEncounter.responsibleParty.assignedEntity) as |practitionerId|}}
+                {{>Resources/Practitioner.hbs practitioner=this.componentOf.encompassingEncounter.responsibleParty.assignedEntity ID=practitionerId.Id}},
+                {{>References/Encounter/participant.individual.hbs ID=(generateUUID (toJsonString ../this.componentOf.encompassingEncounter)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+            {{/with}}
+
+
             {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString this)) REF=(concat 'Encounter/' (generateUUID (toJsonString this.componentOf.encompassingEncounter)))}},
             {{#if  this.componentOf.encompassingEncounter.location}}
                 {{>Resources/Location.hbs location=this.componentOf.encompassingEncounter.location ID=(generateUUID (toJsonString this.componentOf.encompassingEncounter.location))}},
