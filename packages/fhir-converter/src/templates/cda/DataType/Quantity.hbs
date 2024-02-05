@@ -11,6 +11,7 @@
         {{#if comparator.isValid}}
           {
             "value": "{{comparator.number}}",
+            {{!-- safe to use triple braces here since we control the input and can ensure no single quotes --}}
             "comparator": "{{{comparator.comparator}}}",
             "unit": "{{../../../quantity.unit}}",
             "system": "http://unitsofmeasure.org"
