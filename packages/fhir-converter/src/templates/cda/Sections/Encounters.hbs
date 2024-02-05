@@ -6,7 +6,6 @@
                 	{{>References/Encounter/subject.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
 
-                {{log (toJsonStringPrettier encounterEntry.encounter.performer.assignedEntity)}}
                 {{#if encounterEntry.encounter.performer.assignedEntity}}
                     {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=encounterEntry.encounter.performer.assignedEntity) as |practitionerId|}}
                         {{>Resources/Practitioner.hbs practitioner=encounterEntry.encounter.performer.assignedEntity ID=practitionerId.Id}},
