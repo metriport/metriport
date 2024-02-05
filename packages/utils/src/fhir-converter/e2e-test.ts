@@ -129,7 +129,7 @@ export async function main() {
   }
 
   if (!useFhirServer) {
-    const stats = await countResourcesPerDirectory(cdaLocation, fhirExtension);
+    const stats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
     console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
     console.log(`Total: ${stats.total}`);
     storeStats(stats);
