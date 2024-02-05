@@ -1,7 +1,12 @@
 {
 	{{#if code.originalText}}
 		"text":"{{{code.originalText._}}}",
+	{{else}}
+		{{#if text}}
+			"text":"{{{text}}}",
+		{{/if}}
 	{{/if}}
+
 	"coding": 
     [
 		{{>DataType/Coding.hbs code=code}},

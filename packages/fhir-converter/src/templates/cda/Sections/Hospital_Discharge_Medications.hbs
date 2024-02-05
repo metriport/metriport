@@ -12,6 +12,9 @@
                     {{#each (toArray this.substanceAdministration.entryRelationship)}}
                         {{#if (contains (toJsonString this.observation.templateId) '"2.16.840.1.113883.10.20.22.4.19"')}}
                             {{>Resources/Condition.hbs conditionEntry=this.observation ID=(generateUUID (toJsonString this.observation))}},
+                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=../this.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
+                                {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString ../this.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                            {{/with}}
                             {{>References/MedicationAdministration/reasonReference.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Condition/' (generateUUID (toJsonString this.observation)))}},
                         {{/if}}
                     {{/each}}
