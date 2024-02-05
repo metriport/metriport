@@ -6,6 +6,14 @@
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
+                {{#if (toArray obsEntry.observation.author)}}
+                    {{#each (toArray obsEntry.observation.author) as |author|}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
+                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                    {{/each}}
+                {{/if}}
             {{/each}}
         {{/each}}
     {{/with}}
