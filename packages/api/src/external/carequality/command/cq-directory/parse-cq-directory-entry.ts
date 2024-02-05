@@ -7,7 +7,7 @@ import {
 } from "@metriport/carequality-sdk/common/util";
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
@@ -15,7 +15,7 @@ import { CQDirectoryEntryData } from "../../cq-directory";
 const EARTH_RADIUS = 6378168;
 
 export type XCUrls = {
-  urlXCPD: string;
+  urlXCPD?: string;
   urlDQ?: string;
   urlDR?: string;
 };
@@ -27,27 +27,26 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const normalizedOid = getOid(org);
     if (!normalizedOid) return [];
 
-    const url = getUrls(org.contained);
-    if (!url?.urlXCPD) return [];
-
+    const urls = getUrls(org.contained);
     const coordinates = org.address ? getCoordinates(org.address) : undefined;
     const lat = coordinates ? coordinates.lat : undefined;
     const lon = coordinates ? coordinates.lon : undefined;
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
-
     const state = getState(org.address);
 
     const orgData: CQDirectoryEntryData = {
       id: normalizedOid,
       name: org.name?.value ?? undefined,
-      urlXCPD: url.urlXCPD,
-      urlDQ: url.urlDQ,
-      urlDR: url.urlDR,
+      urlXCPD: urls?.urlXCPD,
+      urlDQ: urls?.urlDQ,
+      urlDR: urls?.urlDR,
       lat,
       lon,
       point,
       state,
       data: org,
+      managingOrganization: getManagingOrg(org.managingOrg),
+      gateway: false,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
     return orgData;
@@ -86,22 +85,26 @@ function getUrls(contained: Contained): XCUrls | undefined {
     }
   });
 
+  const urls: XCUrls = {};
   const urlXCPD = endpointMap[XCPD_STRING];
+  const urlDQ = endpointMap[XCA_DQ_STRING];
+  const urlDR = endpointMap[XCA_DR_STRING];
 
-  if (!urlXCPD) return;
-
-  const urls: XCUrls = {
-    urlXCPD,
-  };
-
-  if (endpointMap[XCA_DQ_STRING]) {
-    urls.urlDQ = endpointMap[XCA_DQ_STRING];
+  if (isValidUrl(urlXCPD)) {
+    urls.urlXCPD = urlXCPD;
   }
-  if (endpointMap[XCA_DR_STRING]) {
-    urls.urlDR = endpointMap[XCA_DR_STRING];
+  if (isValidUrl(urlDQ)) {
+    urls.urlDQ = urlDQ;
+  }
+  if (isValidUrl(urlDR)) {
+    urls.urlDR = urlDR;
   }
 
   return urls;
+}
+
+function isValidUrl(url: string | undefined): boolean {
+  return url ? url.startsWith("http") : false;
 }
 
 function getCoordinates(address: Address[]): Coordinates | undefined {
@@ -130,4 +133,9 @@ function getOid(org: Organization): string | undefined {
   } catch (err) {
     console.log(`Organization ${org?.name?.value} has invalid OID: ${oid}`);
   }
+}
+
+function getManagingOrg(managingOrg: ManagingOrganization) {
+  const parts = managingOrg?.reference?.value?.split("/");
+  return parts ? parts[parts.length - 1] : undefined;
 }

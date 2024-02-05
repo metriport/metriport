@@ -11,6 +11,11 @@ export const organizationIdentifierSchema = z.object({
   value: objectValue,
 });
 
+export const managinOrganizationSchema = z
+  .object({ reference: z.object({ value: z.string().nullish() }) })
+  .nullish();
+export type ManagingOrganization = z.infer<typeof managinOrganizationSchema>;
+
 export const organizationSchema = z
   .object({
     identifier: organizationIdentifierSchema,
@@ -25,6 +30,7 @@ export const organizationSchema = z
       }, z.array(addressSchema))
       .optional(),
     contained: containedSchema,
+    managingOrg: managinOrganizationSchema,
   })
   .optional();
 

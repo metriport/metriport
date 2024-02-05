@@ -4,7 +4,7 @@ import { Organization } from "@metriport/carequality-sdk/models/organization";
 export type CQDirectoryEntryData = {
   id: string; // Organization's OID
   name?: string;
-  urlXCPD: string;
+  urlXCPD?: string;
   urlDQ?: string;
   urlDR?: string;
   lat?: number;
@@ -12,6 +12,8 @@ export type CQDirectoryEntryData = {
   state?: string;
   data?: Organization;
   point?: string;
+  managingOrganization?: string;
+  gateway: boolean;
   lastUpdatedAtCQ: string;
 };
 

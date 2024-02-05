@@ -1,7 +1,7 @@
-import { DataTypes, Sequelize } from "sequelize";
-import { CQDirectoryEntry } from "../cq-directory";
-import { BaseModel, ModelSetup } from "../../../models/_default";
 import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { DataTypes, Sequelize } from "sequelize";
+import { BaseModel, ModelSetup } from "../../../models/_default";
+import { CQDirectoryEntry } from "../cq-directory";
 
 export class CQDirectoryEntryModel
   extends BaseModel<CQDirectoryEntryModel>
@@ -10,15 +10,17 @@ export class CQDirectoryEntryModel
   static NAME = "cq_directory_entry";
   declare id: string; // Organization's OID
   declare name?: string;
-  declare urlXCPD: string;
+  declare urlXCPD?: string;
   declare urlDQ?: string;
   declare urlDR?: string;
-  declare lastUpdatedAtCQ: string;
   declare lat?: number;
   declare lon?: number;
   declare point?: string;
   declare state?: string;
   declare data?: Organization;
+  declare managingOrganization?: string;
+  declare gateway: boolean;
+  declare lastUpdatedAtCQ: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     CQDirectoryEntryModel.init(
@@ -30,6 +32,7 @@ export class CQDirectoryEntryModel
         urlXCPD: {
           type: DataTypes.STRING,
           field: "url_xcpd",
+          allowNull: true,
         },
         urlDQ: {
           type: DataTypes.STRING,
@@ -53,6 +56,14 @@ export class CQDirectoryEntryModel
         },
         point: {
           type: "CUBE",
+        },
+        managingOrganization: {
+          type: DataTypes.STRING,
+          field: "managing_organization",
+        },
+        gateway: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,
