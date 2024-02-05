@@ -8,6 +8,7 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
@@ -41,6 +42,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
+import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { getSecrets, Secrets } from "./shared/secrets";
@@ -705,6 +707,26 @@ export class APIStack extends Stack {
       vpc: this.vpc,
       apiAddress: apiLoadBalancerAddress,
     });
+
+    //-------------------------------------------
+    // Backups
+    //-------------------------------------------
+    if (this.isProd(props)) {
+      new DailyBackup(this, "APIDBBackup", {
+        backupPlanName: "APIDB",
+        resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
+      });
+      new DailyBackup(this, "APIMedicalDocsBucketBackup", {
+        backupPlanName: "MedicalDocsBucket",
+        resources: [BackupResource.fromArn(medicalDocumentsBucket.bucketArn)],
+      });
+    }
+    if (isSandbox(props.config) && sandboxSeedDataBucket) {
+      new DailyBackup(this, "APISandboxSeedDataBucketBackup", {
+        backupPlanName: "SandboxSeedDataBucket",
+        resources: [BackupResource.fromArn(sandboxSeedDataBucket.bucketArn)],
+      });
+    }
 
     //-------------------------------------------
     // Output

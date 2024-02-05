@@ -26,6 +26,11 @@ export const validateFhirEntries = (bundle: Bundle): Bundle => {
 
   for (const entry of bundle.entry) {
     const resourceType = entry.resource.resourceType;
+    if (typeof resourceType !== "string") {
+      throw new BadRequestError("Resource type must be a string", undefined, {
+        actualType: typeof resourceType,
+      });
+    }
 
     const isValid = validate(entry.resource);
 
