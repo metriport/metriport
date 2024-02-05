@@ -25,10 +25,12 @@
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     	{{>References/Observation/subject.hbs ID=(generateUUID (toJsonString procEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
-                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=procEntry.observation.author.assignedAuthor) as |practitionerId|}}
-                            {{>Resources/Practitioner.hbs practitioner=procEntry.procedure.observation.author ID=practitionerId.Id}},
-                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString procEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
-                    {{/with}}
+                    {{#if procEntry.observation.author.assignedAuthor}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=procEntry.observation.author.assignedAuthor) as |practitionerId|}}
+                                {{>Resources/Practitioner.hbs practitioner=procEntry.procedure.observation.author ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString procEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                    {{/if}}
                 {{/if}}
             {{/each}}
         {{/with}} 

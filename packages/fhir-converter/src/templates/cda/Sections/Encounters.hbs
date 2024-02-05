@@ -29,11 +29,12 @@
                             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                             	{{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                             {{/with}}
-
-                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
-                                {{>Resources/Practitioner.hbs practitioner=condEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
-                                {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
-                            {{/with}}
+                            {{#if condEntry.observation.author.assignedAuthor}}
+                                {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
+                                    {{>Resources/Practitioner.hbs practitioner=condEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                                    {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                                {{/with}}
+                            {{/if}}
 
                             {{>References/Encounter/diagnosis.condition.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString condEntry.observation)))}},
                         {{/if}}

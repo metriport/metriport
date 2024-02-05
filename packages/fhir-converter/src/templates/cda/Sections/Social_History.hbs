@@ -7,10 +7,12 @@
 				{{/with}}
                 {{#if (toArray obsEntry.observation.author)}}
                     {{#each (toArray obsEntry.observation.author) as |author|}}
-                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
-                            {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
-                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
-                        {{/with}}
+                        {{#if author.assignedAuthor}}
+                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
+                                {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                            {{/with}}
+                        {{/if}}
                     {{/each}}
                 {{/if}}
             {{/each}}
