@@ -18,7 +18,7 @@
                                 {{/with}}
                                 {{>References/MedicationRequest/medicationReference.hbs ID=(generateUUID (toJsonString this.supply)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable)))}},
                             {{/if}}
-                            {!-- I am keeping what was originally here but I have yet to see an author placed here --}}
+                            {{!-- I am keeping what was originally here but I have yet to see an author placed here --}}
                             {{#if medReq.supply.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medReq.supply.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=medReq.supply.author.assignedAuthor ID=practitionerId.Id}},
