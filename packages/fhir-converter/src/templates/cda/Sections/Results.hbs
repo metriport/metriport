@@ -13,9 +13,11 @@
                             {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                         {{/with}}
                          {{#if drEntry.organizer.performer.assignedEntity.representedOrganization}}
-                            {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=(generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization))}},
-                            {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Organization/' (generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization)))}}
-                         {{/if}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=drEntry.organizer.performer.assignedEntity.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                                {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
                     {{/if}}
                 {{/if}}
 

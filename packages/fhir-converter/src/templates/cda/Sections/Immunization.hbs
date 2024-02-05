@@ -6,8 +6,10 @@
             {{/if}}
             {{#if (eq immEntry.substanceAdministration.informant.assignedEntity.id.root 'FACILITY')}}
                 {{#if immEntry.substanceAdministration.informant.assignedEntity.representedOrganization.name._}}
-                    {{>Resources/Organization.hbs org=immEntry.substanceAdministration.informant.assignedEntity.representedOrganization ID=(generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization))}},
-                    {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' (generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization)))}},
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=immEntry.substanceAdministration.informant.assignedEntity.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=immEntry.substanceAdministration.informant.assignedEntity.representedOrganization ID=orgId.Id}},
+                        {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{/with}}
                 {{/if}}
             {{/if}}
             {{#if immEntry.substanceAdministration.author.assignedAuthor}}
@@ -17,8 +19,10 @@
                 {{/with}}
             {{/if}}
             {{#if immEntry.substanceAdministration.author.assignedAuthor.representedOrganization}}
-                {{>Resources/Organization.hbs org=immEntry.substanceAdministration.author.assignedAuthor.representedOrganization ID=(generateUUID (toJsonString immEntry.substanceAdministration.author.assignedAuthor.representedOrganization))}},
-                {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' (generateUUID (toJsonString immEntry.substanceAdministration.author.assignedAuthor.representedOrganization)))}},
+                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=immEntry.substanceAdministration.author.assignedAuthor.representedOrganization) as |orgId|}}
+                    {{>Resources/Organization.hbs org=immEntry.substanceAdministration.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                    {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' orgId.Id)}},
+                {{/with}}
             {{/if}}
             {{#if immEntry.substanceAdministration}}
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}

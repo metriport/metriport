@@ -15,8 +15,10 @@
                     --}}
                     {{#if (contains (toJsonString this.templateId) '"2.16.840.1.113883.10.20.22.4.87"')}}
                         {{#if this.assignedEntity.representedOrganization.name._}}
-                            {{>Resources/Organization.hbs org=this.assignedEntity.representedOrganization ID=(generateUUID (toJsonString this.assignedEntity.representedOrganization))}},
-                            {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payEntry.act)) REF=(concat 'Organization/' (generateUUID (toJsonString this.assignedEntity.representedOrganization)))}},
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=this.assignedEntity.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=this.assignedEntity.representedOrganization ID=orgId.Id}},
+                                {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
                         {{/if}}
                     {{/if}}
                 {{/each}}
