@@ -12,7 +12,13 @@
                         {{>Resources/Practitioner.hbs practitioner=mentalEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
                         {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString mentalEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                     {{/with}}
-                {{/if}}        
+                {{/if}}
+                {{#if mentalEntry.observation.author.assignedAuthor.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=mentalEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=mentalEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                        {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString mentalEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{/with}}
+                {{/if}}
             {{/if}}
             
             {{#if mentalEntry.organizer}}
@@ -26,7 +32,13 @@
                             {{>Resources/Practitioner.hbs practitioner=mentalComp.observation.author.assignedAuthor ID=practitionerId.Id}},
                             {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString mentalComp.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                         {{/with}}
-                    {{/if}}                
+                    {{/if}}
+                    {{#if mentalComp.observation.author.assignedAuthor.representedOrganization}}
+                        {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=mentalComp.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                            {{>Resources/Organization.hbs org=mentalComp.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString mentalComp.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                        {{/with}}
+                    {{/if}}              
                 {{/each}}
             {{/if}}
             

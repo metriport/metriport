@@ -24,11 +24,23 @@
                                     {{>Resources/Practitioner.hbs practitioner=medReq.supply.author.assignedAuthor ID=practitionerId.Id}},
                                     {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                                 {{/with}}
+                                {{#if medReq.supply.author.assignedAuthor.representedOrganization}}
+                                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medReq.supply.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                        {{>Resources/Organization.hbs org=medReq.supply.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                        {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Organization/' orgId.Id)}}
+                                    {{/with}}
+                                {{/if}}
                             {{else if ../this.substanceAdministration.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=../this.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=../this.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},
                                     {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                                 {{/with}}
+                                {{#if ../this.substanceAdministration.author.assignedAuthor.representedOrganization}}
+                                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=../this.substanceAdministration.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                        {{>Resources/Organization.hbs org=../this.substanceAdministration.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                        {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Organization/' orgId.Id)}}
+                                    {{/with}}
+                                {{/if}}
                             {{/if}}
 
                         {{/each}}

@@ -13,6 +13,12 @@
                                 {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                             {{/with}}
                         {{/if}}
+                        {{#if author.assignedAuthor.representedOrganization}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
                     {{/each}}
                 {{/if}}
             {{/each}}

@@ -13,6 +13,13 @@
                     {{/with}}
                 {{/if}}
 
+                {{#if encounterEntry.encounter.performer.assignedEntity.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=encounterEntry.encounter.performer.assignedEntity.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=encounterEntry.encounter.performer.assignedEntity ID=orgId.Id}},
+                        {{>References/Encounter/participant.individual.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Organization/' OrgId.Id)}},
+                    {{/with}}
+                {{/if}}
+
                 {{#each (toArray encounterEntry.encounter.participant)}}
                     {{#if (eq this.typeCode 'LOC')}}
                 	    {{#if (contains (toJsonString this.participantRole.templateId) '"2.16.840.1.113883.10.20.22.4.32"')}}
@@ -33,6 +40,13 @@
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=condEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
                                     {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                                {{/with}}
+                            {{/if}}
+
+                            {{#if condEntry.observation.author.assignedAuthor.representedOrganization}}
+                                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=condEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                    {{>Resources/Organization.hbs org=condEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                    {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Organization/' OrgId.Id)}},
                                 {{/with}}
                             {{/if}}
 
