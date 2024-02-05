@@ -11,6 +11,13 @@
                         {{>Resources/Organization.hbs org=procEntry.procedure.performer.assignedEntity.representedOrganization ID=(generateUUID (toJsonString procEntry.procedure.performer.assignedEntity.representedOrganization))}},
                         {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString procEntry.procedure)) REF=(concat 'Organization/' (generateUUID (toJsonString procEntry.procedure.performer.assignedEntity.representedOrganization)))}},
                     {{/if}}
+                    
+                    {{#if procEntry.procedure.performer.assignedEntity}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=procEntry.procedure.performer.assignedEntity) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=procEntry.procedure.performer.assignedEntity ID=practitionerId.Id}},
+                            {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString procEntry.procedure)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                    {{/if}}
                 {{/if}}
                 
                 {{#if procEntry.observation}}

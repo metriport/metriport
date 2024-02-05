@@ -19,7 +19,7 @@
         "dosage":
         [
             {
-                "text":"{{medicationStatement.text._}}",
+                "text":"{{{ parseReferenceData medicationStatement.text._ }}}",
                 "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
                     {
