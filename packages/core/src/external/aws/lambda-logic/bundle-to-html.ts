@@ -1459,30 +1459,7 @@ function createObservationVitalsSection(observations: Observation[]) {
 }
 
 function createVitalsByDate(observations: Observation[]): string {
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (!observationDate.length) return acc;
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.display;
-    });
-
-    if (observationDisplay || observation.code?.text) {
-      acc.push({
-        date: observationDate,
-        observations: [observation],
-      });
-    }
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1568,30 +1545,7 @@ function createObservationLaboratorySection(observations: Observation[]) {
 function createObservationsByDate(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (!observationDate.length) return acc;
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.display;
-    });
-
-    if (observationDisplay || observation.code?.text) {
-      acc.push({
-        date: observationDate,
-        observations: [observation],
-      });
-    }
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations)
 
   return filteredObservations
     .map(tables => {
@@ -1695,30 +1649,7 @@ function createOtherObservationsSection(observations: Observation[]) {
 }
 
 function createOtherObservationsByDate(observations: Observation[]): string {
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (!observationDate.length) return acc;
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    const observationDisplay = observation.code?.coding?.find(coding => {
-      return coding.display;
-    });
-
-    if (observationDisplay || observation.code?.text) {
-      acc.push({
-        date: observationDate,
-        observations: [observation],
-      });
-    }
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1761,6 +1692,38 @@ function createOtherObservationsByDate(observations: Observation[]): string {
       `;
     })
     .join("");
+}
+
+type FilteredObservations = { date: string; observations: Observation[] }
+
+
+function filterObservationsByDate(observations: Observation[]): FilteredObservations[]  {
+  const filteredObservations = observations.reduce((acc, observation) => {
+    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
+    const existingObservation = acc.find(observation => observation.date === observationDate);
+
+    if (!observationDate.length) return acc;
+
+    if (existingObservation) {
+      existingObservation.observations.push(observation);
+      return acc;
+    }
+
+    const observationDisplay = observation.code?.coding?.find(coding => {
+      return coding.display;
+    });
+
+    if (observationDisplay || observation.code?.text) {
+      acc.push({
+        date: observationDate,
+        observations: [observation],
+      });
+    }
+
+    return acc;
+  }, [] as FilteredObservations[]);
+
+  return filteredObservations
 }
 
 function renderClassDisplay(encounter: Encounter) {
