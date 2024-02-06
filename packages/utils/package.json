@@ -47,7 +47,8 @@
     "mime-types": "^2.1.35",
     "playwright": "^1.39.0",
     "readline-sync": "^1.4.10",
-    "sequelize": "^6.31.0"
+    "sequelize": "^6.31.0",
+    "xml2js": "^0.6.2"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.1",

@@ -22,6 +22,7 @@ export async function convertCDAsToFHIR(
         await convert(baseFolderName, fileName, outputFolderName, api, fhirExtension);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        console.error(`Error converting ${fileName}: ${JSON.stringify(error.message)}`);
         if (error.message.includes("File has nonXMLBody")) {
           nonXMLBodyCount++;
         } else {
@@ -53,8 +54,8 @@ async function convert(
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
-    console.log(`Skipping ${fileName} because it has nonXMLBody`);
-    throw new Error(`File has nonXMLBody`);
+    //console.log(`Skipping ${fileName} because it has nonXMLBody`);
+    return;
   }
 
   const unusedSegments = false;

@@ -52,7 +52,8 @@ export async function getResourceCountByFile(fileName: string) {
     | Bundle
     | undefined;
   if (!bundle || !bundle.entry) {
-    throw new Error("Invalid bundle");
+    console.log("Invalid bundle for file", fileName);
+    return { total: 0, countPerType: {} as Record<ResourceType, number> };
   }
   const countPerType = countResourcesPerType(bundle);
   const resources = bundle.entry?.flatMap(entry => entry.resource ?? []);

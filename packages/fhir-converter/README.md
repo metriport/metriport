@@ -72,3 +72,63 @@ There is a known issue that the v1.0.0 converter UI gets auto-updated to v2.0.0 
 
 - [Handlebars Documentation](https://handlebarsjs.com/)
 - [HL7 Community 2-To-FHIR-Project](https://confluence.hl7.org/display/OO/2-To-FHIR+Project)
+
+## Resoure Counts on Reference Insert
+
+```
+Pre FHIR Insert
+Resources: {
+  "AllergyIntolerance": 819,
+  "Composition": 9445,
+  "Condition": 16920,
+  "Consent": 53,
+  "Coverage": 742,
+  "Device": 9207,
+  "FamilyMemberHistory": 774,
+  "Medication": 10376,
+  "MedicationStatement": 5560,
+  "Observation": 150294,
+  "Organization": 20477,
+  "Patient": 9445,
+  "Practitioner": 37757,
+  "RelatedPerson": 12240,
+  "DiagnosticReport": 30754,
+  "Encounter": 18582,
+  "Location": 17626,
+  "Procedure": 9410,
+  "Immunization": 2456,
+  "MedicationRequest": 4525,
+  "MedicationAdministration": 5231,
+  "Communication": 1525,
+  "ServiceRequest": 1,
+  "Goal": 547
+}
+Total: 374766
+```
+
+```
+Post FHIR Insert
+Resources:  {
+	AllergyIntolerance: 752,
+	Communication: 790,
+	Composition: 9424,
+	Condition: 13020,
+	Consent: 44,
+	Coverage: 556,
+	Device: 3830,
+	DiagnosticReport: 24773,
+	Encounter: 18460,
+	FamilyMemberHistory: 725,
+	Goal: 45,
+	Immunization: 2123,
+	MedicationAdministration: 3770,
+	MedicationRequest: 3398,
+	MedicationStatement: 4695,
+	Observation: 81321,
+	Procedure: 8711,
+	RelatedPerson: 269,
+	ServiceRequest: 1,
+	Practitioner: 7447
+}
+Total resources: 184154
+```
