@@ -588,7 +588,7 @@ function createDiagnosticReportsSection(
   return `
     <div id="reports" class="section">
       <div class="section-title">
-        <h3 id="reports" title="reports">&#x276F; Reports</h3>
+        <h3 id="reports" title="reports">&#x276F; Visit Notes</h3>
         <a href="#mr-header">&#x25B2; Back to Top</a>
       </div>
       <div class="section-content">
@@ -1774,7 +1774,6 @@ function createOtherObservationsByDate(observations: Observation[]): string {
   const filteredObservations = observations.reduce((acc, observation) => {
     const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
-
     if (!observationDate.length) return acc;
 
     if (existingObservation) {
