@@ -65,7 +65,6 @@ if ! [ -z "${KEYSTORE_TYPE+x}" ]; then
 fi
 
 # license key
-LICENSE_KEY="$(grep -v '^#' /run/secrets/license_key)"
 if ! [ -z "${LICENSE_KEY+x}" ]; then
 	LINE_COUNT=`grep "license.key" /opt/connect/conf/mirth.properties | wc -l`
 	if [ $LINE_COUNT -lt 1 ]; then

@@ -13,7 +13,6 @@ import {
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
-import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import fs from "fs";
 import path from "path";
@@ -25,7 +24,6 @@ import IHEDBConstruct from "./ihe-db-construct";
 
 const storePassSecretFilename = "store-pass.secret";
 const storeKeyPassSecretFilename = "keystore-pass.secret";
-const licenseKeyFilename = "license-key.secret";
 const secretPropertiesFilename = "secret.properties";
 
 export interface IHEGatewayConstructProps {
@@ -72,7 +70,11 @@ export default class IHEGatewayConstruct extends Construct {
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = db.server.clusterIdentifier;
 
-    const secrets = this.getSecrets(db.secret);
+    if (isLocalEnvironment()) loadLocalEnv();
+
+    const secrets = {
+      DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+    };
     const environment = {
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
@@ -84,25 +86,21 @@ export default class IHEGatewayConstruct extends Construct {
     const containerInsights = isProd(mainConfig) ? true : false;
     const cluster = new ecs.Cluster(scope, `${id}Cluster`, { vpc, containerInsights });
 
-    if (isLocalEnvironment()) loadLocalEnv();
-
     envVarsToSecretFiles();
-    const buildSecrets = {
+    const dockerBuildSecrets = {
       store_pass: DockerBuildSecret.fromSrc(storePassSecretFilename),
       keystore_pass: DockerBuildSecret.fromSrc(storeKeyPassSecretFilename),
-      license_key: DockerBuildSecret.fromSrc(licenseKeyFilename),
     };
-    const buildArgs = {
+    const dockerBuildArgs = {
       ARTIFACT: config.artifactUrl,
       KEYSTORENAME: config.keyStoreName,
       ZULUKEY: config.zuluKey,
+      LICENSE_KEY: getEnvVar("IHE_GW_LICENSE_KEY") ?? "",
     };
-
     const dockerImage = new ecr_assets.DockerImageAsset(this, `${id}DockerImage`, {
       directory: iheGWDockerDir,
-      file: "Dockerfile",
-      buildSecrets,
-      buildArgs,
+      buildSecrets: dockerBuildSecrets,
+      buildArgs: dockerBuildArgs,
     });
 
     // Why ALB:
@@ -245,13 +243,6 @@ export default class IHEGatewayConstruct extends Construct {
     });
   }
 
-  private getSecrets(dbSecret: ISecret): { DATABASE_PASSWORD: ecs.Secret } {
-    const secrets = {
-      DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret),
-    };
-    return secrets;
-  }
-
   // private createAlarms(
   //   id: string,
   //   {
@@ -343,14 +334,12 @@ function loadLocalEnv() {
 }
 
 function envVarsToSecretFiles() {
-  const storePass = getEnvVar(`STOREPASS`) ?? "";
-  const keyStorePass = getEnvVar(`KEYSTOREPASS`) ?? "";
-  const license = getEnvVar(`LICENSE_KEY`) ?? "";
-  const keystoreName = getEnvVar(`KEYSTORENAME`) ?? "";
+  const storePass = getEnvVar(`IHE_GW_STOREPASS`) ?? "";
+  const keyStorePass = getEnvVar(`IHE_GW_KEYSTOREPASS`) ?? "";
+  const keystoreName = getEnvVar(`IHE_GW_KEYSTORENAME`) ?? "";
 
   fs.writeFileSync(path.resolve(iheGWDockerDir, storePassSecretFilename), storePass);
   fs.writeFileSync(path.resolve(iheGWDockerDir, storeKeyPassSecretFilename), keyStorePass);
-  fs.writeFileSync(path.resolve(iheGWDockerDir, licenseKeyFilename), license);
 
   // Intentionally setting the storepass using the value of keystorepass
   // Also built on run-docker.sh

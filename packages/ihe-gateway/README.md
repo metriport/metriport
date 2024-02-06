@@ -44,7 +44,7 @@ If you do add extensions, you might need to add a license key to a `.env` file:
 
 ```shell
 $ touch .env
-$ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
+$ echo "IHE_GW_LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 ```
 
 ### Launch
