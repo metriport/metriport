@@ -79,6 +79,7 @@ export function createAPIService({
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
     cxsWithCQDirectFeatureFlag: string;
+    cxsWithIncreasedSandboxLimitFeatureFlag: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -184,6 +185,8 @@ export function createAPIService({
           CXS_WITH_CQ_DIRECT_FEATURE_FLAG: appConfigEnvVars.cxsWithCQDirectFeatureFlag,
           CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
             appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
+          CXS_WITH_INCREASED_SANDBOX_LIMIT_FEATURE_FLAG:
+            appConfigEnvVars.cxsWithIncreasedSandboxLimitFeatureFlag,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
