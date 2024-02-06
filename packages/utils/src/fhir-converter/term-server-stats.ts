@@ -4,6 +4,7 @@ import * as xml2js from "xml2js";
 import { codeSystemMapping } from "./term-server";
 
 interface Stats {
+  codeOccurrences: { [code: string]: number };
   totalFiles: number;
   tagsWithTranslation: number;
   totalTagsChecked: number;
@@ -106,6 +107,13 @@ function findTags(obj: any, tagName: string, stats: Stats): void {
 
                     if (!hasDisplayName && translationHasCode) {
                       stats.terminologyStats[terminology].tagsWithCodeNoDisplayNameThroughout++;
+                      const code = translation.$.code;
+                      if (code) {
+                        if (!stats.codeOccurrences[code]) {
+                          stats.codeOccurrences[code] = 0;
+                        }
+                        stats.codeOccurrences[code]++;
+                      }
                     }
                   }
                 );
@@ -121,6 +129,11 @@ function findTags(obj: any, tagName: string, stats: Stats): void {
               if (!hasDisplayName && hasCode) {
                 stats.tagsWithCodeNoDisplayNameThroughout++;
                 stats.terminologyStats[terminology].tagsWithCodeNoDisplayNameThroughout++;
+                const code = tagObj.$.code;
+                if (!stats.codeOccurrences[code]) {
+                  stats.codeOccurrences[code] = 0;
+                }
+                stats.codeOccurrences[code]++;
               }
             }
           });
@@ -168,6 +181,7 @@ async function main() {
   console.log(`Total XML files found: ${xmlFileCount}`);
   try {
     const stats: Stats = {
+      codeOccurrences: {},
       totalFiles: 0,
       tagsWithTranslation: 0,
       tagsWithDisplayNameButNoCode: 0,
@@ -177,7 +191,9 @@ async function main() {
     };
 
     await parseDirectory(dirPath, stats);
-    console.log("Stats:", stats);
+    const sortedCodes = Object.entries(stats.codeOccurrences).sort((a, b) => b[1] - a[1]);
+
+    console.log("Most common codes:", JSON.stringify(sortedCodes, null, 2));
   } catch (error) {
     console.error(error);
   }
