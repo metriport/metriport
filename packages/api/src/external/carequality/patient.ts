@@ -10,7 +10,11 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
-import { searchCQDirectoriesAroundPatientAddresses } from "./command/cq-directory/search-cq-directory";
+import {
+  searchCQDirectoriesAroundPatientAddresses,
+  filterCQOrgsToSearch,
+  toBasicOrgAttributes,
+} from "./command/cq-directory/search-cq-directory";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import {
@@ -23,6 +27,7 @@ import { PatientDiscoveryResult } from "./patient-discovery-result";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientDataCarequality } from "./patient-shared";
+import { getCQGateways } from "./command/cq-directory/cq-gateways";
 
 dayjs.extend(duration);
 
@@ -107,12 +112,15 @@ export async function prepareForPatientDiscovery(
 ): Promise<PatientDiscoveryReqToExternalGW> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
-  const [organization, nearbyCQOrgs] = await Promise.all([
+  const [organization, nearbyCQOrgs, cqGateways] = await Promise.all([
     getOrganizationOrFail({ cxId }),
     searchCQDirectoriesAroundPatientAddresses({ patient }),
+    getCQGateways(),
   ]);
 
-  const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
+  const cqGatewaysBasicDetails = cqGateways.map(toBasicOrgAttributes);
+  const orgsToSearch = filterCQOrgsToSearch(nearbyCQOrgs, cqGatewaysBasicDetails);
+  const xcpdGateways = cqOrgsToXCPDGateways(orgsToSearch);
 
   const pdRequest = createPatientDiscoveryRequest({
     patient: fhirPatient,

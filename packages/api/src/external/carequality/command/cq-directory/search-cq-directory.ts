@@ -2,16 +2,18 @@ import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
+import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
+const CQ_IGNORE_LIST: string[] = constructGatewayIgnoreList();
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
   id: string;
   lon: number | undefined;
   lat: number | undefined;
-  urlXCPD: string;
+  urlXCPD: string | undefined;
   urlDQ: string | undefined;
   urlDR: string | undefined;
 };
@@ -94,4 +96,21 @@ export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDeta
     urlDQ: org.urlDQ,
     urlDR: org.urlDR,
   };
+}
+
+export function filterCQOrgsToSearch(
+  orgs: CQOrgBasicDetails[],
+  gateways: CQOrgBasicDetails[]
+): CQOrgBasicDetails[] {
+  const allOrgs = [...orgs, ...gateways];
+  return allOrgs.filter(org => {
+    if (org.urlXCPD && !CQ_IGNORE_LIST.includes(org.urlXCPD)) return org;
+  });
+}
+
+function constructGatewayIgnoreList(): string[] {
+  const ignoreList: string[] = [];
+  const CW_XCPD_LINK_IN_CQ = Config.getCommonWellXCPDUrl();
+  if (CW_XCPD_LINK_IN_CQ) ignoreList.push(CW_XCPD_LINK_IN_CQ);
+  return ignoreList;
 }

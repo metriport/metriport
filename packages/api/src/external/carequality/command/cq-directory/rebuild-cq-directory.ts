@@ -7,10 +7,10 @@ import { Config } from "../../../../shared/config";
 import { capture } from "../../../../shared/notifications";
 import { makeCarequalityAPI } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { updateCQGateways } from "./cq-gateways";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
 import { cqDirectoryEntry, cqDirectoryEntryBackup, cqDirectoryEntryTemp } from "./shared";
-import { updateGateway } from "./update-gateway";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
@@ -69,7 +69,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await renameCQDirectoryTablesAndUpdateIndexes();
-    await updateGateways(Array.from(gatewaysSet));
+    await updateCQGateways(Array.from(gatewaysSet));
     console.log("CQ directory successfully rebuilt! :)");
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
@@ -130,9 +130,4 @@ async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
       transaction,
     });
   });
-}
-
-async function updateGateways(gateways: string[]): Promise<void> {
-  console.log(`Found ${gateways.length} gateways in the CQ directory. Updating...`);
-  await Promise.allSettled(gateways.map(gateway => updateGateway(gateway)));
 }

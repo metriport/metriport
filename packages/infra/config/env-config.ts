@@ -45,6 +45,7 @@ export type EnvConfig = {
   carequality?: {
     secretNames?: {
       CQ_API_KEY?: string;
+      CW_XCPD_URL_IN_CQ?: string;
     };
     envVars?: {
       CQ_ORG_DETAILS?: string;
