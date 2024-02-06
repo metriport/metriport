@@ -67,20 +67,36 @@ export async function convertCodeSystem(oid: string) {
   }
 }
 
-// Modified function to accept codeSystemType
+interface ParameterPart {
+  name: string;
+  valueCode?: string;
+  valueString?: string;
+}
+
+interface Parameter {
+  name: string;
+  valueString?: string;
+  part?: ParameterPart[];
+}
+
 export async function getCodeDetails(code: string, codeSystemType: string) {
   try {
-    // Retrieve the code system URL based on the codeSystemType
     const codeSystem = codeSystemUrls[codeSystemType];
     if (!codeSystem) {
       console.error("Unsupported code system type:", codeSystemType);
       return;
     }
 
-    // Use the URL from the code system
     const url = `http://localhost:29927/R4/CodeSystem/$lookup?system=${codeSystem.url}&code=${code}`;
     const response = await axios.get(url);
-    console.log(JSON.stringify(response.data, null, 2));
+
+    // Assuming the structure of the response is as provided
+    const displayParameter = response.data.parameter.find((p: Parameter) => p.name === "display");
+    if (displayParameter && displayParameter.valueString) {
+      console.log(displayParameter.valueString); // Logs the 'display' field's value
+    } else {
+      console.log("Display field not found in the response.");
+    }
   } catch (error) {
     console.error("Error fetching code details:", error);
   }
@@ -88,4 +104,4 @@ export async function getCodeDetails(code: string, codeSystemType: string) {
 
 // Example usage with a specific code and code system type
 //convertCodeSystem('2.16.840.1.113883.6.90');
-//getCodeDetails('1963-8', 'LNC');
+getCodeDetails("72166-2", "LNC");
