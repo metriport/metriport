@@ -1,8 +1,8 @@
-import { CfnOutput, DockerBuildSecret, Duration } from "aws-cdk-lib";
+import { CfnOutput, Duration } from "aws-cdk-lib";
 import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as ecr_assets from "aws-cdk-lib/aws-ecr-assets";
+import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import {
@@ -14,17 +14,12 @@ import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import { Construct } from "constructs";
-import fs from "fs";
 import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
 import { loadExternalDotEnv } from "../shared/dotenv";
-import { getEnvVar, isLocalEnvironment, isProd } from "../shared/util";
+import { isLocalEnvironment, isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
-
-const storePassSecretFilename = "store-pass.secret";
-const storeKeyPassSecretFilename = "keystore-pass.secret";
-const secretPropertiesFilename = "secret.properties";
 
 export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
@@ -70,6 +65,7 @@ export default class IHEGatewayConstruct extends Construct {
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = db.server.clusterIdentifier;
 
+    // TODO 1377 only needed if we build docker through CDK
     if (isLocalEnvironment()) loadLocalEnv();
 
     const secrets = {
@@ -86,22 +82,13 @@ export default class IHEGatewayConstruct extends Construct {
     const containerInsights = isProd(mainConfig) ? true : false;
     const cluster = new ecs.Cluster(scope, `${id}Cluster`, { vpc, containerInsights });
 
-    envVarsToSecretFiles();
-    const dockerBuildSecrets = {
-      store_pass: DockerBuildSecret.fromSrc(storePassSecretFilename),
-      keystore_pass: DockerBuildSecret.fromSrc(storeKeyPassSecretFilename),
-    };
-    const dockerBuildArgs = {
-      ARTIFACT: config.artifactUrl,
-      KEYSTORENAME: config.keyStoreName,
-      ZULUKEY: config.zuluKey,
-      LICENSE_KEY: getEnvVar("IHE_GW_LICENSE_KEY") ?? "",
-    };
-    const dockerImage = new ecr_assets.DockerImageAsset(this, `${id}DockerImage`, {
-      directory: iheGWDockerDir,
-      buildSecrets: dockerBuildSecrets,
-      buildArgs: dockerBuildArgs,
-    });
+    const ecrRepo = ecr.Repository.fromRepositoryName(
+      scope,
+      "IHE-GW-ECR-Repo",
+      "metriport/ihe-gateway"
+    );
+
+    const image = ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest");
 
     // Why ALB:
     // - https://github.com/metriport/metriport-internal/issues/738
@@ -118,7 +105,7 @@ export default class IHEGatewayConstruct extends Construct {
         cpu: config.ecs.cpu,
         desiredCount: config.ecs.minCapacity,
         taskImageOptions: {
-          image: ecs.ContainerImage.fromDockerImageAsset(dockerImage),
+          image,
           containerPort: 8080,
           // containerPort: mainPort,
           // certificate: httpsCert,
@@ -130,7 +117,7 @@ export default class IHEGatewayConstruct extends Construct {
         publicLoadBalancer: false,
         idleTimeout: config.ecs.maxRequestTimeout,
         runtimePlatform: {
-          cpuArchitecture: ecs.CpuArchitecture.ARM64,
+          cpuArchitecture: ecs.CpuArchitecture.X86_64,
           operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         },
       }
@@ -327,26 +314,9 @@ export default class IHEGatewayConstruct extends Construct {
   // }
 }
 
+// TODO 1377 only needed if we build docker through CDK
 function loadLocalEnv() {
   const dotEnvFile = path.resolve(iheGWDockerDir, ".env");
   console.log(`Loading .env from ${dotEnvFile}...`);
   loadExternalDotEnv(dotEnvFile);
-}
-
-function envVarsToSecretFiles() {
-  const storePass = getEnvVar(`IHE_GW_STOREPASS`) ?? "";
-  const keyStorePass = getEnvVar(`IHE_GW_KEYSTOREPASS`) ?? "";
-  const keystoreName = getEnvVar(`IHE_GW_KEYSTORENAME`) ?? "";
-
-  fs.writeFileSync(path.resolve(iheGWDockerDir, storePassSecretFilename), storePass);
-  fs.writeFileSync(path.resolve(iheGWDockerDir, storeKeyPassSecretFilename), keyStorePass);
-
-  // Intentionally setting the storepass using the value of keystorepass
-  // Also built on run-docker.sh
-  const secretProperties =
-    `keystore.path=\${dir.appdata}/${keystoreName}\n` +
-    `keystore.storepass=${keyStorePass}\n` +
-    `keystore.keypass=${keyStorePass}\n` +
-    `keystore.type=pkcs12\n`;
-  fs.writeFileSync(path.resolve(iheGWDockerDir, secretPropertiesFilename), secretProperties);
 }
