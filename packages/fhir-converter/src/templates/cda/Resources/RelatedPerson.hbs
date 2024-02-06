@@ -14,7 +14,7 @@
             [
                 {
                     {{#if ../relatedPerson.code.originalText}}
-                        "text":"{{{../relatedPerson.code.originalText._}}}",
+                        "text":"{{{ parseReferenceData ../relatedPerson.code.originalText._ }}}",
                     {{/if}}
                     "coding": 
                     [
@@ -29,7 +29,7 @@
                 },
                 {
                     {{#with (evaluate 'Utils/ContactRoleCode.hbs' code=(trimAndUpper ../relatedPerson.classCode)) as |respObjRole|}}
-                        "text":"{{{respObjRole.code.displayName}}}",
+                        "text":"{{respObjRole.code.displayName}}",
                         "coding":
                         [
                                 {{>DataType/Coding.hbs code=respObjRole.code}},
