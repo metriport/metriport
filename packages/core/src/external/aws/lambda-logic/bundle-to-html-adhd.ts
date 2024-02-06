@@ -33,7 +33,7 @@ const LOINC_CODE = "loinc";
 const MEDICARE_CODE = "medicare";
 const CPT_CODE = "cpt";
 
-export const bundleToHtml = (fhirBundle: Bundle): string => {
+export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
   const {
     patient,
     practitioners,
@@ -62,6 +62,8 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   }
 
   const aweVisits = getAnnualWellnessVisits(conditions);
+  const adhdVisits = getADHDVisits(conditions);
+  const aYearAgo = dayjs().subtract(1, "year").format(ISO_DATE);
 
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -233,14 +235,30 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
-          ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(
+          ${createFilteredReportSection(
             diagnosticReports,
             practitioners,
             aweVisits,
+            organizations,
+            "Annual Wellness Exams",
+            "awe",
+            aYearAgo
+          )}
+          ${createDiagnosticReportsSection(
+            diagnosticReports,
+            practitioners,
+            [...aweVisits, ...adhdVisits],
             organizations
           )}
+          ${createFilteredReportSection(
+            diagnosticReports,
+            practitioners,
+            adhdVisits,
+            organizations,
+            "ADHD",
+            "adhd"
+          )}
+          ${createMedicationSection(medications, medicationStatements)}
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -439,7 +457,10 @@ function createMRHeader(patient: Patient) {
                 <a href="#awe">Annual Wellness Exams</a>
               </li>
               <li>
-                <a href="#reports">Reports</a>
+                <a href="#reports">Visit Notes</a>
+              </li>
+              <li>
+                <a href="#adhd">ADHD</a>
               </li>
               <li>
                 <a href="#medications">Medications</a>
@@ -521,52 +542,10 @@ type EncounterSection = {
   };
 };
 
-function createAWESection(
-  diagnosticReports: DiagnosticReport[],
-  practitioners: Practitioner[],
-  aweVisits: Condition[],
-  organization: Organization[]
-) {
-  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
-  const mappedOrganizations = mapResourceToId<Organization>(organization);
-
-  if (!diagnosticReports) {
-    return "";
-  }
-
-  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
-
-  const AWEreports = buildReports(
-    encounterSections,
-    mappedPractitioners,
-    mappedOrganizations,
-    aweVisits,
-    true
-  );
-
-  const hasAWEreports = AWEreports.length > 0;
-
-  return `
-    <div id="awe" class="section">
-      <div class="section-title">
-        <h3 id="awe" title="reports">&#x276F; Annual Wellness Exams</h3>
-        <a href="#mr-header">&#x25B2; Back to Top</a>
-      </div>
-      <div class="section-content">
-        ${
-          hasAWEreports
-            ? AWEreports
-            : `<table><tbody><tr><td>No annual wellness exam info found</td></tr></tbody></table>`
-        }
-      </div>
-    </div>
-  `;
-}
-
 function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
-  aweVisits: Condition[],
+  aweAndADHDVisits: Condition[],
   organizations: Organization[]
 ) {
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
@@ -578,12 +557,30 @@ function createDiagnosticReportsSection(
 
   const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
 
+  const encountersWithoutAWEAndADHD = Object.entries(encounterSections)
+    .filter(([key]) => {
+      const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+      const leftOverVisit = aweAndADHDVisits.find(visit => {
+        const visitDate = visit.onsetDateTime ?? "";
+        const visitDateFormatted = dayjs(visitDate).format(ISO_DATE);
+
+        return visitDateFormatted === encounterDateFormatted;
+      });
+
+      return !leftOverVisit;
+    })
+    .reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {} as EncounterSection);
+
+  const aYearAgo = dayjs().subtract(1, "year").format(ISO_DATE);
+
   const nonAWEreports = buildReports(
-    encounterSections,
+    encountersWithoutAWEAndADHD,
     mappedPractitioners,
     mappedOrganizations,
-    aweVisits,
-    false
+    aYearAgo
   );
 
   const hasNonAWEreports = nonAWEreports.length > 0;
@@ -599,6 +596,68 @@ function createDiagnosticReportsSection(
           hasNonAWEreports
             ? nonAWEreports
             : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+        }
+      </div>
+    </div>
+  `;
+}
+
+function createFilteredReportSection(
+  diagnosticReports: DiagnosticReport[],
+  practitioners: Practitioner[],
+  filterConditions: Condition[],
+  organization: Organization[],
+  title: string,
+  tag: string,
+  dateFilter?: string
+) {
+  const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
+  const mappedOrganizations = mapResourceToId<Organization>(organization);
+
+  if (!diagnosticReports) {
+    return "";
+  }
+
+  const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
+
+  const encountersWithAWE = Object.entries(encounterSections)
+    .filter(([key]) => {
+      const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+      const conditionVisit = filterConditions.find(condition => {
+        const conditionVisitDate = condition.onsetDateTime ?? "";
+        const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
+
+        return conditionVisitDateFormatted === encounterDateFormatted;
+      });
+
+      return conditionVisit;
+    })
+    .reduce((acc, [key, value]) => {
+      acc[key] = value;
+      return acc;
+    }, {} as EncounterSection);
+
+  const conditionReports = buildReports(
+    encountersWithAWE,
+    mappedPractitioners,
+    mappedOrganizations,
+    dateFilter,
+    filterConditions
+  );
+
+  const hasConditionReports = conditionReports.length > 0;
+
+  return `
+    <div id="${tag}" class="section">
+      <div class="section-title">
+        <h3 id="${tag}" title="reports">&#x276F; ${title}</h3>
+        <a href="#mr-header">&#x25B2; Back to Top</a>
+      </div>
+      <div class="section-content">
+        ${
+          hasConditionReports
+            ? conditionReports
+            : `<table><tbody><tr><td>${title} may not be present</td></tr></tbody></table>`
         }
       </div>
     </div>
@@ -679,8 +738,8 @@ function buildReports(
   encounterSections: EncounterSection,
   mappedPractitioners: Record<string, Practitioner>,
   mappedOrganizations: Record<string, Organization>,
-  aweVisits: Condition[],
-  onlyAWE: boolean
+  dateFilter?: string,
+  conditions?: Condition[]
 ) {
   return (
     Object.entries(encounterSections)
@@ -689,16 +748,12 @@ function buildReports(
         return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
       })
       .filter(([key]) => {
-        // FILTER FOR ENCOUNTERS WITH AWE DIAGNOSTIC REPORTS
-        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
-        const aweVisit = aweVisits.find(aweVisit => {
-          const aweVisitDate = aweVisit.onsetDateTime ?? "";
-          const aweVisitDateFormatted = dayjs(aweVisitDate).format(ISO_DATE);
+        if (dateFilter) {
+          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+          return encounterDateFormatted > dateFilter;
+        }
 
-          return aweVisitDateFormatted === encounterDateFormatted;
-        });
-
-        return onlyAWE ? aweVisit : !aweVisit;
+        return true;
       })
       .filter(([, value]) => {
         const documentation = value.documentation;
@@ -719,11 +774,34 @@ function buildReports(
           return "";
         }
 
+        const condition = conditions?.find(condition => {
+          const conditionDate = condition.onsetDateTime ?? "";
+          const conditionDateFormatted = dayjs(conditionDate).format(ISO_DATE);
+          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+
+          return conditionDateFormatted === encounterDateFormatted;
+        });
+
+        const codeName = getSpecificCode(condition?.code?.coding ?? [], [ICD_10_CODE]);
+
+        const idc10Code = condition?.code?.coding?.find(code =>
+          code.system?.toLowerCase().includes(ICD_10_CODE)
+        );
+
+        const name =
+          idc10Code?.display ??
+          condition?.code?.coding?.[0]?.display ??
+          condition?.code?.text ??
+          "";
+
         return `
         <div id="report">
           <div class="header">
             <h3 class="title">Encounter</h3>
             <span>Date: ${formatDateForDisplay(key) ?? ""}</span>
+          </div>
+          <div>
+            ${condition ? `<h4>Diagnosis</h4><p>${name} - ${codeName}</p>` : ""}
           </div>
           <div>
             ${
@@ -747,7 +825,7 @@ function buildReports(
             }
 
           </div>
-        </div>
+        </>
     `;
       })
       .join("")
@@ -838,6 +916,12 @@ function createMedicationSection(
     const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
 
     return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
+  }).filter(medicationStatement => {
+    const medicationDate = medicationStatement.effectivePeriod?.start ?? "";
+    const medicationDateFormatted = dayjs(medicationDate).format(ISO_DATE);
+    const aYearAgo = dayjs().subtract(1, "year").format(ISO_DATE);
+
+    return medicationDateFormatted > aYearAgo;
   });
 
   const otherMedications = removeDuplicate.filter(
@@ -909,7 +993,6 @@ function createSectionInMedications(
         <th style="width: 25%">Instructions</th>
         <div style="width: 50%">
           <th>Dosage</th>
-          <th>Status</th>
           <th>Code</th>
           <th>Date</th>
         </div>
@@ -938,7 +1021,6 @@ function createSectionInMedications(
               ""
             ) ?? ""
           }</td>
-              <td>${medicationStatement.status ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${formatDateForDisplay(getDateFormMedicationStatement(medicationStatement))}</td>
             </tr>
@@ -1076,10 +1158,9 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
     <thead>
       <tr>
         <th style="width: 40%">Condition</th>
-        <th style="width: 15%">Code</th>
-        <th style="width: 15%">First seen</th>
-        <th style="width: 15%">Last seen</th>
-        <th style="width: 15%">Status</th>
+        <th style="width: 20%">Code</th>
+        <th style="width: 20%">First seen</th>
+        <th style="width: 20%">Last seen</th>
       </tr>
     </thead>
     <tbody>
@@ -1091,7 +1172,6 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
               <td>${condition.code ?? ""}</td>
               <td>${formatDateForDisplay(condition.firstSeen)}</td>
               <td>${formatDateForDisplay(condition.lastSeen)}</td>
-              <td>${condition.clinicalStatus}</td>
             </tr>
           `;
         })
@@ -1197,7 +1277,6 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         <th style="width: 17.5%">Code</th>
         <th style="width: 17.5%">First Seen</th>
         <th style="width: 17.5%">Last Seen</th>
-        <th style="width: 17.5%">Status</th>
       </tr>
     </thead>
     <tbody>
@@ -1214,7 +1293,6 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
               <td>${allergy.code}</td>
               <td>${formatDateForDisplay(allergy.firstSeen)}</td>
               <td>${formatDateForDisplay(allergy.lastSeen)}</td>
-              <td>${allergy.clinicalStatus}</td>
             </tr>
           `;
         })
@@ -1252,10 +1330,9 @@ function createProcedureSection(procedures: Procedure[]) {
 
     <thead>
       <tr>
-        <th style="width: 30%">Procedure</th>
-        <th style="width: 17.5%">Code</th>
-        <th style="width: 17.5%">Date</th>
-        <th style="width: 17.5%">Status</th>
+        <th style="width: 40%">Procedure</th>
+        <th style="width: 30%">Code</th>
+        <th style="width: 30%">Date</th>
       </tr>
     </thead>
     <tbody>
@@ -1273,7 +1350,6 @@ function createProcedureSection(procedures: Procedure[]) {
               <td>${procedure?.code?.text ?? ""}</td>
               <td>${code ?? ""}</td>
               <td>${formatDateForDisplay(procedure.performedDateTime)}</td>
-              <td>${procedure.status ?? ""}</td>
             </tr>
           `;
         })
@@ -1802,10 +1878,9 @@ function createImmunizationSection(immunizations: Immunization[]) {
     <thead>
       <tr>
         <th style="width: 30%">Immunization</th>
-        <th style="width: 17.5%">Code</th>
-        <th style="width: 17.5%">Manufacturer</th>
-        <th style="width: 17.5%">Date</th>
-        <th style="width: 17.5%">Status</th>
+        <th style="width: 23.3%">Code</th>
+        <th style="width: 23.3%">Manufacturer</th>
+        <th style="width: 23.3%">Date</th>
       </tr>
     </thead>
     <tbody>
@@ -1822,7 +1897,6 @@ function createImmunizationSection(immunizations: Immunization[]) {
               <td>${code ?? ""}</td>
               <td>${immunization.manufacturer?.display ?? ""}</td>
               <td>${formatDateForDisplay(immunization.occurrenceDateTime)}</td>
-              <td>${immunization.status ?? ""}</td>
             </tr>
           `;
         })
@@ -2252,4 +2326,14 @@ function getAnnualWellnessVisits(conditions: Condition[]) {
   });
 
   return annualWellnessVisit;
+}
+
+function getADHDVisits(conditions: Condition[]) {
+  const adhdVisits = conditions.filter(condition => {
+    const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
+
+    return code?.includes("F90");
+  });
+
+  return adhdVisits;
 }

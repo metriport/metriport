@@ -16,6 +16,7 @@ export function createAppConfigStack(
   appConfigConfigId: string;
   cxsWithEnhancedCoverageFeatureFlag: string;
   cxsWithCQDirectFeatureFlag: string;
+  cxsWithADHDMRFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
@@ -30,6 +31,7 @@ export function createAppConfigStack(
 
   const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
   const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
+  const cxsWithADHDMRFeatureFlag = "cxsWithADHDMR";
   const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
     stack,
     "OSSAPIConfigVersion",
@@ -55,6 +57,14 @@ export function createAppConfigStack(
               },
             },
           },
+          [cxsWithADHDMRFeatureFlag]: {
+            name: cxsWithADHDMRFeatureFlag,
+            attributes: {
+              cxIds: {
+                type: "string[]",
+              },
+            },
+          },
         },
         values: {
           [cxsWithEnhancedCoverageFeatureFlag]: {
@@ -62,6 +72,10 @@ export function createAppConfigStack(
             cxIds: [],
           },
           [cxsWithCQDirectFeatureFlag]: {
+            enabled: true,
+            cxIds: [],
+          },
+          [cxsWithADHDMRFeatureFlag]: {
             enabled: true,
             cxIds: [],
           },
@@ -100,5 +114,6 @@ export function createAppConfigStack(
     appConfigConfigId: appConfigOSSProfile.ref,
     cxsWithEnhancedCoverageFeatureFlag,
     cxsWithCQDirectFeatureFlag,
+    cxsWithADHDMRFeatureFlag,
   };
 }

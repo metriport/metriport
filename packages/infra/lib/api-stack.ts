@@ -137,6 +137,7 @@ export class APIStack extends Stack {
       appConfigConfigId,
       cxsWithEnhancedCoverageFeatureFlag,
       cxsWithCQDirectFeatureFlag,
+      cxsWithADHDMRFeatureFlag,
     } = createAppConfigStack(this, { config: props.config });
 
     //-------------------------------------------
@@ -351,6 +352,11 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: slackNotification?.alarmAction,
+        appConfigEnvVars: {
+          appId: appConfigAppId,
+          configId: appConfigConfigId,
+          cxsWithADHDMRFeatureFlag,
+        }
       });
     }
 
@@ -1204,8 +1210,13 @@ export class APIStack extends Stack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    appConfigEnvVars: {
+      appId: string;
+      configId: string;
+      cxsWithADHDMRFeatureFlag: string;
+    };
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
+    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket, appConfigEnvVars } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
@@ -1220,6 +1231,9 @@ export class APIStack extends Stack {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
+        ADHD_MR_FEATURE_FLAG: appConfigEnvVars.cxsWithADHDMRFeatureFlag,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
