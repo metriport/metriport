@@ -77,25 +77,7 @@ export function createAppConfigStack({
               },
             },
           },
-        },
-        values: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithCQDirectFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithADHDMRFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            enabled: true,
-            cxIdsAndLimits: [],
-          },
-        },
+        }
       }),
     }
   );
