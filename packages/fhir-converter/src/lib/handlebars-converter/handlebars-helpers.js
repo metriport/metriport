@@ -11,6 +11,13 @@ var crypto = require("crypto");
 var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
+const he = require('he');
+const convert = require("convert-units");
+
+
+const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
+const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
+const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -147,7 +154,10 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) throw `Invalid datetime: ${ds}`;
+    if (!validUTCDateTime(dateTimeComposition)) 
+    {
+      console.log(`Invalid datetime: ${ds}`);
+    }
     return new Date(date + " " + time + " " + timezone).toISOString();
   }
 
@@ -510,6 +520,22 @@ module.exports.external = [
     },
   },
   {
+    name: "multipleToArray",
+    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
+    func: function (...vals) {
+        var combinedArr = [];
+        vals.forEach(function(val) {
+            if (Array.isArray(val)) {
+                combinedArr.push(...val);
+            } else if (val) {
+                combinedArr.push(val);
+            }
+        });
+
+        return combinedArr;
+    },
+  },
+  {
     name: "getFirstCdaSections",
     description:
       "Returns first instance (non-alphanumeric chars replace by '_' in name) of the sections e.g. getFirstCdaSections msg 'Allergies' 'Medication': getFirstCdaSections message section1 section2 …",
@@ -571,7 +597,6 @@ module.exports.external = [
           //-1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-
             if (
               sectionObj.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
@@ -584,6 +609,33 @@ module.exports.external = [
         return ret;
       } catch (err) {
         throw `helper "getFirstCdaSectionsByTemplateId" : ${err}`;
+      }
+    },
+  },
+  {
+    name: "getAllCdaSectionsByTemplateId",
+    description:
+      "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
+    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+      try {
+        var ret = [];
+        // -1 because templateIds includes the full message at the end
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
+            const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
+            if (
+              sectionObj.templateId &&
+              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
+            ) {
+              var item = {};
+              item[normalizeSectionName(templateIds[t])] = sectionObj;
+              ret.push(item);
+            }
+          }
+        }
+        return ret;
+      } catch (err) {
+        throw `helper "getAllCdaSectionsByTemplateId" : ${err}`;
       }
     },
   },
@@ -814,24 +866,52 @@ module.exports.external = [
   {
     name: "toString",
     description: "Converts to string: toString object",
-    func: function (o) {
-      return o.toString();
+    func: function(str) {
+      return str.toString();
     },
   },
   {
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
-    func: function (o) {
-      // console.log(o);
-      return JSON.stringify(o);
+    func: function(str) {
+      return JSON.stringify(str);
+    },
+  },
+  {
+    name: "toJsonStringPrettier",
+    description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
+    func: function(str) {
+      return JSON.stringify(str, null, 2);
     },
   },
   {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toLowerCase();
+        return str.toString().toLowerCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
+    name: "trimAndLower",
+    description: "Trims and converts string to lower case: trimAndLower string",
+    func: function(str) {
+      try {
+        return str.toString().trim().toLowerCase();
+      } catch (err) {
+        return "";
+      }
+    },
+  },
+  {
+    name: "trimAndUpper",
+    description: "Trims and converts string to upper case: trimAndUpper string",
+    func: function(str) {
+      try {
+        return str.toString().trim().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -840,9 +920,9 @@ module.exports.external = [
   {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
-    func: function (o) {
+    func: function(str) {
       try {
-        return o.toString().toUpperCase();
+        return str.toString().toUpperCase();
       } catch (err) {
         return "";
       }
@@ -851,7 +931,7 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function (o) {
+    func: function(o) {
       return isNaN(o);
     },
   },
@@ -960,6 +1040,127 @@ module.exports.external = [
     description: "divide first number by the second number: / number1 number2",
     func: function (x, y) {
       return Number(x) / Number(y);
+    },
+  },
+  {
+    name: "startsWith",
+    description: "Checks if a string starts with a given substring: startsWith string substring",
+    func: function (str, substr) {
+      return str.startsWith(substr);
+    },
+  },
+  {
+    name: "parseReferenceData",
+    description: "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
+    func: function (referenceData) {
+      if (referenceData == undefined) {
+        return "";
+      }
+      return JSON.stringify(referenceData).slice(1, -1);
+    }
+  },
+  {
+    name: "personalRelationshipRoleTypeCodeSystem",
+    description: "Returns the code system for the related person relationship code",
+    func: function () {
+      return PERSONAL_RELATIONSHIP_TYPE_CODE;
+    },
+  },
+  {
+    name: "decodeHtmlEntities",
+    description: "Decodes html strings",
+    func: function (str) {
+      if (!str) {
+        return "";
+      }
+      const result = he.decode(str);
+      return result;
+    },
+  },
+  {
+    name: "convertFeetAndInchesToCm",
+    description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
+      if (match) {
+        const inches = (12 * parseFloat(match[1])) + parseFloat(match[2]);
+        const cm = convert(inches).from('in').to('cm');
+        const cmRounded = parseFloat(cm.toFixed(2));
+        return { isValid: true, value: cmRounded, unit: 'cm' };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractNumberAndUnit",
+    description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
+      if (match) {
+        return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractComparator",
+    description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
+    func: function (str) {
+      if (!str) {
+        return { isValid: false };
+      }
+      const match = str.match(new RegExp(`^([<>]=?)(${DECIMAL_REGEX_STR})$`));
+      if (match) {
+        return { isValid: true, comparator: match[1], number: parseFloat(match[2]) };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractRangeFromQuantity",
+    description: "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
+    func: function (obj) {
+      if (obj === undefined || obj === null || obj.value === undefined) {
+        return { isValid: false };
+      }
+      const match = obj.value.match(new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`));
+      if (match) {
+        return { 
+          isValid: true, 
+          range: {
+            low: {
+              value: match[1], 
+              unit: obj.unit || "",
+            },
+            high: {
+              value: match[2],
+              unit: obj.unit || "",
+            }
+          }
+        };
+      } else {
+        return { isValid: false };
+      }
+    },
+  },
+  {
+    name: "extractDecimal",
+    description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
+    func: function (str) {
+      if (!str) {
+        return "";
+      }
+      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
+      return match ? match[0] : '';
     },
   },
 ];

@@ -15,20 +15,26 @@
             "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
             "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
         },
+        {{!-- https://www.hl7.org/fhir/R4/dosage.html#Dosage --}}
         "dosage":
         [
             {
+                "text":"{{{ parseReferenceData medicationStatement.text._ }}}",
+                "route":{{>DataType/CodeableConcept.hbs code=medicationStatement.routeCode}},
                 "doseAndRate": [
-                {
-                    "doseQuantity":
                     {
-                        "value":{{medicationStatement.doseQuantity.value}},
-                        "unit":"{{medicationStatement.doseQuantity.unit}}"
-                    }
-                },
+                        {{#with (extractRangeFromQuantity medicationStatement.doseQuantity) as |rangeObj|}}
+                            {{#if rangeObj.isValid}}
+                                "doseRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                            {{else}}
+                                "doseQuantity": {{>DataType/Quantity.hbs quantity=../medicationStatement.doseQuantity}},
+                            {{/if}}
+                        {{/with}}
+                    },
                 ],
             },
-        ]
+        ],
+        {{!-- not mapping precondition from CDA --}}
     },
     "request":{
         "method":"PUT",

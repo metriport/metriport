@@ -1,5 +1,5 @@
-import { DocumentQueryProgress, isProcessing } from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+import { DocumentQueryProgress, isProcessing } from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 
 export function areDocumentsProcessing(patient: Patient): boolean;
 export function areDocumentsProcessing(progress: DocumentQueryProgress | undefined): boolean;

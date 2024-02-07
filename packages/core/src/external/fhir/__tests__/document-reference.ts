@@ -26,10 +26,6 @@ export const makeDocumentReference = ({
         id: "2.16.840.1.113883.3.9621.5.2004",
         name: "Metriport 2004",
       },
-      {
-        resourceType: "Patient",
-        id: _patient.id,
-      },
     ],
     masterIdentifier: {
       system: "urn:ietf:rfc:3986",

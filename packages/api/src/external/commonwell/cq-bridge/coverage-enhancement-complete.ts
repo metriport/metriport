@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { TriggerAndQueryDocRefsLocal } from "../../../command/medical/document/trigger-and-query-local";
-import { Patient } from "../../../domain/medical/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { CQLinkStatus } from "../patient-shared";
 import { setCQLinkStatus } from "./cq-link-status";
 import { ECUpdaterLocal } from "./ec-updater-local";

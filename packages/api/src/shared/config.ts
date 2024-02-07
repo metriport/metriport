@@ -236,13 +236,6 @@ export class Config {
     return getEnvVar("FHIR_CONVERTER_SERVER_URL");
   }
 
-  static getSidechainFHIRConverterQueueURL(): string | undefined {
-    return getEnvVar("SIDECHAIN_FHIR_CONVERTER_QUEUE_URL");
-  }
-  static getSidechainFHIRConverterDQLURL(): string | undefined {
-    return getEnvVar("SIDECHAIN_FHIR_CONVERTER_DLQ_URL");
-  }
-
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
@@ -253,6 +246,10 @@ export class Config {
 
   static getFHIRToMedicalRecordLambdaName(): string | undefined {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
+  }
+
+  static getDocQueryResultsLambdaName(): string {
+    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
@@ -297,5 +294,8 @@ export class Config {
   }
   static getCxsWithCQDirectFeatureFlagName(): string {
     return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
+  }
+  static getCxsWithIncreasedSandboxLimitFeatureFlagValue(): string | undefined {
+    return getEnvVar("CXS_WITH_INCREASED_SANDBOX_LIMIT_FEATURE_FLAG");
   }
 }

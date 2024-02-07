@@ -1,19 +1,21 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
-import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import {
   ConvertResult,
   DocumentQueryProgress,
   DocumentQueryStatus,
   Progress,
-} from "../../../domain/medical/document-query";
-import { Patient } from "../../../domain/medical/patient";
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
+import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
+import { appendDocQueryProgressWithSource } from "../../../external/hie/append-doc-query-progress-with-source";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
-import { appendDocQueryProgress, SetDocQueryProgress } from "../patient/append-doc-query-progress";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
@@ -34,7 +36,6 @@ export function isDocumentQueryProgressEqual(
   return isProgressEqual(a?.convert, b?.convert) && isProgressEqual(a?.download, b?.download);
 }
 
-// TODO: eventually we will have to update this to support multiple HIEs
 export async function queryDocumentsAcrossHIEs({
   cxId,
   patientId,
@@ -73,11 +74,23 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
+  await appendDocQueryProgressWithSource({
+    source: MedicalDataSource.ALL,
+    patient: updatedPatient,
+    requestId,
+    reset: true,
+  });
+
   getDocumentsFromCW({
     patient,
     facilityId,
     forceDownload: override,
     forceQuery,
+    requestId,
+  }).catch(emptyFunction);
+
+  getDocumentsFromCQ({
+    patient,
     requestId,
   }).catch(emptyFunction);
 
@@ -101,24 +114,6 @@ type UpdateResult = {
   patient: Pick<Patient, "id" | "cxId">;
   convertResult: ConvertResult;
 };
-
-type UpdateDocQueryParams =
-  | (SetDocQueryProgress & { convertResult?: never })
-  | (UpdateResult & {
-      downloadProgress?: never;
-      convertProgress?: never;
-      reset?: never;
-    });
-
-/**
- * @deprecated - call appendDocQueryProgress or updateConversionProgress directly
- */
-export async function updateDocQuery(params: UpdateDocQueryParams): Promise<Patient> {
-  if (params.convertResult) {
-    return updateConversionProgress(params);
-  }
-  return appendDocQueryProgress(params);
-}
 
 export const updateConversionProgress = async ({
   patient,

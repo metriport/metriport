@@ -1,16 +1,20 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.2.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.2.1')}}
-            {{#each (toArray 2_16_840_1_113883_10_20_22_2_2_1.entry) as |immEntry|}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.2')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.2' '2.16.840.1.113883.10.20.22.2.2.1')}}
+        {{#each (multipleToArray this.[2_16_840_1_113883_10_20_22_2_2].entry this.[2_16_840_1_113883_10_20_22_2_2_1].entry) as |immEntry|}}
+            {{#if immEntry.substanceAdministration}}
                 {{>Resources/Immunization.hbs imm=immEntry.substanceAdministration ID=(generateUUID (toJsonString immEntry))}},
-                {{#if (eq immEntry.substanceAdministration.informant.assignedEntity.id.root 'FACILITY')}}
-                    {{#if immEntry.substanceAdministration.informant.assignedEntity.representedOrganization.name._}}
-                        {{>Resources/Organization.hbs org=immEntry.substanceAdministration.informant.assignedEntity.representedOrganization ID=(generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization))}},
-                        {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' (generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization)))}},
-                    {{/if}}
+            {{/if}}
+            {{#if (eq immEntry.substanceAdministration.informant.assignedEntity.id.root 'FACILITY')}}
+                {{#if immEntry.substanceAdministration.informant.assignedEntity.representedOrganization.name._}}
+                    {{>Resources/Organization.hbs org=immEntry.substanceAdministration.informant.assignedEntity.representedOrganization ID=(generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization))}},
+                    {{>References/Immunization/performer.actor.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Organization/' (generateUUID (toJsonString immEntry.substanceAdministration.informant.assignedEntity.representedOrganization)))}},
                 {{/if}}
+            {{/if}}
+            {{#if immEntry.substanceAdministration}}
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                	{{>References/Immunization/patient.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{>References/Immunization/patient.hbs ID=(generateUUID (toJsonString immEntry)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
-            {{/each}}
-        {{/with}}
+            {{/if}}
+        {{/each}}
+    {{/with}}
 {{/if}} 

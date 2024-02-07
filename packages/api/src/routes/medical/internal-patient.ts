@@ -1,11 +1,15 @@
+import { genderAtBirthSchema } from "@metriport/api-sdk";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { sleep, stringToBoolean } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import stringify from "json-stringify-safe";
+import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
@@ -13,14 +17,15 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
+  getPatients,
   getPatientStates,
 } from "../../command/medical/patient/get-patient";
+import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
-import { MedicalDataSource } from "../../external";
 import {
-  getCxsWithEnhancedCoverageFeatureFlagValue,
   getCxsWithCQDirectFeatureFlagValue,
+  getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -29,10 +34,10 @@ import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-p
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
+import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
-import { stringToBoolean } from "../../shared/types";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -47,12 +52,16 @@ import {
   getFromQueryAsArrayOrFail,
 } from "../util";
 import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
 
 dayjs.extend(duration);
 
 const router = Router();
+const patientChunkSize = 25;
+const SLEEP_TIME = dayjs.duration({ seconds: 5 });
+const patientLoader = new PatientLoaderLocal();
 
 /** ---------------------------------------------------------------------------
  * GET /internal/patient/ids
@@ -197,7 +206,6 @@ router.delete(
     const patientId = getFromParamsOrFail("patientId", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const linkSource = req.params.source;
-
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
@@ -394,10 +402,10 @@ router.post(
       const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
 
       if (filteredCxIds.length < 1 && cxIds.length == 1) {
-        console.log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
+        log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       } else if (filteredCxIds.length < 1) {
-        console.log(`No customers to Enhanced Coverage, skipping...`);
+        log(`No customers to Enhanced Coverage, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       }
       log(`Using these cxIds: ${cxIds.join(", ")}`);
@@ -524,6 +532,103 @@ router.get(
       conversionType,
     });
     return res.json(data);
+  })
+);
+
+/**
+ * POST /internal/patient/trigger-update
+ *
+ * Triggers an update for all of a cx's patients. The point of this is to add coordinates to the patient's addresses.
+ *
+ * @param req.query.cxId The customer ID.
+ *
+ */
+router.post(
+  "/trigger-update",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patients = await getPatients({ cxId });
+    const chunks = chunk(patients, patientChunkSize);
+    const { log } = out(`Patient trigger update - cx ${cxId}`);
+    log(`Will update ${patients.length} patients in ${chunks.length} chunks`);
+
+    let totalUpdated = 0;
+    for (const chunk of chunks) {
+      const results = await Promise.allSettled(
+        chunk.map(async patient => {
+          const updateInfo: PatientUpdateCmd = {
+            id: patient.id,
+            cxId: patient.cxId,
+            ...patient.data,
+          };
+          await updatePatient(updateInfo, false);
+        })
+      );
+      const successful = results.filter(r => r.status === "fulfilled").length;
+      totalUpdated += successful;
+
+      log(`Updated ${successful} patients in this chunk`);
+      await sleep(SLEEP_TIME.asMilliseconds());
+    }
+
+    log(`Finished updating ${totalUpdated} patients`);
+    return res.sendStatus(status.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/
+ *
+ * Returns a list of patients that match the given demographics.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.query.dob The patient's date of birth.
+ * @param req.query.genderAtBirth The patient's gender at birth.
+ * @param req.query.firstNameInitial The patient's first name initial.
+ * @param req.query.lastNameInitial The patient's last name initial.
+ * @return A list of patients that match the given demographics.
+ */
+router.get(
+  "/",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const dob = getFrom("query").orFail("dob", req);
+    const genderAtBirth = genderAtBirthSchema.parse(getFrom("query").orFail("genderAtBirth", req));
+    const firstNameInitial = getFrom("query").optional("firstNameInitial", req);
+    const lastNameInitial = getFrom("query").optional("lastNameInitial", req);
+    const foundPatients = await patientLoader.findBySimilarity({
+      cxId,
+      data: {
+        dob,
+        genderAtBirth,
+        firstNameInitial,
+        lastNameInitial,
+      },
+    });
+    // TODO check if we're not returning Sequelize's Model data here; even thought the shape is Patient, the underlying object is PatientModel
+    // If we are, we should convert it to a DTO. Here, on `GET /internal/patient/:id`, and on `GET /internal/mpi/patient`
+    return res.status(status.OK).json(foundPatients.map(dtoFromModel));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/patient/:id
+ *
+ * return a patient given a specific customer id and patient id
+ * @param req.query.cxId The customer ID.
+ * @param req.params.id The patient ID.
+ * @return A patient.
+ *
+ */
+router.get(
+  "/:id",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const id = getFromParamsOrFail("id", req);
+
+    const patient = await getPatientOrFail({ cxId, id });
+
+    return res.status(status.OK).json(dtoFromModel(patient));
   })
 );
 

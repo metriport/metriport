@@ -10,13 +10,7 @@
             {{/each}}
         ],
         "status":{{>ValueSet/DiagnosticReportStatus.hbs code=diagReport.statusCode.code}},
-        "code":
-            {{#if diagReport.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=diagReport.code.translation}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=diagReport.code}},
-            {{/if}}
-            
+        "code":{{>DataType/CodeableConcept.hbs code=diagReport.code}},
         "effectivePeriod":
         {
             "start":"{{formatAsDateTime diagReport.effectiveTime.low.value}}",
@@ -24,6 +18,15 @@
         },
         
         "effectiveDateTime":"{{formatAsDateTime diagReport.effectiveTime.value}}",
+        {{#if diagReport.text._b64}}
+            "presentedForm": [
+                {
+                    "contentType": "text/plain",
+                    {{!-- safe to use triple braces here since we control the input and can ensure no single quotes --}}
+                    "data": "{{{diagReport.text._b64}}}",
+                }
+            ],
+        {{/if}}
 
     },
     "request":{

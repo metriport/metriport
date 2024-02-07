@@ -1,0 +1,51 @@
+ "code":
+    {{#if (eq code "BILL")}}
+        {
+            "code": "BILL",
+            "displayName": "Billing Contact",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "ORG")}}
+        {
+            "code": "ORG",
+            "displayName": "organizational contact",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "PAYOR")}}
+        {
+            "code": "PAYOR",
+            "displayName": "Payor contact",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "ECON")}}
+        {
+            "code": "ECON",
+            "displayName": "emergency contact",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "NOK")}}
+        {
+            "code": "NOK",
+            "displayName": "Next of Kin",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "AGNT")}}
+        {
+            "code": "AGNT",
+            "displayName": "Agent",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "CAREGIVER")}}
+        {
+            "code": "CAREGIVER",
+            "displayName": "Caregiver",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{else if (eq code "PRS")}}
+        {
+            "code": "PRS",
+            "displayName": "Personal Relationship",
+            "codeSystem": "2.16.840.1.113883.5.111"
+        }
+    {{/if}}
+

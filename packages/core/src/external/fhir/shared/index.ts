@@ -1,15 +1,30 @@
-import { Operator } from "@medplum/core";
+import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
   DocumentReference,
+  Extension,
   OperationOutcomeIssue,
+  Reference,
+  Resource,
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
+import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
+import { isMetriportExtension } from "./extensions/metriport";
+
+export const SEPARATOR_ID = "/";
+export const SEPARATOR_REF = "#";
 
 export function operationOutcomeIssueToString(i: OperationOutcomeIssue): string {
   return i.diagnostics ?? i.details?.text ?? i.code ?? "Unknown error";
 }
 
+export function getDetailFromOutcomeError(err: OperationOutcomeError): string {
+  return err.outcome.issue ? err.outcome.issue.map(operationOutcomeIssueToString).join(";") : "";
+}
+
+export function isUploadedByCustomer(doc: DocumentReference): boolean {
+  return doc.extension?.some(isMetriportExtension) ?? false;
+}
 export function downloadedFromCW(doc: DocumentReference): boolean {
   return doc.extension?.some(isCommonwellExtension) ?? false;
 }
@@ -78,4 +93,31 @@ const resourcesSupportingDateQueriesMap: { [k in MedplumResourceType]?: boolean 
 
 export function resourceSupportsDateQuery(resourceType: MedplumResourceType): boolean {
   return Object.keys(resourcesSupportingDateQueriesMap).includes(resourceType);
+}
+
+export function isResourceDerivedFromDocRef(resource: Resource, docId: string): boolean {
+  if (!("extension" in resource)) return false;
+  return (resource.extension ?? [])?.some(e => isExtensionDerivedFromDocRef(e, docId));
+}
+
+export function isExtensionDerivedFromDocRef(e: Extension, docId: string): boolean {
+  return e.url === DOC_ID_EXTENSION_URL && (e.valueString ?? "")?.includes(docId);
+}
+
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectId(subject: Reference | undefined): string | undefined {
+  return subject?.id;
+}
+/**
+ * @see getPatientId() to get the patient ID from a DocumentReference
+ */
+export function getIdFromSubjectRef(subject: Reference | undefined): string | undefined {
+  if (subject?.reference) {
+    const reference = subject.reference;
+    if (reference.includes(SEPARATOR_ID)) return subject.reference.split(SEPARATOR_ID)[1];
+    if (reference.includes(SEPARATOR_REF)) return subject.reference.split(SEPARATOR_REF)[1];
+  }
+  return undefined;
 }

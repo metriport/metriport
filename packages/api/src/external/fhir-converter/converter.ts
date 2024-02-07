@@ -1,11 +1,11 @@
 import { Document } from "@metriport/commonwell-sdk";
+import { buildDocIdFHIRExtension } from "@metriport/core/external/fhir/shared/extensions/doc-id-extension";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { sandboxSleepTime } from "../commonwell/document/shared";
 import { makeFHIRServerConnector } from "../fhir/connector/connector-factory";
-import { buildDocIdFHIRExtension } from "../fhir/shared/extensions/doc-id-extension";
-import { sidechainConvertCDAToFHIR } from "../sidechain-fhir-converter/converter";
 import { FHIRConverterSourceDataType } from "./connector";
 import { makeFHIRConverterConnector } from "./connector-factory";
 
@@ -27,7 +27,7 @@ export enum FHIRConverterCDATemplate {
 
 export type ContentMimeType = Pick<Document["content"], "mimeType">;
 
-export function isConvertible(mimeType?: string): boolean {
+export function isConvertible(mimeType?: string | undefined): boolean {
   // TODO move to core's isMimeTypeXML()
   return mimeType != null && ["text/xml", "application/xml"].includes(mimeType);
 }
@@ -47,6 +47,7 @@ export async function convertCDAToFHIR(params: {
   keepUnusedSegments?: boolean;
   keepInvalidAccess?: boolean;
   requestId: string;
+  source?: MedicalDataSource;
 }): Promise<void> {
   const {
     patient,
@@ -57,6 +58,7 @@ export async function convertCDAToFHIR(params: {
     keepUnusedSegments = false,
     keepInvalidAccess = false,
     requestId,
+    source,
   } = params;
   const { log } = Util.out(
     `convertCDAToFHIR, patientId ${patient.id}, requestId ${requestId}, docId ${document.id}`
@@ -94,6 +96,7 @@ export async function convertCDAToFHIR(params: {
       unusedSegments: `${keepUnusedSegments}`,
       invalidAccess: `${keepInvalidAccess}`,
       requestId,
+      source,
     });
   } catch (error) {
     log(`Error requesting CDA to FHIR conversion: ${error}`, params);
@@ -102,13 +105,4 @@ export async function convertCDAToFHIR(params: {
     });
     throw error;
   }
-
-  // also do the sidechain conversion (remove when no longer needed)
-  await sidechainConvertCDAToFHIR({
-    patient,
-    document: params.document,
-    s3FileName,
-    s3BucketName,
-    requestId,
-  });
 }

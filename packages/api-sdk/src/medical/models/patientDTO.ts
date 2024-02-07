@@ -16,10 +16,10 @@ export type PatientDTO = {
 };
 
 type Address = {
-  addressLine1?: string;
+  addressLine1: string;
   addressLine2?: string;
-  city?: string;
-  state?: string;
+  city: string;
+  state: string;
   zip: string;
   country: string;
 };

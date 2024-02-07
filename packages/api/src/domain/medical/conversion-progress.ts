@@ -1,5 +1,8 @@
-import { DocumentQueryProgress, getStatusFromProgress } from "./document-query";
-import { Patient } from "./patient";
+import {
+  DocumentQueryProgress,
+  getStatusFromProgress,
+} from "@metriport/core/domain/document-query";
+import { Patient } from "@metriport/core/domain/patient";
 
 export const convertResult = ["success", "failed"] as const;
 export type ConvertResult = (typeof convertResult)[number];
@@ -15,6 +18,15 @@ export const calculateConversionProgress = ({
 }): DocumentQueryProgress => {
   const docQueryProgress = patient.data.documentQueryProgress ?? {};
 
+  const talliedDocQueryProgress = tallyDocQueryProgress(docQueryProgress, convertResult);
+
+  return talliedDocQueryProgress;
+};
+
+export const tallyDocQueryProgress = (
+  docQueryProgress: DocumentQueryProgress,
+  convertResult: ConvertResult
+): DocumentQueryProgress => {
   const totalToConvert = docQueryProgress?.convert?.total ?? 0;
 
   const successfulConvert = docQueryProgress?.convert?.successful ?? 0;

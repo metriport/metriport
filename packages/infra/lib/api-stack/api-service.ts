@@ -28,37 +28,61 @@ interface ApiServiceProps extends StackProps {
 }
 
 // TODO move these parameters to object properties
-export function createAPIService(
-  stack: Construct,
-  props: ApiServiceProps,
-  secrets: Secrets,
-  vpc: ec2.IVpc,
-  dbCredsSecret: secret.ISecret,
-  dynamoDBTokenTable: dynamodb.Table,
-  alarmAction: SnsAction | undefined,
-  dnsZones: DnsZones,
-  fhirServerUrl: string,
-  fhirServerQueueUrl: string | undefined,
-  fhirConverterQueueUrl: string | undefined,
-  fhirConverterServiceUrl: string | undefined,
-  sidechainFHIRConverterQueue: IQueue | undefined,
-  sidechainFHIRConverterDLQ: IQueue | undefined,
-  cdaToVisualizationLambda: ILambda,
-  documentDownloaderLambda: ILambda,
-  medicalDocumentsUploadBucket: s3.Bucket,
-  fhirToMedicalRecordLambda: ILambda | undefined,
-  searchIngestionQueue: IQueue,
-  searchEndpoint: string,
-  searchAuth: { userName: string; secret: ISecret },
-  searchIndexName: string,
+export function createAPIService({
+  stack,
+  props,
+  secrets,
+  vpc,
+  dbCredsSecret,
+  dynamoDBTokenTable,
+  alarmAction,
+  dnsZones,
+  fhirServerUrl,
+  fhirServerQueueUrl,
+  fhirConverterQueueUrl,
+  fhirConverterServiceUrl,
+  cdaToVisualizationLambda,
+  documentDownloaderLambda,
+  documentQueryResultsLambda,
+  medicalDocumentsUploadBucket,
+  fhirToMedicalRecordLambda,
+  searchIngestionQueue,
+  searchEndpoint,
+  searchAuth,
+  searchIndexName,
+  appConfigEnvVars,
+  cookieStore,
+}: {
+  stack: Construct;
+  props: ApiServiceProps;
+  secrets: Secrets;
+  vpc: ec2.IVpc;
+  dbCredsSecret: secret.ISecret;
+  dynamoDBTokenTable: dynamodb.Table;
+  alarmAction: SnsAction | undefined;
+  dnsZones: DnsZones;
+  fhirServerUrl: string;
+  fhirServerQueueUrl: string | undefined;
+  fhirConverterQueueUrl: string | undefined;
+  fhirConverterServiceUrl: string | undefined;
+  cdaToVisualizationLambda: ILambda;
+  documentDownloaderLambda: ILambda;
+  documentQueryResultsLambda: ILambda;
+  medicalDocumentsUploadBucket: s3.Bucket;
+  fhirToMedicalRecordLambda: ILambda | undefined;
+  searchIngestionQueue: IQueue;
+  searchEndpoint: string;
+  searchAuth: { userName: string; secret: ISecret };
+  searchIndexName: string;
   appConfigEnvVars: {
     appId: string;
     configId: string;
     cxsWithEnhancedCoverageFeatureFlag: string;
     cxsWithCQDirectFeatureFlag: string;
-  },
-  cookieStore: secret.ISecret | undefined
-): {
+    cxsWithIncreasedSandboxLimitFeatureFlag: string;
+  };
+  cookieStore: secret.ISecret | undefined;
+}): {
   cluster: ecs.Cluster;
   service: ecs_patterns.NetworkLoadBalancedFargateService;
   serverAddress: string;
@@ -130,6 +154,7 @@ export function createAPIService(
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
+          DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -143,12 +168,6 @@ export function createAPIService(
           ...(fhirConverterServiceUrl && {
             FHIR_CONVERTER_SERVER_URL: fhirConverterServiceUrl,
           }),
-          ...(sidechainFHIRConverterQueue && {
-            SIDECHAIN_FHIR_CONVERTER_QUEUE_URL: sidechainFHIRConverterQueue.queueUrl,
-          }),
-          ...(sidechainFHIRConverterDLQ && {
-            SIDECHAIN_FHIR_CONVERTER_DLQ_URL: sidechainFHIRConverterDLQ.queueUrl,
-          }),
           SEARCH_INGESTION_QUEUE_URL: searchIngestionQueue.queueUrl,
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
@@ -156,14 +175,18 @@ export function createAPIService(
           ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
             CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
           }),
-          PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
-          PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
+          ...(props.config.locationService && {
+            PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
+            PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,
+          }),
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
           CXS_WITH_CQ_DIRECT_FEATURE_FLAG: appConfigEnvVars.cxsWithCQDirectFeatureFlag,
           CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
             appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
+          CXS_WITH_INCREASED_SANDBOX_LIMIT_FEATURE_FLAG:
+            appConfigEnvVars.cxsWithIncreasedSandboxLimitFeatureFlag,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -193,6 +216,7 @@ export function createAPIService(
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
@@ -202,18 +226,6 @@ export function createAPIService(
     cdaToVisualizationLambda.grantInvoke(fhirToMedicalRecordLambda);
   }
 
-  sidechainFHIRConverterQueue &&
-    provideAccessToQueue({
-      accessType: "send",
-      queue: sidechainFHIRConverterQueue,
-      resource: fargateService.service.taskDefinition.taskRole,
-    });
-  sidechainFHIRConverterDLQ &&
-    provideAccessToQueue({
-      accessType: "both",
-      queue: sidechainFHIRConverterDLQ,
-      resource: fargateService.service.taskDefinition.taskRole,
-    });
   if (cookieStore) {
     cookieStore.grantRead(fargateService.service.taskDefinition.taskRole);
     cookieStore.grantWrite(fargateService.service.taskDefinition.taskRole);

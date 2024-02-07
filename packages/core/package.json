@@ -1,6 +1,6 @@
 {
   "name": "@metriport/core",
-  "version": "1.6.12",
+  "version": "1.9.0",
   "private": true,
   "description": "Metriport helps you access and manage health and medical data, through a single open source API. Common code shared across packages.",
   "author": "Metriport Inc. <contact@metriport.com>",
@@ -17,8 +17,10 @@
   "exports": {
     ".": "./dist/index.js",
     "./domain/*": "./dist/domain/*.js",
+    "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
-    "./util/*": "./dist/util/*.js"
+    "./util/*": "./dist/util/*.js",
+    "./mpi/*": "./dist/mpi/*.js"
   },
   "typesVersions": {
     "*": {
@@ -28,11 +30,17 @@
       "domain/*": [
         "dist/domain/*"
       ],
+      "command/*": [
+        "dist/command/*"
+      ],
       "external/*": [
         "dist/external/*"
       ],
       "util/*": [
         "dist/util/*"
+      ],
+      "mpi/*": [
+        "dist/mpi/*"
       ]
     }
   },
@@ -54,6 +62,7 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",

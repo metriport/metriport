@@ -101,6 +101,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const patientId = attrib.patientId?.stringValue;
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
+      const source = attrib.source?.stringValue;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -151,7 +152,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           const errors = getErrorsFromReponse(response);
           if (errors.length <= 0) break;
           retry = count < maxRetries;
-          log(`Got ${errors.length} errors from FHIR, ${retry ? "" : "NOT "}trying again...`);
+          log(
+            `Got ${errors.length} errors from FHIR, ${
+              retry ? "" : "NOT "
+            }trying again... errors: ${JSON.stringify(errors)}`
+          );
           if (!retry) {
             throw new MetriportError(`Too many errors from FHIR`, undefined, {
               count: count.toString(),
@@ -178,7 +183,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         processFHIRResponse(response, event, log);
 
         await cloudWatchUtils.reportMetrics(metrics);
-        await ossApi.notifyApi({ cxId, patientId, status: "success", jobId }, log);
+        await ossApi.notifyApi({ cxId, patientId, status: "success", jobId, source }, log);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
@@ -201,7 +206,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.sendToDLQ(message);
 
           await ossApi.notifyApi(
-            { cxId, patientId, status: "failed", details: error.message, jobId },
+            { cxId, patientId, status: "failed", details: error.message, jobId, source },
             log
           );
         }

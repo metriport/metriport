@@ -9,15 +9,14 @@
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ], 
-        "status":{{>ValueSet/FMStatus.hbs payerEntry.statusCode.code}},
-        "relationship":{{>DataType/CodeableConcept.hbs code=payerEntry.code}},      
+        "status":{{>ValueSet/FMStatus.hbs code=payerEntry.statusCode.code}},
+        "relationship":{{>DataType/CodeableConcept.hbs code=payerEntry.code}},
+
+        {{!-- Missing CCDA Policy Holder > FHIR policyHolder --}}
+        {{!-- Missing CCDA Guarantor > FHIR Participant Extension --}}
     },
     "request":{
         "method":"PUT",
         "url":"Coverage/{{ID}}",
     },
 },
-
-
-
-  

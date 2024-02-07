@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><list>
+  <com.mirth.connect.plugins.directoryresource.DirectoryResourceProperties version="4.4.2">
+    <pluginPointName>Directory Resource</pluginPointName>
+    <type>Directory</type>
+    <id>Default Resource</id>
+    <name>[Default Resource]</name>
+    <description>Loads libraries from the custom-lib folder in the Mirth Connect home directory.</description>
+    <includeWithGlobalScripts>true</includeWithGlobalScripts>
+    <loadParentFirst>false</loadParentFirst>
+    <directory>custom-lib</directory>
+    <directoryRecursion>true</directoryRecursion>
+  </com.mirth.connect.plugins.directoryresource.DirectoryResourceProperties>
+</list>

@@ -10,12 +10,7 @@
             {{/each}}
         ],
         "status":"completed"
-        "relationship":
-            {{#if familyEntry.subject.relatedSubject.code.translation}}
-                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code.translation}},
-            {{else}}
-                {{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code}},
-            {{/if}}
+        "relationship":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.code}},
         "sex":{{>DataType/CodeableConcept.hbs code=familyEntry.subject.relatedSubject.subject.administrativeGenderCode}},
         "bornString":"{{familyEntry.subject.relatedSubject.subject.birthTime.value}}",
         "condition":
@@ -28,11 +23,7 @@
                                 "contributedToDeath":true,
                             {{/if}}
                             {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.31')}}
-                                "onsetAge":{
-                                        "value": {{this.observation.value.value}},
-                                        "system": "http://unitsofmeasure.org",
-                                        "code": "{{this.observation.value.unit}}"
-                                    },
+                                "onsetAge":{{>DataType/Quantity.hbs quantity=this.observationEntry.value}},
                             {{/if}}
                         {{/each}} 
                 },

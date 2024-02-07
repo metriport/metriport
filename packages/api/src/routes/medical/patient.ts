@@ -1,6 +1,7 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -15,11 +16,11 @@ import { PatientCreateCmd, createPatient } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import cwCommands from "../../external/commonwell";
-import { toFHIR } from "../../external/fhir/patient";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -67,7 +68,8 @@ router.post(
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
       const numPatients = await Patient.count({ where: { cxId } });
-      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+      const patientLimit = await getSandboxPatientLimitForCx(cxId);
+      if (numPatients >= patientLimit) {
         return res.status(status.BAD_REQUEST).json({
           message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
         });
@@ -84,7 +86,6 @@ router.post(
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
     await upsertPatientToFHIRServer(patient.cxId, fhirPatient);
-
     return res.status(status.CREATED).json(dtoFromModel(patient));
   })
 );

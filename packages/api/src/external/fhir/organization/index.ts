@@ -1,4 +1,4 @@
-import { Organization } from "../../../domain/medical/organization";
+import { Organization } from "@metriport/core/domain/organization";
 import { Organization as FHIROrganization } from "@medplum/fhirtypes";
 
 export const toFHIR = (org: Organization): FHIROrganization => {

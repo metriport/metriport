@@ -16,25 +16,25 @@
             {{/each}}
         ],
         
-        {{#if observationCategory}}
-             "category": [
-                  {
-                      "coding": [
-                          {
-                            "system": "http://terminology.hl7.org/CodeSystem/observation-category",
-                            "code": "{{observationCategory}}"
-                          }
-                    ]
-                  }
-            ],
-        {{/if}}
+            {{#if observationCategory}}
+                {{#with (evaluate 'Utils/ObservationCategoryDisplayFromCode.hbs' code=observationCategory) as |respObj|}}
+                    "category": [
+                        {
+                            "coding": [
+                                {
+                                    "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                                    "code": "{{../observationCategory}}",
+                                    "display": "{{respObj.display}}"
+                                }
+                            ],
+                            "text": "{{respObj.display}}"
+                        }
+                    ],
+                {{/with}}
+            {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        {{#if observationEntry.code.translation.code}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code.translation}},
-        {{else}}
-            "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code}},
-        {{/if}}
+        "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._}},
         
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
@@ -51,29 +51,21 @@
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
-            "valueQuantity":
-            {
-                "value":{{observationEntry.value.value}},
-                "unit":"{{observationEntry.value.unit}}",
-            }, 
+            {{#with (extractRangeFromQuantity observationEntry.value) as |rangeObj|}}
+                {{#if rangeObj.isValid}}
+                    "valueRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                {{else}}
+                    "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
+                {{/if}}
+            {{/with}}
         {{else}}
-            "valueString":"{{observationEntry.value._}}",
+            {{!-- okay since we control the input and escape all single quotes in parseReferenceData --}}
+            "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
         [
-          {
-            "low":
-                {
-                    "value":{{observationEntry.referenceRange.observationRange.value.low.value}},
-                    "unit":"{{observationEntry.referenceRange.observationRange.value.low.unit}}",
-                }
-           "high":
-               {
-                   "value":{{observationEntry.referenceRange.observationRange.value.high.value}},
-                   "unit":"{{observationEntry.referenceRange.observationRange.value.high.unit}}",
-               }
-          },
+          {{>DataType/Range.hbs referenceRange=observationEntry.referenceRange.observationRange.value}}
         ],
         "interpretation":
         [

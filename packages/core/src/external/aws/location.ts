@@ -9,6 +9,12 @@ export type Coordinates = {
   lon: number;
 };
 
+export type GeocodingResult = {
+  coordinates: Coordinates;
+  relevance: number;
+  suggestedLabel: string;
+};
+
 export function makeLocationClient(region: string): AWS.Location {
   return new AWS.Location({ signatureVersion: "v4", region });
 }
@@ -27,22 +33,28 @@ export function getLocationResultPayload({
   return result.Results;
 }
 
-export function getCoordinatesFromLocation({
-  result,
-}: {
-  result: PromiseResult<AWS.Location.SearchPlaceIndexForTextResponse, AWS.AWSError>;
-}): Coordinates {
-  const resp = getLocationResultPayload({ result });
-  const topSuggestion = resp ? resp[0] : undefined;
-  if (topSuggestion) {
-    const point = topSuggestion.Place?.Geometry?.Point;
+export function parseSuggestedAddress(
+  suggestedAddress: AWS.Location.SearchForTextResult
+): GeocodingResult {
+  const point = suggestedAddress.Place?.Geometry?.Point;
+  const relevance = suggestedAddress.Relevance;
+  const label = suggestedAddress.Place.Label;
+  const errorMsg = "No location found";
 
-    if (point) {
-      const lon = point[0];
-      const lat = point[1];
-      if (lon && lat) return { lon, lat };
-    }
+  if (!point) throw new Error(errorMsg);
+
+  const lon = point[0];
+  const lat = point[1];
+  if (lon && lat && relevance && label) {
+    return {
+      coordinates: {
+        lon,
+        lat,
+      },
+      relevance,
+      suggestedLabel: label,
+    };
   }
 
-  throw new Error("No location found");
+  throw new Error(errorMsg);
 }

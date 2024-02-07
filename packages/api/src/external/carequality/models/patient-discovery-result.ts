@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
-import { PatientDiscoveryResponseIncoming } from "@metriport/ihe-gateway-sdk";
-import { PatientDiscoveryResult } from "../domain/patient-discovery-result";
+import { PatientDiscoveryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryResult } from "../patient-discovery-result";
 import { ModelSetup } from "../../../models/_default";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -11,7 +11,7 @@ export class PatientDiscoveryResultModel extends Model<any, any> implements Pati
   declare patientId: string;
   declare status: string;
   declare createdAt: CreationOptional<Date>;
-  declare data: PatientDiscoveryResponseIncoming;
+  declare data: PatientDiscoveryRespFromExternalGW;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     PatientDiscoveryResultModel.init(

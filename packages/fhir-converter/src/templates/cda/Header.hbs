@@ -23,7 +23,15 @@
             {{>Resources/Organization.hbs org=this.custodian.assignedCustodian.representedCustodianOrganization ID=(generateUUID (toJsonString this.custodian.assignedCustodian.representedCustodianOrganization))}},
     		{{>References/Composition/custodian.hbs ID=(generateUUID (toJsonString this)) REF=(concat 'Organization/' (generateUUID (toJsonString this.custodian.assignedCustodian.representedCustodianOrganization)))}},            
         {{/if}}
-        
+
+        {{#each (toArray this.participant)}}
+            {{#if this}}
+                {{>Resources/RelatedPerson.hbs relatedPerson=this.associatedEntity ID=(generateUUID (toJsonString this.associatedEntity))}},
+                {{>References/Patient/link.other.hbs ID=@metriportPatientId REF=(concat 'RelatedPerson/' (generateUUID (toJsonString this.associatedEntity)))}},
+                {{>References/RelatedPerson/patient.hbs ID=(generateUUID (toJsonString this.associatedEntity)) REF=(concat 'Patient/' @metriportPatientId)}},
+            {{/if}}
+        {{/each}}
+
 {{/with}}
     	
 {{#if msg.ClinicalDocument.author.assignedAuthor.assignedAuthoringDevice}}

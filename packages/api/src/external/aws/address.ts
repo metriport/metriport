@@ -1,39 +1,65 @@
-import { Address } from "../../domain/medical/address";
+import { Address } from "@metriport/core/domain/address";
 import {
-  getCoordinatesFromLocation,
+  GeocodingResult,
+  getLocationResultPayload,
   makeLocationClient,
+  parseSuggestedAddress,
 } from "@metriport/core/external/aws/location";
-import { Config } from "../../shared/config";
 import * as AWS from "aws-sdk";
-import { Coordinates } from "@metriport/core/external/aws/location";
+import { Config } from "../../shared/config";
 
-const indexName = Config.getPlaceIndexName();
-const placeIndexRegion = Config.getPlaceIndexRegion();
-const client = makeLocationClient(placeIndexRegion);
+export type AddressGeocodingResult = {
+  address: Address;
+  relevance: number;
+  suggestedLabel: string;
+};
+
+let indexName: string | undefined;
+let placeIndexRegion: string | undefined;
+let client: AWS.Location | undefined;
+
+function getIndexName(): string {
+  if (!indexName) indexName = Config.getPlaceIndexName();
+  return indexName;
+}
+function getPlaceIndexRegion(): string {
+  if (!placeIndexRegion) placeIndexRegion = Config.getPlaceIndexRegion();
+  return placeIndexRegion;
+}
+function getLocationClient(): AWS.Location {
+  if (!client) {
+    placeIndexRegion = getPlaceIndexRegion();
+    client = makeLocationClient(placeIndexRegion);
+  }
+  return client;
+}
+
+export function buildAddressText(address: Address): string {
+  return `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
+}
 
 /**
- * Geocodes a list of addresses using Amazon Location Services.
- * @param addresses
- * @returns
+ * Geocodes an addresses using Amazon Location Services.
+ * @param address an Address object
+ * @returns a Coordinate pair
  */
-export async function geocodeAddresses(addresses: Address[]): Promise<Coordinates[]> {
-  const resultPromises = await Promise.allSettled(
-    addresses.map(async address => {
-      const addressText = `${address.addressLine1}, ${address.city}, ${address.state} ${address.zip}`;
-      const countryFilter = address.country ?? "USA";
+export async function geocodeAddress(address: Address): Promise<GeocodingResult | undefined> {
+  const addressText = buildAddressText(address);
+  const countryFilter = address.country ?? "USA";
 
-      const params: AWS.Location.Types.SearchPlaceIndexForTextRequest = {
-        Text: addressText,
-        MaxResults: 1,
-        Language: "en",
-        FilterCountries: [countryFilter],
-        IndexName: indexName,
-      };
+  const params: AWS.Location.Types.SearchPlaceIndexForTextRequest = {
+    Text: addressText,
+    MaxResults: 1,
+    Language: "en",
+    FilterCountries: [countryFilter],
+    IndexName: getIndexName(),
+  };
 
-      const locationResponse = await client.searchPlaceIndexForText(params).promise();
-      return getCoordinatesFromLocation({ result: locationResponse });
-    })
-  );
-  const successful = resultPromises.flatMap(p => (p.status === "fulfilled" ? p.value : []));
-  return successful;
+  const locationResponse = await getLocationClient().searchPlaceIndexForText(params).promise();
+  const resp = getLocationResultPayload({ result: locationResponse });
+
+  const topSuggestion = resp ? resp[0] : undefined;
+  if (topSuggestion) {
+    return parseSuggestedAddress(topSuggestion);
+  }
 }
