@@ -104,7 +104,7 @@ module.exports = class cda extends dataHandler {
     for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
       // doing this is apparently more efficient than just using replace
       const regex = new RegExp(stringToReplace, "g");
-      res = res.replace(regex, " ");
+      res = res.replace(regex, "\n");
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);
