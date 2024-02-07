@@ -34,26 +34,7 @@
             {{/if}}
         
         "status":{{>ValueSet/ObservationStatus.hbs code=observationEntry.statusCode.code}},
-        "code": {
-            {{#if observationEntry.code.originalText}}
-                "text":"{{{observationEntry.code.originalText._}}}",
-            {{else if observationEntry.text._}}
-                "text":"{{{observationEntry.text._}}}",
-            {{/if}}
-            {{#if observationEntry.code}}
-                "coding": 
-                [
-                    {{>DataType/Coding.hbs code=observationEntry.code}},
-                    {{#if observationEntry.code.translation.code}}
-                        {{>DataType/Coding.hbs code=observationEntry.code.translation}},
-                    {{else}}
-                        {{#each observationEntry.code.translation}}
-                            {{>DataType/Coding.hbs code=this}},
-                        {{/each}}
-                    {{/if}}
-                ],
-            {{/if}}
-        },
+        "code": {{>DataType/CodeableConcept.hbs code=observationEntry.code text=observationEntry.text._}},
         
         {{#if observationEntry.effectiveTime.low.value}}
             "effectivePeriod":
@@ -70,29 +51,21 @@
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
-            "valueQuantity":
-            {
-                "value":"{{observationEntry.value.value}}",
-                "unit":"{{observationEntry.value.unit}}",
-            }, 
+            {{#with (extractRangeFromQuantity observationEntry.value) as |rangeObj|}}
+                {{#if rangeObj.isValid}}
+                    "valueRange": {{>DataType/Range.hbs range=rangeObj.range}},
+                {{else}}
+                    "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
+                {{/if}}
+            {{/with}}
         {{else}}
+            {{!-- okay since we control the input and escape all single quotes in parseReferenceData --}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{/if}}
         
         "referenceRange":
         [
-          {
-            "low":
-                {
-                    "value":"{{observationEntry.referenceRange.observationRange.value.low.value}}",
-                    "unit":"{{observationEntry.referenceRange.observationRange.value.low.unit}}",
-                }
-           "high":
-               {
-                   "value":"{{observationEntry.referenceRange.observationRange.value.high.value}}",
-                   "unit":"{{observationEntry.referenceRange.observationRange.value.high.unit}}",
-               }
-          },
+          {{>DataType/Range.hbs referenceRange=observationEntry.referenceRange.observationRange.value}}
         ],
         "interpretation":
         [

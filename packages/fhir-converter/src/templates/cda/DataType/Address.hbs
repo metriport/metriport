@@ -2,7 +2,7 @@
     "use": {{>ValueSet/AddressUse.hbs code=addr.use}},
     "line": [
        	{{#each (toArray addr.streetAddressLine)}}
-           	"{{{this._}}}",
+           	"{{this._}}",
        	{{/each}}
     ],
     "city": "{{addr.city._}}",
