@@ -56,8 +56,7 @@ export async function getMedicalRecordSummaryStatus({
 
 function getCreatedAtDate(info: { exists: boolean; createdAt?: Date }): string | undefined {
   const dateString =
-    info.createdAt?.toLocaleString("en-US") ??
-    (info.exists ? DEFAULT_MR_CREATION_DATE_STRING : undefined);
+    info.createdAt?.toString() ?? (info.exists ? DEFAULT_MR_CREATION_DATE_STRING : undefined);
 
   return dateString;
 }
