@@ -292,6 +292,8 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient whose data is to be returned.
    * @param conversionType Indicate how the medical record should be rendered. Can be "html" or "pdf".
    * @return The URL for the medical record summary, if it exists. Otherwise, returns undefined.
+   *
+   * @throws Error if the request fails.
    */
   async getMedicalRecordSummary(
     patientId: string,
@@ -304,8 +306,10 @@ export class MetriportMedicalApi {
         },
       });
       return resp.data.url;
-    } catch (error) {
-      return undefined;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.status === 404) return undefined;
+      throw error;
     }
   }
 
