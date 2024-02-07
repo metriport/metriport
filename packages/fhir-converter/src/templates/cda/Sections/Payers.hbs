@@ -1,9 +1,9 @@
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.18')}}
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.18')}}
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_18.entry)}}
-            {{#each (toArray this.act.entryRelationship) as |payEntry|}}
-                {{>Resources/Coverage.hbs payerEntry=payEntry.act ID=(generateUUID (toJsonString payEntry.act))}},
-                {{#each (toArray payEntry.act.performer)}}
+            {{#each (toArray this.act.entryRelationship) as |payerEntry|}}
+                {{>Resources/Coverage.hbs payerEntry=payerEntry.act ID=(generateUUID (toJsonString payerEntry.act))}},
+                {{#each (toArray payerEntry.act.performer)}}
                     {{!--
                     From: https://confluence.hl7.org/display/SD/C-CDA+OIDs (see "Entry Templates")
                     2.16.840.1.113883.10.20.22.4.87	- Payer Performer
@@ -13,11 +13,12 @@
 
                     Example: https://github.com/HL7/C-CDA-Examples/blob/fb1c33b3a880fc47407f25c5dafa0066996529f4/Documents/CCD/CCD%201/CCD.XML
                     --}}
-                    {{#if (contains (toJsonString this.templateId) '"2.16.840.1.113883.10.20.22.4.87"')}}
+                    {{#if (contains (toJsonString this.templateId) "2.16.840.1.113883.10.20.22.4.87")}}
                         {{#if this.assignedEntity.representedOrganization.name._}}
                             {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=this.assignedEntity.representedOrganization) as |orgId|}}
                                 {{>Resources/Organization.hbs org=this.assignedEntity.representedOrganization ID=orgId.Id}},
-                                {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
+                                {{>References/Coverage/payor.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
+                                {{>References/Coverage/beneficiary.hbs ID=(generateUUID (toJsonString payerEntry.act)) REF=(concat 'Patient/' @metriportPatientId)}},
                             {{/with}}
                         {{/if}}
                     {{/if}}

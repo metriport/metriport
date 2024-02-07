@@ -1,10 +1,8 @@
 {
 	{{#if code.originalText}}
-		"text":"{{{code.originalText._}}}",
-	{{else}}
-		{{#if text}}
-			"text":"{{{text}}}",
-		{{/if}}
+		"text":"{{{parseReferenceData code.originalText._ }}}",
+	{{else if text}}
+		"text": "{{{parseReferenceData text}}}",
 	{{/if}}
 
 	"coding": 
