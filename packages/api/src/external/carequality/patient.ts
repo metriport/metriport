@@ -150,7 +150,9 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
     return {
       patientId: id,
       systemId: system,
-      ...pd.data.gateway,
+      oid: pd.data.gateway.oid,
+      url: pd.data.gateway.url ?? "",
+      id: pd.data.gateway.id,
     };
   });
 }

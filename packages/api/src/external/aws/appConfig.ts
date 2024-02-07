@@ -1,7 +1,7 @@
 import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { capture } from "@metriport/core/util/notifications";
+import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
-import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 
 const log = Util.log(`App Config`);
@@ -15,7 +15,8 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
   try {
     const featureFlag = await getFeatureFlagValue<{
       enabled: boolean | undefined;
-      cxIds: string[] | undefined;
+      cxIds?: string[];
+      cxIdsAndLimits?: string[];
     }>(
       Config.getAWSRegion(),
       Config.getAppConfigAppId(),
@@ -23,7 +24,10 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
       Config.getEnvType(),
       featureFlagName
     );
-    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+    if (featureFlag?.enabled) {
+      if (featureFlag?.cxIds) return featureFlag.cxIds;
+      if (featureFlag?.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
+    }
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName };
@@ -39,6 +43,14 @@ export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<stri
 
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
+}
+
+export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<
+  string[] | undefined
+> {
+  const featureFlagValue = Config.getCxsWithIncreasedSandboxLimitFeatureFlagValue();
+  if (!featureFlagValue) return;
+  return getCxsWithFeatureFlagValue(featureFlagValue);
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
