@@ -656,7 +656,7 @@ function buildEncounterSections(
 
         if (diagnosticReportsType === "documentation") {
           const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
-          const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
+          const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("utf-8");
           const blackListNote = "Not on file";
           const noteIsBlacklisted = decodeNote.toLowerCase().includes(blackListNote.toLowerCase());
 
@@ -764,7 +764,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
   const documentations = documentation
     .map(documentation => {
       const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("binary");
+      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
       const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
 
       const practitionerField = createPractionerField(documentation, mappedPractitioners);
@@ -2087,9 +2087,13 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
   });
 
   const removeDuplicate = uniqWith(coveragesSortedByDate, (a, b) => {
-    const aDate = dayjs(a.period?.start).format(ISO_DATE);
-    const bDate = dayjs(b.period?.start).format(ISO_DATE);
-    return aDate === bDate && a.type?.text === b.type?.text;
+    if (a.period?.start && b.period?.start) {
+      const aDate = dayjs(a.period?.start).format(ISO_DATE);
+      const bDate = dayjs(b.period?.start).format(ISO_DATE);
+      return aDate === bDate && a.type?.text === b.type?.text;
+    } else {
+      return a.relationship?.text === b.relationship?.text;
+    }
   });
 
   const coverageTableContents =

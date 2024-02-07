@@ -138,7 +138,8 @@ export class APIStack extends Stack {
       cxsWithEnhancedCoverageFeatureFlag,
       cxsWithCQDirectFeatureFlag,
       cxsWithADHDMRFeatureFlag,
-    } = createAppConfigStack(this, { config: props.config });
+      cxsWithIncreasedSandboxLimitFeatureFlag,
+    } = createAppConfigStack({ stack: this, props: { config: props.config } });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -356,7 +357,7 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
           cxsWithADHDMRFeatureFlag,
-        }
+        },
       });
     }
 
@@ -407,6 +408,7 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
         cxsWithCQDirectFeatureFlag,
+        cxsWithIncreasedSandboxLimitFeatureFlag,
       },
       cookieStore,
     });
@@ -1216,7 +1218,15 @@ export class APIStack extends Stack {
       cxsWithADHDMRFeatureFlag: string;
     };
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket, appConfigEnvVars } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      appConfigEnvVars,
+    } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
