@@ -2107,9 +2107,13 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
   });
 
   const removeDuplicate = uniqWith(coveragesSortedByDate, (a, b) => {
-    const aDate = dayjs(a.period?.start).format(ISO_DATE);
-    const bDate = dayjs(b.period?.start).format(ISO_DATE);
-    return aDate === bDate && a.type?.text === b.type?.text;
+    if (a.period?.start && b.period?.start) {
+      const aDate = dayjs(a.period?.start).format(ISO_DATE);
+      const bDate = dayjs(b.period?.start).format(ISO_DATE);
+      return aDate === bDate && a.type?.text === b.type?.text;
+    } else {
+      return a.relationship?.text === b.relationship?.text;
+    }
   });
 
   const coverageTableContents =
