@@ -240,23 +240,26 @@ export const bundleToHtmlADHD = (fhirBundle: Bundle): string => {
             practitioners,
             aweVisits,
             organizations,
-            "Annual Wellness Exams",
+            encounters,
+            "Annual Wellness Exam Encounters",
             "awe",
             aYearAgo
-          )}
-          ${createDiagnosticReportsSection(
-            diagnosticReports,
-            practitioners,
-            [...aweVisits, ...adhdVisits],
-            organizations
           )}
           ${createFilteredReportSection(
             diagnosticReports,
             practitioners,
             adhdVisits,
             organizations,
-            "ADHD",
+            encounters,
+            "ADHD Encounters",
             "adhd"
+          )}
+          ${createDiagnosticReportsSection(
+            diagnosticReports,
+            practitioners,
+            [...aweVisits, ...adhdVisits],
+            organizations,
+            encounters
           )}
           ${createMedicationSection(medications, medicationStatements)}
           ${createConditionSection(conditions, encounters)}
@@ -454,13 +457,13 @@ function createMRHeader(patient: Patient) {
           <ul id="nav">
             <div class='half'>
               <li>
-                <a href="#awe">Annual Wellness Exams</a>
+                <a href="#awe">Annual Wellness Exam Encounters</a>
+              </li>
+              <li>
+                <a href="#adhd">ADHD Encounters</a>
               </li>
               <li>
                 <a href="#reports">Visit Notes</a>
-              </li>
-              <li>
-                <a href="#adhd">ADHD</a>
               </li>
               <li>
                 <a href="#medications">Medications</a>
@@ -546,7 +549,8 @@ function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweAndADHDVisits: Condition[],
-  organizations: Organization[]
+  organizations: Organization[],
+  encounters: Encounter[]
 ) {
   const mappedPractitioners = mapResourceToId<Practitioner>(practitioners);
   const mappedOrganizations = mapResourceToId<Organization>(organizations);
@@ -555,16 +559,22 @@ function createDiagnosticReportsSection(
     return "";
   }
 
+  const visitDateDict = getConditionDatesFromEncounters(encounters);
+
   const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
 
   const encountersWithoutAWEAndADHD = Object.entries(encounterSections)
     .filter(([key]) => {
       const encounterDateFormatted = dayjs(key).format(ISO_DATE);
       const leftOverVisit = aweAndADHDVisits.find(visit => {
-        const visitDate = visit.onsetDateTime ?? "";
-        const visitDateFormatted = dayjs(visitDate).format(ISO_DATE);
+        const visitId = visit.id ?? "";
+        const visitVisitDate = visit.onsetDateTime
+          ? visit.onsetDateTime
+          : visitDateDict[visitId]?.start;
 
-        return visitDateFormatted === encounterDateFormatted;
+        const visitVisitDateFormatted = dayjs(visitVisitDate).format(ISO_DATE);
+
+        return visitVisitDateFormatted === encounterDateFormatted;
       });
 
       return !leftOverVisit;
@@ -580,6 +590,7 @@ function createDiagnosticReportsSection(
     encountersWithoutAWEAndADHD,
     mappedPractitioners,
     mappedOrganizations,
+    encounters,
     aYearAgo
   );
 
@@ -595,7 +606,7 @@ function createDiagnosticReportsSection(
         ${
           hasNonAWEreports
             ? nonAWEreports
-            : `<table><tbody><tr><td>No reports found</td></tr></tbody></table>`
+            : `<table><tbody><tr><td>No visit notes found</td></tr></tbody></table>`
         }
       </div>
     </div>
@@ -607,6 +618,7 @@ function createFilteredReportSection(
   practitioners: Practitioner[],
   filterConditions: Condition[],
   organization: Organization[],
+  encounters: Encounter[],
   title: string,
   tag: string,
   dateFilter?: string
@@ -620,11 +632,17 @@ function createFilteredReportSection(
 
   const encounterSections: EncounterSection = buildEncounterSections({}, diagnosticReports);
 
-  const encountersWithAWE = Object.entries(encounterSections)
+  const conditionDateDict = getConditionDatesFromEncounters(encounters);
+
+  const encountersWithCondition = Object.entries(encounterSections)
     .filter(([key]) => {
       const encounterDateFormatted = dayjs(key).format(ISO_DATE);
       const conditionVisit = filterConditions.find(condition => {
-        const conditionVisitDate = condition.onsetDateTime ?? "";
+        const conditionId = condition.id ?? "";
+        const conditionVisitDate = condition.onsetDateTime
+          ? condition.onsetDateTime
+          : conditionDateDict[conditionId]?.start;
+
         const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
 
         return conditionVisitDateFormatted === encounterDateFormatted;
@@ -638,9 +656,10 @@ function createFilteredReportSection(
     }, {} as EncounterSection);
 
   const conditionReports = buildReports(
-    encountersWithAWE,
+    encountersWithCondition,
     mappedPractitioners,
     mappedOrganizations,
+    encounters,
     dateFilter,
     filterConditions
   );
@@ -727,6 +746,7 @@ function buildReports(
   encounterSections: EncounterSection,
   mappedPractitioners: Record<string, Practitioner>,
   mappedOrganizations: Record<string, Organization>,
+  encounters: Encounter[],
   dateFilter?: string,
   conditions?: Condition[]
 ) {
@@ -763,12 +783,18 @@ function buildReports(
           return "";
         }
 
-        const condition = conditions?.find(condition => {
-          const conditionDate = condition.onsetDateTime ?? "";
-          const conditionDateFormatted = dayjs(conditionDate).format(ISO_DATE);
-          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+        const conditionDateDict = getConditionDatesFromEncounters(encounters);
 
-          return conditionDateFormatted === encounterDateFormatted;
+        const condition = conditions?.find(condition => {
+          const conditionId = condition.id ?? "";
+          const conditionVisitDate = condition.onsetDateTime
+            ? condition.onsetDateTime
+            : conditionDateDict[conditionId]?.start;
+
+          const encounterDateFormatted = dayjs(key).format(ISO_DATE);
+          const conditionVisitDateFormatted = dayjs(conditionVisitDate).format(ISO_DATE);
+
+          return conditionVisitDateFormatted === encounterDateFormatted;
         });
 
         const codeName = getSpecificCode(condition?.code?.coding ?? [], [ICD_10_CODE]);
@@ -831,7 +857,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
   const documentations = documentation
     .map(documentation => {
       const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("binary");
+      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
       const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
 
       const practitionerField = createPractionerField(documentation, mappedPractitioners);
@@ -913,40 +939,14 @@ function createMedicationSection(
     return medicationDateFormatted > aYearAgo;
   });
 
-  const otherMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status !== ("active" || "unknown")
-  );
-
-  const activeMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status === "active"
-  );
-
-  const emptyMedications = removeDuplicate.filter(
-    medicationStatement => !medicationStatement.status || medicationStatement.status === "unknown"
-  );
-
-  const activeMedicationsSection = createSectionInMedications(
+  const medicationsSection = createSectionInMedications(
     mappedMedications,
-    activeMedications,
-    "Active Medications"
-  );
-
-  const emptyMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    emptyMedications,
-    "Unknown Status Medications"
-  );
-
-  const completedMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    otherMedications,
-    "Other Status Medications"
+    removeDuplicate,
+    "All Medications"
   );
 
   const medicalTableContents = `
-  ${activeMedicationsSection}
-  ${emptyMedicationsSection}
-    ${completedMedicationsSection}
+  ${medicationsSection}
   `;
 
   return createSection("Medications", medicalTableContents);
@@ -1683,9 +1683,9 @@ function createObservationsByDate(observations: Observation[]): string {
     .join("");
 }
 
-type FilteredObservations = { date: string; observations: Observation[] }
+type FilteredObservations = { date: string; observations: Observation[] };
 
-function filterObservationsByDate(observations: Observation[]): FilteredObservations[]  {
+function filterObservationsByDate(observations: Observation[]): FilteredObservations[] {
   const filteredObservations = observations.reduce((acc, observation) => {
     const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
@@ -1711,9 +1711,8 @@ function filterObservationsByDate(observations: Observation[]): FilteredObservat
     return acc;
   }, [] as FilteredObservations[]);
 
-  return filteredObservations
+  return filteredObservations;
 }
-
 
 function createOtherObservationsSection(observations: Observation[]) {
   if (!observations) {
