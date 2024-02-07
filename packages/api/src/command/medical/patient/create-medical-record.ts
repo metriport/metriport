@@ -8,6 +8,7 @@ import { Config } from "../../../shared/config";
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
 const bucketName = Config.getMedicalDocumentsBucketName();
+const DEFAULT_MR_CREATION_DATE_STRING = new Date("2023-09-21").toString(); // The date of the MAPI launch
 
 export type GetConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
@@ -28,14 +29,8 @@ export type ConsolidatedQueryParams = {
 } & GetConsolidatedFilters;
 
 type MedicalRecordsStatus = {
-  html: {
-    exists: boolean;
-    createdAt?: string;
-  };
-  pdf: {
-    exists: boolean;
-    createdAt?: string;
-  };
+  htmlCreatedAt?: string;
+  pdfCreatedAt?: string;
 };
 
 export async function getMedicalRecordSummaryStatus({
@@ -54,15 +49,17 @@ export async function getMedicalRecordSummaryStatus({
   ]);
 
   return {
-    html: {
-      exists: htmlMRInfo.exists,
-      createdAt: htmlMRInfo.createdAt?.toString(),
-    },
-    pdf: {
-      exists: pdfMRInfo.exists,
-      createdAt: pdfMRInfo.createdAt?.toString(),
-    },
+    htmlCreatedAt: getCreatedAtDate(htmlMRInfo),
+    pdfCreatedAt: getCreatedAtDate(pdfMRInfo),
   };
+}
+
+function getCreatedAtDate(info: { exists: boolean; createdAt?: Date }): string | undefined {
+  const dateString =
+    info.createdAt?.toLocaleString("en-US") ??
+    (info.exists ? DEFAULT_MR_CREATION_DATE_STRING : undefined);
+
+  return dateString;
 }
 
 export async function getMedicalRecordSummary({
@@ -74,9 +71,9 @@ export async function getMedicalRecordSummary({
   cxId: string;
   conversionType: "pdf" | "html";
 }): Promise<string | undefined> {
-  const { pdf, html } = await getMedicalRecordSummaryStatus({ patientId, cxId });
-  const pdfIsValid = conversionType === "pdf" && pdf.exists;
-  const htmlIsValid = conversionType === "html" && html.exists;
+  const { pdfCreatedAt, htmlCreatedAt } = await getMedicalRecordSummaryStatus({ patientId, cxId });
+  const pdfIsValid = conversionType === "pdf" && pdfCreatedAt;
+  const htmlIsValid = conversionType === "html" && htmlCreatedAt;
 
   if (pdfIsValid || htmlIsValid) {
     const s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);

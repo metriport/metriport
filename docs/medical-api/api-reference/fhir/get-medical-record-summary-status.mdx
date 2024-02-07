@@ -16,7 +16,7 @@ To create a Medical Record Summary, you need to use the [Start Consolidated Data
 
 ## Response
 
-Returns a JSON containing the booleans for the existence of the Medical Record Summary in PDF and HTML formats, as well as the dates when they were generated.
+Returns a JSON containing the dates when the Medical Record Summary in PDF and HTML formats were generated.
 
 <ResponseExample>
 
@@ -24,32 +24,24 @@ Returns a JSON containing the booleans for the existence of the Medical Record S
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
-const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c"
+const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c";
 
-const status = await metriport.getMedicalRecordSummaryStatus(
-  metriportPatientId
-);
+const status = await metriport.getMedicalRecordSummaryStatus(metriportPatientId);
 ```
 
 </ResponseExample>
 
-<ResponseField name="pdf" type="boolean" required>
-  <Snippet file="medical-record-status.mdx" />
+<ResponseField name="htmlCreatedAt" type="string">
+  When the HTML summary was created.
 </ResponseField>
 
-<ResponseField name="html" type="boolean" required>
-  <Snippet file="medical-record-status.mdx" />
+<ResponseField name="pdfCreatedAt" type="string">
+  When the PDF summary was created.
 </ResponseField>
 
 ```json
 {
-  "pdf": {
-    "exists": true,
-    "createdAt": "2024-01-18T00:27:16.000Z"
-  },
-  "html": {
-    "exists": true,
-    "createdAt": "2024-01-18T00:26:54.000Z"
-  }
+  "htmlCreatedAt": "2024-01-18T00:26:54.000Z",
+  "pdfCreatedAt": "2024-01-18T00:27:16.000Z"
 }
 ```
