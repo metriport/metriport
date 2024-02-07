@@ -51,7 +51,7 @@ export async function countResourcesPerDirectory(dirName: string, fileExtension 
   return consolidated;
 }
 
-export async function getResourceCountByFile(fileName: string, dirName: string) {
+export async function getResourceCountByFile(fileName: string, dirName?: string) {
   const contents = await getFileContentsAsync(fileName);
   const bundleTmp = JSON.parse(contents);
   const bundle = (bundleTmp.fhirResource ? bundleTmp.fhirResource : bundleTmp) as
@@ -64,15 +64,17 @@ export async function getResourceCountByFile(fileName: string, dirName: string) 
   const countPerType = countResourcesPerType(bundle);
 
   const resources = bundle.entry?.flatMap(entry => entry.resource ?? []);
-  const modifiedFileName = fileName.split("output/")[1] || fileName;
 
-  const resource_count_data = {
-    modifiedFileName,
-    countPerType,
-    total: bundle.entry?.length || 0,
-  };
-  const outputPath = `./output/${dirName.replace(/\//g, "-")}-resource-counts.json`;
-  await appendResourceCountsToFile(resource_count_data, outputPath);
+  if (dirName) {
+    const modifiedFileName = fileName.split("output/")[1] || fileName;
+    const resource_count_data = {
+      modifiedFileName,
+      countPerType,
+      total: bundle.entry?.length || 0,
+    };
+    const outputPath = `./output/${dirName?.replace(/\//g, "-")}-resource-counts.json`;
+    await appendResourceCountsToFile(resource_count_data, outputPath);
+  }
 
   return { total: resources.length, countPerType };
 }
