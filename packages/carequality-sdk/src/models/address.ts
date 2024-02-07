@@ -20,8 +20,7 @@ export const addressSchema = z.object({
   managingOrg: z
     .object({
       reference: objectValue,
-    })
-    .optional(),
+    }).optional(),
   contained: z
     .array(
       z.object({
