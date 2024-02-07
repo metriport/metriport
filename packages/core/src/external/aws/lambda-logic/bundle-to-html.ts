@@ -654,17 +654,6 @@ function buildEncounterSections(
           };
         }
 
-        if (diagnosticReportsType === "documentation") {
-          const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
-          const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("utf-8");
-          const blackListNote = "Not on file";
-          const noteIsBlacklisted = decodeNote.toLowerCase().includes(blackListNote.toLowerCase());
-
-          if (noteIsBlacklisted) {
-            continue;
-          }
-        }
-
         if (!isReportDuplicate) {
           encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
         }
@@ -1633,10 +1622,8 @@ function createOtherObservationsSection(observations: Observation[]) {
     return aDate === bDate && a.code?.text === b.code?.text;
   }).filter(observation => {
     const value = observation.valueQuantity?.value ?? observation.valueString;
-    const notOnFile = "not on file";
-    const valueHasNotOnFile = observation.valueString?.toLowerCase().includes(notOnFile);
 
-    return !!value && !valueHasNotOnFile;
+    return !!value;
   });
 
   const observationTableContents =
