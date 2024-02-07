@@ -3,7 +3,6 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
-  generalResources,
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
   ResourceTypeForConsolidation,
@@ -25,7 +24,7 @@ import {
   writeFileContents,
 } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
-import { convertCDAsToFHIR } from "./convert";
+import { convertCDAsToFHIR, loadBaseTemplates } from "./convert";
 import { countResourcesPerDirectory } from "./shared";
 
 dayjs.extend(duration);
@@ -114,6 +113,9 @@ export async function main() {
 
   const relativeFileNames = ccdaFileNames.map(f => f.replace(cdaLocation, ""));
 
+  // load base templates so your run is with up to date changes
+  await loadBaseTemplates(converterApi);
+
   // Convert them into JSON files
   const { nonXMLBodyCount } = await convertCDAsToFHIR(
     cdaLocation,
@@ -129,7 +131,7 @@ export async function main() {
   }
 
   if (!useFhirServer) {
-    const stats = await countResourcesPerDirectory(cdaLocation, fhirExtension);
+    const stats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
     console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
     console.log(`Total: ${stats.total}`);
     storeStats(stats);
@@ -211,7 +213,7 @@ async function insertBundlesIntoFHIRServer(fileNames: string[]) {
         await insertSingleBundle(outputFolderName + fileName);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        console.log(`Error inserting ${fileName}: ${error.message}`);
+        console.log(`Error inserting ${fileName}: ${JSON.stringify(error.message)}`);
         errCount++;
       }
     },
@@ -289,14 +291,16 @@ async function getStatusFromFHIRServer() {
 }
 
 async function getResourceCount() {
-  const { resourcesByPatient, resourcesBySubject } = getResourcesFilter();
+  const { resourcesByPatient, resourcesBySubject, generalResourcesNoFilter } = getResourcesFilter();
   const summaryCount = "&_summary=count";
 
   const result = await Promise.allSettled([
-    ...[...resourcesByPatient, ...resourcesBySubject].map(async resource => {
-      const res = await fhirApi.search(resource, summaryCount);
-      return { resourceType: resource, count: res.total ?? 0 };
-    }),
+    ...[...resourcesByPatient, ...resourcesBySubject, ...generalResourcesNoFilter].map(
+      async resource => {
+        const res = await fhirApi.search(resource, summaryCount);
+        return { resourceType: resource, count: res.total ?? 0 };
+      }
+    ),
   ]);
 
   return result;
@@ -305,7 +309,12 @@ async function getResourceCount() {
 function getResourcesFilter() {
   const resourcesByPatient = resourcesSearchableByPatient;
   const resourcesBySubject = resourcesSearchableBySubject;
-  const generalResourcesNoFilter = generalResources;
+  const generalResourcesNoFilter = [
+    "Practitioner",
+    "Organization",
+    "Medication",
+    "Location",
+  ] as const;
   return {
     resourcesByPatient,
     resourcesBySubject,

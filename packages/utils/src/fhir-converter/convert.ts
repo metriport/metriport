@@ -4,6 +4,9 @@ import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/f
 import { getPatientIdFromFileName } from "./shared";
 import path = require("node:path");
 
+export async function loadBaseTemplates(api: AxiosInstance) {
+  await api.post("/api/UpdateBaseTemplates");
+}
 export async function convertCDAsToFHIR(
   baseFolderName: string,
   fileNames: string[],
@@ -26,6 +29,7 @@ export async function convertCDAsToFHIR(
         if (error.message.includes("File has nonXMLBody")) {
           nonXMLBodyCount++;
         } else {
+          console.error(`Error converting ${fileName}: ${JSON.stringify(error.message)}`);
           const errorData = error.response?.data ?? error;
           errorCount++;
           const errorFileName = `${outputFolderName}/error_${fileName.replace(/[/\\]/g, "_")}.json`;
@@ -54,7 +58,7 @@ async function convert(
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
-    console.log(`Skipping ${fileName} because it has nonXMLBody`);
+    //console.log(`Skipping ${fileName} because it has nonXMLBody`);
     throw new Error(`File has nonXMLBody`);
   }
 
