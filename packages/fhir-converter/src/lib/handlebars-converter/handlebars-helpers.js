@@ -364,12 +364,13 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes another string: contains parentStr childStr",
-    func: function (parentStr, childStr) {
+    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
       }
-      return parentStr.toString().includes(childStr);
+      parentStr = parentStr.toString();
+      return childStrs.some(childStr => parentStr.includes(childStr));
     },
   },
   {
@@ -859,7 +860,7 @@ module.exports.external = [
       try {
         return getDateTime(dateTimeString);
       } catch (err) {
-        throw `helper "formatAsDateTime" : ${err}`;
+        console.log(`helper "formatAsDateTime" : ${err}`);
       }
     },
   },
