@@ -68,15 +68,15 @@ module.exports = class cda extends dataHandler {
             const id = value.reference.value.substring(1);
             const foundText = this.idToValueMap[id];
             const foundB64 = this.idToB64ValueMap[id];
-            if (foundB64) {
-              // if we found b64, just use it, we shouldn't mix this with any existing text
-              obj[key] = { _b64: this.removeLineBreaks(foundB64) };
-            } else if (foundText) {
+            if (foundText) {
               const newText =
                 existingText && existingText !== foundText
                   ? `${existingText} - ${foundText}`
                   : foundText;
               obj[key] = { _: this.removeLineBreaks(newText) };
+            } else if (foundB64) {
+              // if we found b64, just use it, we shouldn't mix this with any existing text
+              obj[key] = { _b64: this.removeLineBreaks(foundB64) };
             }
           }
         }
@@ -104,7 +104,7 @@ module.exports = class cda extends dataHandler {
     for (const stringToReplace of ["<br />", "<br/>", "<br>"]) {
       // doing this is apparently more efficient than just using replace
       const regex = new RegExp(stringToReplace, "g");
-      res = res.replace(regex, " ");
+      res = res.replace(regex, "\n");
     }
     res = res.replace(elementTime00010101Regex, elementTime00010101Replacement);
     res = res.replace(valueTime00010101Regex, valueTime00010101Replacement);

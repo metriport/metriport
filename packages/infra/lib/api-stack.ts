@@ -137,7 +137,8 @@ export class APIStack extends Stack {
       appConfigConfigId,
       cxsWithEnhancedCoverageFeatureFlag,
       cxsWithCQDirectFeatureFlag,
-    } = createAppConfigStack(this, { config: props.config });
+      cxsWithIncreasedSandboxLimitFeatureFlag,
+    } = createAppConfigStack({ stack: this, props: { config: props.config } });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -401,6 +402,7 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
         cxsWithEnhancedCoverageFeatureFlag,
         cxsWithCQDirectFeatureFlag,
+        cxsWithIncreasedSandboxLimitFeatureFlag,
       },
       cookieStore,
     });

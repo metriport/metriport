@@ -7,15 +7,18 @@ interface AppConfigStackProps extends StackProps {
   config: EnvConfig;
 }
 
-// TODO move these parameters to object properties
-export function createAppConfigStack(
-  stack: Construct,
-  props: AppConfigStackProps
-): {
+export function createAppConfigStack({
+  stack,
+  props,
+}: {
+  stack: Construct;
+  props: AppConfigStackProps;
+}): {
   appConfigAppId: string;
   appConfigConfigId: string;
   cxsWithEnhancedCoverageFeatureFlag: string;
   cxsWithCQDirectFeatureFlag: string;
+  cxsWithIncreasedSandboxLimitFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
@@ -30,6 +33,7 @@ export function createAppConfigStack(
 
   const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
   const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
+  const cxsWithIncreasedSandboxLimitFeatureFlag = "cxsWithIncreasedSandboxLimit";
   const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
     stack,
     "OSSAPIConfigVersion",
@@ -55,6 +59,14 @@ export function createAppConfigStack(
               },
             },
           },
+          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
+            name: cxsWithIncreasedSandboxLimitFeatureFlag,
+            attributes: {
+              cxIds: {
+                type: "string[]",
+              },
+            },
+          },
         },
         values: {
           [cxsWithEnhancedCoverageFeatureFlag]: {
@@ -64,6 +76,10 @@ export function createAppConfigStack(
           [cxsWithCQDirectFeatureFlag]: {
             enabled: true,
             cxIds: [],
+          },
+          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
+            enabled: true,
+            cxIdsAndLimits: [],
           },
         },
       }),
@@ -100,5 +116,6 @@ export function createAppConfigStack(
     appConfigConfigId: appConfigOSSProfile.ref,
     cxsWithEnhancedCoverageFeatureFlag,
     cxsWithCQDirectFeatureFlag,
+    cxsWithIncreasedSandboxLimitFeatureFlag,
   };
 }
