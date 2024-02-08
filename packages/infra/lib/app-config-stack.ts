@@ -25,24 +25,13 @@ export function createAppConfigStack({
     type: "AWS.Freeform",
   });
 
-  // TODO do we absolutely need to define all of these to create an AppConfig?
-  // Ideally we wouldn't set 'content'
-  const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
-    stack,
-    "OSSAPIConfigVersion",
-    {
-      applicationId: appConfigOSSApp.ref,
-      configurationProfileId: appConfigOSSProfile.ref,
-      contentType: "application/json",
-      content: "",
-    }
-  );
 
-  const appConfigOSSEnv = new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
+  new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
     applicationId: appConfigOSSApp.ref,
     name: props.config.environmentType,
   });
-  const appConfigOSSStrategy = new appConfig.CfnDeploymentStrategy(
+  
+  new appConfig.CfnDeploymentStrategy(
     stack,
     "OSSAPIConfigDeploymentStrategy",
     {
@@ -53,13 +42,7 @@ export function createAppConfigStack({
       finalBakeTimeInMinutes: 0,
     }
   );
-  new appConfig.CfnDeployment(stack, "OSSAPIConfigDeployment", {
-    applicationId: appConfigOSSApp.ref,
-    configurationProfileId: appConfigOSSProfile.ref,
-    configurationVersion: appConfigOSSVersion.ref,
-    environmentId: appConfigOSSEnv.ref,
-    deploymentStrategyId: appConfigOSSStrategy.ref,
-  });
+
   return {
     appConfigAppId: appConfigOSSApp.ref,
     appConfigConfigId: appConfigOSSProfile.ref,
