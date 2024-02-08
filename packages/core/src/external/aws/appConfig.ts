@@ -4,12 +4,31 @@ function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
 }
 
+export type FFStructure = {
+  cxsWithEnhancedCoverageFeatureFlag: {
+    enabled: boolean;
+    cxIds: string[];
+  };
+  cxsWithCQDirectFeatureFlag: {
+    enabled: boolean;
+    cxIds: string[];
+  };
+  cxsWithADHDMRFeatureFlag: {
+    enabled: boolean;
+    cxIds: string[];
+  };
+  cxsWithIncreasedSandboxLimitFeatureFlag: {
+    enabled: boolean;
+    cxIdsAndLimits: string[];
+  };
+};
+
 export async function getFeatureFlagValue<T>(
   region: string,
   appId: string,
   configId: string,
   envName: string,
-  featureFlagName: string
+  featureFlagName: keyof FFStructure
 ): Promise<T | undefined> {
   const appConfig = makeAppConfigClient(region);
   const config = await appConfig

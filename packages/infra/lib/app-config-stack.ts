@@ -16,10 +16,6 @@ export function createAppConfigStack({
 }): {
   appConfigAppId: string;
   appConfigConfigId: string;
-  cxsWithEnhancedCoverageFeatureFlag: string;
-  cxsWithCQDirectFeatureFlag: string;
-  cxsWithADHDMRFeatureFlag: string;
-  cxsWithIncreasedSandboxLimitFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
@@ -30,52 +26,6 @@ export function createAppConfigStack({
     locationUri: "hosted",
     name: "OSSAPIConfigProfile",
     type: "AWS.Freeform",
-  });
-
-  const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
-  const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
-  const cxsWithADHDMRFeatureFlag = "cxsWithADHDMR";
-  const cxsWithIncreasedSandboxLimitFeatureFlag = "cxsWithIncreasedSandboxLimit";
-  new appConfig.CfnHostedConfigurationVersion(stack, "OSSAPIConfigVersion", {
-    applicationId: appConfigOSSApp.ref,
-    configurationProfileId: appConfigOSSProfile.ref,
-    contentType: "application/json",
-    content: JSON.stringify({
-      flags: {
-        [cxsWithEnhancedCoverageFeatureFlag]: {
-          name: cxsWithEnhancedCoverageFeatureFlag,
-          attributes: {
-            cxIds: {
-              type: "string[]",
-            },
-          },
-        },
-        [cxsWithCQDirectFeatureFlag]: {
-          name: cxsWithCQDirectFeatureFlag,
-          attributes: {
-            cxIds: {
-              type: "string[]",
-            },
-          },
-        },
-        [cxsWithADHDMRFeatureFlag]: {
-          name: cxsWithADHDMRFeatureFlag,
-          attributes: {
-            cxIds: {
-              type: "string[]",
-            },
-          },
-        },
-        [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-          name: cxsWithIncreasedSandboxLimitFeatureFlag,
-          attributes: {
-            cxIdsAndLimits: {
-              type: "string[]",
-            },
-          },
-        },
-      },
-    }),
   });
 
   new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
@@ -94,9 +44,5 @@ export function createAppConfigStack({
   return {
     appConfigAppId: appConfigOSSApp.ref,
     appConfigConfigId: appConfigOSSProfile.ref,
-    cxsWithEnhancedCoverageFeatureFlag,
-    cxsWithCQDirectFeatureFlag,
-    cxsWithADHDMRFeatureFlag,
-    cxsWithIncreasedSandboxLimitFeatureFlag,
   };
 }

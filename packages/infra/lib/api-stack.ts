@@ -132,14 +132,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const {
-      appConfigAppId,
-      appConfigConfigId,
-      cxsWithEnhancedCoverageFeatureFlag,
-      cxsWithCQDirectFeatureFlag,
-      cxsWithADHDMRFeatureFlag,
-      cxsWithIncreasedSandboxLimitFeatureFlag,
-    } = createAppConfigStack({ stack: this, props: { config: props.config } });
+    const { appConfigAppId, appConfigConfigId } = createAppConfigStack({
+      stack: this,
+      props: { config: props.config },
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -356,7 +352,6 @@ export class APIStack extends Stack {
         appConfigEnvVars: {
           appId: appConfigAppId,
           configId: appConfigConfigId,
-          cxsWithADHDMRFeatureFlag,
         },
       });
     }
@@ -406,9 +401,6 @@ export class APIStack extends Stack {
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
-        cxsWithEnhancedCoverageFeatureFlag,
-        cxsWithCQDirectFeatureFlag,
-        cxsWithIncreasedSandboxLimitFeatureFlag,
       },
       cookieStore,
     });
@@ -1215,7 +1207,6 @@ export class APIStack extends Stack {
     appConfigEnvVars: {
       appId: string;
       configId: string;
-      cxsWithADHDMRFeatureFlag: string;
     };
   }): Lambda {
     const {
@@ -1243,7 +1234,6 @@ export class APIStack extends Stack {
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
         APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
         APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-        ADHD_MR_FEATURE_FLAG: appConfigEnvVars.cxsWithADHDMRFeatureFlag,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],

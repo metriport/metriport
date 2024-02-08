@@ -24,7 +24,6 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
 const PDFConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
-const cxsWithADHDMRFeatureFlag = getEnvOrFail("ADHD_MR_FEATURE_FLAG");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
@@ -204,7 +203,7 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   const featureFlag = await getFeatureFlagValue<{
     enabled: boolean | undefined;
     cxIds: string[] | undefined;
-  }>(region, appConfigAppID, appConfigConfigID, getEnvType(), cxsWithADHDMRFeatureFlag);
+  }>(region, appConfigAppID, appConfigConfigID, getEnvType(), "cxsWithADHDMRFeatureFlag");
 
   if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
   else return [];
