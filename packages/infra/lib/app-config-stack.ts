@@ -36,75 +36,59 @@ export function createAppConfigStack({
   const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
   const cxsWithADHDMRFeatureFlag = "cxsWithADHDMR";
   const cxsWithIncreasedSandboxLimitFeatureFlag = "cxsWithIncreasedSandboxLimit";
-  const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
-    stack,
-    "OSSAPIConfigVersion",
-    {
-      applicationId: appConfigOSSApp.ref,
-      configurationProfileId: appConfigOSSProfile.ref,
-      contentType: "application/json",
-      content: JSON.stringify({
-        flags: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            name: cxsWithEnhancedCoverageFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
+  new appConfig.CfnHostedConfigurationVersion(stack, "OSSAPIConfigVersion", {
+    applicationId: appConfigOSSApp.ref,
+    configurationProfileId: appConfigOSSProfile.ref,
+    contentType: "application/json",
+    content: JSON.stringify({
+      flags: {
+        [cxsWithEnhancedCoverageFeatureFlag]: {
+          name: cxsWithEnhancedCoverageFeatureFlag,
+          attributes: {
+            cxIds: {
+              type: "string[]",
             },
           },
-          [cxsWithCQDirectFeatureFlag]: {
-            name: cxsWithCQDirectFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
+        },
+        [cxsWithCQDirectFeatureFlag]: {
+          name: cxsWithCQDirectFeatureFlag,
+          attributes: {
+            cxIds: {
+              type: "string[]",
             },
           },
-          [cxsWithADHDMRFeatureFlag]: {
-            name: cxsWithADHDMRFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
+        },
+        [cxsWithADHDMRFeatureFlag]: {
+          name: cxsWithADHDMRFeatureFlag,
+          attributes: {
+            cxIds: {
+              type: "string[]",
             },
           },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            name: cxsWithIncreasedSandboxLimitFeatureFlag,
-            attributes: {
-              cxIdsAndLimits: {
-                type: "string[]",
-              },
+        },
+        [cxsWithIncreasedSandboxLimitFeatureFlag]: {
+          name: cxsWithIncreasedSandboxLimitFeatureFlag,
+          attributes: {
+            cxIdsAndLimits: {
+              type: "string[]",
             },
           },
-        }
-      }),
-    }
-  );
+        },
+      },
+    }),
+  });
 
-  const appConfigOSSEnv = new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
+  new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
     applicationId: appConfigOSSApp.ref,
     name: props.config.environmentType,
   });
 
-  const appConfigOSSStrategy = new appConfig.CfnDeploymentStrategy(
-    stack,
-    "OSSAPIConfigDeploymentStrategy",
-    {
-      deploymentDurationInMinutes: 0,
-      growthFactor: 100,
-      name: "OSSAPIConfigDeploymentStrategy",
-      replicateTo: "SSM_DOCUMENT",
-      finalBakeTimeInMinutes: 0,
-    }
-  );
-
-  new appConfig.CfnDeployment(stack, "OSSAPIConfigDeployment", {
-    applicationId: appConfigOSSApp.ref,
-    configurationProfileId: appConfigOSSProfile.ref,
-    configurationVersion: appConfigOSSVersion.ref,
-    environmentId: appConfigOSSEnv.ref,
-    deploymentStrategyId: appConfigOSSStrategy.ref,
+  new appConfig.CfnDeploymentStrategy(stack, "OSSAPIConfigDeploymentStrategy", {
+    deploymentDurationInMinutes: 0,
+    growthFactor: 100,
+    name: "OSSAPIConfigDeploymentStrategy",
+    replicateTo: "SSM_DOCUMENT",
+    finalBakeTimeInMinutes: 0,
   });
 
   return {
