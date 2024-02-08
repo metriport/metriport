@@ -200,16 +200,14 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         const preProcessedFilename = `${s3FileName}.from_converter`;
 
-        await sendConversionResult(
-          cxId,
-          patientId,
-          preProcessedFilename,
-          conversionResult,
-          jobStartedAt,
-          jobId,
-          source,
-          log
-        );
+        await s3Utils.s3
+          .upload({
+            Bucket: conversionResultBucketName,
+            Key: preProcessedFilename,
+            Body: JSON.stringify(conversionResult),
+            ContentType: "application/fhir+json",
+          })
+          .promise();
 
         await cloudWatchUtils.reportMemoryUsage();
 
