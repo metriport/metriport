@@ -7,7 +7,7 @@
                     {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nutrEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
             
-                {{#each (toArray this.observation.entryRelationship) as |nutrEntryRel|}}
+                {{#each (toArray nutrEntry.observation.entryRelationship) as |nutrEntryRel|}}
                     {{>Resources/Observation.hbs observationEntry=nutrEntryRel.observation ID=(generateUUID (toJsonString nutrEntryRel.observation))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString nutrEntryRel.observation)) REF=(concat 'Patient/' patientId.Id)}},

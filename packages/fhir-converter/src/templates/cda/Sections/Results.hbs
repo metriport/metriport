@@ -21,7 +21,7 @@
                     {{/if}}
                 {{/if}}
 
-                {{#each (toArray this.organizer.component) as |obsEntry|}}
+                {{#each (toArray drEntry.organizer.component) as |obsEntry|}}
                     {{#if obsEntry.observation}}
                         {{>Resources/Observation.hbs observationCategory="laboratory" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}},                   
                         {{>References/DiagnosticReport/result.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Observation/' (generateUUID (toJsonString obsEntry.observation)))}},

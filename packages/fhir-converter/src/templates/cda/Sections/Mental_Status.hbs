@@ -22,7 +22,7 @@
             {{/if}}
             
             {{#if mentalEntry.organizer}}
-                {{#each (toArray this.organizer.component) as |mentalComp|}}
+                {{#each (toArray mentalEntry.organizer.component) as |mentalComp|}}
                     {{>Resources/Observation.hbs observationEntry=mentalComp.observation ID=(generateUUID (toJsonString mentalComp.observation))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString mentalComp.observation)) REF=(concat 'Patient/' patientId.Id)}},
