@@ -46,7 +46,7 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
-    if (bundleEntry.resource.id === patientId) continue;
+    if (!bundleEntry.resource.id || bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -198,10 +198,24 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           timestamp: new Date(),
         };
 
+        const preProcessedFilename = `${s3FileName}.from_converter`;
+
+        await sendConversionResult(
+          cxId,
+          patientId,
+          preProcessedFilename,
+          conversionResult,
+          jobStartedAt,
+          jobId,
+          source,
+          log
+        );
+
         await cloudWatchUtils.reportMemoryUsage();
 
         // post-process conversion result
         const postProcessStart = Date.now();
+        conversionResult.entry = conversionResult.entry.filter(e => e.resource);
         const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         removePatientFromConversion(updatedConversionResult);
