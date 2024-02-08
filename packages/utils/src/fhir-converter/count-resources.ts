@@ -16,7 +16,6 @@ import { countResourcesPerDirectory, getResourceCountByFile } from "./shared";
 
 export async function main() {
   const fileName = process.argv[2];
-
   if (!fileName) {
     console.log(`Usage: ts-node src/fhir-converter/count-resources.ts <file/folder.json>`);
     process.exit(1);
