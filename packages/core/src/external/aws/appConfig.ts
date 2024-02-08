@@ -4,32 +4,32 @@ function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
 }
 
-export type FFStructure = {
-  cxsWithEnhancedCoverageFeatureFlag: {
-    enabled: boolean;
-    cxIds: string[];
-  };
-  cxsWithCQDirectFeatureFlag: {
-    enabled: boolean;
-    cxIds: string[];
-  };
-  cxsWithADHDMRFeatureFlag: {
-    enabled: boolean;
-    cxIds: string[];
-  };
-  cxsWithIncreasedSandboxLimitFeatureFlag: {
-    enabled: boolean;
-    cxIdsAndLimits: string[];
-  };
+export type RegularType = {
+  enabled: boolean;
+  cxIds: string[];
+  cxIdsAndLimits: never;
 };
 
-export async function getFeatureFlagValue<T>(
+export type OddType = {
+  enabled: boolean;
+  cxIdsAndLimits: string[];
+  cxIds: never;
+};
+
+export type FeatureFlagsStructure = {
+  cxsWithEnhancedCoverageFeatureFlag: RegularType;
+  cxsWithCQDirectFeatureFlag: RegularType;
+  cxsWithADHDMRFeatureFlag: RegularType;
+  cxsWithIncreasedSandboxLimitFeatureFlag: OddType;
+};
+
+export async function getFeatureFlagValue<T extends keyof FeatureFlagsStructure>(
   region: string,
   appId: string,
   configId: string,
   envName: string,
-  featureFlagName: keyof FFStructure
-): Promise<T | undefined> {
+  featureFlagName: T
+): Promise<FeatureFlagsStructure[T] | undefined> {
   const appConfig = makeAppConfigClient(region);
   const config = await appConfig
     .getConfiguration({

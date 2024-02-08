@@ -1,4 +1,4 @@
-import { getFeatureFlagValue, FFStructure } from "@metriport/core/external/aws/appConfig";
+import { getFeatureFlagValue, FeatureFlagsStructure } from "@metriport/core/external/aws/appConfig";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
@@ -11,13 +11,11 @@ const log = Util.log(`App Config`);
  *
  * @returns Array of cxIds
  */
-async function getCxsWithFeatureFlagValue(featureFlagName: keyof FFStructure): Promise<string[]> {
+async function getCxsWithFeatureFlagValue(
+  featureFlagName: keyof FeatureFlagsStructure
+): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValue<{
-      enabled: boolean | undefined;
-      cxIds?: string[];
-      cxIdsAndLimits?: string[];
-    }>(
+    const featureFlag = await getFeatureFlagValue(
       Config.getAWSRegion(),
       Config.getAppConfigAppId(),
       Config.getAppConfigConfigId(),
