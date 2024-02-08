@@ -46,8 +46,6 @@ export async function countResourcesPerDirectory(dirName: string, fileExtension 
     { total: 0, countPerType: {} as Record<ResourceType, number> }
   );
 
-  // Specify the path and filename for the output JSON file
-
   return consolidated;
 }
 

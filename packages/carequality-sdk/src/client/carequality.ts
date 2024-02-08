@@ -15,6 +15,7 @@ const XML_FORMAT = "xml";
 export enum APIMode {
   dev = "dev",
   staging = "stage",
+  production = "production",
 }
 
 /**
@@ -23,6 +24,8 @@ export enum APIMode {
 export class Carequality implements CarequalityAPI {
   private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
   private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
+  private static readonly productionUrl =
+    "https://prod-dir-ceq-01.sequoiaproject.org/fhir-stu3/1.0.1/";
 
   // NOTE: These URLs can be used if we migrate to FHIR R4 format.
   // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
@@ -43,7 +46,7 @@ export class Carequality implements CarequalityAPI {
    */
   constructor(
     apiKey: string,
-    apiMode: APIMode = APIMode.staging,
+    apiMode: APIMode = APIMode.production,
     options: { timeout?: number } = {}
   ) {
     let baseUrl;
@@ -54,6 +57,9 @@ export class Carequality implements CarequalityAPI {
         break;
       case APIMode.staging:
         baseUrl = Carequality.stagingUrl;
+        break;
+      case APIMode.production:
+        baseUrl = Carequality.productionUrl;
         break;
       default:
         throw new Error("API mode not supported.");
