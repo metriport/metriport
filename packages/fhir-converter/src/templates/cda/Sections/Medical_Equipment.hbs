@@ -19,8 +19,8 @@
                 {{/with}}
                 {{#if this.procedure.performer.assignedEntity.representedOrganization.name._}}
                     {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=this.procedure.performer.assignedEntity.representedOrganization) as |orgId|}}
-                        {{>Resources/Organization.hbs org=this.procedure.performer.assignedEntity.representedOrganization ID=orgId.Id}},
-                        {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString this.procedure)) REF=(concat 'Organization/' orgId.Id)}},
+                        {{>Resources/Organization.hbs org=../this.procedure.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                        {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString ../this.procedure)) REF=(concat 'Organization/' orgId.Id)}},
                     {{/with}} 
                 {{/if}}
             {{/if}}
