@@ -25,7 +25,7 @@ beforeEach(() => {
     download: makeProgress(),
     convert: makeProgress(),
   };
-  jest.spyOn(webhooks, "handleWebhookBeingSent").mockImplementation();
+  jest.spyOn(webhooks, "processDocQueryProgressWebhook").mockImplementation();
   patient = makePatient({ data: makePatientData({ documentQueryProgress }) });
   patientModel = patient as unknown as PatientModel;
   mockStartTransaction();
