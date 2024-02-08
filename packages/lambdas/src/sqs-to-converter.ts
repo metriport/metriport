@@ -198,16 +198,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           timestamp: new Date(),
         };
 
-        const preProcessedFilename = `${s3FileName}.from_converter`;
+        const preProcessedFilename = `${s3FileName}.from_converter.json`;
 
-        await s3Utils.s3
-          .upload({
-            Bucket: conversionResultBucketName,
-            Key: preProcessedFilename,
-            Body: JSON.stringify(conversionResult),
-            ContentType: "application/fhir+json",
-          })
-          .promise();
+        try {
+          await s3Utils.s3
+            .upload({
+              Bucket: conversionResultBucketName,
+              Key: preProcessedFilename,
+              Body: JSON.stringify(conversionResult),
+              ContentType: "application/fhir+json",
+            })
+            .promise();
+        } catch (error) {
+          console.log(`Error uploading pre-processed file: ${error}`);
+          capture.error(error, {
+            extra: { context: lambdaName, preProcessedFilename, patientId, cxId, jobId },
+          });
+        }
 
         await cloudWatchUtils.reportMemoryUsage();
 
