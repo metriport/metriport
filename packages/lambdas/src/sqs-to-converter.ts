@@ -215,7 +215,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         // post-process conversion result
         const postProcessStart = Date.now();
-        conversionResult.entry = conversionResult.entry.filter(e => e.resource);
+        conversionResult.entry = conversionResult.entry.filter(e => e.resource.id);
         const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         removePatientFromConversion(updatedConversionResult);
