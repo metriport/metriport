@@ -7,7 +7,7 @@ const longerValidOid = "1.22.33.444.555.6677.889999.0001";
 const validOidWithPrefix = "urn:oid:1.22.333.444";
 const invalidOid = "notAnOid";
 const consecutiveDotsInvalidOid = "1.22.333..444";
-const validOidWithTrailingDot = "1.22.333.444.";
+const validOidWithTrailingString = "1.22.333.444SomeJunk";
 
 describe("normalizeOid", () => {
   it("should return the same oid if it is already valid", () => {
@@ -18,7 +18,7 @@ describe("normalizeOid", () => {
 
   it("should return the oid without the junk surrounding it", () => {
     expect(normalizeOid(validOidWithPrefix)).toBe(validOid);
-    expect(normalizeOid(validOidWithTrailingDot)).toBe(validOid);
+    expect(normalizeOid(validOidWithTrailingString)).toBe(validOid);
   });
 
   it("should throw an error if oid does not conform to the format", () => {
