@@ -50,17 +50,10 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles download progress processing", async () => {
       const downloadProgress = { status: "processing" as const };
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              download: downloadProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
         requestId,
+        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
@@ -69,17 +62,10 @@ describe("processDocQueryProgressWebhook", () => {
     it("handles convert progress processing", async () => {
       const convertProgress = { status: "processing" as const };
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              convert: convertProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
         requestId,
+        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
@@ -89,17 +75,10 @@ describe("processDocQueryProgressWebhook", () => {
       const downloadProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              download: downloadProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient: { id: patient.id, cxId: patient.cxId },
         requestId,
+        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -112,40 +91,14 @@ describe("processDocQueryProgressWebhook", () => {
       );
     });
 
-    it("handles download progress completed - webhook already sent", async () => {
-      const downloadProgress = { status: "completed" as const, webhookSent: true as const };
-
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              download: downloadProgress,
-            },
-          },
-        },
-        requestId,
-      });
-
-      expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
-
     it("handles convert progress completed - webhook not sent", async () => {
       const convertProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              convert: convertProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
         requestId,
+        documentQueryProgress: { convert: convertProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -157,40 +110,14 @@ describe("processDocQueryProgressWebhook", () => {
       );
     });
 
-    it("handles convert progress completed - webhook already sent", async () => {
-      const convertProgress = { status: "completed" as const, webhookSent: true as const };
-
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              convert: convertProgress,
-            },
-          },
-        },
-        requestId,
-      });
-
-      expect(processPatientDocumentRequest).not.toHaveBeenCalled();
-    });
-
     it("handles download progress failed", async () => {
       const downloadProgress = { status: "failed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              download: downloadProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
         requestId,
+        documentQueryProgress: { download: downloadProgress },
       });
 
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
@@ -207,18 +134,12 @@ describe("processDocQueryProgressWebhook", () => {
       const convertProgress = { status: "failed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
-      await processDocQueryWebhook.handleWebhookBeingSent({
-        patient: {
-          ...patient,
-          data: {
-            ...patient.data,
-            documentQueryProgress: {
-              convert: convertProgress,
-            },
-          },
-        },
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
         requestId,
+        documentQueryProgress: { convert: convertProgress },
       });
+
       expect(processPatientDocumentRequest).toHaveBeenCalledWith(
         patient.cxId,
         patient.id,
@@ -226,6 +147,31 @@ describe("processDocQueryProgressWebhook", () => {
         convertProgress.status,
         requestId
       );
+    });
+
+    it("handles download progress - webhook exists", async () => {
+      const downloadProgress = { status: "completed" as const, webhookSent: true as const };
+      composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
+
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
+        requestId,
+        documentQueryProgress: { download: downloadProgress },
+      });
+
+      expect(processPatientDocumentRequest).not.toHaveBeenCalled();
+    });
+
+    it("handles convert progress - webhook exists", async () => {
+      const downloadProgress = { status: "completed" as const, webhookSent: true as const };
+
+      await processDocQueryWebhook.processDocQueryProgressWebhook({
+        patient,
+        requestId,
+        documentQueryProgress: { convert: downloadProgress },
+      });
+
+      expect(processPatientDocumentRequest).not.toHaveBeenCalled();
     });
   });
 });
