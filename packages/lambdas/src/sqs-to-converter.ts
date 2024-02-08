@@ -46,7 +46,8 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
-    if (!bundleEntry.resource.id || bundleEntry.resource.id === patientId) continue;
+    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
+    if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
     bundleEntry.resource.id = newId;
@@ -220,7 +221,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
 
         // post-process conversion result
         const postProcessStart = Date.now();
-        conversionResult.entry = conversionResult.entry.filter(e => e.resource.id);
         const updatedConversionResult = replaceIDs(conversionResult, patientId);
         addExtensionToConversion(updatedConversionResult, documentExtension);
         removePatientFromConversion(updatedConversionResult);
