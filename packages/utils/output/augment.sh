@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script takes a JSON file as input, adds an index to each item in the array within the JSON file, and overwrites the original file with the updated content.
+# Its useful for adding indexes to json files that are used in the templates
 
 # Check if an argument is passed
 if [ "$#" -ne 1 ]; then

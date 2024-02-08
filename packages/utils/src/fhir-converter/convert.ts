@@ -58,7 +58,6 @@ async function convert(
   const patientId = getPatientIdFromFileName(fileName);
   const fileContents = getFileContents(baseFolderName + fileName);
   if (fileContents.includes("nonXMLBody")) {
-    //console.log(`Skipping ${fileName} because it has nonXMLBody`);
     throw new Error(`File has nonXMLBody`);
   }
 
