@@ -8,6 +8,7 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -1242,6 +1243,27 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    fhirToMedicalRecordLambda.role?.attachInlinePolicy(
+      new iam.Policy(this, "FhirLambdaPermissionsForAppConfig", {
+        statements: [
+          new iam.PolicyStatement({
+            actions: [
+              "appconfig:StartConfigurationSession",
+              "appconfig:GetLatestConfiguration",
+              "appconfig:GetConfiguration",
+              "apigateway:GET",
+            ],
+            resources: ["*"],
+          }),
+          new iam.PolicyStatement({
+            actions: ["geo:SearchPlaceIndexForText"],
+            resources: [`arn:aws:geo:*`],
+            effect: iam.Effect.ALLOW,
+          }),
+        ],
+      })
+    );
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
