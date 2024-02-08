@@ -1,7 +1,7 @@
-import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { sleep } from "@metriport/core/util/sleep";
 import { QueryTypes, Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
+import { makeCarequalityAPI } from "../../api";
 import { capture } from "../../../../shared/notifications";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
@@ -32,8 +32,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
     await createTempCQDirectoryTable();
     while (!isDone) {
       try {
-        const apiKey = Config.getCQApiKey();
-        const cq = new Carequality(apiKey); // TODO: use the prod API mode - https://github.com/metriport/metriport-internal/issues/1350
+        const cq = makeCarequalityAPI();
+        if (!cq) throw new Error("Carequality API not initialized");
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
