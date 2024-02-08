@@ -29,8 +29,8 @@ export async function countResourcesPerDirectory(dirName: string, fileExtension 
   const fileNames = getFileNames({ folder: dirName, extension: fileExtension, recursive: true });
   console.log(`Consolidating data of ${fileNames.length} files...`);
   const countsByFile = [];
-  for (const fileName of fileNames) {
-    const count = await getResourceCountByFile(fileName, dirName);
+  for (const [index, fileName] of fileNames.entries()) {
+    const count = await getResourceCountByFile(fileName, index, dirName);
     countsByFile.push(count);
   }
   const consolidated = countsByFile.reduce(
@@ -49,7 +49,7 @@ export async function countResourcesPerDirectory(dirName: string, fileExtension 
   return consolidated;
 }
 
-export async function getResourceCountByFile(fileName: string, dirName?: string) {
+export async function getResourceCountByFile(fileName: string, index?: number, dirName?: string) {
   const contents = await getFileContentsAsync(fileName);
   const bundleTmp = JSON.parse(contents);
   const bundle = (bundleTmp.fhirResource ? bundleTmp.fhirResource : bundleTmp) as
@@ -66,11 +66,12 @@ export async function getResourceCountByFile(fileName: string, dirName?: string)
   if (dirName) {
     const modifiedFileName = fileName.split("output/")[1] || fileName;
     const resource_count_data = {
+      index,
       modifiedFileName,
       countPerType,
       total: bundle.entry?.length || 0,
     };
-    const outputPath = `./output/${dirName?.replace(/\//g, "-")}-resource-counts.json`;
+    const outputPath = `${dirName.replace(/\/output$/, "")}/resource-counts-per-file.json`;
     await appendResourceCountsToFile(resource_count_data, outputPath);
   }
 

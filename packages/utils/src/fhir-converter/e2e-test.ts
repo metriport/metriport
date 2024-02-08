@@ -74,6 +74,8 @@ const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
 const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
+const totalResourceCountStatsLocation = `${logsFolderName}/total-resource-counts.json`;
+const totalResourceCountPostHAPIStatsLocation = `${logsFolderName}/total-resource-counts-post-hapi.json`;
 
 type Params = {
   cleanup?: boolean;
@@ -130,48 +132,47 @@ export async function main() {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
   }
 
-  if (!useFhirServer) {
-    const stats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
-    console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
-    console.log(`Total: ${stats.total}`);
-    storeStats(stats);
-    return;
-  }
+  const totalResourceCountStats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
+  storeStats(totalResourceCountStats, totalResourceCountStatsLocation);
+  console.log(`Resources: ${JSON.stringify(totalResourceCountStats.countPerType, null, 2)}`);
+  console.log(`Total: ${totalResourceCountStats.total}`);
 
   if (cleanup) await removeAllPartitionsFromFHIRServer();
+  if (useFhirServer) {
+    // Create tenant at FHIR server
+    await createTenant();
 
-  // Create tenant at FHIR server
-  await createTenant();
+    const fhirFileNames = getFileNames({
+      folder: outputFolderName,
+      recursive: true,
+      extension: fhirExtension,
+    });
+    console.log(`Found ${fhirFileNames.length} JSON files.`);
 
-  const fhirFileNames = getFileNames({
-    folder: outputFolderName,
-    recursive: true,
-    extension: fhirExtension,
-  });
-  console.log(`Found ${fhirFileNames.length} JSON files.`);
+    const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
 
-  const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
+    // Insert JSON files into FHIR server
+    await insertBundlesIntoFHIRServer(relativeJSONFileNames);
 
-  // Insert JSON files into FHIR server
-  await insertBundlesIntoFHIRServer(relativeJSONFileNames);
+    // Get stats from FHIR Server
+    const stats = await getStatusFromFHIRServer();
+    console.log(`Resources: `, stats.resources);
+    console.log(`Total resources: ${stats.total}`);
+    storeStats(stats, totalResourceCountPostHAPIStatsLocation);
 
-  // Get stats from FHIR Server
-  const stats = await getStatusFromFHIRServer();
-  console.log(`Resources: `, stats.resources);
-  console.log(`Total resources: ${stats.total}`);
-  storeStats(stats);
-
-  const duration = Date.now() - startedAt;
-  const durationMin = dayjs.duration(duration).asMinutes();
-  console.log(`Total time: ${duration} ms / ${durationMin} min`);
-
+    const duration = Date.now() - startedAt;
+    const durationMin = dayjs.duration(duration).asMinutes();
+    console.log(`Total time: ${duration} ms / ${durationMin} min`);
+  }
+  // IMPORTANT leave this here since scripts greps this line to get location for diffing stats
+  console.log(`File1 Location: ${totalResourceCountStatsLocation}`);
   return;
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-function storeStats(stats: any) {
+function storeStats(stats: any, statsLocation: string) {
   writeFileContents(
-    `${logsFolderName}/stats.json`,
+    statsLocation,
     JSON.stringify(
       {
         cdaLocation: cdaLocation,
