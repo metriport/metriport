@@ -1255,12 +1255,7 @@ export class APIStack extends Stack {
               "apigateway:GET",
             ],
             resources: ["*"],
-          }),
-          new iam.PolicyStatement({
-            actions: ["geo:SearchPlaceIndexForText"],
-            resources: [`arn:aws:geo:*`],
-            effect: iam.Effect.ALLOW,
-          }),
+          })
         ],
       })
     );
