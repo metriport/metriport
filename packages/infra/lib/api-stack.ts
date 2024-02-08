@@ -1252,7 +1252,6 @@ export class APIStack extends Stack {
               "appconfig:StartConfigurationSession",
               "appconfig:GetLatestConfiguration",
               "appconfig:GetConfiguration",
-              "apigateway:GET",
             ],
             resources: ["*"],
           })
