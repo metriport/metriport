@@ -1,17 +1,22 @@
 import { Aspects, CfnOutput } from "aws-cdk-lib";
+import { BackupResource } from "aws-cdk-lib/aws-backup";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
+import { EnvType } from "../env-type";
+import { DailyBackup } from "../shared/backup";
 import { addDBClusterPerformanceAlarms } from "../shared/rds";
+import { isProdEnv } from "../shared/util";
 
 // export interface IHEGatewayAlarmThresholds {
 //   masterCpuUtilization?: number;
 //   cpuUtilization?: number;
 // }
 export interface IHEDatabaseConstructProps {
+  env: EnvType;
   config: IHEGatewayProps;
   vpc: ec2.IVpc;
   alarmAction?: SnsAction | undefined;
@@ -79,6 +84,13 @@ export default class IHEDBConstruct extends Construct {
         }
       },
     });
+
+    if (isProdEnv(props.env)) {
+      new DailyBackup(this, "APIDBBackup", {
+        backupPlanName: "IHE_GW_DB",
+        resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
+      });
+    }
 
     addDBClusterPerformanceAlarms(
       this,

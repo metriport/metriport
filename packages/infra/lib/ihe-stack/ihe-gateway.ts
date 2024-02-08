@@ -36,6 +36,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
 
   const db = new IHEDBConstruct(stack, {
     ...props,
+    env: mainConfig.environmentType,
     config,
   });
 

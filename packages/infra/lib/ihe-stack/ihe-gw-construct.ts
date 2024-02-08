@@ -63,7 +63,7 @@ export default class IHEGatewayConstruct extends Construct {
       patientDiscoveryLambda,
     } = props;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
-    const dbIdentifier = db.server.clusterIdentifier;
+    const dbIdentifier = config.rds.dbName;
 
     // TODO 1377 only needed if we build docker through CDK
     if (isLocalEnvironment()) loadLocalEnv();
@@ -72,6 +72,7 @@ export default class IHEGatewayConstruct extends Construct {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
     };
     const environment = {
+      DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
       LAMBDA_PATIENT_DISCOVERY_ARN: patientDiscoveryLambda.functionArn,
@@ -212,6 +213,7 @@ export default class IHEGatewayConstruct extends Construct {
     });
 
     // Grant access for the service
+    db.server.connections.allowFrom(fargateService.service, ec2.Port.allTraffic());
     db.secret.grantRead(fargateService.taskDefinition.taskRole);
     documentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
     documentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
