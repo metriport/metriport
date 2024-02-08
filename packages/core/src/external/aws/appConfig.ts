@@ -4,32 +4,32 @@ function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
 }
 
-export type RegularType = {
+export type CustomerIdsFF = {
   enabled: boolean;
   cxIds: string[];
   cxIdsAndLimits: never;
 };
 
-export type OddType = {
+export type SandboxLimitFF = {
   enabled: boolean;
   cxIdsAndLimits: string[];
   cxIds: never;
 };
 
-export type FeatureFlagsStructure = {
-  cxsWithEnhancedCoverageFeatureFlag: RegularType;
-  cxsWithCQDirectFeatureFlag: RegularType;
-  cxsWithADHDMRFeatureFlag: RegularType;
-  cxsWithIncreasedSandboxLimitFeatureFlag: OddType;
+export type FeatureFlagDatastore = {
+  cxsWithEnhancedCoverageFeatureFlag: CustomerIdsFF;
+  cxsWithCQDirectFeatureFlag: CustomerIdsFF;
+  cxsWithADHDMRFeatureFlag: CustomerIdsFF;
+  cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;
 };
 
-export async function getFeatureFlagValue<T extends keyof FeatureFlagsStructure>(
+export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   region: string,
   appId: string,
   configId: string,
   envName: string,
   featureFlagName: T
-): Promise<FeatureFlagsStructure[T] | undefined> {
+): Promise<FeatureFlagDatastore[T] | undefined> {
   const appConfig = makeAppConfigClient(region);
   const config = await appConfig
     .getConfiguration({
