@@ -16,9 +16,6 @@ export function createAppConfigStack({
 }): {
   appConfigAppId: string;
   appConfigConfigId: string;
-  cxsWithEnhancedCoverageFeatureFlag: string;
-  cxsWithCQDirectFeatureFlag: string;
-  cxsWithIncreasedSandboxLimitFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
@@ -31,9 +28,8 @@ export function createAppConfigStack({
     type: "AWS.Freeform",
   });
 
-  const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
-  const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
-  const cxsWithIncreasedSandboxLimitFeatureFlag = "cxsWithIncreasedSandboxLimit";
+  // TODO do we absolutely need to define all of these to create an AppConfig?
+  // Ideally we wouldn't set 'content'
   const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
     stack,
     "OSSAPIConfigVersion",
@@ -41,48 +37,7 @@ export function createAppConfigStack({
       applicationId: appConfigOSSApp.ref,
       configurationProfileId: appConfigOSSProfile.ref,
       contentType: "application/json",
-      content: JSON.stringify({
-        flags: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            name: cxsWithEnhancedCoverageFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-          [cxsWithCQDirectFeatureFlag]: {
-            name: cxsWithCQDirectFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            name: cxsWithIncreasedSandboxLimitFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-        },
-        values: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithCQDirectFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            enabled: true,
-            cxIdsAndLimits: [],
-          },
-        },
-      }),
+      content: "",
     }
   );
 
@@ -114,8 +69,5 @@ export function createAppConfigStack({
   return {
     appConfigAppId: appConfigOSSApp.ref,
     appConfigConfigId: appConfigOSSProfile.ref,
-    cxsWithEnhancedCoverageFeatureFlag,
-    cxsWithCQDirectFeatureFlag,
-    cxsWithIncreasedSandboxLimitFeatureFlag,
   };
 }

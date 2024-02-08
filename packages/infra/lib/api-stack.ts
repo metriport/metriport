@@ -132,13 +132,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const {
-      appConfigAppId,
-      appConfigConfigId,
-      cxsWithEnhancedCoverageFeatureFlag,
-      cxsWithCQDirectFeatureFlag,
-      cxsWithIncreasedSandboxLimitFeatureFlag,
-    } = createAppConfigStack({ stack: this, props: { config: props.config } });
+    const { appConfigAppId, appConfigConfigId } = createAppConfigStack({
+      stack: this,
+      props: { config: props.config },
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -400,9 +397,6 @@ export class APIStack extends Stack {
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
-        cxsWithEnhancedCoverageFeatureFlag,
-        cxsWithCQDirectFeatureFlag,
-        cxsWithIncreasedSandboxLimitFeatureFlag,
       },
       cookieStore,
     });
