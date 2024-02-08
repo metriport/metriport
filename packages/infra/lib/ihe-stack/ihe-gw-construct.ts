@@ -5,6 +5,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import {
   ApplicationProtocol,
   ListenerAction,
@@ -18,6 +19,7 @@ import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
 import { loadExternalDotEnv } from "../shared/dotenv";
+import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { isLocalEnvironment, isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
 
@@ -35,6 +37,7 @@ export interface IHEGatewayConstructProps {
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
   patientDiscoveryLambda: Lambda;
+  // inboundDocRetrievalBucket: IBucket;
 }
 
 const id = "IHEGateway";
@@ -61,6 +64,7 @@ export default class IHEGatewayConstruct extends Construct {
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
+      // inboundDocRetrievalBucket,
     } = props;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
@@ -68,16 +72,27 @@ export default class IHEGatewayConstruct extends Construct {
     // TODO 1377 only needed if we build docker through CDK
     if (isLocalEnvironment()) loadLocalEnv();
 
-    const secrets = {
-      DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+    const getLambdaUrl = (arn: string) => {
+      return getLambdaUrlShared({ region: mainConfig.region, arn });
     };
-    const environment = {
+
+    const secrets: ApplicationLoadBalancedTaskImageOptions["secrets"] = {
+      DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+      // AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID},
+      // AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY},
+    };
+    const environment: ApplicationLoadBalancedTaskImageOptions["environment"] = {
       DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
-      LAMBDA_PATIENT_DISCOVERY_ARN: patientDiscoveryLambda.functionArn,
-      LAMBDA_DOCUMENT_QUERY_ARN: documentQueryLambda.functionArn,
-      LAMBDA_DOCUMENT_RETRIEVE_ARN: documentRetrievalLambda.functionArn,
+      INBOUND_XCPD_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
+      INBOUND_XCA38_URL: getLambdaUrl(documentQueryLambda.functionArn),
+      INBOUND_XCA39_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
+      // TODO 1377 reenable this
+      // TODO 1377 reenable this
+      // TODO 1377 reenable this
+      // S3_BUCKET_NAME: inboundDocRetrievalBucket.bucketName,
+      VMOPTIONS: `-Xms${config.java.xms},-Xmx${config.java.xmx}`,
     };
 
     const containerInsights = isProd(mainConfig) ? true : false;
@@ -167,6 +182,13 @@ export default class IHEGatewayConstruct extends Construct {
         // ],
       });
     });
+    fargateService.targetGroup.configureHealthCheck({
+      healthyThresholdCount: 2,
+      interval: Duration.seconds(20),
+      path: "/",
+      port: "8080",
+      protocol: Protocol.HTTP,
+    });
 
     // allow the LB to talk to fargate
     fargateService.service.connections.allowFrom(
@@ -213,11 +235,15 @@ export default class IHEGatewayConstruct extends Construct {
     });
 
     // Grant access for the service
-    db.server.connections.allowFrom(fargateService.service, ec2.Port.allTraffic());
+    db.server.connections.allowDefaultPortFrom(fargateService.service);
     db.secret.grantRead(fargateService.taskDefinition.taskRole);
     documentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
     documentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
     patientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+    // TODO 1377 reenable this
+    // TODO 1377 reenable this
+    // TODO 1377 reenable this
+    // inboundDocRetrievalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
     // TODO 1377 Implement this
     // TODO 1377 Implement this

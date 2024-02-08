@@ -1,4 +1,5 @@
-FROM --platform=linux/amd64 alpine:3
+ARG PLATFORM=linux/amd64
+FROM --platform=$PLATFORM alpine:3
 
 RUN apk update && apk upgrade && apk --no-cache add bash curl
 

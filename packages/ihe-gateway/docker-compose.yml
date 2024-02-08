@@ -5,6 +5,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        # Update this if you're trying to run it on a different platform
+        PLATFORM: "linux/arm64"
         ARTIFACT: "${IHE_GW_ARTIFACT_URL}"
         KEYSTORENAME: "${IHE_GW_KEYSTORENAME}"
         ZULUKEY: "${IHE_GW_ZULUKEY}"
@@ -25,8 +27,7 @@ services:
       DATABASE_USERNAME: "${DATABASE_USERNAME}"
       DATABASE_PASSWORD: "${DATABASE_PASSWORD}"
       DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
-      VMOPTIONS: "-Xmx3072m"
-      LICENSE_KEY: ${IHE_GW_LICENSE_KEY}
+      VMOPTIONS: "-Xms2048m,-Xmx3072m"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     restart: on-failure
@@ -48,6 +49,7 @@ services:
       - "16853:16853"
     secrets:
       - mirth_properties
+      - license_key
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
@@ -71,6 +73,8 @@ secrets:
   mirth_properties:
     file: ./secret.properties
   store_pass:
-    file: ./store-pass.secret
+    file: ./store_pass.secret
   keystore_pass:
-    file: ./keystore-pass.secret
+    file: ./keystore_pass.secret
+  license_key:
+    file: ./license_key.secret

@@ -17,6 +17,7 @@ interface IHEGatewayProps extends StackProps {
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
   patientDiscoveryLambda: Lambda;
+  // inboundDocRetrievalBucket: IBucket;
   alarmAction?: SnsAction | undefined;
 }
 

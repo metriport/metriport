@@ -155,6 +155,7 @@ fi
 # merge the user's secret mirth.properties
 # takes a whole mirth.properties file and merges line by line with /opt/connect/conf/mirth.properties
 if [ -f /run/secrets/mirth_properties ]; then
+		echo "Found mirth.properties secret, merging."
 
     # add new line in case /opt/connect/conf/mirth.properties doesn't end with one
     echo "" >> /opt/connect/conf/mirth.properties
@@ -180,6 +181,8 @@ if [ -f /run/secrets/mirth_properties ]; then
             fi
         fi
     done <<< "`cat /run/secrets/mirth_properties`"
+else
+		echo "WARNING: No mirth.properties secret found"
 fi
 
 # merge the user's secret vmoptions

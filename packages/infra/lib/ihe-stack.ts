@@ -48,6 +48,15 @@ export class IHEStack extends Stack {
       props.config.medicalDocumentsBucketName
     );
 
+    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
+    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
+    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
+    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
+    // const inboundDocRetrievalBucket = new s3.Bucket(this, "IHE_GW_DR_Bucket", {
+    //   bucketName: props.config.iheGateway.s3.inboundDocRetrievalBucket,
+    //   removalPolicy: RemovalPolicy.RETAIN,
+    // });
+
     // Create the API Gateway
     const api = new apig.RestApi(this, "IHEAPIGateway", {
       description: "Metriport IHE Gateway",
@@ -147,6 +156,7 @@ export class IHEStack extends Stack {
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
+      // inboundDocRetrievalBucket,
       alarmAction: alarmSnsAction,
     });
 

@@ -28,7 +28,6 @@ To build the server container for the first time, run the command below, which w
 IHE GW as well as a Postgres instance:
 
 ```shell
-$ docker-compose -f docker-compose.yml up --build
 $ ./scripts/run-docker.sh --build
 ```
 

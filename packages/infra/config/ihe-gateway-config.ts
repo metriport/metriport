@@ -31,6 +31,16 @@ export type IHEGatewayProps = {
      */
     maxRequestTimeout: Duration;
   };
+  java: {
+    /**
+     * Java's `-Xmx` value. https://eclipse.dev/openj9/docs/xms/
+     */
+    xmx: string;
+    /**
+     * Java's `-Xms` value. https://eclipse.dev/openj9/docs/xms/
+     */
+    xms: string;
+  };
   rds: {
     dbName: string;
     userName: string;
@@ -47,23 +57,11 @@ export type IHEGatewayProps = {
      */
     documentRetrieve?: number;
   };
+  s3: {
+    inboundDocRetrievalBucket: string;
+  };
   artifactUrl: string;
   keyStoreName: string;
   zuluKey: string;
-  // TODO 1377 MOVE THIS TO SECRETS
-  // TODO 1377 MOVE THIS TO SECRETS
-  // TODO 1377 MOVE THIS TO SECRETS
-  // TODO 1377 MOVE THIS TO SECRETS
-  // TODO 1377 MOVE THIS TO SECRETS
-  // STOREPASS: string;
-  // KEYSTOREPASS: string;
-  // secretNames: IHEGatewaySecretNames;
   snsTopicArn?: string;
 };
-
-// TODO 1377 remove this
-// export type IHEGatewaySecretNames = {
-//   STOREPASS: string;
-//   KEYSTOREPASS: string;
-//   LICENSE_KEY: string;
-// };
