@@ -3,13 +3,13 @@
         {{#if procEntry.procedure}}
             {{>Resources/Procedure.hbs procedureEntry=procEntry.procedure ID=(generateUUID (toJsonString procEntry.procedure))}},
             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-            	{{>References/Procedure/subject.hbs ID=(generateUUID (toJsonString ../procEntry.procedure)) REF=(concat 'Patient/' patientId.Id)}},
+            	{{>References/Procedure/subject.hbs ID=(generateUUID (toJsonString procEntry.procedure)) REF=(concat 'Patient/' patientId.Id)}},
             {{/with}}
             
             {{#if procEntry.procedure.performer.assignedEntity.representedOrganization}}
                 {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=procEntry.procedure.performer.assignedEntity.representedOrganization) as |orgId|}}
-                    {{>Resources/Organization.hbs org=../procEntry.procedure.performer.assignedEntity.representedOrganization ID=orgId.Id}},
-                    {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString ../procEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{>Resources/Organization.hbs org=procEntry.procedure.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                    {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString procEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},
                 {{/with}} 
             {{/if}}
         {{/if}}
@@ -20,7 +20,7 @@
             {{>Resources/MedicationAdministration.hbs medicationAdministration=procEntry.substanceAdministration ID=(generateUUID (toJsonString procEntry.substanceAdministration))}},
             {{>Resources/Medication.hbs medication=procEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString procEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial))}},
             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-            	{{>References/MedicationAdministration/subject.hbs ID=(generateUUID (toJsonString ../procEntry.substanceAdministration)) REF=(concat 'Patient/' patientId.Id)}},
+            	{{>References/MedicationAdministration/subject.hbs ID=(generateUUID (toJsonString procEntry.substanceAdministration)) REF=(concat 'Patient/' patientId.Id)}},
             {{/with}}
             {{>References/MedicationAdministration/medicationReference.hbs ID=(generateUUID (toJsonString procEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString procEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
         {{/if}}
