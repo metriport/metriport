@@ -6,6 +6,18 @@
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
+                {{#if condEntry.observation.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=condEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                {{/if}}
+                {{#if condEntry.observation.author.assignedAuthor.representedOrganization}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=condEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=condEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                        {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Organization/' OrgId.Id)}},
+                    {{/with}}
+                {{/if}}
             {{/each}}
         {{/each}}
     {{/with}}
