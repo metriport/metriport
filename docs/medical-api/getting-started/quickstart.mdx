@@ -195,14 +195,14 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
 
 1. Querying for available `Documents` to get a list of metadata describing the available records.
-2. Downloading the `Document` data from the URL returned in the metadata.
+1. Downloading the `Document` data from the URL returned in the metadata.
 
 To query for a Patient's available `Documents`, you can either:
 
 ### Query for Documents using the API
 
 1. Start an asynchronous [Document Query](/medical-api/api-reference/document/start-document-query) across HIEs;
-2. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
+1. Then, either process the inbound [Webhook message](/medical-api/more-info/webhooks) which will be sent if you
    have Webhooks configured, or poll the API to [List Documents](/medical-api/api-reference/document/list-documents) to get
    the available document references returned from HIEs.
 
