@@ -50,8 +50,8 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
-import { tallyDocQueryProgressWithSource } from "../../hie/tally-doc-query-progress-with-source";
-import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
+import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -156,7 +156,7 @@ export async function queryAndProcessDocuments({
     const msg = `Failed to query and process documents - CommonWell`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
       downloadProgress: { status: "failed" },
       requestId,
@@ -336,7 +336,7 @@ async function initPatientDocQuery(
   convertibleDocs: number,
   requestId: string
 ): Promise<Patient> {
-  return setDocQueryProgressWithSource({
+  return setDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: {
       status: "processing",
@@ -644,7 +644,7 @@ async function downloadDocsAndUpsertFHIR({
             processFhirAndSearchResponse(patient, doc, fhir);
           }
 
-          await tallyDocQueryProgressWithSource({
+          await tallyDocQueryProgress({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               successful: 1,
@@ -656,7 +656,7 @@ async function downloadDocsAndUpsertFHIR({
 
           return FHIRDocRef;
         } catch (error) {
-          await tallyDocQueryProgressWithSource({
+          await tallyDocQueryProgress({
             patient: { id: patient.id, cxId: patient.cxId },
             progress: {
               errors: 1,
@@ -694,7 +694,7 @@ async function downloadDocsAndUpsertFHIR({
     await sleepBetweenChunks();
   }
 
-  await setDocQueryProgressWithSource({
+  await setDocQueryProgress({
     patient: { id: patient.id, cxId: patient.cxId },
     downloadProgress: { status: "completed" },
     ...(convertibleDocCount <= 0

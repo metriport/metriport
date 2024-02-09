@@ -12,7 +12,7 @@ import { calculateConversionProgress } from "../../../domain/medical/conversion-
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
-import { resetDocQueryProgressWithSource } from "../../../external/hie/reset-doc-query-progress-with-source";
+import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { Util } from "../../../shared/util";
@@ -66,17 +66,17 @@ export async function queryDocumentsAcrossHIEs({
     return createQueryResponse("processing", patient);
   }
 
+  await resetDocQueryProgress({
+    source: MedicalDataSource.ALL,
+    patient,
+  });
+
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
     documentQueryProgress: { download: { status: "processing" } },
     requestId,
     cxDocumentRequestMetadata,
-  });
-
-  await resetDocQueryProgressWithSource({
-    source: MedicalDataSource.ALL,
-    patient: updatedPatient,
   });
 
   getDocumentsFromCW({

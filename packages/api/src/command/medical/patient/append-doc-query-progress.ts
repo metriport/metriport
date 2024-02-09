@@ -62,7 +62,7 @@ export async function appendDocQueryProgress({
         ? {}
         : existingPatient.data.documentQueryProgress;
 
-    const updatedDocumentQueryProgress = setDocQueryProgress(
+    const updatedDocumentQueryProgress = aggregateDocQueryProgress(
       documentQueryProgress,
       downloadProgress,
       convertProgress,
@@ -126,7 +126,7 @@ export async function updateProgressWebhookSent(
   });
 }
 
-export const setDocQueryProgress = (
+export const aggregateDocQueryProgress = (
   documentQueryProgress: DocumentQueryProgress,
   downloadProgress?: Progress | undefined | null,
   convertProgress?: Progress | undefined | null,

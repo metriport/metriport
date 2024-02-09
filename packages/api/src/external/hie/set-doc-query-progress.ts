@@ -8,7 +8,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
   SetDocQueryProgressBase,
-  setDocQueryProgress,
+  aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getCWData } from "../commonwell/patient";
@@ -17,7 +17,7 @@ import { processDocQueryProgressWebhook } from "../../command/medical/document/p
 
 type StaticProgress = Pick<Progress, "status" | "total">;
 
-export type SetDocQueryProgressWithSource = {
+export type SetDocQueryProgress = {
   source: MedicalDataSource;
   downloadProgress?: StaticProgress | undefined;
   convertProgress?: StaticProgress | undefined;
@@ -25,12 +25,12 @@ export type SetDocQueryProgressWithSource = {
 
 /**
  * Updates the total and status for the given HIE which is then aggregated
- * to the patient's document query progress. Use tallyDocQueryProgressWithSource to update
+ * to the patient's document query progress. Use tallyDocQueryProgress to update
  * the successful and error count.
  *
  * @returns
  */
-export async function setDocQueryProgressWithSource({
+export async function setDocQueryProgress({
   patient,
   requestId,
   downloadProgress,
@@ -38,7 +38,7 @@ export async function setDocQueryProgressWithSource({
   convertibleDownloadErrors,
   increaseCountConvertible,
   source,
-}: SetDocQueryProgressWithSource): Promise<Patient> {
+}: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
@@ -122,7 +122,7 @@ export function setHIEDocProgress(
 
   const sourceData = externalData[source];
 
-  const docQueryProgress = setDocQueryProgress(
+  const docQueryProgress = aggregateDocQueryProgress(
     sourceData?.documentQueryProgress ?? {},
     downloadProgress,
     convertProgress,
