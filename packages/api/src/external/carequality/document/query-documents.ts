@@ -8,7 +8,7 @@ import { getOrganizationOrFail } from "../../../command/medical/organization/get
 import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
-import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -58,7 +58,7 @@ export async function getDocumentsFromCQ({
     const msg = `Failed to query and process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
       requestId,
