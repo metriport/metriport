@@ -14,7 +14,7 @@ const api = axios.create();
 dayjs.extend(duration);
 
 export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 3 });
-const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
+const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
 export const sendIHEGatewayResults = async <TableResult>({
   requestId,

@@ -1,5 +1,5 @@
 import { DocumentRetrievalRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
-import { DocumentRetrievalResultModel } from "../../models/document-retrieval-result";
+import { IHEToExternalGwDocumentRetrievalModel } from "../../models/ihe-to-external-gw-document-retrieval";
 import { DefaultPayload } from "./shared";
 
 export type CreateDocumentRetrievalPayload = {
@@ -8,10 +8,10 @@ export type CreateDocumentRetrievalPayload = {
   response: DocumentRetrievalRespFromExternalGW;
 };
 
-export async function createDocumentRetrievalResult(
+export async function createIHEToExternalGwDocumentRetrieval(
   payload: CreateDocumentRetrievalPayload
-): Promise<DocumentRetrievalResultModel> {
-  return await DocumentRetrievalResultModel.create({
+): Promise<IHEToExternalGwDocumentRetrievalModel> {
+  return await IHEToExternalGwDocumentRetrievalModel.create({
     ...payload.defaultPayload,
     status: payload.status,
     data: payload.response,

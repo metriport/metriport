@@ -332,7 +332,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+    const documentQueryResultsLambda = this.setupIHEToExternalGwDocumentQuerys({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -341,7 +341,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
-    const documentRetrievalResultsLambda = this.setupDocumentRetrievalResults({
+    const documentRetrievalResultsLambda = this.setupIHEToExternalGwDocumentRetrievals({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -1126,7 +1126,7 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  private setupDocumentQueryResults(ownProps: {
+  private setupIHEToExternalGwDocumentQuerys(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -1138,8 +1138,8 @@ export class APIStack extends Stack {
 
     const documentQueryResultsLambda = createLambda({
       stack: this,
-      name: "DocumentQueryResults",
-      entry: "document-query-results",
+      name: "IHEToExternalGwDocumentQuerys",
+      entry: "ihe-to-external-gw-document-query",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -1155,7 +1155,7 @@ export class APIStack extends Stack {
     return documentQueryResultsLambda;
   }
 
-  private setupDocumentRetrievalResults(ownProps: {
+  private setupIHEToExternalGwDocumentRetrievals(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -1167,8 +1167,8 @@ export class APIStack extends Stack {
 
     const documentRetrievalResultsLambda = createLambda({
       stack: this,
-      name: "DocumentRetrievalResults",
-      entry: "document-retrieval-results",
+      name: "IHEToExternalGwDocumentRetrievals",
+      entry: "ihe-to-external-gw-document-retrieval",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

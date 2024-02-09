@@ -11,8 +11,8 @@ import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
-import { DocumentQueryResultModel } from "../external/carequality/models/document-query-result";
-import { DocumentRetrievalResultModel } from "../external/carequality/models/document-retrieval-result";
+import { IHEToExternalGwDocumentQueryModel } from "../external/carequality/models/ihe-to-external-gw-document-query";
+import { IHEToExternalGwDocumentRetrievalModel } from "../external/carequality/models/ihe-to-external-gw-document-retrieval";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
@@ -32,8 +32,8 @@ const models: ModelSetup[] = [
   MAPIAccess.setup,
   DocRefMappingModel.setup,
   PatientDiscoveryResultModel.setup,
-  DocumentQueryResultModel.setup,
-  DocumentRetrievalResultModel.setup,
+  IHEToExternalGwDocumentQueryModel.setup,
+  IHEToExternalGwDocumentRetrievalModel.setup,
   CoverageEnhancementModel.setup,
 ];
 

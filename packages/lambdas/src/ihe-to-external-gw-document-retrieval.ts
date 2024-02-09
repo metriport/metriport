@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/serverless";
 import { sendIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
 import {
   DOC_RETRIEVAL_RESULT_TABLE_NAME,
-  DocumentRetrievalResult,
+  IHEToExternalGwDocumentRetrieval,
 } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
@@ -36,7 +36,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     const endpointUrl = `${apiUrl}/internal/carequality/document-retrieval/results`;
 
     try {
-      await sendIHEGatewayResults<DocumentRetrievalResult>({
+      await sendIHEGatewayResults<IHEToExternalGwDocumentRetrieval>({
         requestId,
         patientId,
         cxId,
@@ -49,7 +49,13 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const msg = `Error sending document retrieval results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(error, {
-        extra: { context: `sendDocumentRetrievalResults`, error, patientId, requestId, cxId },
+        extra: {
+          context: `sendIHEToExternalGwDocumentRetrievals`,
+          error,
+          patientId,
+          requestId,
+          cxId,
+        },
       });
     }
   }

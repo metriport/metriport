@@ -91,22 +91,6 @@ export const cqToFHIR = (
     ...(doc.creation ? { creation: doc.creation } : {}),
   };
 
-  const metriportFHIRContent = fhirDocRef
-    ? createDocReferenceContent({
-        ...baseAttachment,
-        location: doc.url ?? "",
-        extension: [metriportDataSourceExtension],
-      })
-    : {};
-
-  const cqFHIRContent = !fhirDocRef
-    ? createDocReferenceContent({
-        ...baseAttachment,
-        location: doc.url ?? "",
-        extension: [cqExtension],
-      })
-    : {};
-
   return {
     ...(fhirDocRef ? { ...fhirDocRef } : {}),
     ...(!fhirDocRef ? { description: doc.title ?? "" } : {}),
@@ -117,9 +101,38 @@ export const cqToFHIR = (
       value: doc.repositoryUniqueId,
     },
     subject: toFHIRSubject(patientId),
-    content: fhirDocRef?.content ? [...fhirDocRef.content, metriportFHIRContent] : [cqFHIRContent],
+    content: generateCQFHIRContent(fhirDocRef?.content, baseAttachment, doc.url),
     extension: [cqExtension],
   };
+};
+
+const generateCQFHIRContent = (
+  content: DocumentReferenceContent[] | undefined,
+  baseAttachment: {
+    contentType?: string;
+    size?: number;
+    creation?: string;
+    fileName?: string;
+  },
+  location: string | null | undefined
+): DocumentReferenceContent[] => {
+  if (content) {
+    const metriportFHIRContent = createDocReferenceContent({
+      ...baseAttachment,
+      location: location ?? "",
+      extension: [metriportDataSourceExtension],
+    });
+
+    return [...content, metriportFHIRContent];
+  }
+
+  const cqFHIRContent = createDocReferenceContent({
+    ...baseAttachment,
+    location: location ?? "",
+    extension: [cqExtension],
+  });
+
+  return [cqFHIRContent];
 };
 
 export const cwToFHIR = (

@@ -4,17 +4,17 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { DocumentRetrievalResult } from "../document-retrieval-result";
+import { IHEToExternalGwDocumentRetrieval } from "../ihe-to-external-gw-document-retrieval";
 import { isConvertible } from "../../fhir-converter/converter";
-import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
-import { tallyDocQueryProgressWithSource } from "../../hie/tally-doc-query-progress-with-source";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "../../fhir/document";
 import { getDocuments } from "../../fhir/document/get-documents";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 
-export async function processDocumentRetrievalResults({
+export async function processIHEToExternalGwDocumentRetrievals({
   requestId,
   patientId,
   cxId,
@@ -23,29 +23,38 @@ export async function processDocumentRetrievalResults({
   requestId: string;
   patientId: string;
   cxId: string;
-  documentRetrievalResults: DocumentRetrievalResult[];
+  documentRetrievalResults: IHEToExternalGwDocumentRetrieval[];
 }): Promise<void> {
   try {
+    let issuesWithGateway = 0;
+    let successDocsCount = 0;
+
     for (const result of documentRetrievalResults) {
       const { operationOutcome } = result.data;
-      const issuesWithGateway = operationOutcome?.issue?.length ?? 0;
-      const successDocsCount = result.data.documentReference?.length ?? 0;
 
-      tallyDocQueryProgressWithSource({
-        patient: { id: patientId, cxId: cxId },
-        progress: {
-          successful: successDocsCount,
-          errors: issuesWithGateway,
-        },
-        type: "download",
-        requestId,
-        source: MedicalDataSource.CAREQUALITY,
-      });
+      if (operationOutcome?.issue) {
+        issuesWithGateway += operationOutcome.issue.length;
+      }
+
+      if (result.data.documentReference) {
+        successDocsCount += result.data.documentReference.length;
+      }
 
       await handleDocReferences(result.data.documentReference, requestId, patientId, cxId);
     }
 
-    await setDocQueryProgressWithSource({
+    await tallyDocQueryProgress({
+      patient: { id: patientId, cxId: cxId },
+      progress: {
+        successful: successDocsCount,
+        errors: issuesWithGateway,
+      },
+      type: "download",
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "completed",
@@ -57,7 +66,7 @@ export async function processDocumentRetrievalResults({
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
       requestId,
@@ -161,7 +170,7 @@ async function handleDocReferences(
 
   await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
 
-  await setDocQueryProgressWithSource({
+  await setDocQueryProgress({
     patient: { id: patientId, cxId: cxId },
     convertibleDownloadErrors: errorCountConvertible,
     requestId,

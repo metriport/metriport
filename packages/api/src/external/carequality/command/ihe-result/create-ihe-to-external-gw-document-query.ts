@@ -1,5 +1,5 @@
 import { DocumentQueryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResultModel } from "../../models/document-query-result";
+import { IHEToExternalGwDocumentQueryModel } from "../../models/ihe-to-external-gw-document-query";
 import { DefaultPayload } from "./shared";
 
 export type CreateDocumentQueryPayload = {
@@ -8,10 +8,10 @@ export type CreateDocumentQueryPayload = {
   response: DocumentQueryRespFromExternalGW;
 };
 
-export async function createDocumentQueryResult(
+export async function createIHEToExternalGwDocumentQuery(
   payload: CreateDocumentQueryPayload
-): Promise<DocumentQueryResultModel> {
-  return await DocumentQueryResultModel.create({
+): Promise<IHEToExternalGwDocumentQueryModel> {
+  return await IHEToExternalGwDocumentQueryModel.create({
     ...payload.defaultPayload,
     status: payload.status,
     data: payload.response,

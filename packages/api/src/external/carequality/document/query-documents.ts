@@ -9,6 +9,7 @@ import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { processAsyncError } from "../../../errors";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -53,7 +54,8 @@ export async function getDocumentsFromCQ({
           numOfGateways: documentQueryRequests.length,
         }),
       })
-      .promise();
+      .promise()
+      .catch(processAsyncError(`cq.invokeDocRetrievalResultsLambda`));
   } catch (error) {
     const msg = `Failed to query and process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);

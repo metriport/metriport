@@ -13,10 +13,10 @@ export interface BaseResultDomain {
   createdAt: Date;
 }
 
-export interface DocumentQueryResult extends BaseResultDomain {
+export interface IHEToExternalGwDocumentQuery extends BaseResultDomain {
   data: DocumentQueryRespFromExternalGW;
 }
 
-export interface DocumentRetrievalResult extends BaseResultDomain {
+export interface IHEToExternalGwDocumentRetrieval extends BaseResultDomain {
   data: DocumentRetrievalRespFromExternalGW;
 }

@@ -25,8 +25,8 @@ import { createOrUpdateCQOrganization } from "../../external/carequality/organiz
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
-import { processDocumentRetrievalResults } from "../../external/carequality/document/process-document-retrieval-results";
+import { processIHEToExternalGwDocumentQuerys } from "../../external/carequality/document/process-ihe-to-gw-document-query";
+import { processIHEToExternalGwDocumentRetrievals } from "../../external/carequality/document/process-ihe-to-gw-document-retrieval";
 
 dayjs.extend(duration);
 const router = Router();
@@ -164,7 +164,7 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processDocumentQueryResults(req.body);
+    await processIHEToExternalGwDocumentQuerys(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -196,7 +196,7 @@ router.post(
 router.post(
   "/document-retrieval/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processDocumentRetrievalResults(req.body);
+    await processIHEToExternalGwDocumentRetrievals(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

@@ -10,8 +10,8 @@ import {
 import { getIheResultStatus } from "../../ihe-result";
 import { DefaultPayload } from "./shared";
 import { createPatientDiscoveryResult } from "./create-patient-discovery-result";
-import { createDocumentQueryResult } from "./create-document-query-result";
-import { createDocumentRetrievalResult } from "./create-document-retrieval-result";
+import { createIHEToExternalGwDocumentQuery } from "./create-ihe-to-external-gw-document-query";
+import { createIHEToExternalGwDocumentRetrieval } from "./create-ihe-to-external-gw-document-retrieval";
 
 export enum IHEResultType {
   PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW = "patient-discovery",
@@ -59,11 +59,11 @@ export async function handleIHEResponse({ type, response }: IHEResult): Promise<
       return;
     }
     case IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW: {
-      await createDocumentQueryResult({ defaultPayload, status, response });
+      await createIHEToExternalGwDocumentQuery({ defaultPayload, status, response });
       return;
     }
     case IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW: {
-      await createDocumentRetrievalResult({ defaultPayload, status, response });
+      await createIHEToExternalGwDocumentRetrieval({ defaultPayload, status, response });
       return;
     }
   }

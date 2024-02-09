@@ -1,20 +1,20 @@
 import { Sequelize } from "sequelize";
 import { DocumentQueryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResult } from "../document-query-result";
+import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
 import { ModelSetup } from "../../../models/_default";
 import { BaseIHEResultModel } from "../../../models/medical/ihe-result";
 
-export class DocumentQueryResultModel
-  extends BaseIHEResultModel<DocumentQueryResultModel>
-  implements DocumentQueryResult
+export class IHEToExternalGwDocumentQueryModel
+  extends BaseIHEResultModel<IHEToExternalGwDocumentQueryModel>
+  implements IHEToExternalGwDocumentQuery
 {
   static NAME = "document_query_result";
   declare data: DocumentQueryRespFromExternalGW;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    DocumentQueryResultModel.init(BaseIHEResultModel.attributes(), {
+    IHEToExternalGwDocumentQueryModel.init(BaseIHEResultModel.attributes(), {
       ...BaseIHEResultModel.modelOptions(sequelize),
-      tableName: DocumentQueryResultModel.NAME,
+      tableName: IHEToExternalGwDocumentQueryModel.NAME,
     });
   };
 }

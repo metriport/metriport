@@ -1,14 +1,15 @@
 import { out } from "@metriport/core/util/log";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { DocumentQueryResult } from "../document-query-result";
+import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
 import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
+import { DocumentWithMetriportId } from "./shared";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { makeIheGatewayAPI } from "../api";
 import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
@@ -17,13 +18,15 @@ import { combineDocRefs } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "../../fhir/document";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { processAsyncError } from "../../../errors";
 
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
 const lambdaName = Config.getDocQueryResultsLambdaName();
+const parallelUpsertsToFhir = 500;
 
-export async function processDocumentQueryResults({
+export async function processIHEToExternalGwDocumentQuerys({
   requestId,
   patientId,
   cxId,
@@ -32,7 +35,7 @@ export async function processDocumentQueryResults({
   requestId: string;
   patientId: string;
   cxId: string;
-  documentQueryResults: DocumentQueryResult[];
+  documentQueryResults: IHEToExternalGwDocumentQuery[];
 }): Promise<void> {
   if (!iheGateway) return;
   const { log } = out(`CQ query docs - requestId ${requestId}, M patient ${patientId}`);
@@ -96,7 +99,8 @@ export async function processDocumentQueryResults({
           numOfGateways: documentRetrievalRequests.length,
         }),
       })
-      .promise();
+      .promise()
+      .catch(processAsyncError(`cq.invokeDocRetrievalResultsLambda`));
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
@@ -130,26 +134,31 @@ async function storeInitDocRefInFHIR(
   cxId: string,
   patientId: string
 ) {
-  await Promise.allSettled(
-    docRefs.map(async docRef => {
+  await executeAsynchronously(
+    docRefs,
+    async docRef => {
       try {
         const docId = docRef.metriportId ?? "";
 
-        const FHIRDocRef = cqToFHIR(docId, docRef, patientId);
+        const fhirDocRef = cqToFHIR(docId, docRef, patientId);
 
-        await upsertDocumentToFHIRServer(cxId, FHIRDocRef);
+        await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {
-        console.log(`Failed to store initial doc ref in FHIR: ${errorToString(error)}`);
-        capture.error(error, {
+        const msg = `Failed to store initial doc ref in FHIR`;
+        console.log(`${msg}: ${errorToString(error)}`);
+        capture.message(msg, {
           extra: {
             context: `cq.storeInitDocRefInFHIR`,
             error,
             docRef,
+            patientId,
+            cxId,
           },
         });
         throw error;
       }
-    })
+    },
+    { numberOfParallelExecutions: parallelUpsertsToFhir }
   );
 }
 

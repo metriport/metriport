@@ -2,7 +2,7 @@ import { PurposeOfUse } from "@metriport/shared";
 import { DocumentRetrievalReqToExternalGW, DocumentReference } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { DocumentWithMetriportId } from "./shared";
-import { DocumentQueryResult } from "../document-query-result";
+import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
 import { Organization } from "@metriport/core/domain/organization";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -19,7 +19,7 @@ export function createCQDocumentRetrievalRequests({
   cxId: string;
   organization: Organization;
   documentReferences: DocumentWithMetriportId[];
-  documentQueryResults: DocumentQueryResult[];
+  documentQueryResults: IHEToExternalGwDocumentQuery[];
 }): DocumentRetrievalReqToExternalGW[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;

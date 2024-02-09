@@ -14,13 +14,13 @@ export const getNonExistentDocRefs = async (
   patientId: string,
   cxId: string
 ): Promise<DocumentWithMetriportId[]> => {
-  const [{ existingDocRefs, nonExistingDocRefs }, FHIRDocRefs] = await Promise.all([
+  const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
     filterOutExistingDocRefsS3(documents, patientId, cxId),
     getDocRefsFromFHIR(cxId, patientId),
   ]);
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
-    f => !FHIRDocRefs.find(d => d.id === f.docUniqueId)
+    f => !fhirDocRefs.find(d => d.id === f.docUniqueId)
   );
 
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
@@ -28,7 +28,7 @@ export const getNonExistentDocRefs = async (
   return docsToDownload;
 };
 
-type ExistentialDocRefs = {
+type ObservedDocRefs = {
   existingDocRefs: DocumentWithMetriportId[];
   nonExistingDocRefs: DocumentWithMetriportId[];
 };
@@ -37,7 +37,7 @@ const filterOutExistingDocRefsS3 = async (
   documents: DocumentWithMetriportId[],
   patientId: string,
   cxId: string
-): Promise<ExistentialDocRefs> => {
+): Promise<ObservedDocRefs> => {
   const docIdWithExist = await Promise.allSettled(
     documents.map(async (doc): Promise<{ docId: string; exists: boolean }> => {
       const fileName = createS3FileName(cxId, patientId, doc.docUniqueId);
@@ -56,7 +56,7 @@ const filterOutExistingDocRefsS3 = async (
   );
 
   const existentialDocRefs = documents.reduce(
-    (acc: ExistentialDocRefs, curr) => {
+    (acc: ObservedDocRefs, curr) => {
       for (const succDoc of successfulDocs) {
         if (succDoc.docId === curr.docUniqueId) {
           if (succDoc.exists) {
