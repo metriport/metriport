@@ -43,8 +43,6 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
   // TODO 1377 Update this
-  // TODO 1377 Update this
-  // TODO 1377 Update this
   // iheGateway: {
   //   vpcId: "<your-vpc-id>",
   //   certArn: "<your-cert-arn>",

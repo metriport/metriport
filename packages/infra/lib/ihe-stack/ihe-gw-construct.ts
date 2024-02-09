@@ -14,21 +14,19 @@ import {
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
-import path from "path";
 import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
-import { loadExternalDotEnv } from "../shared/dotenv";
+import { ecrRepoName } from "../ihe-prereq-stack";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
-import { isLocalEnvironment, isProd } from "../shared/util";
+import { isProd } from "../shared/util";
 import IHEDBConstruct from "./ihe-db-construct";
 
 export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
   config: IHEGatewayProps;
   vpc: ec2.IVpc;
-  // TODO 1377 Implement this
-  // TODO 1377 Implement this
   // TODO 1377 Implement this
   // alarmThresholds?: IHEGatewayAlarmThresholds;
   privateZone: r53.IPrivateHostedZone;
@@ -37,11 +35,10 @@ export interface IHEGatewayConstructProps {
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
   patientDiscoveryLambda: Lambda;
-  // inboundDocRetrievalBucket: IBucket;
+  medicalDocumentsBucket: IBucket;
 }
 
 const id = "IHEGateway";
-const iheGWDockerDir = path.resolve(process.cwd(), "../ihe-gateway");
 
 const mainPort = 8443;
 const additionalHTTPPorts = [
@@ -64,13 +61,10 @@ export default class IHEGatewayConstruct extends Construct {
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
-      // inboundDocRetrievalBucket,
+      medicalDocumentsBucket,
     } = props;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
-
-    // TODO 1377 only needed if we build docker through CDK
-    if (isLocalEnvironment()) loadLocalEnv();
 
     const getLambdaUrl = (arn: string) => {
       return getLambdaUrlShared({ region: mainConfig.region, arn });
@@ -78,8 +72,6 @@ export default class IHEGatewayConstruct extends Construct {
 
     const secrets: ApplicationLoadBalancedTaskImageOptions["secrets"] = {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
-      // AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID},
-      // AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY},
     };
     const environment: ApplicationLoadBalancedTaskImageOptions["environment"] = {
       DATABASE: `postgres`,
@@ -88,21 +80,14 @@ export default class IHEGatewayConstruct extends Construct {
       INBOUND_XCPD_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
       INBOUND_XCA38_URL: getLambdaUrl(documentQueryLambda.functionArn),
       INBOUND_XCA39_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
-      // TODO 1377 reenable this
-      // TODO 1377 reenable this
-      // TODO 1377 reenable this
-      // S3_BUCKET_NAME: inboundDocRetrievalBucket.bucketName,
+      S3_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       VMOPTIONS: `-Xms${config.java.xms},-Xmx${config.java.xmx}`,
     };
 
     const containerInsights = isProd(mainConfig) ? true : false;
     const cluster = new ecs.Cluster(scope, `${id}Cluster`, { vpc, containerInsights });
 
-    const ecrRepo = ecr.Repository.fromRepositoryName(
-      scope,
-      "IHE-GW-ECR-Repo",
-      "metriport/ihe-gateway"
-    );
+    const ecrRepo = ecr.Repository.fromRepositoryName(scope, "IHE-GW-ECR-Repo", ecrRepoName);
 
     const image = ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest");
 
@@ -123,8 +108,6 @@ export default class IHEGatewayConstruct extends Construct {
         taskImageOptions: {
           image,
           containerPort: 8080,
-          // containerPort: mainPort,
-          // certificate: httpsCert,
           containerName: `${id}-Server`,
           secrets,
           environment,
@@ -160,26 +143,12 @@ export default class IHEGatewayConstruct extends Construct {
       protocol: ApplicationProtocol.HTTPS,
       certificates: [httpsCert],
       defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-      // defaultTargetGroups: [
-      //   new ApplicationTargetGroup(this, `${id}TargetGroupSSL`, {
-      //     port: 443,
-      //     protocol: ApplicationProtocol.HTTPS,
-      //     vpc,
-      //   }),
-      // ],
     });
     additionalHTTPPorts.forEach(port => {
       fargateService.loadBalancer.addListener(`${id}Listener_${port}`, {
         port,
         protocol: ApplicationProtocol.HTTP,
         defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-        // defaultTargetGroups: [
-        //   new ApplicationTargetGroup(this, `${id}TargetGroup${port}`, {
-        //     port,
-        //     protocol: ApplicationProtocol.HTTP,
-        //     vpc,
-        //   }),
-        // ],
       });
     });
     fargateService.targetGroup.configureHealthCheck({
@@ -240,13 +209,8 @@ export default class IHEGatewayConstruct extends Construct {
     documentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
     documentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
     patientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-    // TODO 1377 reenable this
-    // TODO 1377 reenable this
-    // TODO 1377 reenable this
-    // inboundDocRetrievalBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
+    medicalDocumentsBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
 
-    // TODO 1377 Implement this
-    // TODO 1377 Implement this
     // TODO 1377 Implement this
     // this.createAlarms(id, props.alarmThresholds);
 
@@ -340,11 +304,4 @@ export default class IHEGatewayConstruct extends Construct {
   //     evaluationPeriods: 1,
   //   });
   // }
-}
-
-// TODO 1377 only needed if we build docker through CDK
-function loadLocalEnv() {
-  const dotEnvFile = path.resolve(iheGWDockerDir, ".env");
-  console.log(`Loading .env from ${dotEnvFile}...`);
-  loadExternalDotEnv(dotEnvFile);
 }

@@ -6,6 +6,9 @@ export type IHEGatewayProps = {
   vpcId: string;
   certArn: string;
   subdomain: string; // Subdomain for IHE integrations
+  /**
+   * ID of the existing private hosted zone where the IHE Gateway will be deployed.
+   */
   privateZoneId: string;
   ecs: {
     // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
@@ -57,11 +60,5 @@ export type IHEGatewayProps = {
      */
     documentRetrieve?: number;
   };
-  s3: {
-    inboundDocRetrievalBucket: string;
-  };
-  artifactUrl: string;
-  keyStoreName: string;
-  zuluKey: string;
   snsTopicArn?: string;
 };

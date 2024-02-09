@@ -4,6 +4,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
+import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import IHEDBConstruct from "./ihe-db-construct";
@@ -17,13 +18,12 @@ interface IHEGatewayProps extends StackProps {
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
   patientDiscoveryLambda: Lambda;
-  // inboundDocRetrievalBucket: IBucket;
+  medicalDocumentsBucket: IBucket;
   alarmAction?: SnsAction | undefined;
 }
 
 const name = "IHEGateway";
 
-// TODO move these parameters to object properties
 export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void {
   const { config: mainConfig, apiResource } = props;
 

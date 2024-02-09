@@ -50,9 +50,6 @@ export default class IHEDBConstruct extends Construct {
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
     });
     // TODO 1377 validate that it copies the props from the default group
-    // TODO 1377 validate that it copies the props from the default group
-    // TODO 1377 validate that it copies the props from the default group
-    // TODO 1377 validate that it copies the props from the default group
     const parameterGroup = new rds.ParameterGroup(this, "FHIR_DB_Params", {
       engine: dbEngine,
       parameters: {

@@ -48,15 +48,6 @@ export class IHEStack extends Stack {
       props.config.medicalDocumentsBucketName
     );
 
-    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
-    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
-    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
-    // TODO 1377 Define how we're dealing w/ this and the value on the config - see https://metriport.slack.com/archives/C065BLRBUDQ/p1707417900166829
-    // const inboundDocRetrievalBucket = new s3.Bucket(this, "IHE_GW_DR_Bucket", {
-    //   bucketName: props.config.iheGateway.s3.inboundDocRetrievalBucket,
-    //   removalPolicy: RemovalPolicy.RETAIN,
-    // });
-
     // Create the API Gateway
     const api = new apig.RestApi(this, "IHEAPIGateway", {
       description: "Metriport IHE Gateway",
@@ -66,8 +57,6 @@ export class IHEStack extends Stack {
       },
     });
 
-    // TODO 1377 Setup WAF
-    // TODO 1377 Setup WAF
     // TODO 1377 Setup WAF
 
     // get the certificate form ACM
@@ -91,40 +80,6 @@ export class IHEStack extends Stack {
     });
 
     const lambdaLayers = setupLambdasLayers(this, true);
-
-    // // Create lambdas
-    // const xcaResource = api.root.addResource("xca");
-    // const xcpdResource = api.root.addResource("xcpd");
-
-    // // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
-    // this.setupDocumentQueryLambda(
-    //   props,
-    //   lambdaLayers,
-    //   xcaResource,
-    //   vpc,
-    //   medicalDocumentsBucket,
-    //   alarmSnsAction
-    // );
-    // this.setupDocumentRetrievalLambda(
-    //   props,
-    //   lambdaLayers,
-    //   xcaResource,
-    //   vpc,
-    //   medicalDocumentsBucket,
-    //   alarmSnsAction
-    // );
-    // this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
-
-    // const proxy = new apig.ProxyResource(this, `IHE/Proxy`, {
-    //   parent: api.root,
-    //   anyMethod: false,
-    //   defaultCorsPreflightOptions: { allowOrigins: ["*"] },
-    // });
-    // proxy.addMethod("ANY", new apig.LambdaIntegration(iheLambda), {
-    //   requestParameters: {
-    //     "method.request.path.proxy": true,
-    //   },
-    // });
 
     const documentQueryLambda = this.setupDocumentQueryLambda(
       props,
@@ -156,7 +111,7 @@ export class IHEStack extends Stack {
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
-      // inboundDocRetrievalBucket,
+      medicalDocumentsBucket,
       alarmAction: alarmSnsAction,
     });
 
