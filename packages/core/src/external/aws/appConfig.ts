@@ -29,7 +29,7 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   configId: string,
   envName: string,
   featureFlagName: T
-): Promise<FeatureFlagDatastore[T] | undefined> {
+): Promise<FeatureFlagDatastore[T]> {
   const appConfig = makeAppConfigClient(region);
   const config = await appConfig
     .getConfiguration({
