@@ -29,7 +29,7 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   configId: string,
   envName: string,
   featureFlagName: T
-): Promise<FeatureFlagDatastore[T] | undefined> {
+): Promise<FeatureFlagDatastore[T]> {
   const appConfig = makeAppConfigClient(region);
   const config = await appConfig
     .getConfiguration({
@@ -45,8 +45,10 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   );
   if (configContent && config.ContentType && config.ContentType === "application/json") {
     const configContentValue = JSON.parse(configContent.toString());
-    if (configContentValue.values) return configContentValue.values[featureFlagName];
+    if (configContentValue.values && configContentValue.values[featureFlagName])
+      return configContentValue.values[featureFlagName];
+    else throw new Error(`Feature Flag ${featureFlagName} not found in config`);
   }
 
-  return undefined;
+  throw new Error(`Failed to get Feature Flag Value for ${featureFlagName}`);
 }

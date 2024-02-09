@@ -22,9 +22,9 @@ async function getCxsWithFeatureFlagValue(
       Config.getEnvType(),
       featureFlagName
     );
-    if (featureFlag?.enabled) {
-      if (featureFlag?.cxIds) return featureFlag.cxIds;
-      if (featureFlag?.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
+    if (featureFlag.enabled) {
+      if (featureFlag.cxIds) return featureFlag.cxIds;
+      if (featureFlag.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
     }
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
