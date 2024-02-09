@@ -285,45 +285,6 @@ export class MetriportMedicalApi {
     return resp.data;
   }
 
-  // Keeping this code around in case we decide to expose it to the customers.
-  // /**
-  //  * Returns the URL for a medical record summary, if it exists.
-  //  *
-  //  * @param patientId The ID of the patient whose data is to be returned.
-  //  * @param conversionType Indicate how the medical record should be rendered. Can be "html" or "pdf".
-  //  * @return The URL for the medical record summary, if it exists. Otherwise, returns undefined.
-  //  *
-  //  * @throws Error if the request fails.
-  //  */
-  // async getMedicalRecordSummary(
-  //   patientId: string,
-  //   conversionType: "html" | "pdf"
-  // ): Promise<string | undefined> {
-  //   try {
-  //     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record`, {
-  //       params: {
-  //         conversionType,
-  //       },
-  //     });
-  //     return resp.data.url;
-  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  //   } catch (error: any) {
-  //     if (error.status === 404) return undefined;
-  //     throw error;
-  //   }
-  // }
-
-  // /**
-  //  * Checks for the existence of a medical record summary. Indicates whether the summary exists in PDF and HTML formats and when they were generated.
-  //  *
-  //  * @param patientId The ID of the patient to check the medical record summary for.
-  //  * @return An object containing the booleans for the existence and dates of the Medical Record Summary in PDF and HTML formats.
-  //  */
-  // async getMedicalRecordSummaryStatus(patientId: string): Promise<MedicalRecordsStatusDTO> {
-  //   const resp = await this.api.get(`${PATIENT_URL}/${patientId}/medical-record-status`);
-  //   return resp.data as MedicalRecordsStatusDTO;
-  // }
-
   /** ---------------------------------------------------------------------------
    * Get the consolidated data query status for a given patient.
    * The results to the query are sent through Webhook (see
