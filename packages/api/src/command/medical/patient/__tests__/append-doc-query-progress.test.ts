@@ -10,7 +10,7 @@ import { PatientModel } from "../../../../models/medical/patient";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
-import { setDocQueryProgress } from "../../../../external/hie/set-doc-query-progress-with-source";
+import { setDocQueryProgress } from "../../../../external/hie/set-doc-query-progress";
 import * as webhooks from "../../document/process-doc-query-webhook";
 
 let documentQueryProgress: DocumentQueryProgress;
