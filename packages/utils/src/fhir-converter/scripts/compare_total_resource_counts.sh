@@ -28,5 +28,4 @@ fi
 # Run jsondiffpatch
 jsondiffpatch "$FILE1" "$TMP_FILE2"
 
-# Optionally, remove the temporary file after comparison
 rm "$TMP_FILE2"

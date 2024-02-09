@@ -22,9 +22,9 @@
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "echo \"No test specified yet\"",
-    "e2e-test-and-compare-total-resource-counts": "bash scripts/run_e2e_and_compare.sh",
-    "compare-total-resource-counts": "bash scripts/compare_total_resource_counts.sh",
-    "compare-resource-counts-per-file": "bash scripts/compare_resource_counts_per_file.sh"
+    "e2e-test-and-compare-total-resource-counts": "bash src/fhir-converter/scripts/run_e2e_and_compare.sh",
+    "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
+    "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh"
   },
   "keywords": [],
   "author": "",
@@ -65,6 +65,7 @@
     "eslint-config-prettier": "^8.6.0",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "jsondiffpatch": "^0.6.0"
   }
 }

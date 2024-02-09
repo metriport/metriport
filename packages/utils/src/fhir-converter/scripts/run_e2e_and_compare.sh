@@ -18,4 +18,4 @@ fi
 echo "Extracted file1 location: $FILE1_LOCATION"
 
 # Run the run_jsondiffpatch.sh script with the extracted file location
-./scripts/compare_total_resource_counts.sh "$FILE1_LOCATION"
+.src/fhir-converter/scripts/compare_total_resource_counts.sh "$FILE1_LOCATION"
