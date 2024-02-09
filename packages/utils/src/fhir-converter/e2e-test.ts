@@ -3,7 +3,6 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
-  generalResources,
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
   ResourceTypeForConsolidation,
@@ -305,7 +304,12 @@ async function getResourceCount() {
 function getResourcesFilter() {
   const resourcesByPatient = resourcesSearchableByPatient;
   const resourcesBySubject = resourcesSearchableBySubject;
-  const generalResourcesNoFilter = generalResources;
+  const generalResourcesNoFilter = [
+    "Practitioner",
+    "Organization",
+    "Medication",
+    "Location",
+  ] as const;
   return {
     resourcesByPatient,
     resourcesBySubject,
