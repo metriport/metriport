@@ -14,6 +14,4 @@ Run the scripts manually for per file counts and post hapi counts, since the per
 
 # Updating Baseline Files for Resource Count Comparisons
 
-When you're ready to merge your data mapping related changes into the `develop` branch, it's important to update the baseline files with the outputs of your test runs. This ensures that future comparisons are made against the most current data. The scripts provided in this utils/scripts package are designed to compare your test run outputs against these baseline files.
-
-Just copy and paste the baseline output.
+When you're ready to merge your data mapping related changes into the `develop` branch, it's important to update the baseline files with the outputs of your test runs by copying and pasting your output in. This ensures that future comparisons are made against the most current data. The scripts provided in this utils/scripts package are designed to compare your test run outputs against these baseline files.

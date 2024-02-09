@@ -1,4 +1,7 @@
 #!/bin/bash
+## This script renames files and directories within a specified directory by hashing their names along with a secret passphrase. 
+## This is useful for renaming data files whose names have sensitive information in them.
+
 
 # Check if a directory name is provided
 if [ "$#" -ne 1 ]; then
