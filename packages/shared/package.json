@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.4.2-alpha.3",
+  "version": "0.4.2",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",

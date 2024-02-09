@@ -1,28 +1,29 @@
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.23')}}
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.23')}}
-        {{#each (toArray 2_16_840_1_113883_10_20_22_2_23.entry)}}
-            {{#if this.organizer}}
-                {{>Resources/Device2.hbs deviceEntry=this.organizer ID=(generateUUID (toJsonString this.organizer))}},
-                {{#each (toArray this.organizer.component) as |medequipEntry|}}
-                    {{>Resources/Device2.hbs deviceEntry=medequipEntry.supply ID=(generateUUID (toJsonString medequipEntry.supply))}},
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_23.entry) as |medEquipEntry|}}
+            {{#if medEquipEntry.organizer}}
+                {{>Resources/Device2.hbs deviceEntry=medEquipEntry.organizer ID=(generateUUID (toJsonString medEquipEntry.organizer))}},
+                {{#each (toArray medEquipEntry.organizer.component) as |componentEntry|}}
+                    {{>Resources/Device2.hbs deviceEntry=componentEntry.supply ID=(generateUUID (toJsonString componentEntry.supply))}},
                 {{/each}}
             {{/if}}
             
-            {{#if this.supply}}
-                {{>Resources/Device2.hbs deviceEntry=this.supply ID=(generateUUID (toJsonString this.supply))}},
+            {{#if medEquipEntry.supply}}
+                {{>Resources/Device2.hbs deviceEntry=medEquipEntry.supply ID=(generateUUID (toJsonString medEquipEntry.supply))}},
             {{/if}}
             
-            {{#if this.procedure}}
-                {{>Resources/Procedure.hbs procedureEntry=this.procedure ID=(generateUUID (toJsonString this.procedure))}},
+            {{#if medEquipEntry.procedure}}
+                {{>Resources/Procedure.hbs procedureEntry=medEquipEntry.procedure ID=(generateUUID (toJsonString medEquipEntry.procedure))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                    {{>References/Procedure/subject.hbs ID=(generateUUID (toJsonString ../procedure)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{>References/Procedure/subject.hbs ID=(generateUUID (toJsonString medEquipEntry.procedure)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
-                {{#if this.procedure.performer.assignedEntity.representedOrganization.name._}}
-                    {{>Resources/Organization.hbs org=this.procedure.performer.assignedEntity.representedOrganization ID=(generateUUID (toJsonString this.procedure.performer.assignedEntity.representedOrganization))}},
-                    {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString this.procedure)) REF=(concat 'Organization/' (generateUUID (toJsonString this.procedure.performer.assignedEntity.representedOrganization)))}},
+                {{#if medEquipEntry.procedure.performer.assignedEntity.representedOrganization.name._}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medEquipEntry.procedure.performer.assignedEntity.representedOrganization) as |orgId|}}
+                        {{>Resources/Organization.hbs org=medEquipEntry.procedure.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                        {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString medEquipEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},
+                    {{/with}} 
                 {{/if}}
             {{/if}}
-            
         {{/each}}
     {{/with}}    
 {{/if}}  

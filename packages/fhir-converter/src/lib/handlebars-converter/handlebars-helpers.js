@@ -364,12 +364,13 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes another string: contains parentStr childStr",
-    func: function (parentStr, childStr) {
+    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
       }
-      return parentStr.toString().includes(childStr);
+      parentStr = parentStr.toString();
+      return childStrs.some(childStr => parentStr.includes(childStr));
     },
   },
   {
@@ -498,7 +499,15 @@ module.exports.external = [
           );
           partial = handlebarsInstance.partials[templatePath];
         }
-        return JSON.parse(jsonProcessor.Process(partial(inObj.hash)));
+        var result = partial(inObj.hash);
+        var processedResult = JSON.parse(jsonProcessor.Process(result));
+
+        // Check if the processedResult is undefined or an empty object
+        if (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object)) {
+          return undefined;
+        }
+
+        return processedResult;
       } catch (err) {
         throw `helper "evaluate" : ${err}`;
       }
@@ -859,7 +868,7 @@ module.exports.external = [
       try {
         return getDateTime(dateTimeString);
       } catch (err) {
-        throw `helper "formatAsDateTime" : ${err}`;
+        console.log(`helper "formatAsDateTime" : ${err}`);
       }
     },
   },
