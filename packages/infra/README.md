@@ -105,9 +105,9 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
 If you need to deploy the IHE Stack from the local environment/computer, you'll need
 
 1. A `.env-ihe` file on the `packages/infra` folder, containing the ENV vars CDK sends to Docker:
-   - `STOREPASS`
-   - `KEYSTOREPASS`
-   - `LICENSE_KEY`
+   - `IHE_GW_STOREPASS`
+   - `IHE_GW_KEYSTOREPASS`
+   - `IHE_GW_LICENSE_KEY`
 2. Pass `LOCAL=true` as an env var to the `cdk` CLI command, so it loads the `.env-ihe` file into
    environment variables:
 

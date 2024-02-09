@@ -220,8 +220,6 @@ jobs:
         env:
           IHE_GW_CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
           ENV_TYPE: ${{ inputs.deploy_env }}
-
-      # IHE Stack CDK DIFF
       - name: Diff IHE Stack CDK
         uses: metriport/deploy-with-cdk@master
         if: inputs.ihe_cdk_stack != null
