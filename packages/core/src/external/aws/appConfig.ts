@@ -48,5 +48,5 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
     if (configContentValue.values) return configContentValue.values[featureFlagName];
   }
 
-  return undefined;
+  throw new Error(`Failed to get Feature Flag Value for ${featureFlagName}`);
 }
