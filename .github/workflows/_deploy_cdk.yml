@@ -172,6 +172,7 @@ jobs:
       # Location Stack CDK DIFF
       - name: Diff Location Services CDK stack
         uses: metriport/deploy-with-cdk@master
+        if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
           cdk_version: "2.87.0"

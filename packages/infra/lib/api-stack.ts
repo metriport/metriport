@@ -8,6 +8,7 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -132,12 +133,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const {
-      appConfigAppId,
-      appConfigConfigId,
-      cxsWithEnhancedCoverageFeatureFlag,
-      cxsWithCQDirectFeatureFlag,
-    } = createAppConfigStack(this, { config: props.config });
+    const { appConfigAppId, appConfigConfigId } = createAppConfigStack({
+      stack: this,
+      props: { config: props.config },
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -351,6 +350,10 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: slackNotification?.alarmAction,
+        appConfigEnvVars: {
+          appId: appConfigAppId,
+          configId: appConfigConfigId,
+        },
       });
     }
 
@@ -399,8 +402,6 @@ export class APIStack extends Stack {
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
-        cxsWithEnhancedCoverageFeatureFlag,
-        cxsWithCQDirectFeatureFlag,
       },
       cookieStore,
     });
@@ -1204,8 +1205,20 @@ export class APIStack extends Stack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    appConfigEnvVars: {
+      appId: string;
+      configId: string;
+    };
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      appConfigEnvVars,
+    } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
@@ -1220,6 +1233,8 @@ export class APIStack extends Stack {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
@@ -1228,6 +1243,21 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    fhirToMedicalRecordLambda.role?.attachInlinePolicy(
+      new iam.Policy(this, "FhirLambdaPermissionsForAppConfig", {
+        statements: [
+          new iam.PolicyStatement({
+            actions: [
+              "appconfig:StartConfigurationSession",
+              "appconfig:GetLatestConfiguration",
+              "appconfig:GetConfiguration",
+            ],
+            resources: ["*"],
+          }),
+        ],
+      })
+    );
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 

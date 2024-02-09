@@ -79,7 +79,7 @@ export async function main() {
   }
 
   // Consolidate all bundles' resources into a single bundle
-  const resources = await getResourcesPerDirectory(folder, fhirExtension);
+  const resources = await getResourcesPerDirectory(outputFolderName, fhirExtension);
   const bundleFileName = `${outputFolderName}/bundle.json`;
   const bundle: Bundle<Resource> = {
     resourceType: "Bundle",
@@ -96,7 +96,7 @@ export async function main() {
 
   // count by looking at the files
   console.log(`Counting from folder...`);
-  const stats = await countResourcesPerDirectory(folder, fhirExtension);
+  const stats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
   console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
   console.log(`Total: ${stats.total}`);
   storeStats(stats);

@@ -1,4 +1,3 @@
-import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import {
   patientDiscoveryRespFromExternalGWSchema,
@@ -10,6 +9,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { makeCarequalityAPI } from "../../external/carequality/api";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
@@ -55,8 +55,8 @@ router.get(
   "/directory/organization/:oid",
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const apiKey = Config.getCQApiKey();
-    const cq = new Carequality(apiKey);
+    const cq = makeCarequalityAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
     const resp = await cq.listOrganizations({ count: 1, oid });
     const org = parseCQDirectoryEntries(resp);
