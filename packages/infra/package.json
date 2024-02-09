@@ -1,6 +1,6 @@
 {
   "name": "infrastructure",
-  "version": "1.8.2-alpha.2",
+  "version": "1.8.2",
   "private": true,
   "bin": {
     "infrastructure": "bin/infrastructure.js"
