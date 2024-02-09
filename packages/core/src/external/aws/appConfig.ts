@@ -45,7 +45,9 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   );
   if (configContent && config.ContentType && config.ContentType === "application/json") {
     const configContentValue = JSON.parse(configContent.toString());
-    if (configContentValue.values) return configContentValue.values[featureFlagName];
+    if (configContentValue.values && configContentValue.values[featureFlagName])
+      return configContentValue.values[featureFlagName];
+    else throw new Error(`Feature Flag ${featureFlagName} not found in config`);
   }
 
   throw new Error(`Failed to get Feature Flag Value for ${featureFlagName}`);
