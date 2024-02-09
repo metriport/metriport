@@ -29,7 +29,6 @@ find "$directory" -mindepth 1 -type d | sort -r | while read -r dir; do
     dir_name=$(basename "$dir")
     new_name=$(hash_name "$dir_name")
     mv "$dir" "$parent_path/$new_name"
-    echo "Renamed $dir to $parent_path/$new_name"
 done
 
 # Then find and rename all files
@@ -45,5 +44,4 @@ find "$directory" -type f | while read -r file; do
         new_file_path="$dir_path/$new_base_name.$extension"
     fi
     mv "$file" "$new_file_path"
-    echo "Renamed $file to $new_file_path"
 done
