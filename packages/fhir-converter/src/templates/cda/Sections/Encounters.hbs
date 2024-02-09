@@ -43,13 +43,6 @@
                                 {{/with}}
                             {{/if}}
 
-                            {{#if condEntry.observation.author.assignedAuthor.representedOrganization}}
-                                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=condEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
-                                    {{>Resources/Organization.hbs org=condEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
-                                    {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Organization/' OrgId.Id)}},
-                                {{/with}}
-                            {{/if}}
-
                             {{>References/Encounter/diagnosis.condition.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Condition/' (generateUUID (toJsonString condEntry.observation)))}},
                         {{/if}}
                     {{/each}}
