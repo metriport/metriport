@@ -37,7 +37,7 @@
                             {{#if entryRelationship.supply.author.assignedAuthor.representedOrganization}}
                                 {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=entryRelationship.supply.author.assignedAuthor.representedOrganization) as |orgId|}}
                                     {{>Resources/Organization.hbs org=entryRelationship.supply.author.assignedAuthor.representedOrganization ID=orgId.Id}},
-                                    {{>References/MedicationAdministration/performer.actor.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Organization/' OrgId.Id)}},
+                                    {{>References/MedicationAdministration/performer.actor.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Organization/' orgId.Id)}},
                                 {{/with}}
                             {{/if}}
                         {{/if}}
@@ -57,7 +57,7 @@
                             {{#if entryRelationship.supply.performer.assignedEntity.representedOrganization}}
                                 {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=entryRelationship.supply.performer.assignedEntity.representedOrganization) as |orgId|}}
                                     {{>Resources/Organization.hbs org=entryRelationship.supply.performer.assignedEntity.representedOrganization ID=orgId.Id}},
-                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Organization/' OrgId.Id)}},
+                                    {{>References/MedicationDispense/performer.actor.hbs ID=(generateUUID (toJsonString entryRelationship.supply)) REF=(concat 'Organization/' orgId.Id)}},
                                 {{/with}}
                             {{/if}}
 
