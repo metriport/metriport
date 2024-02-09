@@ -31,7 +31,7 @@ import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
-import { tallyDocQueryProgress } from "../../external/hie/tally-doc-query-progress-with-source";
+import { tallyDocQueryProgress } from "../../external/hie/tally-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
