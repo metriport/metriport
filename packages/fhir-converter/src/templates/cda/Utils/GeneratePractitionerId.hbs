@@ -1,6 +1,7 @@
-{
-    "Id":
-        {{#with (elementAt (toArray obj.id) 0) as |FirstId|}}
+
+{{#with (elementAt (toArray obj.id) 0) as |FirstId|}}
+    {
+        "Id":
             {{#if (and FirstId.root FirstId.extension)}}
                 "{{generateUUID (concat (toString FirstId.root) '|' (toString FirstId.extension))}}"
             {{else if FirstId.root}}
@@ -8,7 +9,7 @@
                 "{{generateUUID (toString FirstId.root)}}"
             {{else}}
                 {{!--Generate using obj if no root or id is available--}}
-                "{{generateUUID (toJsonString ..)}}"
+                "{{generateUUID (toJsonString ../obj)}}"
             {{/if}}
-        {{/with}}
-}
+    }
+{{/with}}

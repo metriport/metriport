@@ -1,7 +1,10 @@
 import puppeteer from "puppeteer-core";
 import fs from "fs";
+import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { getEnvType } from "@metriport/core/util/env-var";
+import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
 import chromium from "@sparticuz/chromium";
 import * as uuid from "uuid";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
@@ -21,6 +24,8 @@ const region = getEnvOrFail("AWS_REGION");
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
 const PDFConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
+const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
+const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
 const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
 const s3Client = makeS3Client(region);
 
@@ -40,9 +45,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     try {
+      const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
+      const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
 
-      const html = bundleToHtml(bundle);
+      const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
       const htmlFileName = getHTMLFileName(fhirFileName);
 
       await s3Client
@@ -191,3 +198,16 @@ const convertStoreAndReturnPdfUrl = async ({
 
   return urlPdf;
 };
+
+async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
+  const featureFlag = await getFeatureFlagValue(
+    region,
+    appConfigAppID,
+    appConfigConfigID,
+    getEnvType(),
+    "cxsWithADHDMRFeatureFlag"
+  );
+
+  if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+  else return [];
+}

@@ -2,6 +2,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
+import path = require("node:path");
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -69,7 +70,7 @@ async function convert(
   const conversionResult = res.data.fhirResource;
   addMissingRequests(conversionResult);
 
-  const destFileName = `${outputFolderName}${fileName.replace(".xml", fhirExtension)}`;
+  const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
   makeDirIfNeeded(destFileName);
   writeFileContents(destFileName, JSON.stringify(conversionResult));
 }

@@ -39,7 +39,8 @@ describe("cw-fhir-proxy", () => {
       `&_include=DocumentReference:custodian` +
       `&_include=DocumentReference:encounter` +
       `&${patientParamName}=${patientParamValue}` +
-      `&status=current`;
+      `&status=current` +
+      `&_count=500`;
 
     it("throws when gets no query params", async () => {
       const path = `/DocumentReference`;
@@ -64,7 +65,9 @@ describe("cw-fhir-proxy", () => {
       const inputPatientParam = "patient.identifier";
       const expectedPatientParam = "patient";
       const inputQuery = makeQuery(inputPatientParam, `urn:oid:${orgId}%7C${patientId}`);
-      const expectedQuery = makeQuery(expectedPatientParam, patientId);
+      const expectedQuery = new URLSearchParams(
+        makeQuery(expectedPatientParam, patientId)
+      ).toString();
       mock_getOrgOrFail.mockImplementation(async () => ({ cxId: tenant }));
       const res = await processDocReference(path, inputQuery);
       expect(res).toBeTruthy();

@@ -8,5 +8,11 @@
                     {{>References/ServiceRequest/requester.hbs ID=(generateUUID (toJsonString referralEntry.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                 {{/with}}
             {{/if}}
+            {{#if referralEntry.act.author.assignedAuthor.representedOrganization}}
+                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=referralEntry.act.author.assignedAuthor.representedOrganization) as |orgId|}}
+                    {{>Resources/Organization.hbs org=referralEntry.act.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                    {{>References/ServiceRequest/requester.hbs ID=(generateUUID (toJsonString referralEntry.act)) REF=(concat 'Organization/' orgId.Id)}},
+                {{/with}}
+            {{/if}}
     {{/each}}
 {{/with}}

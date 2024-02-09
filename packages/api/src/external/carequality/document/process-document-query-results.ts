@@ -16,7 +16,7 @@ import { getPatientWithDependencies } from "../../../command/medical/patient/get
 import { combineDocRefs } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "../../fhir/document";
-import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
@@ -54,7 +54,7 @@ export async function processDocumentQueryResults({
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "processing",
@@ -101,7 +101,7 @@ export async function processDocumentQueryResults({
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
       requestId,
