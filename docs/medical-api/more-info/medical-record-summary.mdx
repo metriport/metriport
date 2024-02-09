@@ -5,7 +5,7 @@ description: "Consolidate Medical Records Into a Single Document"
 
 This guide will teach you how to generate a Medical Record Summary, which condenses all of patients' medical records into a single document.
 
-To do this, Metriport extracts FHIR resources across all available CDA documents for a patient and de-duplicates them, resulting in a set of unique medical records, which are then written into HTML and PDF files, making them extremely easy to navigate.
+To do this, Metriport extracts FHIR resources across all available C-CDA documents for a patient and de-duplicates them, resulting in a set of unique medical records. These are then rendered as HTML or PDF files, making them extremely easy to navigate.
 
 Here's the title page of an example Medical Record Summary:
 
@@ -15,23 +15,22 @@ Here's the title page of an example Medical Record Summary:
 
 To generate a Medical Record Summary using Metriport API:
 
-Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to choose [FHIR resources](/medical-api/fhir/overview), date range, and rendering (`PDF` or `HTML`) for your Medical Record Summary. When this query completes, a [webhook](/medical-api/more-info/webhooks#medical-record) with a downloadable URL will be sent to you.
-
-<Tip>
-  Once the query is kicked off, you can monitor its status using the [Get Consolidated Data Query
-  Status](/medical-api/api-reference/fhir/consolidated-data-query-get) endpoint.
-</Tip>
+1. Start a [Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post). This endpoint allows you to optionally choose [FHIR resources](/medical-api/fhir/overview), date range, and rendering (`pdf` or `html`) for your Medical Record Summary.
+2. When the file is rendered, a [webhook message with a downloadable URL](/medical-api/more-info/webhooks#medical-record) will be sent to you.
 
 ## Generate using the Dashboard
 
-To generate a Medical Record Summary from the dashboard, you need to navigate to the patient's document section as follows:
+To generate a Medical Record Summary from the dashboard:
+
+1. Navigate to the patient's document section as follows:
 
 <img className="h-100" src="/images/dashboard-patient.png" />
 
-Then, select whether you want to download a new or a previously-generated (if such is available) Medical Record Summary, and click the button with the desired format to initiate the download.
+2. Select whether you want to download a new or a previously-generated (if such is available) Medical Record Summary
+3. Click the button with the desired format to initiate the download.
 
 <Warning>
-  This process may take some time, depending on the number of documents for the patient.
+  For patients with a large number of documents, this may take a few minutes to complete.
 </Warning>
 
 <img className="h-100" src="/images/dashboard-documents.png" />
