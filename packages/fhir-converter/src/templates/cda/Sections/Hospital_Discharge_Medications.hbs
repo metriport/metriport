@@ -22,13 +22,6 @@
                                 {{/with}}
                             {{/if}}
 
-                            {{#if medAdm.substanceAdministration.author.assignedAuthor.representedOrganization}}
-                                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medAdm.substanceAdministration.author.assignedAuthor.representedOrganization) as |orgId|}}
-                                    {{>Resources/Organization.hbs org=medAdm.substanceAdministration.author.assignedAuthor.representedOrganization ID=orgId.Id}},
-                                    {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString entryRelationship.observation)) REF=(concat 'Organization/' OrgId.Id)}},
-                                {{/with}}
-                            {{/if}}
-
                             {{>References/MedicationAdministration/reasonReference.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Condition/' (generateUUID (toJsonString entryRelationship.observation)))}},
                         {{/if}}
                     {{/each}}
