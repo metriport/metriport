@@ -11,7 +11,7 @@ import { isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { DocumentQueryResult } from "../document-query-result";
-import { setDocQueryProgressWithSource } from "../../hie/set-doc-query-progress-with-source";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -41,7 +41,7 @@ export async function processDocumentQueryResults({
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "processing",
@@ -62,7 +62,7 @@ export async function processDocumentQueryResults({
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
-    await setDocQueryProgressWithSource({
+    await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
       requestId,

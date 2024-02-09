@@ -9,7 +9,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
  *
  * @returns
  */
-export async function resetDocQueryProgressWithSource({
+export async function resetDocQueryProgress({
   patient,
   source,
 }: {
@@ -58,6 +58,7 @@ export async function resetDocQueryProgressWithSource({
       data: {
         ...existingPatient.data,
         externalData: resetExternalData,
+        documentQueryProgress: {},
       },
     };
 
