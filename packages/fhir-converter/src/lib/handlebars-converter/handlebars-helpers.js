@@ -499,7 +499,15 @@ module.exports.external = [
           );
           partial = handlebarsInstance.partials[templatePath];
         }
-        return JSON.parse(jsonProcessor.Process(partial(inObj.hash)));
+        var result = partial(inObj.hash);
+        var processedResult = JSON.parse(jsonProcessor.Process(result));
+
+        // Check if the processedResult is undefined or an empty object
+        if (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object)) {
+          return undefined;
+        }
+
+        return processedResult;
       } catch (err) {
         throw `helper "evaluate" : ${err}`;
       }
