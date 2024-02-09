@@ -55,7 +55,7 @@ dayjs.extend(duration);
  * - fhirBaseUrl: the URL of the FHIR server;
  */
 
-const cdaLocation = `/Users/jonahkaye/Desktop/2024-01-23T08:02:29.892Z/circle-medical-100-adhd-patient-sample/018a82ac-6c5a-7095-8c5a-0e38cae57db1`;
+const cdaLocation = `/Users/jonahkaye/Desktop/2024-01-23T08:02:29.892Z/test-patient-sample`;
 const converterBaseUrl = "http://localhost:8080";
 const fhirBaseUrl = "http://localhost:8889";
 const parallelConversions = 10;
@@ -173,7 +173,6 @@ function storeStats(stats: any, statsLocation: string) {
     statsLocation,
     JSON.stringify(
       {
-        cdaLocation: cdaLocation,
         ...stats,
       },
       null,
