@@ -46,6 +46,7 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
+    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
@@ -197,6 +198,24 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
         };
+
+        const preProcessedFilename = `${s3FileName}.from_converter.json`;
+
+        try {
+          await s3Utils.s3
+            .upload({
+              Bucket: conversionResultBucketName,
+              Key: preProcessedFilename,
+              Body: JSON.stringify(conversionResult),
+              ContentType: "application/fhir+json",
+            })
+            .promise();
+        } catch (error) {
+          console.log(`Error uploading pre-processed file: ${error}`);
+          capture.error(error, {
+            extra: { context: lambdaName, preProcessedFilename, patientId, cxId, jobId },
+          });
+        }
 
         await cloudWatchUtils.reportMemoryUsage();
 
