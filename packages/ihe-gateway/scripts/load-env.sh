@@ -16,8 +16,8 @@ if [ -f .env ]; then
     set +o allexport
 else
     if [ "$1" == "strict" ]; then
-        echo "No .env file found"
+        echo "Error: No .env file found"
         exit 1
     fi
-    echo "No .env file found, expecting env vars to be set"
+    echo "Warning: No .env file found, expecting env vars to be set"
 fi
