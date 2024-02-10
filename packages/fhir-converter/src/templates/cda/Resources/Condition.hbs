@@ -21,7 +21,7 @@
               {{/each}}
             ]
         },
-        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value}},
+        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
         {{#if conditionEntry.effectiveTime.low.value}} 
             "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
         {{else}}

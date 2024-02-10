@@ -15,15 +15,15 @@ const Config = {
     return getEnvVar("SAML_HOME_COMMUNITY_ID");
   },
 
-  getInboundXcpdUrl: function () {
+  getInboundPatientDiscoveryURL: function () {
     return getEnvVar("INBOUND_PATIENT_DISCOVERY_URL");
   },
 
-  getInboundDqUrl: function () {
+  getInboundDocumentQueryURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_QUERY_URL");
   },
 
-  getInboundDrUrl: function () {
+  getInboundDocumentRetrievalURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_RETRIEVAL_URL");
   },
 

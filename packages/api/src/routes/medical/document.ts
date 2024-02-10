@@ -1,13 +1,15 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
 import { UploadDocumentResult } from "@metriport/api-sdk";
+import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus, { OK } from "http-status";
 import { z } from "zod";
 import { downloadDocument } from "../../command/medical/document/document-download";
-import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
+import { startBulkGetDocumentUrls } from "../../command/medical/document/start-bulk-get-doc-url";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import ForbiddenError from "../../errors/forbidden";
@@ -18,7 +20,6 @@ import {
 import { upsertDocumentToFHIRServer } from "../../external/fhir/document/save-document-reference";
 import { searchDocuments } from "../../external/fhir/document/search-documents";
 import { Config } from "../../shared/config";
-import { stringToBoolean } from "@metriport/shared";
 import { sanitize } from "../helpers/string";
 import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
@@ -90,7 +91,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    return res.status(OK).json(patient.data.documentQueryProgress);
+    return res.status(OK).json(patient.data.documentQueryProgress ?? {});
   })
 );
 
@@ -209,33 +210,39 @@ router.post(
 async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocumentResult> {
   const cxId = getCxIdOrFail(req);
   const patientId = getFromQueryOrFail("patientId", req);
-  const docId = uuidv7();
-  const s3FileName = createS3FileName(cxId, patientId, docId);
+  const docRefId = uuidv7();
+  const s3FileName = createDocumentFilePath(cxId, patientId, docRefId);
   const organization = await getOrganizationOrFail({ cxId });
 
   const docRefDraft = req.body;
   docRefCheck(docRefDraft);
   // #1075 TODO: Validate FHIR Payloads
 
-  const docRef = composeDocumentReference(
-    docRefDraft,
+  const docRef = composeDocumentReference({
+    inputDocRef: docRefDraft,
     organization,
     patientId,
-    docId,
-    s3FileName,
-    medicalDocumentsUploadBucketName
-  );
-
-  const url = await s3Utils.getPresignedUploadUrl({
-    bucket: medicalDocumentsUploadBucketName,
-    key: s3FileName,
+    docRefId,
+    s3Key: s3FileName,
+    s3BucketName: medicalDocumentsUploadBucketName,
   });
 
-  // Make a temporary DocumentReference on the FHIR server.
-  console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
-  await upsertDocumentToFHIRServer(cxId, docRef);
+  const upsertOnFHIRServer = async () => {
+    // Make a temporary DocumentReference on the FHIR server.
+    console.log("Creating a temporary DocumentReference on the FHIR server with ID:", docRef.id);
+    await upsertDocumentToFHIRServer(cxId, docRef);
+  };
 
-  return { documentReferenceId: docId, uploadUrl: url };
+  const getPresignedUrl = async () => {
+    return s3Utils.getPresignedUploadUrl({
+      bucket: medicalDocumentsUploadBucketName,
+      key: s3FileName,
+    });
+  };
+
+  const [, url] = await Promise.all([upsertOnFHIRServer(), getPresignedUrl()]);
+
+  return { documentReferenceId: docRefId, uploadUrl: url };
 }
 
 /**

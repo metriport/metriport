@@ -30,7 +30,7 @@ export const SamlAttributesSchema = z.object({
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string(),
+  cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string().optional(),
@@ -84,7 +84,7 @@ export const baseResponseSchema = z.object({
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
 
 export const baseErrorResponseSchema = baseResponseSchema.extend({
-  operationOutcome: operationOutcomeSchema,
+  operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseErrorResponse = z.infer<typeof baseErrorResponseSchema>;
 

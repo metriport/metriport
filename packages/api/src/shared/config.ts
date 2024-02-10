@@ -236,13 +236,6 @@ export class Config {
     return getEnvVar("FHIR_CONVERTER_SERVER_URL");
   }
 
-  static getSidechainFHIRConverterQueueURL(): string | undefined {
-    return getEnvVar("SIDECHAIN_FHIR_CONVERTER_QUEUE_URL");
-  }
-  static getSidechainFHIRConverterDQLURL(): string | undefined {
-    return getEnvVar("SIDECHAIN_FHIR_CONVERTER_DLQ_URL");
-  }
-
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
@@ -295,11 +288,5 @@ export class Config {
   }
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
-  }
-  static getCxsWithEnhancedCoverageFeatureFlagName(): string {
-    return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
-  }
-  static getCxsWithCQDirectFeatureFlagName(): string {
-    return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
   }
 }

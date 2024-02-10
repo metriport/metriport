@@ -4,6 +4,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { Product } from "../../../domain/product";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
+import { Config } from "../../../shared/config";
 
 const ADDRESS_MATCH_RELEVANCE_THRESHOLD = 0.9;
 
@@ -29,7 +30,8 @@ export async function addCoordinatesToAddresses({
   addresses: Address[];
   patient: Pick<Patient, "id" | "cxId">;
   reportRelevance?: boolean;
-}): Promise<Address[]> {
+}): Promise<Address[] | undefined> {
+  if (Config.isSandbox()) return;
   const updatedAddresses = await addGeographicCoordinates(addresses, patient, reportRelevance);
   const addressesWithCoordinates = combineAddresses(updatedAddresses, addresses);
   return addressesWithCoordinates;

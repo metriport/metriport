@@ -1,4 +1,5 @@
 import { EnvType } from "../lib/env-type";
+import { IHEGatewayProps } from "./ihe-gateway-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -24,7 +25,7 @@ export type EnvConfig = {
   authSubdomain: string; // Authentication subdomain
   dbName: string;
   dbUsername: string;
-  loadBalancerDnsName?: string;
+  loadBalancerDnsName: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
   usageReportUrl?: string;
   fhirServerUrl: string;
@@ -37,7 +38,7 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
-  locationService: {
+  locationService?: {
     stackName: string;
     placeIndexName: string;
     placeIndexRegion: string;
@@ -95,12 +96,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  iheGateway?: {
-    vpcId: string;
-    certArn: string;
-    subdomain: string; // Subdomain for IHE integrations
-    snsTopicArn?: string;
-  };
+  iheGateway?: IHEGatewayProps;
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {
@@ -109,16 +105,6 @@ export type EnvConfig = {
     workspaceId: string;
     alertsChannelId: string;
   };
-  sidechainFHIRConverter?: {
-    bucketName: string;
-    url: string;
-    urlBlacklist: string; // comma-separated list of URLs to be replaced, case sensitive
-    wordsToRemove: string; // comma-separated list of words to be removed, case insensitive
-    secretNames?: {
-      SIDECHAIN_FHIR_CONVERTER_KEYS: string;
-    };
-  };
-  fhirToCDAUrl: string;
   docQueryChecker?: {
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"

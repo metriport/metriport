@@ -2,6 +2,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { AxiosInstance } from "axios";
 import { getFileContents, makeDirIfNeeded, writeFileContents } from "../shared/fs";
 import { getPatientIdFromFileName } from "./shared";
+import path = require("node:path");
 
 export async function convertCDAsToFHIR(
   baseFolderName: string,
@@ -67,8 +68,29 @@ async function convert(
     headers: { "Content-Type": "text/plain" },
   });
   const conversionResult = res.data.fhirResource;
+  addMissingRequests(conversionResult);
 
-  const destFileName = `${outputFolderName}${fileName.replace(".xml", fhirExtension)}`;
+  const destFileName = path.join(outputFolderName, fileName.replace(".xml", fhirExtension));
   makeDirIfNeeded(destFileName);
   writeFileContents(destFileName, JSON.stringify(conversionResult));
+}
+
+interface Entry {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  request?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  resource?: any;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function addMissingRequests(fhirBundle: any) {
+  if (!fhirBundle?.entry?.length) return;
+  fhirBundle.entry.forEach((e: Entry) => {
+    if (!e.request && e.resource) {
+      e.request = {
+        method: "PUT",
+        url: `${e.resource.resourceType}/${e.resource.id}`,
+      };
+    }
+  });
 }

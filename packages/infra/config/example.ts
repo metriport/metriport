@@ -12,6 +12,7 @@ export const config: EnvConfig = {
   authSubdomain: "auth",
   dbName: "my_db",
   dbUsername: "my_db_user",
+  loadBalancerDnsName: "<your-load-balancer-dns-name>",
   fhirServerUrl: "http://localhost:8888",
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: "CRONOMETER_CLIENT_ID",
@@ -41,12 +42,13 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
-  iheGateway: {
-    vpcId: "<your-vpc-id>",
-    certArn: "<your-cert-arn>",
-    subdomain: "ihe",
-    snsTopicArn: "<your-sns-topic-arn>",
-  },
+  // TODO 1377 Update this
+  // iheGateway: {
+  //   vpcId: "<your-vpc-id>",
+  //   certArn: "<your-cert-arn>",
+  //   subdomain: "ihe",
+  //   snsTopicArn: "<your-sns-topic-arn>",
+  // },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
@@ -84,7 +86,6 @@ export const config: EnvConfig = {
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
   systemRootOID: "2.16.840.1.113883.3.999999",
-  fhirToCDAUrl: "https://converter-test.com",
   mirthConfig: {
     envVars: {
       INBOUND_PATIENT_DISCOVERY_URL: "https://api.myhealthapp.com/pd",

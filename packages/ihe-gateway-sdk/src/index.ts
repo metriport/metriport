@@ -51,6 +51,7 @@ export {
   npiStringArraySchema,
   oidStringSchema,
   BaseRequest,
+  BaseErrorResponse,
   baseRequestSchema,
   DocumentReference,
   OperationOutcome,

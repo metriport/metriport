@@ -9,8 +9,8 @@ on:
       - "packages/api/**"
       - "packages/api-sdk/**"
       - "packages/commonwell-sdk/**"
-      - "packages/connect-widget/**"
       - "packages/core/**"
+      - "packages/fhir-converter/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
@@ -25,8 +25,8 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
-      widget: ${{ steps.changes.outputs.widget }}
     steps:
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -49,38 +49,26 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
+            # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
+            fhir-converter:
+              - "packages/fhir-converter/Dockerfile"
+              - "packages/fhir-converter/docker-entrypoint.sh"
+              - "packages/fhir-converter/package*.json"
+              - "packages/fhir-converter/mocha-config.json"
+              - "packages/fhir-converter/src/**"
+              - "packages/fhir-converter/test/**"
+              - "packages/fhir-converter/deploy/**"
             infra-lambdas:
               - "packages/shared/**"
               - "packages/core/**"
               - "packages/infra/**"
               - "packages/lambdas/**"
               - "package*.json"
-            widget:
-              - "packages/connect-widget/**"
-              - "package*.json"
-
-  widget:
-    if: needs.files-changed.outputs.widget == 'true'
-    needs: files-changed
-    uses: ./.github/workflows/_deploy_widget.yml
-    with:
-      build_env: "production"
-      deploy_env: "production"
-      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
-      S3_BUCKET: ${{ vars.S3_BUCKET_PRODUCTION }}
-      CF_DISTRIB_ID: ${{ vars.WIDGET_CF_DISTRIB_ID_PRODUCTION }}
-    secrets:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   api-prod:
     if: needs.files-changed.outputs.api == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_deploy_api.yml
+    uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "production"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
@@ -95,7 +83,7 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   api-sandbox:
-    uses: ./.github/workflows/_deploy_api.yml
+    uses: ./.github/workflows/_deploy-api.yml
     needs: [api-prod]
     if: ${{ !failure() && needs.api-prod.result == 'success' }}
     with:
@@ -113,15 +101,17 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
+    uses: ./.github/workflows/_deploy-cdk.yml
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
     needs: files-changed
     with:
       deploy_env: "production"
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
+      # TODO 1377 uncomment this line when the IHE stack is ready for production
+      # ihe_cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -130,16 +120,18 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+      IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+      IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
   infra-api-lambdas-sandbox:
-    uses: ./.github/workflows/_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy-cdk.yml
     needs: [infra-api-lambdas]
     if: ${{ !failure() && needs.infra-api-lambdas.result == 'success' }}
     with:
       deploy_env: "sandbox"
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_SANDBOX }}
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -148,45 +140,26 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-  infra-widget:
-    uses: ./.github/workflows/_deploy_cdk.yml
-    if: needs.files-changed.outputs.infra-lambdas == 'true'
-    needs: files-changed
-    with:
-      deploy_env: "production"
-      cdk_stack: ${{ vars.WIDGET_STACK_NAME_PRODUCTION }}
-      AWS_REGION: ${{ vars.WIDGET_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
-    secrets:
-      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+      IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+      IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [widget, api-sandbox, infra-api-lambdas-sandbox, infra-widget]
+    needs: [api-sandbox, infra-api-lambdas-sandbox]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.infra-widget.result == 'success') }}
+    if: ${{ !failure() && (needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success') }}
     secrets: inherit
 
   e2e-tests:
     uses: ./.github/workflows/_e2e-tests.yml
     needs: release
-    # run even if one of the dependencies didn't
-    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
-    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.widget.result == 'success' || needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-widget.result == 'success') }}
     with:
       deploy_env: "production"
       api_url: ${{ vars.API_URL_PRODUCTION }}
       fhir_url: ${{ vars.FHIR_SERVER_URL_PRODUCTION }}
-      widget_url: ${{ vars.WIDGET_URL_PRODUCTION }}
     secrets:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

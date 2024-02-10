@@ -1,18 +1,18 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import {
   ConsolidationConversionType,
   Input as ConversionInput,
   Output as ConversionOutput,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { Patient } from "@metriport/core/domain/patient";
+import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
-import { createS3FileName } from "../../../shared/external";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { convertDoc } from "../document/document-download";
 
@@ -24,7 +24,6 @@ dayjs.extend(duration);
  */
 // TODO https://github.com/metriport/metriport-internal/issues/1319 to decrease this significantly
 export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").add(2, "seconds");
-export const MEDICAL_RECORD_KEY = "MR";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
@@ -137,7 +136,7 @@ async function convertFHIRBundleToMedicalRecord({
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
   // Store the bundle on S3
-  const fileName = createS3FileName(patient.cxId, patient.id, `${MEDICAL_RECORD_KEY}.json`);
+  const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
 
   await s3
     .putObject({

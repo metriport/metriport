@@ -1,20 +1,21 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
+import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../../command/medical/patient/append-doc-query-progress";
-import { Organization } from "@metriport/core/domain/organization";
-import { Patient } from "@metriport/core/domain/patient";
 import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
-import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { getFileExtension, sandboxSleepTime } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
+import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
+import { sandboxSleepTime } from "./shared";
 
 const randomDates = [
   "2023-06-15",
