@@ -196,14 +196,21 @@ const convertStoreAndReturnPdfUrl = async ({
 };
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValue(
-    region,
-    appConfigAppID,
-    appConfigConfigID,
-    getEnvType(),
-    "cxsWithADHDMRFeatureFlag"
-  );
+  try {
+    const featureFlag = await getFeatureFlagValue(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithADHDMRFeatureFlag"
+    );
 
-  if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
-  else return [];
+    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
 }
