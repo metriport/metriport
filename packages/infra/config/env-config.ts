@@ -1,4 +1,5 @@
 import { EnvType } from "../lib/env-type";
+import { IHEGatewayProps } from "./ihe-gateway-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -95,12 +96,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  iheGateway?: {
-    vpcId: string;
-    certArn: string;
-    subdomain: string; // Subdomain for IHE integrations
-    snsTopicArn?: string;
-  };
+  iheGateway?: IHEGatewayProps;
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {
