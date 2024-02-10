@@ -10,7 +10,10 @@ import {
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
 import { QueryProgress } from "@metriport/core/domain/query-status";
-import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import {
+  buildBundle,
+  getReferencesFromResources,
+} from "@metriport/core/external/fhir/shared/bundle";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { emptyFunction } from "@metriport/shared";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
@@ -253,7 +256,7 @@ export async function getConsolidatedPatientData({
   const grouped = [...filtered, ...missingRefsOnFHIR];
 
   const entry: BundleEntry[] = grouped.map(r => ({ resource: r }));
-  return buildResponse(entry);
+  return buildBundle(entry);
 }
 
 function filterByDocumentIds(
@@ -291,10 +294,6 @@ const searchResources = async <K extends ResourceType>(
     throw err;
   }
 };
-
-function buildResponse(entries: BundleEntry[]): Bundle<Resource> {
-  return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
-}
 
 function getMessage(err: OperationOutcomeError): string {
   return err.outcome.issue ? err.outcome.issue.map(issueToString).join(",") : "";
