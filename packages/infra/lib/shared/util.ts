@@ -1,14 +1,27 @@
 import { EnvConfig } from "../../config/env-config";
 import { EnvType } from "../env-type";
 
+export function isStagingEnv(env: EnvType): boolean {
+  return env === EnvType.staging;
+}
+export function isProdEnv(env: EnvType): boolean {
+  return env === EnvType.production;
+}
+export function isSandboxEnv(env: EnvType): boolean {
+  return env === EnvType.sandbox;
+}
+
 export function isStaging(config: EnvConfig): boolean {
-  return config.environmentType === EnvType.staging;
+  return isStagingEnv(config.environmentType);
 }
 export function isProd(config: EnvConfig): boolean {
-  return config.environmentType === EnvType.production;
+  return isProdEnv(config.environmentType);
 }
 export function isSandbox(config: EnvConfig): boolean {
-  return config.environmentType === EnvType.sandbox;
+  return isSandboxEnv(config.environmentType);
+}
+export function isLocalEnvironment(): boolean {
+  return getEnvVar("LOCAL") !== undefined;
 }
 
 export function mbToBytes(mb: number): number {

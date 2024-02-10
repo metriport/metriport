@@ -92,7 +92,7 @@ jobs:
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+      IHE_CONFIG_BUCKET_NAME: ${{ vars.IHE_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -101,6 +101,9 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      STOREPASS: ${{ secrets.STOREPASS }}
+      KEYSTOREPASS: ${{ secrets.KEYSTOREPASS }}
+      LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
 
   release:
     uses: ./.github/workflows/_release.yml

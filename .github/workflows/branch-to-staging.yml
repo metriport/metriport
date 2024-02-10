@@ -31,7 +31,7 @@ jobs:
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
       ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -40,3 +40,6 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+      IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+      IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}

@@ -13,7 +13,9 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
 - `cdk diff` compare deployed stack with current state
 - `cdk synth` emits the synthesized CloudFormation template
 
-## Creating a Certificate for IHE
+## IHE Stack
+
+### Creating a Certificate for IHE
 
 1. **Download Certificate and Private Key**
 
@@ -97,3 +99,18 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
        --private-key fileb://decrypted_private_key.key \
        --certificate-chain fileb://intermediate_cert.pem
      ```
+
+### Local Development
+
+If you need to deploy the IHE Stack from the local environment/computer, you'll need
+
+1. A `.env-ihe` file on the `packages/infra` folder, containing the ENV vars CDK sends to Docker:
+   - `STOREPASS`
+   - `KEYSTOREPASS`
+   - `LICENSE_KEY`
+2. Pass `LOCAL=true` as an env var to the `cdk` CLI command, so it loads the `.env-ihe` file into
+   environment variables:
+
+   ```shell
+   $ LOCAL=true cdk diff -c env=<environment> IHEStack
+   ```
