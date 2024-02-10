@@ -77,11 +77,11 @@ export default class IHEGatewayConstruct extends Construct {
       DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
-      INBOUND_XCPD_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
-      INBOUND_XCA38_URL: getLambdaUrl(documentQueryLambda.functionArn),
-      INBOUND_XCA39_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
+      INBOUND_PATIENT_DISCOVERY_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
+      INBOUND_DOCUMENT_QUERY_URL: getLambdaUrl(documentQueryLambda.functionArn),
+      INBOUND_DOCUMENT_RETRIEVAL_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
       S3_BUCKET_NAME: medicalDocumentsBucket.bucketName,
-      VMOPTIONS: `-Xms${config.java.xms},-Xmx${config.java.xmx}`,
+      VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
     };
 
     const containerInsights = isProd(mainConfig) ? true : false;

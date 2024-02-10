@@ -11,6 +11,7 @@ services:
         KEYSTORENAME: "${IHE_GW_KEYSTORENAME}"
         ZULUKEY: "${IHE_GW_ZULUKEY}"
       x-bake:
+        # TODO 1377 Try to remove 'platforms' or keep it to one value
         platforms:
           - linux/amd64
           - linux/arm64
@@ -32,7 +33,6 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     restart: on-failure
     ports:
-      # - "8089:8080" # Can expose port 8080 for HTTP access (not the API, it doesn't work)
       - "8443:8443"
       - "8081:8081"
       - "8082:8082"

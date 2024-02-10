@@ -15,10 +15,16 @@ export type IHEGatewayProps = {
     // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
     /**
      * Determines the valid CPU values.
+     *
+     * @see {@link ECS_MEMORY}
+     * @see {@link https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size}
      */
     memory: ECS_MEMORY;
     /**
      * Determined by the memory value.
+     *
+     * @see {@link ECS_CPU}
+     * @see {@link https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size}
      */
     cpu: ECS_CPU;
     /**
@@ -36,13 +42,17 @@ export type IHEGatewayProps = {
   };
   java: {
     /**
-     * Java's `-Xmx` value. https://eclipse.dev/openj9/docs/xms/
+     * Java's `-Xmx` value.
+     *
+     * @see {@link https://eclipse.dev/openj9/docs/xms/}
      */
-    xmx: string;
+    maxHeapSize: string;
     /**
-     * Java's `-Xms` value. https://eclipse.dev/openj9/docs/xms/
+     * Java's `-Xms` value.
+     *
+     * @see {@link https://eclipse.dev/openj9/docs/xms/}
      */
-    xms: string;
+    initialHeapSize: string;
   };
   rds: {
     dbName: string;
@@ -58,7 +68,7 @@ export type IHEGatewayProps = {
     /**
      * Optional in case its shared with document query
      */
-    documentRetrieve?: number;
+    documentRetrieval?: number;
   };
   snsTopicArn?: string;
 };

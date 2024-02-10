@@ -12,6 +12,8 @@
  * Between 16384 (16 GB) and 61440 (60 GB) in increments of 4096 (4 GB) - Available cpu values: 8192 (8 vCPU)
  *
  * Between 32768 (32 GB) and 122880 (120 GB) in increments of 8192 (8 GB) - Available cpu values: 16384 (16 vCPU)
+ *
+ * @see {@link https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size}
  */
 export type ECS_MEMORY = number;
 
@@ -29,5 +31,7 @@ export type ECS_MEMORY = number;
  * 8192 (8 vCPU) - Available memory values: Between 16GB and 60GB in 4GB increments
  *
  * 16384 (16 vCPU) - Available memory values: Between 32GB and 120GB in 8GB increments
+ *
+ * @see {@link https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size}
  */
 export type ECS_CPU = number;

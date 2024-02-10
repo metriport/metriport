@@ -44,6 +44,7 @@ echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
 
 echo "Building and pushing Docker image"
+# TODO 1377 Try to remove '--platform' or keep it to one value
 docker buildx build \
   --build-arg "ARTIFACT=$IHE_GW_ARTIFACT_URL" \
   --build-arg "KEYSTORENAME=$IHE_GW_KEYSTORENAME" \

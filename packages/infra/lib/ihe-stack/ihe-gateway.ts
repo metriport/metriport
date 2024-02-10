@@ -49,19 +49,19 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     db,
   });
 
+  const patientDiscoveryPort = config.ports.patientDiscovery;
+  const documentQueryPort = config.ports.documentQuery;
+  const documentRetrievalPort = config.ports.documentRetrieval ?? documentQueryPort;
   const buildAddress = (port: number) => `http://${iheGWAddress}:${port}`;
 
-  const xcaResource = apiResource.addResource("xca");
-  const documentQueryResource = xcaResource.addResource("document-query");
-  proxyToServer(documentQueryResource, buildAddress(config.ports.documentQuery));
-  const documentRetrievalResource = xcaResource.addResource("document-retrieve");
-  proxyToServer(
-    documentRetrievalResource,
-    buildAddress(config.ports.documentRetrieve ?? config.ports.documentQuery)
-  );
+  const patientDiscoveryResource = apiResource.addResource("patient-discovery");
+  proxyToServer(patientDiscoveryResource, buildAddress(patientDiscoveryPort));
 
-  const xcpdResource = apiResource.addResource("xcpd");
-  proxyToServer(xcpdResource, buildAddress(config.ports.patientDiscovery));
+  const documentQueryResource = apiResource.addResource("document-query");
+  proxyToServer(documentQueryResource, buildAddress(documentQueryPort));
+
+  const documentRetrievalResource = apiResource.addResource("document-retrieval");
+  proxyToServer(documentRetrievalResource, buildAddress(documentRetrievalPort));
 }
 
 function proxyToServer(resource: apig.Resource, serverAddress: string) {

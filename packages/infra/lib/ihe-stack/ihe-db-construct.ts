@@ -11,10 +11,6 @@ import { DailyBackup } from "../shared/backup";
 import { addDBClusterPerformanceAlarms } from "../shared/rds";
 import { isProdEnv } from "../shared/util";
 
-// export interface IHEGatewayAlarmThresholds {
-//   masterCpuUtilization?: number;
-//   cpuUtilization?: number;
-// }
 export interface IHEDatabaseConstructProps {
   env: EnvType;
   config: IHEGatewayProps;
@@ -50,7 +46,7 @@ export default class IHEDBConstruct extends Construct {
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
     });
     // TODO 1377 validate that it copies the props from the default group
-    const parameterGroup = new rds.ParameterGroup(this, "FHIR_DB_Params", {
+    const parameterGroup = new rds.ParameterGroup(this, "IHE_GW_DB_Params", {
       engine: dbEngine,
       parameters: {
         log_min_duration_statement: config.rds.minSlowLogDurationInMs.toString(),
@@ -83,7 +79,7 @@ export default class IHEDBConstruct extends Construct {
     });
 
     if (isProdEnv(props.env)) {
-      new DailyBackup(this, "APIDBBackup", {
+      new DailyBackup(this, "IHE_GW_DB_Backup", {
         backupPlanName: "IHE_GW_DB",
         resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
       });
