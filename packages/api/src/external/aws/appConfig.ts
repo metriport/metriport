@@ -1,4 +1,4 @@
-import { getFeatureFlagValue, FeatureFlagDatastore } from "@metriport/core/external/aws/appConfig";
+import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
@@ -7,11 +7,11 @@ import { Util } from "../../shared/util";
 const log = Util.log(`App Config`);
 
 /**
- * Returns the list of Customer IDs that are enabled for the given feature flag.
+ * Returns the list of customers that are enabled for the given feature flag.
  *
- * @returns Array of cxIds
+ * @returns Array of cxIds or cxIdsAndLimits
  */
-async function getCxsWithFeatureFlagValue(
+async function getCxsWithFeatureFlagEnabled(
   featureFlagName: keyof FeatureFlagDatastore
 ): Promise<string[]> {
   try {
@@ -36,15 +36,15 @@ async function getCxsWithFeatureFlagValue(
 }
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue("cxsWithEnhancedCoverageFeatureFlag");
+  return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
 }
 
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue("cxsWithCQDirectFeatureFlag");
+  return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }
 
 export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue("cxsWithIncreasedSandboxLimitFeatureFlag");
+  return getCxsWithFeatureFlagEnabled("cxsWithIncreasedSandboxLimitFeatureFlag");
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
