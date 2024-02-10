@@ -1,0 +1,49 @@
+---
+title: "Get Medical Record Summary"
+description: "Get the Medical Record Summary in PDF or HTML formats."
+api: "GET /patient/:id/medical-record"
+---
+
+This endpoint returns the URL to download the patient's Medical Record Summary in the PDF or HTML format, if it exists.
+
+To create a Medical Record Summary, you need to use the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+
+<Info>The URL will only be valid for 180 seconds before you need to request a new one.</Info>
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Query Params
+
+<ParamField query="conversionType" type="string" required>
+  The doc type to convert to. Either `html` or `pdf`.
+
+  <Info>This parameter is to indicate how the medical record should be rendered.</Info>
+</ParamField>
+
+## Response
+
+If the Medical Record Summary exists, it will return a JSON object containing the downloadable URL. Otherwise, will throw a NotFoundError.
+
+<ResponseField name="url" type="string">
+  The downloadable URL.
+</ResponseField>
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c";
+
+const url = await metriport.getMedicalRecordSummary(
+  metriportPatientId, 
+  "pdf"
+);
+```
+
+</ResponseExample>

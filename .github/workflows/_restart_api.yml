@@ -7,7 +7,7 @@ on:
         description: "the name of the script under the scripts/ folder to run"
         required: false
         type: string
-        default: "restart-api.sh"
+        default: "restart-ecs.sh"
       ECR_REPO_URI:
         description: "The URI of the ECR repository to push the Docker image to"
         required: true

@@ -153,7 +153,7 @@ export async function queryAndProcessDocuments({
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
-    const msg = `Failed to query and process documents`;
+    const msg = `Failed to query and process documents - CommonWell`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({

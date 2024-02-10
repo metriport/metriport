@@ -15,6 +15,19 @@ const s3Utils = new S3Utils(region);
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 const SIGNED_URL_DURATION_SECONDS = 60;
 
+/**
+ * This lambda is called by CommonWell as part of document retrieval - DR.
+ *
+ * It's called after document query - DQ - with the Document Refeference's
+ * attachment URL - which points to here.
+ *
+ * This lambda should be behind API GW's OAuth authorizer at all times.
+ *
+ * It will:
+ * - receive the attachment URL;
+ * - generate a signed URL for the file (60s expiration);
+ * - returns a redirect to the signed URL.
+ */
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
     const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";

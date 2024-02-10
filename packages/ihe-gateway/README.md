@@ -28,7 +28,7 @@ To build the server container for the first time, run the command below, which w
 IHE GW as well as a Postgres instance:
 
 ```shell
-$ docker-compose -f docker-compose.yml up --build
+$ ./scripts/run-docker.sh --build
 ```
 
 ### Custom Extensions
@@ -43,7 +43,7 @@ If you do add extensions, you might need to add a license key to a `.env` file:
 
 ```shell
 $ touch .env
-$ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
+$ echo "IHE_GW_LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 ```
 
 ### Launch
@@ -51,7 +51,7 @@ $ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 In subsequent runs, you can use docker-compose start - or just run it from Docker Desktop:
 
 ```shell
-$ docker-compose start
+$ ./scripts/run-docker.sh
 ```
 
 ### Development
@@ -60,7 +60,7 @@ Make sure to have the `.env` file initialized. See `.env.example` for more detai
 
 Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
 backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (SSL/Java keystore certificates).
+information (e.g., SSL/Java keystore private key).
 
 :warning: The commands below will overwrite the destination (either local config files or server
 configs).

@@ -1534,7 +1534,7 @@ function createObservationLaboratorySection(observations: Observation[]) {
 function createObservationsByDate(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
-  const filteredObservations = filterObservationsByDate(observations)
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1681,10 +1681,9 @@ function createOtherObservationsByDate(observations: Observation[]): string {
     .join("");
 }
 
-type FilteredObservations = { date: string; observations: Observation[] }
+type FilteredObservations = { date: string; observations: Observation[] };
 
-
-function filterObservationsByDate(observations: Observation[]): FilteredObservations[]  {
+function filterObservationsByDate(observations: Observation[]): FilteredObservations[] {
   const filteredObservations = observations.reduce((acc, observation) => {
     const observationDate = formatDateForDisplay(observation.effectiveDateTime);
     const existingObservation = acc.find(observation => observation.date === observationDate);
@@ -1710,7 +1709,7 @@ function filterObservationsByDate(observations: Observation[]): FilteredObservat
     return acc;
   }, [] as FilteredObservations[]);
 
-  return filteredObservations
+  return filteredObservations;
 }
 
 function renderClassDisplay(encounter: Encounter) {

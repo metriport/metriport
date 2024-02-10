@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?><map>
   <entry>
-    <string>INBOUND.XCPD55</string>
+    <string>INBOUND_PATIENT_DISCOVERY_URL</string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>http://localhost:16850</value>
       <comment>AWS Lambda inbound XCPD interface</comment>
@@ -42,14 +42,14 @@
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
-    <string>INBOUND.XCA39</string>
+    <string>INBOUND_DOCUMENT_RETRIEVAL_URL</string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>http://localhost:16850</value>
       <comment>AWS Lambda inbound XCA ITI-39 interface</comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
-    <string>INBOUND.XCA38</string>
+    <string>INBOUND_PATIENT_DISCOVERY_URL</string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>http://localhost:16850</value>
       <comment>AWS Lambda inbound XCA ITI-38 interface</comment>
