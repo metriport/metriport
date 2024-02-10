@@ -98,8 +98,14 @@ export class S3Utils {
     key: string,
     bucket: string
   ): Promise<
-    | { exists: true; size: number; contentType: string; eTag?: string }
-    | { exists: false; size?: never; contentType?: never; eTag?: never }
+    | {
+        exists: true;
+        size: number;
+        contentType: string;
+        eTag?: string;
+        createdAt: Date | undefined;
+      }
+    | { exists: false; size?: never; contentType?: never; eTag?: never; createdAt?: never }
   > {
     try {
       const head = await this.s3
@@ -113,6 +119,7 @@ export class S3Utils {
         size: head.ContentLength ?? 0,
         contentType: head.ContentType ?? "",
         eTag: head.ETag ?? "",
+        createdAt: head.LastModified,
       };
     } catch (err) {
       return { exists: false };

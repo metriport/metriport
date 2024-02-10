@@ -15,6 +15,11 @@ export type PatientDTO = {
   contact?: Contact | Contact[];
 };
 
+type Coordinates = {
+  lat: number;
+  lon: number;
+};
+
 type Address = {
   addressLine1: string;
   addressLine2?: string;
@@ -22,6 +27,7 @@ type Address = {
   state: string;
   zip: string;
   country: string;
+  coordinates?: Coordinates;
 };
 
 type PersonalIdentifier = {

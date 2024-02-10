@@ -1254,7 +1254,7 @@ export class APIStack extends Stack {
               "appconfig:GetConfiguration",
             ],
             resources: ["*"],
-          })
+          }),
         ],
       })
     );
