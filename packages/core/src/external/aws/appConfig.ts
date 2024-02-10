@@ -2,7 +2,7 @@ import { AppConfig } from "aws-sdk";
 import { MetriportError } from "../../util/error/metriport-error";
 import { out } from "../../util/log";
 
-const { log } = out(`appConfig`);
+const { log } = out(`Core appConfig - FF`);
 
 function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
