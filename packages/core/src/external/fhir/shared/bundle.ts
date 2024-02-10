@@ -1,4 +1,4 @@
-import { Reference, Resource, ResourceType } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Reference, Resource, ResourceType } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { uniq } from "lodash";
@@ -64,4 +64,8 @@ function getReferencesFromRaw(
       (!referencesToInclude.length || referencesToInclude.includes(r.type as ResourceType)) &&
       !referencesToExclude.includes(r.type as ResourceType)
   );
+}
+
+export function buildBundle(entries: BundleEntry[]): Bundle<Resource> {
+  return { resourceType: "Bundle", total: entries.length, type: "searchset", entry: entries };
 }

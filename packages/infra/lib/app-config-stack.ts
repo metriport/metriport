@@ -25,23 +25,18 @@ export function createAppConfigStack({
     type: "AWS.Freeform",
   });
 
-
   new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
     applicationId: appConfigOSSApp.ref,
     name: props.config.environmentType,
   });
-  
-  new appConfig.CfnDeploymentStrategy(
-    stack,
-    "OSSAPIConfigDeploymentStrategy",
-    {
-      deploymentDurationInMinutes: 0,
-      growthFactor: 100,
-      name: "OSSAPIConfigDeploymentStrategy",
-      replicateTo: "SSM_DOCUMENT",
-      finalBakeTimeInMinutes: 0,
-    }
-  );
+
+  new appConfig.CfnDeploymentStrategy(stack, "OSSAPIConfigDeploymentStrategy", {
+    deploymentDurationInMinutes: 0,
+    growthFactor: 100,
+    name: "OSSAPIConfigDeploymentStrategy",
+    replicateTo: "SSM_DOCUMENT",
+    finalBakeTimeInMinutes: 0,
+  });
 
   return {
     appConfigAppId: appConfigOSSApp.ref,

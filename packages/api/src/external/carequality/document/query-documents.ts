@@ -57,7 +57,7 @@ export async function getDocumentsFromCQ({
       .promise()
       .catch(processAsyncError(`cq.invokeDocRetrievalResultsLambda`));
   } catch (error) {
-    const msg = `Failed to query and process documents in Carequality.`;
+    const msg = `Failed to query and process documents - Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({

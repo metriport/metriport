@@ -47,6 +47,7 @@ _[Add and remove items below accordingly]_
 
 - :warning: Points to `master`
 - :warning: This contains a DB migration
+- [ ] Maintenance window scheduled/created at Checkly
 - [ ] Execute this on <env1>, <env2>
   - [ ] _step1_
   - [ ] _step2_

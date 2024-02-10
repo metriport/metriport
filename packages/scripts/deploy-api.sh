@@ -73,4 +73,4 @@ docker buildx build \
 popd
 
 # Build and push Docker images
-source ./packages/scripts/restart-api.sh
+source ./packages/scripts/restart-ecs.sh

@@ -1,5 +1,5 @@
 // Set the parameters required for the AWS Lambda
-channelMap.put('URL', configurationMap.get('INBOUND.XCA39'));
+channelMap.put('URL', configurationMap.get('INBOUND_DOCUMENT_RETRIEVAL_URL'));
 
 channelMap.put('DEST_ID', 'd' + connectorMessage.getDestinationIdMap().get('AWS Lambda Interface'));
 

@@ -27,7 +27,6 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
-// TODO move these parameters to object properties
 export function createAPIService({
   stack,
   props,
