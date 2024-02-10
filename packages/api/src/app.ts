@@ -1,19 +1,20 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else.
+import { capture } from "@metriport/core/util/notifications";
 import { sleep } from "@metriport/shared";
 import * as Sentry from "@sentry/node";
 import cors from "cors";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
+import { initEvents } from "./event";
+import { initFeatureFlags } from "./external/aws/appConfig";
 import initDB from "./models/db";
 import { errorHandler } from "./routes/helpers/default-error-handler";
 import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { capture } from "./shared/notifications";
-import { initEvents } from "./event";
 
 const app: Application = express();
 const version = Config.getVersion();
@@ -61,8 +62,8 @@ initEvents();
 const port = 8080;
 app.listen(port, "0.0.0.0", async () => {
   try {
-    // initialize connection to the databases
-    await initDB();
+    // Initialize connection to the database and feature flags
+    await Promise.all([initDB(), initFeatureFlags()]);
     console.log(`[server]: API server is running on port ${port} :)`);
   } catch (error) {
     const msg = "API server failed to start";
