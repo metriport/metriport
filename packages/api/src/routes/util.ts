@@ -4,6 +4,9 @@ import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
 import { stringToBoolean } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
+
+const { log } = out("asyncHandler");
 
 export const asyncHandler =
   (
@@ -18,8 +21,8 @@ export const asyncHandler =
     try {
       await f(req, res, next);
     } catch (err) {
-      if (Config.isCloudEnv()) console.error(errorToString(err));
-      else console.error(err);
+      if (Config.isCloudEnv()) log(errorToString(err));
+      else log("", err);
       next(err);
     }
   };

@@ -1,4 +1,8 @@
 import { AppConfig } from "aws-sdk";
+import { MetriportError } from "../../util/error/metriport-error";
+import { out } from "../../util/log";
+
+const { log } = out(`appConfig`);
 
 function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
@@ -40,15 +44,17 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
     })
     .promise();
   const configContent = config.Content;
-  console.log(
-    `From config with appId=${appId} configId=${configId} envName=${envName} featureFlagName=${featureFlagName} - got config version: ${config.ConfigurationVersion}`
+  log(
+    `From config with appId=${appId} configId=${configId} envName=${envName} ` +
+      `featureFlagName=${featureFlagName} - got config version: ${config.ConfigurationVersion}`
   );
   if (configContent && config.ContentType && config.ContentType === "application/json") {
     const configContentValue = JSON.parse(configContent.toString());
-    if (configContentValue.values && configContentValue.values[featureFlagName])
+    if (configContentValue.values && configContentValue.values[featureFlagName]) {
       return configContentValue.values[featureFlagName];
-    else throw new Error(`Feature Flag ${featureFlagName} not found in config`);
+    } else {
+      throw new MetriportError(`Feature Flag not found in config`, undefined, { featureFlagName });
+    }
   }
-
-  throw new Error(`Failed to get Feature Flag Value for ${featureFlagName}`);
+  throw new MetriportError(`Failed to get Feature Flag Value`, undefined, { featureFlagName });
 }
