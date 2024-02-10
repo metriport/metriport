@@ -210,6 +210,7 @@ router.post(
   "/db-maintenance",
   asyncHandler(async (req: Request, res: Response) => {
     const result = await dbMaintenance();
+    console.log(`DB Maintenance Result: ${JSON.stringify(result)}`);
     return res.status(httpStatus.OK).json(result);
   })
 );
