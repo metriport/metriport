@@ -16,15 +16,15 @@ const Config = {
   },
 
   getInboundXcpdUrl: function () {
-    return getEnvVar("INBOUND_XCPD_URL");
+    return getEnvVar("INBOUND_PATIENT_DISCOVERY_URL");
   },
 
   getInboundDqUrl: function () {
-    return getEnvVar("INBOUND_XCA38_URL");
+    return getEnvVar("INBOUND_DOCUMENT_QUERY_URL");
   },
 
   getInboundDrUrl: function () {
-    return getEnvVar("INBOUND_XCA39_URL");
+    return getEnvVar("INBOUND_DOCUMENT_RETRIEVAL_URL");
   },
 
   getS3BucketName: function () {

@@ -129,9 +129,9 @@ export type EnvConfig = {
   };
   mirthConfig?: {
     envVars: {
-      INBOUND_XCPD_URL: string;
-      INBOUND_DR_URL: string;
-      INBOUND_DQ_URL: string;
+      INBOUND_PATIENT_DISCOVERY_URL: string;
+      INBOUND_DOCUMENT_QUERY_URL: string;
+      INBOUND_DOCUMENT_RETRIEVAL_URL: string;
       SAML_HOME_COMMUNITY_ID: string;
       S3_BUCKET_NAME: string;
     };
