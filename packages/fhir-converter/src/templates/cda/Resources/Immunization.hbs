@@ -38,6 +38,14 @@
             {{/with}}
         {{/each}}
 
+        {{#if imm.doseQuantity}}
+            "doseQuantity":{{>DataType/SimpleQuantity.hbs quantity=imm.doseQuantity}},
+        {{/if}}
+
+        {{!-- Missing performer --}}
+
+        {{!-- Missing author --}}
+
         {{!-- Missing performer --}}
 
         {{!-- Missing author --}}
