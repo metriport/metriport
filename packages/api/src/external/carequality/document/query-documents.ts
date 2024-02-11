@@ -14,7 +14,7 @@ import { processAsyncError } from "../../../errors";
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
 const iheGateway = makeIheGatewayAPI();
-const lambdaName = Config.getDocQueryResultsLambdaName();
+const lambdaName = Config.getIHEToExternalGwDocumentQueryLambdaName();
 
 export async function getDocumentsFromCQ({
   requestId,

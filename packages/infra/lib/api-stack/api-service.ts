@@ -42,8 +42,8 @@ export function createAPIService({
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
-  documentQueryResultsLambda,
-  documentRetrievalResultsLambda,
+  iheToExternalGWDocumentQuerysLambda,
+  iheToExternalGWDocumentRetrievalsLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -67,8 +67,8 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  documentQueryResultsLambda: ILambda;
-  documentRetrievalResultsLambda: ILambda;
+  iheToExternalGWDocumentQuerysLambda: ILambda;
+  iheToExternalGWDocumentRetrievalsLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -152,8 +152,10 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
-          DOC_RETRIEVAL_RESULTS_LAMBDA_NAME: documentRetrievalResultsLambda.functionName,
+          IHE_TO_EXTERNAL_GW_DOC_QUERIES_LAMBDA_NAME:
+            iheToExternalGWDocumentQuerysLambda.functionName,
+          IHE_TO_EXTERNAL_GW_DOC_RETRIEVAL_LAMBDA_NAME:
+            iheToExternalGWDocumentRetrievalsLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -210,8 +212,8 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  documentRetrievalResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  iheToExternalGWDocumentQuerysLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  iheToExternalGWDocumentRetrievalsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

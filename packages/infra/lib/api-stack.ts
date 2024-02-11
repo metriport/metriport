@@ -332,7 +332,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const documentQueryResultsLambda = this.setupIHEToExternalGwDocumentQuerys({
+    const iheToExternalGWDocumentQuerysLambda = this.setupIHEToExternalGwDocumentQuerys({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -341,7 +341,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
-    const documentRetrievalResultsLambda = this.setupIHEToExternalGwDocumentRetrievals({
+    const iheToExternalGWDocumentRetrievalsLambda = this.setupIHEToExternalGwDocumentRetrievals({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -401,8 +401,8 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      documentQueryResultsLambda,
-      documentRetrievalResultsLambda,
+      iheToExternalGWDocumentQuerysLambda,
+      iheToExternalGWDocumentRetrievalsLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       searchIngestionQueue: ccdaSearchQueue,
@@ -468,12 +468,12 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
-    documentQueryResultsLambda.addEnvironment(
+    iheToExternalGWDocumentQuerysLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
 
-    documentRetrievalResultsLambda.addEnvironment(
+    iheToExternalGWDocumentRetrievalsLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
@@ -1136,7 +1136,7 @@ export class APIStack extends Stack {
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
-    const documentQueryResultsLambda = createLambda({
+    const iheToExternalGWDocumentQuerysLambda = createLambda({
       stack: this,
       name: "IHEToExternalGwDocumentQuerys",
       entry: "ihe-to-external-gw-document-query",
@@ -1152,7 +1152,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    return documentQueryResultsLambda;
+    return iheToExternalGWDocumentQuerysLambda;
   }
 
   private setupIHEToExternalGwDocumentRetrievals(ownProps: {
@@ -1165,7 +1165,7 @@ export class APIStack extends Stack {
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
-    const documentRetrievalResultsLambda = createLambda({
+    const iheToExternalGWDocumentRetrievalsLambda = createLambda({
       stack: this,
       name: "IHEToExternalGwDocumentRetrievals",
       entry: "ihe-to-external-gw-document-retrieval",
@@ -1181,7 +1181,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    return documentRetrievalResultsLambda;
+    return iheToExternalGWDocumentRetrievalsLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {

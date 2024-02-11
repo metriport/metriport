@@ -22,7 +22,7 @@ import { processAsyncError } from "../../../errors";
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
-const lambdaName = Config.getDocQueryResultsLambdaName();
+const lambdaName = Config.getIHEToExternalGwDocumentRetrievalsLambdaName();
 const parallelUpsertsToFhir = 500;
 
 export async function processIHEToExternalGwDocumentQuerys({

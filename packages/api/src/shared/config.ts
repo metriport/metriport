@@ -248,12 +248,12 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getDocQueryResultsLambdaName(): string {
-    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
+  static getIHEToExternalGwDocumentQueryLambdaName(): string {
+    return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_QUERIES_LAMBDA_NAME");
   }
 
-  static getDocRetrievalResultsLambdaName(): string {
-    return getEnvVarOrFail("DOC_RETRIEVAL_RESULTS_LAMBDA_NAME");
+  static getIHEToExternalGwDocumentRetrievalsLambdaName(): string {
+    return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
