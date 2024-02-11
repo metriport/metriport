@@ -49,7 +49,7 @@ import {
   getFileName,
 } from "./shared";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
-import { processFhirAndSearchResponse } from "../../fhir/document/process-fhir-search-response";
+import { processFhirResponse } from "../../fhir/document/process-fhir-search-response";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 
@@ -620,7 +620,7 @@ async function downloadDocsAndUpsertFHIR({
                 log
               ),
             ]);
-            processFhirAndSearchResponse(patient, doc.id, fhir);
+            processFhirResponse(patient, doc.id, fhir);
           }
 
           await tallyDocQueryProgress({

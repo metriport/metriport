@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/serverless";
-import { sendIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
+import axios from "axios";
+import { pollIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
 import {
   DOC_QUERY_RESULT_TABLE_NAME,
   IHEToExternalGwDocumentQuery,
@@ -14,6 +15,8 @@ capture.init();
 const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
 const dbCreds = getEnvVarOrFail("DB_CREDS");
 const apiUrl = getEnvVarOrFail("API_URL");
+const api = axios.create();
+const endpointUrl = `${apiUrl}/internal/carequality/document-query/results`;
 
 capture.setExtra({ lambdaName: lambdaName });
 
@@ -30,13 +33,11 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     cxId: string;
   }) => {
     console.log(
-      `Running with envType: ${getEnvType()}, requestId: ${requestId}, numOfGateways: ${numOfGateways} `
+      `Running with envType: ${getEnvType()}, requestId: ${requestId}, numOfGateways: ${numOfGateways} cxId: ${cxId} patientId: ${patientId}`
     );
 
-    const endpointUrl = `${apiUrl}/internal/carequality/document-query/results`;
-
     try {
-      await sendIHEGatewayResults<IHEToExternalGwDocumentQuery>({
+      const results = await pollIHEGatewayResults<IHEToExternalGwDocumentQuery>({
         requestId,
         patientId,
         cxId,
@@ -44,6 +45,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         dbCreds,
         endpointUrl,
         resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
+      });
+
+      const resultsData = results.map(result => result.data);
+
+      await api.post(endpointUrl, {
+        requestId,
+        patientId,
+        cxId,
+        resultsData,
       });
     } catch (error) {
       const msg = `Error sending document query results`;

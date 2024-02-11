@@ -15,7 +15,6 @@ import {
   RelatedPerson,
   Resource,
 } from "@medplum/fhirtypes";
-import { DocumentReference as IHEGWDocumentReference } from "@metriport/ihe-gateway-sdk";
 import {
   Contained,
   DocumentContent,
@@ -34,7 +33,6 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
 import { cwExtension } from "../../commonwell/extension";
-import { cqExtension } from "../../carequality/extension";
 import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 dayjs.extend(isToday);
@@ -78,63 +76,7 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
   return date.toISOString();
 }
 
-export const cqToFHIR = (
-  docId: string,
-  doc: IHEGWDocumentReference,
-  patientId: string,
-  fhirDocRef?: DocumentReference
-): DocumentReferenceWithId => {
-  const baseAttachment = {
-    ...(doc.fileName ? { fileName: doc.fileName } : {}),
-    ...(doc.contentType ? { contentType: doc.contentType } : {}),
-    ...(doc.size ? { size: doc.size } : {}),
-    ...(doc.creation ? { creation: doc.creation } : {}),
-  };
-
-  return {
-    ...(fhirDocRef ? { ...fhirDocRef } : {}),
-    ...(!fhirDocRef ? { description: doc.title ?? "" } : {}),
-    id: docId,
-    resourceType: "DocumentReference",
-    masterIdentifier: {
-      system: doc.homeCommunityId,
-      value: doc.repositoryUniqueId,
-    },
-    subject: toFHIRSubject(patientId),
-    content: generateCQFHIRContent(fhirDocRef?.content, baseAttachment, doc.url),
-    extension: [cqExtension],
-  };
-};
-
-const generateCQFHIRContent = (
-  content: DocumentReferenceContent[] | undefined,
-  baseAttachment: {
-    contentType?: string;
-    size?: number;
-    creation?: string;
-    fileName?: string;
-  },
-  location: string | null | undefined
-): DocumentReferenceContent[] => {
-  if (content) {
-    const metriportFHIRContent = createDocReferenceContent({
-      ...baseAttachment,
-      location: location ?? "",
-      extension: [metriportDataSourceExtension],
-    });
-
-    return [...content, metriportFHIRContent];
-  }
-
-  const cqFHIRContent = createDocReferenceContent({
-    ...baseAttachment,
-    location: location ?? "",
-    extension: [cqExtension],
-  });
-
-  return [cqFHIRContent];
-};
-
+// TODO: Move to external/commonwell
 export const cwToFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,

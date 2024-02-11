@@ -1,4 +1,4 @@
-// If both successes and failures are received from Responding Gateways, the Initiating Gateway shall return both DocumentResponse and
+// If both successes and failures are received from Responding Gateways, the Initiating Gateway shall return both DocumentResponse and 
 // RegistryErrorList elements in one response and specify PartialSuccess status.
 
 if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryResponseCode.toString()) {
@@ -34,8 +34,8 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			attachment.metriportId = idMapping[attachment.docUniqueId.toString()];
       attachment.fileLocation = bucketName;
 
-			// Responding Gateways which support the Persistence of Retrieved Documents Option shall specify the NewRepositoryUniqueId element
-			// indicating the document is available for later retrieval and be able to return exactly the same document in all future retrieve
+			// Responding Gateways which support the Persistence of Retrieved Documents Option shall specify the NewRepositoryUniqueId element 
+			// indicating the document is available for later retrieval and be able to return exactly the same document in all future retrieve 
 			// requests for the document identified by NewDocumentUniqueId.
 			var newRepositoryUniqueId = entry.*::NewRepositoryUniqueId.toString();
 			if (newRepositoryUniqueId) attachment.newRepositoryUniqueId = newRepositoryUniqueId.toString();
@@ -51,17 +51,13 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			try {
 
 				attachment.contentType = entry.*::mimeType.toString();
-				attachment.fileName = filePath.toString();
+				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
 
-        if (docExists) {
-          attachment.isNew = false;
-        } else {
-          attachment.isNew = true;
-        }
+        attachment.isNew = !docExists
 
 				var result = xcaWriteToFile(filePath.toString(), entry.*::Document.toString(), attachment);
-
+			
 			} catch(ex) {
 				var issue = {
 					 "severity": "fatal",
@@ -72,7 +68,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				if (!operationOutcome) operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
 				operationOutcome.issue.push(issue);
 			}
-
+			
 			contentList.push(attachment);
 		}
 

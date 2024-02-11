@@ -2,15 +2,14 @@ import { out } from "@metriport/core/util/log";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { DocumentReference, DocumentRetrievalRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { IHEToExternalGwDocumentRetrieval } from "../ihe-to-external-gw-document-retrieval";
 import { isConvertible } from "../../fhir-converter/converter";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
-import { cqToFHIR } from "../../fhir/document";
+import { cqToFHIR } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 
@@ -18,29 +17,29 @@ export async function processIHEToExternalGwDocumentRetrievals({
   requestId,
   patientId,
   cxId,
-  documentRetrievalResults,
+  resultsOfAllExternalGWs,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  documentRetrievalResults: IHEToExternalGwDocumentRetrieval[];
+  resultsOfAllExternalGWs: DocumentRetrievalRespFromExternalGW[];
 }): Promise<void> {
   try {
     let issuesWithGateway = 0;
     let successDocsCount = 0;
 
-    for (const result of documentRetrievalResults) {
-      const { operationOutcome } = result.data;
+    for (const resultOfExternalGW of resultsOfAllExternalGWs) {
+      const { operationOutcome } = resultOfExternalGW;
 
       if (operationOutcome?.issue) {
         issuesWithGateway += operationOutcome.issue.length;
       }
 
-      if (result.data.documentReference) {
-        successDocsCount += result.data.documentReference.length;
+      if (resultOfExternalGW.documentReference) {
+        successDocsCount += resultOfExternalGW.documentReference.length;
       }
 
-      await handleDocReferences(result.data.documentReference, requestId, patientId, cxId);
+      await handleDocReferences(resultOfExternalGW.documentReference, requestId, patientId, cxId);
     }
 
     await tallyDocQueryProgress({
@@ -110,7 +109,7 @@ async function handleDocReferences(
   };
 
   for (const docRef of docRefs) {
-    const isDocConvertible = isConvertible(docRef.contentType);
+    const isDocConvertible = isConvertible(docRef.contentType || undefined);
     const shouldConvert = isDocConvertible && docRef.isNew;
 
     if (!docRef.isNew) {
@@ -165,10 +164,23 @@ async function handleDocReferences(
 
     transactionBundle.entry?.push(transactionEntry);
 
-    await ingestIntoSearchEngine({ id: patientId, cxId }, FHIRDocRef, file, requestId, log);
+    ingestIntoSearchEngine({ id: patientId, cxId }, FHIRDocRef, file, requestId, log);
   }
 
-  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
+  try {
+    await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
+  } catch (error) {
+    const msg = `Failed to upsert doc refs in FHIR`;
+    console.log(`${msg}: ${errorToString(error)}`);
+    capture.message(msg, {
+      extra: {
+        context: `cq.upsertDocRefsInFHIR`,
+        error,
+        patientId,
+        cxId,
+      },
+    });
+  }
 
   await setDocQueryProgress({
     patient: { id: patientId, cxId: cxId },

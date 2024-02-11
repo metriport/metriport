@@ -1,8 +1,11 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { DocumentRetrievalReqToExternalGW, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import {
+  DocumentRetrievalReqToExternalGW,
+  DocumentReference,
+  DocumentQueryRespFromExternalGW,
+} from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { DocumentWithMetriportId } from "./shared";
-import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
 import { Organization } from "@metriport/core/domain/organization";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -13,22 +16,22 @@ export function createCQDocumentRetrievalRequests({
   cxId,
   organization,
   documentReferences,
-  documentQueryResults,
+  resultsOfAllExternalGWs,
 }: {
   requestId: string;
   cxId: string;
   organization: Organization;
   documentReferences: DocumentWithMetriportId[];
-  documentQueryResults: IHEToExternalGwDocumentQuery[];
+  resultsOfAllExternalGWs: DocumentQueryRespFromExternalGW[];
 }): DocumentRetrievalReqToExternalGW[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  const requests: DocumentRetrievalReqToExternalGW[] = documentQueryResults.map(
+  const requests: DocumentRetrievalReqToExternalGW[] = resultsOfAllExternalGWs.map(
     documentQueryResult => {
-      const { patientId, gateway } = documentQueryResult.data;
+      const { patientId, gateway } = documentQueryResult;
 
       const requestDocReferences: DocumentReference[] = documentReferences.filter(
         docRef => docRef.homeCommunityId === gateway?.homeCommunityId

@@ -1,22 +1,18 @@
 import { Sequelize, QueryTypes } from "sequelize";
-import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { RaceControl, checkIfRaceIsComplete, controlDuration } from "../../../../util/race-control";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
 import { errorToString } from "../../../../util/error/shared";
-
-const REQUEST_ID_COLUMN = "request_id";
-
-const api = axios.create();
+import { REQUEST_ID_COLUMN } from "../../ihe-result";
 
 dayjs.extend(duration);
 
 export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 3 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
-export const sendIHEGatewayResults = async <TableResult>({
+export const pollIHEGatewayResults = async <TableResult>({
   requestId,
   patientId,
   cxId,
@@ -32,7 +28,7 @@ export const sendIHEGatewayResults = async <TableResult>({
   dbCreds: string;
   endpointUrl: string;
   resultsTable: string;
-}): Promise<void> => {
+}): Promise<TableResult[]> => {
   const sequelize = initSequelizeForLambda(dbCreds);
 
   const raceControl: RaceControl = { isRaceInProgress: true };
@@ -65,12 +61,7 @@ export const sendIHEGatewayResults = async <TableResult>({
       raceControl.isRaceInProgress = false;
     }
 
-    await api.post(endpointUrl, {
-      requestId,
-      patientId,
-      cxId,
-      iheGatewayResults,
-    });
+    return iheGatewayResults;
   } catch (error) {
     const msg = `Failed to post ihe gateway results - table: ${resultsTable}`;
     console.log(`${msg} - endpoint ${endpointUrl}. Error: ${errorToString(error)}`);
@@ -104,7 +95,7 @@ async function getIHEGatewayResultCount(
   } catch (error) {
     const msg = `Failed to get ${resultsTable} result count`;
 
-    throw new MetriportError(msg);
+    throw new MetriportError(msg, error);
   }
 }
 
@@ -123,6 +114,6 @@ async function queryIHEGatewayResults<TableResult>(
   } catch (error) {
     const msg = `Failed to query ${resultsTable} results. Error: ${error}`;
 
-    throw new MetriportError(msg);
+    throw new MetriportError(msg, error);
   }
 }

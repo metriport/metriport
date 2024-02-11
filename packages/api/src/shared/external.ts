@@ -1,4 +1,4 @@
-\import { MedicalDataSource } from "@metriport/core/external/index";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { getOrCreateDocRefMapping } from "../command/medical/docref-mapping/get-docref-mapping";
 
 export const mapDocRefToMetriport = async ({

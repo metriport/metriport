@@ -1,4 +1,3 @@
-import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -8,10 +7,9 @@ import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { Config } from "../../../shared/config";
 import { isConvertible } from "../../fhir-converter/converter";
-import { makeFhirApi } from "../../fhir/api/api-factory";
-import { getAllPages } from "../../fhir/shared/paginated";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
+import { getDocuments } from "../../fhir/document/get-documents";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -98,7 +96,7 @@ const getNonExistentDocRefs = async (
 ): Promise<DocumentReference[]> => {
   const [{ existingDocRefs, nonExistingDocRefs }, FHIRDocRefs] = await Promise.all([
     filterOutExistingDocRefsS3(documents, patientId, cxId),
-    getDocRefsFromFHIR(cxId, patientId),
+    getDocuments({ cxId, patientId }),
   ]);
 
   const fhirDocRefIds = new Set(FHIRDocRefs.map(d => d.id));
@@ -162,12 +160,4 @@ const filterOutExistingDocRefsS3 = async (
   );
 
   return existentialDocRefs;
-};
-
-const getDocRefsFromFHIR = (cxId: string, patientId: string): Promise<FHIRDocumentReference[]> => {
-  const fhirApi = makeFhirApi(cxId);
-
-  return getAllPages(() =>
-    fhirApi.searchResourcePages("DocumentReference", `patient=${patientId}`)
-  );
 };

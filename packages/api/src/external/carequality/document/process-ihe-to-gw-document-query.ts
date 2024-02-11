@@ -3,8 +3,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference } from "@metriport/ihe-gateway-sdk";
-import { IHEToExternalGwDocumentQuery } from "../ihe-to-external-gw-document-query";
+import { DocumentReference, DocumentQueryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
 import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -16,7 +15,7 @@ import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
 import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
 import { combineDocRefs } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { cqToFHIR } from "../../fhir/document";
+import { cqToFHIR } from "./shared";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { processAsyncError } from "../../../errors";
 
@@ -30,22 +29,22 @@ export async function processIHEToExternalGwDocumentQuerys({
   requestId,
   patientId,
   cxId,
-  documentQueryResults,
+  resultsOfAllExternalGWs,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  documentQueryResults: IHEToExternalGwDocumentQuery[];
+  resultsOfAllExternalGWs: DocumentQueryRespFromExternalGW[];
 }): Promise<void> {
   if (!iheGateway) return;
   const { log } = out(`CQ query docs - requestId ${requestId}, M patient ${patientId}`);
 
   const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
-  const docRefs = combineDocRefs(documentQueryResults);
+  const docRefs = combineDocRefs(resultsOfAllExternalGWs);
 
   const docRefsWithMetriportId = await Promise.all(
-    docRefs.map(addMetriportDocRef({ cxId, patientId, requestId }))
+    docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
   );
 
   try {
@@ -78,7 +77,7 @@ export async function processIHEToExternalGwDocumentQuerys({
       cxId,
       organization,
       documentReferences: docsToDownload,
-      documentQueryResults: documentQueryResults,
+      resultsOfAllExternalGWs: resultsOfAllExternalGWs,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
@@ -162,7 +161,7 @@ async function storeInitDocRefInFHIR(
   );
 }
 
-function addMetriportDocRef({
+function addMetriportDocRefID({
   cxId,
   patientId,
   requestId,

@@ -1,9 +1,8 @@
-import { S3Utils, createS3FileName } from "@metriport/core/external/aws/s3";
-import { DocumentReference as FHIRDocumentReference } from "@medplum/fhirtypes";
+import { S3Utils } from "@metriport/core/external/aws/s3";
+import { createFileName } from "@metriport/core/src/domain/filename";
 import { Config } from "../../../shared/config";
-import { makeFhirApi } from "../../fhir/api/api-factory";
-import { getAllPages } from "../../fhir/shared/paginated";
 import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
+import { getDocuments } from "../../fhir/document/get-documents";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -16,7 +15,7 @@ export const getNonExistentDocRefs = async (
 ): Promise<DocumentWithMetriportId[]> => {
   const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
     filterOutExistingDocRefsS3(documents, patientId, cxId),
-    getDocRefsFromFHIR(cxId, patientId),
+    getDocuments({ cxId, patientId }),
   ]);
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
@@ -40,7 +39,7 @@ const filterOutExistingDocRefsS3 = async (
 ): Promise<ObservedDocRefs> => {
   const docIdWithExist = await Promise.allSettled(
     documents.map(async (doc): Promise<{ docId: string; exists: boolean }> => {
-      const fileName = createS3FileName(cxId, patientId, doc.docUniqueId);
+      const fileName = createFileName(cxId, patientId, doc.docUniqueId);
 
       const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
@@ -75,12 +74,4 @@ const filterOutExistingDocRefsS3 = async (
   );
 
   return existentialDocRefs;
-};
-
-const getDocRefsFromFHIR = (cxId: string, patientId: string): Promise<FHIRDocumentReference[]> => {
-  const fhirApi = makeFhirApi(cxId);
-
-  return getAllPages(() =>
-    fhirApi.searchResourcePages("DocumentReference", `patient=${patientId}`)
-  );
 };

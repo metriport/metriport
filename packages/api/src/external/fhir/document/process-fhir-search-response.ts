@@ -1,7 +1,7 @@
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { Patient } from "@metriport/core/domain/patient";
 
-export function processFhirAndSearchResponse(
+export function processFhirResponse(
   patient: Pick<Patient, "id">,
   docId: string,
   fhir: PromiseSettledResult<void>
