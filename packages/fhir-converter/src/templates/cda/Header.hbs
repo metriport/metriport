@@ -11,6 +11,7 @@
     {{/if}}
 
     {{#if document.componentOf.encompassingEncounter}}
+        {{!-- do we want to include this? Kinda a duplicate of more rich data later in encounter section --}}
         {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter))}},
         
         {{#if document.componentOf.encompassingEncounter.responsibleParty.assignedEntity}}
@@ -21,7 +22,7 @@
         {{/if}}
 
         {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' (generateUUID (toJsonString document.componentOf.encompassingEncounter)))}},
-        {{#if  document.componentOf.encompassingEncounter.location}}
+        {{#if document.componentOf.encompassingEncounter.location}}
             {{>Resources/Location.hbs location=document.componentOf.encompassingEncounter.location ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter.location))}},
             {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Location/' (generateUUID (toJsonString document.componentOf.encompassingEncounter.location)))}},
         {{/if}}

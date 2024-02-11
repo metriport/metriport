@@ -3,10 +3,12 @@
             {{!-- sections here is already an array so this is not a bug --}}
             {{#each sections}}
                 {{#each (multipleToArray this.[2_16_840_1_113883_10_20_22_2_65].entry this.[1_3_6_1_4_1_19376_1_5_3_1_3_5].entry) as |note|}}
-                    {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
-                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
-                    {{/with}}
+                    {{#if note.act}}
+                        {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
+                    {{/if}}
 
                     {{!-- TODO need to add references, author, etc --}}
                     {{#if note.act.author.assignedAuthor}}
