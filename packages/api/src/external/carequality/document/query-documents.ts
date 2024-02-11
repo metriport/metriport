@@ -55,7 +55,7 @@ export async function getDocumentsFromCQ({
         }),
       })
       .promise()
-      .catch(processAsyncError(`cq.invokeDocRetrievalResultsLambda`));
+      .catch(processAsyncError(`cq.processIHEToExternalGwDocumentQuerys`));
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);

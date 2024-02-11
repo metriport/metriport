@@ -99,7 +99,7 @@ export async function processIHEToExternalGwDocumentQuerys({
         }),
       })
       .promise()
-      .catch(processAsyncError(`cq.invokeDocRetrievalResultsLambda`));
+      .catch(processAsyncError(`cq.processIHEToExternalGwDocumentRetrievals`));
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
