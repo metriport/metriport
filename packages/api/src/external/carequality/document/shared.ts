@@ -73,10 +73,12 @@ const generateCQFHIRContent = (
   },
   location: string | null | undefined
 ): DocumentReferenceContent[] => {
+  if (!location) return [];
+
   if (content) {
     const metriportFHIRContent = createDocReferenceContent({
       ...baseAttachment,
-      location: location ?? "",
+      location: location,
       extension: [metriportDataSourceExtension],
     });
 
@@ -85,7 +87,7 @@ const generateCQFHIRContent = (
 
   const cqFHIRContent = createDocReferenceContent({
     ...baseAttachment,
-    location: location ?? "",
+    location: location,
     extension: [cqExtension],
   });
 

@@ -29,17 +29,32 @@ export async function processIHEToExternalGwDocumentRetrievals({
     let successDocsCount = 0;
 
     for (const resultOfExternalGW of resultsOfAllExternalGWs) {
-      const { operationOutcome } = resultOfExternalGW;
+      try {
+        const { operationOutcome } = resultOfExternalGW;
 
-      if (operationOutcome?.issue) {
-        issuesWithGateway += operationOutcome.issue.length;
+        if (operationOutcome?.issue) {
+          issuesWithGateway += operationOutcome.issue.length;
+        }
+
+        if (resultOfExternalGW.documentReference) {
+          successDocsCount += resultOfExternalGW.documentReference.length;
+        }
+        await handleDocReferences(resultOfExternalGW.documentReference, requestId, patientId, cxId);
+      } catch (error) {
+        const msg = `Failed to handle doc references in Carequality.`;
+        console.log(`${msg}. Error: ${errorToString(error)}`);
+
+        capture.message(msg, {
+          extra: {
+            context: `cq.handleDocReferences`,
+            error,
+            patientId: patientId,
+            requestId,
+            cxId,
+          },
+          level: "error",
+        });
       }
-
-      if (resultOfExternalGW.documentReference) {
-        successDocsCount += resultOfExternalGW.documentReference.length;
-      }
-
-      await handleDocReferences(resultOfExternalGW.documentReference, requestId, patientId, cxId);
     }
 
     await tallyDocQueryProgress({
@@ -118,6 +133,10 @@ async function handleDocReferences(
 
     if (shouldConvert) {
       try {
+        if (!docRef.fileLocation || !docRef.fileName) {
+          throw new Error(`File location or file name is missing for doc ${docRef.metriportId}`);
+        }
+
         await convertCDAToFHIR({
           patient: {
             id: patientId,
@@ -127,8 +146,8 @@ async function handleDocReferences(
             id: docRef.metriportId ?? "",
             content: { mimeType: docRef.contentType ?? "" },
           },
-          s3FileName: docRef.fileName ?? "",
-          s3BucketName: docRef.fileLocation ?? "",
+          s3FileName: docRef.fileName,
+          s3BucketName: docRef.fileLocation,
           requestId,
           source: MedicalDataSource.CAREQUALITY,
         });
@@ -148,10 +167,16 @@ async function handleDocReferences(
 
     const FHIRDocRef = cqToFHIR(docId, docRef, patientId, currentFHIRDocRef[0]);
 
+    if (!docRef.fileLocation || !docRef.url || !docRef.contentType) {
+      throw new Error(
+        `Doc ${docRef.metriportId} is not valid. File location, file name or content type is missing.`
+      );
+    }
+
     const file = {
-      key: docRef.url ?? "",
-      bucket: docRef.fileLocation ?? "",
-      contentType: docRef.contentType ?? "",
+      key: docRef.url,
+      bucket: docRef.fileLocation,
+      contentType: docRef.contentType,
     };
 
     const transactionEntry: BundleEntry = {

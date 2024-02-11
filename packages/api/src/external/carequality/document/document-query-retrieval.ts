@@ -1,4 +1,5 @@
 import { PurposeOfUse } from "@metriport/shared";
+import { capture } from "@metriport/core/util/notifications";
 import {
   DocumentRetrievalReqToExternalGW,
   DocumentReference,
@@ -29,15 +30,30 @@ export function createCQDocumentRetrievalRequests({
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  const requests: DocumentRetrievalReqToExternalGW[] = resultsOfAllExternalGWs.map(
-    documentQueryResult => {
+  const requests = resultsOfAllExternalGWs.reduce(
+    (acc: DocumentRetrievalReqToExternalGW[], documentQueryResult) => {
       const { patientId, gateway } = documentQueryResult;
 
       const requestDocReferences: DocumentReference[] = documentReferences.filter(
         docRef => docRef.homeCommunityId === gateway?.homeCommunityId
       );
 
-      return {
+      const isGWValid = gateway?.homeCommunityId && gateway?.url;
+
+      if (!isGWValid) {
+        const msg = `Gateway is not valid for patient ${patientId} and homeCommunityId ${gateway?.homeCommunityId} and url ${gateway?.url}`;
+        capture.message(msg, {
+          extra: {
+            requestId,
+            patientId,
+            cxId,
+          },
+        });
+
+        return acc;
+      }
+
+      const request: DocumentRetrievalReqToExternalGW = {
         id: requestId,
         cxId: cxId,
         patientId: patientId,
@@ -54,12 +70,15 @@ export function createCQDocumentRetrievalRequests({
           purposeOfUse: PurposeOfUse.TREATMENT,
         },
         gateway: {
-          homeCommunityId: gateway?.homeCommunityId || "",
-          url: gateway?.url || "",
+          homeCommunityId: gateway.homeCommunityId,
+          url: gateway.url,
         },
         documentReference: requestDocReferences,
       };
-    }
+
+      return [...acc, request];
+    },
+    []
   );
 
   const requestsWithDocRefs = requests.filter(request => request.documentReference.length > 0);
