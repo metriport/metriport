@@ -9,7 +9,7 @@ import { REQUEST_ID_COLUMN } from "../../ihe-result";
 
 dayjs.extend(duration);
 
-export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 3 });
+export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
 export const pollIHEGatewayResults = async <TableResult>({
