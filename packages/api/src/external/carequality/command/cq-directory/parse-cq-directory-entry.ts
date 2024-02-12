@@ -104,7 +104,14 @@ function getUrls(contained: Contained): XCUrls | undefined {
 }
 
 function isValidUrl(url: string | undefined): boolean {
-  return url ? url.startsWith("http") : false;
+  if (!url) return false;
+
+  try {
+    new URL(url);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 function getCoordinates(address: Address[]): Coordinates | undefined {

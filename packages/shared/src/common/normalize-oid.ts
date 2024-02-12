@@ -17,9 +17,16 @@ export function normalizeOid(input: string): string {
 function startsWithRootCode(oid: string): boolean {
   if (oid.includes(".")) {
     const root = oid.split(".")[0];
-    return root ? parseInt(root) <= 2 : false;
+    if (root) {
+      const rootInt = parseInt(root);
+      return isWithinRootBounds(rootInt) ?? false;
+    }
   } else {
-    if (parseInt(oid) <= 2) return true;
+    return isWithinRootBounds(parseInt(oid));
   }
   return false;
+}
+
+function isWithinRootBounds(root: number): boolean {
+  return root >= 0 && root <= 2;
 }

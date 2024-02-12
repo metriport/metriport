@@ -6,14 +6,14 @@ import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
-const CQ_IGNORE_LIST: string[] = constructGatewayIgnoreList();
+const cqIgnoreList: string[] = constructGatewayIgnoreList();
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
   id: string;
   lon: number | undefined;
   lat: number | undefined;
-  urlXCPD: string | undefined;
+  urlXCPD: string | undefined | null;
   urlDQ: string | undefined;
   urlDR: string | undefined;
 };
@@ -104,13 +104,13 @@ export function filterCQOrgsToSearch(
 ): CQOrgBasicDetails[] {
   const allOrgs = [...orgs, ...gateways];
   return allOrgs.filter(org => {
-    if (org.urlXCPD && !CQ_IGNORE_LIST.includes(org.urlXCPD)) return org;
+    if (org.urlXCPD && !cqIgnoreList.includes(org.urlXCPD)) return org;
   });
 }
 
 function constructGatewayIgnoreList(): string[] {
-  const ignoreList: string[] = [];
-  const CW_XCPD_LINK_IN_CQ = Config.getCommonWellXCPDUrl();
-  if (CW_XCPD_LINK_IN_CQ) ignoreList.push(CW_XCPD_LINK_IN_CQ);
+  let ignoreList: string[] = [];
+  const urlsToIgnore = Config.getCQUrlsToIgnore();
+  if (urlsToIgnore) ignoreList = urlsToIgnore.split(",");
   return ignoreList;
 }

@@ -90,8 +90,8 @@ export class Config {
     return getEnvVarOrFail("CQ_API_KEY");
   }
 
-  static getCommonWellXCPDUrl(): string | undefined {
-    return getEnvVar("CW_XCPD_URL_IN_CQ");
+  static getCQUrlsToIgnore(): string | undefined {
+    return getEnvVar("CQ_URLS_TO_IGNORE");
   }
 
   static getPlaceIndexName(): string {

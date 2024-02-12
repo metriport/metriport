@@ -4,7 +4,7 @@ import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { cqDirectoryEntryTemp } from "./shared";
 
 const keys = createKeys();
-const NUMBER_OF_KEYS = keys.split(",").length;
+const number_of_keys = keys.split(",").length;
 
 function createKeys(): string {
   const id: keyof Pick<CQDirectoryEntryModel, "id"> = "id";
@@ -49,7 +49,7 @@ export async function bulkInsertCQDirectoryEntries(
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
-    .map(() => `(${new Array(NUMBER_OF_KEYS).fill("?").join(", ")})`)
+    .map(() => `(${new Array(number_of_keys).fill("?").join(", ")})`)
     .join(", ");
   const date = new Date().toISOString();
 

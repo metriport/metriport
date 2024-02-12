@@ -146,12 +146,13 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
   return pdResults.flatMap(pd => {
     const id = pd.data.externalGatewayPatient?.id;
     const system = pd.data.externalGatewayPatient?.system;
-    if (!id || !system) return [];
+    const url = pd.data.gateway.url;
+    if (!id || !system || !url) return [];
     return {
       patientId: id,
       systemId: system,
       oid: pd.data.gateway.oid,
-      url: pd.data.gateway.url ?? "",
+      url,
       id: pd.data.gateway.id,
     };
   });
