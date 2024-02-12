@@ -16,6 +16,7 @@ export type CQOrgBasicDetails = {
   urlXCPD: string | undefined | null;
   urlDQ: string | undefined;
   urlDR: string | undefined;
+  active: boolean;
 };
 
 /**
@@ -95,6 +96,7 @@ export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDeta
     urlXCPD: org.urlXCPD,
     urlDQ: org.urlDQ,
     urlDR: org.urlDR,
+    active: org.active,
   };
 }
 
@@ -104,7 +106,7 @@ export function filterCQOrgsToSearch(
 ): CQOrgBasicDetails[] {
   const allOrgs = [...orgs, ...gateways];
   return allOrgs.filter(org => {
-    if (org.urlXCPD && !cqIgnoreList.includes(org.urlXCPD)) return org;
+    if (org.active && hasValidXcpdLink(org)) return org;
   });
 }
 
@@ -113,4 +115,10 @@ function constructGatewayIgnoreList(): string[] {
   const urlsToIgnore = Config.getCQUrlsToIgnore();
   if (urlsToIgnore) ignoreList = urlsToIgnore.split(",");
   return ignoreList;
+}
+
+function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
+  const urlXCPD = org.urlXCPD;
+  if (!urlXCPD) return false;
+  return !cqIgnoreList.includes(urlXCPD);
 }

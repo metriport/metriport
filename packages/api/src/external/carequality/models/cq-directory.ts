@@ -20,6 +20,7 @@ export class CQDirectoryEntryModel
   declare data?: Organization;
   declare managingOrganization?: string;
   declare gateway: boolean;
+  declare active: boolean;
   declare lastUpdatedAtCQ: string;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -64,6 +65,9 @@ export class CQDirectoryEntryModel
         gateway: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
+        },
+        active: {
+          type: DataTypes.BOOLEAN,
         },
         lastUpdatedAtCQ: {
           type: DataTypes.STRING,

@@ -14,6 +14,7 @@ export type CQDirectoryEntryData = {
   point?: string;
   managingOrganization?: string;
   gateway: boolean;
+  active: boolean;
   lastUpdatedAtCQ: string;
 };
 
