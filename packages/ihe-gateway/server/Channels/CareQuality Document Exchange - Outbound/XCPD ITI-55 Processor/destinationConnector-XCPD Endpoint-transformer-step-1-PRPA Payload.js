@@ -1,11 +1,13 @@
 // Generate PRPA_IN201305UV02 [Patient Registry Find Candidates Query] message
-var receiver = getHL7v3Receiver(msg.gateway.oid.toString(), msg.gateway.url.toString());
-var sender = getHL7v3Sender(configurationMap.get('HL7v3.Sender.OID'), configurationMap.get('HL7v3.Sender.Name'));
-var prpa = getXCPDRequest(receiver, sender);
+const senderOID = Config.getHomeCommunityId();
+const senderNamme = Config.getHomeCommunityName();
+const receiver = getHL7v3Receiver(msg.gateway.oid.toString(), msg.gateway.url.toString());
+const sender = getHL7v3Sender(senderOID, senderNamme);
+const prpa = getXCPDRequest(receiver, sender);
 
-prpa.*::id.@root = configurationMap.get('HL7v3.Sender.OID');
+prpa.*::id.@root = senderOID;
 prpa.*::id.@extension = msg.id.toString();
-prpa.*::controlActProcess.*::queryByParameter.*::queryId.@root = configurationMap.get('HL7v3.Sender.OID');
+prpa.*::controlActProcess.*::queryByParameter.*::queryId.@root = senderOID;
 prpa.*::controlActProcess.*::queryByParameter.*::queryId.@extension = msg.id.toString();
 prpa.*::controlActProcess.*::queryByParameter.*::parameterList.appendChild(channelMap.get('PARAMLIST'));
 
