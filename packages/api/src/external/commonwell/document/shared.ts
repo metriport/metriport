@@ -1,6 +1,6 @@
 import { Document } from "@metriport/commonwell-sdk";
-import { contentType, extension } from "mime-types";
 import { Patient } from "@metriport/core/domain/patient";
+import { getFileExtension } from "@metriport/core/util/mime";
 
 export const sandboxSleepTime = 5000;
 
@@ -33,10 +33,4 @@ export function getFileName(patient: Patient, doc: Document): string {
 function getSuffix(id: string | undefined): string {
   if (!id) return "";
   return id.replace("urn:uuid:", "");
-}
-
-export function getFileExtension(value: string | undefined): string {
-  if (!value || !contentType(value)) return "";
-  const fileExtension = extension(value);
-  return fileExtension ? `.${fileExtension}` : "";
 }

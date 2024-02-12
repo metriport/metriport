@@ -4,7 +4,8 @@ import {
   DocumentBulkSignerLambdaResponseArraySchema,
 } from "@metriport/core/domain/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
-import { createS3FileName, S3Utils } from "@metriport/core/external/aws/s3";
+import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isMedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Request, Response } from "express";
@@ -300,9 +301,14 @@ router.post(
     if (!file) {
       throw new BadRequestError("File must be provided");
     }
+    const metadata = uploadDocSchema.parse({
+      description: req.body.description,
+      orgName: req.body.orgName,
+      practitionerName: req.body.practitionerName,
+    });
 
     const docRefId = uuidv7();
-    const fileName = createS3FileName(cxId, patientId, docRefId);
+    const fileName = createDocumentFilePath(cxId, patientId, docRefId, file.mimetype);
 
     const uploadRes = await s3Utils.s3
       .upload({
@@ -312,12 +318,6 @@ router.post(
         ContentType: file.mimetype,
       })
       .promise();
-
-    const metadata = uploadDocSchema.parse({
-      description: req.body.description,
-      orgName: req.body.orgName,
-      practitionerName: req.body.practitionerName,
-    });
 
     const docRef = await createAndUploadDocReference({
       cxId,

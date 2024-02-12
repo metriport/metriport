@@ -1,4 +1,4 @@
-import { createS3FileName } from "../external/aws/s3";
+import { createFilePath } from "./filename";
 
 export const MEDICAL_RECORD_KEY = "MR";
 
@@ -8,7 +8,7 @@ export const createMRSummaryFileName = (
   extension: "pdf" | "html" | "json"
 ): string => {
   if (extension === "pdf") {
-    return createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}.html.pdf`);
+    return createFilePath(cxId, patientId, `${MEDICAL_RECORD_KEY}.html.pdf`);
   }
-  return createS3FileName(cxId, patientId, `${MEDICAL_RECORD_KEY}.${extension}`);
+  return createFilePath(cxId, patientId, `${MEDICAL_RECORD_KEY}.${extension}`);
 };
