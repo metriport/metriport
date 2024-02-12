@@ -184,7 +184,6 @@ export function createAPIService({
           ...(cookieStore && {
             CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
           }),
-          ...props.config.mirthConfig?.envVars,
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,
