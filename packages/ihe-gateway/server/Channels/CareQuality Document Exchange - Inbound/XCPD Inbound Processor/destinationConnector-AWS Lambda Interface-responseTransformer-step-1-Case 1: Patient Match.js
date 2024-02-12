@@ -1,5 +1,6 @@
 // Only a single entry per assigning authority is allowed
 if (msg.patientMatch) {
+	const senderOID = Config.getHomeCommunityId();
 
 	// The Responding Gateway finds exactly one patient record matching the criteria sent in the query parameters.
 	var prpa = getXCPDQueryResponse(msg, payload);
@@ -7,7 +8,7 @@ if (msg.patientMatch) {
 
 		var authorOrPerformer = <authorOrPerformer typeCode="AUT">
 					          <assignedDevice classCode="ASSIGNED">
-					            <id root={configurationMap.get('HL7v3.Sender.OID')}/>
+					            <id root={senderOID}/>
 					          </assignedDevice>
 					        </authorOrPerformer>;
 		prpa.controlActProcess.authorOrPerformer = authorOrPerformer;

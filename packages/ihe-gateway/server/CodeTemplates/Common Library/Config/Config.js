@@ -11,18 +11,19 @@ function getEnvVar(name) {
 }
 
 const Config = {
-  getSamlHomeCommunityId: function () {
-    return getEnvVar("SAML_HOME_COMMUNITY_ID");
+  getHomeCommunityId: function () {
+    return getEnvVar("HOME_COMMUNITY_ID");
+  },
+  getHomeCommunityName: function () {
+    return getEnvVar("HOME_COMMUNITY_NAME");
   },
 
   getInboundPatientDiscoveryURL: function () {
     return getEnvVar("INBOUND_PATIENT_DISCOVERY_URL");
   },
-
   getInboundDocumentQueryURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_QUERY_URL");
   },
-
   getInboundDocumentRetrievalURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_RETRIEVAL_URL");
   },
