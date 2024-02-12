@@ -54,7 +54,7 @@ const filterOutExistingDocRefsS3 = async (
     ref.status === "fulfilled" && ref.value ? ref.value : []
   );
 
-  const existentialDocRefs = documents.reduce(
+  const observedDocRefs = documents.reduce(
     (acc: ObservedDocRefs, curr) => {
       for (const succDoc of successfulDocs) {
         if (succDoc.docId === curr.docUniqueId) {
@@ -73,5 +73,5 @@ const filterOutExistingDocRefsS3 = async (
     }
   );
 
-  return existentialDocRefs;
+  return observedDocRefs;
 };

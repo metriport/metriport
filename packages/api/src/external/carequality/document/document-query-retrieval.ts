@@ -33,15 +33,11 @@ export function createCQDocumentRetrievalRequests({
   const requests = resultsOfAllExternalGWs.reduce(
     (acc: DocumentRetrievalReqToExternalGW[], documentQueryResult) => {
       const { patientId, gateway } = documentQueryResult;
-
-      const requestDocReferences: DocumentReference[] = documentReferences.filter(
-        docRef => docRef.homeCommunityId === gateway?.homeCommunityId
-      );
-
       const isGWValid = gateway?.homeCommunityId && gateway?.url;
 
       if (!isGWValid) {
-        const msg = `Gateway is not valid for patient ${patientId} and homeCommunityId ${gateway?.homeCommunityId} and url ${gateway?.url}`;
+        const msg = `Gateway is not valid for patient ${patientId}`;
+
         capture.message(msg, {
           extra: {
             requestId,
@@ -52,6 +48,10 @@ export function createCQDocumentRetrievalRequests({
 
         return acc;
       }
+
+      const requestDocReferences: DocumentReference[] = documentReferences.filter(
+        docRef => docRef.homeCommunityId === gateway.homeCommunityId
+      );
 
       const request: DocumentRetrievalReqToExternalGW = {
         id: requestId,

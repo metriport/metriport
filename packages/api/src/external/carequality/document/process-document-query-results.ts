@@ -108,7 +108,7 @@ const getNonExistentDocRefs = async (
   return docsToDownload;
 };
 
-type ExistentialDocRefs = {
+type ObservedDocRefs = {
   existingDocRefs: DocumentReference[];
   nonExistingDocRefs: DocumentReference[];
 };
@@ -117,7 +117,7 @@ const filterOutExistingDocRefsS3 = async (
   documents: DocumentReference[],
   patientId: string,
   cxId: string
-): Promise<ExistentialDocRefs> => {
+): Promise<ObservedDocRefs> => {
   const docIdWithExist = await Promise.allSettled(
     documents.map(async (doc): Promise<{ docId: string; exists: boolean }> => {
       const fileName = createDocumentFilePath(
@@ -140,8 +140,8 @@ const filterOutExistingDocRefsS3 = async (
     ref.status === "fulfilled" && ref.value ? ref.value : []
   );
 
-  const existentialDocRefs = documents.reduce(
-    (acc: ExistentialDocRefs, curr) => {
+  const observedDocRefs = documents.reduce(
+    (acc: ObservedDocRefs, curr) => {
       for (const succDoc of successfulDocs) {
         if (succDoc.docId === curr.docUniqueId) {
           if (succDoc.exists) {
@@ -159,5 +159,5 @@ const filterOutExistingDocRefsS3 = async (
     }
   );
 
-  return existentialDocRefs;
+  return observedDocRefs;
 };
