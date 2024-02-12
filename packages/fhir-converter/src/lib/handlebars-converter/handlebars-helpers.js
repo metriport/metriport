@@ -602,17 +602,18 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
-
-        for (var t = 0; t < templateIds.length - 1; t++) {
-          //-1 because templateIds includes the full message at the end
+  
+        for (var t = 0; t < templateIds.length - 1; t++) { // -1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-            if (
-              sectionObj.templateId &&
-              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
-            ) {
+            // Normalize sectionObj.templateId to always be an array
+            let templateIdsArray = Array.isArray(sectionObj.templateId) ? sectionObj.templateId : [sectionObj.templateId];
+            
+            // Check if any templateId object in the normalized array has a root value that matches exactly
+            const hasExactMatch = templateIdsArray.some(templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]);
+            if (hasExactMatch) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
-              break;
+              break; // Found the first matching section, no need to check further
             }
           }
         }
