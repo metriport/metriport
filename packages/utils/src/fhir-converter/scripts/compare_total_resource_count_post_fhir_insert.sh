@@ -9,7 +9,7 @@ fi
 
 FILE1=$1
 
-FILE2="./src/fhir-converter/fhir-resource-counts/develop-post-hapi-fhir-resource-count.json"
+FILE2="./src/fhir-converter/fhir-resource-counts/develop-post-fhir-insert-resource-count.json"
 
 if [ ! -f "$FILE2" ]; then
   echo "$FILE2 does not exist."
