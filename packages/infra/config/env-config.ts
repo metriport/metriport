@@ -113,6 +113,15 @@ export type EnvConfig = {
      */
     scheduleExpressions: string | string[];
   };
+  mirthConfig?: {
+    envVars: {
+      INBOUND_PATIENT_DISCOVERY_URL: string;
+      INBOUND_DOCUMENT_QUERY_URL: string;
+      INBOUND_DOCUMENT_RETRIEVAL_URL: string;
+      SAML_HOME_COMMUNITY_ID: string;
+      S3_BUCKET_NAME: string;
+    };
+  };
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;
