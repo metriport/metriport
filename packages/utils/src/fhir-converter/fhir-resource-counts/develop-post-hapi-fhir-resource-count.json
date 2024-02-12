@@ -1,28 +1,23 @@
 {
-  "total": 191989,
+  "total": 194799,
   "resources": {
     "AllergyIntolerance": 736,
     "Communication": 789,
     "Composition": 9405,
-    "Condition": 13075,
+    "Condition": 13635,
     "Consent": 44,
     "Coverage": 558,
     "Device": 3830,
-    "DiagnosticReport": 24941,
-    "Encounter": 18460,
+    "DiagnosticReport": 24940,
+    "Encounter": 19159,
     "FamilyMemberHistory": 725,
     "Goal": 45,
     "Immunization": 2123,
-    "MedicationAdministration": 2687,
-    "MedicationRequest": 3428,
-    "MedicationStatement": 4691,
-    "Observation": 81464,
+    "MedicationAdministration": 2435,
+    "MedicationRequest": 5629,
+    "MedicationStatement": 6946,
+    "Observation": 94614,
     "Procedure": 8915,
-    "RelatedPerson": 269,
-    "ServiceRequest": 1,
-    "Practitioner": 8188,
-    "Organization": 1552,
-    "Medication": 2388,
-    "Location": 3675
+    "RelatedPerson": 271
   }
 }
