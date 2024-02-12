@@ -77,6 +77,8 @@ export default class IHEGatewayConstruct extends Construct {
       INBOUND_DOCUMENT_QUERY_URL: getLambdaUrl(documentQueryLambda.functionArn),
       INBOUND_DOCUMENT_RETRIEVAL_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
       S3_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+      HOME_COMMUNITY_ID: mainConfig.systemRootOID,
+      HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
       VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
     };
 

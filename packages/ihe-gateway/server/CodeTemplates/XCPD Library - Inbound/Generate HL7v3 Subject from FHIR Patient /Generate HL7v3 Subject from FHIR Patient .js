@@ -6,6 +6,7 @@
 */
 function getXCPDResponseSubject(lambda) {
 
+	const senderOID = Config.getHomeCommunityId();
 	var qualityOfMatch = 99;
 	try {
 		qualityOfMatch = ('number' == typeof lambda.patientMatchDegree && (lambda.patientMatchDegree > 0 || lambda.patientMatchDegree <= 100)) ? lambda.patientMatchDegree : 99;
@@ -29,7 +30,7 @@ function getXCPDResponseSubject(lambda) {
 		            </subject1>
 		            <custodian typeCode="CST">
 		              <assignedEntity classCode="ASSIGNED">
-		                <id root={configurationMap.get('HL7v3.Sender.OID')}/>
+		                <id root={senderOID}/>
 		                <code code="NotHealthDataLocator" codeSystem="1.3.6.1.4.1.19376.1.2.27.2"/>
 		              </assignedEntity>
 		            </custodian>

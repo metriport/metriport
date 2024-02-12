@@ -6,7 +6,7 @@
 */
 function setSAMLAttributes(msg) {
   // The name of the organization that the user belongs to as required by HIPAA Privacy Disclosure Accounting
-  channelMap.put("Organization", configurationMap.get("SAML.Organization"));
+  channelMap.put("Organization", Config.getHomeCommunityName());
   if (
     msg.samlAttributes.hasOwnProperty("organization") &&
     msg.samlAttributes.organization.toString().length > 0
@@ -15,9 +15,8 @@ function setSAMLAttributes(msg) {
       channelMap.put("Organization", msg.samlAttributes.organization.toString());
     } catch (ex) {}
 
-  var homeCommunityId = Config.getSamlHomeCommunityId();
   // The value SHALL be the Home Community ID (an Object Identifier) assigned to the NHIO that is initiating the request, using the urn format
-  channelMap.put("HomeCommunityId", homeCommunityId);
+  channelMap.put("HomeCommunityId", Config.getHomeCommunityId());
 
   if (
     msg.samlAttributes.hasOwnProperty("homeCommunityId") &&

@@ -15,19 +15,6 @@
 	</entry>
 	<entry>
 		<string>
-			HL7v3.Sender.Name
-		</string>
-		<com.mirth.connect.util.ConfigurationProperty>
-			<value>
-				Metriport
-			</value>
-			<comment>
-				The name of the HL7v3 message sending organization (OPTIONAL)
-			</comment>
-		</com.mirth.connect.util.ConfigurationProperty>
-	</entry>
-	<entry>
-		<string>
 			SAML.SubjectRole.Code
 		</string>
 		<com.mirth.connect.util.ConfigurationProperty>
@@ -36,19 +23,6 @@
 			</value>
 			<comment>
 				SAML default value
-			</comment>
-		</com.mirth.connect.util.ConfigurationProperty>
-	</entry>
-	<entry>
-		<string>
-			HL7v3.Sender.OID
-		</string>
-		<com.mirth.connect.util.ConfigurationProperty>
-			<value>
-				2.16.840.1.113883.3.9621
-			</value>
-			<comment>
-				The OID of the HL7v3 message sending organization (REQUIRED)
 			</comment>
 		</com.mirth.connect.util.ConfigurationProperty>
 	</entry>
@@ -101,19 +75,6 @@
 			</value>
 			<comment>
 				Inbound XCPD, XCA queue throttle setting
-			</comment>
-		</com.mirth.connect.util.ConfigurationProperty>
-	</entry>
-	<entry>
-		<string>
-			SAML.Organization
-		</string>
-		<com.mirth.connect.util.ConfigurationProperty>
-			<value>
-				Metriport
-			</value>
-			<comment>
-				SAML default value
 			</comment>
 		</com.mirth.connect.util.ConfigurationProperty>
 	</entry>
