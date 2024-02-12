@@ -624,15 +624,18 @@ module.exports.external = [
     name: "getAllCdaSectionsByTemplateId",
     description:
       "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
-    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
         // -1 because templateIds includes the full message at the end
         for (var t = 0; t < templateIds.length - 1; t++) {
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
-              sectionObj.templateId &&
+              sectionObj?.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
             ) {
               var item = {};

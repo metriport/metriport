@@ -5,15 +5,19 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        ARTIFACT: "${ARTIFACT_URL}"
-        STOREPASS: "${STOREPASS}"
-        KEYSTOREPASS: "${KEYSTOREPASS}"
-        KEYSTORENAME: "${KEYSTORENAME}"
-        ZULUKEY: "${ZULUKEY}"
+        # Update this if you're trying to run it on a different platform
+        PLATFORM: "linux/arm64"
+        ARTIFACT: "${IHE_GW_ARTIFACT_URL}"
+        KEYSTORENAME: "${IHE_GW_KEYSTORENAME}"
+        ZULUKEY: "${IHE_GW_ZULUKEY}"
       x-bake:
+        # TODO 1377 Try to remove 'platforms' or keep it to one value
         platforms:
-          - linux/amd64    
+          - linux/amd64
           - linux/arm64
+      secrets:
+        - store_pass
+        - keystore_pass
     volumes:
       - ./config/custom-extensions:/opt/connect/custom-extensions
     depends_on:
@@ -21,13 +25,12 @@ services:
         condition: service_healthy
     environment:
       DATABASE: "postgres"
-      DATABASE_USERNAME: "${DB_USERNAME}"
-      DATABASE_PASSWORD: "${DB_PASSWORD}"
+      DATABASE_USERNAME: "${DATABASE_USERNAME}"
+      DATABASE_PASSWORD: "${DATABASE_PASSWORD}"
       DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
-      VMOPTIONS: "-Xmx3072m"
-      LICENSE_KEY: ${LICENSE_KEY}
+      VMOPTIONS: "-Xms2048m,-Xmx3072m"
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY} 
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     restart: on-failure
     ports:
       - "8443:8443"
@@ -46,14 +49,15 @@ services:
       - "16853:16853"
     secrets:
       - mirth_properties
+      - license_key
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
     restart: always
     environment:
       POSTGRES_DB: "db"
-      POSTGRES_USER: "${DB_USERNAME}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_USER: "${DATABASE_USERNAME}"
+      POSTGRES_PASSWORD: "${DATABASE_PASSWORD}"
     ports:
       - "5436:5432"
     volumes:
@@ -68,3 +72,9 @@ volumes:
 secrets:
   mirth_properties:
     file: ./secret.properties
+  store_pass:
+    file: ./store_pass.secret
+  keystore_pass:
+    file: ./keystore_pass.secret
+  license_key:
+    file: ./license_key.secret

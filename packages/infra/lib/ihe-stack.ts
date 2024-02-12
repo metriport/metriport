@@ -3,14 +3,16 @@ import * as apig from "aws-cdk-lib/aws-apigateway";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -55,6 +57,8 @@ export class IHEStack extends Stack {
       },
     });
 
+    // TODO 1377 Setup WAF
+
     // get the certificate form ACM
     const certificate = cert.Certificate.fromCertificateArn(
       this,
@@ -77,28 +81,39 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    // Create lambdas
-    const xcaResource = api.root.addResource("xca");
-    const xcpdResource = api.root.addResource("xcpd");
+    const documentQueryLambda = this.setupDocumentQueryLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      alarmSnsAction
+    );
+    const documentRetrievalLambda = this.setupDocumentRetrievalLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      medicalDocumentsBucket,
+      alarmSnsAction
+    );
+    const patientDiscoveryLambda = this.setupPatientDiscoveryLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      alarmSnsAction
+    );
 
-    // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
-    this.setupDocumentQueryLambda(
-      props,
-      lambdaLayers,
-      xcaResource,
+    createIHEGateway(this, {
+      ...props,
+      config: props.config,
       vpc,
+      zoneName: props.config.host,
+      apiResource: api.root,
+      documentQueryLambda,
+      documentRetrievalLambda,
+      patientDiscoveryLambda,
       medicalDocumentsBucket,
-      alarmSnsAction
-    );
-    this.setupDocumentRetrievalLambda(
-      props,
-      lambdaLayers,
-      xcaResource,
-      vpc,
-      medicalDocumentsBucket,
-      alarmSnsAction
-    );
-    this.setupPatientDiscoveryLambda(props, lambdaLayers, xcpdResource, vpc, alarmSnsAction);
+      alarmAction: alarmSnsAction,
+    });
 
     //-------------------------------------------
     // Output
@@ -120,15 +135,14 @@ export class IHEStack extends Stack {
   private setupDocumentQueryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource,
     vpc: ec2.IVpc,
     medicalDocumentsBucket: s3.IBucket,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "DocumentQuery",
-      entry: "document-query",
+      entry: "ihe-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -139,24 +153,21 @@ export class IHEStack extends Stack {
       alarmSnsAction,
       version: props.version,
     });
-
-    const documentQueryResource = xcaResource.addResource("document-query");
-    documentQueryResource.addMethod("ANY", new apig.LambdaIntegration(documentQueryLambda));
     medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
+    return documentQueryLambda;
   }
 
   private setupDocumentRetrievalLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    xcaResource: apig.Resource,
     vpc: ec2.IVpc,
     medicalDocumentsBucket: s3.IBucket,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "DocumentRetrieval",
-      entry: "document-retrieval",
+      entry: "ihe-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -167,23 +178,20 @@ export class IHEStack extends Stack {
       alarmSnsAction,
       version: props.version,
     });
-
-    const documentRetrievalResource = xcaResource.addResource("document-retrieve");
-    documentRetrievalResource.addMethod("ANY", new apig.LambdaIntegration(documentRetrievalLambda));
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
+    return documentRetrievalLambda;
   }
 
   private setupPatientDiscoveryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
-    apiResource: apig.Resource,
     vpc: ec2.IVpc,
     alarmSnsAction?: SnsAction | undefined
-  ) {
+  ): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "PatientDiscovery",
-      entry: "patient-discovery",
+      entry: "ihe-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -194,8 +202,7 @@ export class IHEStack extends Stack {
       alarmSnsAction,
       version: props.version,
     });
-
-    apiResource.addMethod("ANY", new apig.LambdaIntegration(patientDiscoveryLambda));
+    return patientDiscoveryLambda;
   }
 }
 

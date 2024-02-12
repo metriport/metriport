@@ -1,21 +1,25 @@
-import puppeteer from "puppeteer-core";
-import fs from "fs";
-import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
+import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
-import { getEnvType } from "@metriport/core/util/env-var";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
-import chromium from "@sparticuz/chromium";
-import * as uuid from "uuid";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
+import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
 import * as Sentry from "@sentry/serverless";
+import chromium from "@sparticuz/chromium";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+import fs from "fs";
+import puppeteer from "puppeteer-core";
+import * as uuid from "uuid";
 import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
 import { sleep } from "./shared/sleep";
 
 // Keep this as early on the file as possible
 capture.init();
+dayjs.extend(duration);
 
 // Automatically set by AWS
 const lambdaName = getEnvOrFail("AWS_LAMBDA_FUNCTION_NAME");
@@ -23,10 +27,11 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const bucketName = getEnvOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 // converter config
-const PDFConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
+const pdfConvertTimeout = getEnvOrFail("PDF_CONVERT_TIMEOUT_MS");
 const appConfigAppID = getEnvOrFail("APPCONFIG_APPLICATION_ID");
 const appConfigConfigID = getEnvOrFail("APPCONFIG_CONFIGURATION_ID");
-const GRACEFUL_SHUTDOWN_ALLOWANCE_MS = 3_000;
+const GRACEFUL_SHUTDOWN_ALLOWANCE = dayjs.duration({ seconds: 3 });
+const PDF_CONTENT_LOAD_ALLOWANCE = dayjs.duration({ seconds: 2.5 });
 const s3Client = makeS3Client(region);
 
 export const handler = Sentry.AWSLambda.wrapHandler(
@@ -50,7 +55,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const bundle = await getBundleFromS3(fhirFileName);
 
       const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
-      const htmlFileName = getHTMLFileName(fhirFileName);
+      const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
       await s3Client
         .putObject({
@@ -64,7 +69,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       let url: string;
 
       if (conversionType === "pdf") {
-        url = await convertStoreAndReturnPdfUrl({ fileName: htmlFileName, html, bucketName });
+        const pdfFileName = createMRSummaryFileName(cxId, patientId, "pdf");
+        url = await convertStoreAndReturnPdfUrl({ fileName: pdfFileName, html, bucketName });
       } else {
         url = await getSignedUrl(htmlFileName);
       }
@@ -103,13 +109,6 @@ async function getBundleFromS3(fileName: string) {
   return JSON.parse(objectBody.toString());
 }
 
-function getHTMLFileName(fhirFileName: string) {
-  const fileNameParts = fhirFileName.split(".");
-  fileNameParts.pop();
-  fileNameParts.push("html");
-  return fileNameParts.join(".");
-}
-
 const convertStoreAndReturnPdfUrl = async ({
   fileName,
   html,
@@ -126,7 +125,6 @@ const convertStoreAndReturnPdfUrl = async ({
   fs.writeFileSync(htmlFilepath, html);
 
   // Defines filename + path for downloaded HTML file
-  const pdfFilename = fileName.concat(".pdf");
   const tmpPDFFileName = tmpFileName.concat(".pdf");
   const pdfFilepath = `/tmp/${tmpPDFFileName}`;
 
@@ -134,7 +132,8 @@ const convertStoreAndReturnPdfUrl = async ({
   let browser: puppeteer.Browser | null = null;
 
   try {
-    const puppeteerTimeoutInMillis = parseInt(PDFConvertTimeout) - GRACEFUL_SHUTDOWN_ALLOWANCE_MS;
+    const puppeteerTimeoutInMillis =
+      parseInt(pdfConvertTimeout) - GRACEFUL_SHUTDOWN_ALLOWANCE.asMilliseconds();
     // Defines browser
     browser = await puppeteer.launch({
       pipe: true,
@@ -148,12 +147,9 @@ const convertStoreAndReturnPdfUrl = async ({
     // Defines page
     const page = await browser.newPage();
 
-    await page.setDefaultNavigationTimeout(puppeteerTimeoutInMillis);
-
+    page.setDefaultNavigationTimeout(puppeteerTimeoutInMillis);
     await page.setContent(html);
-
-    // Wait 2.5 seconds
-    await sleep(2_500);
+    await sleep(PDF_CONTENT_LOAD_ALLOWANCE.asMilliseconds());
 
     // Generate PDF from page in puppeteer
     await page.pdf({
@@ -173,7 +169,7 @@ const convertStoreAndReturnPdfUrl = async ({
     await s3Client
       .putObject({
         Bucket: bucketName,
-        Key: pdfFilename,
+        Key: fileName,
         Body: fs.readFileSync(pdfFilepath),
         ContentType: "application/pdf",
       })
@@ -194,20 +190,27 @@ const convertStoreAndReturnPdfUrl = async ({
 
   // Logs "shutdown" statement
   console.log("generate-pdf -> shutdown");
-  const urlPdf = await getSignedUrl(pdfFilename);
+  const urlPdf = await getSignedUrl(fileName);
 
   return urlPdf;
 };
 
 async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
-  const featureFlag = await getFeatureFlagValue(
-    region,
-    appConfigAppID,
-    appConfigConfigID,
-    getEnvType(),
-    "cxsWithADHDMRFeatureFlag"
-  );
+  try {
+    const featureFlag = await getFeatureFlagValue(
+      region,
+      appConfigAppID,
+      appConfigConfigID,
+      getEnvType(),
+      "cxsWithADHDMRFeatureFlag"
+    );
 
-  if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
-  else return [];
+    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+  } catch (error) {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
+    capture.error(msg, { extra: { ...extra, error } });
+  }
+
+  return [];
 }

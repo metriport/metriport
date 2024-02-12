@@ -1,5 +1,5 @@
 import { Bundle, Resource, ResourceType } from "@medplum/fhirtypes";
-import { parseS3FileName } from "@metriport/core/external/aws/s3";
+import { parseFilePath } from "@metriport/core/domain/filename";
 import { getFileContentsAsync, getFileNames } from "../shared/fs";
 import { uuidv7 } from "../shared/uuid-v7";
 import { promises as fs } from "fs";
@@ -79,7 +79,7 @@ export async function getResourceCountByFile(fileName: string, index?: number, d
 }
 
 export function getPatientIdFromFileName(fileName: string) {
-  const parts = parseS3FileName(fileName);
+  const parts = parseFilePath(fileName);
   if (!parts) return uuidv7();
   return parts.patientId;
 }
