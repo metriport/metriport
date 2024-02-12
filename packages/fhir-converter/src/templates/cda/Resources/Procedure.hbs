@@ -29,9 +29,9 @@
             "performedPeriod": {{>DataType/Period.hbs period=procedureEntry.effectiveTime}},
         {{/if}}
         {{#if procedureEntry.text._}}
-            "note": {
+            "note": [
                 "text": "{{{parseReferenceData procedureEntry.text._}}}",
-            },
+            ],
         {{/if}}
         "bodySite":
         [
