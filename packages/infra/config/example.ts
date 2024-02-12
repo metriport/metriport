@@ -87,14 +87,5 @@ export const config: EnvConfig = {
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
-  mirthConfig: {
-    envVars: {
-      INBOUND_PATIENT_DISCOVERY_URL: "https://api.myhealthapp.com/pd",
-      INBOUND_DOCUMENT_QUERY_URL: "https://api.myhealthapp.com/dq",
-      INBOUND_DOCUMENT_RETRIEVAL_URL: "https://api.myhealthapp.com/dr",
-      SAML_HOME_COMMUNITY_ID: "2.16.840.1.113883.3.99999",
-      S3_BUCKET_NAME: "myhealthapp-mirth",
-    },
-  },
 };
 export default config;
