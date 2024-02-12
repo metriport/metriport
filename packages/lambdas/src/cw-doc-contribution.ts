@@ -1,4 +1,5 @@
 import { docContributionFileParam } from "@metriport/core/external/commonwell/document/document-contribution";
+import { errorToString } from "@metriport/core/util/error/shared";
 import * as Sentry from "@sentry/serverless";
 import * as lambda from "aws-lambda";
 import { capture } from "./shared/capture";
@@ -30,29 +31,57 @@ const SIGNED_URL_DURATION_SECONDS = 60;
  */
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (event: lambda.APIGatewayRequestAuthorizerEvent) => {
-    const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
-    const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
+    try {
+      console.log(`Received request w/ params: ${JSON.stringify(event.queryStringParameters)}`);
 
-    if (fileName) {
+      const fileName = event.queryStringParameters?.[docContributionFileParam] ?? "";
+      if (fileName.trim().length <= 0) {
+        return sendResponse({
+          statusCode: 400,
+          body: "Missing fileName query parameter",
+        });
+      }
+      console.log(`File name: ${fileName}`);
+
+      const key = fileName.startsWith("/") ? fileName.slice(1) : fileName;
+      if (!key || key.trim().length <= 0) {
+        return sendResponse({
+          statusCode: 400,
+          body: "Invalid fileName query parameter",
+        });
+      }
+
+      console.log(`Key: ${key}`);
       const url = s3Utils.s3.getSignedUrl("getObject", {
         Bucket: bucketName,
         Key: key,
         Expires: SIGNED_URL_DURATION_SECONDS,
       });
-
-      const response = {
+      return sendResponse({
         statusCode: 301,
         headers: {
           Location: url,
         },
-      };
-
-      return response;
+        body: "",
+      });
+    } catch (error) {
+      const msg = `Error processing DR from CW`;
+      console.log(`${msg}: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          queryParams: event.queryStringParameters,
+          error,
+        },
+      });
+      return sendResponse({
+        statusCode: 500,
+        body: "Internal Server Error",
+      });
     }
-
-    return {
-      statusCode: 400,
-      body: "Missing fileName query parameter",
-    };
   }
 );
+
+function sendResponse(response: lambda.APIGatewayProxyResult) {
+  console.log(`Sending to CW: ${JSON.stringify(response)}`);
+  return response;
+}
