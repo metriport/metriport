@@ -1,17 +1,22 @@
-import axios from "axios";
-import { MetriportError } from "../../../util/error/metriport-error";
-import { S3Utils, parseS3FileName, buildDestinationKeyMetadata } from "../s3";
 import { DocumentReference } from "@medplum/fhirtypes";
+import axios from "axios";
+import { createDocumentFileName } from "../../../domain/document/filename";
+import {
+  createUploadFilePath,
+  createUploadMetadataFilePath,
+} from "../../../domain/document/upload";
+import { parseFilePath } from "../../../domain/filename";
+import { MetriportError } from "../../../util/error/metriport-error";
 import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
 import {
+  createPatientUniqueId,
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_REPOSITORY_UNIQUE_ID,
-  createPatientUniqueId,
 } from "../../carequality/shared";
+import { S3Utils } from "../s3";
 
 const api = axios.create();
 
-const UPLOADS_FOLDER = "uploads";
 const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
 
 export type FileData = {
@@ -30,16 +35,21 @@ export async function documentUploaderHandler(
   apiServerURL: string
 ): Promise<void | { message: string; size: number }> {
   const s3Utils = new S3Utils(region);
-  const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
-  const s3FileNameParts = parseS3FileName(sourceKey);
+
+  const s3FileNameParts = parseFilePath(sourceKey);
   if (!s3FileNameParts) {
     const message = "Failed to parse S3 file key";
-    console.log(message);
+    console.log(`${message} - sourceKey: ${sourceKey}`);
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
-  const { cxId, patientId, docId } = s3FileNameParts;
-  const destinationKey = buildDestinationKey(cxId, patientId, docId);
+  const { cxId, patientId, fileId: docId } = s3FileNameParts;
+  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
 
+  const docName = createDocumentFileName(docId, contentType);
+  const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
+
+  const destinationKey = createUploadFilePath(cxId, patientId, docName);
+  const copySource = encodeURI(`${sourceBucket}/${sourceKey}`);
   const params = {
     CopySource: copySource,
     Bucket: destinationBucket,
@@ -58,12 +68,6 @@ export async function documentUploaderHandler(
     throw new MetriportError(message, error, { copySource, destinationBucket, destinationKey });
   }
 
-  // Get file info from the copied file
-  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(
-    destinationKey,
-    destinationBucket
-  );
-
   const fileData: FileData = {
     mimeType: contentType,
     size,
@@ -80,7 +84,6 @@ export async function documentUploaderHandler(
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
     } else {
-      const s3MetadataFileName = buildDestinationKeyMetadata(cxId, patientId, docId);
       await createAndUploadMetadataFile({
         s3Utils,
         cxId,
@@ -89,7 +92,7 @@ export async function documentUploaderHandler(
         hash,
         size: stringSize,
         docRef,
-        s3MetadataFileName,
+        metadataFileName,
         destinationBucket,
       });
     }
@@ -120,10 +123,6 @@ async function forwardCallToServer(
   return resp.data;
 }
 
-function buildDestinationKey(cxId: string, patientId: string, docId: string): string {
-  return `${cxId}/${patientId}/${UPLOADS_FOLDER}/${cxId}_${patientId}_${docId}`;
-}
-
 async function createAndUploadMetadataFile({
   s3Utils,
   cxId,
@@ -132,7 +131,7 @@ async function createAndUploadMetadataFile({
   hash,
   size,
   docRef,
-  s3MetadataFileName,
+  metadataFileName,
   destinationBucket,
 }: {
   s3Utils: S3Utils;
@@ -142,7 +141,7 @@ async function createAndUploadMetadataFile({
   hash: string;
   size: string;
   docRef: DocumentReference;
-  s3MetadataFileName: string;
+  metadataFileName: string;
   destinationBucket: string;
 }): Promise<void> {
   const createdTime = new Date().toISOString();
@@ -166,6 +165,6 @@ async function createAndUploadMetadataFile({
     title,
   });
 
-  console.log(`Uploading metadata to S3 with key: ${s3MetadataFileName}`);
-  await s3Utils.uploadFile(destinationBucket, s3MetadataFileName, Buffer.from(extrinsicObjectXml));
+  console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
+  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
 }

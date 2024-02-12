@@ -364,12 +364,13 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes another string: contains parentStr childStr",
-    func: function (parentStr, childStr) {
+    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
       }
-      return parentStr.toString().includes(childStr);
+      parentStr = parentStr.toString();
+      return childStrs.some(childStr => parentStr.includes(childStr));
     },
   },
   {
@@ -498,7 +499,15 @@ module.exports.external = [
           );
           partial = handlebarsInstance.partials[templatePath];
         }
-        return JSON.parse(jsonProcessor.Process(partial(inObj.hash)));
+        var result = partial(inObj.hash);
+        var processedResult = JSON.parse(jsonProcessor.Process(result));
+
+        // Check if the processedResult is undefined or an empty object
+        if (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object)) {
+          return undefined;
+        }
+
+        return processedResult;
       } catch (err) {
         throw `helper "evaluate" : ${err}`;
       }
@@ -592,13 +601,15 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
 
         for (var t = 0; t < templateIds.length - 1; t++) {
           //-1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
-              sectionObj.templateId &&
+              sectionObj?.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
             ) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
@@ -616,15 +627,18 @@ module.exports.external = [
     name: "getAllCdaSectionsByTemplateId",
     description:
       "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
-    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
         // -1 because templateIds includes the full message at the end
         for (var t = 0; t < templateIds.length - 1; t++) {
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
-              sectionObj.templateId &&
+              sectionObj?.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
             ) {
               var item = {};
@@ -859,7 +873,7 @@ module.exports.external = [
       try {
         return getDateTime(dateTimeString);
       } catch (err) {
-        throw `helper "formatAsDateTime" : ${err}`;
+        console.log(`helper "formatAsDateTime" : ${err}`);
       }
     },
   },

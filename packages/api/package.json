@@ -1,6 +1,6 @@
 {
   "name": "api",
-  "version": "1.13.2-alpha.3",
+  "version": "1.13.4",
   "description": "",
   "main": "app.js",
   "private": true,

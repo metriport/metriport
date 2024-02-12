@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "command": "ts-node ./packages/api/src/app.ts",
+            "command": "npm run dev -w packages/api",
             "name": "Run Api App",
             "request": "launch",
             "type": "node-terminal"

@@ -29,5 +29,61 @@
   "hosted-zone:account=463519787594:domainName=metriport.com:region=us-east-2": {
     "Id": "/hostedzone/Z06381181A1ZNHQQAN5CN",
     "Name": "metriport.com."
+  },
+  "vpc-provider:account=463519787594:filter.vpc-id=vpc-0d8445a352c94cdfb:region=us-east-2:returnAsymmetricSubnets=true": {
+    "vpcId": "vpc-0d8445a352c94cdfb",
+    "vpcCidrBlock": "10.0.0.0/16",
+    "ownerAccountId": "463519787594",
+    "availabilityZones": [],
+    "subnetGroups": [
+      {
+        "name": "Private",
+        "type": "Private",
+        "subnets": [
+          {
+            "subnetId": "subnet-01745533c89ecd07e",
+            "cidr": "10.0.96.0/19",
+            "availabilityZone": "us-east-2a",
+            "routeTableId": "rtb-03fa63e4cf2ad1831"
+          },
+          {
+            "subnetId": "subnet-0694aa5d12ab7a02e",
+            "cidr": "10.0.128.0/19",
+            "availabilityZone": "us-east-2b",
+            "routeTableId": "rtb-02185a4a9f82d3e6f"
+          },
+          {
+            "subnetId": "subnet-07d96ddc70f41eafd",
+            "cidr": "10.0.160.0/19",
+            "availabilityZone": "us-east-2c",
+            "routeTableId": "rtb-04ad84d6d6f2180c1"
+          }
+        ]
+      },
+      {
+        "name": "Public",
+        "type": "Public",
+        "subnets": [
+          {
+            "subnetId": "subnet-07ae11c5118053fc1",
+            "cidr": "10.0.0.0/19",
+            "availabilityZone": "us-east-2a",
+            "routeTableId": "rtb-00425d32f2c04a732"
+          },
+          {
+            "subnetId": "subnet-044d93e4a6fde4805",
+            "cidr": "10.0.32.0/19",
+            "availabilityZone": "us-east-2b",
+            "routeTableId": "rtb-0d753a1693fd39325"
+          },
+          {
+            "subnetId": "subnet-0c02c080abad379ab",
+            "cidr": "10.0.64.0/19",
+            "availabilityZone": "us-east-2c",
+            "routeTableId": "rtb-04dc45cf3f964aa9b"
+          }
+        ]
+      }
+    ]
   }
 }

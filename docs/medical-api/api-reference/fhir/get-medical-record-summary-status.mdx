@@ -1,0 +1,47 @@
+---
+title: "Get Medical Record Summary Status"
+description: "Check if a Medical Record Summary for a patient already exists, and when it was generated."
+api: "GET /patient/:id/medical-record-status"
+---
+
+This endpoint checks whether the patient's Medical Record Summary already exists in the PDF and HTML formats.
+
+To create a Medical Record Summary, you need to use the [Start Consolidated Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post).
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of the Patient.
+</ParamField>
+
+## Response
+
+Returns a JSON containing the dates when the Medical Record Summary in PDF and HTML formats were generated.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+const metriportPatientId = "018a80c4-292a-7486-a223-6dcbc636c44c";
+
+const status = await metriport.getMedicalRecordSummaryStatus(metriportPatientId);
+```
+
+</ResponseExample>
+
+<ResponseField name="htmlCreatedAt" type="string">
+  When the HTML summary was created.
+</ResponseField>
+
+<ResponseField name="pdfCreatedAt" type="string">
+  When the PDF summary was created.
+</ResponseField>
+
+```json
+{
+  "htmlCreatedAt": "2024-01-18T00:26:54.000Z",
+  "pdfCreatedAt": "2024-01-18T00:27:16.000Z"
+}
+```

@@ -25,6 +25,8 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
+      ihe-gw-config: ${{ steps.changes.outputs.ihe-gw-config }}
+      ihe-gw-server: ${{ steps.changes.outputs.ihe-gw-server }}
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
     steps:
@@ -48,6 +50,13 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
+            ihe-gw-config:
+              - "packages/ihe-gateway/config/**"
+              - "packages/ihe-gateway/scripts/**"
+              - "packages/ihe-gateway/server/**"
+            ihe-gw-server:
+              - "packages/ihe-gateway/Dockerfile"
+              - "packages/ihe-gateway/entrypoint.sh"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
               - "packages/fhir-converter/Dockerfile"
@@ -67,7 +76,7 @@ jobs:
   api:
     if: needs.files-changed.outputs.api == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_deploy_api.yml
+    uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "staging"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
@@ -83,16 +92,16 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
-    uses: ./.github/workflows/_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy-cdk.yml
     if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
     needs: files-changed
     with:
       deploy_env: "staging"
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME_STAGING }}
+      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_STAGING }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -101,23 +110,60 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+      IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+      IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
+
+  ihe-gw-server:
+    if: needs.files-changed.outputs.ihe-gw-server == 'true'
+    needs: files-changed
+    uses: ./.github/workflows/_deploy-ihe-gw.yml
+    with:
+      deploy_env: "staging"
+      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+      IHE_GW_ARTIFACT_URL: ${{ vars.IHE_GW_ARTIFACT_URL }}
+      IHE_GW_KEYSTORENAME: ${{ vars.IHE_GW_KEYSTORENAME }}
+      IHE_GW_ZULUKEY: ${{ vars.IHE_GW_ZULUKEY }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
+      IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
+      IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
+
+  ihe-gw-config:
+    needs: [files-changed, ihe-gw-server]
+    if: ${{ !failure() && needs.files-changed.outputs.ihe-gw-config == 'true' }}
+    uses: ./.github/workflows/_ihe-gw-push-config.yml
+    with:
+      deploy_env: "staging"
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
+      IHE_GW_FULL_BACKUP_LOCATION: ${{ vars.IHE_GW_FULL_BACKUP_LOCATION }}
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_URL: ${{ secrets.IHE_GW_URL_STAGING }}
+      IHE_GW_USER: ${{ secrets.IHE_GW_USER }}
+      IHE_GW_PASSWORD: ${{ secrets.IHE_GW_PASSWORD }}
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [api, infra-api-lambdas]
+    needs: [api, infra-api-lambdas, ihe-gw-config]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.ihe-gw-config.result == 'success') }}
     secrets: inherit
 
   e2e-tests:
     uses: ./.github/workflows/_e2e-tests.yml
     needs: release
-    # run even if one of the dependencies didn't
-    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
-    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}

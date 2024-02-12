@@ -1,32 +1,74 @@
-import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
 import { Util } from "../../shared/util";
 
-const log = Util.log(`App Config`);
+const log = Util.log(`App Config - FF`);
+
+const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
+  "cxsWithEnhancedCoverageFeatureFlag",
+  "cxsWithCQDirectFeatureFlag",
+  "cxsWithADHDMRFeatureFlag",
+  "cxsWithIncreasedSandboxLimitFeatureFlag",
+];
 
 /**
- * Returns the list of Customer IDs that are enabled for the given feature flag.
- *
- * @returns Array of cxIds
+ * Go through all Feature Flags to make sure they are accessible.
  */
-async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<string[]> {
+export async function initFeatureFlags() {
+  if (Config.isDev()) {
+    log(`Skipping initializing Feature Flags - Develop/Local env`);
+    return;
+  }
+  const res = await Promise.allSettled(
+    listOfFeatureFlags.map(ff =>
+      getFeatureFlagValueLocal(ff).catch(initFeatureFlagsErrorHandling(ff))
+    )
+  );
+  const failed = res.flatMap(r => (r.status === "rejected" ? r.reason : []));
+  if (failed.length > 0) {
+    throw new MetriportError(`Failed to initialize Feature Flags`, undefined, {
+      failed: failed.map(f => f.reason).join("; "),
+    });
+  }
+  log(`Feature Flags initialized.`);
+}
+
+function initFeatureFlagsErrorHandling(featureFlagName: keyof FeatureFlagDatastore) {
+  return (error: unknown) => {
+    const msg = `Failed to get Feature Flag Value`;
+    const extra = { featureFlagName };
+    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
+    capture.error(msg, { extra: { ...extra, error } });
+    throw error;
+  };
+}
+
+function getFeatureFlagValueLocal(featureFlagName: keyof FeatureFlagDatastore) {
+  return getFeatureFlagValue(
+    Config.getAWSRegion(),
+    Config.getAppConfigAppId(),
+    Config.getAppConfigConfigId(),
+    Config.getEnvType(),
+    featureFlagName
+  );
+}
+
+/**
+ * Returns the list of customers that are enabled for the given feature flag.
+ *
+ * @returns Array of cxIds or cxIdsAndLimits
+ */
+async function getCxsWithFeatureFlagEnabled(
+  featureFlagName: keyof FeatureFlagDatastore
+): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValue<{
-      enabled: boolean | undefined;
-      cxIds?: string[];
-      cxIdsAndLimits?: string[];
-    }>(
-      Config.getAWSRegion(),
-      Config.getAppConfigAppId(),
-      Config.getAppConfigConfigId(),
-      Config.getEnvType(),
-      featureFlagName
-    );
-    if (featureFlag?.enabled) {
-      if (featureFlag?.cxIds) return featureFlag.cxIds;
-      if (featureFlag?.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
+    const featureFlag = await getFeatureFlagValueLocal(featureFlagName);
+    if (featureFlag.enabled) {
+      if (featureFlag.cxIds) return featureFlag.cxIds;
+      if (featureFlag.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
     }
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
@@ -38,19 +80,15 @@ async function getCxsWithFeatureFlagValue(featureFlagName: string): Promise<stri
 }
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue(Config.getCxsWithEnhancedCoverageFeatureFlagName());
+  return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
 }
 
 export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagValue(Config.getCxsWithCQDirectFeatureFlagName());
+  return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }
 
-export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<
-  string[] | undefined
-> {
-  const featureFlagValue = Config.getCxsWithIncreasedSandboxLimitFeatureFlagValue();
-  if (!featureFlagValue) return;
-  return getCxsWithFeatureFlagValue(featureFlagValue);
+export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithIncreasedSandboxLimitFeatureFlag");
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
