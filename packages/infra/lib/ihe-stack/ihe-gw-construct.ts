@@ -1,12 +1,10 @@
 import { CfnOutput, Duration } from "aws-cdk-lib";
-import * as acm from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
-import { ApplicationProtocol, ListenerAction } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -95,7 +93,7 @@ export default class IHEGatewayConstruct extends Construct {
     //   ALB: max 4,000s - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#connection-idle-timeout
     // - https://aws.amazon.com/elasticloadbalancing/features/
     // - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html
-    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
+    const fargateService = new ecs_patterns.ApplicationMultipleTargetGroupsFargateService(
       this,
       `${id}FargateService`,
       {
@@ -105,20 +103,56 @@ export default class IHEGatewayConstruct extends Construct {
         desiredCount: config.ecs.minCapacity,
         taskImageOptions: {
           image,
-          containerPort: 8080,
+          containerPorts: [8080, mainPort, ...additionalHTTPPorts],
           containerName: `${id}-Server`,
           secrets,
           environment,
         },
+        // targetGroups: [
+        //   {
+        //     containerPort: 8080,
+        //     protocol: EcsProtocol.TCP,
+        //   },
+        //   {
+        //     containerPort: 8443,
+        //     protocol: EcsProtocol.TCP,
+        //   },
+        //   ...additionalHTTPPorts.map(port => ({
+        //     containerPort: port,
+        //     protocol: EcsProtocol.TCP,
+        //   })),
+        // ],
         healthCheckGracePeriod: Duration.seconds(60),
-        publicLoadBalancer: false,
-        idleTimeout: config.ecs.maxRequestTimeout,
         runtimePlatform: {
           cpuArchitecture: ecs.CpuArchitecture.X86_64,
           operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
         },
       }
     );
+    // const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
+    //   this,
+    //   `${id}FargateService`,
+    //   {
+    //     cluster: cluster,
+    //     memoryLimitMiB: config.ecs.memory,
+    //     cpu: config.ecs.cpu,
+    //     desiredCount: config.ecs.minCapacity,
+    //     taskImageOptions: {
+    //       image,
+    //       containerPort: 8080,
+    //       containerName: `${id}-Server`,
+    //       secrets,
+    //       environment,
+    //     },
+    //     healthCheckGracePeriod: Duration.seconds(60),
+    //     publicLoadBalancer: false,
+    //     idleTimeout: config.ecs.maxRequestTimeout,
+    //     runtimePlatform: {
+    //       cpuArchitecture: ecs.CpuArchitecture.X86_64,
+    //       operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+    //     },
+    //   }
+    // );
     this.server = fargateService.service;
     this.serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
 
@@ -132,23 +166,32 @@ export default class IHEGatewayConstruct extends Construct {
     });
 
     // Additional LB listeners
-    const httpsCert = new acm.Certificate(this, `${id}HTTPSCertificate`, {
-      domainName: `${config.subdomain}.${mainConfig.domain}`,
-      validation: acm.CertificateValidation.fromDns(privateZone),
-    });
-    fargateService.loadBalancer.addListener(`${id}HTTPSListener`, {
-      port: mainPort,
-      protocol: ApplicationProtocol.HTTPS,
-      certificates: [httpsCert],
-      defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-    });
-    additionalHTTPPorts.forEach(port => {
-      fargateService.loadBalancer.addListener(`${id}Listener_${port}`, {
-        port,
-        protocol: ApplicationProtocol.HTTP,
-        defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-      });
-    });
+    // const httpsCert = new acm.Certificate(this, `${id}HTTPSCertificate`, {
+    //   domainName: `${config.subdomain}.${mainConfig.domain}`,
+    //   validation: acm.CertificateValidation.fromDns(privateZone),
+    // });
+
+    // fargateService.targetGroup.addTarget(new )
+    // fargateService.loadBalancer.addListener(`${id}HTTPSListener`, {
+    //   port: mainPort,
+    //   protocol: ApplicationProtocol.HTTPS,
+    //   certificates: [httpsCert],
+    //   defaultAction: ListenerAction.forward([fargateService.targetGroup]),
+    //   // defaultAction: ListenerAction.forward([new TargetGroupBase(this, `${id}TargetGroup`, {
+    //   //   targetGroupName: `${id}TargetGroup`,
+    //   //   protocol: ApplicationProtocol.HTTP,
+    //   //   port: 8080,
+    //   //   vpc,
+    //   // })]),
+    // });
+    // additionalHTTPPorts.forEach(port => {
+    //   fargateService.loadBalancer.addListener(`${id}Listener_${port}`, {
+    //     port,
+    //     // TODO 1377 try to use HTTPS here
+    //     protocol: ApplicationProtocol.HTTP,
+    //     defaultAction: ListenerAction.forward([fargateService.targetGroup]),
+    //   });
+    // });
 
     // allow the LB to talk to fargate
     fargateService.service.connections.allowFrom(
@@ -164,13 +207,13 @@ export default class IHEGatewayConstruct extends Construct {
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
     // fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
-    // TODO try to avoid this, then remove it
+    // TODO 1337 try to avoid this, then remove it
     // fargateService.targetGroup.configureHealthCheck({
-    //   healthyThresholdCount: 2,
+    //   healthyThresholdCount: 3,
     //   interval: Duration.seconds(10),
     //   path: "/",
-    //   port: "8080",
-    //   protocol: Protocol.HTTP,
+    //   port: mainPort.toString(),
+    //   protocol: Protocol.HTTPS,
     // });
 
     // hookup autoscaling based on 90% thresholds
