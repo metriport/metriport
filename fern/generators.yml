@@ -1,10 +1,11 @@
+default-group: test
 groups:
   publish:
     audiences: 
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.6.5
+        version: 0.7.5
         output:
           location: pypi
           package-name: metriport
@@ -14,7 +15,7 @@ groups:
         github: 
           repository: metriport/metriport-python
       - name: fernapi/fern-java-sdk
-        version: 0.5.13
+        version: 0.5.20
         output:
           location: maven
           coordinate: com.metriport:metriport-java
@@ -25,13 +26,14 @@ groups:
         github: 
           repository: metriport/metriport-java
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.7
+        version: 0.9.0
         output:
           location: npm
           package-name: '@metriport/api-sdk'
           token: ${NPM_TOKEN}
         config:
           namespaceExport: Metriport
+          noSerdeLayer: true
         github: 
           repository: metriport/metriport-node
   test: # fern generate --group test will locally generate the SDKs for testing
@@ -39,24 +41,26 @@ groups:
       - public
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.6.5
+        version: 0.7.5
         output:
           location: local-file-system
-          path: ../packages/sdks/python/generated
+          path: ../packages/sdks/python/tester-local/generated
         config:
           client_class_name: Metriport
       - name: fernapi/fern-java-sdk
-        version: 0.5.13
+        version: 0.5.20
         output:
           location: local-file-system
-          path: ../packages/sdks/java/generated
+          path: ../packages/sdks/java/tester-local/src/main/java/com/metriport/generated
         config:
+          package-prefix: com.metriport.generated
           client-class-name: Metriport
       - name: fernapi/fern-typescript-node-sdk
-        version: 0.8.7
+        version: 0.9.0
         output:
           location: local-file-system
-          path: ../packages/sdks/typescript/generated
+          path: ../packages/sdks/typescript/tester-local/src
         config:
           namespaceExport: Metriport
           outputSourceFiles: true
+          noSerdeLayer: true

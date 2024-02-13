@@ -1,0 +1,134 @@
+imports:
+  fhir: ../fhir/__package__.yml
+
+types:
+  WebhookDocumentDataPayload:
+    properties:
+      id:
+        type: string
+        docs: The ID of the Document.
+      fileName:
+        type: string
+        docs: The file name of the document.
+      description:
+        type: optional<string>
+        docs: The description of the document.
+      mimeType:
+        type: optional<string>
+        docs: The MIME type of the document.
+      size:
+        type: optional<integer>
+        docs: The size of the document in bytes.
+      url:
+        type: optional<string>
+        docs: The URL of the document.
+      status:
+        type: optional<string>
+        docs: The status of the document.
+      indexed:
+        type: optional<string>
+        docs: The indexed date of the document in ISO-8601 format.
+      type:
+        type: optional<fhir.CodeableConcept>
+        docs: The type of the document.
+    audiences:
+    - public
+
+  WebhookPatientPayload:
+    properties:
+      patientId:
+        type: string
+        docs: The ID of the patient.
+      externalId:
+        type: optional<string>
+        docs: The external ID of the patient.
+      type:
+        type: string
+        docs: The type of the webhook.
+      documents:
+        type: optional<list<WebhookDocumentDataPayload>>
+        docs: An array of WebhookDocumentDataPayload objects.
+      status:
+        type: MAPIWebhookStatus
+        docs: The status of the webhook.
+    audiences:
+    - public
+
+  MAPIWebhookStatus:
+    enum:
+      - processing
+      - completed
+      - failed
+    audiences:
+    - public
+
+  WebhookMetadataPayload:
+    properties:
+      messageId:
+        type: string
+        docs: The ID of the message.
+      when:
+        type: string
+        docs: The timestamp of when the webhook was triggered.
+      type:
+        type: string
+        docs: The type of the webhook.
+      data:
+        type: optional<unknown>
+        docs: Any additional data associated with the webhook.
+    audiences:
+    - public
+
+  WebhookPatientDocumentDataPayload:
+    properties:
+      meta:
+        type: WebhookMetadataPayload
+        docs: The metadata of the webhook.
+      patients:
+        type: list<WebhookPatientPayload>
+        docs: An array of WebhookPatientPayload objects.
+    audiences:
+    - public
+  
+  Filters:
+    type: map<string, optional<string>>
+    docs: A map of filter keys to their values.
+
+
+  PayloadPatient:
+    properties:
+      patientId:
+        type: string
+        docs: The ID of the patient.
+      externalId:
+        type: optional<string>
+        docs: The external ID of the patient.
+      status:
+        type: ConsolidatedWebhookStatus
+        docs: The status of the webhook.
+      bundle:
+        type: optional<fhir.Bundle>
+        docs: The FHIR bundle with the patient's consolidated data.
+      filters:
+        type: optional<Filters>
+        docs: The filters used to obtain the bundle.
+    audiences:
+    - public
+
+  ConsolidatedWebhookStatus:
+    enum:
+      - completed
+      - failed
+    audiences:
+    - public
+
+  WebhookPatientConsolidatedDataPayload:
+    properties:
+      meta:
+        type: WebhookMetadataPayload
+        docs: The metadata of the webhook.
+      patients:
+        type: list<PayloadPatient>
+        docs: An array of Payload Patient objects.
+    audiences:
+    - public

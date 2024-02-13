@@ -1,4 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/fern-api/fern/main/fern.schema.json
+imports:
+  fhir: ../fhir/__package__.yml
 
 service:
   base-path: /medical/v1
@@ -35,6 +37,16 @@ service:
               formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
                no end date filter will be applied.
             type: optional<string>
+          conversionType:
+            docs: |
+              The doc type to convert to. Either `html` or `pdf`.
+            type: optional<string>
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
+
       response:
         type: StartConsolidatedQueryResponse
         docs: Returns a Bundle that contains a property entry which is simply an array of FHIR resources.
@@ -62,6 +74,48 @@ service:
             id: "12345678"
           response:
             body: $GetConsolidatedQueryStatusResponse.Example0
+
+    createPatientConsolidated:
+      display-name: Create Patient's Consolidated Data
+      docs: Create Patient's Consolidated Data with a FHIR Bundle.
+      method: PUT
+      path: /patient/{id}/consolidated
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Patient
+      request:
+        body: ConsolidatedBundleUpload
+      response:
+        type: fhir.Bundle
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "12345678"
+          request: $ConsolidatedBundleUpload.Example1
+          response:
+             body:
+                resourceType: "Bundle"
+                id: "12345"
+                type: "transaction-response"
+                entry:
+                  - resource: ""
+                    response:
+                      status: 201 Created
+                      location: Observation/3/_history/1
+                      etag: '1'
+                      lastModified: '2023-07-27T21:29:31.491+00:00'
+                      outcome:
+                        resourceType: OperationOutcome
+                        issue:
+                          - severity: information
+                            code: informational
+                            details:
+                              coding:
+                                - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
+                                  code: SUCCESSFUL_CREATE
+                                  display: Create succeeded.
+                            diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
 
     countPatientData:
       display-name: Count Patient Data
@@ -107,7 +161,7 @@ types:
 
   GetConsolidatedQueryStatusResponse:
     properties:
-      status: PatientConsolidatedDataStatus
+      status: optional<PatientConsolidatedDataStatus>
       message: optional<string>
     examples:
       - name: Example0
@@ -150,78 +204,20 @@ types:
             no end date filter will be applied.
         type: optional<string>
 
-  ResourcesSearchableByPatient:
-    enum:
-      - Account
-      - AllergyIntolerance
-      - Appointment
-      - AppointmentResponse
-      - AuditEvent
-      - Basic
-      - BodyStructure
-      - CarePlan
-      - CareTeam
-      - ChargeItem
-      - Claim
-      - ClaimResponse
-      - ClinicalImpression
-      - Communication
-      - CommunicationRequest
-      - Composition
-      - Condition
-      - Consent
-      - Contract
-      - Coverage
-      - CoverageEligibilityRequest
-      - CoverageEligibilityResponse
-      - DetectedIssue
-      - Device
-      - DeviceRequest
-      - DeviceUseStatement
-      - DiagnosticReport
-      - DocumentManifest
-      - DocumentReference
-      - Encounter
-      - EnrollmentRequest
-      - EpisodeOfCare
-      - ExplanationOfBenefit
-      - FamilyMemberHistory
-      - Flag
-      - Goal
-      - GuidanceResponse
-      - ImagingStudy
-      - Immunization
-      - ImmunizationEvaluation
-      - ImmunizationRecommendation
-      - Invoice
-      - List
-      - MeasureReport
-      - Media
-      - MedicationAdministration
-      - MedicationDispense
-      - MedicationRequest
-      - MedicationStatement
-      - MolecularSequence
-      - NutritionOrder
-      - Observation
-      - Person
-      - Procedure
-      - Provenance
-      - QuestionnaireResponse
-      - RelatedPerson
-      - RequestGroup
-      - ResearchSubject
-      - RiskAssessment
-      - ServiceRequest
-      - Specimen
-
-  ResourcesSearchableBySubject:
-    enum:
-      - AdverseEvent
-      - Task
-
-  ResourceTypeForConsolidation:
-    discriminated: false
-    union:
-      - ResourcesSearchableByPatient
-      - ResourcesSearchableBySubject
+  ConsolidatedBundleUpload:
+    properties:
+      resourceType:
+        type: string
+        docs: The resource needs to be “Bundle”
+      type:
+        type: string
+        docs: The type needs to be “collection”
+      entry:
+        type: list<map<string, unknown>>
+        docs: The entry needs to be an array of FHIR resources.
+    examples:
+      - name: Example1
+        value:
+          resourceType: "Bundle"
+          type: "collection"
+          entry: [{"resource": {"resourceType": "Observation", "code": {"text": "Cancer"}, "valueCodeableConcept": {"text": "NEGATIVE"}, "status": "final", "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory"}]}]}}]
