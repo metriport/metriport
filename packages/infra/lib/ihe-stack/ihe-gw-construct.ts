@@ -3,6 +3,7 @@ import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
+import { Protocol } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -93,6 +94,7 @@ export default class IHEGatewayConstruct extends Construct {
     //   ALB: max 4,000s - https://docs.aws.amazon.com/elasticloadbalancing/latest/application/application-load-balancers.html#connection-idle-timeout
     // - https://aws.amazon.com/elasticloadbalancing/features/
     // - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html
+    // const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
     const fargateService = new ecs_patterns.ApplicationMultipleTargetGroupsFargateService(
       this,
       `${id}FargateService`,
@@ -108,6 +110,11 @@ export default class IHEGatewayConstruct extends Construct {
           secrets,
           environment,
         },
+        targetGroups: [8080, mainPort, ...additionalHTTPPorts].map(port => ({
+          containerPort: port,
+          protocol: Protocol.TCP,
+        })),
+        // listeners: [],
         // targetGroups: [
         //   {
         //     containerPort: 8080,
