@@ -55,6 +55,8 @@ _[Add and remove items below accordingly]_
 - [ ] Added to [monthly product update](https://www.notion.so/metriport/Customer-Updates-21b4e9d3ad5f4fd68db587a11db28cff?pvs=4) (introduce a feature that would be useful customers)
 - [ ] Upstream dependencies are met/released
 - [ ] Release NPM packages
+- [ ] Fern Definition Updated
+- [ ] Release Fern SDKs
 - [ ] _[action n-1]_
 - [ ] _[action n]_
 - [ ] Merge this
