@@ -1,0 +1,17 @@
+{
+    "resource":{
+        "resourceType": "DiagnosticReport",
+        "id":"{{ID}}",
+        "code":{{>DataType/CodeableConcept.hbs code=diagReport.code text=diagReport.title._}},
+        "presentedForm": [
+                {
+                    "contentType": "text/plain",
+                    "data": "{{base64Encode text}}",
+                }
+            ],
+    },
+    "request":{
+        "method":"PUT",
+        "url":"DiagnosticReport/{{ID}}",
+    },
+},
