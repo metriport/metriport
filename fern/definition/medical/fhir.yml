@@ -5,8 +5,6 @@ imports:
 service:
   base-path: /medical/v1
   auth: true
-  # audiences: 
-  #   - public
   endpoints:
     startConsolidatedQuery:
       display-name: Start Consolidated Data Query

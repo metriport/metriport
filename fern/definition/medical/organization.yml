@@ -6,8 +6,6 @@ imports:
 service:
   base-path: /medical/v1/organization
   auth: true
-  # audiences: 
-  #   - public
   endpoints:
     create:
       display-name: Create Organization
