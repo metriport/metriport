@@ -39,7 +39,7 @@ service:
             type: optional<string>
           conversionType:
             docs: |
-              The doc type to convert to. Either html or pdf.
+              The doc type to convert to. Either `html` or `pdf`.
             type: optional<string>
         body:
           docs: |
@@ -99,10 +99,10 @@ service:
                 id: "12345"
                 type: "transaction-response"
                 entry:
-                  - resource: "" # <---------------------- adding this works
+                  - resource: ""
                     response:
                       status: 201 Created
-                      location: Appointment/3/_history/1
+                      location: Observation/3/_history/1
                       etag: '1'
                       lastModified: '2023-07-27T21:29:31.491+00:00'
                       outcome:
@@ -115,7 +115,7 @@ service:
                                 - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
                                   code: SUCCESSFUL_CREATE
                                   display: Create succeeded.
-                            diagnostics: Successfully created resource "Appointment/3/_history/1". Took 7ms.
+                            diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
 
     countPatientData:
       display-name: Count Patient Data
@@ -220,4 +220,4 @@ types:
         value:
           resourceType: "Bundle"
           type: "collection"
-          entry: [{"resource": {"resourceType": "Appointment", "status": "booked", "participant": [{"actor": {"reference": "Patient/${patientId}", "display": "John Doe"}, "status": "accepted", "period": {"start": "2021-05-24T13:21:28.527Z", "end": "2021-05-24T13:21:28.527Z"}}], "meta": {"versionId": "12345", "lastUpdated": "2023-05-24T13:21:28.527Z"}}}]
+          entry: [{"resource": {"resourceType": "Observation", "code": {"text": "Cancer"}, "valueCodeableConcept": {"text": "NEGATIVE"}, "status": "final", "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory"}]}]}}]

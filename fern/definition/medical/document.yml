@@ -95,7 +95,7 @@ service:
             type: optional<string>
           content:
             docs: |
-              Value to search on the document reference (minimum 3 chars).
+              Value to search within the document reference and the actual contents of the document (minimum 3 chars).
             type: optional<string>
       response:
         type: ListDocumentReferences

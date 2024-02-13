@@ -122,7 +122,7 @@ service:
         query-parameters:
           conversionType:
             type: string
-            docs: The type of conversion to perform. "html" or "pdf"
+            docs: The type of conversion to perform. `html` or `pdf`
       response: 
         type: string
         docs: The URL for the medical record summary
