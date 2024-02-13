@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axiosRetry from "axios-retry";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
@@ -8,9 +9,12 @@ import { CarequalityAPI } from "./carequality-api";
 dayjs.extend(duration);
 
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
+const DEFAULT_MAXIMUM_BACKOFF = dayjs.duration(30, "seconds");
+const BASE_DELAY = dayjs.duration(1, "seconds");
 const MAX_COUNT = 1000;
 const JSON_FORMAT = "json";
 const XML_FORMAT = "xml";
+const DEFAULT_MAX_RETRIES = 3;
 
 export enum APIMode {
   dev = "dev",
@@ -27,27 +31,26 @@ export class Carequality implements CarequalityAPI {
   private static readonly productionUrl =
     "https://prod-dir-ceq-01.sequoiaproject.org/fhir-stu3/1.0.1/";
 
-  // NOTE: These URLs can be used if we migrate to FHIR R4 format.
-  // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
-  // private static readonly  stagingUrl = "https://directory.stage.carequality.org/fhir";
-
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
   readonly apiKey: string;
+  readonly maxBackoff: number;
 
   /**
    * Creates a new instance of the Carequality API client pertaining to an
    * organization to make requests on behalf of.
    *
-   * @param apiKey          The API key to use for authentication.
-   * @param apiMode         Optional, the mode the client will be running. Defaults to staging.
-   * @param options         Optional parameters
-   * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
+   * @param apiKey              The API key to use for authentication.
+   * @param apiMode             Optional, the mode the client will be running. Defaults to staging.
+   * @param options             Optional parameters
+   * @param options.timeout     Connection timeout in milliseconds, defaults to 120 seconds.
+   * @param options.retries     Number of retries for failed requests, defaults to 3.
+   * @param options.maxBackoff  Number of seconds for the maximum backoff during retry requests, defaults to 30 seconds.
    */
   constructor(
     apiKey: string,
     apiMode: APIMode = APIMode.production,
-    options: { timeout?: number } = {}
+    options: { timeout?: number; retries?: number; maxBackoff?: number } = {}
   ) {
     let baseUrl;
 
@@ -64,11 +67,28 @@ export class Carequality implements CarequalityAPI {
       default:
         throw new Error("API mode not supported.");
     }
+    this.maxBackoff = options?.maxBackoff
+      ? dayjs.duration(options.maxBackoff, "seconds").asMilliseconds()
+      : DEFAULT_MAXIMUM_BACKOFF.asMilliseconds();
 
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
     });
+
+    axiosRetry(this.api, {
+      retries: options?.retries ?? DEFAULT_MAX_RETRIES,
+      retryDelay: retryCount => {
+        const exponentialDelay = Math.pow(2, retryCount);
+        const jitter = Math.random();
+        const delayWithJitter = (exponentialDelay + jitter) * BASE_DELAY.asMilliseconds();
+        return Math.min(delayWithJitter, this.maxBackoff);
+      },
+      retryCondition: error => {
+        return error.response?.status !== 200;
+      },
+    });
+
     this.apiKey = apiKey;
   }
 
@@ -81,6 +101,22 @@ export class Carequality implements CarequalityAPI {
 
   async sendGetRequest(url: string, headers?: Record<string, string>): Promise<AxiosResponse> {
     return this.api.get(url, { headers: this.buildHeaders(headers) });
+  }
+
+  async sendPostRequest(
+    url: string,
+    data: unknown,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
+    return this.api.post(url, data, { headers: this.buildHeaders(headers) });
+  }
+
+  async sendPutRequest(
+    url: string,
+    data: unknown,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
+    return this.api.put(url, data, { headers: this.buildHeaders(headers) });
   }
 
   /**
@@ -114,7 +150,6 @@ export class Carequality implements CarequalityAPI {
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
-
     return orgs;
   }
 
@@ -130,9 +165,7 @@ export class Carequality implements CarequalityAPI {
     query.append("_format", XML_FORMAT);
 
     const url = `${Carequality.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.api.post(url, org, {
-      headers: { "Content-Type": "text/xml" },
-    });
+    const resp = await this.sendPostRequest(url, org, { "Content-Type": "text/xml" });
     return resp.data;
   }
 
@@ -149,9 +182,7 @@ export class Carequality implements CarequalityAPI {
     query.append("_format", XML_FORMAT);
 
     const url = `${Carequality.ORG_ENDPOINT}/${oid}?${query.toString()}`;
-    const resp = await this.api.put(url, org, {
-      headers: { "Content-Type": "application/xml" },
-    });
+    const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/xml" });
     return resp.data;
   }
 }
