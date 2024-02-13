@@ -155,7 +155,7 @@ router.post(
         patient: patient,
         type: "convert",
         progress: {
-          ...(status === "completed" ? { successful: 1 } : { errors: 1 }),
+          ...(status === "success" ? { successful: 1 } : { errors: 1 }),
         },
         requestId,
         source,
