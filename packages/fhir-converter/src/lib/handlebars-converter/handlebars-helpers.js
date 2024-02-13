@@ -1233,7 +1233,33 @@ module.exports.external = [
         if (mappedData === "") return undefined;
 
         const plainText = convertMappedDataToPlainText(mappedData);
+        const fs = require('fs');
+        const path = require('path');
+        const outputFilePath = path.join(__dirname, 'assessment-output.txt');
+        const separator = "\n------------\n";
+        const outputData = separator + plainText;
+        
+        fs.appendFile(outputFilePath, outputData, { flag: 'a' }, (err) => {
+            if (err) {
+                console.error('Error writing to file:', err);
+            }
+        });
+
         return plainText;
+    },
+  },
+  {
+    name: "coalesce",
+    description: "Returns the first non-null/undefined value from the list of provided arguments.",
+    func: function (...args) {
+      // Last argument is Handlebars options object, so we exclude it
+      const values = args.slice(0, -1);
+      for (let value of values) {
+        if (value !== undefined) {
+          return value;
+        }
+      }
+      return undefined; 
     },
   },
 ];

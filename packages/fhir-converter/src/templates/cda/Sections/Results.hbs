@@ -1,8 +1,9 @@
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.3')}}
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.3.1' '2.16.840.1.113883.10.20.22.2.3')}}
-            {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_3_1.entry 2_16_840_1_113883_10_20_22_2_3.entry) as |drEntry|}}
+        {{#with (coalesce 2_16_840_1_113883_10_20_22_2_3_1.code 2_16_840_1_113883_10_20_22_2_3.code) as |categoryCode|}}
+            {{#each (multipleToArray ../2_16_840_1_113883_10_20_22_2_3_1.entry ../2_16_840_1_113883_10_20_22_2_3.entry) as |drEntry|}}
                 {{#if drEntry.organizer}}
-                    {{>Resources/DiagnosticReport.hbs diagReport=drEntry.organizer ID=(generateUUID (toJsonString drEntry.organizer))}},
+                    {{>Resources/DiagnosticReport.hbs diagReport=drEntry.organizer categoryCode=categoryCode ID=(generateUUID (toJsonString drEntry.organizer))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
@@ -59,4 +60,5 @@
                 {{/each}}
             {{/each}}
         {{/with}}
+    {{/with}}
 {{/if}}
