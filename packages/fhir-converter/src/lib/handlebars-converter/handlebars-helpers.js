@@ -13,6 +13,7 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require('he');
 const convert = require("convert-units");
+const path = require('path');
 
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
@@ -1172,6 +1173,67 @@ module.exports.external = [
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
       return match ? match[0] : '';
+    },
+  },
+  {
+    name: "extractAndMapTableData",
+    description: "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
+    func: function (json) {
+        if (!json || !json.table || !json.table.thead || !json.table.tbody) {
+            return undefined;
+        }
+
+        const getHeaders = (thead) => {
+            if (!thead.tr || !thead.tr.th) return [];
+            return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
+        };
+
+        // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
+        const getRowData = (tr, headers) => {
+            if (!tr || !tr.td || headers.length === 0) return undefined;
+            const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
+            const rowData = {};
+            tdArray.forEach((td, index) => {
+                if (!td) return;
+                if (td.paragraph) {
+                    const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
+                    const textValues = paragraphArray.map(paragraph => {
+                        if (!paragraph || !paragraph.content) return "";
+                        const contentArray = Array.isArray(paragraph.content) ? paragraph.content : [paragraph.content];
+                        return concatenateTextValues(contentArray);
+                    }).join('\n');
+                    rowData[headers[index]] = textValues;
+                } else {
+                    rowData[headers[index]] = td._ || "";
+                }
+            });
+            return rowData;
+        };
+
+        const concatenateTextValues = (content) => {
+            if (!content) return '';
+            const contentArray = Array.isArray(content) ? content : [content];
+            return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
+        };
+
+        const convertMappedDataToPlainText = (mappedData) => {
+          if (!mappedData || mappedData.length === 0) return "";
+          return mappedData.map(entry => {
+              return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
+          }).join('\n\n');
+        };
+
+        const headers = getHeaders(json.table.thead);
+        if (headers.length === 0) return undefined;
+
+        const trArray = Array.isArray(json.table.tbody.tr) ? json.table.tbody.tr : [json.table.tbody.tr];
+        if (trArray.length === 0) return undefined;
+
+        const mappedData = trArray.map(tr => getRowData(tr, headers));
+        if (mappedData === "") return undefined;
+
+        const plainText = convertMappedDataToPlainText(mappedData);
+        return plainText;
     },
   },
 ];
