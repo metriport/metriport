@@ -2,11 +2,9 @@ import { StackProps } from "aws-cdk-lib";
 import * as appConfig from "aws-cdk-lib/aws-appconfig";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
-
 interface AppConfigStackProps extends StackProps {
   config: EnvConfig;
 }
-
 export function createAppConfigStack({
   stack,
   props,
@@ -16,14 +14,10 @@ export function createAppConfigStack({
 }): {
   appConfigAppId: string;
   appConfigConfigId: string;
-  cxsWithEnhancedCoverageFeatureFlag: string;
-  cxsWithCQDirectFeatureFlag: string;
-  cxsWithIncreasedSandboxLimitFeatureFlag: string;
 } {
   const appConfigOSSApp = new appConfig.CfnApplication(stack, "OSSAPIConfig", {
     name: "OSSAPIConfig",
   });
-
   const appConfigOSSProfile = new appConfig.CfnConfigurationProfile(stack, "OSSAPIConfigProfile", {
     applicationId: appConfigOSSApp.ref,
     locationUri: "hosted",
@@ -31,91 +25,21 @@ export function createAppConfigStack({
     type: "AWS.Freeform",
   });
 
-  const cxsWithEnhancedCoverageFeatureFlag = "cxsWithEnhancedCoverage";
-  const cxsWithCQDirectFeatureFlag = "cxsWithCQDirect";
-  const cxsWithIncreasedSandboxLimitFeatureFlag = "cxsWithIncreasedSandboxLimit";
-  const appConfigOSSVersion = new appConfig.CfnHostedConfigurationVersion(
-    stack,
-    "OSSAPIConfigVersion",
-    {
-      applicationId: appConfigOSSApp.ref,
-      configurationProfileId: appConfigOSSProfile.ref,
-      contentType: "application/json",
-      content: JSON.stringify({
-        flags: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            name: cxsWithEnhancedCoverageFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-          [cxsWithCQDirectFeatureFlag]: {
-            name: cxsWithCQDirectFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            name: cxsWithIncreasedSandboxLimitFeatureFlag,
-            attributes: {
-              cxIds: {
-                type: "string[]",
-              },
-            },
-          },
-        },
-        values: {
-          [cxsWithEnhancedCoverageFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithCQDirectFeatureFlag]: {
-            enabled: true,
-            cxIds: [],
-          },
-          [cxsWithIncreasedSandboxLimitFeatureFlag]: {
-            enabled: true,
-            cxIdsAndLimits: [],
-          },
-        },
-      }),
-    }
-  );
-
-  const appConfigOSSEnv = new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
+  new appConfig.CfnEnvironment(stack, "OSSAPIConfigEnv", {
     applicationId: appConfigOSSApp.ref,
     name: props.config.environmentType,
   });
 
-  const appConfigOSSStrategy = new appConfig.CfnDeploymentStrategy(
-    stack,
-    "OSSAPIConfigDeploymentStrategy",
-    {
-      deploymentDurationInMinutes: 0,
-      growthFactor: 100,
-      name: "OSSAPIConfigDeploymentStrategy",
-      replicateTo: "SSM_DOCUMENT",
-      finalBakeTimeInMinutes: 0,
-    }
-  );
-
-  new appConfig.CfnDeployment(stack, "OSSAPIConfigDeployment", {
-    applicationId: appConfigOSSApp.ref,
-    configurationProfileId: appConfigOSSProfile.ref,
-    configurationVersion: appConfigOSSVersion.ref,
-    environmentId: appConfigOSSEnv.ref,
-    deploymentStrategyId: appConfigOSSStrategy.ref,
+  new appConfig.CfnDeploymentStrategy(stack, "OSSAPIConfigDeploymentStrategy", {
+    deploymentDurationInMinutes: 0,
+    growthFactor: 100,
+    name: "OSSAPIConfigDeploymentStrategy",
+    replicateTo: "SSM_DOCUMENT",
+    finalBakeTimeInMinutes: 0,
   });
 
   return {
     appConfigAppId: appConfigOSSApp.ref,
     appConfigConfigId: appConfigOSSProfile.ref,
-    cxsWithEnhancedCoverageFeatureFlag,
-    cxsWithCQDirectFeatureFlag,
-    cxsWithIncreasedSandboxLimitFeatureFlag,
   };
 }

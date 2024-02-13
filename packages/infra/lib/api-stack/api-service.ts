@@ -27,7 +27,6 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
-// TODO move these parameters to object properties
 export function createAPIService({
   stack,
   props,
@@ -77,9 +76,6 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
-    cxsWithEnhancedCoverageFeatureFlag: string;
-    cxsWithCQDirectFeatureFlag: string;
-    cxsWithIncreasedSandboxLimitFeatureFlag: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -182,11 +178,6 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          CXS_WITH_CQ_DIRECT_FEATURE_FLAG: appConfigEnvVars.cxsWithCQDirectFeatureFlag,
-          CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
-            appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
-          CXS_WITH_INCREASED_SANDBOX_LIMIT_FEATURE_FLAG:
-            appConfigEnvVars.cxsWithIncreasedSandboxLimitFeatureFlag,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),

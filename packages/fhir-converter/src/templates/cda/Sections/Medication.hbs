@@ -6,29 +6,41 @@
                    	{{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     	{{>References/MedicationStatement/subject.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
-
+                    
                     {{#if medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial}}
-                        {{>Resources/Medication.hbs medication=medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString medEntry.substanceAdministration.consumable))}},
-                        {{>References/MedicationStatement/medicationReference.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable)))}},
-                        {{#each (toArray this.substanceAdministration.entryRelationship) as |medReq|}}
+                        {{>Resources/Medication.hbs medication=medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial))}},
+                        {{>References/MedicationStatement/medicationReference.hbs ID=(generateUUID (toJsonString medEntry.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
+                        {{#each (toArray medEntry.substanceAdministration.entryRelationship) as |medReq|}}
                             {{#if medReq.supply}}
                                 {{>Resources/MedicationRequest.hbs medicationRequest=medReq.supply ID=(generateUUID (toJsonString medReq.supply))}},
                                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                                	{{>References/MedicationRequest/subject.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Patient/' patientId.Id)}},
+                                	{{>References/MedicationRequest/subject.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Patient/' patientId.Id)}},
                                 {{/with}}
-                                {{>References/MedicationRequest/medicationReference.hbs ID=(generateUUID (toJsonString this.supply)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable)))}},
+                                {{>References/MedicationRequest/medicationReference.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Medication/' (generateUUID (toJsonString medEntry.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
                             {{/if}}
                             {{!-- I am keeping what was originally here but I have yet to see an author placed here --}}
                             {{#if medReq.supply.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medReq.supply.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=medReq.supply.author.assignedAuthor ID=practitionerId.Id}},
-                                    {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
+                                    {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                                 {{/with}}
-                            {{else if ../this.substanceAdministration.author.assignedAuthor}}
-                                {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=../this.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
-                                    {{>Resources/Practitioner.hbs practitioner=../this.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},
-                                    {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString ../supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
+                                {{#if medReq.supply.author.assignedAuthor.representedOrganization}}
+                                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medReq.supply.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                        {{>Resources/Organization.hbs org=medReq.supply.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                        {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Organization/' orgId.Id)}}
+                                    {{/with}}
+                                {{/if}}
+                            {{else if medEntry.substanceAdministration.author.assignedAuthor}}
+                                {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medEntry.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
+                                    {{>Resources/Practitioner.hbs practitioner=medEntry.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},
+                                    {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                                 {{/with}}
+                                {{#if medEntry.substanceAdministration.author.assignedAuthor.representedOrganization}}
+                                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medEntry.substanceAdministration.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                        {{>Resources/Organization.hbs org=medEntry.substanceAdministration.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                        {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Organization/' orgId.Id)}}
+                                    {{/with}}
+                                {{/if}}
                             {{/if}}
 
                         {{/each}}

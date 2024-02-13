@@ -2,7 +2,7 @@
         	{{#each (toArray 2_16_840_1_113883_10_20_22_2_45.entry) as |commEntry|}}
             	{{>Resources/Communication.hbs communicationEntry=commEntry.act ID=(generateUUID (toJsonString commEntry.act))}} 
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                	{{>References/Communication/subject.hbs ID=(generateUUID (toJsonString planEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                	{{>References/Communication/subject.hbs ID=(generateUUID (toJsonString commEntry.act)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
             {{/each}}
         {{/with}}
