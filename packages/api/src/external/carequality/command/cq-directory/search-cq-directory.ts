@@ -6,7 +6,7 @@ import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
-const cqIgnoreList: string[] = constructGatewayIgnoreList();
+const cqExcludeList: string[] = constructGatewayExcludeList();
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
@@ -110,15 +110,15 @@ export function filterCQOrgsToSearch(
   });
 }
 
-function constructGatewayIgnoreList(): string[] {
-  let ignoreList: string[] = [];
-  const urlsToIgnore = Config.getCQUrlsToIgnore();
-  if (urlsToIgnore) ignoreList = urlsToIgnore.split(",");
-  return ignoreList;
+function constructGatewayExcludeList(): string[] {
+  let excludeList: string[] = [];
+  const urlsToExclude = Config.getCQUrlsToExclude();
+  if (urlsToExclude) excludeList = urlsToExclude.split(",");
+  return excludeList;
 }
 
 function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
   const urlXCPD = org.urlXCPD;
   if (!urlXCPD) return false;
-  return !cqIgnoreList.includes(urlXCPD);
+  return !cqExcludeList.includes(urlXCPD);
 }

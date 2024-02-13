@@ -90,8 +90,8 @@ export class Config {
     return getEnvVarOrFail("CQ_API_KEY");
   }
 
-  static getCQUrlsToIgnore(): string | undefined {
-    return getEnvVar("CQ_URLS_TO_IGNORE");
+  static getCQUrlsToExclude(): string | undefined {
+    return getEnvVar("CQ_URLS_TO_EXCLUDE");
   }
 
   static getPlaceIndexName(): string {

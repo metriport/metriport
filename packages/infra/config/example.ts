@@ -64,7 +64,7 @@ export const config: EnvConfig = {
   carequality: {
     secretNames: {
       CQ_API_KEY: "CQ_API_KEY",
-      CQ_URLS_TO_IGNORE:
+      CQ_URLS_TO_EXCLUDE:
         "https://commonwell.com/patient-discovery-routes/,https://ehealthexchange.org/patient-discovery-routes/",
     },
     envVars: {

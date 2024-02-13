@@ -24,7 +24,7 @@ import {
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { CQLink } from "./cq-patient-data";
 import { PatientDiscoveryResult } from "./patient-discovery-result";
-import { cqOrgsToXCPDGateways } from "./organization-conversion";
+import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientDataCarequality } from "./patient-shared";
 import { getCQGateways } from "./command/cq-directory/cq-gateways";
@@ -120,7 +120,8 @@ export async function prepareForPatientDiscovery(
 
   const cqGatewaysBasicDetails = cqGateways.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(nearbyCQOrgs, cqGatewaysBasicDetails);
-  const xcpdGateways = cqOrgsToXCPDGateways(orgsToSearch);
+  const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
+  const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
   const pdRequest = createPatientDiscoveryRequest({
     patient: fhirPatient,

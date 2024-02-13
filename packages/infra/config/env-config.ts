@@ -46,7 +46,7 @@ export type EnvConfig = {
   carequality?: {
     secretNames?: {
       CQ_API_KEY?: string;
-      CQ_URLS_TO_IGNORE?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
     envVars?: {
       CQ_ORG_DETAILS?: string;

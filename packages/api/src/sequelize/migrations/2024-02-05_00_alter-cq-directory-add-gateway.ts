@@ -7,7 +7,6 @@ const managingOrgColumn = "managing_organization";
 const activeColumn = "active";
 const columnToChange = "url_xcpd";
 
-// Use 'Promise.all' when changes are independent of each other
 export const up: Migration = async ({ context: queryInterface }) => {
   await queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.addColumn(

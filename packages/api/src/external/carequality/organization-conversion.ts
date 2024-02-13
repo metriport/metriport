@@ -8,9 +8,15 @@ export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateways 
       return {
         url: org.urlXCPD,
         oid: org.id,
-        id: uuidv7(),
       };
     }
     return [];
   });
+}
+
+export function generateIdsForGateways(gateways: XCPDGateways): XCPDGateways {
+  return gateways.map(gateway => ({
+    ...gateway,
+    id: uuidv7(),
+  }));
 }
