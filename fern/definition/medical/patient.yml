@@ -2,6 +2,7 @@
 
 imports:
   commons: ../commons.yml
+  fhir: ../fhir/__package__.yml
 
 service:
   base-path: /medical/v1/patient
@@ -37,6 +38,8 @@ service:
             genderAtBirth: F
             personalIdentifiers:
               - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
           response:
             body: $Patient.Example1
 
@@ -77,7 +80,7 @@ service:
 
     list:
       display-name: List Patients at Facility
-      docs: Lists all Patients receiving care at the specified Facility.
+      docs: Lists all Patients receiving care at the specified Facility, or all Patients if no Facility is specified.
       method: GET
       path: ""
       request:
@@ -104,17 +107,58 @@ service:
             type: optional<string>
             docs: The ID of the Facility where the patient is receiving care.
 
-types:
-  Addresses:
-    discriminated: false
-    union:
-      - commons.Address
-      - list<commons.Address>
+    getMedicalRecordSummary:
+      display-name: Get Medical Record Summary
+      docs: |
+        Returns the URL for a medical record summary
+      method: GET
+      path: /{patientId}/medical-record
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      request:
+        name: MedicalRecordSummaryRequest
+        query-parameters:
+          conversionType:
+            type: string
+            docs: The type of conversion to perform. `html` or `pdf`
+      response: 
+        type: string
+        docs: The URL for the medical record summary
 
-  Contacts:
-    discriminated: false
-    union:
-      - Contact
+    getMedicalRecordSummaryStatus:
+      display-name: Get Medical Record Summary Status
+      docs: |
+        Returns the status of a medical record summary
+      method: GET
+      path: /{patientId}/medical-record-status
+      path-parameters:
+        patientId:
+          type: string
+          docs: The ID of the Patient.
+      response: 
+        type: MedicalRecordStatus
+        docs: the status of the medical record summary
+
+types:
+  MedicalRecordStatus:
+    properties:
+      html: 
+        type: RecordStatus
+        docs: The status of the html conversion
+      pdf:
+        type: RecordStatus
+        docs: The status of the pdf conversion
+    
+  RecordStatus:
+    properties:
+      exists:
+        type: boolean
+        docs: Whether or not the record exists 
+      createdAt:
+        type: optional<string>
+        docs: The date the record was created
 
   PersonalIdentifier:
     union:
@@ -135,12 +179,7 @@ types:
         type: string
         docs: The ID number.
       assigner: optional<string>
-      period: optional<Period>
-
-  Period:
-    properties:
-      start: optional<string>
-      end: optional<string>
+      period: optional<fhir.Period>
 
   Contact:
     properties:
@@ -150,17 +189,11 @@ types:
       email:
         type: optional<string>
         docs: The Patient's email address.
-      facilityIds:
-        type: list<FacilityId>
-        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
           phone: "1234567899"
           email: karen@cvspharmacy.com
-          facilityIds:
-            - $FacilityId.Example1
-            - $FacilityId.Example2
 
   FacilityId:
     type: string
@@ -194,10 +227,13 @@ types:
           An array of the Patient's personal IDs, such as a driver's license. 
           May be empty.
       address:
-        type: optional<Addresses>
+        type: list<commons.Address>
       contact:
         type: optional<list<Contact>>
-
+      externalID:
+        type: optional<string>
+        docs: An external Patient ID to associate to a Patient in Metriport.
+    
   Patient:
     extends: BasePatient
     properties:
@@ -206,6 +242,9 @@ types:
         docs: | 
           The ID assigned to this Patient. This ID will be used to uniquely 
           identify this Patient in medical documents.
+      facilityIds:
+        type: list<FacilityId>
+        docs: Array of the IDs of the Facilities where the Patient is receiving care.
     examples:
       - name: Example1
         value:
@@ -216,6 +255,10 @@ types:
           genderAtBirth: F
           personalIdentifiers:
             - $PersonalIdentifier.Example1
+          address:
+            - $commons.Address.Example1
+          facilityIds:
+            - $FacilityId.Example1
 
   ListPatientsResponse:
     properties:
