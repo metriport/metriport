@@ -1,3 +1,4 @@
+{{!-- TODO IMPLEMENT THIS PROPERLY. THIS IS NOT PRODUCTION READY. DO NOT USE --}}
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.8')}}
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.8')}}
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_8) as |assessment|}}
