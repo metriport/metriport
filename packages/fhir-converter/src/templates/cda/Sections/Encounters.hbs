@@ -1,10 +1,12 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.22.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.22.1')}}
-            {{#each (toArray this.[2_16_840_1_113883_10_20_22_2_22_1].entry) as |encounterEntry|}}
-                {{>Resources/Encounter.hbs encounter=encounterEntry.encounter ID=(generateUUID (toJsonString encounterEntry))}},
-                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                	{{>References/Encounter/subject.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Patient/' patientId.Id)}},
-                {{/with}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.22')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.22.1' '2.16.840.1.113883.10.20.22.2.22') as |encounters|}}
+            {{#each (multipleToArray this.[2_16_840_1_113883_10_20_22_2_22_1].entry this.[2_16_840_1_113883_10_20_22_2_22].entry) as |encounterEntry|}}
+                {{#if encounterEntry.encounter}}
+                    {{>Resources/Encounter.hbs encounter=encounterEntry.encounter ID=(generateUUID (toJsonString encounterEntry))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/Encounter/subject.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+                {{/if}}
 
                 {{#if encounterEntry.encounter.performer.assignedEntity}}
                     {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=encounterEntry.encounter.performer.assignedEntity) as |practitionerId|}}
@@ -16,25 +18,25 @@
                 {{#if encounterEntry.encounter.performer.assignedEntity.representedOrganization}}
                     {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=encounterEntry.encounter.performer.assignedEntity.representedOrganization) as |orgId|}}
                         {{>Resources/Organization.hbs org=encounterEntry.encounter.performer.assignedEntity ID=orgId.Id}},
-                        {{>References/Encounter/serviceProvider.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Organization/' OrgId.Id)}},
+                        {{>References/Encounter/serviceProvider.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Organization/' orgId.Id)}},
                     {{/with}}
                 {{/if}}
 
                 {{#each (toArray encounterEntry.encounter.participant) as |participantEntry|}}
                     {{#if (eq participantEntry.typeCode 'LOC')}}
-                	    {{#if (contains (toJsonString participantEntry.participantRole.templateId) '"2.16.840.1.113883.10.20.22.4.32"')}}
-               			    {{>Resources/Location.hbs location=participantEntry.participantRole playingEntity=participantEntry.participantRole.playingEntity ID=(generateUUID (toJsonString participantEntry.participantRole))}},
-                		    {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Location/' (generateUUID (toJsonString participantEntry.participantRole)))}},                    
+                        {{#if (contains (toJsonString participantEntry.participantRole.templateId) '"2.16.840.1.113883.10.20.22.4.32"')}}
+                            {{>Resources/Location.hbs location=participantEntry.participantRole playingEntity=participantEntry.participantRole.playingEntity ID=(generateUUID (toJsonString participantEntry.participantRole))}},
+                            {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString encounterEntry)) REF=(concat 'Location/' (generateUUID (toJsonString participantEntry.participantRole)))}},                    
                         {{/if}}                
                     {{/if}}
                 {{/each}}
-              
+            
                 {{#each (toArray encounterEntry.encounter.entryRelationship)}}
                     {{#each (toArray this.act.entryRelationship) as |condEntry|}}
                         {{#if condEntry.observation}}
                             {{>Resources/Condition.hbs conditionEntry=condEntry.observation ID=(generateUUID (toJsonString condEntry.observation))}},
                             {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                            	{{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                                {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                             {{/with}}
                             {{#if condEntry.observation.author.assignedAuthor}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
@@ -47,7 +49,6 @@
                         {{/if}}
                     {{/each}}
                 {{/each}}
-
             {{/each}}
         {{/with}}
 {{/if}}

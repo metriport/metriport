@@ -21,4 +21,4 @@ if [ ! -f "$FILE2" ]; then
 fi
 
 # Run jsondiffpatch
-jsondiffpatch "$FILE1" "$FILE2"
+jsondiffpatch "$FILE2" "$FILE1"
