@@ -212,7 +212,7 @@ router.post(
 
     if (hasSource) {
       await setDocQueryProgress({
-        patient: updatedPatient,
+        patient: { id: patientId, cxId },
         requestId: updatedPatient.data.documentQueryProgress?.requestId ?? "",
         downloadProgress,
         convertProgress,
