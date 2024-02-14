@@ -4,7 +4,7 @@ import duration from "dayjs/plugin/duration";
 import { Agent } from "https";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { Organization } from "../models/organization";
-import { CarequalityAPI } from "./carequality-api";
+import { CarequalityManagementAPI } from "./carequality-api";
 
 dayjs.extend(duration);
 
@@ -22,7 +22,7 @@ export enum APIMode {
 /**
  * This SDK operates on FHIR STU3 format.
  */
-export class Carequality implements CarequalityAPI {
+export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
   private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
   private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
   private static readonly productionUrl =
@@ -36,8 +36,6 @@ export class Carequality implements CarequalityAPI {
   readonly api: AxiosInstance;
   readonly apiKey: string;
   private httpsAgent: Agent;
-  private rsaPrivateKey: string;
-  private passphrase: string;
 
   /**
    * Creates a new instance of the Carequality API client pertaining to an
@@ -66,24 +64,22 @@ export class Carequality implements CarequalityAPI {
     apiMode: APIMode;
     options?: { timeout?: number };
   }) {
-    this.rsaPrivateKey = rsaPrivateKey;
-    this.passphrase = passphrase;
     this.httpsAgent = new Agent({
       cert: orgCert,
-      key: this.rsaPrivateKey,
-      passphrase: this.passphrase,
+      key: rsaPrivateKey,
+      passphrase,
     });
     let baseUrl;
 
     switch (apiMode) {
       case APIMode.dev:
-        baseUrl = Carequality.devUrl;
+        baseUrl = CarequalityManagementAPIImpl.devUrl;
         break;
       case APIMode.staging:
-        baseUrl = Carequality.stagingUrl;
+        baseUrl = CarequalityManagementAPIImpl.stagingUrl;
         break;
       case APIMode.production:
-        baseUrl = Carequality.productionUrl;
+        baseUrl = CarequalityManagementAPIImpl.productionUrl;
         break;
       default:
         throw new Error("API mode not supported.");
@@ -135,7 +131,7 @@ export class Carequality implements CarequalityAPI {
     oid && query.append("_id", oid);
     const queryString = query.toString();
 
-    const url = `${Carequality.ORG_ENDPOINT}?${queryString}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${queryString}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
@@ -154,7 +150,7 @@ export class Carequality implements CarequalityAPI {
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
 
-    const url = `${Carequality.ORG_ENDPOINT}?${query.toString()}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${query.toString()}`;
     const resp = await this.api.post(url, org, {
       headers: { "Content-Type": "text/xml" },
     });
@@ -173,7 +169,7 @@ export class Carequality implements CarequalityAPI {
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
 
-    const url = `${Carequality.ORG_ENDPOINT}/${oid}?${query.toString()}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     const resp = await this.api.put(url, org, {
       headers: { "Content-Type": "application/xml" },
     });
