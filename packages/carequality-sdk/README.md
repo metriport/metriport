@@ -10,10 +10,13 @@ import {
   Carequality
 } from "@metriport/carequality-sdk";
 
-const Carequality = new Carequality(
-    "API_KEY",
-    APIMode.dev
-  );
+const Carequality = new Carequality({
+    apiKey: "API_KEY",
+    apiMode: APIMode.dev,
+    orgCert: "ORG_CERTIFICATE",
+    rsaPrivateKey: "ORG_PRIVATE_KEY",
+    passphrase: "KEY_PASSPHRASE"
+});
 ```
 
 ```

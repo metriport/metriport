@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { Agent } from "https";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { Organization } from "../models/organization";
 import { CarequalityAPI } from "./carequality-api";
@@ -34,21 +35,44 @@ export class Carequality implements CarequalityAPI {
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
   readonly apiKey: string;
+  private httpsAgent: Agent;
+  private rsaPrivateKey: string;
+  private passphrase: string;
 
   /**
    * Creates a new instance of the Carequality API client pertaining to an
    * organization to make requests on behalf of.
    *
+   * @param orgCert         The certificate (public key) for the organization.
+   * @param rsaPrivateKey   An RSA key corresponding to the specified orgCert.
+   * @param passphrase      The passphrase to decrypt the private key.
    * @param apiKey          The API key to use for authentication.
    * @param apiMode         Optional, the mode the client will be running. Defaults to staging.
    * @param options         Optional parameters
    * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(
-    apiKey: string,
-    apiMode: APIMode = APIMode.production,
-    options: { timeout?: number } = {}
-  ) {
+  constructor({
+    orgCert,
+    rsaPrivateKey,
+    passphrase,
+    apiKey,
+    apiMode = APIMode.production,
+    options = {},
+  }: {
+    orgCert: string;
+    rsaPrivateKey: string;
+    passphrase: string;
+    apiKey: string;
+    apiMode: APIMode;
+    options?: { timeout?: number };
+  }) {
+    this.rsaPrivateKey = rsaPrivateKey;
+    this.passphrase = passphrase;
+    this.httpsAgent = new Agent({
+      cert: orgCert,
+      key: this.rsaPrivateKey,
+      passphrase: this.passphrase,
+    });
     let baseUrl;
 
     switch (apiMode) {
@@ -68,6 +92,7 @@ export class Carequality implements CarequalityAPI {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
+      httpsAgent: this.httpsAgent,
     });
     this.apiKey = apiKey;
   }
