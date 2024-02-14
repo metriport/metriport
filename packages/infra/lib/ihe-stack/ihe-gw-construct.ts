@@ -6,7 +6,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 // import { Protocol } from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
-import { ApplicationLoadBalancer, Protocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { Protocol } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -189,10 +189,13 @@ export default class IHEGatewayConstruct extends Construct {
 
     // [8080, mainPort, ...additionalHTTPPorts].forEach(port => {
     [mainPort, ...additionalHTTPPorts].forEach(port => {
-      const lb = new ApplicationLoadBalancer(this, `IHE_GW_LB_${port}`, {
-        vpc,
-        internetFacing: false,
-      });
+      // fargateService.service.
+      // fargateService.service.taskDefinition.findContainer().addPortMappings()
+      // const lb = new ApplicationLoadBalancer(this, `IHE_GW_LB_${port}`, {
+      //   vpc,
+      //   internetFacing: false,
+      // });
+      const lb = fargateService.loadBalancer;
       const listener = lb.addListener(`IHE_GW_LB_Listener_${port}`, { port });
       // const target = listener.addTargets("ECS", {
       listener.addTargets(`IHE_GW_LB_ECS_Target_${port}`, {
