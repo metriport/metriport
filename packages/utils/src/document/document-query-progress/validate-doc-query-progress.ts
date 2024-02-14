@@ -17,7 +17,7 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const DOCUMENT_QUERY_COUNT_TIMEOUT = dayjs.duration({ minutes: 120 });
 const CHECK_COUNT_INTERVAL = dayjs.duration({ minutes: 1 });
-const CREATE_PATIENT_SLEEP = dayjs.duration({ seconds: 60 });
+const CREATE_PATIENT_SLEEP = dayjs.duration({ minutes: 1 });
 
 export const internalApi = axios.create({
   baseURL: apiUrl,
@@ -43,6 +43,11 @@ const createFacility: FacilityCreate = {
     country: "USA",
   },
 };
+
+/**
+ * This is to test that the count works after the doc query is complete and subsequent doc query is performed.
+ */
+const resetAndRunAgain = false;
 
 /**
  * Utility to test doc query progress for a given set of patients.
@@ -77,13 +82,31 @@ async function main() {
     createdPatients.push(patient);
   }
 
+  await validateDocQueryProgress(createdPatients, facility.id);
+
+  if (resetAndRunAgain) {
+    await validateDocQueryProgress(createdPatients, facility.id, true);
+  }
+
+  for (const patient of createdPatients) {
+    await internalApi.delete(
+      `/internal/patient/${patient.id}?facilityId=${facility.id}&cxId=${cxId}`
+    );
+  }
+}
+
+const validateDocQueryProgress = async (
+  createdPatients: PatientDTO[],
+  facilityId: string,
+  resetAndRunAgain = false
+): Promise<void> => {
   const promises = createdPatients.map(async patient => {
-    const isPatientLinked = await checkPatientLinkingStatus(patient, facility.id);
+    const isPatientLinked = await checkPatientLinkingStatus(patient, facilityId);
 
     console.log(`isPatientLinked: ${patient.firstName} ${patient.lastName}`, isPatientLinked);
 
     if (isPatientLinked) {
-      return await queryPatientDocs(patient, facility.id);
+      return await queryPatientDocs(patient, facilityId, resetAndRunAgain);
     }
 
     return { patient, successful: false };
@@ -99,17 +122,13 @@ async function main() {
 
   const overallSuccess = successfulPatientQueries.length === createdPatients.length;
 
-  for (const patient of createdPatients) {
-    await internalApi.delete(
-      `/internal/patient/${patient.id}?facilityId=${facility.id}&cxId=${cxId}`
-    );
-  }
-
   console.log(
-    "The doc query was completed for all patients - status were all queries successful:",
+    `The doc query was completed for all patients${
+      resetAndRunAgain ? " (resetAndRunAgain)" : ""
+    } - status were all queries successful:`,
     overallSuccess
   );
-}
+};
 
 async function checkPatientLinkingStatus(
   patient: PatientDTO,
@@ -156,12 +175,29 @@ const metadata = {
 
 async function queryPatientDocs(
   patient: PatientDTO,
-  facilityId: string
+  facilityId: string,
+  resetAndRunAgain = false
 ): Promise<{ patient: PatientDTO; successful: boolean }> {
   try {
-    const startedQuery = await metriportApi.startDocumentQuery(patient.id, facilityId, metadata);
+    if (resetAndRunAgain) {
+      await internalApi.post(
+        `/medical/v1/document/query`,
+        {
+          metadata,
+        },
+        {
+          params: {
+            patientId: patient.id,
+            facilityId,
+            override: true,
+          },
+        }
+      );
+    } else {
+      await metriportApi.startDocumentQuery(patient.id, facilityId, metadata);
+    }
 
-    console.log("startDocumentQuery response:", startedQuery);
+    console.log("Document query started:", patient.id, patient.firstName, patient.lastName);
 
     const raceControl: RaceControl = { isRaceInProgress: true };
 

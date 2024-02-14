@@ -80,13 +80,13 @@ const docRefBase = {
 async function main() {
   try {
     for (const patient of patientsToCreate) {
-      const superheroPatient = await metriportApi.createPatient(patient, facilityId);
-      console.log("Patient created:", superheroPatient.id, patient.firstName, patient.lastName);
+      const createdPatient = await metriportApi.createPatient(patient, facilityId);
+      console.log("Patient created:", createdPatient.id, patient.firstName, patient.lastName);
 
       await Promise.all([
-        uploadDocType(superheroPatient, "xml", NUM_XML),
-        uploadDocType(superheroPatient, "pdf", NUM_PDF),
-        uploadDocType(superheroPatient, "jpeg", NUM_JPEG),
+        uploadDocType(createdPatient, "xml", NUM_XML),
+        uploadDocType(createdPatient, "pdf", NUM_PDF),
+        uploadDocType(createdPatient, "jpeg", NUM_JPEG),
       ]);
     }
   } catch (err) {
