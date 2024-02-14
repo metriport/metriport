@@ -46,7 +46,9 @@ export type DriversLicense = {
 export const genderAtBirthTypes = ["F", "M"] as const;
 export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
-export abstract class PatientExternalDataEntry {}
+export abstract class PatientExternalDataEntry {
+  documentQueryProgress?: DocumentQueryProgress;
+}
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
 

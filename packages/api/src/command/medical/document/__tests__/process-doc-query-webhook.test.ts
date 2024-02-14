@@ -1,11 +1,13 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
+import { Patient } from "@metriport/core/domain/patient";
 import { DocumentReferenceDTO } from "../../../../routes/medical/dtos/documentDTO";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { makeSettingModel } from "../../../../models/__tests__/settings";
 import { Settings } from "../../../../models/settings";
 import { WebhookRequest } from "../../../../models/webhook-request";
 import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import * as documentWebhook from "../document-webhook";
 import * as processDocQueryWebhook from "../process-doc-query-webhook";
 import * as webhookRequest from "../../../webhook/webhook-request";
@@ -15,19 +17,17 @@ import * as getPatient from "../../patient/get-patient";
 import * as webhook from "../../../webhook/webhook";
 
 let processPatientDocumentRequest: jest.SpyInstance;
-let getAllWebhookRequestByRequestId: jest.SpyInstance;
 let composeDocRefPayload: jest.SpyInstance;
 
 const patientModel = makePatientModel();
+let patient: Patient;
 let settingsModel: Settings;
 let webhookModel: WebhookRequest;
 
 beforeEach(() => {
   mockStartTransaction();
   processPatientDocumentRequest = jest.spyOn(documentWebhook, "processPatientDocumentRequest");
-  getAllWebhookRequestByRequestId = jest
-    .spyOn(webhookRequest, "getAllWebhookRequestByRequestId")
-    .mockResolvedValue([]);
+  patient = makePatient({ data: makePatientData() });
   composeDocRefPayload = jest.spyOn(processDocQueryWebhook, "composeDocRefPayload");
 
   settingsModel = makeSettingModel({ id: "theId" });
@@ -43,7 +43,6 @@ afterEach(() => {
 });
 
 describe("processDocQueryProgressWebhook", () => {
-  const patient = { id: "theId", cxId: "theCxId" };
   const requestId = uuidv7_file.uuidv4();
   const webhookPayload: DocumentReferenceDTO[] = [];
 
@@ -72,7 +71,7 @@ describe("processDocQueryProgressWebhook", () => {
       expect(processPatientDocumentRequest).not.toHaveBeenCalled();
     });
 
-    it("handles download progress completed", async () => {
+    it("handles download progress completed - webhook not sent", async () => {
       const downloadProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
@@ -92,7 +91,7 @@ describe("processDocQueryProgressWebhook", () => {
       );
     });
 
-    it("handles convert progress completed", async () => {
+    it("handles convert progress completed - webhook not sent", async () => {
       const convertProgress = { status: "completed" as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
 
@@ -151,10 +150,8 @@ describe("processDocQueryProgressWebhook", () => {
     });
 
     it("handles download progress - webhook exists", async () => {
-      const downloadProgress = { status: "completed" as const };
-      const webhooks = [{ type: "medical.document-download" }];
+      const downloadProgress = { status: "completed" as const, webhookSent: true as const };
       composeDocRefPayload.mockResolvedValueOnce(webhookPayload);
-      getAllWebhookRequestByRequestId.mockResolvedValueOnce(webhooks);
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,
@@ -166,10 +163,7 @@ describe("processDocQueryProgressWebhook", () => {
     });
 
     it("handles convert progress - webhook exists", async () => {
-      const downloadProgress = { status: "completed" as const };
-      const webhooks = [{ type: "medical.document-conversion" }];
-
-      getAllWebhookRequestByRequestId.mockResolvedValueOnce(webhooks);
+      const downloadProgress = { status: "completed" as const, webhookSent: true as const };
 
       await processDocQueryWebhook.processDocQueryProgressWebhook({
         patient,

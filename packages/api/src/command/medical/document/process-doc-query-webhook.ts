@@ -8,13 +8,12 @@ import { MAPIWebhookStatus } from "./document-webhook";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
 import { getDocuments } from "../../../external/fhir/document/get-documents";
 import { toDTO, DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
-import { getAllWebhookRequestByRequestId } from "../../webhook/webhook-request";
 import { Config } from "../../../shared/config";
 
 const { log } = out(`Doc Query Webhook`);
 const isSandbox = Config.isSandbox();
-const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
-const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
+export const DOWNLOAD_WEBHOOK_TYPE = "medical.document-download";
+export const CONVERSION_WEBHOOK_TYPE = "medical.document-conversion";
 
 /**
  * Processes the document query progress to determine if when to send the document download and conversion webhooks
@@ -31,10 +30,8 @@ export const processDocQueryProgressWebhook = async ({
   const { id: patientId } = patient;
 
   try {
-    const webhooks = await getAllWebhookRequestByRequestId(requestId);
-    const webhookSet = new Set(webhooks.map(webhook => webhook.type));
-    const downloadWebhookSent = webhookSet.has(DOWNLOAD_WEBHOOK_TYPE);
-    const convertWebhookSent = webhookSet.has(CONVERSION_WEBHOOK_TYPE);
+    const downloadWebhookSent = documentQueryProgress?.download?.webhookSent ?? false;
+    const convertWebhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
 
     await handleDownloadWebhook(downloadWebhookSent, patient, requestId, documentQueryProgress);
     await handleConversionWebhook(convertWebhookSent, patient, requestId, documentQueryProgress);
@@ -69,11 +66,13 @@ const handleDownloadWebhook = async (
     const downloadIsCompleted = downloadStatus === "completed";
     const payload = await composeDocRefPayload(patient.id, patient.cxId, requestId);
 
+    const whStatus = downloadIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
+
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,
       DOWNLOAD_WEBHOOK_TYPE,
-      downloadIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+      whStatus,
       requestId,
       downloadIsCompleted ? payload : undefined
     );
@@ -94,11 +93,13 @@ const handleConversionWebhook = async (
   if (canProcessRequest) {
     const convertIsCompleted = convertStatus === "completed";
 
+    const whStatus = convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed;
+
     processPatientDocumentRequest(
       patient.cxId,
       patient.id,
       CONVERSION_WEBHOOK_TYPE,
-      convertIsCompleted ? MAPIWebhookStatus.completed : MAPIWebhookStatus.failed,
+      whStatus,
       requestId
     );
   }
