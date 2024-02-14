@@ -43,20 +43,20 @@ jobs:
       IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
       IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
 
-  ihe-gw-config:
-    uses: ./.github/workflows/_ihe-gw-push-config.yml
-    needs: ihe-gw-server
-    with:
-      deploy_env: "staging"
-      is-branch-to-staging: true
-      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
-      IHE_GW_FULL_BACKUP_LOCATION: ${{ vars.IHE_GW_FULL_BACKUP_LOCATION }}
-    secrets:
-      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      IHE_GW_URL: ${{ secrets.IHE_GW_URL_STAGING }}
-      IHE_GW_USER: ${{ secrets.IHE_GW_USER }}
-      IHE_GW_PASSWORD: ${{ secrets.IHE_GW_PASSWORD }}
+  # ihe-gw-config:
+  #   uses: ./.github/workflows/_ihe-gw-push-config.yml
+  #   needs: ihe-gw-server
+  #   with:
+  #     deploy_env: "staging"
+  #     is-branch-to-staging: true
+  #     IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
+  #     IHE_GW_FULL_BACKUP_LOCATION: ${{ vars.IHE_GW_FULL_BACKUP_LOCATION }}
+  #   secrets:
+  #     DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  #     DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+  #     IHE_GW_URL: ${{ secrets.IHE_GW_URL_STAGING }}
+  #     IHE_GW_USER: ${{ secrets.IHE_GW_USER }}
+  #     IHE_GW_PASSWORD: ${{ secrets.IHE_GW_PASSWORD }}
 
   infra-and-lambdas:
     uses: ./.github/workflows/_deploy-cdk.yml
