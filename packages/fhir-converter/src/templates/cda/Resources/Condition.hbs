@@ -22,8 +22,12 @@
             ]
         },
         "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
-        {{#if conditionEntry.effectiveTime.low.value}} 
-            "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}", 
+
+
+        {{#if (and conditionEntry.effectiveTime.low.value conditionEntry.effectiveTime.high.value)}}
+            "onsetPeriod":{{>DataType/Period.hbs period=conditionEntry.effectiveTime}},
+        {{else if conditionEntry.effectiveTime.low.value}} 
+            "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}",
         {{else}}
             "onsetAge":
             [
