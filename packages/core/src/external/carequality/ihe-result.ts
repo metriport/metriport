@@ -1,6 +1,6 @@
 import {
-  DocumentQueryRespFromExternalGW,
-  DocumentRetrievalRespFromExternalGW,
+  OutboundDocumentQueryResp as IHEOutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp as IHEOutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 
 export const REQUEST_ID_COLUMN = "request_id";
@@ -13,10 +13,10 @@ export interface BaseResultDomain {
   createdAt: Date;
 }
 
-export interface IHEToExternalGwDocumentQuery extends BaseResultDomain {
-  data: DocumentQueryRespFromExternalGW;
+export interface OutboundDocumentQueryResp extends BaseResultDomain {
+  data: IHEOutboundDocumentQueryResp;
 }
 
-export interface IHEToExternalGwDocumentRetrieval extends BaseResultDomain {
-  data: DocumentRetrievalRespFromExternalGW;
+export interface OutboundDocumentRetrievalResp extends BaseResultDomain {
+  data: IHEOutboundDocumentRetrievalResp;
 }

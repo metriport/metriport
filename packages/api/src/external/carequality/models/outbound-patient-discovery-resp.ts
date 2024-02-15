@@ -1,20 +1,23 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
-import { PatientDiscoveryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
-import { PatientDiscoveryResult } from "../patient-discovery-result";
+import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import { PatientDiscoveryResp } from "../patient-discovery-result";
 import { ModelSetup } from "../../../models/_default";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class PatientDiscoveryResultModel extends Model<any, any> implements PatientDiscoveryResult {
+export class OutboundPatientDiscoveryRespModel
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extends Model<any, any>
+  implements PatientDiscoveryResp
+{
   static NAME = "patient_discovery_result";
   declare id: string;
   declare requestId: string;
   declare patientId: string;
   declare status: string;
   declare createdAt: CreationOptional<Date>;
-  declare data: PatientDiscoveryRespFromExternalGW;
+  declare data: OutboundPatientDiscoveryResp;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientDiscoveryResultModel.init(
+    OutboundPatientDiscoveryRespModel.init(
       {
         id: {
           type: DataTypes.UUID,
@@ -44,7 +47,7 @@ export class PatientDiscoveryResultModel extends Model<any, any> implements Pati
         underscored: true,
         timestamps: false,
         createdAt: "created_at",
-        tableName: PatientDiscoveryResultModel.NAME,
+        tableName: OutboundPatientDiscoveryRespModel.NAME,
       }
     );
   };

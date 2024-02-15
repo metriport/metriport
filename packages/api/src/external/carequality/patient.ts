@@ -1,4 +1,4 @@
-import { PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import {
   RaceControl,
   checkIfRaceIsComplete,
@@ -18,12 +18,12 @@ import { searchCQDirectoriesAroundPatientAddresses } from "./command/cq-director
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import {
-  getPatientDiscoveryResultCount,
-  getPatientDiscoveryResults,
-} from "./command/patient-discovery-result/get-patient-discovery-result";
+  getPatientDiscoveryRespCount,
+  getOutboundPatientDiscoveryResps,
+} from "./command/outbound-patient-discovery-resp/get-outbound-patient-discovery-resp";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { CQLink } from "./cq-patient-data";
-import { PatientDiscoveryResult } from "./patient-discovery-result";
+import { PatientDiscoveryResp } from "./patient-discovery-result";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientDataCarequality } from "./patient-shared";
@@ -69,7 +69,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
         CHECK_DB_INTERVAL.asMilliseconds()
       ),
     ]);
-    const pdResults = await getPatientDiscoveryResults(pdRequest.id);
+    const pdResults = await getOutboundPatientDiscoveryResps(pdRequest.id);
     if (raceResult) {
       log(
         `${raceResult}. Got ${pdResults.length} successes out of ${numGateways} gateways for PD. RequestID: ${pdRequest.id}`
@@ -115,7 +115,7 @@ export async function remove(patient: Patient): Promise<void> {
 export async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
-): Promise<PatientDiscoveryReqToExternalGW> {
+): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
   const [organization, nearbyCQOrgs] = await Promise.all([
@@ -138,14 +138,14 @@ export async function prepareForPatientDiscovery(
 
 export async function handlePatientDiscoveryResults(
   patient: Patient,
-  pdResults: PatientDiscoveryResult[]
+  pdResults: PatientDiscoveryResp[]
 ): Promise<void> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
   if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 }
 
-export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
+export function buildCQLinks(pdResults: PatientDiscoveryResp[]): CQLink[] {
   return pdResults.flatMap(pd => {
     const id = pd.data.externalGatewayPatient?.id;
     const system = pd.data.externalGatewayPatient?.system;
@@ -159,6 +159,6 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
 }
 
 async function isPDComplete(requestId: string, numGatewaysInRequest: number): Promise<boolean> {
-  const pdResultCount = await getPatientDiscoveryResultCount(requestId);
+  const pdResultCount = await getPatientDiscoveryRespCount(requestId);
   return pdResultCount >= numGatewaysInRequest;
 }

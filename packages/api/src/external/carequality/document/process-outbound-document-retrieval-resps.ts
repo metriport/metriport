@@ -2,7 +2,7 @@ import { out } from "@metriport/core/util/log";
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference, DocumentRetrievalRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { DocumentReference, OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { isConvertible } from "../../fhir-converter/converter";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -13,33 +13,33 @@ import { cqToFHIR } from "./shared";
 import { getDocuments } from "../../fhir/document/get-documents";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 
-export async function processIHEToExternalGwDocumentRetrievals({
+export async function processOutboundDocumentRetrievalResps({
   requestId,
   patientId,
   cxId,
-  resultsOfAllExternalGWs,
+  outboundDocRetrievalResps,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  resultsOfAllExternalGWs: DocumentRetrievalRespFromExternalGW[];
+  outboundDocRetrievalResps: OutboundDocumentRetrievalResp[];
 }): Promise<void> {
   try {
     let issuesWithGateway = 0;
     let successDocsCount = 0;
 
-    for (const resultOfExternalGW of resultsOfAllExternalGWs) {
+    for (const docRetrievalResp of outboundDocRetrievalResps) {
       try {
-        const { operationOutcome } = resultOfExternalGW;
+        const { operationOutcome } = docRetrievalResp;
 
         if (operationOutcome?.issue) {
           issuesWithGateway += operationOutcome.issue.length;
         }
 
-        if (resultOfExternalGW.documentReference) {
-          successDocsCount += resultOfExternalGW.documentReference.length;
+        if (docRetrievalResp.documentReference) {
+          successDocsCount += docRetrievalResp.documentReference.length;
         }
-        await handleDocReferences(resultOfExternalGW.documentReference, requestId, patientId, cxId);
+        await handleDocReferences(docRetrievalResp.documentReference, requestId, patientId, cxId);
       } catch (error) {
         const msg = `Failed to handle doc references in Carequality.`;
         console.log(`${msg}. Error: ${errorToString(error)}`);

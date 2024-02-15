@@ -1,4 +1,4 @@
-import { PatientDiscoveryReqToExternalGW, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/carequality-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -19,7 +19,7 @@ export function createPatientDiscoveryRequest({
   facilityNPI: string;
   orgName: string;
   orgOid: string;
-}): PatientDiscoveryReqToExternalGW {
+}): OutboundPatientDiscoveryReq {
   const user = `${orgName} System User`;
 
   return {

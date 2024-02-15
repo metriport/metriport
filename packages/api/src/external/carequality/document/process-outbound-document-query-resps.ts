@@ -3,7 +3,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference, DocumentQueryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -11,7 +11,7 @@ import { mapDocRefToMetriport } from "../../../shared/external";
 import { DocumentWithMetriportId } from "./shared";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { makeIheGatewayAPI } from "../api";
-import { createCQDocumentRetrievalRequests } from "./document-query-retrieval";
+import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
 import { combineDocRefs } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
@@ -22,26 +22,26 @@ import { processAsyncError } from "../../../errors";
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
-const lambdaName = Config.getIHEToExternalGwDocumentRetrievalsLambdaName();
+const lambdaName = Config.getOutboundDocRetrievalRespsLambdaName();
 const parallelUpsertsToFhir = 500;
 
-export async function processIHEToExternalGwDocumentQuerys({
+export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
-  resultsOfAllExternalGWs,
+  outboundDocumentQueryResps,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  resultsOfAllExternalGWs: DocumentQueryRespFromExternalGW[];
+  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): Promise<void> {
   if (!iheGateway) return;
   const { log } = out(`CQ query docs - requestId ${requestId}, M patient ${patientId}`);
 
   const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
-  const docRefs = combineDocRefs(resultsOfAllExternalGWs);
+  const docRefs = combineDocRefs(outboundDocumentQueryResps);
 
   const docRefsWithMetriportId = await Promise.all(
     docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
@@ -72,17 +72,17 @@ export async function processIHEToExternalGwDocumentQuerys({
 
     await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
 
-    const documentRetrievalRequests = createCQDocumentRetrievalRequests({
+    const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
       requestId,
       cxId,
       organization,
       documentReferences: docsToDownload,
-      resultsOfAllExternalGWs: resultsOfAllExternalGWs,
+      outboundDocumentQueryResps,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     await iheGateway.startDocumentsRetrieval({
-      documentRetrievalReqToExternalGW: documentRetrievalRequests,
+      outboundDocumentRetrievalReq: documentRetrievalRequests,
     });
 
     // We invoke the lambda that will start polling for the results
@@ -99,7 +99,7 @@ export async function processIHEToExternalGwDocumentQuerys({
         }),
       })
       .promise()
-      .catch(processAsyncError(`cq.processIHEToExternalGwDocumentRetrievals`));
+      .catch(processAsyncError(`cq.processOutboundDocumentRetrievalResps`));
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);

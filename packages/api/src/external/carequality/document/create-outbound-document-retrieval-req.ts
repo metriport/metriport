@@ -1,9 +1,9 @@
 import { PurposeOfUse } from "@metriport/shared";
 import { capture } from "@metriport/core/util/notifications";
 import {
-  DocumentRetrievalReqToExternalGW,
+  OutboundDocumentRetrievalReq,
   DocumentReference,
-  DocumentQueryRespFromExternalGW,
+  OutboundDocumentQueryResp,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { DocumentWithMetriportId } from "./shared";
@@ -12,27 +12,27 @@ import { Organization } from "@metriport/core/domain/organization";
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
-export function createCQDocumentRetrievalRequests({
+export function createOutboundDocumentRetrievalReqs({
   requestId,
   cxId,
   organization,
   documentReferences,
-  resultsOfAllExternalGWs,
+  outboundDocumentQueryResps,
 }: {
   requestId: string;
   cxId: string;
   organization: Organization;
   documentReferences: DocumentWithMetriportId[];
-  resultsOfAllExternalGWs: DocumentQueryRespFromExternalGW[];
-}): DocumentRetrievalReqToExternalGW[] {
+  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
+}): OutboundDocumentRetrievalReq[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  const requests = resultsOfAllExternalGWs.reduce(
-    (acc: DocumentRetrievalReqToExternalGW[], documentQueryResult) => {
-      const { patientId, gateway } = documentQueryResult;
+  const requests = outboundDocumentQueryResps.reduce(
+    (acc: OutboundDocumentRetrievalReq[], documentQueryResp) => {
+      const { patientId, gateway } = documentQueryResp;
       const isGWValid = gateway?.homeCommunityId && gateway?.url;
 
       if (!isGWValid) {
@@ -53,7 +53,7 @@ export function createCQDocumentRetrievalRequests({
         docRef => docRef.homeCommunityId === gateway.homeCommunityId
       );
 
-      const request: DocumentRetrievalReqToExternalGW = {
+      const request: OutboundDocumentRetrievalReq = {
         id: requestId,
         cxId: cxId,
         patientId: patientId,

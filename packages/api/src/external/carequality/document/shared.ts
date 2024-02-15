@@ -1,7 +1,7 @@
 import {
   DocumentReference,
-  DocumentQueryRespFromExternalGW,
-  DocumentRetrievalRespFromExternalGW,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
   DocumentReference as IHEGWDocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 import {
@@ -18,7 +18,7 @@ export type DocumentWithMetriportId = DocumentReference & {
   originalId: string;
 };
 
-type IHEResults = DocumentQueryRespFromExternalGW | DocumentRetrievalRespFromExternalGW;
+type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
 
 // Create a single array of all the document references from all the document query results
 export function combineDocRefs(documentQueryResults: IHEResults[]): DocumentReference[] {

@@ -3,7 +3,7 @@ import axios from "axios";
 import { pollIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
 import {
   DOC_QUERY_RESULT_TABLE_NAME,
-  IHEToExternalGwDocumentQuery,
+  OutboundDocumentQueryResp,
 } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
@@ -37,7 +37,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     try {
-      const results = await pollIHEGatewayResults<IHEToExternalGwDocumentQuery>({
+      const results = await pollIHEGatewayResults<OutboundDocumentQueryResp>({
         requestId,
         patientId,
         cxId,
@@ -59,7 +59,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const msg = `Error sending document query results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(error, {
-        extra: { context: `sendIHEToExternalGwDocumentQuerys`, error, patientId, requestId, cxId },
+        extra: { context: `sendOutboundDocumentQueryResps`, error, patientId, requestId, cxId },
       });
     }
   }

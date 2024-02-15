@@ -1,8 +1,8 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
 import {
-  patientDiscoveryRespFromExternalGWSchema,
-  documentQueryRespFromExternalGWSchema,
-  documentRetrievalRespFromExternalGWSchema,
+  outboundPatientDiscoveryRespSchema,
+  outboundDocumentQueryRespSchema,
+  outboundDocumentRetrievalRespSchema,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -18,15 +18,15 @@ import {
   searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
 import {
-  IHEResultType,
-  handleIHEResponse,
-} from "../../external/carequality/command/ihe-result/create-ihe-result";
+  OutboundRespType,
+  handleOutboundResponse,
+} from "../../external/carequality/command/outbound-resp/create-outbound-resp";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processIHEToExternalGwDocumentQuerys } from "../../external/carequality/document/process-ihe-to-gw-document-query";
-import { processIHEToExternalGwDocumentRetrievals } from "../../external/carequality/document/process-ihe-to-gw-document-retrieval";
+import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
+import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 
 dayjs.extend(duration);
 const router = Router();
@@ -128,9 +128,9 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = patientDiscoveryRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW,
+    const pdResponse = outboundPatientDiscoveryRespSchema.parse(req.body);
+    await handleOutboundResponse({
+      type: OutboundRespType.OUTBOUND_PATIENT_DISCOVERY_RESP,
       response: pdResponse,
     });
 
@@ -146,9 +146,9 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const dqResponse = documentQueryRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW,
+    const dqResponse = outboundDocumentQueryRespSchema.parse(req.body);
+    await handleOutboundResponse({
+      type: OutboundRespType.OUTBOUND_DOCUMENT_QUERY_RESP,
       response: dqResponse,
     });
 
@@ -164,7 +164,7 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processIHEToExternalGwDocumentQuerys(req.body);
+    await processOutboundDocumentQueryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -178,9 +178,9 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const drResponse = documentRetrievalRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW,
+    const drResponse = outboundDocumentRetrievalRespSchema.parse(req.body);
+    await handleOutboundResponse({
+      type: OutboundRespType.OUTBOUND_DOCUMENT_RETRIEVAL_RESP,
       response: drResponse,
     });
 
@@ -196,7 +196,7 @@ router.post(
 router.post(
   "/document-retrieval/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processIHEToExternalGwDocumentRetrievals(req.body);
+    await processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

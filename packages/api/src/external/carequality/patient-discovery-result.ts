@@ -1,9 +1,9 @@
-import { PatientDiscoveryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { BaseDomainCreate } from "@metriport/core/domain/base-domain";
 
-export interface PatientDiscoveryResult extends BaseDomainCreate {
+export interface PatientDiscoveryResp extends BaseDomainCreate {
   requestId: string;
   status: string;
   createdAt: Date;
-  data: PatientDiscoveryRespFromExternalGW;
+  data: OutboundPatientDiscoveryResp;
 }

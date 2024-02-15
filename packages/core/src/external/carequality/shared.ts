@@ -1,7 +1,4 @@
-import {
-  DocumentQueryReqFromExternalGW,
-  DocumentRetrievalReqFromExternalGW,
-} from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
 
@@ -96,7 +93,7 @@ export function extractDocumentUniqueId(documentId: string): string {
 }
 
 export function validateBasePayload(
-  payload: DocumentQueryReqFromExternalGW | DocumentRetrievalReqFromExternalGW
+  payload: InboundDocumentQueryReq | InboundDocumentRetrievalReq
 ): void {
   if (!payload.id) {
     throw new XDSRegistryError("Request id is not defined");

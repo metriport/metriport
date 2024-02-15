@@ -6,17 +6,13 @@ const documentRetrievalReqDefaultSchema = baseRequestSchema.extend({
 });
 
 // TO EXTERNAL GATEWAY
-export const documentRetrievalReqToExternalGWSchema = documentRetrievalReqDefaultSchema.extend({
+export const outboundDocumentRetrievalReqSchema = documentRetrievalReqDefaultSchema.extend({
   gateway: xcaGatewaySchema,
 });
 
-export type DocumentRetrievalReqToExternalGW = z.infer<
-  typeof documentRetrievalReqToExternalGWSchema
->;
+export type OutboundDocumentRetrievalReq = z.infer<typeof outboundDocumentRetrievalReqSchema>;
 
 // FROM EXTERNAL GATEWAY
-export const documentRetrievalReqFromExternalGWSchema = documentRetrievalReqDefaultSchema;
+export const inboundDocumentRetrievalReqSchema = documentRetrievalReqDefaultSchema;
 
-export type DocumentRetrievalReqFromExternalGW = z.infer<
-  typeof documentRetrievalReqFromExternalGWSchema
->;
+export type InboundDocumentRetrievalReq = z.infer<typeof inboundDocumentRetrievalReqSchema>;

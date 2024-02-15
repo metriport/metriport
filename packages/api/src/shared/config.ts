@@ -248,11 +248,11 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getIHEToExternalGwDocumentQueryLambdaName(): string {
+  static getOutboundDocumentQueryRespsLambdaName(): string {
     return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_QUERIES_LAMBDA_NAME");
   }
 
-  static getIHEToExternalGwDocumentRetrievalsLambdaName(): string {
+  static getOutboundDocRetrievalRespsLambdaName(): string {
     return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 

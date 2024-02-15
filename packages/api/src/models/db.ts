@@ -2,7 +2,6 @@ import * as AWS from "aws-sdk";
 import { Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../external/carequality/models/cq-directory";
 import { CQPatientDataModel } from "../external/carequality/models/cq-patient-data";
-import { PatientDiscoveryResultModel } from "../external/carequality/models/patient-discovery-result";
 import { FacilityModel } from "../models/medical/facility";
 import { OrganizationModel } from "../models/medical/organization";
 import updateDB from "../sequelize";
@@ -11,8 +10,9 @@ import { ConnectedUser } from "./connected-user";
 import { initDDBDev, initLocalCxAccount } from "./db-dev";
 import { CoverageEnhancementModel } from "./medical/coverage-enhancement";
 import { DocRefMappingModel } from "./medical/docref-mapping";
-import { IHEToExternalGwDocumentQueryModel } from "../external/carequality/models/ihe-to-external-gw-document-query";
-import { IHEToExternalGwDocumentRetrievalModel } from "../external/carequality/models/ihe-to-external-gw-document-retrieval";
+import { OutboundDocumentQueryRespModel } from "../external/carequality/models/outbound-document-query-resp";
+import { OutboundPatientDiscoveryRespModel } from "../external/carequality/models/outbound-patient-discovery-resp";
+import { OutboundDocumentRetrievalRespModel } from "../external/carequality/models/outbound-document-retrieval-resp";
 import { MAPIAccess } from "./medical/mapi-access";
 import { PatientModel } from "./medical/patient";
 import { Settings } from "./settings";
@@ -31,9 +31,9 @@ const models: ModelSetup[] = [
   PatientModel.setup,
   MAPIAccess.setup,
   DocRefMappingModel.setup,
-  PatientDiscoveryResultModel.setup,
-  IHEToExternalGwDocumentQueryModel.setup,
-  IHEToExternalGwDocumentRetrievalModel.setup,
+  OutboundPatientDiscoveryRespModel.setup,
+  OutboundDocumentQueryRespModel.setup,
+  OutboundDocumentRetrievalRespModel.setup,
   CoverageEnhancementModel.setup,
 ];
 

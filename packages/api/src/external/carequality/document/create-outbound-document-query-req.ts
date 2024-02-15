@@ -1,5 +1,5 @@
 import { PurposeOfUse } from "@metriport/shared";
-import { DocumentQueryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "@metriport/core/domain/organization";
 import { CQLink } from "../cq-patient-data";
@@ -7,7 +7,7 @@ import { CQLink } from "../cq-patient-data";
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
-export function createCQDocumentQueryRequests({
+export function createOutboundDocumentQueryRequests({
   requestId,
   cxId,
   organization,
@@ -17,7 +17,7 @@ export function createCQDocumentQueryRequests({
   cxId: string;
   organization: Organization;
   cqLinks: CQLink[];
-}): DocumentQueryReqToExternalGW[] {
+}): OutboundDocumentQueryReq[] {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;

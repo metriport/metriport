@@ -1,7 +1,4 @@
-import {
-  DocumentQueryReqFromExternalGW,
-  DocumentQueryRespToExternalGW,
-} from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { validateDQ } from "./validating-dq";
 import {
   XDSUnknownPatientId,
@@ -12,14 +9,14 @@ import {
 } from "../error";
 
 export async function processIncomingRequest(
-  payload: DocumentQueryReqFromExternalGW
-): Promise<DocumentQueryRespToExternalGW> {
+  payload: InboundDocumentQueryReq
+): Promise<InboundDocumentQueryResp> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
     const documentContents = await validateDQ(payload);
 
     // construct response
-    const response: DocumentQueryRespToExternalGW = {
+    const response: InboundDocumentQueryResp = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
