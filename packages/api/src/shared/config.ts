@@ -90,6 +90,18 @@ export class Config {
     return getEnvVarOrFail("CQ_API_KEY");
   }
 
+  static getCQOrgPrivateKey(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
+  }
+
+  static getCQOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
+  }
+
+  static getCQOrgCertificate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
+  }
+
   static getPlaceIndexName(): string {
     return getEnvVarOrFail("PLACE_INDEX_NAME");
   }
