@@ -37,13 +37,13 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * Creates a new instance of the Carequality API client pertaining to an
    * organization to make requests on behalf of.
    *
-   * @param orgCert         The certificate (public key) for the organization.
-   * @param rsaPrivateKey   An RSA key corresponding to the specified orgCert.
-   * @param passphrase      The passphrase to decrypt the private key.
-   * @param apiKey          The API key to use for authentication.
-   * @param apiMode         Optional, the mode the client will be running. Defaults to staging.
-   * @param options         Optional parameters
-   * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
+   * @param orgCert                 The certificate (public key) for the organization.
+   * @param rsaPrivateKey           An RSA key corresponding to the specified orgCert.
+   * @param rsaPrivateKeyPassword   The passphrase to decrypt the private key.
+   * @param apiKey                  The API key to use for authentication.
+   * @param apiMode                 Optional, the mode the client will be running. Defaults to staging.
+   * @param options                 Optional parameters
+   * @param options.timeout         Connection timeout in milliseconds, default 120 seconds.
    */
   constructor({
     orgCert,

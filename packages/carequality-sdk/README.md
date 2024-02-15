@@ -15,7 +15,7 @@ const Carequality = new Carequality({
     apiMode: APIMode.dev,
     orgCert: "ORG_CERTIFICATE",
     rsaPrivateKey: "ORG_PRIVATE_KEY",
-    passphrase: "KEY_PASSPHRASE"
+    rsaPrivateKeyPassword: "ORG_PRIVATE_KEY_PASSWORD"
 });
 ```
 
