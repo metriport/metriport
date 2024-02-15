@@ -63,7 +63,7 @@ export const config: EnvConfig = {
   },
   carequality: {
     secretNames: {
-      CQ_API_KEY: "CQ_API_KEY",
+      CQ_DIRECTORY_API_KEY: "CQ_DIRECTORY_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
       CQ_ORG_CERTIFICATE: "CQ_ORG_CERTIFICATE",
       CQ_ORG_PRIVATE_KEY_PASSWORD: "CQ_ORG_PRIVATE_KEY_PASSWORD",
