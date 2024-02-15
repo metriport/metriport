@@ -76,6 +76,11 @@
                                         },
                                     {{/each}}
                                 {{/each}}
+                            {{else if (eq resObj.resourceType 'CarePlan')}}
+                                {
+                                    "reference":"{{concat resObj.resourceType '/' (generateUUID (toJsonString ../this.section))}}",
+                                    {{>Utils/DisplayFromSectionEntry.hbs section=../../this.section entry=this}}
+                                },
                             {{else if resObj.resourceType}}
                                 {{#each (toArray ../this.section.entry)}}                           	
                                     {

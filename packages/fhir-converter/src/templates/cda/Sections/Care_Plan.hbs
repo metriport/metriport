@@ -1,0 +1,86 @@
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.10')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.10') as |carePlan|}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_10.entry) as |carePlanEntry|}}
+            {{#if carePlanEntry.observation}}
+                    {{>Resources/CarePlan.hbs carePlan=carePlan ID=(generateUUID (toJsonString carePlan))}}
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+
+                    {{>References/CarePlan/supportingInfo.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Observation/' (generateUUID (toJsonString carePlanEntry.observation)))}}
+                    {{>Resources/Observation.hbs observationEntry=carePlanEntry.observation ID=(generateUUID (toJsonString carePlanEntry.observation))}}
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString carePlanEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+
+                    {{#if carePlanEntry.observation.author.assignedAuthor}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=carePlanEntry.observation.author.assignedAuthor) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=carePlanEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                            {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString carePlanEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                        {{#if observation.author.assignedAuthor.representedOrganization}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=carePlanEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=carePlanEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString carePlanEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
+                    {{/if}}
+            {{/if}}
+            {{#if carePlanEntry.encounter}}
+
+                {{>Resources/CarePlan.hbs carePlan=carePlan ID=(generateUUID (toJsonString carePlan))}}
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+                {{>Resources/Encounter.hbs encounter=carePlanEntry.encounter ID=(generateUUID (toJsonString carePlanEntry.encounter))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/supportingInfo.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Encounter/' (generateUUID (toJsonString carePlanEntry.encounter)))}},
+                {{/with}}
+
+                {{#if carePlanEntry.encounter.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=carePlanEntry.encounter.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=carePlanEntry.encounter.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/Encounter/participant.individual.hbs ID=(generateUUID (toJsonString carePlanEntry.encounter)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                        {{#if carePlanEntry.encounter.author.assignedAuthor.representedOrganization}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=carePlanEntry.encounter.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=carePlanEntry.encounter.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/Encounter/serviceProvider.hbs ID=(generateUUID (toJsonString carePlanEntry.encounter)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
+                {{/if}}
+            {{/if}}
+            {{#if carePlanEntry.procedure}}
+
+                {{>Resources/CarePlan.hbs carePlan=carePlan ID=(generateUUID (toJsonString carePlan))}}
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/subject.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+                {{>Resources/Procedure.hbs procedureEntry=carePlanEntry.procedure ID=(generateUUID (toJsonString carePlanEntry.procedure))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/CarePlan/supportingInfo.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Procedure/' (generateUUID (toJsonString carePlanEntry.procedure)))}},
+                {{/with}}
+
+                {{#if carePlanEntry.procedure.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=carePlanEntry.procedure.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=carePlanEntry.procedure.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString carePlanEntry.procedure)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                    {{#if carePlanEntry.procedure.author.assignedAuthor.representedOrganization}}
+                        {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=carePlanEntry.procedure.author.assignedAuthor.representedOrganization) as |orgId|}}
+                            {{>Resources/Organization.hbs org=carePlanEntry.procedure.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                            {{>References/Procedure/performer.actor.hbs ID=(generateUUID (toJsonString carePlanEntry.procedure)) REF=(concat 'Organization/' orgId.Id)}},
+                        {{/with}}
+                    {{/if}}
+                {{/if}}
+            {{/if}}            
+        {{/each}}
+        {{#with (getFirstCdaSectionsByTemplateId ../msg '2.16.840.1.113883.10.20.22.2.22.1' '2.16.840.1.113883.10.20.22.2.22') as |encounters|}}
+            {{#with (elementAt (multipleToArray encounters.[2_16_840_1_113883_10_20_22_2_22_1].entry encounters.[2_16_840_1_113883_10_20_22_2_22].entry) 0) as |encounterEntry|}}
+                {{#if encounterEntry.encounter}}
+                    {{>References/CarePlan/encounter.hbs ID=(generateUUID (toJsonString carePlan)) REF=(concat 'Encounter/' (generateUUID (toJsonString encounterEntry.encounter)))}},
+                {{/if}}
+            {{/with}}
+        {{/with}}
+    {{/with}}
+{{/if}}
