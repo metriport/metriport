@@ -23,14 +23,10 @@ export enum APIMode {
  * This SDK operates on FHIR STU3 format.
  */
 export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
-  private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
+  private static readonly devUrl = "https://directory.dev.carequality.org/fhir-pre-stu3/";
   private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
   private static readonly productionUrl =
     "https://prod-dir-ceq-01.sequoiaproject.org/fhir-stu3/1.0.1/";
-
-  // NOTE: These URLs can be used if we migrate to FHIR R4 format.
-  // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
-  // private static readonly  stagingUrl = "https://directory.stage.carequality.org/fhir";
 
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
@@ -52,14 +48,14 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
   constructor({
     orgCert,
     rsaPrivateKey,
-    passphrase,
+    rsaPrivateKeyPassword,
     apiKey,
     apiMode = APIMode.production,
     options = {},
   }: {
     orgCert: string;
     rsaPrivateKey: string;
-    passphrase: string;
+    rsaPrivateKeyPassword: string;
     apiKey: string;
     apiMode: APIMode;
     options?: { timeout?: number };
@@ -67,7 +63,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     this.httpsAgent = new Agent({
       cert: orgCert,
       key: rsaPrivateKey,
-      passphrase,
+      passphrase: rsaPrivateKeyPassword,
     });
     let baseUrl;
 

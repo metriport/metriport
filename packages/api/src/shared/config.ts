@@ -94,8 +94,8 @@ export class Config {
     return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
   }
 
-  static getCQKeyPassphrase(): string {
-    return getEnvVarOrFail("CQ_KEY_PASSPHRASE");
+  static getCQOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
   }
 
   static getCQOrgCertificate(): string {

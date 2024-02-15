@@ -20,15 +20,15 @@ export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undef
   if (Config.isSandbox()) return;
   const cqApiKey = Config.getCQApiKey();
   const cqOrgCert = Config.getCQOrgCertificate();
-  const cqPrivateKey = Config.getCQOrgPrivateKey();
-  const cqPassphrase = Config.getCQKeyPassphrase();
+  const cqOrgPrivateKey = Config.getCQOrgPrivateKey();
+  const cqPrivateKeyPassword = Config.getCQOrgPrivateKeyPassword();
 
   return new CarequalityManagementAPIImpl({
     apiKey: cqApiKey,
     apiMode: cqApiMode,
     orgCert: cqOrgCert,
-    rsaPrivateKey: cqPrivateKey,
-    passphrase: cqPassphrase,
+    rsaPrivateKey: cqOrgPrivateKey,
+    rsaPrivateKeyPassword: cqPrivateKeyPassword,
   });
 }
 
