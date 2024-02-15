@@ -1,0 +1,104 @@
+Get Apple Health data via webhooks.
+
+## Overview
+
+This is a guide to help you integrate with Apple Health - a repository for health and fitness data available on iPhone and iPad devices.
+We provide an SDK that allows you to receive Apple Health data in the background via webhooks. When a user adds health data,
+the SDK will automatically send it to the Metriport API after the user goes back to your app, and we'll forward it to your webhook URL.
+
+<Callout intent="info">
+  Apple Health is available for devices on iOS v13 or higher. This also applies for when developing
+  on a simulator.
+</Callout>
+
+<Callout intent="success">
+  As a prerequisite, we suggest looking at our [webhooks docs](/home/api-info/webhooks) to
+  understand how the flow works.
+</Callout>
+
+## Initial Setup
+
+### 1. Enable HealthKit
+
+First thing you need to do is enable HealthKit capabilities for your app.
+In Xcode, select the project, click on the `Signing & Capabilities` tab and add the HealthKit capability.
+Make sure to select `Background Delivery` under `Capabilities` to be able to receive data via webhooks.
+
+<img className="h-100" src="https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/healthkit-capability.png" />
+
+<Callout intent="warn">
+  You will need a paid Apple Developer account to be able to access HealthKit capabilities.
+  Otherwise, you will see provisioning errors when trying to build the project, and won't be able to
+  integrate with Apple Health.
+</Callout>
+
+If you have an `Info.plist` file in your project directory, add the following key to the file:
+
+<CodeBlock title = "Swift">
+  ```swift
+  <key>NSHealthShareUsageDescription</key>
+  <string>Share health usage with this app.</string>
+  ```
+</CodeBlock>
+
+If you don't have an `Info.plist` file, you can set this by select the Xcode project,
+clicking on the `Info` tab, and adding the key/value there.
+
+### 2. Install the Metriport Connect Widget SDK
+
+Install the SDK for the platform you're using, to easily integrate the Connect Widget into your app:
+
+- [Swift](/devices-api/sdks/connect-widget/swift)
+- [React Native](/devices-api/sdks/connect-widget/react-native)
+- [Flutter](/devices-api/sdks/connect-widget/flutter)
+- [Cordova](/devices-api/sdks/connect-widget/cordova)
+
+## Receiving Data
+
+The way we receive and send data via webhooks is in 2 steps:
+
+**Step 1:** When the user first connects to Apple Health we will make an initial query for all data within the last 30 days.
+This will be a daily average of all data types.
+
+**Step 2:** Once this data is queried we will then listen on an hourly basis for any updates to the Apple Health.
+If there are changes then a query will be sent via webhook with just the data that's been added.
+
+To understand the data you should expect to receive from Apple Health checkout our [data
+models](/devices-api/more-info/models).
+
+<Callout intent="info">
+  When listening for hourly changes you'll notice that the metadata contains an `hour` field as
+  shown below. This is to signify the hour of the day in which the data is aggregated which will be
+  in the format of `HH:00`. To learn more view [ model](/devices-api/more-info/models#metadata).
+</Callout>
+
+```json
+{
+  "body": [
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "17:00",
+        "source": "apple"
+      },
+      "weight_kg": 72
+    },
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "18:00",
+        "source": "apple"
+      },
+      "weight_kg": 74
+    },
+    {
+      "metadata": {
+        "date": "2023-06-14",
+        "hour": "19:00",
+        "source": "apple"
+      },
+      "weight_kg": 74
+    }
+  ]
+}
+```

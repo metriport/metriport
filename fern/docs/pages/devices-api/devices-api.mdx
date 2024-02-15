@@ -1,0 +1,180 @@
+Follow this guide to get started accessing your users' wearable, RPM device, and mHealth app data.
+
+<img 
+  src="https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/integrations.svg" 
+  style={{ display: "block", marginLeft: "auto", marginRight: "auto", marginBottom: "10px" }}
+  width="500"
+/>
+
+## Overview
+
+Getting started with our Devices API is pretty easy, you'll just need take the following steps:
+
+1. [Create a developer account](#1--create-a-developer-account).
+2. [Generate an API key](#2--generate-an-api-key).
+3. [Integrate your app with Metriport](#3--integrate-your-app-with-metriport).
+4. [Link to the Metriport Connect widget in your app](#4--link-to-the-metriport-connect-widget-in-your-app).
+5. [Access your users' health data](#5--access-your-user-s-health-data) 🎉🎉🎉
+
+Feel free to follow along with this overview video as well, or just watch it before
+getting started to get an idea of the expected result:
+
+<iframe
+  src="https://www.loom.com/embed/10c24aa43300417e86cdeb61ff59b1b8?sid=4848e9c7-85bf-493c-ba99-e96ea1c68d41"
+  width="100%"
+  height="450px"
+></iframe>
+
+Let's get into it! 🤘
+
+## 1. Create a developer account
+
+<Card
+  title="Click me to go to the developer dashboard!"
+  icon="user"
+  href="https://dash.metriport.com/"
+>
+  This will take you to the Metriport developer dashboard where you can create your Metriport
+  account.
+</Card>
+
+<Callout intent="success">
+  To demo the app without having to use your production enviroment simply head over to the
+  `Developers` page and toggle "sandbox". This will allow you to try out the Devices API with up to
+  10 connected users.
+</Callout>
+
+## 2. Generate an API key
+
+Once you've created an account and confirmed your email, you'll be taken to the [dashboard
+home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
+
+- In the left hand menu, click `Products & Billing`.
+- Click `Get Started` on the Device API product, and add your payment info.
+- In the left hand menu, click `Developers`.
+- On the Developers page, you'll be able to click the `Generate Secret Key` button.
+
+<Callout intent="info">
+  This Secret Key will allow you to start making requests to the entire Metriport API on your
+  behalf. Treat this like a password, and keep it somewhere safe! You can read the [API
+  Keys](/home/api-info/api-keys) page to learn more about API key security best practices.
+</Callout>
+
+<Callout intent="success">
+  If you believe your key has been compromised, you can always revoke it and then generate a new one
+  on the Developers page by clicking the trash button beside the key.
+</Callout>
+
+## 3. Integrate your app with Metriport
+
+There are two ways to receive data from Metriport:
+
+- API: Your app requests data from Metriport:
+  - your application polls Metriport for user data, for a specific date;
+- Webhook: Metriport sends data to your app when it becomes available:
+  - your application exposes a webhook (endpoint), which Metriport calls when there's more user data available;
+  - note that this is the only way to get information from Garmin and Apple Health (you can see what providers support Webhooks [here](/devices-api/more-info/our-integrations));
+  - to learn more about how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+
+### 3.1 API: setup the Metriport client on your server
+
+If you're using Node, you can use the [Metriport SDK](/devices-api/sdks/api/node) to simplify calling Metriport's API.
+
+In the root of your server project, run the following terminal command to install the SDK:
+
+<CodeBlock title = "Bash">
+  ```bash
+  npm install --save @metriport/api-sdk
+  ```
+</CodeBlock>
+
+From here, all you need to do is to initialize a Metriport client instance using your API
+key, and you're good to start making requests to the Metriport API from your server:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  import { MetriportDevicesApi } from "@metriport/api-sdk";
+
+  const metriportClient = new MetriportDevicesApi("YOUR_API_KEY", {
+    sandbox: false, // set to true to use the sandbox environment
+  });
+  ```
+</CodeBlock>
+
+If you don't want to use the SDK, you can also make requests to the Metriport API directly.
+Head to the [API reference](/devices-api/api-reference) to learn more about the available endpoints.
+
+### 3.2. Webhook: expose an endpoint to be called by Metriport
+
+This allows your application to receive user data as soon as it becomes available, removing the need to poll Metriport's API at regular intervals.
+
+It's the only and required way to get information from Garmin and Apple Health.
+
+Head to the [webhook page](/home/api-info/webhooks) to learn how to setup this integration with Metriport.
+
+## 4. Link to the Metriport Connect Widget in your app
+
+With Metriport, you get a pre-built [Connect Widget](https://connect.metriport.com/?token=demo)
+that you can easily plug into your app, so that your users can connect all of their data sources to your application!
+Here's a preview:
+
+<iframe width="90%" height="700" src="https://connect.metriport.com/?token=demo"></iframe>
+
+To hook this up, on your server you'll just need to create each user in Metriport, and
+generate a temporary token for each Connect session:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  // create user in Metriport and get the Metriport user ID
+  const metriportUserId = await metriportClient.getMetriportUserId("your-internal-user-id");
+
+  // create a session token to be used in the Metriport Connect widget
+  const connectToken = await metriportClient.getConnectToken(metriportUserId);
+  ```
+</CodeBlock>
+
+<Callout intent="info">
+  As the Metriport user ID is reused for all subsequent data requests, we recommend saving it in
+  your database for future requests.
+</Callout>
+
+Then, in your application's front end, simply link to the Metriport Connect widget
+and pass in that session token you generated above:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  window.open(`https://connect.metriport.com/?token=${connectToken}`);
+  ```
+</CodeBlock>
+
+The token will expire 10 minutes after it is created, and can be reused for the duration of the
+Connect session.
+
+To open the widget in Sandbox mode, add the parameter `&sandbox=true` to the
+URL. For example:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  `https://connect.metriport.com/?token=${connectToken}&sandbox=true`;
+  ```
+</CodeBlock>
+
+
+Head to the [Connect Widget page](/devices-api/getting-started/connect-widget) to learn more about the various Widget customization options, and view some code samples for integrating the Widget on different platforms such as iOS and Android.
+
+<Callout intent="warn">
+  Multiple connected users should not access the same provider account - even across enviroments.
+  For more info see the section [Connecting to
+  Providers](/devices-api/more-info/our-integrations#connecting-to-providers).
+</Callout>
+
+## 5. Access your user's health data
+
+<Callout intent="success">
+  That's it, now you're ready to start accessing all of your user's health data from all of the data
+  sources they've connected to your app!
+</Callout>
+
+<Card title="API reference" icon="terminal" href="/devices-api/api-reference">
+  Check out our API reference for example data requests and responses.
+</Card>

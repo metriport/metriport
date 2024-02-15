@@ -1,0 +1,282 @@
+Overview of the configurations and implementation details for the Metriport Connect Widget.
+
+# Overview
+
+With Metriport, you get a pre-built [Connect widget](https://connect.metriport.com/?token=demo)
+that you can easily plug into your app, so that your users can connect all of their data sources to your application!
+Here's a preview:
+
+<iframe width="90%" height="700" src="https://connect.metriport.com/?token=demo"></iframe>
+
+## How to Implement
+
+You can use the references below for sample implementations on various platforms. Generally, you can either:
+
+- use one of our supported SDKs to implement the Widget (required to integrate with Apple Health);
+- or, link to the Connect Widget in web apps;
+- or, use WebViews to implement the Widget on mobile platforms.
+
+<Callout intent="info">
+  As per the [Quickstart
+  guide](/devices-api/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app),
+  you'll need to generate a temporary token for each Connect Widget session.
+</Callout>
+
+### Web
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  window.open(`https://connect.metriport.com/?token=${connectToken}`);
+  ```
+</CodeBlock>
+
+<Callout intent="info">
+  Not all of the data providers support an `iframe` embedding, so we recommend to avoid using an
+  `iframe` for the Connect Widget in your web app.
+</Callout>
+
+### iOS (Swift)
+
+See our [Swift SDK guide](/devices-api/sdks/connect-widget/swift) for implementation details.
+
+<Callout intent="success">
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/ios/Metriport%20mobile)
+  of this in an iOS app.
+</Callout>
+
+### Android (Kotlin)
+
+<CodeBlocks>
+  <CodeBlock title = "MainActivity.kt">
+    ```kotlin
+    package com.example.metriport
+
+    import android.os.Bundle
+    import android.webkit.WebViewClient
+    import androidx.appcompat.app.AppCompatActivity
+    import kotlinx.android.synthetic.main.activity_main.*
+
+
+    class MainActivity : AppCompatActivity() {
+
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            setContentView(R.layout.activity_main)
+
+            webView.webViewClient = WebViewClient()
+
+            // For more information of how to create a token view link below
+            // https://docs.metriport.com/getting-started/connect-quickstart#4-link-to-the-metriport-connect-widget-in-your-app
+            val prodUrl = "https://connect.metriport.com/?token=demo"
+
+            // To use emulator locally make sure to use your IP
+            // val localhostUrl = "http://{LOCAL_IP}:3001/?token={YOUR_TOKEN}"
+
+            webView.loadUrl(prodUrl)
+
+            webView.settings.domStorageEnabled = true;
+
+            webView.settings.javaScriptEnabled = true
+
+            webView.settings.setSupportZoom(true)
+        }
+
+        override fun onBackPressed() {
+            if (webView.canGoBack())
+                webView.goBack()
+            else
+                super.onBackPressed()
+        }
+    }
+
+    ```
+  </CodeBlock>
+
+  <CodeBlock title = "activity_main.xml">
+    ```xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+
+        <!-- Place WebView on the Screen -->
+        <WebView
+            android{id}="@+id/webView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    ```
+  </CodeBlock>
+
+  <CodeBlock title = "AndroidManifest.xml">
+    ```xml
+    <?xml version="1.0" encoding="utf-8"?>
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools">
+
+        <!-- These permissions are needed to embed the WebView -->
+        <uses-permission android:name="android.permission.INTERNET"/>
+        <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+
+        <application
+            android:allowBackup="true"
+            android:networkSecurityConfig="@xml/network_security_config"
+            android:dataExtractionRules="@xml/data_extraction_rules"
+            android:fullBackupContent="@xml/backup_rules"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/app_name"
+            android:roundIcon="@mipmap/ic_launcher_round"
+            android:supportsRtl="true"
+            android:theme="@style/Theme.Metriport"
+            tools:targetApi="31">
+            <activity
+                android:name=".MainActivity"
+                android:exported="true">
+                <intent-filter>
+                    <action android:name="android.intent.action.MAIN" />
+
+                    <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+
+                <meta-data
+                    android:name="android.app.lib_name"
+                    android:value="" />
+            </activity>
+        </application>
+
+    </manifest>
+
+    ```
+  </CodeBlock>
+
+</CodeBlocks>
+
+<Callout intent="success">
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/android) of this in
+  an Android app.
+</Callout>
+
+### React Native
+
+See our [React Native SDK guide](/devices-api/sdks/connect-widget/react-native) for implementation details.
+
+<Callout intent="success">
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/react-native) of this
+  in a React Native app.
+</Callout>
+
+### Flutter
+
+See our [Flutter SDK guide](/devices-api/sdks/connect-widget/flutter) for implementation details.
+
+### Cordova
+
+See our [Cordova SDK guide](/devices-api/sdks/connect-widget/cordova) for implementation details.
+
+<Callout intent="success">
+  Our GitHub repo has [an example
+  implementation](https://github.com/metriport/metriport/tree/develop/examples/cordova) of this in a
+  Cordova app.
+</Callout>
+
+## URL Parameters
+
+Set url parameters to validate the current session of the widget and make
+certain customizations to fit your product needs.
+
+### token
+
+This is the token generated by Metriport. Check the [Quickstart guide](/devices-api/getting-started/connect-quickstart) for more details.
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}`;
+```
+
+### sandbox
+
+Set this flag to `true` to run the Widget in Sandbox mode. Check the [Quickstart guide](/devices-api/getting-started/connect-quickstart) for more details.
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&sandbox=true`;
+```
+
+### colorMode
+
+You can update the color mode to be either `light or dark`.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&colorMode=dark`;
+```
+
+<iframe
+  width="90%"
+  height="700"
+  src="https://connect.metriport.com/?token=demo&colorMode=dark"
+></iframe>
+
+### customColor
+
+You can set your own color as the highlight color by adding a default color such as orange or add a hex code.
+For a comprehensive list of available colors [visit here](https://www.w3schools.com/cssref/css_colors.php).<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&customColor=orange`;
+```
+
+<Callout intent="success">If you wish to add a hex code ensure that it is URL encoded ie. customColor=%23FF5733</Callout>
+
+<iframe
+  width="90%"
+  height="700"
+  src="https://connect.metriport.com/?token=demo&customColor=orange"
+></iframe>
+
+### redirectUrl
+
+After users successfully connect a provider, they can be redirected to a URL of your choosing.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news`;
+```
+
+<Callout intent="success">
+  For optimal results, we advise that you encode your URLs before including them in query
+  parameters. ie. redirectUrl=https%3A%2F%2Fmy-app.com%2Fgood-news
+</Callout>
+
+### failRedirectUrl
+
+After a failed attempt to connect a provider, your users can be redirected to another URL of your choosing. This is similar to [redirectUrl](#redirecturl) above.<br/>
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&failRedirectUrl=https%3A%2F%2Fmy-app.com%2Fless-good-news`;
+```
+
+### providers
+
+You can choose the providers you wish to display to your users. It must be a comma separated lowercased list of providers.
+For a list of the available providers [visit here](/devices-api/more-info/our-integrations).
+
+```typescript
+`https://connect.metriport.com/?token=${connectToken}&providers=fitbit,oura,garmin`;
+```
+
+<Callout intent="success">
+  This defaults to all providers if no paramater is set. Once you set the provider parameter you
+  will need to manually add providers or it will default to your last request.
+</Callout>
+
+<iframe
+  width="90%"
+  height="700"
+  src="https://connect.metriport.com/?token=demo&providers=fitbit,oura,garmin"
+></iframe>

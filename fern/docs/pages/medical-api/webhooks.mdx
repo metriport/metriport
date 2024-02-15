@@ -1,0 +1,388 @@
+Receive status updates as soon as data becomes available.
+
+## Overview
+
+When using the Medical API, Metriport will send Webhook messages to your app as soon as data becomes available.
+
+This is the usual flow to obtain Patient data:
+
+1. You trigger a [document query](/medical-api/api-reference/document/start-document-query) to retrieve a Patient's medical documents from HIEs;
+   - XML C-CDA documents will be converted and stored on Metriport's FHIR storage;
+   - as documents get downloaded and converted, you should get [patient document data](#patient-document-data) webhook messages;
+2. Once document conversion is completed, you can [query for patient consolidated data](/medical-api/api-reference/fhir/consolidated-data-query-post);
+   - depending on the amount of data this can take some time to crunch together, so results are sent through a webhook message:
+     [patient consolidated data](#patient-consolidated-data)
+
+You should expect to get more than one Webhook message per patient per request (document query and/or consolidated data).
+
+To enable this integration approach with Metriport, and for some prerequesite reading to understand
+how the Webhook flow works, see [our Webhooks guide](/home/api-info/webhooks).
+
+### Passing Metadata
+
+You can pass metadata to the [start document query](/medical-api/api-reference/document/start-document-query) or [start consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post),
+endpoints, and you will receive the `meta.data` field of the webhook request.
+
+Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. You may use this to attach whatever metadata is relevant for your use-case - for example, external IDs.
+Below is an example payload you could send in the request body of one of those endpoints and how you would use the sdk:
+
+```json
+{
+  "metadata": {
+     "youCan": "putAny",
+     "stringKeyValue": "pairsHere",
+  }
+}
+
+```
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+  const metadata = {
+      youCan: "putAny",
+      stringKeyValue: "pairsHere",
+  };
+
+  const metriport = new MetriportMedicalApi(apiToken);
+
+  const consolidatedData = await metriport.startConsolidatedQuery(
+    patientId,
+    ["AllergyIntolerance", "Appointment"] as const,
+    "2023-03-01",
+    "2023-04-01",
+    undefined,
+    metadata
+  );
+
+  ```
+</CodeBlock>
+
+### Patient Document Data
+
+These are messages you can expect to receive in the following scenarios:
+
+1. When [queried documents](/medical-api/api-reference/document/start-document-query) have completed downloading (`type` for a patient in
+   the message will be `document-download`, and at this point you'll be able to [download the raw files](/medical-api/api-reference/document/get-document));
+
+<Callout intent="success">
+  Note that the webhooks will only contain updates for new data fetched in the current document
+  query.
+</Callout>
+
+2. Then, if the downloaded documents contained C-CDA/XML files, when the conversion to FHIR has completed (`type` for a patient in the message
+   will be `document-conversion`, and at this point you'll be able to query for [patient consolidated data](#patient-consolidated-data) in FHIR-compliant format).
+
+```json
+{
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "medical.document-bulk-download-urls"
+    "data": {
+        youCan: "putAny",
+        stringKeyValue: "pairsHere",
+    }
+  },
+  "patients": [
+    {
+      "patientId": "<patient-id-1>",
+      "externalId": "<external-id-1>",
+      "type": "document-download",
+      "status": "completed",
+      "documents": [
+        {
+          "id": "1.2.543.1.34.1.34.134",
+          "fileName": "CCDA_Diag.xml",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/xml",
+          "size": "17344007",
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+        },
+        {
+          "id": "1.2.543.1.224.54.22.540",
+          "fileName": "Progress_Notes.xml",
+          "description": "Patient Encounter Progress Notes 2023-03-22",
+          "status": "current",
+          "indexed": "2023-03-22T08:34:00.000Z",
+          "mimeType": "application/xml",
+          "size": "8675545",
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "371532007",
+                "display": "Progress Report"
+              }
+            ],
+            "text": "Progress Notes"
+          }
+        }
+      ]
+    },
+    {
+      "patientId": "<patient-id-2>",
+      "type": "document-download",
+      "status": "completed",
+      ...
+    }
+  ]
+}
+```
+
+The format follows:
+
+`meta` `required`
+Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+`type` `string` `required`
+The type of the Medical API webhook data message. Can be one of: `medical.document-download`, `medical.document-conversion`,
+`medical.consolidated-data`, `medical.document-bulk-download-urls`.
+
+`patients` `PatientDocQueryUpdate[]` `required`
+Array of Document query status updates - where each item corresponds to a specific patient.
+
+`patiendId` `string``required`
+The Patient ID.
+
+`type` `string` `required`
+Specifies what step in the Document query flow this message is for - can be one of `document-download` | `document-conversion`.
+
+`status` `string` `required`
+The outcome of the step corresponding to `type` - can be one of `completed` | `failed`.
+
+`documents` `DocumentReference[]`
+An array of objects describing the Documents that can be retrieved for the Patient - will only be present for `document-download` messages.
+
+### Patient Consolidated Data
+
+A Patient's consolidated data is the result of converting C-CDA documents from HIEs into FHIR, as well as other FHIR data your application
+has [inserted into Metriport's FHIR repository](/medical-api/api-reference/fhir/create-patient-consolidated).
+
+Patients can have a large amount of data, so in order to have access to a Patient's data:
+
+1. [Trigger a consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-post) - one query per patient at any given time;
+1. Your app can check the status by calling [get consolidated query status](/medical-api/api-reference/fhir/consolidated-data-query-get);
+1. When the result is ready, we'll send a webhook message with the results (below).
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2023-08-23T22:09:11.373Z",
+    "type": "medical.consolidated-data"
+  },
+  "patients": [
+    {
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "status": "completed",
+      "filters": {
+        "resources": "DocumentReference,Appointment"
+      },
+      "bundle": {
+        "type": "searchset",
+        "resourceType": "Bundle",
+        "total": 1,
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "Appointment",
+              "id": "123",
+              "start": "2021-06-10T13:00:00.000Z",
+              "end": "2021-06-10T13:55:00.000Z",
+              "status": "booked",
+              "meta": {
+                "source": "#cXWJjuhQX33LJ0VJrPiD0",
+                "versionId": "2",
+                "lastUpdated": "2023-08-23T12:41:54.661-05:00"
+              },
+              "contained": [
+                {
+                  "id": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+                  "meta": {
+                    "source": "#4fh35tN5_DjOxfVrq3dfi"
+                  },
+                  "name": [
+                    {
+                      "given": ["John"],
+                      "family": "Doe"
+                    }
+                  ],
+                  "gender": "male",
+                  "address": [
+                    {
+                      "country": "USA",
+                      "postalCode": "12345"
+                    }
+                  ],
+                  "birthDate": "1981-01-01",
+                  "resourceType": "Patient"
+                }
+              ],
+              "participant": [
+                {
+                  "actor": {
+                    "display": "John Doe",
+                    "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
+                  },
+                  "period": {
+                    "end": "2021-05-24T13:21:28.527Z",
+                    "start": "2021-05-24T13:21:28.527Z"
+                  },
+                  "status": "accepted"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+#### Medical Record
+
+When querying for a Patient's consolidated data, you can also request this information in PDF or HTML format.
+
+The following is the result of the [previous section](#patient-consolidated-data), but with the `Bundle` containing a document reference to a rendered medical record that represents the resulting FHIR bundle.
+
+Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing an attachment with a `url` which can be used to download the rendered medical record.
+
+Example payload:
+
+```json
+{
+  "meta": {
+    "messageId": "1e82424a-1220-473d-a0d1-6e5fde15159e",
+    "when": "2023-08-23T22:09:11.373Z",
+    "type": "medical.consolidated-data"
+  },
+  "patients": [
+    {
+      "patientId": "eddeefa1-b54a-41d6-854f-0e91b7871d6a",
+      "externalId": "1234567890",
+      "status": "completed",
+      "filters": {
+        "resources": "DocumentReference,Appointment"
+      },
+      "bundle": {
+        "resourceType": "Bundle",
+        "total": 1,
+        "type": "collection",
+        "entry": [
+          {
+            "resource": {
+              "resourceType": "DocumentReference",
+              "subject": {
+                "reference": "Patient/eddeefa1-b54a-41d6-854f-0e91b7871d6a"
+              },
+              "content": [
+                {
+                  "attachment": {
+                    "contentType": "application/pdf",
+                    "url": "https://documents.s3.amazonaws.com/abc123-Amz-SignedHeaders=host"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+### Bulk Document Download URLs
+
+If you want to download all of a patient's documents, especially when they have a large volume of documents, you can start a [Bulk Get Document URL query](/medical-api/api-reference/document/download-url-bulk). We’ll send a webhook message with all the downloadable URLs for all the patient's documents.
+You can use the value of the `url` property in the returned `documents` objects to download the files.
+
+Here is an example payload:
+
+```json
+{
+"meta": {
+    "messageId": "bd4184dd-3b35-4c60-8130-447d1d528fea",
+    "when": "2023-11-30T05:05:12.215Z",
+    "type": "medical.document-bulk-download"
+  },
+  "patients": [
+    {
+      "status": "completed",
+      "patientId": "<patient-id-1>",
+      "externalId": "<external-id-1>",
+      "documents": [
+        {
+          "id": "018c1b94-57dc-7950-b564-f74ab9b56cc4",
+          "size": 40670,
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f74ab9b56cc4.xml",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/xml",
+          "size": 40670,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<a-document-url>"
+        },
+        {
+          "id": "018c1b94-57dc-7950-b564-f749bcf9be3e",
+          "fileName": "81f2ec4e-c71c-4090-bf1c-9d8529f25b5a/018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16/81f2ec4e-c71c-4090-bf1c-9d8529f65b5a_018c1b94-2ed9-70f2-8b0f-ad4f8e8c7a16_018c1b94-57dc-7950-b564-f749bcf9be3e.pdf",
+          "description": "Patient Diagnoses",
+          "status": "current",
+          "indexed": "2019-09-07T15:50:00.000Z",
+          "mimeType": "application/pdf",
+          "size": 77093,
+          "type": {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "62479008",
+                "display": "Diagnoses"
+              }
+            ],
+            "text": "Diagnoses"
+          }
+          "url": "<another-document-url>"
+        }
+      ],
+    }
+  ]
+}
+```
+
+The format is as follows:
+
+`meta` `required`
+Metadata about the message. The full format is described [here](/home/api-info/webhooks#meta-data).
+
+`type` `string` `required`
+The type of the Medical API webhook data message. In this case, it will be `medical.document-bulk-download-urls`.
+
+`patients` `DocumentBulkDownloadUrls[]` `required`
+An array of Document bulk download URLs, where each item corresponds to the queried patient.

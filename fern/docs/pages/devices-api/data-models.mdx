@@ -1,0 +1,523 @@
+Below is a comprehensive list of our data models that you should expect to see when receiving data.
+
+## Activity
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Activity extends MetriportData {
+    summary?: {
+      durations?: ActivityDurations;
+      energy_expenditure?: EnergyExpenditure;
+      movement?: ActivityMovement;
+      biometrics?: {
+        heart_rate?: HeartRate;
+        hrv?: HeartRateVariability;
+        respiration?: Respiration;
+      };
+    };
+    activity_logs?: ActivityLog[];
+  }
+  ```
+</CodeBlock>
+
+## Biometrics
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Biometrics extends MetriportData {
+    blood_glucose?: BloodGlucose;
+    blood_pressure?: BloodPressure;
+    heart_rate?: HeartRate;
+    hrv?: HeartRateVariability;
+    respiration?: Respiration;
+    temperature?: Temperature;
+  }
+  ```
+</CodeBlock>
+
+## Body
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Body extends MetriportData {
+    body_fat_pct?: number;
+    height_cm?: number;
+    weight_kg?: number;
+    bone_mass_kg?: number;
+    muscle_mass_kg?: number;
+    lean_mass_kg?: number;
+    max_possible_heart_rate_bpm?: number;
+    weight_samples_kg?: Sample[];
+  }
+  ```
+</CodeBlock>
+
+## Nutrition
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Nutrition extends MetriportData {
+    summary?: {
+      macros?: Macros;
+      micros?: Micros;
+      aminos?: Aminos;
+    };
+    foods?: Food[];
+  }
+  ```
+</CodeBlock>
+
+### Macros
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Macros {
+    alcohol_g?: number;
+    carbs_g?: number;
+    cholesterol_mg?: number;
+    energy_kcal?: number;
+    fat_g?: number;
+    fiber_g?: number;
+    protein_g?: number;
+    sodium_mg?: number;
+    sugar_g?: number;
+    trans_fat_g?: number;
+    water_ml?: number;
+  }
+  ```
+</CodeBlock>
+
+### Micros
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Micros {
+    biotin_mg?: number;
+    caffeine_mg?: number;
+    calcium_mg?: number;
+    copper_mg?: number;
+    folate_mg?: number;
+    folic_acid_mg?: number;
+    iodine_mg?: number;
+    iron_mg?: number;
+    magnesium_mg?: number;
+    manganese_mg?: number;
+    phosphorus_mg?: number;
+    potassium_mg?: number;
+    selenium_mg?: number;
+    vitamin_A_mg?: number;
+    vitamin_B1_mg?: number;
+    vitamin_B2_mg?: number;
+    vitamin_B3_mg?: number;
+    vitamin_B5_mg?: number;
+    vitamin_B6_mg?: number;
+    vitamin_B12_mg?: number;
+    vitamin_C_mg?: number;
+    vitamin_D_mg?: number;
+    vitamin_E_mg?: number;
+    vitamin_K_mg?: number;
+    zinc_mg?: number;
+  }
+  ```
+</CodeBlock>
+
+### Aminos
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Aminos {
+    alanine_g?: number;
+    arginine_g?: number;
+    asparagine_g?: number;
+    aspartic_acid_g?: number;
+    cysteine_g?: number;
+    glutamine_g?: number;
+    glutamic_acid_g?: number;
+    glycine_g?: number;
+    histidine_g?: number;
+    isoleucine_g?: number;
+    leucine_g?: number;
+    lysine_g?: number;
+    methionine_g?: number;
+    phenylalanine_g?: number;
+    proline_g?: number;
+    serine_g?: number;
+    threonine_g?: number;
+    tryptophan_g?: number;
+    tyrosine_g?: number;
+    valine_g?: number;
+  }
+  ```
+</CodeBlock>
+
+### Food
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Food {
+    name?: string;
+    brand?: string;
+    amount?: number;
+    unit?: string;
+    nutrition_facts?: {
+      macros?: Macros;
+      micros?: Micros;
+      aminos?: Aminos;
+    };
+  }
+  ```
+</CodeBlock>
+
+## Sleep
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Sleep extends MetriportData {
+    start_time?: string;
+    end_time?: string;
+    durations?: SleepDurations;
+    biometrics?: SleepBiometrics;
+    wakeup_frequency?: number;
+  }
+  ```
+</CodeBlock>
+
+### Sleep Durations
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface SleepDurations {
+    total_seconds?: number;
+    awake_seconds?: number;
+    deep_seconds?: number;
+    rem_seconds?: number;
+    light_seconds?: number;
+    in_bed_seconds?: number;
+    time_to_fall_asleep_seconds?: number;
+    no_data_seconds?: number;
+  }
+  ```
+</CodeBlock>
+
+### Sleep Biometrics
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface SleepBiometrics {
+    heart_rate?: HeartRate;
+    hrv?: HeartRateVariability;
+    respiration?: Respiration;
+    temperature?: Temperature;
+  }
+  ```
+</CodeBlock>
+
+## User
+
+### User
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface User extends MetriportData {
+    age?: number;
+    first_name?: string;
+    last_name?: string;
+    city?: string;
+    country?: string;
+    date_of_birth?: string;
+    email?: string;
+    region?: string; // can be state, province, etc.
+    sex?: Sex;
+  }
+  ```
+</CodeBlock>
+
+### Connected User Info
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export type ConnectedUserInfo = {
+    metriportUserId: string;
+    appUserId: string;
+    connectedProviders?: string[];
+  };
+  ```
+</CodeBlock>
+
+## Common
+
+### Activity Durations
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface ActivityDurations {
+    active_seconds?: number;
+    // also referred to as metabolic-equivalent minutes
+    intensity?: {
+      rest_seconds?: number;
+      very_low_seconds?: number;
+      low_seconds?: number;
+      med_seconds?: number;
+      high_seconds?: number;
+    };
+    // also referred to as stress
+    strain?: {
+      rest_seconds?: number;
+      very_low_seconds?: number;
+      low_seconds?: number;
+      med_seconds?: number;
+      high_seconds?: number;
+      very_high_seconds?: number;
+    };
+  }
+  ```
+</CodeBlock>
+
+### Activity Log
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface ActivityLog {
+    metadata: Metadata;
+    name?: string;
+    type?: string;
+    start_time?: string;
+    end_time?: string;
+    durations?: ActivityDurations;
+    energy_expenditure?: EnergyExpenditure;
+    movement?: ActivityMovement;
+    location?: {
+      start_lat_lon_deg?: LatLon;
+      end_lat_lon_deg?: LatLon;
+      polystring?: string;
+      city?: string;
+      country?: string;
+      region?: string; // can be state, province, etc.
+    };
+    biometrics?: {
+      heart_rate?: HeartRate;
+      hrv?: HeartRateVariability;
+      respiration?: Respiration;
+    };
+  }
+  ```
+</CodeBlock>
+
+### Activity Movement
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface ActivityMovement {
+    steps_count?: number;
+    floors_count?: number;
+    elevation?: {
+      gain_meters?: number;
+      min_meters?: number;
+      max_meters?: number;
+    };
+    speed?: {
+      max_km_h?: number;
+      avg_km_h?: number;
+    };
+    avg_cadence?: number;
+    distance_meters?: number;
+  }
+  ```
+</CodeBlock>
+
+### Blood Glucose
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface BloodGlucose {
+    avg_mg_dL?: number;
+    samples_mg_dL: Sample[];
+  }
+  ```
+</CodeBlock>
+
+### Blood Pressure
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface BloodPressure {
+    diastolic_mm_Hg?: {
+      samples?: Sample[];
+    };
+    systolic_mm_Hg?: {
+      samples?: Sample[];
+    };
+  }
+  ```
+</CodeBlock>
+
+### Energy Expenditure
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface EnergyExpenditure {
+    active_kcal?: number;
+    basal_metabolic_rate_kcal?: number;
+    total_watts?: number;
+    avg_watts?: number;
+  }
+  ```
+</CodeBlock>
+
+### Heart Rate Variability
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface HeartRateVariability {
+    rmssd?: {
+      avg_millis?: number;
+      samples_millis?: Sample[];
+    };
+    sdnn?: {
+      avg_millis?: number;
+      samples_millis?: Sample[];
+    };
+  }
+  ```
+</CodeBlock>
+
+### Heart Rate
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface HeartRate {
+    min_bpm?: number;
+    max_bpm?: number;
+    avg_bpm?: number;
+    resting_bpm?: number;
+    samples_bpm?: Sample[];
+  }
+  ```
+</CodeBlock>
+
+### Lat Lon
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface LatLon {
+    lat: number;
+    lon: number;
+  }
+  ```
+</CodeBlock>
+
+### Metadata
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Metadata {
+    date: string;
+    hour?: string;
+    source: ProviderSource;
+    data_source?: SourceInfo;
+    error?: string;
+  }
+  ```
+</CodeBlock>
+
+### Source Info
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface SourceInfo {
+    source_type?: SourceType;
+    id?: string;
+    name?: string;
+    type?: string;
+  }
+  ```
+</CodeBlock>
+
+### Provider Source
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export enum ProviderSource {
+    apple = "apple",
+    cronometer = "cronometer",
+    dexcom = "dexcom",
+    fitbit = "fitbit",
+    garmin = "garmin",
+    oura = "oura",
+    whoop = "whoop",
+    withings = "withings",
+  }
+  ```
+</CodeBlock>
+
+### Respiration
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Respiration {
+    vo2_max?: number;
+    spo2?: {
+      // blood oxygen
+      min_pct?: number;
+      max_pct?: number;
+      avg_pct?: number;
+      std_dev?: number;
+    };
+    avg_breaths_per_minute?: number;
+    peak_flow_L_min?: number;
+    forced_volume_L?: number;
+    /**
+    * Samples of respiration readings, breaths per minute over time.
+    */
+    samples_breaths_per_minute?: Sample[];
+  }
+  ```
+</CodeBlock>
+
+### Sample
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Sample {
+    time: string;
+    value: number;
+    std_dev?: number;
+    data_source?: SourceInfo;
+  }
+  ```
+</CodeBlock>
+
+### Source Type
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export enum SourceType {
+    manual = "MANUAL_ENTRY",
+    device = "DEVICE",
+  }
+  ```
+</CodeBlock>
+
+### Sex
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export type Sex = "male" | "female";
+  ```
+</CodeBlock>
+
+### Temperature
+
+<CodeBlock title = "Typescript">
+  ```typescript
+  export interface Temperature {
+    core?: {
+      avg_celcius?: number;
+      samples_celcius?: Sample[];
+    };
+    delta_celcius?: number;
+    skin?: {
+      avg_celcius?: number;
+      samples_celcius?: Sample[];
+    };
+  }
+  ```
+</CodeBlock>

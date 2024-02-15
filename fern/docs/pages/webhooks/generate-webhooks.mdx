@@ -1,0 +1,42 @@
+If using the dashboard: simply delete your webhook URL on the [Developers page](https://dash.metriport.com/developers), save, and enter it again.
+
+If using the API: set the webhook URL to an empty string via the [Update Settings endpoint](https://docs.metriport.com/home/api-reference/settings/post-settings), and then set it to your desired URL making another request to the same endpoint.
+​
+## Format
+
+Webhook requests contain the relevant information on the body of the HTTP request.
+
+There are several types of messages you can expect to receive:
+
+  - `ping`: validation of the webhook connection between Metriport and your app;
+  - [Devices API messages](https://docs.metriport.com/home/api-info/webhooks#devices-api-messages);
+  - [Medical API messages](https://docs.metriport.com/home/api-info/webhooks#medical-api-messages).
+
+In general, upon successful receiving of these messages, it’s expected that your app responds with a `200` HTTP status code (OK).
+
+There’s no need to include anything on the response body.
+​
+## The `ping` message
+
+This is a simple message to validate access to your app’s webhook endpoint. Your app should accept a `POST` request with this body…
+
+```json
+{
+  "ping": "<random-sequence>"
+  "meta": {
+    "messageId": "<message-id>",
+    "when": "<date-time-in-utc>",
+    "type": "ping"
+  }
+}
+```
+
+…and respond to this request by sending back the `<random-sequence>` as below:
+
+```json
+{
+  "pong": "<random-sequence>"
+}
+```
+
+You can check the [webhook mock server available on our repository](https://github.com/metriport/metriport/blob/master/utils/src/mock-webhook.ts) for a simple implementation of this message.

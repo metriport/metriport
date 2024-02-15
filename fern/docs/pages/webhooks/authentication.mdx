@@ -1,0 +1,66 @@
+When Metriport sends a webhook message, it includes an `x-metriport-signature` header.
+
+  - `x-metriport-signature`: This is an [HMAC](https://en.wikipedia.org/wiki/HMAC) SHA-256 hash computed using your webhook key and the body of the webhook message.
+
+At a high level, an HMAC works by taking a secret key and a message, and performing iterative hashes of the two to create a signature. That signature is compared against the signature in the header for equality. If the signatures are equal, you can trust the webhook payload is authentic and has not been tampered with. If they aren’t equal, you should throw it awasy.
+
+You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here’s an example of how you can do this in Node.js:
+
+<CodeBlock title = "Node.js example">
+```typescript
+  const signature = req.headers["x-metriport-signature"];
+  const signatureAsString = // codeToValidateAndConvertToString(signature);
+  const metriportApi = new MetriportMedicalApi(apiKey, {
+    baseAddress: apiUrl,
+  });
+  if (metriportApi.verifyWebhookSignature(whKey, req.body, signatureAsString)) {
+    console.log(`Signature verified`);
+  } else {
+    console.log(`Signature verification failed`);
+  }
+```
+</CodeBlock>
+
+The important thing is to make sure you use a trusted cryptography library in whatever language you choose to validate the webhook message in. You can also compute an HMAC in python:
+
+<CodeBlock title = "HMAC in python">
+```python
+import hmac
+import hashlib
+import json
+
+def compute_hmac(key, message, signature, digestmod=hashlib.sha256):
+    """
+    Verify the HMAC signature for a given message and key.
+
+    :param key: The secret key (string).
+    :param message: The message to be authenticated (string in JSON format).
+    :param signature: The provided HMAC signature to verify against (string).
+    :param digestmod: The hash function to use (defaults to hashlib.sha256).
+    :return: True if signature is verified, False otherwise.
+    """
+    message_bytestring = json.dumps(message, separators=(',', ':')).encode()  # Convert the message string to bytes
+    key_bytestring = key.encode()  # Convert the key string to bytes
+    hmac_object = hmac.new(key_bytestring, message_bytestring, digestmod)
+    computed_signature = hmac_object.hexdigest()
+    print(computed_signature)
+    return signature == computed_signature
+
+# Example usage
+
+key = 'your_secret_key'  # Your key 
+message = '{"webhookUrl": "https://api.app.com/webhook"}'  # The message from the request in JSON format
+signature = 'the-request-signature'  # The signature from the header 
+
+is_signature_valid = compute_hmac(key, message, signature)
+
+if is_signature_valid:
+    print("Signature verified")
+else:
+    print("Signature verification failed")
+```
+</CodeBlock>
+
+<Callout intent="warn">
+The previous method of authenticating webhooks, comparing your webhook key with the `x-webhook-key` in each request’s HTTP header, is being deprecated on **December 9th, 2023**. Please update your implementation to use the `x-metriport-signature` header for authentication.
+</Callout>

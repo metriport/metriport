@@ -1,0 +1,87 @@
+"Connect to Tenovi RPM devices.
+
+## Overview
+
+This is a guide to help you integrate with [Tenovi](https://tenovi.com/) - a remote patient monitoring (RPM) device provider.
+When a patient takes measurements with Tenovi RPM devices, the data will be made available both through [webhooks](/home/api-info/webhooks),
+and our [REST API](/devices-api/api-reference/get-biometrics-data).
+
+<Callout intent="success">
+  You can read more about what data types are supported on our [integrations
+  page](/devices-api/more-info/our-integrations).
+</Callout>
+
+## Setup
+
+<Callout intent="success">
+  As a prerequisite, we recommend following our [Devices API quickstart
+  guide](/devices-api/getting-started/connect-quickstart), up to and including the "Integrate your
+  app with Metriport" step.
+</Callout>
+
+To integrate with Tenovi, you will need to do the following for each of your users:
+
+1. Obtain a [connect token](/devices-api/api-reference/user/create-connect-token) for the user;
+1. Activate the user's Tenovi device(s) using the [Connect RPM Device](/devices-api/api-reference/connect/connect-rpm-device) endpoint.
+
+<Callout intent="info">
+  In the Connect RPM Device endpoint, you will need to use the Tenovi `Patient ID` as the
+  `deviceUserId`, and the `HWI ID`, as `deviceIds`.
+</Callout>
+
+<img className="h-100" src="https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/tenovi-dashboard.png" />
+
+## REST Endpoints
+
+<Callout intent="warn">To use any of these endpoints, you will **need** to use the [headers](#headers).</Callout>
+
+With Tenovi, you can query for past user data using one of the following endpoints:
+
+- [getBodyData](/devices-api/api-reference/get-body-data)
+- [getBiometricsData](/devices-api/api-reference/get-biometrics-data)
+
+You can revoke a user's access to Tenovi with the following endpoint:
+
+- [revokeProviderAccess](/devices-api/api-reference/user/revoke-provider-access)
+
+You can disconnect a single device from the user using the following endpoint:
+
+- [disconnectDevice](/devices-api/api-reference/user/disconnect-device)
+
+## Headers
+
+The following headers are required to use the REST endpoints outlined above (see image below for reference).
+
+`x-tenovi-api-key` `string` `required`
+Your company's API key generated on Tenovi's Client Home page.
+
+`x-tenovi-client-name` `string` `required`
+Your company's name as indicated on your custom Tenovi URL, what comes after
+"https://api2.tenovi.com/clients/...".
+
+<img className="h-100" src="https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/tenovi-client-home.png" />
+
+## Device Reassignment
+
+If you would like to reassign a device from one patient to another, please follow these steps:
+
+1. On the Client Devices page of the Tenovi dashboard, note down the Gateway ID of the device you want to disconnect (see image below).
+
+
+<img className="h-100" src="https://mintlify.s3-us-west-1.amazonaws.com/metriport/images/tenovi-gateway-id.png" />
+
+
+2. Use the [disconnectDevice](/devices-api/api-reference/user/disconnect-device) or [revokeProviderAccess](/devices-api/api-reference/user/revoke-provider-access) endpoint to disconnect the currently-connected user from the device. This step also deactivates the device, preventing it from sending any further webhooks.
+
+3. On the same page from step #1, click the Patient ID you would like to remove. Verify you clicked the ID of the patient that will **no longer** use this device. Press "Remove Patient" and confirm the action by clicking "OK".
+
+4. Press the resulting "N/A" field under the Patient ID, and fill out the information for the new patient.
+
+5. Re-activate the device by entering the Gateway ID from step #1.
+
+6. Connect a new user by following the steps outlined in the [Setup](#setup) section using the Patient ID you entered in step #4.
+
+<Callout intent="success">
+  If you forgot to note down the Gateway ID for your device from step #1, you can find it on the
+  sticker on the back of your Gateway device.
+</Callout>
