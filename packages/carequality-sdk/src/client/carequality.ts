@@ -39,7 +39,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    *
    * @param orgCert                 The certificate (public key) for the organization.
    * @param rsaPrivateKey           An RSA key corresponding to the specified orgCert.
-   * @param rsaPrivateKeyPassword   The passphrase to decrypt the private key.
+   * @param rsaPrivateKeyPassword   The password to decrypt the private key.
    * @param apiKey                  The API key to use for authentication.
    * @param apiMode                 Optional, the mode the client will be running. Defaults to staging.
    * @param options                 Optional parameters
