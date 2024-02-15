@@ -18,13 +18,13 @@ const cqApiMode = Config.isProdEnv()
  */
 export function makeCarequalityManagementAPI(): CarequalityManagementAPI | undefined {
   if (Config.isSandbox()) return;
-  const cqDirectoryApiKey = Config.getCQDirectoryApiKey();
+  const cqManagementApiKey = Config.getCQManagementApiKey();
   const cqOrgCert = Config.getCQOrgCertificate();
   const cqOrgPrivateKey = Config.getCQOrgPrivateKey();
   const cqPrivateKeyPassword = Config.getCQOrgPrivateKeyPassword();
 
   return new CarequalityManagementAPIImpl({
-    apiKey: cqDirectoryApiKey,
+    apiKey: cqManagementApiKey,
     apiMode: cqApiMode,
     orgCert: cqOrgCert,
     rsaPrivateKey: cqOrgPrivateKey,

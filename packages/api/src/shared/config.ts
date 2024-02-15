@@ -86,8 +86,8 @@ export class Config {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
 
-  static getCQDirectoryApiKey(): string {
-    return getEnvVarOrFail("CQ_DIRECTORY_API_KEY");
+  static getCQManagementApiKey(): string {
+    return getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
   }
 
   static getCQOrgPrivateKey(): string {
