@@ -17,7 +17,7 @@ for directory in "$root_directory"/*; do
       
       if [[ "$has_composition" == "true" ]]; then
         # Count entries in sections with "Encounter" or "Encounter Details" in the title within Composition resources
-        encounter_entries=$(jq '[.entry[].resource | select(.resourceType == "Composition").section[]? | select(.title? == "Encounter" or .title? == "Encounter Details") | .entry[]? | length] | add' "$file")
+        encounter_entries=$(jq '[.entry[].resource | select(.resourceType == "Composition").section[]? | select(.title? == "Encounter" or .title? == "Encounter Details" or .title? == "Encounters") | .entry[]? | length] | add' "$file")
         
         # Check if there is a section with the title "XYZ" within Composition resources
         other_resource_exists=$(jq '[.entry[].resource | select(.resourceType == "Composition").section[]? | select(.title? == "Plan of Treatment")] | length > 0' "$file")

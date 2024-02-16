@@ -532,16 +532,28 @@ module.exports.external = [
   },
   {
     name: "multipleToArray",
-    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
     func: function (...vals) {
-        var combinedArr = [];
-        vals.forEach(function(val) {
-            if (Array.isArray(val)) {
-                combinedArr.push(...val);
-            } else if (val) {
+        const uniqueSet = new Set();
+        const combinedArr = [];
+
+        // Use vals.length - 1 to exclude the last argument
+        for (let i = 0; i < vals.length - 1; i++) {
+            const val = vals[i];
+            let hash;
+
+            if (typeof val === 'object' && val !== null) {
+                // Attempt to create a unique hash for objects
+                hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
+            } else {
+                // Use primitive value directly
+                hash = val;
+            }
+
+            if (!uniqueSet.has(hash)) {
+                uniqueSet.add(hash);
                 combinedArr.push(val);
             }
-        });
+        }
 
         return combinedArr;
     },
