@@ -141,7 +141,20 @@ export async function updateDocumentReference({
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
-    const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
+    const refDate = dayjs();
+    const updatedDocumentReference = cloneDeep(docRefDraft);
+    const metriportContent = createDocReferenceContent({
+      contentType: fileData.mimeType,
+      size: fileData.size,
+      creation: refDate.toISOString(),
+      fileName: fileData.originalName,
+      location: fileData.locationUrl,
+      extension: [metriportDataSourceExtension],
+    });
+
+    updatedDocumentReference.extension = [metriportDataSourceExtension];
+    updatedDocumentReference.content = [metriportContent];
+    updatedDocumentReference.docStatus = updatedDocumentReference.docStatus ?? "final";
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
@@ -152,23 +165,4 @@ export async function updateDocumentReference({
     capture.error(msg, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
     return undefined;
   }
-}
-
-function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
-  const refDate = dayjs();
-  const amendedDocRef = cloneDeep(doc);
-  const metriportContent = createDocReferenceContent({
-    contentType: fileData.mimeType,
-    size: fileData.size,
-    creation: refDate.toISOString(),
-    fileName: fileData.originalName,
-    location: fileData.locationUrl,
-    extension: [metriportDataSourceExtension],
-  });
-
-  amendedDocRef.extension = [metriportDataSourceExtension];
-  amendedDocRef.content = [metriportContent];
-  amendedDocRef.docStatus = "amended";
-
-  return amendedDocRef;
 }
