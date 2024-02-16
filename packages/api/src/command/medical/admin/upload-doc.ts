@@ -154,7 +154,7 @@ export async function updateDocumentReference({
 
     updatedDocumentReference.extension = [metriportDataSourceExtension];
     updatedDocumentReference.content = [metriportContent];
-    updatedDocumentReference.docStatus = updatedDocumentReference.docStatus ?? "final";
+    updatedDocumentReference.docStatus = "final";
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
