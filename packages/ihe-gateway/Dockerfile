@@ -61,6 +61,15 @@ RUN --mount=type=secret,id=store_pass \
     -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia5 -cacerts -file /opt/connect/appdata/sequoia5.pem
 RUN (cat mcserver.vmoptions /opt/connect/docs/mcservice-java9+.vmoptions ; echo "") > mcserver_base.vmoptions
 EXPOSE 8443
+EXPOSE 8080
+EXPOSE 8081
+EXPOSE 8082
+EXPOSE 8083
+EXPOSE 8084
+EXPOSE 8085
+EXPOSE 8086
+EXPOSE 9091
+EXPOSE 9092
 
 COPY entrypoint.sh /
 RUN chmod 755 /entrypoint.sh

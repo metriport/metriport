@@ -39,6 +39,7 @@ services:
       HOME_COMMUNITY_NAME: "${HOME_COMMUNITY_NAME}"
     restart: on-failure
     ports:
+      - "8080:8080"
       - "8443:8443"
       - "8081:8081"
       - "8082:8082"
@@ -48,6 +49,7 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
+      # TODO 1377 validate we can remove these
       # - "8100:8100"
       # - "23067:23067"
       # - "16850:16850"
