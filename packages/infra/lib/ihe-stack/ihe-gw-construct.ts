@@ -7,10 +7,10 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import {
+  ApplicationLoadBalancer,
   ApplicationProtocol,
   ApplicationTargetGroup,
   HealthCheck,
-  ListenerAction,
   Protocol,
   TargetType,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
@@ -43,11 +43,13 @@ export interface IHEGatewayConstructProps {
   medicalDocumentsBucket: IBucket;
 }
 
+const maxPortsPerLB = 5;
+
 const id = "IHEGateway";
 
 // TODO 1377 Figure this out and enable the remaining ports. Might need to create 2-3 LBs: "UpdateService error: load balancers can have at most 5 items"
 // const mainPort = 8443;
-const additionalHTTPPorts = [
+const httpPorts = [
   // 8081, 8082, 8083, 8084, 8085, 8086, 9091, 9092, 8100, 23067, 16850, 16852, 16853,
   // 8081, 8082, 8083, 8084, 8085, 8086, 9091, 9092,
   // 8443, 8081, 8082, 8083, 8084, 8085, 8086, 9091, 9092,
@@ -115,29 +117,68 @@ export default class IHEGatewayConstruct extends Construct {
     // - https://docs.aws.amazon.com/AmazonECS/latest/developerguide/load-balancer-types.html
     const containerName = `${id}-Server`;
     // const containerPorts = [8080, mainPort, ...additionalHTTPPorts];
-    const containerPorts = additionalHTTPPorts;
+    // maxPortsPerLB - 1 because 8080 is added to the main container regardless
+    const portsOnMainContainer = maxPortsPerLB - 1;
+    const mainContainerPorts = httpPorts.slice(0, portsOnMainContainer);
+    const additionalContainerPorts =
+      httpPorts.length > portsOnMainContainer ? httpPorts.slice(portsOnMainContainer) : [];
+    const serviceId = `${id}FargateService`;
 
     // TODO 1377 1st attempt
-    const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(
+    // const fargateService = new ecs_patterns.ApplicationLoadBalancedFargateService(this, serviceId, {
+    //   serviceName: serviceId,
+    //   cluster: cluster,
+    //   memoryLimitMiB: config.ecs.memory,
+    //   cpu: config.ecs.cpu,
+    //   desiredCount: config.ecs.minCapacity,
+    //   taskImageOptions: {
+    //     image,
+    //     containerPort: 8080,
+    //     containerName,
+    //     secrets,
+    //     environment,
+    //   },
+    //   // targetGroups: [8080, mainPort, ...additionalHTTPPorts].map(port => ({
+    //   //   containerPort: port,
+    //   //   protocol: Protocol.TCP,
+    //   // })),
+    //   publicLoadBalancer: false,
+    //   healthCheckGracePeriod: Duration.seconds(60),
+    //   runtimePlatform: {
+    //     cpuArchitecture: ecs.CpuArchitecture.X86_64,
+    //     operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+    //   },
+    // });
+
+    // TODO 1377 2nd/3rd attempts
+    const fargateService = new ecs_patterns.ApplicationMultipleTargetGroupsFargateService(
       this,
-      `${id}FargateService`,
+      serviceId,
       {
+        serviceName: serviceId,
         cluster: cluster,
         memoryLimitMiB: config.ecs.memory,
         cpu: config.ecs.cpu,
         desiredCount: config.ecs.minCapacity,
         taskImageOptions: {
           image,
-          containerPort: 8080,
+          containerPorts: [8080, ...httpPorts],
           containerName,
           secrets,
           environment,
         },
-        // targetGroups: [8080, mainPort, ...additionalHTTPPorts].map(port => ({
-        //   containerPort: port,
-        //   protocol: Protocol.TCP,
-        // })),
-        publicLoadBalancer: false,
+        // loadBalancers: [
+        //   {
+        //     name: `${id}_LB`,
+        //     publicLoadBalancer: false,
+        //     listeners: httpPorts.map(port => ({
+        //       name: `${id}_LB_Listener_${port}`,
+        //       port,
+        //       protocol: ApplicationProtocol.HTTP,
+        //     })),
+        //   },
+        // ],
+        assignPublicIp: false,
         healthCheckGracePeriod: Duration.seconds(60),
         runtimePlatform: {
           cpuArchitecture: ecs.CpuArchitecture.X86_64,
@@ -145,35 +186,6 @@ export default class IHEGatewayConstruct extends Construct {
         },
       }
     );
-
-    // TODO 1377 2nd/3rd attempts
-    // const fargateService = new ecs_patterns.ApplicationMultipleTargetGroupsFargateService(
-    //   this,
-    //   `${id}FargateService`,
-    //   {
-    //     cluster: cluster,
-    //     memoryLimitMiB: config.ecs.memory,
-    //     cpu: config.ecs.cpu,
-    //     desiredCount: config.ecs.minCapacity,
-    //     taskImageOptions: {
-    //       image,
-    //       containerPorts,
-    //       containerName,
-    //       secrets,
-    //       environment,
-    //     },
-    //     // targetGroups: containerPorts.map(port => ({
-    //     //   containerPort: port,
-    //     //   protocol: EcsProtocol.TCP,
-    //     // })),
-    //     publicLoadBalancer: false,
-    //     healthCheckGracePeriod: Duration.seconds(60),
-    //     runtimePlatform: {
-    //       cpuArchitecture: ecs.CpuArchitecture.X86_64,
-    //       operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-    //     },
-    //   }
-    // );
 
     this.server = fargateService.service;
     this.serverAddress = fargateService.loadBalancer.loadBalancerDnsName;
@@ -213,16 +225,26 @@ export default class IHEGatewayConstruct extends Construct {
       protocol: Protocol.HTTP,
       timeout: Duration.seconds(5),
     };
-    fargateService.targetGroup.configureHealthCheck(healthCheck);
+    // const tgs = [fargateService.targetGroup];
+    const tgs = fargateService.targetGroups;
+    tgs.forEach(tg => tg.configureHealthCheck(healthCheck));
 
     const lb = fargateService.loadBalancer;
-    lb.addSecurityGroup(
-      new SecurityGroup(this, `${id}_LB_SG_Out`, {
-        allowAllOutbound: true,
-        securityGroupName: `${id}_LB_SG_Outbound`,
-        vpc,
-      })
-    );
+    // const lbs = [lb];
+    const lbs = fargateService.loadBalancers;
+    console.log(`>>> Got ${lbs.length} LBs from the fargate service`);
+    let lbCount = 0;
+    lbs.forEach(lb => {
+      const lbSGId = `${id}_LB_SG_Out${lbCount++}`;
+      lb.addSecurityGroup(
+        new SecurityGroup(this, lbSGId, {
+          allowAllOutbound: true,
+          securityGroupName: lbSGId,
+          vpc,
+        })
+      );
+    });
+    // lb.setAttribute("scheme", "internal");
 
     // TODO 1377 Add this to support HTTPS/8443
     // const httpsCert = new Certificate(this, `${id}HTTPSCertificate`, {
@@ -231,10 +253,10 @@ export default class IHEGatewayConstruct extends Construct {
     //   validation: CertificateValidation.fromDns(privateZone),
     // });
 
-    containerPorts.forEach(port => {
-      fargateService.taskDefinition.defaultContainer?.addPortMappings({
-        containerPort: port,
-      });
+    const addPortToLB = (port: number, lb: ApplicationLoadBalancer) => {
+      // fargateService.taskDefinition.defaultContainer?.addPortMappings({
+      //   containerPort: port,
+      // });
       const isHttps = port === 443 || port === 8443;
       if (isHttps) return;
       const protocol = isHttps ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP;
@@ -253,192 +275,31 @@ export default class IHEGatewayConstruct extends Construct {
         port,
         protocol,
         // certificates,
-        defaultAction: ListenerAction.forward([tg]),
+        // defaultAction: ListenerAction.forward([tg]),
+        defaultTargetGroups: [tg],
       });
+    };
+
+    mainContainerPorts.forEach(port => {
+      console.log(`Adding port ${port} to the MAIN LB`);
+      addPortToLB(port, lb);
     });
 
-    // Additional LB listeners
-    // fargateService.loadBalancer.addListener(`${id}HTTPSListener`, {
-    //   port: mainPort,
-    //   protocol: ApplicationProtocol.HTTPS,
-    //   certificates: [httpsCert],
-    //   defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-    //   // defaultAction: ListenerAction.forward([new TargetGroupBase(this, `${id}TargetGroup`, {
-    //   //   targetGroupName: `${id}TargetGroup`,
-    //   //   protocol: ApplicationProtocol.HTTP,
-    //   //   port: 8080,
-    //   //   vpc,
-    //   // })]),
+    // 1377 make this more dynamic, create one for each 5 ports
+    // const newLB = new ApplicationLoadBalancer(this, `${id}LB_Alt`, {
+    //   vpc,
+    //   internetFacing: false,
     // });
-    // additionalHTTPPorts.forEach(port => {
-    //   fargateService.loadBalancer.addListener(`${id}Listener_${port}`, {
-    //     port,
-    //     // TODO 1377 try to use HTTPS here
+    // newLB.listeners.forEach(listener => {
+    //   listener.addTargets(`${id}LB_Alt_Targets`, {
+    //     port: 8080,
     //     protocol: ApplicationProtocol.HTTP,
-    //     defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-    //     // defaultTargetGroups: [fargateService.targetGroup],
-    //   });
-    // });
-
-    // TODO 1377 2nd attempt
-    // [mainPort, ...additionalHTTPPorts].forEach(port => {
-    //   // fargateService.service.
-    //   // fargateService.service.taskDefinition.findContainer().addPortMappings()
-    //   const lb = fargateService.loadBalancer;
-    //   const listener = lb.addListener(`IHE_GW_LB_Listener_${port}`, {
-    //     port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     certificates: [httpsCert],
-    //   });
-    //   // const target = listener.addTargets("ECS", {
-    //   listener.addTargets(`IHE_GW_LB_ECS_Target_${port}`, {
-    //     port: port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     targets: [
-    //       fargateService.service.loadBalancerTarget({
-    //         containerName,
-    //         containerPort: port,
-    //         protocol: EcsProtocol.TCP,
-    //       }),
-    //     ],
-    //   });
-    // });
-
-    // TODO 1377 3rd attempt
-    // [mainPort, ...additionalHTTPPorts].forEach(port => {
-    //   const lb = new ApplicationLoadBalancer(this, `IHE_GW_LB_${port}`, {
-    //     vpc,
-    //     internetFacing: false,
-    //   });
-    //   fargateService.loadBalancers.push(lb);
-    //   const listener = lb.addListener(`IHE_GW_LB_Listener_${port}`, {
-    //     port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     certificates: [httpsCert],
-    //     // defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-    //     // defaultTargetGroups: [fargateService.targetGroup],
-    //   });
-    //   // const target = listener.addTargets("ECS", {
-    //   listener.addTargets(`IHE_GW_LB_ECS_Target_${port}`, {
-    //     port: port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     targets: [
-    //       fargateService.service.loadBalancerTarget({
-    //         containerName,
-    //         containerPort: port,
-    //         protocol: EcsProtocol.TCP,
-    //       }),
-    //     ],
-    //   });
-    // });
-
-    // TODO 1377 something from the internet
-    // const pgAdminTarget: InstanceIdTarget[] = [];
-    // pgAdminTarget.push(new InstanceIdTarget(fargateService.instanceId, 80));
-    // const pgAdminTg = new ApplicationTargetGroup(this, "TargetGroup", {
-    //   healthCheck: {
-    //     path: "/health.html",
-    //     port: "80",
-    //     protocol: Protocol.HTTP,
-    //   },
-    //   port: 80,
-    //   protocol: ApplicationProtocol.HTTP,
-    //   targetType: TargetType.INSTANCE,
-    //   targets: [pgAdminTarget],
-    //   vpc,
-    // });
-    // const alb = new ApplicationLoadBalancer(this, "ALB", {
-    //   vpc,
-    //   internetFacing: true,
-    //   loadBalancerName: "ec2-alb",
-    //   vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-    // });
-    // alb.addListener("lister", {
-    //   certificates: [httpsCert],
-    //   defaultTargetGroups: [pgAdminTg],
-    //   port: 443,
-    //   protocol: ApplicationProtocol.HTTPS,
-    // });
-
-    // TODO 1377 2nd attempt
-    // [mainPort, ...additionalHTTPPorts].forEach(port => {
-    //   // fargateService.service.
-    //   // fargateService.service.taskDefinition.findContainer().addPortMappings()
-    //   const lb = fargateService.loadBalancer;
-    //   const listener = lb.addListener(`IHE_GW_LB_Listener_${port}`, {
-    //     port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     certificates: [httpsCert],
-    //   });
-    //   // const target = listener.addTargets("ECS", {
-    //   listener.addTargets(`IHE_GW_LB_ECS_Target_${port}`, {
-    //     port: port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     targets: [
-    //       fargateService.service.loadBalancerTarget({
-    //         containerName,
-    //         containerPort: port,
-    //         protocol: EcsProtocol.TCP,
-    //       }),
-    //     ],
-    //   });
-    // });
-
-    // TODO 1377 3rd attempt
-    // [mainPort, ...additionalHTTPPorts].forEach(port => {
-    //   const lb = new ApplicationLoadBalancer(this, `IHE_GW_LB_${port}`, {
-    //     vpc,
-    //     internetFacing: false,
-    //   });
-    //   fargateService.loadBalancers.push(lb);
-    //   const listener = lb.addListener(`IHE_GW_LB_Listener_${port}`, {
-    //     port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     certificates: [httpsCert],
-    //     // defaultAction: ListenerAction.forward([fargateService.targetGroup]),
-    //     // defaultTargetGroups: [fargateService.targetGroup],
-    //   });
-    //   // const target = listener.addTargets("ECS", {
-    //   listener.addTargets(`IHE_GW_LB_ECS_Target_${port}`, {
-    //     port: port,
-    //     protocol: ApplicationProtocol.HTTPS,
-    //     targets: [
-    //       fargateService.service.loadBalancerTarget({
-    //         containerName,
-    //         containerPort: port,
-    //         protocol: EcsProtocol.TCP,
-    //       }),
-    //     ],
-    //   });
-    // });
-
-    // TODO 1377 something from the internet
-    // const pgAdminTarget: InstanceIdTarget[] = [];
-    // pgAdminTarget.push(new InstanceIdTarget(fargateService.instanceId, 80));
-    // const pgAdminTg = new ApplicationTargetGroup(this, "TargetGroup", {
-    //   healthCheck: {
-    //     path: "/health.html",
-    //     port: "80",
-    //     protocol: Protocol.HTTP,
-    //   },
-    //   port: 80,
-    //   protocol: ApplicationProtocol.HTTP,
-    //   targetType: TargetType.INSTANCE,
-    //   targets: [pgAdminTarget],
-    //   vpc,
-    // });
-    // const alb = new ApplicationLoadBalancer(this, "ALB", {
-    //   vpc,
-    //   internetFacing: true,
-    //   loadBalancerName: "ec2-alb",
-    //   vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
-    // });
-    // alb.addListener("lister", {
-    //   certificates: [httpsCert],
-    //   defaultTargetGroups: [pgAdminTg],
-    //   port: 443,
-    //   protocol: ApplicationProtocol.HTTPS,
-    // });
+    //     targets: [fa])
+    additionalContainerPorts.forEach(port => {
+      console.log(`Adding port ${port} to the alt LB`);
+      // addPortToLB(port, newLB);
+      addPortToLB(port, lb);
+    });
 
     // allow the LB to talk to fargate
     fargateService.service.connections.allowFrom(
