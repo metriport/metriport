@@ -164,6 +164,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+        if (payloadRaw.includes("nonXMLBody")) {
+          const msg = "XML document is unstructured CDA with nonXMLBody";
+          console.log(`${msg}, skipping...`);
+          capture.message(msg, {
+            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
+            level: "warning",
+          });
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
+          return;
+        }
         const payloadClean = cleanUpPayload(payloadRaw);
         metrics.download = {
           duration: Date.now() - downloadStart,
