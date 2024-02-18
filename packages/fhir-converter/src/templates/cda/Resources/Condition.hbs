@@ -21,8 +21,11 @@
               {{/each}}
             ]
         },
-        "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
-
+        {{#if conditionEntry.text._}}
+            "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
+        {{else}}
+            "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text}},
+        {{/if}}
 
         {{#if (and conditionEntry.effectiveTime.low.value conditionEntry.effectiveTime.high.value)}}
             "onsetPeriod":{{>DataType/Period.hbs period=conditionEntry.effectiveTime}},
@@ -39,7 +42,7 @@
             ],
         {{/if}}
 
-        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.entryRelationship.observation.code}}],
+        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.entryRelationship.observation.code text=conditionEntry.entryRelationship.observation.text._}}],
 
         {{! Missing meta}}
         {{! Missing extension}}
