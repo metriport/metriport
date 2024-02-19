@@ -515,7 +515,7 @@ module.exports.external = [
   },
   {
     name: "evaluate",
-    description: "Returns template result object: evaluate templatePath inObj",
+    description: "Returns template  result object: evaluate templatePath inObj",
     func: function (templatePath, inObj) {
       return evaluateTemplate(templatePath, inObj);
     },
@@ -1276,35 +1276,6 @@ module.exports.external = [
         }
       }
       return undefined; 
-    },
-  },
-  {
-      name: "logToFile",
-      description: "Logs the given contents to a file called diagnosis.txt, ignoring the last entry. Accepts multiple strings.",
-      func: function (...contents) {
-        const fs = require('fs');
-        const path = require('path');
-        // Remove the last entry which is passed by Handlebars and considered junk
-        contents.pop();
-        const sanitizedContents = contents.map(content => content.replace(/\r?\n|\r/g, ""));
-        const filePath = path.join(__dirname, '../../../diagnosisTwo.txt');
-        const combinedContent = sanitizedContents.join("") + "\n";
-
-        fs.appendFile(filePath, combinedContent, function (err) {
-          if (err) {
-            console.error(`Error logging to file: ${err}`);
-          }
-        });
-
-        return "";
-      },
-  },
-  {
-    name: "sanitizeDiagnosis",
-    description: "Strips out new lines and '- Primary' from the string.",
-    func: function (text) {
-      if (!text) return "";
-      return text.replace(/\n/g, "").replace(/- Primary/g, "").trim();
     },
   },
 ];

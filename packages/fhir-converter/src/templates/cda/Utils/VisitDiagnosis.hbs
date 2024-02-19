@@ -8,7 +8,7 @@
                     [
                     {{#each diagnosisMap as |value key|}}
                         {{#if value.Diagnosis}}
-                            {{>DataType/CodeableConcept.hbs text=(sanitizeDiagnosis value.Diagnosis)}},
+                            {{>DataType/CodeableConcept.hbs text=value.Diagnosis}},
                         {{/if}}
                     {{/each}}
                     ]

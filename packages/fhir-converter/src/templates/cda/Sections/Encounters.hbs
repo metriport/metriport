@@ -1,4 +1,4 @@
-{{#with (evaluate 'Utils/ReasonForVisit.hbs' msg=msg) as |reasonCodes|}}
+{{#with (optionalEvaluate 'Utils/ReasonForVisit.hbs' msg=msg) as |reasonCodes|}}
     {{#if (contains (toString (toJsonString ../msg)) '2.16.840.1.113883.10.20.22.2.22')}}
         {{#with (getFirstCdaSectionsByTemplateId ../msg '2.16.840.1.113883.10.20.22.2.22.1' '2.16.840.1.113883.10.20.22.2.22') as |encounters|}}
                 {{#with (multipleToArray this.[2_16_840_1_113883_10_20_22_2_22_1].entry this.[2_16_840_1_113883_10_20_22_2_22].entry) as |encounterEntries|}}
