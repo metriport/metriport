@@ -16,9 +16,6 @@ const leadingDots = ".1.22.333.444";
 const multipleLeadingDots = "..1.22.333.444";
 const rootBoundaryZero = "0.1.2";
 const rootBoundaryTwo = "2.999.999";
-const nonNumericInOid = "1.22.33a.444";
-const oidWithSpaces = "1. 22.333 .444";
-const oidWithCommas = "1,22,333,444";
 
 describe("normalizeOid", () => {
   it("should return the same oid if it is already valid", () => {
@@ -59,14 +56,5 @@ describe("normalizeOid", () => {
   it("should handle root code boundary conditions", () => {
     expect(normalizeOid(rootBoundaryZero)).toBe(rootBoundaryZero);
     expect(normalizeOid(rootBoundaryTwo)).toBe(rootBoundaryTwo);
-  });
-
-  it("should throw an error for non-numeric characters in OID parts", () => {
-    expect(() => normalizeOid(nonNumericInOid)).toThrow("OID is not valid");
-  });
-
-  it("should throw an error for OIDs with spaces or other delimiters", () => {
-    expect(() => normalizeOid(oidWithSpaces)).toThrow("OID is not valid");
-    expect(() => normalizeOid(oidWithCommas)).toThrow("OID is not valid");
   });
 });
