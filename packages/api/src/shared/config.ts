@@ -86,8 +86,20 @@ export class Config {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
 
-  static getCQApiKey(): string {
-    return getEnvVarOrFail("CQ_API_KEY");
+  static getCQManagementApiKey(): string {
+    return getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
+  }
+
+  static getCQOrgPrivateKey(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
+  }
+
+  static getCQOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
+  }
+
+  static getCQOrgCertificate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
 
   static getCQUrlsToExclude(): string | undefined {

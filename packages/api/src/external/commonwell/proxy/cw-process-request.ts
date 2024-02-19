@@ -11,7 +11,7 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { Request } from "express";
-import { partition } from "lodash";
+import { partition, uniqBy } from "lodash";
 import { queryToSearchParams } from "../../../routes/helpers/query";
 import { Config } from "../../../shared/config";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -62,7 +62,11 @@ export async function processRequest(req: Request): Promise<Bundle<Resource>> {
 
   const bundle = prepareBundle(rawResources);
 
-  log(`Responding to CW (cx ${cxId} / patient ${patientId}): ${bundle.entry?.length} resources`);
+  log(
+    `Responding to CW (cx ${cxId} / patient ${patientId}): ${
+      bundle.entry?.length
+    } resources - ${JSON.stringify(bundle)}`
+  );
   return bundle;
 }
 
@@ -174,7 +178,8 @@ function prepareBundle(resources: Resource[]): Bundle<Resource> {
   const filteredDocRefs = filterDocRefs(documentReferences);
   const updatedDocRefs = adjustAttachmentURLs(filteredDocRefs);
   const consolidatedResources = [...updatedDocRefs, ...otherResources];
-  const bundleEntries: BundleEntry[] = consolidatedResources.map(r => ({ resource: r }));
+  const uniqueResources = uniqBy(consolidatedResources, r => r.id);
+  const bundleEntries: BundleEntry[] = uniqueResources.map(r => ({ resource: r }));
   const bundle = buildBundle(bundleEntries);
   return bundle;
 }

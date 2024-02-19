@@ -1,8 +1,8 @@
 import { Config } from "../../shared/config";
-import { makeCarequalityAPI } from "./api";
+import { makeCarequalityManagementAPI } from "./api";
 import { buildOrganizationFromTemplate } from "./organization-template";
 
-const cq = makeCarequalityAPI();
+const cq = makeCarequalityManagementAPI();
 
 export type CQOrgDetails = {
   name: string;

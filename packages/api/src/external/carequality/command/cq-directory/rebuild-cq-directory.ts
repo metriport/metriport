@@ -5,7 +5,7 @@ import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { Config } from "../../../../shared/config";
 import { capture } from "../../../../shared/notifications";
-import { makeCarequalityAPI } from "../../api";
+import { makeCarequalityManagementAPI } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { updateCQGateways } from "./cq-gateways";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
@@ -28,7 +28,7 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   let currentPosition = 0;
   let isDone = false;
-  const cq = makeCarequalityAPI();
+  const cq = makeCarequalityManagementAPI();
   if (!cq) throw new Error("Carequality API not initialized");
   const gatewaysSet = new Set<string>();
 

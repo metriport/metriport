@@ -113,6 +113,9 @@ module.exports = class cda extends dataHandler {
 
   parseSrcData(data) {
     return new Promise((fulfill, reject) => {
+      if (typeof data === "string" && data.includes("nonXMLBody")) {
+        return reject(new Error("Can not convert unstructured CDA with nonXMLBody"));
+      }
       let minifiedData = minifyXML.minify(data, {
         removeComments: true,
         removeWhitespaceBetweenTags: true,

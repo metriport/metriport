@@ -1,6 +1,6 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.4.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.4.1')}}
-        {{#each (toArray 2_16_840_1_113883_10_20_22_2_4_1.entry)}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.4')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.4.1' '2.16.840.1.113883.10.20.22.2.4')}}
+        {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_4_1.entry 2_16_840_1_113883_10_20_22_2_4.entry)}}
             {{#each (toArray this.organizer.component) as |obsEntry|}}
                 {{>Resources/Observation.hbs observationCategory="vital-signs" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
