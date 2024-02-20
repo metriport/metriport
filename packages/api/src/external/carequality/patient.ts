@@ -119,7 +119,7 @@ export async function prepareForPatientDiscovery(
   ]);
 
   const cqGatewaysBasicDetails = cqGateways.map(toBasicOrgAttributes);
-  const orgsToSearch = filterCQOrgsToSearch(nearbyCQOrgs, cqGatewaysBasicDetails);
+  const orgsToSearch = filterCQOrgsToSearch([...nearbyCQOrgs, ...cqGatewaysBasicDetails]);
   const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
   const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 

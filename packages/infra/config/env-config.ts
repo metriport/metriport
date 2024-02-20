@@ -45,7 +45,6 @@ export type EnvConfig = {
   };
   carequality?: {
     secretNames?: {
-      CQ_URLS_TO_EXCLUDE?: string;
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
       CQ_ORG_CERTIFICATE: string;
@@ -53,6 +52,7 @@ export type EnvConfig = {
     };
     envVars?: {
       CQ_ORG_DETAILS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {

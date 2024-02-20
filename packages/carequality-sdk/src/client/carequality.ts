@@ -39,7 +39,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
   private httpsAgent: Agent;
 
   /**
-   * Creates a new instance of the Carequality API client pertaining to an
+   * Creates a new instance of the Carequality Management API client pertaining to an
    * organization to make requests on behalf of.
    *
    * @param orgCert                 The certificate (public key) for the organization.
@@ -100,13 +100,13 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     axiosRetry(this.api, {
       retries: options?.retries ?? DEFAULT_MAX_RETRIES,
       retryDelay: retryCount => {
-        const exponentialDelay = Math.pow(2, retryCount);
+        const exponentialDelay = Math.pow(2, Math.max(0, retryCount - 1));
         const jitter = Math.random();
         const delayWithJitter = (exponentialDelay + jitter) * BASE_DELAY.asMilliseconds();
         return Math.min(delayWithJitter, this.maxBackoff);
       },
       retryCondition: error => {
-        return error.response?.status !== 200;
+        return error.response?.status !== 200 && error.response?.status !== 403; // As per the Carequality Implementation Guide: https://carequality.org/healthcare-directory/operational_best_practices.html#reliability
       },
     });
 

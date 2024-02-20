@@ -75,7 +75,7 @@ function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-function getUrls(contained: Contained): XCUrls | undefined {
+function getUrls(contained: Contained): XCUrls {
   const endpointMap: Record<string, string> = {};
 
   contained?.forEach(c => {

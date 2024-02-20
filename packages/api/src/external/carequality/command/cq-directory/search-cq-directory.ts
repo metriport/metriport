@@ -13,7 +13,7 @@ export type CQOrgBasicDetails = {
   id: string;
   lon: number | undefined;
   lat: number | undefined;
-  urlXCPD: string | undefined | null;
+  urlXCPD: string | undefined;
   urlDQ: string | undefined;
   urlDR: string | undefined;
   active: boolean;
@@ -100,12 +100,8 @@ export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDeta
   };
 }
 
-export function filterCQOrgsToSearch(
-  orgs: CQOrgBasicDetails[],
-  gateways: CQOrgBasicDetails[]
-): CQOrgBasicDetails[] {
-  const allOrgs = [...orgs, ...gateways];
-  return allOrgs.filter(org => {
+export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetails[] {
+  return orgs.filter(org => {
     if (org.active && hasValidXcpdLink(org)) return org;
   });
 }

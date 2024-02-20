@@ -63,8 +63,6 @@ export const config: EnvConfig = {
   },
   carequality: {
     secretNames: {
-      CQ_URLS_TO_EXCLUDE:
-        "https://commonwell.com/patient-discovery-routes/,https://ehealthexchange.org/patient-discovery-routes/",
       CQ_MANAGEMENT_API_KEY: "CQ_MANAGEMENT_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
       CQ_ORG_CERTIFICATE: "CQ_ORG_CERTIFICATE",
@@ -72,6 +70,8 @@ export const config: EnvConfig = {
     },
     envVars: {
       CQ_ORG_DETAILS: `{"name": "Test org","oid": "1.2.3.1.4.1.11.12.29.2022.1234","addressLine1": "123 Main St","city": "Phoenix","state": "AZ","zip": "12345","lat": "33.12345","lon": "-112.12345","urlXCPD": "https://api.myhealthapp.com/xcpd","urlDQ": "https://api.myhealthapp.com/xca-dq","urlDR": "https://api.myhealthapp.com/xca-dr","contactName": "Engineering","phone": "(123)-123-1234","email": "support@healthapp.com"}`,
+      CQ_URLS_TO_EXCLUDE:
+        "https://commonwell.com/patient-discovery-routes/,https://ehealthexchange.org/patient-discovery-routes/",
     },
   },
   commonwell: {

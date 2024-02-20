@@ -10,7 +10,7 @@ export class CQDirectoryEntryModel
   static NAME = "cq_directory_entry";
   declare id: string; // Organization's OID
   declare name?: string;
-  declare urlXCPD?: string | null;
+  declare urlXCPD?: string;
   declare urlDQ?: string;
   declare urlDR?: string;
   declare lat?: number;
