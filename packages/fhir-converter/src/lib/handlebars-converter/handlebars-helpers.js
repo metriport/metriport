@@ -196,6 +196,30 @@ module.exports.external = [
         throw "#if requires exactly one argument";
       }
 
+      const allValuesAreNull = (obj) => {
+        let queue = [obj];
+        while (queue.length > 0) {
+          let current = queue.shift();
+          if (current && typeof current === 'object') {
+            if (current.nullFlavor) {
+              // Continue to next iteration to check other properties
+              continue;
+            }
+            for (let key in current) {
+              if (current.hasOwnProperty(key)) {
+                queue.push(current[key]);
+              }
+            }
+          } else if (current !== null) {
+            // If the current value is not null and not an object with nullFlavor, return false
+            return false;
+          }
+        }
+        // If the loop completes without returning false, all values are null or have nullFlavor
+        return true;
+      };
+  
+
       if (HandlebarsUtils.isFunction(conditional)) {
         conditional = conditional.call(this);
       }
@@ -208,7 +232,13 @@ module.exports.external = [
       if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional) || hasNullFlavorUNK) {
         return options.inverse(this);
       } else {
-        return options.fn(this);
+        // If the direct check is not sufficient, use the queue-based approach
+        const allNull = allValuesAreNull(conditional);
+        if (allNull) {
+          return options.inverse(this);
+        } else {
+          return options.fn(this);
+        }
       }
     },
   },
