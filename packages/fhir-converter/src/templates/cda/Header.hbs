@@ -22,10 +22,10 @@
         {{/if}}
 
         {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' (generateUUID (toJsonString document.componentOf.encompassingEncounter)))}},
-        {{#if document.componentOf.encompassingEncounter.location}}
-            {{>Resources/Location.hbs location=document.componentOf.encompassingEncounter.location ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter.location))}},
-            {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Location/' (generateUUID (toJsonString document.componentOf.encompassingEncounter.location)))}},
-        {{/if}}
+        {{#with (evaluate 'Utils/GenerateLocationId.hbs' location=document.componentOf.encompassingEncounter.location.healthCareFacility) as |locationId|}}
+            {{>Resources/Location2.hbs location=document.componentOf.encompassingEncounter.location.healthCareFacility ID=locationId.Id}},
+            {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Location/' locationId.Id)}},
+        {{/with}}
     {{/if}}
     
     {{#if document.custodian.assignedCustodian.representedCustodianOrganization.name._}}
