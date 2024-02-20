@@ -24,6 +24,7 @@ export type FeatureFlagDatastore = {
   cxsWithEnhancedCoverageFeatureFlag: CustomerIdsFF;
   cxsWithCQDirectFeatureFlag: CustomerIdsFF;
   cxsWithADHDMRFeatureFlag: CustomerIdsFF;
+  cxsWithNoWebhookPongFeatureFlag: CustomerIdsFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;
 };
 

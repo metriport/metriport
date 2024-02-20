@@ -7,7 +7,7 @@ import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getPatients } from "../../command/medical/patient/get-patient";
 
-const maxNumberOfParallelRequestsToCW = 20;
+const maxNumberOfParallelRequestsToCW = 10;
 
 /**
  * Implementation of the PatientUpdater that executes the logic on CommonWell.

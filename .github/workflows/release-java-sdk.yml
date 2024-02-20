@@ -1,0 +1,31 @@
+name: Release Java SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "The version of the Java SDK that you would like to release"
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup node
+        uses: actions/setup-node@v3
+
+      - name: Download Fern
+        run: npm install -g fern-api
+
+      - name: Release SDKs
+        env:
+          FERN_TOKEN: ${{ secrets.FERN_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
+        run: |
+          fern generate --group java-sdk --version ${{ inputs.version }} --log-level debug
+          fern generate --group python-sdk --version ${{ inputs.version }} --log-level debug

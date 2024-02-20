@@ -12,6 +12,7 @@ const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
   "cxsWithCQDirectFeatureFlag",
   "cxsWithADHDMRFeatureFlag",
   "cxsWithIncreasedSandboxLimitFeatureFlag",
+  "cxsWithNoWebhookPongFeatureFlag",
 ];
 
 /**
@@ -91,6 +92,10 @@ export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise
   return getCxsWithFeatureFlagEnabled("cxsWithIncreasedSandboxLimitFeatureFlag");
 }
 
+export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
+}
+
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
@@ -99,4 +104,9 @@ export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<bool
 export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
+}
+
+export async function isNoWebhookPongEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
+  return cxIdsWithECEnabled.some(i => i === cxId);
 }

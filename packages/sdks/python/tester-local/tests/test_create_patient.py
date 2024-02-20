@@ -1,10 +1,8 @@
 import os
 
 from generated.client import Metriport
-from generated import commons
-from generated.resources import medical, UsState, Address
+from generated.resources import UsState, Address
 from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense
-
 
 import os
 from dotenv import load_dotenv

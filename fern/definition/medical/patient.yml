@@ -7,8 +7,6 @@ imports:
 service:
   base-path: /medical/v1/patient
   auth: true
-  audiences: 
-    - public
   endpoints:
     create:
       display-name: Create Patient

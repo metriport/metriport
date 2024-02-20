@@ -1,8 +1,6 @@
 default-group: test
 groups:
-  publish:
-    audiences: 
-      - public
+  python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.7.5
@@ -14,6 +12,8 @@ groups:
           client_class_name: Metriport
         github: 
           repository: metriport/metriport-python
+  java-sdk:
+    generators:
       - name: fernapi/fern-java-sdk
         version: 0.5.20
         output:
@@ -25,6 +25,8 @@ groups:
           client-class-name: Metriport
         github: 
           repository: metriport/metriport-java
+  node-sdk:
+    generators:
       - name: fernapi/fern-typescript-node-sdk
         version: 0.9.0
         output:
@@ -37,8 +39,6 @@ groups:
         github: 
           repository: metriport/metriport-node
   test: # fern generate --group test will locally generate the SDKs for testing
-    audiences: 
-      - public
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.7.5
