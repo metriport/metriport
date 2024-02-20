@@ -4,7 +4,6 @@ import { RDSAlarmThresholds } from "./aws/rds";
 
 export type IHEGatewayProps = {
   vpcId: string;
-  certArn: string;
   subdomain: string; // Subdomain for IHE integrations
   /**
    * ID of the existing private hosted zone where the IHE Gateway will be deployed.

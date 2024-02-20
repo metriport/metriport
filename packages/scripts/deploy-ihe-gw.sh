@@ -14,8 +14,12 @@ if [[ -z "${ECS_CLUSTER}" ]]; then
   echo "ECS_CLUSTER is missing"
   exit 1
 fi
-if [[ -z "${ECS_SERVICE}" ]]; then
-  echo "ECS_SERVICE is missing"
+if [[ -z "${ECS_SERVICE1}" ]]; then
+  echo "ECS_SERVICE1 is missing"
+  exit 1
+fi
+if [[ -z "${ECS_SERVICE2}" ]]; then
+  echo "ECS_SERVICE2 is missing"
   exit 1
 fi
 
@@ -61,5 +65,32 @@ docker buildx build \
 
 popd
 
-echo "Restarting the IHE GW service"
-source ./packages/scripts/restart-ecs.sh
+# TODO 1377 Split restart from wait and wait in parallel”’
+echo "Restarting the IHE GW service $ECS_SERVICE1"
+# Update the fargate service
+aws ecs update-service \
+  --no-cli-pager \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$ECS_SERVICE1" \
+  --force-new-deployment
+
+echo "Restarting the IHE GW service $ECS_SERVICE2"
+# Update the fargate service
+aws ecs update-service \
+  --no-cli-pager \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$ECS_SERVICE2" \
+  --force-new-deployment
+
+
+echo "Waiting for services to be healthy/stable..."
+# Wait for the service to be stable
+until ( aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE1" && \
+        aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE2" )
+do
+    echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
+    sleep 5
+done
+echo -e "Done."
