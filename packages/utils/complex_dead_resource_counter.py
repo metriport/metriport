@@ -14,7 +14,7 @@ def find_dead_responses(directory):
                         resource = entry.get("resource")
                         if resource:
                             resource_type = resource.get("resourceType")
-                            for field in ["vaccineCode", "code", "reasonCode"]:
+                            for field in ["vaccineCode", "code", "reasonCode", "dosage"]:
                                 no_phrases = ["no known", "no observation", "no data", "no information", "no results", "no medical", "no smoking status", "no social history", "no chronic problems"]
                                 if field in resource and "text" in resource[field]:
                                     text_lower = resource[field]["text"].lower()
@@ -60,3 +60,5 @@ if __name__ == "__main__":
 # No Chronic Problems: {'count': 2, 'resources': {'Condition'}}
 # No Chronic Problems(Confirmed): {'count': 1, 'resources': {'Condition'}}
 # Total count of resources with 'dead responses': 534
+
+## TODO gotta get the ones in the b64 still 

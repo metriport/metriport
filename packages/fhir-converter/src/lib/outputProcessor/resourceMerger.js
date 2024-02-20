@@ -78,7 +78,7 @@ function hasEmptyResourceFilterText(item) {
   const resource = item.resource;
   if (!resource) return false;
 
-  const fieldsToCheck = ["vaccineCode", "code", "reasonCode"];
+  const fieldsToCheck = ["vaccineCode", "code", "reasonCode", "dosage", "note", "reaction.substance"];
   const noPhrases = [
     "no known", "no observation", "no data", "no information", 
     "no results", "no medical", "no smoking status", "no social history", 
@@ -86,16 +86,37 @@ function hasEmptyResourceFilterText(item) {
   ];
 
   for (let field of fieldsToCheck) {
-    if (resource[field] && resource[field].text) {
-      const textLower = resource[field].text.toLowerCase();
+    let fieldValue = getNestedFieldValue(resource, field);
+    if (Array.isArray(fieldValue)) {
+      for (let value of fieldValue) {
+        if (value && value.text) {
+          const textLower = value.text.toLowerCase();
+          if (noPhrases.some(phrase => textLower.includes(phrase))) {
+            return true; // Found a dead response, should be filtered out
+          }
+        }
+      }
+    } else if (fieldValue && fieldValue.text) {
+      console.log(`Field exists: ${field}`); // Print if the nested field exists
+      const textLower = fieldValue.text.toLowerCase();
       if (noPhrases.some(phrase => textLower.includes(phrase))) {
         return true; // Found a dead response, should be filtered out
       }
     }
   }
-
   return false; // No dead response found, should not be filtered out
 }
+
+function getNestedFieldValue(obj, path) {
+  return path.split('.').reduce((o, key) => {
+    if (o === undefined) return undefined;
+    if (Array.isArray(o)) {
+      return o.map(item => item[key]).filter(item => item !== undefined);
+    }
+    return o[key];
+  }, obj);
+}
+
 
 function getKey(res) {
   if (
