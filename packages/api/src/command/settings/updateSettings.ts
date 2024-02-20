@@ -77,7 +77,7 @@ type TestWebhookCommand = Pick<Settings, "webhookUrl" | "webhookKey"> & { cxId: 
 const testWebhook = async ({ cxId, webhookUrl, webhookKey }: TestWebhookCommand): Promise<void> => {
   if (!webhookUrl || !webhookKey) return;
   try {
-    const testOK = await sendTestPayload(webhookUrl, webhookKey);
+    const testOK = await sendTestPayload(webhookUrl, webhookKey, cxId);
     await updateWebhookStatus({
       cxId,
       webhookEnabled: testOK,

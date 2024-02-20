@@ -28,6 +28,7 @@ import {
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
+import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
@@ -155,7 +156,7 @@ router.post(
         patient: patient,
         type: "convert",
         progress: {
-          ...(status === "completed" ? { successful: 1 } : { errors: 1 }),
+          ...(status === "success" ? { successful: 1 } : { errors: 1 }),
         },
         requestId,
         source,
@@ -190,10 +191,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
+    const hie = getFrom("query").optional("hie", req);
     const docQueryProgressRaw = req.body;
     const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
     const downloadProgress = docQueryProgress.download;
     const convertProgress = docQueryProgress.convert;
+    const hasSource = isMedicalDataSource(hie);
 
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
@@ -206,6 +209,16 @@ router.post(
       convertProgress,
       requestId: patient.data.documentQueryProgress?.requestId ?? "",
     });
+
+    if (hasSource) {
+      await setDocQueryProgress({
+        patient: { id: patientId, cxId },
+        requestId: updatedPatient.data.documentQueryProgress?.requestId ?? "",
+        downloadProgress,
+        convertProgress,
+        source: hie,
+      });
+    }
 
     return res.json(updatedPatient.data.documentQueryProgress);
   })

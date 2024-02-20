@@ -43,7 +43,7 @@ export async function getDocumentsFromCQ({
 
     // We invoke the lambda that will start polling for the results
     // from the IHE Gateway and process them
-    lambdaClient
+    await lambdaClient
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "Event",

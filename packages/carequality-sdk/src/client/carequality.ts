@@ -1,9 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { Agent } from "https";
 import { STU3Bundle, stu3BundleSchema } from "../models/bundle";
 import { Organization } from "../models/organization";
-import { CarequalityAPI } from "./carequality-api";
+import { CarequalityManagementAPI } from "./carequality-api";
 
 dayjs.extend(duration);
 
@@ -21,45 +22,60 @@ export enum APIMode {
 /**
  * This SDK operates on FHIR STU3 format.
  */
-export class Carequality implements CarequalityAPI {
-  private static readonly devUrl = "https://dev-dir-ceq.sequoiadns.org/fhir-stu3/1.0.1";
+export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
+  private static readonly devUrl = "https://directory.dev.carequality.org/fhir-pre-stu3/";
   private static readonly stagingUrl = "https://stage-dir-ceq.sequoiaproject.org/fhir-stu3/1.0.1";
   private static readonly productionUrl =
     "https://prod-dir-ceq-01.sequoiaproject.org/fhir-stu3/1.0.1/";
 
-  // NOTE: These URLs can be used if we migrate to FHIR R4 format.
-  // private static readonly devUrl = "https://directory.dev.carequality.org/fhir";
-  // private static readonly  stagingUrl = "https://directory.stage.carequality.org/fhir";
-
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
   readonly apiKey: string;
+  private httpsAgent: Agent;
 
   /**
    * Creates a new instance of the Carequality API client pertaining to an
    * organization to make requests on behalf of.
    *
-   * @param apiKey          The API key to use for authentication.
-   * @param apiMode         Optional, the mode the client will be running. Defaults to staging.
-   * @param options         Optional parameters
-   * @param options.timeout Connection timeout in milliseconds, default 120 seconds.
+   * @param orgCert                 The certificate (public key) for the organization.
+   * @param rsaPrivateKey           An RSA key corresponding to the specified orgCert.
+   * @param rsaPrivateKeyPassword   The password to decrypt the private key.
+   * @param apiKey                  The API key to use for authentication.
+   * @param apiMode                 Optional, the mode the client will be running. Defaults to staging.
+   * @param options                 Optional parameters
+   * @param options.timeout         Connection timeout in milliseconds, default 120 seconds.
    */
-  constructor(
-    apiKey: string,
-    apiMode: APIMode = APIMode.production,
-    options: { timeout?: number } = {}
-  ) {
+  constructor({
+    orgCert,
+    rsaPrivateKey,
+    rsaPrivateKeyPassword,
+    apiKey,
+    apiMode = APIMode.production,
+    options = {},
+  }: {
+    orgCert: string;
+    rsaPrivateKey: string;
+    rsaPrivateKeyPassword: string;
+    apiKey: string;
+    apiMode: APIMode;
+    options?: { timeout?: number };
+  }) {
+    this.httpsAgent = new Agent({
+      cert: orgCert,
+      key: rsaPrivateKey,
+      passphrase: rsaPrivateKeyPassword,
+    });
     let baseUrl;
 
     switch (apiMode) {
       case APIMode.dev:
-        baseUrl = Carequality.devUrl;
+        baseUrl = CarequalityManagementAPIImpl.devUrl;
         break;
       case APIMode.staging:
-        baseUrl = Carequality.stagingUrl;
+        baseUrl = CarequalityManagementAPIImpl.stagingUrl;
         break;
       case APIMode.production:
-        baseUrl = Carequality.productionUrl;
+        baseUrl = CarequalityManagementAPIImpl.productionUrl;
         break;
       default:
         throw new Error("API mode not supported.");
@@ -68,6 +84,7 @@ export class Carequality implements CarequalityAPI {
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
+      httpsAgent: this.httpsAgent,
     });
     this.apiKey = apiKey;
   }
@@ -110,7 +127,7 @@ export class Carequality implements CarequalityAPI {
     oid && query.append("_id", oid);
     const queryString = query.toString();
 
-    const url = `${Carequality.ORG_ENDPOINT}?${queryString}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${queryString}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
@@ -129,7 +146,7 @@ export class Carequality implements CarequalityAPI {
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
 
-    const url = `${Carequality.ORG_ENDPOINT}?${query.toString()}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${query.toString()}`;
     const resp = await this.api.post(url, org, {
       headers: { "Content-Type": "text/xml" },
     });
@@ -148,7 +165,7 @@ export class Carequality implements CarequalityAPI {
     query.append("apikey", this.apiKey);
     query.append("_format", XML_FORMAT);
 
-    const url = `${Carequality.ORG_ENDPOINT}/${oid}?${query.toString()}`;
+    const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}/${oid}?${query.toString()}`;
     const resp = await this.api.put(url, org, {
       headers: { "Content-Type": "application/xml" },
     });

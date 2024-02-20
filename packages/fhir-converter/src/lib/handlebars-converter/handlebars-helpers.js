@@ -13,11 +13,13 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require('he');
 const convert = require("convert-units");
+const path = require('path');
 
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
-const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
+const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
+
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
 var getSegmentListsInternal = function (msg, ...segmentIds) {
@@ -601,15 +603,13 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
-
-        for (var t = 0; t < templateIds.length - 1; t++) {
-          //-1 because templateIds includes the full message at the end
+  
+        for (var t = 0; t < templateIds.length - 1; t++) { // -1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-            if (
-              sectionObj.templateId &&
-              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
-            ) {
+            let templateIdsArray = Array.isArray(sectionObj.templateId) ? sectionObj.templateId : [sectionObj.templateId];
+            const hasExactMatch = templateIdsArray.some(templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]);
+            if (hasExactMatch) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
               break;
             }
@@ -625,15 +625,18 @@ module.exports.external = [
     name: "getAllCdaSectionsByTemplateId",
     description:
       "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
-    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
         // -1 because templateIds includes the full message at the end
         for (var t = 0; t < templateIds.length - 1; t++) {
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
-              sectionObj.templateId &&
+              sectionObj?.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
             ) {
               var item = {};
@@ -1170,6 +1173,93 @@ module.exports.external = [
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
       return match ? match[0] : '';
+    },
+  },
+  {
+    name: "extractAndMapTableData",
+    description: "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
+    func: function (json) {
+        if (!json || !json.table || !json.table.thead || !json.table.tbody) {
+            return undefined;
+        }
+
+        const getHeaders = (thead) => {
+            if (!thead.tr || !thead.tr.th) return [];
+            return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
+        };
+
+        // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
+        const getRowData = (tr, headers) => {
+            if (!tr || !tr.td || headers.length === 0) return undefined;
+            const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
+            const rowData = {};
+            tdArray.forEach((td, index) => {
+                if (!td) return;
+                if (td.paragraph) {
+                    const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
+                    const textValues = paragraphArray.map(paragraph => {
+                        if (!paragraph || !paragraph.content) return "";
+                        const contentArray = Array.isArray(paragraph.content) ? paragraph.content : [paragraph.content];
+                        return concatenateTextValues(contentArray);
+                    }).join('\n');
+                    rowData[headers[index]] = textValues;
+                } else {
+                    rowData[headers[index]] = td._ || "";
+                }
+            });
+            return rowData;
+        };
+
+        const concatenateTextValues = (content) => {
+            if (!content) return '';
+            const contentArray = Array.isArray(content) ? content : [content];
+            return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
+        };
+
+        const convertMappedDataToPlainText = (mappedData) => {
+          if (!mappedData || mappedData.length === 0) return "";
+          return mappedData.map(entry => {
+              return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
+          }).join('\n\n');
+        };
+
+        const headers = getHeaders(json.table.thead);
+        if (headers.length === 0) return undefined;
+
+        const trArray = Array.isArray(json.table.tbody.tr) ? json.table.tbody.tr : [json.table.tbody.tr];
+        if (trArray.length === 0) return undefined;
+
+        const mappedData = trArray.map(tr => getRowData(tr, headers));
+        if (mappedData === "") return undefined;
+
+        const plainText = convertMappedDataToPlainText(mappedData);
+        const fs = require('fs');
+        const path = require('path');
+        const outputFilePath = path.join(__dirname, 'assessment-output.txt');
+        const separator = "\n------------\n";
+        const outputData = separator + plainText;
+        
+        fs.appendFile(outputFilePath, outputData, { flag: 'a' }, (err) => {
+            if (err) {
+                console.error('Error writing to file:', err);
+            }
+        });
+
+        return plainText;
+    },
+  },
+  {
+    name: "coalesce",
+    description: "Returns the first non-null/undefined value from the list of provided arguments.",
+    func: function (...args) {
+      // Last argument is Handlebars options object, so we exclude it
+      const values = args.slice(0, -1);
+      for (let value of values) {
+        if (value !== undefined) {
+          return value;
+        }
+      }
+      return undefined; 
     },
   },
 ];

@@ -17,8 +17,8 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatients,
   getPatientStates,
+  getPatients,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -33,8 +33,10 @@ import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admi
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
+import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
+import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -51,7 +53,7 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
 } from "../util";
-import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
+import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -421,6 +423,29 @@ router.post(
       const durationMin = dayjs.duration(duration).asMinutes();
       log(`Done, duration: ${duration} ms / ${durationMin} min`);
     }
+  })
+);
+
+const cqLinkStatusSchema = z.enum(cqLinkStatus);
+
+/**
+ * POST /internal/patient/enhance-coverage/set-cq-link-statuses
+ *
+ * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientIds The IDs of the patients to complete the process for.
+ * @param req.query.cqLinkStatus The status to set the CQ link to.
+ */
+router.post(
+  "/enhance-coverage/set-cq-link-statuses",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const cqLinkStatusParam = getFrom("query").orFail("cqLinkStatus", req);
+    const cqLinkStatus = cqLinkStatusSchema.parse(cqLinkStatusParam);
+
+    await setCQLinkStatuses({ cxId, patientIds, cqLinkStatus });
+    return res.sendStatus(status.OK);
   })
 );
 

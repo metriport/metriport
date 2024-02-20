@@ -1,12 +1,12 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.6.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.6.1')}}
-        {{#each (toArray 2_16_840_1_113883_10_20_22_2_6_1.entry)}}
-            {{#each (toArray this.act.entryRelationship) as |alEntry|}}
-                {{#if (contains (toJsonString alEntry.observation.templateId) '"2.16.840.1.113883.10.20.22.4.7"')}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.6')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.6.1' '2.16.840.1.113883.10.20.22.2.6')}}
+        {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_6_1.entry 2_16_840_1_113883_10_20_22_2_6.entry) as |allergy|}}
+            {{#each (toArray allergy.act.entryRelationship) as |allergyEntry|}}
+                {{#if (contains (toJsonString allergyEntry.observation.templateId) '"2.16.840.1.113883.10.20.22.4.7"')}}
                     {{!-- Allergy status should come from the Act, not from observation. Observation status tells the status of the act of observing. --}}
-                    {{>Resources/AllergyIntolerance.hbs allergyStatus=../this.act.statusCode allergyEntry=alEntry.observation ID=(generateUUID (toJsonString alEntry.observation))}},
+                    {{>Resources/AllergyIntolerance.hbs allergyStatus=allergy.act.statusCode allergyEntry=allergyEntry.observation ID=(generateUUID (toJsonString allergyEntry.observation))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                        {{>References/AllergyIntolerance/patient.hbs ID=(generateUUID (toJsonString alEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{>References/AllergyIntolerance/patient.hbs ID=(generateUUID (toJsonString allergyEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
                 {{/if}}
             {{/each}}

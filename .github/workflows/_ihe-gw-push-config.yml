@@ -19,6 +19,10 @@ on:
         required: true
         type: string
     secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
       IHE_GW_URL:
         required: true
       IHE_GW_USER:
@@ -89,7 +93,7 @@ jobs:
 
       - name: Push configs to IHE Gateway
         env:
-          ENV_TYPE: ${{ secrets.ENV_TYPE }}
+          ENV_TYPE: ${{ inputs.deploy_env }}
           IHE_GW_CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
           IHE_GW_FULL_BACKUP_LOCATION: ${{ inputs.IHE_GW_FULL_BACKUP_LOCATION }}
           IHE_GW_URL: ${{ secrets.IHE_GW_URL }}

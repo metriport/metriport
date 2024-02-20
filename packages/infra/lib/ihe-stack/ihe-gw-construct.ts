@@ -6,11 +6,7 @@ import * as ecr from "aws-cdk-lib/aws-ecr";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
-import {
-  ApplicationProtocol,
-  ListenerAction,
-  Protocol,
-} from "aws-cdk-lib/aws-elasticloadbalancingv2";
+import { ApplicationProtocol, ListenerAction } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -139,7 +135,7 @@ export default class IHEGatewayConstruct extends Construct {
       validation: acm.CertificateValidation.fromDns(privateZone),
     });
     fargateService.loadBalancer.addListener(`${id}HTTPSListener`, {
-      port: 443,
+      port: mainPort,
       protocol: ApplicationProtocol.HTTPS,
       certificates: [httpsCert],
       defaultAction: ListenerAction.forward([fargateService.targetGroup]),
@@ -150,13 +146,6 @@ export default class IHEGatewayConstruct extends Construct {
         protocol: ApplicationProtocol.HTTP,
         defaultAction: ListenerAction.forward([fargateService.targetGroup]),
       });
-    });
-    fargateService.targetGroup.configureHealthCheck({
-      healthyThresholdCount: 2,
-      interval: Duration.seconds(20),
-      path: "/",
-      port: "8080",
-      protocol: Protocol.HTTP,
     });
 
     // allow the LB to talk to fargate
@@ -173,19 +162,14 @@ export default class IHEGatewayConstruct extends Construct {
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
     // fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
-    // This also speeds up deployments so the health checks have a faster turnaround.
-    // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/target-group-health-checks.html
+    // TODO try to avoid this, then remove it
     // fargateService.targetGroup.configureHealthCheck({
     //   healthyThresholdCount: 2,
     //   interval: Duration.seconds(10),
+    //   path: "/",
+    //   port: "8080",
+    //   protocol: Protocol.HTTP,
     // });
-    fargateService.targetGroup.configureHealthCheck({
-      healthyThresholdCount: 2,
-      interval: Duration.seconds(30),
-      path: "/",
-      port: `${mainPort}`,
-      protocol: Protocol.HTTPS,
-    });
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({

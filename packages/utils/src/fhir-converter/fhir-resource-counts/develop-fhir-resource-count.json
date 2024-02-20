@@ -1,0 +1,28 @@
+{
+  "total": 435325,
+  "countPerType": {
+    "Communication": 790,
+    "Composition": 9445,
+    "Condition": 17580,
+    "Device": 9207,
+    "DiagnosticReport": 27547,
+    "Encounter": 19384,
+    "Location": 17861,
+    "Observation": 165048,
+    "Organization": 32171,
+    "Patient": 9445,
+    "Practitioner": 65437,
+    "Procedure": 9603,
+    "RelatedPerson": 12260,
+    "Medication": 12391,
+    "MedicationAdministration": 5387,
+    "MedicationRequest": 8022,
+    "MedicationStatement": 8354,
+    "AllergyIntolerance": 819,
+    "Coverage": 744,
+    "FamilyMemberHistory": 774,
+    "Immunization": 2456,
+    "Goal": 547,
+    "Consent": 53
+  }
+}
