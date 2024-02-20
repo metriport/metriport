@@ -116,11 +116,12 @@ function fromHttpRequestToFHIR(req: Request): {
 }
 
 function getAllowedSearchParams(searchParams: URLSearchParams): URLSearchParams {
-  for (const [param] of searchParams.entries()) {
-    if (!allowedQueryParams.includes(param)) searchParams.delete(param);
+  const paramsToUse = new URLSearchParams();
+  for (const [param, value] of searchParams.entries()) {
+    if (allowedQueryParams.includes(param)) paramsToUse.append(param, value);
   }
-  if (searchParams.size <= 0) throw new BadRequestError(`Missing query parameters`);
-  return searchParams;
+  if (paramsToUse.size <= 0) throw new BadRequestError(`Missing query parameters`);
+  return paramsToUse;
 }
 
 async function queryFHIRServer({
