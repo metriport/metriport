@@ -1,5 +1,8 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { createFileName } from "@metriport/core/src/domain/filename";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { errorToString } from "@metriport/core/util/error/shared";
+import { capture } from "@metriport/core/util/notifications";
 import { Config } from "../../../shared/config";
 import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
 import { getDocuments } from "../../fhir/document/get-documents";
@@ -7,6 +10,7 @@ import { getDocuments } from "../../fhir/document/get-documents";
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const s3BucketName = Config.getMedicalDocumentsBucketName();
+const parallelS3Queries = 10;
 
 export const getNonExistentDocRefs = async (
   documents: DocumentWithMetriportId[],
@@ -37,34 +41,45 @@ const filterOutExistingDocRefsS3 = async (
   patientId: string,
   cxId: string
 ): Promise<ObservedDocRefs> => {
-  const docIdWithExist = await Promise.allSettled(
-    documents.map(async (doc): Promise<{ docId: string; exists: boolean }> => {
+  const successfulDocs: { docId: string; exists: boolean }[] = [];
+
+  await executeAsynchronously(documents, async doc => {
+    try {
       const fileName = createFileName(cxId, patientId, doc.docUniqueId);
 
       const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
-      return {
+      successfulDocs.push({
         docId: doc.docUniqueId,
         exists,
-      };
-    })
-  );
+      });
+    } catch (error) {
+      const msg = `Failed to store initial doc ref in FHIR`;
+      console.log(`${msg}: ${errorToString(error)}`);
+      capture.message(msg, {
+        extra: {
+          context: `cq.storeInitDocRefInFHIR`,
+          error,
+          doc,
+          patientId,
+          cxId,
+        },
+      });
+      throw error;
+    }
+  }, { numberOfParallelExecutions: parallelS3Queries });
 
-  const successfulDocs = docIdWithExist.flatMap(ref =>
-    ref.status === "fulfilled" && ref.value ? ref.value : []
-  );
 
   const observedDocRefs = documents.reduce(
     (acc: ObservedDocRefs, curr) => {
-      for (const succDoc of successfulDocs) {
-        if (succDoc.docId === curr.docUniqueId) {
-          if (succDoc.exists) {
-            acc.existingDocRefs = [...acc.existingDocRefs, curr];
-          } else {
-            acc.nonExistingDocRefs = [...acc.nonExistingDocRefs, curr];
-          }
-        }
+      const matchingDoc = successfulDocs.find(succDoc => succDoc.docId === curr.docUniqueId);
+
+      if (matchingDoc && matchingDoc.exists) {
+        acc.existingDocRefs = [...acc.existingDocRefs, curr];
+      } else {
+        acc.nonExistingDocRefs = [...acc.nonExistingDocRefs, curr];
       }
+
       return acc;
     },
     {

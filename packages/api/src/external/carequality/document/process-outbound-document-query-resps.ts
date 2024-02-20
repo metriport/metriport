@@ -23,7 +23,7 @@ const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
 const lambdaName = Config.getOutboundDocRetrievalRespsLambdaName();
-const parallelUpsertsToFhir = 500;
+const parallelUpsertsToFhir = 100;
 
 export async function processOutboundDocumentQueryResps({
   requestId,
