@@ -1,8 +1,6 @@
 import os
 
 from generated.client import Metriport
-from generated import commons
-from generated.resources import medical
 
 import os
 from dotenv import load_dotenv

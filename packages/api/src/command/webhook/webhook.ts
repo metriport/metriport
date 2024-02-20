@@ -6,6 +6,7 @@ import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
+import { isNoWebhookPongEnabledForCx } from "../../external/aws/appConfig";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { EventTypes, analytics } from "../../shared/analytics";
@@ -199,7 +200,7 @@ export const sendPayload = async (
   }
 };
 
-export const sendTestPayload = async (url: string, key: string): Promise<boolean> => {
+export const sendTestPayload = async (url: string, key: string, cxId: string): Promise<boolean> => {
   const ping = nanoid();
   const when = dayjs().toISOString();
   const payload: WebhookPingPayload = {
@@ -212,8 +213,9 @@ export const sendTestPayload = async (url: string, key: string): Promise<boolean
   };
 
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
-  if (res && res.pong && res.pong === ping) return true;
-  return false;
+  const isNoWebhookPongEnabled = await isNoWebhookPongEnabledForCx(cxId);
+  // check for a matching pong response, unless FF is enabled to skip that check
+  return res && (isNoWebhookPongEnabled || (res.pong && res.pong === ping));
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {

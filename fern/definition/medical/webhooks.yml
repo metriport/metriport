@@ -31,8 +31,6 @@ types:
       type:
         type: optional<fhir.CodeableConcept>
         docs: The type of the document.
-    audiences:
-    - public
 
   WebhookPatientPayload:
     properties:
@@ -51,16 +49,12 @@ types:
       status:
         type: MAPIWebhookStatus
         docs: The status of the webhook.
-    audiences:
-    - public
 
   MAPIWebhookStatus:
     enum:
       - processing
       - completed
       - failed
-    audiences:
-    - public
 
   WebhookMetadataPayload:
     properties:
@@ -76,8 +70,6 @@ types:
       data:
         type: optional<unknown>
         docs: Any additional data associated with the webhook.
-    audiences:
-    - public
 
   WebhookPatientDocumentDataPayload:
     properties:
@@ -87,8 +79,6 @@ types:
       patients:
         type: list<WebhookPatientPayload>
         docs: An array of WebhookPatientPayload objects.
-    audiences:
-    - public
   
   Filters:
     type: map<string, optional<string>>
@@ -112,15 +102,11 @@ types:
       filters:
         type: optional<Filters>
         docs: The filters used to obtain the bundle.
-    audiences:
-    - public
 
   ConsolidatedWebhookStatus:
     enum:
       - completed
       - failed
-    audiences:
-    - public
 
   WebhookPatientConsolidatedDataPayload:
     properties:
@@ -130,5 +116,3 @@ types:
       patients:
         type: list<PayloadPatient>
         docs: An array of Payload Patient objects.
-    audiences:
-    - public

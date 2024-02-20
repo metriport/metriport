@@ -1,16 +1,16 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
 import {
-  patientDiscoveryRespFromExternalGWSchema,
   documentQueryRespFromExternalGWSchema,
   documentRetrievalRespFromExternalGWSchema,
+  patientDiscoveryRespFromExternalGWSchema,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
-import { makeCarequalityAPI } from "../../external/carequality/api";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -21,11 +21,11 @@ import {
   IHEResultType,
   handleIHEResponse,
 } from "../../external/carequality/command/ihe-result/create-ihe-result";
+import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 
 dayjs.extend(duration);
 const router = Router();
@@ -55,7 +55,7 @@ router.get(
   "/directory/organization/:oid",
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const cq = makeCarequalityAPI();
+    const cq = makeCarequalityManagementAPI();
     if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
     const resp = await cq.listOrganizations({ count: 1, oid });

@@ -1,12 +1,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { PatientLoaderMetriportAPI } from "@metriport/core/command/patient-loader-metriport-api";
+import { PatientUpdaterMetriportAPI } from "@metriport/core/command/patient-updater-metriport-api";
 import { CodeChallenge } from "@metriport/core/domain/auth/code-challenge";
 import { cookieFromString } from "@metriport/core/domain/auth/cookie-management/cookie-manager";
 import { CookieManagerInMemory } from "@metriport/core/domain/auth/cookie-management/cookie-manager-in-memory";
 import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
-import { PatientLoaderMetriportAPI } from "@metriport/core/command/patient-loader-metriport-api";
-import { PatientUpdaterMetriportAPI } from "@metriport/core/command/patient-updater-metriport-api";
 import { CoverageEnhancerLocal } from "@metriport/core/external/commonwell/cq-bridge/coverage-enhancer-local";
 import { ECUpdaterAPI } from "@metriport/core/external/commonwell/cq-bridge/ec-updater-api";
 import { makeApi } from "@metriport/core/external/commonwell/management/api-factory";
@@ -15,9 +15,11 @@ import {
   SessionManagementConfig,
 } from "@metriport/core/external/commonwell/management/session";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import axios from "axios";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as readline from "readline-sync";
+import { getCxData } from "../shared/get-cx-data";
 
 dayjs.extend(duration);
 
@@ -28,7 +30,6 @@ import { CookieManagerOnSecrets } from "@metriport/core/domain/auth/cookie-manag
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { sleep } from "@metriport/core/util/sleep";
 import { firefox as runtime } from "playwright";
-import { getCxData } from "../shared/get-cx-data";
 
 /**
  * Script to run on local environment the code that enhances coverage @ CommonWell.
@@ -87,6 +88,10 @@ const DOC_QUERIES_IN_PARALLEL = 25;
 const maxDocQueryAttempts = 3;
 const minDocsToConsiderCompleted = 2;
 const prefix = "############################### ";
+
+const api = axios.create({
+  baseURL: metriportApiBaseUrl,
+});
 
 function getConnectors() {
   if (useLocalImplementations) {
@@ -174,6 +179,18 @@ export async function main() {
   console.log(`Giving some time for patients to be updated @ CW...`);
   await sleep(WAIT_BETWEEN_LINKING_AND_DOC_QUERY.asMilliseconds());
   const dqStartedAt = Date.now();
+
+  await api.post(
+    `/internal/patient/enhance-coverage/set-cq-link-statuses`,
+    {},
+    {
+      params: {
+        cxId,
+        patientIds: patientIds.join(","),
+        cqLinkStatus: "linked",
+      },
+    }
+  );
 
   await executeAsynchronously(
     patientIds,

@@ -1,6 +1,6 @@
 import { Organization } from "../models/organization";
 
-export interface CarequalityAPI {
+export interface CarequalityManagementAPI {
   listOrganizations({
     count,
     start,
