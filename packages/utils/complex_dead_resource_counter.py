@@ -28,6 +28,30 @@ def find_dead_responses(directory):
                                         dead_responses[text]["resources"].add(resource_type)
     return dead_responses
 
+import base64
+
+def find_dead_responses_in_b64(directory):
+    dead_responses = {}
+    no_phrases = ["no known", "no observation", "no data", "no information", "no results", "no medical", "no smoking status", "no social history", "no chronic problems"]
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".hbs") and "Observation" in file:
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as f:
+                    content = f.read()
+                    if '"valueString":"{{observationEntry.value._b64}}"' in content:
+                        start = content.find('"valueString":"{{observationEntry.value._b64}}"') + len('"valueString":"')
+                        end = content.find('"}}', start)
+                        b64_string = content[start:end]
+                        decoded_string = base64.b64decode(b64_string).decode('utf-8').lower()
+                        for phrase in no_phrases:
+                            if phrase in decoded_string:
+                                if decoded_string not in dead_responses:
+                                    dead_responses[decoded_string] = {"count": 0, "resources": set()}
+                                dead_responses[decoded_string]["count"] += 1
+                                dead_responses[decoded_string]["resources"].add("Observation")
+    return dead_responses
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script.py <directory>")
@@ -35,6 +59,10 @@ if __name__ == "__main__":
     directory = sys.argv[1]
     dead_resources_count = find_dead_responses(directory)
     for resource_type, count in dead_resources_count.items():
+        print(f"{resource_type}: {count}")
+
+    dead_resources_count_b64 = find_dead_responses_in_b64(directory)
+    for resource_type, count in dead_resources_count_b64.items():
         print(f"{resource_type}: {count}")
 
     total_count = sum(response['count'] for response in dead_resources_count.values())

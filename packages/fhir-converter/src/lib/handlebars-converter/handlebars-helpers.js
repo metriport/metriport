@@ -203,7 +203,9 @@ module.exports.external = [
       // Forces all elements of the conditional to be touched.
       JSON.stringify(conditional);
 
-      if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional)) {
+      const hasNullFlavorUNK = conditional && conditional.nullFlavor && conditional.nullFlavor === "UNK";
+
+      if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional) || hasNullFlavorUNK) {
         return options.inverse(this);
       } else {
         return options.fn(this);
