@@ -15,9 +15,7 @@ module.exports.Process = function (jsonObj, replacementDictionary) {
 
     if (Object.prototype.hasOwnProperty.call(jsonObj, "entry")) {
       for (var item of jsonObj.entry) {
-        if (hasEmptyResourceFilter(item)) continue;
-        if (hasEmptyResourceFilterText(item)) continue;
-
+        //if (hasEmptyResourceFilterText(item)) continue;
         let resourceKey = getKey(item);
         if (Object.prototype.hasOwnProperty.call(resourceKeyToIndexMap, resourceKey)) {
           let index = resourceKeyToIndexMap[resourceKey];

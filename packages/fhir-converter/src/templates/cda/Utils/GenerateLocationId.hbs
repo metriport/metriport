@@ -1,8 +1,8 @@
 {{!-- ID composed of code, addr, name --}}
 {
-    {{#if (and location.code location.location.addr location.location.name)}}
-        "Id": "{{generateUUID (concat location.code location.location.addr location.location.name)}}"
-    {{else if (and location.code location.addr location.playingEntity.name)}}
-        "Id": "{{generateUUID (concat location.code location.addr location.playingEntity.name)}}"
+    {{#if location.location.addr}}
+        "Id": "{{generateUUID (concatDefined location.location.addr location.location.name location.code)}}"
+    {{else if location.addr}}
+        "Id": "{{generateUUID (concatDefined location.addr location.playingEntity.name location.code)}}"
     {{/if}}
 }

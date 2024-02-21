@@ -181,6 +181,29 @@ var getDateTime = function (dateTimeString) {
   ).toJSON();
 };
 
+const allValuesInObjAreNullFlavor = (obj) => {
+  let queue = [obj];
+  while (queue.length > 0) {
+    let current = queue.shift();
+    if (current && typeof current === 'object') {
+      if (current.nullFlavor) {
+        // Continue to next iteration to check other properties
+        continue;
+      }
+      for (let key in current) {
+        if (current.hasOwnProperty(key)) {
+          queue.push(current[key]);
+        }
+      }
+    } else if (current !== null) {
+      // If the current value is not null and not an object with nullFlavor, return false
+      return false;
+    }
+  }
+  // If the loop completes without returning false, all values are null or have nullFlavor
+  return true;
+};
+
 module.exports.internal = {
   getDateTime: getDateTime,
   getDate: getDate,
@@ -196,30 +219,6 @@ module.exports.external = [
         throw "#if requires exactly one argument";
       }
 
-      const allValuesAreNull = (obj) => {
-        let queue = [obj];
-        while (queue.length > 0) {
-          let current = queue.shift();
-          if (current && typeof current === 'object') {
-            if (current.nullFlavor) {
-              // Continue to next iteration to check other properties
-              continue;
-            }
-            for (let key in current) {
-              if (current.hasOwnProperty(key)) {
-                queue.push(current[key]);
-              }
-            }
-          } else if (current !== null) {
-            // If the current value is not null and not an object with nullFlavor, return false
-            return false;
-          }
-        }
-        // If the loop completes without returning false, all values are null or have nullFlavor
-        return true;
-      };
-  
-
       if (HandlebarsUtils.isFunction(conditional)) {
         conditional = conditional.call(this);
       }
@@ -227,14 +226,11 @@ module.exports.external = [
       // Forces all elements of the conditional to be touched.
       JSON.stringify(conditional);
 
-      const hasNullFlavorUNK = conditional && conditional.nullFlavor && conditional.nullFlavor === "UNK";
-
-      if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional) || hasNullFlavorUNK) {
+      if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional)) {
         return options.inverse(this);
       } else {
         // If the direct check is not sufficient, use the queue-based approach
-        const allNull = allValuesAreNull(conditional);
-        if (allNull) {
+        if (allValuesInObjAreNullFlavor(conditional)) {
           return options.inverse(this);
         } else {
           return options.fn(this);
@@ -1293,5 +1289,19 @@ module.exports.external = [
       }
       return undefined; 
     },
+  },
+  {
+    name: "concatDefined",
+    description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
+    func: function (...args) {
+      
+      // Shared function to check if a value is considered "defined" for concatenation
+      const isDefined = (obj) => {
+        return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
+      };
+  
+      // Filter and concatenate defined values
+      return args.filter(arg => isDefined(arg)).join('');
+    }
   },
 ];

@@ -4,7 +4,6 @@ import sys
 
 def count_dead_resources(directory):
     resource_counts = {}
-    oid_counts = {}
     for root, dirs, files in os.walk(directory):
         for file in files:
             if file.endswith(".json"):
@@ -18,13 +17,8 @@ def count_dead_resources(directory):
                         resource = entry.get("resource")
                         
                         # Check if resource only has 'resourceType' and 'id', or also includes 'meta', or includes 'meta' and 'identifier'
-                        if resource and (("meta" in resource and "id" in resource and len(resource) == 3) or 
-                                         ("id" in resource and len(resource) == 2) or
-                                         ("meta" in resource and "identifier" in resource and "id" in resource and len(resource) == 4)):
+                        if resource and (("id" in resource and len(resource) <= 2)):
                             resource_type = resource.get("resourceType")
-                            if (resource_type == "Practitioner"):
-                                identifier_system = resource.get("identifier")[0].get("system") if resource.get("identifier") else "No identifier system"
-                                oid_counts[identifier_system] = oid_counts.get(identifier_system, 0) + 1         
                             if resource_type:
                                 resource_counts[resource_type] = resource_counts.get(resource_type, 0) + 1
                         
@@ -32,20 +26,20 @@ def count_dead_resources(directory):
                             for key, value in resource.items():
                                 if isinstance(value, dict) and key != "meta":
                                     resource_type = resource.get("resourceType")
+                                    if resource_type == "Location":
+                                        print(file_path, resource.get("id"), key)
                                     subreference_field = f"{resource_type}_{key}"
                                     resource_counts[subreference_field] = resource_counts.get(subreference_field, 0) + 1
-    return resource_counts, oid_counts
+    return resource_counts
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python script.py <directory>")
         sys.exit(1)
     directory = sys.argv[1]
-    dead_resources_count, oid_counts = count_dead_resources(directory)
-    # for resource_type, count in dead_resources_count.items():
-    #     print(f"{resource_type}: {count}")
-    for oid_name, count in sorted(oid_counts.items(), key=lambda item: item[1], reverse=True):
-        print(f"{oid_name}: {count}")
+    dead_resources_count = count_dead_resources(directory)
+    for resource_type, count in dead_resources_count.items():
+        print(f"{resource_type}: {count}")
 
 
 # Resolved with dead resource filter
