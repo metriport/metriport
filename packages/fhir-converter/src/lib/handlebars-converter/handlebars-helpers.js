@@ -1294,14 +1294,15 @@ module.exports.external = [
     name: "concatDefined",
     description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
     func: function (...args) {
+
+      args.pop();
       
       // Shared function to check if a value is considered "defined" for concatenation
       const isDefined = (obj) => {
         return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
-      };
-  
+      };  
       // Filter and concatenate defined values
-      return args.filter(arg => isDefined(arg)).join('');
+      return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
     }
   },
 ];
