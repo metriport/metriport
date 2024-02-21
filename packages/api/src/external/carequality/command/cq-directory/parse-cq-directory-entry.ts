@@ -46,7 +46,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       point,
       state,
       data: org,
-      managingOrganization: getManagingOrg(org.managingOrg),
+      managingOrganization: org.managingOrg ? getManagingOrg(org.managingOrg) : undefined,
       gateway: false,
       active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
@@ -144,7 +144,7 @@ function getOid(org: Organization): string | undefined {
   }
 }
 
-function getManagingOrg(managingOrg: ManagingOrganization) {
+function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
   const parts = managingOrg?.reference?.value?.split("/");
   return parts ? parts[parts.length - 1] : undefined;
 }

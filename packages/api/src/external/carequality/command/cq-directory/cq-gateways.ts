@@ -27,7 +27,7 @@ export async function updateCQGateway(gateway: string): Promise<void> {
           [Op.like]: `${gateway}%`,
         },
         urlXCPD: {
-          [Op.ne]: null,
+          [Op.ne]: "",
         },
       },
     }
@@ -38,9 +38,6 @@ export async function getCQGateways(): Promise<CQDirectoryEntryModel[]> {
   return CQDirectoryEntryModel.findAll({
     where: {
       gateway: true,
-      urlXCPD: {
-        [Op.ne]: "",
-      },
     },
   });
 }
