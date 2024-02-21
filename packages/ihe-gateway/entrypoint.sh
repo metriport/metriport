@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Starting the entrypoint.sh script..."
+touch /opt/connect/conf/mirth.properties
+
 custom_extension_count=`ls -1 /opt/connect/custom-extensions/*.zip 2>/dev/null | wc -l`
 if [ $custom_extension_count != 0 ]; then
 	echo "Found ${custom_extension_count} custom extensions."
@@ -13,6 +16,9 @@ fi
 KEYSTORE_PASS=changeme
 sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
 sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
+
+# https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_1/page/connect/connect/topics/c_The_mirth_properties_File_connect_ug.html#:~:text=server.api.allowhttp
+echo -e "\nserver.api.allowhttp = true" >> /opt/connect/conf/mirth.properties
 
 # merge the environment variables into /opt/connect/conf/mirth.properties
 # db type
@@ -252,5 +258,7 @@ fi
 if ! [ -z "${DELAY+x}" ]; then
 	sleep $DELAY
 fi
+
+echo "Executing the command: $@"
 
 exec "$@"

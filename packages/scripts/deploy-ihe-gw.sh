@@ -2,6 +2,15 @@
 
 # Run from the root of the repository.
 
+GITHUB_SHA=$(git rev-parse --short HEAD)
+
+FOLDER=packages/ihe-gateway
+
+pushd ${FOLDER}
+
+echo "Loading environment variables"
+source ./scripts/load-env.sh
+
 if [[ -z "${AWS_REGION}" ]]; then
   echo "AWS_REGION is missing"
   exit 1
@@ -14,12 +23,12 @@ if [[ -z "${ECS_CLUSTER}" ]]; then
   echo "ECS_CLUSTER is missing"
   exit 1
 fi
-if [[ -z "${ECS_SERVICE1}" ]]; then
-  echo "ECS_SERVICE1 is missing"
+if [[ -z "${IHE_OUTBOUND_ECS_SERVICE}" ]]; then
+  echo "IHE_OUTBOUND_ECS_SERVICE is missing"
   exit 1
 fi
-if [[ -z "${ECS_SERVICE2}" ]]; then
-  echo "ECS_SERVICE2 is missing"
+if [[ -z "${IHE_INBOUND_ECS_SERVICE}" ]]; then
+  echo "IHE_INBOUND_ECS_SERVICE is missing"
   exit 1
 fi
 
@@ -32,17 +41,8 @@ set +x
 echo "Logging into ECR/Docker"
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
 
-GITHUB_SHA=$(git rev-parse --short HEAD)
-
-FOLDER=packages/ihe-gateway
-
-pushd ${FOLDER}
-
 echo "Initializing the IHE GW repo"
 ./scripts/init.sh
-
-echo "Loading environment variables"
-source ./scripts/load-env.sh
 
 echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
@@ -66,31 +66,29 @@ docker buildx build \
 popd
 
 # TODO 1377 Split restart from wait and wait in parallel”’
-echo "Restarting the IHE GW service $ECS_SERVICE1"
+echo "Restarting the IHE GW service $IHE_INBOUND_ECS_SERVICE"
 # Update the fargate service
 aws ecs update-service \
   --no-cli-pager \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER" \
-  --service "$ECS_SERVICE1" \
+  --service "$IHE_INBOUND_ECS_SERVICE" \
   --force-new-deployment
 
-echo "Restarting the IHE GW service $ECS_SERVICE2"
+echo "Restarting the IHE GW service $IHE_OUTBOUND_ECS_SERVICE"
 # Update the fargate service
 aws ecs update-service \
   --no-cli-pager \
   --region "$AWS_REGION" \
   --cluster "$ECS_CLUSTER" \
-  --service "$ECS_SERVICE2" \
+  --service "$IHE_OUTBOUND_ECS_SERVICE" \
   --force-new-deployment
-
 
 echo "Waiting for services to be healthy/stable..."
 # Wait for the service to be stable
-until ( aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE1" && \
-        aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$ECS_SERVICE2" )
-do
-    echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
-    sleep 5
+until (aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_INBOUND_ECS_SERVICE" &&
+  aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_OUTBOUND_ECS_SERVICE"); do
+  echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
+  sleep 5
 done
 echo -e "Done."
