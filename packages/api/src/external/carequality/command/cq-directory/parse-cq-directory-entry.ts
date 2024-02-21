@@ -32,6 +32,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const lat = coordinates ? coordinates.lat : undefined;
     const lon = coordinates ? coordinates.lon : undefined;
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
+    const managingOrganization = org.managingOrg ? getManagingOrg(org.managingOrg) : undefined;
     const state = getState(org.address);
     const active = org.active?.value ?? false;
 
@@ -46,7 +47,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       point,
       state,
       data: org,
-      managingOrganization: org.managingOrg ? getManagingOrg(org.managingOrg) : undefined,
+      managingOrganization,
       gateway: false,
       active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
