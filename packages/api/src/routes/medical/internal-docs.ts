@@ -50,6 +50,7 @@ const upload = multer();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
+const requestIdEmptyOverride = "empty-override";
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/re-convert
@@ -141,7 +142,7 @@ router.post(
     // keeping the old logic for now, but we should avoid having these optional parameters that can
     // lead to empty string or `undefined` being used as IDs
     const decomposed = jobId ? parseJobId(jobId) : { requestId: "", documentId: "" };
-    const requestId = decomposed?.requestId ?? "";
+    const requestId = decomposed?.requestId ?? requestIdEmptyOverride;
     const docId = decomposed?.documentId ?? "";
     const hasSource = isMedicalDataSource(source);
 
@@ -207,13 +208,13 @@ router.post(
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      requestId: patient.data.documentQueryProgress?.requestId ?? "",
+      requestId: patient.data.documentQueryProgress?.requestId ?? requestIdEmptyOverride,
     });
 
     if (hasSource) {
       await setDocQueryProgress({
         patient: { id: patientId, cxId },
-        requestId: updatedPatient.data.documentQueryProgress?.requestId ?? "",
+        requestId: updatedPatient.data.documentQueryProgress?.requestId ?? requestIdEmptyOverride,
         downloadProgress,
         convertProgress,
         source: hie,
