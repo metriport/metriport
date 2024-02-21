@@ -261,11 +261,11 @@ export class Config {
   }
 
   static getOutboundDocumentQueryRespsLambdaName(): string {
-    return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_QUERIES_LAMBDA_NAME");
+    return getEnvVarOrFail("OUTBOUND_DOC_QUERY_RESPS_LAMBDA_NAME");
   }
 
   static getOutboundDocRetrievalRespsLambdaName(): string {
-    return getEnvVarOrFail("IHE_TO_EXTERNAL_GW_DOC_RETRIEVAL_LAMBDA_NAME");
+    return getEnvVarOrFail("OUTBOUND_DOC_RETRIEVAL_RESPS_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {

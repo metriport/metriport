@@ -9,7 +9,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { getIheResultStatus } from "../../ihe-result";
 import { DefaultPayload } from "./shared";
-import { createPatientDiscoveryResult } from "./create-outbound-patient-discovery-resp";
+import { createOutboundPatientDiscoveryResp } from "./create-outbound-patient-discovery-resp";
 import { createOutboundDocumentQueryResp } from "./create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "./create-outbound-document-retrieval-resp";
 
@@ -55,7 +55,7 @@ export async function handleOutboundResponse({ type, response }: OutboundResp): 
   switch (type) {
     case OutboundRespType.OUTBOUND_PATIENT_DISCOVERY_RESP: {
       status = getIheResultStatus({ patientMatch: response.patientMatch });
-      await createPatientDiscoveryResult({ defaultPayload, status, response });
+      await createOutboundPatientDiscoveryResp({ defaultPayload, status, response });
       return;
     }
     case OutboundRespType.OUTBOUND_DOCUMENT_QUERY_RESP: {

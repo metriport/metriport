@@ -8,7 +8,7 @@ export type CreatePatientDiscoverRespPayload = {
   response: OutboundPatientDiscoveryResp;
 };
 
-export async function createPatientDiscoveryResult(
+export async function createOutboundPatientDiscoveryResp(
   payload: CreatePatientDiscoverRespPayload
 ): Promise<OutboundPatientDiscoveryRespModel> {
   return await OutboundPatientDiscoveryRespModel.create({

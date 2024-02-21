@@ -152,8 +152,8 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          IHE_TO_EXTERNAL_GW_DOC_QUERIES_LAMBDA_NAME: outboundDocumentQueryRespsLambda.functionName,
-          IHE_TO_EXTERNAL_GW_DOC_RETRIEVAL_LAMBDA_NAME:
+          OUTBOUND_DOC_QUERY_RESPS_LAMBDA_NAME: outboundDocumentQueryRespsLambda.functionName,
+          OUTBOUND_DOC_RETRIEVAL_RESPS_LAMBDA_NAME:
             outboundDocumentRetrievalRespsLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
