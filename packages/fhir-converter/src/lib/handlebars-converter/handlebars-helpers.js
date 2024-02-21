@@ -186,12 +186,15 @@ const allValuesInObjAreNullFlavor = (obj) => {
   while (queue.length > 0) {
     let current = queue.shift();
     if (current && typeof current === 'object') {
-      if (current.nullFlavor) {
+      if (Object.keys(current).length == 1 && current.nullFlavor) {
         // Continue to next iteration to check other properties
         continue;
       }
       for (let key in current) {
         if (current.hasOwnProperty(key)) {
+          if (key === 'classCode'){
+            continue;
+          }
           queue.push(current[key]);
         }
       }
@@ -1300,7 +1303,7 @@ module.exports.external = [
       // Shared function to check if a value is considered "defined" for concatenation
       const isDefined = (obj) => {
         return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
-      };  
+      };
       // Filter and concatenate defined values
       return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
     }
