@@ -181,13 +181,13 @@ var getDateTime = function (dateTimeString) {
   ).toJSON();
 };
 
+// Queue approach to check if all values in the json object are nullFlavor
 const allValuesInObjAreNullFlavor = (obj) => {
   let queue = [obj];
   while (queue.length > 0) {
     let current = queue.shift();
     if (current && typeof current === 'object') {
       if (Object.keys(current).length == 1 && current.nullFlavor) {
-        // Continue to next iteration to check other properties
         continue;
       }
       for (let key in current) {
@@ -199,11 +199,9 @@ const allValuesInObjAreNullFlavor = (obj) => {
         }
       }
     } else if (current !== null) {
-      // If the current value is not null and not an object with nullFlavor, return false
       return false;
     }
   }
-  // If the loop completes without returning false, all values are null or have nullFlavor
   return true;
 };
 
@@ -1300,11 +1298,9 @@ module.exports.external = [
 
       args.pop();
       
-      // Shared function to check if a value is considered "defined" for concatenation
       const isDefined = (obj) => {
         return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
       };
-      // Filter and concatenate defined values
       return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
     }
   },

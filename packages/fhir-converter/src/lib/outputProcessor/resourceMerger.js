@@ -15,7 +15,6 @@ module.exports.Process = function (jsonObj, replacementDictionary) {
 
     if (Object.prototype.hasOwnProperty.call(jsonObj, "entry")) {
       for (var item of jsonObj.entry) {
-        //if (hasEmptyResourceFilterText(item)) continue;
         let resourceKey = getKey(item);
         if (Object.prototype.hasOwnProperty.call(resourceKeyToIndexMap, resourceKey)) {
           let index = resourceKeyToIndexMap[resourceKey];
@@ -54,24 +53,6 @@ const concatAndDedup = (target, source) => {
   return destination;
 };
 
-function hasEmptyResourceFilter(item) {
-  const resource = item.resource;
-  if (!resource) return false;
-
-  const keys = Object.keys(resource);
-  const hasMeta = keys.includes("meta");
-  const hasId = keys.includes("id");
-  const hasIdentifier = keys.includes("identifier");
-
-  if ((hasMeta && hasId && keys.length === 3) ||
-      (hasId && keys.length === 2) ||
-      (hasMeta && hasIdentifier && hasId && keys.length === 4)) {
-    return true; // Matches the dead resource criteria, should be filtered out
-  }
-
-  return false; // Does not match the criteria, should not be filtered out
-}
-
 function hasEmptyResourceFilterText(item) {
   const resource = item.resource;
   if (!resource) return false;
@@ -90,19 +71,18 @@ function hasEmptyResourceFilterText(item) {
         if (value && value.text) {
           const textLower = value.text.toLowerCase();
           if (noPhrases.some(phrase => textLower.includes(phrase))) {
-            return true; // Found a dead response, should be filtered out
+            return true;
           }
         }
       }
     } else if (fieldValue && fieldValue.text) {
-      console.log(`Field exists: ${field}`); // Print if the nested field exists
       const textLower = fieldValue.text.toLowerCase();
       if (noPhrases.some(phrase => textLower.includes(phrase))) {
-        return true; // Found a dead response, should be filtered out
+        return true;
       }
     }
   }
-  return false; // No dead response found, should not be filtered out
+  return false;
 }
 
 function getNestedFieldValue(obj, path) {
