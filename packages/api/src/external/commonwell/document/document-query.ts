@@ -591,11 +591,11 @@ async function downloadDocsAndUpsertFHIR({
             }
           }
 
-          const FHIRDocRef = cwToFHIR(doc.id, docWithFile, patient);
+          const fhirDocRef = cwToFHIR(doc.id, docWithFile, patient);
 
           if (shouldUpsertFHIR) {
             const [fhir] = await Promise.allSettled([
-              upsertDocumentToFHIRServer(cxId, FHIRDocRef, log).catch(error => {
+              upsertDocumentToFHIRServer(cxId, fhirDocRef, log).catch(error => {
                 const context = "upsertDocumentToFHIRServer";
                 const extra = {
                   context: `cw.document-query.` + context,
@@ -610,7 +610,7 @@ async function downloadDocsAndUpsertFHIR({
               }),
               ingestIntoSearchEngine(
                 patient,
-                FHIRDocRef,
+                fhirDocRef,
                 {
                   key: file.key,
                   bucket: file.bucket,
@@ -633,7 +633,7 @@ async function downloadDocsAndUpsertFHIR({
             source: MedicalDataSource.COMMONWELL,
           });
 
-          return FHIRDocRef;
+          return fhirDocRef;
         } catch (error) {
           await tallyDocQueryProgress({
             patient: { id: patient.id, cxId: patient.cxId },

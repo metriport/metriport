@@ -6,13 +6,16 @@ import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
 import { errorToString } from "../../../../util/error/shared";
 import { REQUEST_ID_COLUMN } from "../../ihe-result";
+import { OutboundDocumentQueryResp, OutboundDocumentRetrievalResp } from "../../ihe-result";
 
 dayjs.extend(duration);
 
 export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
-export const pollIHEGatewayResults = async <TableResult>({
+export type TableResult = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
+
+export async function pollIHEGatewayResults({
   requestId,
   patientId,
   cxId,
@@ -28,7 +31,7 @@ export const pollIHEGatewayResults = async <TableResult>({
   dbCreds: string;
   endpointUrl: string;
   resultsTable: string;
-}): Promise<TableResult[]> => {
+}): Promise<TableResult[]> {
   const sequelize = initSequelizeForLambda(dbCreds);
 
   const raceControl: RaceControl = { isRaceInProgress: true };
@@ -48,7 +51,7 @@ export const pollIHEGatewayResults = async <TableResult>({
       ),
     ]);
 
-    const iheGatewayResults = await queryIHEGatewayResults<TableResult>(
+    const iheGatewayResults = await queryIHEGatewayResults(
       sequelize,
       resultsTable,
       requestId
@@ -67,7 +70,7 @@ export const pollIHEGatewayResults = async <TableResult>({
     console.log(`${msg} - endpoint ${endpointUrl}. Error: ${errorToString(error)}`);
     throw new MetriportError(msg, error, { requestId, patientId, cxId, numOfGateways });
   }
-};
+}
 
 async function isIheGatewayResultsComplete(
   sequelize: Sequelize,
@@ -99,7 +102,7 @@ async function getIHEGatewayResultCount(
   }
 }
 
-async function queryIHEGatewayResults<TableResult>(
+async function queryIHEGatewayResults(
   sequelize: Sequelize,
   resultsTable: string,
   requestId: string

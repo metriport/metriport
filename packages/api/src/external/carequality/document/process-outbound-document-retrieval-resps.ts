@@ -165,7 +165,7 @@ async function handleDocReferences(
 
     const docId = docRef.metriportId ?? "";
 
-    const FHIRDocRef = cqToFHIR(docId, docRef, patientId, currentFHIRDocRef[0]);
+    const fhirDocRef = cqToFHIR(docId, docRef, patientId, currentFHIRDocRef[0]);
 
     if (!docRef.fileLocation || !docRef.url || !docRef.contentType) {
       throw new Error(
@@ -180,32 +180,19 @@ async function handleDocReferences(
     };
 
     const transactionEntry: BundleEntry = {
-      resource: FHIRDocRef,
+      resource: fhirDocRef,
       request: {
         method: "PUT",
-        url: FHIRDocRef.resourceType + "/" + FHIRDocRef.id,
+        url: fhirDocRef.resourceType + "/" + fhirDocRef.id,
       },
     };
 
     transactionBundle.entry?.push(transactionEntry);
 
-    ingestIntoSearchEngine({ id: patientId, cxId }, FHIRDocRef, file, requestId, log);
+    ingestIntoSearchEngine({ id: patientId, cxId }, fhirDocRef, file, requestId, log);
   }
 
-  try {
-    await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
-  } catch (error) {
-    const msg = `Failed to upsert doc refs in FHIR`;
-    console.log(`${msg}: ${errorToString(error)}`);
-    capture.message(msg, {
-      extra: {
-        context: `cq.upsertDocRefsInFHIR`,
-        error,
-        patientId,
-        cxId,
-      },
-    });
-  }
+  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
 
   await setDocQueryProgress({
     patient: { id: patientId, cxId: cxId },

@@ -3,7 +3,6 @@ import axios from "axios";
 import { pollIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
 import {
   DOC_QUERY_RESULT_TABLE_NAME,
-  OutboundDocumentQueryResp,
 } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
@@ -37,7 +36,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     try {
-      const results = await pollIHEGatewayResults<OutboundDocumentQueryResp>({
+      const results = await pollIHEGatewayResults({
         requestId,
         patientId,
         cxId,
