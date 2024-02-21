@@ -15,7 +15,6 @@ import {
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
-import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
@@ -46,6 +45,8 @@ export interface IHEGatewayConstructProps {
 const maxPortsPerLB = 5;
 const defaultPorts = [8080, 8443];
 const maxPortsOnProps = maxPortsPerLB - defaultPorts.length;
+const healthcheckIntervalDefaultPorts = Duration.seconds(30);
+const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 
 export default class IHEGatewayConstruct extends Construct {
   public readonly server: ecs.IFargateService;
@@ -101,15 +102,6 @@ export default class IHEGatewayConstruct extends Construct {
 
     const image = ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest");
 
-    const healthCheck: HealthCheck = {
-      healthyThresholdCount: 2,
-      unhealthyThresholdCount: 3,
-      interval: Duration.seconds(10),
-      path: "/",
-      port: "8080",
-      protocol: Protocol.HTTP,
-      timeout: Duration.seconds(5),
-    };
     const taskDefinition = new FargateTaskDefinition(this, `${id}TaskDefinition`, {
       cpu: config.ecs.cpu,
       memoryLimitMiB: config.ecs.memory,
@@ -129,6 +121,7 @@ export default class IHEGatewayConstruct extends Construct {
         hostPort: port,
         protocol: ecs.Protocol.TCP,
       })),
+      logging: ecs.LogDrivers.awsLogs({ streamPrefix: id }),
     });
 
     const alb = new ApplicationLoadBalancer(scope, `${id}ALB`, {
@@ -152,7 +145,19 @@ export default class IHEGatewayConstruct extends Construct {
       domainName: url,
     });
 
-    const addPortToLB = (port: number, theLB: ApplicationLoadBalancer) => {
+    const healthCheck: HealthCheck = {
+      healthyThresholdCount: 2,
+      unhealthyThresholdCount: 2,
+      path: "/",
+      port: "8080",
+      protocol: Protocol.HTTP,
+      timeout: Duration.seconds(5),
+    };
+    const addPortToLB = (
+      port: number,
+      theLB: ApplicationLoadBalancer,
+      healthcheckInterval: Duration
+    ) => {
       const isHttps = port === 443 || port === 8443;
       const protocol = isHttps ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP;
       const certificates = isHttps ? [httpsCert] : undefined;
@@ -172,20 +177,25 @@ export default class IHEGatewayConstruct extends Construct {
           protocol: ApplicationProtocol.HTTP,
           port,
           targetGroupName: targetGroupId,
-          healthCheck,
+          healthCheck: {
+            ...healthCheck,
+            interval: healthcheckInterval,
+          },
         }),
       });
     };
-    [...defaultPorts, ...httpPorts].forEach(port => addPortToLB(port, alb));
+    defaultPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalDefaultPorts));
+    httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
+
     service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
     this.serverAddress = alb.loadBalancerDnsName;
 
-    new r53.ARecord(this, `${id}PrivateRecord`, {
+    new r53.CnameRecord(this, `${id}PrivateRecord`, {
       recordName: url,
       zone: privateZone,
-      target: r53.RecordTarget.fromAlias(new r53_targets.LoadBalancerTarget(alb)),
+      domainName: alb.loadBalancerDnsName,
     });
 
     const lbSGId = `${id}_LB_SG`;

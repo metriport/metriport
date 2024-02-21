@@ -46,6 +46,8 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     ...props,
     env: mainConfig.environmentType,
     config,
+    privateZone,
+    domain: mainConfig.domain,
   });
 
   const containerInsights = isProd(mainConfig) ? true : false;
