@@ -288,14 +288,16 @@ async function getStatusFromFHIRServer() {
 }
 
 async function getResourceCount() {
-  const { resourcesByPatient, resourcesBySubject } = getResourcesFilter();
+  const { resourcesByPatient, resourcesBySubject, generalResourcesNoFilter } = getResourcesFilter();
   const summaryCount = "&_summary=count";
 
   const result = await Promise.allSettled([
-    ...[...resourcesByPatient, ...resourcesBySubject].map(async resource => {
-      const res = await fhirApi.search(resource, summaryCount);
-      return { resourceType: resource, count: res.total ?? 0 };
-    }),
+    ...[...resourcesByPatient, ...resourcesBySubject, ...generalResourcesNoFilter].map(
+      async resource => {
+        const res = await fhirApi.search(resource, summaryCount);
+        return { resourceType: resource, count: res.total ?? 0 };
+      }
+    ),
   ]);
 
   return result;
