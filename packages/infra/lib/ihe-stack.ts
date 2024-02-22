@@ -67,7 +67,8 @@ export class IHEStack extends Stack {
     );
 
     // add domain cert + record
-    const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
+    const iheApiUrl = `${props.config.iheGateway.subdomain}.${props.config.domain}`;
+
     api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
