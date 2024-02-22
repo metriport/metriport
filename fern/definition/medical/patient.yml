@@ -228,7 +228,7 @@ types:
         type: list<commons.Address>
       contact:
         type: optional<list<Contact>>
-      externalID:
+      externalId:
         type: optional<string>
         docs: An external Patient ID to associate to a Patient in Metriport.
     
