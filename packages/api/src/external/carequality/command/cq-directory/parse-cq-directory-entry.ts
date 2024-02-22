@@ -33,6 +33,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const lon = coordinates ? coordinates.lon : undefined;
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
     const managingOrganization = org.managingOrg ? getManagingOrg(org.managingOrg) : undefined;
+    const managingOrganizationId = getManagingOrgId(org);
     const state = getState(org.address);
     const active = org.active?.value ?? false;
 
@@ -48,6 +49,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       state,
       data: org,
       managingOrganization,
+      managingOrganizationId,
       gateway: false,
       active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
@@ -135,17 +137,39 @@ function getState(addresses: Address[] | undefined): string | undefined {
   return;
 }
 
+function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
+  const parts = managingOrg?.reference?.value?.split("/");
+  return parts ? parts[parts.length - 1] : undefined;
+}
+
 function getOid(org: Organization): string | undefined {
-  const oid = org?.identifier?.value?.value;
+  if (!org?.identifier || !org.name) return;
+  return getNormalizedOid(org, `Organization ${org?.name?.value ?? ""}`);
+}
+
+function getManagingOrgId(org: Organization): string | undefined {
+  if (!org?.partOf) return;
+  const name = org?.name?.value ?? undefined;
+  return getNormalizedOid(org.partOf, `Managing Organization ${name ? "of " + name : ""}`);
+}
+
+type IdentifiableEntity = {
+  identifier?: {
+    value?: {
+      value?: string;
+    };
+  };
+};
+
+function getNormalizedOid(
+  entity: IdentifiableEntity,
+  entityDescription: string
+): string | undefined {
+  const oid = entity?.identifier?.value?.value;
   if (!oid) return;
   try {
     return normalizeOid(oid);
   } catch (err) {
-    console.log(`Organization ${org?.name?.value} has invalid OID: ${oid}`);
+    console.log(`${entityDescription} has invalid OID: ${oid}`);
   }
-}
-
-function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
-  const parts = managingOrg?.reference?.value?.split("/");
-  return parts ? parts[parts.length - 1] : undefined;
 }
