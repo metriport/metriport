@@ -7,7 +7,6 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import duration from "dayjs/plugin/duration";
 import dayjs from "dayjs";
 import axios from "axios";
-import { sleep } from "@metriport/shared";
 dayjs.extend(duration);
 
 /**
@@ -22,12 +21,11 @@ dayjs.extend(duration);
  *
  */
 
-const patientId = "";
+const patientId = "018b67ca-f9f5-7baf-badc-63a18e1a7035";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const SLEEP_TIME = dayjs.duration({ minutes: 5 });
 
 export const internalApi = axios.create({
   baseURL: apiUrl,
@@ -65,24 +63,27 @@ async function main() {
       },
     });
 
-    for (let i = 0; i < NUM_OF_REQUESTS; i++) {
-      internalApi.post("/internal/docs/conversion-status", null, {
-        params: {
-          patientId,
-          cxId,
-          status: "success",
-          source: MedicalDataSource.COMMONWELL,
-          jobId: `jobId-${i}`,
-        },
-      });
+    const promises = [];
 
-      console.log(`Request ${i} sent`);
+    for (let i = 0; i < NUM_OF_REQUESTS; i++) {
+      promises.push(
+        internalApi.post("/internal/docs/conversion-status", null, {
+          params: {
+            patientId,
+            cxId,
+            status: "success",
+            source: MedicalDataSource.COMMONWELL,
+            jobId: `jobId-${i}`,
+          },
+        })
+      );
     }
+
+    await Promise.all(promises);
+
   } catch (error) {
     console.error("Error", error);
   }
-
-  sleep(SLEEP_TIME.milliseconds());
 
   const queryStatus = await metriportApi.getDocumentQueryStatus(patientId);
 
