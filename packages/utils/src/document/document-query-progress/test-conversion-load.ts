@@ -9,6 +9,20 @@ import dayjs from "dayjs";
 import axios from "axios";
 dayjs.extend(duration);
 
+/**
+ * Utility to test the load for the conversion status endpoint.
+ *
+ * This will:
+ *   - we will set the doc query progress for the overall and specified hie
+ *   - we will then set the conversion status for given number of requests
+ *   - we will then check the doc query progress for the patient is correct
+ *
+ * Update the respective env variables and run `ts-node handle-conversion-load.ts`
+ *
+ */
+
+const patientId = "";
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
@@ -22,7 +36,6 @@ const metriportApi = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
 });
 
-const patientId = "018b67ca-f9f5-7baf-badc-63a18e1a7035";
 const NUM_OF_REQUESTS = 1000;
 
 const docQueryProgress: DocumentQuery = {
@@ -40,18 +53,6 @@ const docQueryProgress: DocumentQuery = {
   },
 };
 
-/**
- * Utility to test the load for the conversion status endpoint.
- *
- * This will:
- *   - we will set the doc query progress for the overall and specified hie
- *   - we will then set the conversion status for given number of requests
- *   - we will then check the doc query progress for the patient is correct
- *
- * Update the respective env variables and run `ts-node handle-conversion-load.ts`
- *
- */
-
 async function main() {
   try {
     await internalApi.post("/internal/docs/override-progress", docQueryProgress, {
@@ -62,21 +63,24 @@ async function main() {
       },
     });
 
+    const promises = [];
+
     for (let i = 0; i < NUM_OF_REQUESTS; i++) {
-      await internalApi.post("/internal/docs/conversion-status", null, {
-        params: {
-          patientId,
-          cxId,
-          status: "success",
-          source: MedicalDataSource.COMMONWELL,
-          jobId: `jobId-${i}`,
-        },
-      });
-
-      const queryStatus = await metriportApi.getDocumentQueryStatus(patientId);
-
-      console.log("queryStatus", i, JSON.stringify(queryStatus.convert, null, 2));
+      promises.push(
+        internalApi.post("/internal/docs/conversion-status", null, {
+          params: {
+            patientId,
+            cxId,
+            status: "success",
+            source: MedicalDataSource.COMMONWELL,
+            jobId: `jobId-${i}`,
+          },
+        })
+      );
     }
+
+    await Promise.all(promises);
+
   } catch (error) {
     console.error("Error", error);
   }
@@ -87,7 +91,7 @@ async function main() {
 
   const isComplete = queryStatus.convert?.status === "completed";
 
-  console.log("isComplete", isComplete);
+  console.log(isComplete ? "The load test was successfully completed" : "The load test failed");
 }
 
 main();

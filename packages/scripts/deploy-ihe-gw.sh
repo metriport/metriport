@@ -14,8 +14,12 @@ if [[ -z "${ECS_CLUSTER}" ]]; then
   echo "ECS_CLUSTER is missing"
   exit 1
 fi
-if [[ -z "${ECS_SERVICE}" ]]; then
-  echo "ECS_SERVICE is missing"
+if [[ -z "${IHE_OUTBOUND_ECS_SERVICE}" ]]; then
+  echo "IHE_OUTBOUND_ECS_SERVICE is missing"
+  exit 1
+fi
+if [[ -z "${IHE_INBOUND_ECS_SERVICE}" ]]; then
+  echo "IHE_INBOUND_ECS_SERVICE is missing"
   exit 1
 fi
 
@@ -44,15 +48,12 @@ echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
 
 echo "Building and pushing Docker image"
-# TODO 1377 Try to remove '--platform' or keep it to one value
 docker buildx build \
   --build-arg "ARTIFACT=$IHE_GW_ARTIFACT_URL" \
-  --build-arg "KEYSTORENAME=$IHE_GW_KEYSTORENAME" \
+  --build-arg "KEYSTORENAME=$IHE_GW_KEYSTORE_NAME" \
   --build-arg "ZULUKEY=$IHE_GW_ZULUKEY" \
-  --secret "id=store_pass,type=file,src=store_pass.secret" \
-  --secret "id=keystore_pass,type=file,src=keystore_pass.secret" \
-  --secret "id=license_key,type=file,src=license_key.secret" \
-  --secret "id=mirth_properties,type=file,src=secret.properties" \
+  --secret "id=keystore_storepass,type=file,src=keystore_storepass.secret" \
+  --secret "id=keystore_keypass,type=file,src=keystore_keypass.secret" \
   --platform linux/amd64,linux/arm64,linux/arm/v7 \
   --tag "$ECR_REPO_URI:latest" \
   --tag "$ECR_REPO_URI:$GITHUB_SHA" \
@@ -61,5 +62,30 @@ docker buildx build \
 
 popd
 
-echo "Restarting the IHE GW service"
-source ./packages/scripts/restart-ecs.sh
+echo "Restarting the IHE GW service $IHE_INBOUND_ECS_SERVICE"
+# Update the fargate service
+aws ecs update-service \
+  --no-cli-pager \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$IHE_INBOUND_ECS_SERVICE" \
+  --force-new-deployment
+
+echo "Restarting the IHE GW service $IHE_OUTBOUND_ECS_SERVICE"
+# Update the fargate service
+aws ecs update-service \
+  --no-cli-pager \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$IHE_OUTBOUND_ECS_SERVICE" \
+  --force-new-deployment
+
+echo "Waiting for services to be healthy/stable..."
+# Wait for the service to be stable
+until (aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_INBOUND_ECS_SERVICE" &&
+  aws ecs wait services-stable --cluster "$ECS_CLUSTER" --service "$IHE_OUTBOUND_ECS_SERVICE"); do
+  echo "'aws ecs wait services-stable' timed out, trying again in 5s..."
+  sleep 5
+done
+
+echo -e "Done."

@@ -3,6 +3,7 @@ import { BackupResource } from "aws-cdk-lib/aws-backup";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as rds from "aws-cdk-lib/aws-rds";
+import * as r53 from "aws-cdk-lib/aws-route53";
 import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import { Construct } from "constructs";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
@@ -15,6 +16,8 @@ export interface IHEDatabaseConstructProps {
   env: EnvType;
   config: IHEGatewayProps;
   vpc: ec2.IVpc;
+  privateZone: r53.IPrivateHostedZone;
+  domain: string;
   alarmAction?: SnsAction | undefined;
 }
 
@@ -27,7 +30,7 @@ export default class IHEDBConstruct extends Construct {
   constructor(scope: Construct, props: IHEDatabaseConstructProps) {
     super(scope, `${id}Construct`);
 
-    const { vpc, config, alarmAction } = props;
+    const { vpc, config, privateZone, domain, alarmAction } = props;
 
     const dbClusterName = "ihe-db";
     const dbName = config.rds.dbName;
@@ -84,6 +87,12 @@ export default class IHEDBConstruct extends Construct {
         resources: [BackupResource.fromRdsDatabaseCluster(dbCluster)],
       });
     }
+
+    new r53.CnameRecord(this, `${id}PrivateRecord`, {
+      recordName: `db.${config.subdomain}.${domain}`,
+      zone: privateZone,
+      domainName: dbCluster.clusterEndpoint.hostname,
+    });
 
     addDBClusterPerformanceAlarms(
       this,

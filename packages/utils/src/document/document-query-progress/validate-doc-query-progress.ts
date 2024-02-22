@@ -11,6 +11,27 @@ import axios from "axios";
 import { patientsToCreate } from "./patients";
 dayjs.extend(duration);
 
+/**
+ * Utility to test doc query progress for a given set of patients.
+ *
+ * This will:
+ *    - create a new facility
+ *    - create a new patient for each patient in `patientsToCreate`
+ *    - check if the patient is linked
+ *    - start a doc query for each patient
+ *    - check the doc query progress for each patient
+ *    - log the result of all the doc queries
+ *    - delete the patient after the doc query is complete
+ *
+ *
+ * Update the respective env variables and run `ts-node validate-doc-query-progress.ts`
+ *
+ * Note: You can use the populate-patients.ts script to populate
+ * the patients with documents you wish to query here which should be the same as
+ * the ones seen in ./patients.
+ */
+
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
@@ -48,26 +69,6 @@ const createFacility: FacilityCreate = {
  * This is to test that the count works after the doc query is complete and subsequent doc query is performed.
  */
 const resetAndRunAgain = false;
-
-/**
- * Utility to test doc query progress for a given set of patients.
- *
- * This will:
- *    - create a new facility
- *    - create a new patient for each patient in `patientsToCreate`
- *    - check if the patient is linked
- *    - start a doc query for each patient
- *    - check the doc query progress for each patient
- *    - log the result of all the doc queries
- *    - delete the patient after the doc query is complete
- *
- *
- * Update the respective env variables and run `ts-node validate-doc-query-progress.ts`
- *
- * Note: You can use the populate-patients.ts script to populate
- * the patients with documents you wish to query here which should be the same as
- * the ones seen in ./patients.
- */
 
 async function main() {
   const facility = await metriportApi.createFacility(createFacility);
@@ -119,14 +120,14 @@ const validateDocQueryProgress = async (
   console.log("Patient statuses:", JSON.stringify(fulfilled, null, 2));
 
   const successfulPatientQueries = fulfilled.filter(p => p.successful);
+  const failedPatientQueries = fulfilled.filter(p => !p.successful);
 
   const overallSuccess = successfulPatientQueries.length === createdPatients.length;
 
   console.log(
     `The doc query was completed for all patients${
       resetAndRunAgain ? " (resetAndRunAgain)" : ""
-    } - status were all queries successful:`,
-    overallSuccess
+    } - status were all queries successful: ${overallSuccess}. Errors: ${failedPatientQueries.length}`,
   );
 };
 

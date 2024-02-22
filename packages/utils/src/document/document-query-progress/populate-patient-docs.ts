@@ -7,6 +7,17 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import fs from "fs";
 import { patientsToCreate } from "./patients";
 
+/**
+ * Utility to create patients and upload documents for testing.
+ *
+ * This will:
+ *   - create a new patient for each patient in `patientsToCreate`
+ *   - upload a set number of documents for each patient
+ *
+ * Update the respective env variables and run `ts-node populate-patient-docs.ts`
+ *
+ */
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const facilityId = getEnvVarOrFail("FACILITY_ID");
@@ -67,16 +78,6 @@ const docRefBase = {
   },
 };
 
-/**
- * Utility to create patients and upload documents for testing.
- *
- * This will:
- *   - create a new patient for each patient in `patientsToCreate`
- *   - upload a set number of documents for each patient
- *
- * Update the respective env variables and run `ts-node populate-patient-docs.ts`
- *
- */
 async function main() {
   try {
     for (const patient of patientsToCreate) {

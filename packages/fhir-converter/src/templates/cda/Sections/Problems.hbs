@@ -2,10 +2,12 @@
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.5.1' '2.16.840.1.113883.10.20.22.2.5')}}
         {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_5_1.entry 2_16_840_1_113883_10_20_22_2_5.entry) as |problems|}}
             {{#each (toArray problems.act.entryRelationship) as |condEntry|}}
-                {{>Resources/Condition.hbs conditionEntry=condEntry.observation ID=(generateUUID (toJsonString condEntry.observation))}},
-                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                    {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
-                {{/with}}
+                {{#if condEntry.observation}}
+                    {{>Resources/Condition.hbs conditionEntry=condEntry.observation ID=(generateUUID (toJsonString condEntry.observation))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString condEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+                {{/if}}
                 {{#if condEntry.observation.author.assignedAuthor}}
                     {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=condEntry.observation.author.assignedAuthor) as |practitionerId|}}
                         {{>Resources/Practitioner.hbs practitioner=condEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
@@ -15,4 +17,22 @@
             {{/each}}
         {{/each}}
     {{/with}}
-{{/if}} 
+{{/if}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.20')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.20')}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_20.entry ) as |resolvedProblems|}}
+            {{#if resolvedProblems.observation}}
+                {{>Resources/Condition.hbs conditionEntry=resolvedProblems.observation ID=(generateUUID (toJsonString resolvedProblems.observation))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/Condition/subject.hbs ID=(generateUUID (toJsonString resolvedProblems.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+            {{/if}}
+            {{#if resolvedProblems.observation.author.assignedAuthor}}
+                {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=resolvedProblems.observation.author.assignedAuthor) as |practitionerId|}}
+                    {{>Resources/Practitioner.hbs practitioner=resolvedProblems.observation.author.assignedAuthor ID=practitionerId.Id}},
+                    {{>References/Condition/recorder.hbs ID=(generateUUID (toJsonString resolvedProblems.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                {{/with}}
+            {{/if}}
+        {{/each}}
+    {{/with}}
+{{/if}}

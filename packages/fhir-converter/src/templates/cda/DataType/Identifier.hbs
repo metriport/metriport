@@ -1,12 +1,22 @@
 {{#if (not id.nullFlavor)}}
     {{#if id.extension}}
-        {
-            "system":{{>ValueSet/SystemReference.hbs code=id.root}},
-            "value":"{{id.extension}}",
-            "assigner":{
-    	        "display":"{{id.assigningAuthorityName}}"
-                }
-        },
+        {{#with (evaluate 'ValueSet/SystemReference.hbs' code=id.root) as |system|}}
+            {
+                "system": "{{system.oid}}",
+                "value":"{{../id.extension}}",
+                "assigner":{
+                    "display":"{{../id.assigningAuthorityName}}"
+                },
+            {{#unless (startsWith system.oid "http:")}}
+                {{#with (evaluate 'ValueSet/IdentifierType.hbs' code=../id.root) as |system|}}
+                    "type": {
+                        "text": "{{system.oid}}",
+                    },
+                {{/with}}
+            {{/unless}}
+            },
+         {{/with}}
+        
     {{else}}
     {{!-- If the extension is not present, the root is supposed to be universally unique --}}
         {

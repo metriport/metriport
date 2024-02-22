@@ -5,10 +5,10 @@
 	@return {Object} return SOAP message
 */
 function getMCCI_SOAP(payload) {
+	const senderOID = Config.getHomeCommunityId();
+	const uuid = UUIDGenerator.getUUID();
 
-	var uuid = UUIDGenerator.getUUID();
-
-	var soap = <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://www.w3.org/2005/08/addressing">
+	const soap = <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://www.w3.org/2005/08/addressing">
 				  <soap:Header>
 				    <wsa:To soap:mustUnderstand="true">http://www.w3.org/2005/08/addressing/anonymous</wsa:To>
 				    <wsa:Action soap:mustUnderstand="true">urn:hl7-org:v3:MCCI_IN000002UV01</wsa:Action>
@@ -30,7 +30,7 @@ function getMCCI_SOAP(payload) {
 				      </receiver>
 				      <sender typeCode="SND">
 				        <device classCode="DEV" determinerCode="INSTANCE">
-				          <id root={configurationMap.get('HL7v3.Sender.OID')}/>
+				          <id root={senderOID}/>
 				        </device>
 				      </sender>
 				      <acknowledgement>

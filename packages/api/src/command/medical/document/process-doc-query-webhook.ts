@@ -30,11 +30,8 @@ export const processDocQueryProgressWebhook = async ({
   const { id: patientId } = patient;
 
   try {
-    const downloadWebhookSent = documentQueryProgress?.download?.webhookSent ?? false;
-    const convertWebhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
-
-    await handleDownloadWebhook(downloadWebhookSent, patient, requestId, documentQueryProgress);
-    await handleConversionWebhook(convertWebhookSent, patient, requestId, documentQueryProgress);
+    await handleDownloadWebhook(patient, requestId, documentQueryProgress);
+    await handleConversionWebhook(patient, requestId, documentQueryProgress);
   } catch (error) {
     const msg = `Error on processDocQueryProgressWebhook`;
     const extra = {
@@ -52,11 +49,12 @@ export const processDocQueryProgressWebhook = async ({
 };
 
 const handleDownloadWebhook = async (
-  webhookSent: boolean,
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress
 ): Promise<void> => {
+  const webhookSent = documentQueryProgress?.download?.webhookSent ?? false;
+
   const downloadStatus = documentQueryProgress.download?.status;
   const isDownloadFinished = downloadStatus === "completed" || downloadStatus === "failed";
 
@@ -80,11 +78,12 @@ const handleDownloadWebhook = async (
 };
 
 const handleConversionWebhook = async (
-  webhookSent: boolean,
   patient: Pick<Patient, "id" | "cxId" | "externalId">,
   requestId: string,
   documentQueryProgress: DocumentQueryProgress
 ): Promise<void> => {
+  const webhookSent = documentQueryProgress?.convert?.webhookSent ?? false;
+
   const convertStatus = documentQueryProgress.convert?.status;
   const isConvertFinished = convertStatus === "completed" || convertStatus === "failed";
 
