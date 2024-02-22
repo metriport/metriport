@@ -119,8 +119,8 @@ jobs:
     uses: ./.github/workflows/_deploy-ihe-gw.yml
     with:
       deploy_env: "staging"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_STAGING }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}
+      ECR_REPO_URI: ${{ vars.IHE_ECR_REPO_URI_STAGING }}
+      ECS_CLUSTER: ${{ vars.IHE_ECS_CLUSTER_STAGING }}
       IHE_INBOUND_ECS_SERVICE: ${{ vars.IHE_INBOUND_ECS_SERVICE_STAGING }}
       IHE_OUTBOUND_ECS_SERVICE: ${{ vars.IHE_OUTBOUND_ECS_SERVICE_STAGING }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}

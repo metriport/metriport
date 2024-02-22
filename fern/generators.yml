@@ -3,7 +3,7 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 0.7.5
+        version: 0.11.2
         output:
           location: pypi
           package-name: metriport
@@ -12,8 +12,10 @@ groups:
           client_class_name: Metriport
           pydantic_config:
             require_optional_fields: false
+          improved_imports: true
         github: 
           repository: metriport/metriport-python
+          mode: pull-request # Generates a pull request (instead of commit) 
   java-sdk:
     generators:
       - name: fernapi/fern-java-sdk
