@@ -1,5 +1,9 @@
 name: Reusable Deploy workflow based on CDK
 
+# This workflow checks out both the OSS and Internal repos.
+# Because of that, the each step has to indicate the folder in which it should run at - different
+# from regular workflows that only checkout the repo once and run all steps in the same folder.
+
 on:
   workflow_call:
     inputs:
