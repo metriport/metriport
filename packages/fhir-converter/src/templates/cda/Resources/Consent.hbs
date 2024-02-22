@@ -5,7 +5,7 @@
         "id":"{{ID}}",
         "identifier":
         [
-        	{{#each (toArray consentEntry.id)}}
+        	{{#each (toArray id)}}
             	{{>DataType/Identifier.hbs id=this}},
             {{/each}}
         ],
@@ -18,11 +18,11 @@
               }
             ]
         }
-        "category":[{{>DataType/CodeableConcept.hbs code=consentEntry.code}}],    
-        "dateTime":"{{formatAsDateTime consentEntry.component.observation.effectiveTime.low.value}}",
+        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],    
+        "dateTime":"{{formatAsDateTime consentEntry.effectiveTime.low.value}}",
         "provision":
         {
-            "code":[{{>DataType/CodeableConcept.hbs code=consentEntry.component.observation.value}},]
+            "code":[{{>DataType/CodeableConcept.hbs code=consentEntry.value}},]
         },
     },
     "request":{

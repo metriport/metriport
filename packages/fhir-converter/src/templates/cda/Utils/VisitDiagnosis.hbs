@@ -1,0 +1,22 @@
+{{!-- DO NOT USE THIS YET. IT INTRODUCES DUPLICATES --}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.8')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.8')}}
+        {{#each (toArray 2_16_840_1_113883_10_20_22_2_8) as |diagnosis|}}
+            {{#with (extractAndMapTableData diagnosis.text) as |diagnosisMap|}}
+                {
+                "codes":
+                    [
+                    {{#each diagnosisMap as |value key|}}
+                        {{#if value.Diagnosis}}
+                            {{>DataType/CodeableConcept.hbs text=value.Diagnosis}},
+                        {{/if}}
+                    {{/each}}
+                    ]
+                }
+            {{/with}}
+        {{/each}}
+    {{/with}}
+{{/if}}
+
+
+
