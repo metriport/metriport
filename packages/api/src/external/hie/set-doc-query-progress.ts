@@ -8,49 +8,37 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import {
   SetDocQueryProgressBase,
-  setDocQueryProgress,
+  aggregateDocQueryProgress,
 } from "../../command/medical/patient/append-doc-query-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
-import { PatientDataCommonwell } from "../commonwell/patient-shared";
-import { PatientDataCarequality } from "../carequality/patient-shared";
 import { getCWData } from "../commonwell/patient";
 import { getCQData } from "../carequality/patient";
+import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
-export type HIEPatientData = PatientDataCommonwell | PatientDataCarequality;
+type StaticProgress = Pick<Progress, "status" | "total">;
 
-export type SetDocQueryProgressWithSource = {
+export type SetDocQueryProgress = {
   source: MedicalDataSource;
-} & SetDocQueryProgressBase &
-  (
-    | {
-        downloadProgress?: Progress | undefined | null;
-        convertProgress?: Progress | undefined | null;
-        reset?: false | undefined;
-      }
-    | {
-        downloadProgress?: never;
-        convertProgress?: never;
-        reset?: true;
-      }
-  );
+  downloadProgress?: StaticProgress | undefined;
+  convertProgress?: StaticProgress | undefined;
+} & SetDocQueryProgressBase;
 
 /**
- * Appends the given properties of a patient's document query progress.
- * Keeps existing sibling properties when those are not provided, unless
- * 'reset=true' is provided.
+ * Updates the total and status for the given HIE which is then aggregated
+ * to the patient's document query progress. Use tallyDocQueryProgress to update
+ * the successful and error count.
+ *
  * @returns
  */
-export async function appendDocQueryProgressWithSource({
+export async function setDocQueryProgress({
   patient,
   requestId,
   downloadProgress,
   convertProgress,
   convertibleDownloadErrors,
   increaseCountConvertible,
-  reset,
   source,
-}: SetDocQueryProgressWithSource): Promise<Patient> {
+}: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
@@ -63,13 +51,8 @@ export async function appendDocQueryProgressWithSource({
       transaction,
     });
 
-    const documentQueryProgress = !existingPatient.data.documentQueryProgress
-      ? {}
-      : existingPatient.data.documentQueryProgress;
-
     // Set the doc query progress for the given hie
-    const externalData = setExternalData(
-      reset,
+    const externalData = setHIEDocProgress(
       existingPatient,
       downloadProgress,
       convertProgress,
@@ -78,25 +61,14 @@ export async function appendDocQueryProgressWithSource({
       increaseCountConvertible
     );
 
-    existingPatient.data.externalData = externalData;
-
-    // Set the aggregated doc query progress for the patient
-    const externalQueryProgresses = setDocQueryProgressWithExternal(externalData);
-
-    const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
-
-    const updatedDocumentQueryProgress = {
-      ...documentQueryProgress,
-      ...aggregatedDocProgress,
-    };
-
-    updatedDocumentQueryProgress.requestId = requestId;
+    const aggregatedDocProgresses = aggregateAndSetHIEProgresses(existingPatient, externalData);
 
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
-        documentQueryProgress: updatedDocumentQueryProgress,
+        externalData,
+        documentQueryProgress: aggregatedDocProgresses,
       },
     };
 
@@ -117,9 +89,58 @@ export async function appendDocQueryProgressWithSource({
   return result;
 }
 
-type RequiredProgress = Required<Progress>;
+export function aggregateAndSetHIEProgresses(
+  existingPatient: PatientModel,
+  updatedExternalData: PatientExternalData
+) {
+  const documentQueryProgress = !existingPatient.data.documentQueryProgress
+    ? {}
+    : existingPatient.data.documentQueryProgress;
 
-function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
+  // Set the aggregated doc query progress for the patient
+  const externalQueryProgresses = flattenDocQueryProgressWithExternal(updatedExternalData);
+
+  const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+
+  const updatedDocumentQueryProgress = {
+    ...documentQueryProgress,
+    ...aggregatedDocProgress,
+  };
+
+  return updatedDocumentQueryProgress;
+}
+
+export function setHIEDocProgress(
+  patient: PatientModel,
+  downloadProgress: Progress | undefined,
+  convertProgress: Progress | undefined,
+  source: MedicalDataSource,
+  convertibleDownloadErrors?: number,
+  increaseCountConvertible?: number
+): PatientExternalData {
+  const externalData = patient.data.externalData ?? {};
+
+  const sourceData = externalData[source];
+
+  const docQueryProgress = aggregateDocQueryProgress(
+    sourceData?.documentQueryProgress ?? {},
+    downloadProgress,
+    convertProgress,
+    convertibleDownloadErrors,
+    increaseCountConvertible
+  );
+
+  externalData[source] = {
+    ...externalData[source],
+    documentQueryProgress: docQueryProgress,
+  };
+
+  return externalData;
+}
+
+type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
+
+export function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
   download?: RequiredProgress;
   convert?: RequiredProgress;
 } {
@@ -142,7 +163,7 @@ function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
           accType.total += currTotal;
           accType.errors += currErrors;
           accType.successful += currSuccessful;
-          accType.status = setStatus(statuses);
+          accType.status = aggregateStatus(statuses);
         } else {
           acc[type] = {
             total: currTotal,
@@ -161,7 +182,7 @@ function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
   return tallyResults;
 }
 
-function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
   const hasFailed = docQueryProgress.some(status => status === "failed");
 
@@ -171,50 +192,7 @@ function setStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus
   return "completed";
 }
 
-export function setExternalData(
-  reset: boolean | undefined,
-  patient: PatientModel,
-  downloadProgress: Progress | undefined | null,
-  convertProgress: Progress | undefined | null,
-  source: MedicalDataSource,
-  convertibleDownloadErrors?: number,
-  increaseCountConvertible?: number
-): PatientExternalData {
-  const externalData = patient.data.externalData ?? {};
-
-  if (reset) {
-    return {
-      ...externalData,
-      COMMONWELL: {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      },
-      CAREQUALITY: {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      },
-    };
-  }
-
-  const sourceData = externalData[source] as HIEPatientData;
-
-  const docQueryProgress = setDocQueryProgress(
-    sourceData?.documentQueryProgress ?? {},
-    downloadProgress,
-    convertProgress,
-    convertibleDownloadErrors,
-    increaseCountConvertible
-  );
-
-  externalData[source] = {
-    ...externalData[source],
-    documentQueryProgress: docQueryProgress,
-  };
-
-  return externalData;
-}
-
-export function setDocQueryProgressWithExternal(
+export function flattenDocQueryProgressWithExternal(
   externalData: PatientExternalData
 ): DocumentQueryProgress[] {
   const cwExternalData = getCWData(externalData);

@@ -6,6 +6,7 @@ export type Progress = {
   total?: number;
   successful?: number;
   errors?: number;
+  webhookSent?: boolean;
 };
 
 export type ProgressIntKeys = keyof Omit<Progress, "status">;
