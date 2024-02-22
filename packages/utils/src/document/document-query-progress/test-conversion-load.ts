@@ -21,7 +21,7 @@ dayjs.extend(duration);
  *
  */
 
-const patientId = "018b67ca-f9f5-7baf-badc-63a18e1a7035";
+const patientId = "";
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
