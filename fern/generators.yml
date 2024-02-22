@@ -10,6 +10,8 @@ groups:
           token: ${PYPI_TOKEN}
         config:
           client_class_name: Metriport
+          pydantic_config:
+            require_optional_fields: false
         github: 
           repository: metriport/metriport-python
   java-sdk:
