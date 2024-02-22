@@ -15,7 +15,6 @@ groups:
           improved_imports: true
         github: 
           repository: metriport/metriport-python
-          mode: pull-request # Generates a pull request (instead of commit) 
   java-sdk:
     generators:
       - name: fernapi/fern-java-sdk
