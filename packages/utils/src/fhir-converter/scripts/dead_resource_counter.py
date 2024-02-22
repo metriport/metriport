@@ -2,7 +2,6 @@ import os
 import json
 import sys
 
-
 def count_conditions_categories(directory):
     condition_category_count = 0
     conditions_count = 0

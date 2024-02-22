@@ -48,9 +48,7 @@
         
         "bodySite":{{>DataType/CodeableConcept.hbs code=observationEntry.targetSiteCode}},
         
-        {{#if observationEntry.value.code}}
-            "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
-        {{else if observationEntry.value.value}}
+        {{#if observationEntry.value.value}}
             {{#with (extractRangeFromQuantity observationEntry.value) as |rangeObj|}}
                 {{#if rangeObj.isValid}}
                     "valueRange": {{>DataType/Range.hbs range=rangeObj.range}},
@@ -58,6 +56,8 @@
                     "valueQuantity": {{>DataType/Quantity.hbs quantity=../observationEntry.value}},
                 {{/if}}
             {{/with}}
+        {{else if observationEntry.value}}
+            "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value._}}
             "valueString":"{{{parseReferenceData observationEntry.value._}}}",
         {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know         --}}
