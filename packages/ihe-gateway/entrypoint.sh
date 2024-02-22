@@ -2,7 +2,6 @@
 set -e
 
 echo "Starting the entrypoint.sh script..."
-touch /opt/connect/conf/mirth.properties
 
 custom_extension_count=`ls -1 /opt/connect/custom-extensions/*.zip 2>/dev/null | wc -l`
 if [ $custom_extension_count != 0 ]; then
@@ -71,7 +70,6 @@ if ! [ -z "${KEYSTORE_TYPE+x}" ]; then
 fi
 
 # license key
-LICENSE_KEY=$(cat /run/secrets/license_key 2>/dev/null)
 if ! [ -z "${LICENSE_KEY+x}" ]; then
 	LINE_COUNT=`grep "license.key" /opt/connect/conf/mirth.properties | wc -l`
 	if [ $LINE_COUNT -lt 1 ]; then
@@ -79,6 +77,8 @@ if ! [ -z "${LICENSE_KEY+x}" ]; then
 	else
 		sed -i "s/^license\.key\s*=\s*.*\$/license.key = ${LICENSE_KEY//\//\\/}/" /opt/connect/conf/mirth.properties
 	fi
+else
+	echo "WARNING: No license key found"
 fi
 
 # session store
@@ -188,8 +188,6 @@ if [ -f /run/secrets/mirth_properties ]; then
             fi
         fi
     done <<< "`cat /run/secrets/mirth_properties`"
-else
-		echo "WARNING: No mirth.properties secret found"
 fi
 
 # merge the user's secret vmoptions
@@ -258,7 +256,5 @@ fi
 if ! [ -z "${DELAY+x}" ]; then
 	sleep $DELAY
 fi
-
-echo "Executing the command: $@"
 
 exec "$@"

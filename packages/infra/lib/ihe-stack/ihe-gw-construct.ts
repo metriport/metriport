@@ -1,5 +1,4 @@
 import { CfnOutput, Duration } from "aws-cdk-lib";
-import { Certificate, CertificateValidation } from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { SecurityGroup } from "aws-cdk-lib/aws-ec2";
@@ -21,6 +20,7 @@ import { EnvConfig } from "../../config/env-config";
 import { IHEGatewayProps } from "../../config/ihe-gateway-config";
 import { ecrRepoName } from "../ihe-prereq-stack";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
+import { buildSecrets, secretsToECS } from "../shared/secrets";
 import IHEDBConstruct from "./ihe-db-construct";
 
 export interface IHEGatewayConstructProps {
@@ -43,7 +43,7 @@ export interface IHEGatewayConstructProps {
 }
 
 const maxPortsPerLB = 5;
-const defaultPorts = [8080, 8443];
+const defaultPorts = [8080];
 const maxPortsOnProps = maxPortsPerLB - defaultPorts.length;
 const healthcheckIntervalDefaultPorts = Duration.seconds(30);
 const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
@@ -82,8 +82,10 @@ export default class IHEGatewayConstruct extends Construct {
       return getLambdaUrlShared({ region: mainConfig.region, arn });
     };
 
+    const secretManagerSecrets = buildSecrets(this, config.secretNames);
     const secrets: ApplicationLoadBalancedTaskImageOptions["secrets"] = {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+      ...secretsToECS(secretManagerSecrets),
     };
     const environment: ApplicationLoadBalancedTaskImageOptions["environment"] = {
       DATABASE: `postgres`,
@@ -96,6 +98,9 @@ export default class IHEGatewayConstruct extends Construct {
       HOME_COMMUNITY_ID: mainConfig.systemRootOID,
       HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
       VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
+      // Env vars are passed to IHE GW through _MP_ prefixed env vars, see entrypoint.sh
+      _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
+      _MP_KEYSTORE_TYPE: config.keystoreType,
     };
 
     const ecrRepo = ecr.Repository.fromRepositoryName(scope, `${id}EcrRepo`, ecrRepoName);
@@ -140,11 +145,6 @@ export default class IHEGatewayConstruct extends Construct {
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
-    const httpsCert = new Certificate(this, `${id}HTTPSCertificate`, {
-      validation: CertificateValidation.fromDns(privateZone),
-      domainName: url,
-    });
-
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 2,
@@ -158,14 +158,10 @@ export default class IHEGatewayConstruct extends Construct {
       theLB: ApplicationLoadBalancer,
       healthcheckInterval: Duration
     ) => {
-      const isHttps = port === 443 || port === 8443;
-      const protocol = isHttps ? ApplicationProtocol.HTTPS : ApplicationProtocol.HTTP;
-      const certificates = isHttps ? [httpsCert] : undefined;
       const listener = theLB.addListener(`${id}Listener_${port}`, {
         open: false,
         port,
-        protocol,
-        certificates,
+        protocol: ApplicationProtocol.HTTP,
       });
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
@@ -218,14 +214,10 @@ export default class IHEGatewayConstruct extends Construct {
       "Allow traffic from within the VPC to the service secure port"
     );
 
-    // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
-    // from the cluster created above, should be fine for now as it will only accept connections in the VPC
-    fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-
     // TODO 1377 try to remove this
     // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
     // from the cluster created above, should be fine for now as it will only accept connections in the VPC
-    // fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
+    fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
 
     // This speeds up deployments so the tasks are swapped quicker.
     // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay

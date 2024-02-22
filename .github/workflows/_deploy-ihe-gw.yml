@@ -34,7 +34,7 @@ on:
       IHE_GW_ARTIFACT_URL:
         required: true
         type: string
-      IHE_GW_KEYSTORENAME:
+      IHE_GW_KEYSTORE_NAME:
         required: true
         type: string
       IHE_GW_ZULUKEY:
@@ -52,11 +52,9 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
-      IHE_GW_STOREPASS:
+      IHE_GW_KEYSTORE_STOREPASS:
         required: true
-      IHE_GW_KEYSTOREPASS:
-        required: true
-      IHE_GW_LICENSE_KEY:
+      IHE_GW_KEYSTORE_KEYPASS:
         required: true
 
 jobs:
@@ -97,6 +95,7 @@ jobs:
           aws configure set default.region "${{ inputs.AWS_REGION }}"
         working-directory: "./"
 
+      # Needs buildx so we can build w/ secrets
       - name: Setup Docker
         run: docker buildx create --use
         working-directory: "./"
@@ -113,9 +112,8 @@ jobs:
           IHE_OUTBOUND_ECS_SERVICE: ${{ inputs.IHE_OUTBOUND_ECS_SERVICE }}
           AWS_REGION: ${{ inputs.AWS_REGION }}
           IHE_GW_ARTIFACT_URL: ${{ inputs.IHE_GW_ARTIFACT_URL }}
-          IHE_GW_KEYSTORENAME: ${{ inputs.IHE_GW_KEYSTORENAME }}
+          IHE_GW_KEYSTORE_NAME: ${{ inputs.IHE_GW_KEYSTORE_NAME }}
           IHE_GW_ZULUKEY: ${{ inputs.IHE_GW_ZULUKEY }}
           IHE_GW_CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
-          IHE_GW_STOREPASS: ${{ secrets.IHE_GW_STOREPASS }}
-          IHE_GW_KEYSTOREPASS: ${{ secrets.IHE_GW_KEYSTOREPASS }}
-          IHE_GW_LICENSE_KEY: ${{ secrets.IHE_GW_LICENSE_KEY }}
+          IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
+          IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}

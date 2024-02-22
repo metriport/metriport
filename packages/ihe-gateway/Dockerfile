@@ -39,26 +39,26 @@ COPY config/certs/sequoia3.pem /opt/connect/appdata/.
 COPY config/certs/sequoia4.pem /opt/connect/appdata/.
 COPY config/certs/sequoia5.pem /opt/connect/appdata/.
 COPY config/certs/$KEYSTORENAME /opt/connect/appdata/.
-RUN --mount=type=secret,id=store_pass \
-    --mount=type=secret,id=keystore_pass \
+RUN --mount=type=secret,id=keystore_storepass \
+    --mount=type=secret,id=keystore_keypass \
     keytool -noprompt -importkeystore -srckeystore /opt/connect/appdata/$KEYSTORENAME -srcstoretype PKCS12 \
-    -srcstorepass "$(grep -v '^#' /run/secrets/keystore_pass)" -destkeystore /usr/lib/jvm/zulu17/lib/security/cacerts \
-    -deststorepass "$(grep -v '^#' /run/secrets/store_pass)"  -deststoretype JKS
-RUN --mount=type=secret,id=store_pass \
+    -srcstorepass "$(grep -v '^#' /run/secrets/keystore_keypass)" -destkeystore /usr/lib/jvm/zulu17/lib/security/cacerts \
+    -deststorepass "$(grep -v '^#' /run/secrets/keystore_storepass)"  -deststoretype JKS
+RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
-    -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia1 -cacerts -file /opt/connect/appdata/sequoia1.pem
-RUN --mount=type=secret,id=store_pass \
+    -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia1 -cacerts -file /opt/connect/appdata/sequoia1.pem
+RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
-    -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia2 -cacerts -file /opt/connect/appdata/sequoia2.pem
-RUN --mount=type=secret,id=store_pass \
+    -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia2 -cacerts -file /opt/connect/appdata/sequoia2.pem
+RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
-    -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia3 -cacerts -file /opt/connect/appdata/sequoia3.pem
-RUN --mount=type=secret,id=store_pass \
+    -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia3 -cacerts -file /opt/connect/appdata/sequoia3.pem
+RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
-    -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia4 -cacerts -file /opt/connect/appdata/sequoia4.pem
-RUN --mount=type=secret,id=store_pass \
+    -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia4 -cacerts -file /opt/connect/appdata/sequoia4.pem
+RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
-    -storepass "$(grep -v '^#' /run/secrets/store_pass)" -alias sequoia5 -cacerts -file /opt/connect/appdata/sequoia5.pem
+    -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia5 -cacerts -file /opt/connect/appdata/sequoia5.pem
 RUN (cat mcserver.vmoptions /opt/connect/docs/mcservice-java9+.vmoptions ; echo "") > mcserver_base.vmoptions
 EXPOSE 8443
 EXPOSE 8080
