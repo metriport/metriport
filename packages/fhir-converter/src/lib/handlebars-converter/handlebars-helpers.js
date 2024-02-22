@@ -22,6 +22,40 @@ const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
 
 // Some helpers will be referenced in other helpers and declared outside the export below.
+
+var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) {
+  try {
+    var getNamespace = require("cls-hooked").getNamespace;
+    var session = getNamespace(constants.CLS_NAMESPACE);
+    var handlebarsInstance = session.get(constants.CLS_KEY_HANDLEBAR_INSTANCE);
+    let templateLocation = session.get(constants.CLS_KEY_TEMPLATE_LOCATION);
+
+    var partial = handlebarsInstance.partials[templatePath];
+
+    if (typeof partial !== "function") {
+      var content = fs.readFileSync(templateLocation + "/" + templatePath);
+
+      // register partial with compilation output
+      handlebarsInstance.registerPartial(
+        templatePath,
+        handlebarsInstance.compile(content.toString())
+      );
+      partial = handlebarsInstance.partials[templatePath];
+    }
+    var result = partial(inObj.hash);
+    var processedResult = JSON.parse(jsonProcessor.Process(result));
+
+    // Check if the processedResult is undefined or an empty object
+    if (!returnEmptyObject && (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))) {
+      return undefined;
+    }
+
+    return processedResult;
+  } catch (err) {
+    throw `helper "evaluateTemplate" : ${err}`;
+  }
+}
+
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
   for (var s = 0; s < segmentIds.length - 1; s++) {
@@ -481,38 +515,16 @@ module.exports.external = [
   },
   {
     name: "evaluate",
-    description: "Returns template result object: evaluate templatePath inObj",
+    description: "Returns template  result object: evaluate templatePath inObj",
     func: function (templatePath, inObj) {
-      try {
-        var getNamespace = require("cls-hooked").getNamespace;
-        var session = getNamespace(constants.CLS_NAMESPACE);
-        var handlebarsInstance = session.get(constants.CLS_KEY_HANDLEBAR_INSTANCE);
-        let templateLocation = session.get(constants.CLS_KEY_TEMPLATE_LOCATION);
-
-        var partial = handlebarsInstance.partials[templatePath];
-
-        if (typeof partial !== "function") {
-          var content = fs.readFileSync(templateLocation + "/" + templatePath);
-
-          // register partial with compilation output
-          handlebarsInstance.registerPartial(
-            templatePath,
-            handlebarsInstance.compile(content.toString())
-          );
-          partial = handlebarsInstance.partials[templatePath];
-        }
-        var result = partial(inObj.hash);
-        var processedResult = JSON.parse(jsonProcessor.Process(result));
-
-        // Check if the processedResult is undefined or an empty object
-        if (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object)) {
-          return undefined;
-        }
-
-        return processedResult;
-      } catch (err) {
-        throw `helper "evaluate" : ${err}`;
-      }
+      return evaluateTemplate(templatePath, inObj);
+    },
+  },
+  {
+    name: "optionalEvaluate",
+    description: "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
+    func: function (templatePath, inObj) {
+      return evaluateTemplate(templatePath, inObj, true);
     },
   },
   {
@@ -532,16 +544,30 @@ module.exports.external = [
   },
   {
     name: "multipleToArray",
-    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
     func: function (...vals) {
-        var combinedArr = [];
-        vals.forEach(function(val) {
-            if (Array.isArray(val)) {
-                combinedArr.push(...val);
-            } else if (val) {
+        const uniqueSet = new Set();
+        const combinedArr = [];
+
+        // Flatten the input arrays
+        const flatVals = vals.flat();
+
+        for (let i = 0; i < flatVals.length; i++) {
+            const val = flatVals[i];
+            let hash;
+
+            if (typeof val === 'object' && val !== null) {
+                // Attempt to create a unique hash for objects
+                hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
+            } else {
+                // Use primitive value directly
+                hash = val;
+            }
+
+            if (!uniqueSet.has(hash)) {
+                uniqueSet.add(hash);
                 combinedArr.push(val);
             }
-        });
+        }
 
         return combinedArr;
     },
@@ -1216,13 +1242,6 @@ module.exports.external = [
             return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
         };
 
-        const convertMappedDataToPlainText = (mappedData) => {
-          if (!mappedData || mappedData.length === 0) return "";
-          return mappedData.map(entry => {
-              return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
-          }).join('\n\n');
-        };
-
         const headers = getHeaders(json.table.thead);
         if (headers.length === 0) return undefined;
 
@@ -1232,20 +1251,17 @@ module.exports.external = [
         const mappedData = trArray.map(tr => getRowData(tr, headers));
         if (mappedData === "") return undefined;
 
-        const plainText = convertMappedDataToPlainText(mappedData);
-        const fs = require('fs');
-        const path = require('path');
-        const outputFilePath = path.join(__dirname, 'assessment-output.txt');
-        const separator = "\n------------\n";
-        const outputData = separator + plainText;
-        
-        fs.appendFile(outputFilePath, outputData, { flag: 'a' }, (err) => {
-            if (err) {
-                console.error('Error writing to file:', err);
-            }
-        });
-
-        return plainText;
+        return mappedData;
+    },
+  },
+  {
+    name: "convertMappedDataToPlainText",
+    description: "Converts mapped data to plain text format.",
+    func: function (mappedData) {
+      if (!mappedData || mappedData.length === 0) return "";
+      return mappedData.map(entry => {
+        return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
+      }).join('\n\n');
     },
   },
   {
