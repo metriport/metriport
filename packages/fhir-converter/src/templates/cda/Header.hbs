@@ -23,7 +23,7 @@
 
         {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' (generateUUID (toJsonString document.componentOf.encompassingEncounter)))}},
         {{#with (evaluate 'Utils/GenerateLocationId.hbs' location=document.componentOf.encompassingEncounter.location.healthCareFacility) as |locationId|}}
-            {{>Resources/Location2.hbs location=document.componentOf.encompassingEncounter.location.healthCareFacility ID=locationId.Id}},
+            {{>Resources/LocationForHeader.hbs location=document.componentOf.encompassingEncounter.location.healthCareFacility ID=locationId.Id}},
             {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Location/' locationId.Id)}},
         {{/with}}
     {{/if}}
