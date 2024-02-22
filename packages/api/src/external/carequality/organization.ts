@@ -1,66 +1,97 @@
 import { Config } from "../../shared/config";
-import { makeCarequalityManagementAPI } from "./api";
-import { buildOrganizationFromTemplate } from "./organization-template";
+import { buildXmlStringFromTemplate } from "./organization-template";
+import { CQOrgDetails, CQOrgUrls, cqOrgUrlsSchema } from "./shared";
 
-const cq = makeCarequalityManagementAPI();
+/**
+ * Represents an organization to be registered / updated in the Carequality directory.
+ */
+export class CQOrganization {
+  static urls = cqOrgUrlsSchema.parse(JSON.parse(Config.getCQOrgUrls()));
+  xmlString: string | undefined;
 
-export type CQOrgDetails = {
-  name: string;
-  oid: string;
-  addressLine1: string;
-  city: string;
-  state: string;
-  postalCode: string;
-  lat: string;
-  lon: string;
-  urlXCPD: string;
-  urlDQ: string;
-  urlDR: string;
-  contactName: string;
-  phone: string;
-  email: string;
-};
+  constructor(
+    public name: string,
+    public oid: string,
+    public addressLine1: string,
+    public city: string,
+    public state: string,
+    public postalCode: string,
+    public lat: string,
+    public lon: string,
+    public contactName: string,
+    public phone: string,
+    public email: string,
+    public role: "Implementer" | "Connection",
+    public hostOrgOID?: string,
+    public urlXCPD?: string,
+    public urlDQ?: string,
+    public urlDR?: string
+  ) {}
 
-export async function createOrUpdateCQOrganization(): Promise<void> {
-  const cqOrgDetailsString = Config.getCQOrgDetails();
-  if (!cq) return;
-  const cqOrgDetails: CQOrgDetails = cqOrgDetailsString
-    ? JSON.parse(cqOrgDetailsString)
-    : undefined;
-  if (!cqOrgDetails) {
-    const msg = "No CQ Organization details found. Skipping...";
-    console.log(msg);
-    throw new Error(msg);
+  static fromDetails(orgDetails: CQOrgDetails): CQOrganization {
+    const organization = new CQOrganization(
+      orgDetails.name,
+      orgDetails.oid,
+      orgDetails.addressLine1,
+      orgDetails.city,
+      orgDetails.state,
+      orgDetails.postalCode,
+      orgDetails.lat,
+      orgDetails.lon,
+      orgDetails.contactName,
+      orgDetails.phone,
+      orgDetails.email,
+      orgDetails.role,
+      orgDetails.hostOrgOID
+    );
+
+    this.addUrls(organization);
+    return organization;
   }
 
-  const cqOrg = buildOrganizationFromTemplate(cqOrgDetails);
-  try {
-    const org = await cq.listOrganizations({ count: 1, oid: cqOrgDetails.oid });
-    if (org.length > 0) {
-      await updateCQOrganization(cqOrg, cqOrgDetails.oid);
-      return;
+  static addUrls(organization: CQOrganization) {
+    organization.urlXCPD = CQOrganization.urls.urlXCPD;
+    organization.urlDQ = CQOrganization.urls.urlDQ;
+    organization.urlDR = CQOrganization.urls.urlDR;
+  }
+
+  public getDetails(): CQOrgDetails {
+    return {
+      name: this.name,
+      oid: this.oid,
+      addressLine1: this.addressLine1,
+      city: this.city,
+      state: this.state,
+      postalCode: this.postalCode,
+      lat: this.lat,
+      lon: this.lon,
+      contactName: this.contactName,
+      phone: this.phone,
+      email: this.email,
+      role: this.role,
+      hostOrgOID: this.hostOrgOID,
+    };
+  }
+
+  public getUrls(): CQOrgUrls {
+    return CQOrganization.urls;
+  }
+
+  public getDetailsAndUrls(): CQOrgUrls & CQOrgDetails {
+    return {
+      ...this.getDetails(),
+      ...this.getUrls(),
+    };
+  }
+
+  public buildXmlStringFromTemplate(): string {
+    return buildXmlStringFromTemplate(this.getDetailsAndUrls());
+  }
+
+  public toXmlString(): string {
+    if (!this.xmlString) {
+      this.xmlString = this.buildXmlStringFromTemplate();
     }
-  } catch (error) {
-    console.log(`Failed to check if organization exists in the CQ Directory. Cause: ${error}`);
-    throw error;
-  }
-
-  try {
-    console.log(`Registering organization in the CQ Directory...`);
-    await cq.registerOrganization(cqOrg);
-  } catch (error) {
-    console.log(`Failed to register organization in the CQ Directory. Cause: ${error}`);
-    throw error;
-  }
-}
-
-async function updateCQOrganization(cqOrg: string, oid: string): Promise<void> {
-  console.log(`Updating org in the CQ Directory...`);
-  if (!cq) return;
-  try {
-    await cq.updateOrganization(cqOrg, oid);
-  } catch (error) {
-    console.log(`Failed to update organization in the CQ Directory. Cause: ${error}`);
-    throw error;
+    return this.xmlString;
   }
 }

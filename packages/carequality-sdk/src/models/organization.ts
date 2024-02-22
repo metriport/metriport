@@ -4,6 +4,11 @@ import { contactSchema } from "./contact";
 import { containedSchema } from "./contained";
 import { meta, objectValue, objectValueOptional, type } from "./shared";
 
+export const managingOrganizationSchema = z.object({
+  reference: z.object({ value: z.string().nullish() }).nullish(),
+});
+export type ManagingOrganization = z.infer<typeof managingOrganizationSchema>;
+
 export const organizationIdentifierSchema = z.object({
   use: objectValueOptional,
   type: objectValueOptional,
@@ -24,6 +29,8 @@ export const organizationSchema = z
         return Array.isArray(input) ? input : [input];
       }, z.array(addressSchema))
       .optional(),
+    managingOrg: managingOrganizationSchema.nullish(),
+    partOf: z.object({ identifier: organizationIdentifierSchema }).nullish(),
     contained: containedSchema,
   })
   .optional();

@@ -171,6 +171,9 @@ export function createAPIService({
           ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
             CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
           }),
+          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
+            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
+          }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
             PLACE_INDEX_REGION: props.config.locationService.placeIndexRegion,

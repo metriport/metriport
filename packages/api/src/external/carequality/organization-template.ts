@@ -4,9 +4,12 @@ import {
   XCA_DR_STRING,
   XCPD_STRING,
 } from "@metriport/carequality-sdk/common/util";
-import { CQOrgDetails } from "./organization";
+import { Config } from "../../shared/config";
+import { CQOrgDetailsWithUrls } from "./shared";
 
-export function buildOrganizationFromTemplate(orgDetails: CQOrgDetails) {
+const metriportOid = Config.getSystemRootOID();
+
+export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
   const {
     name,
     oid,
@@ -22,82 +25,90 @@ export function buildOrganizationFromTemplate(orgDetails: CQOrgDetails) {
     contactName,
     phone,
     email,
+    role,
+    hostOrgOID,
   } = orgDetails;
 
   const urnOid = "urn:oid:" + oid;
-  const endpointXCPD = getEndpoint(urnOid, urlXCPD, XCPD_STRING);
-  const endpointDQ = urlDQ ? getEndpoint(urnOid, urlDQ, XCA_DQ_STRING) : "";
-  const endpointDR = urlDR ? getEndpoint(urnOid, urlDR, XCA_DR_STRING) : "";
+
+  const endpoints =
+    role === "Implementer"
+      ? getEndpoint(urnOid, XCPD_STRING, urlXCPD) +
+        getEndpoint(urnOid, XCA_DQ_STRING, urlDQ) +
+        getEndpoint(urnOid, XCA_DR_STRING, urlDR)
+      : "";
 
   return `
   <Organization>
-<identifier>
-    <use value="official"/>
-    <system value="http://www.hl7.org/oid/"/>
-    <value value="${urnOid}"/>
-</identifier>
-<active value="true"/>
-<name value="${name}"/>
-<type>
-    <coding>
-        <system value="http://hl7.org/fhir/organization-type"/>
-        <code value="Implementer"/> 
-    </coding>
-</type>
-<contact>
-    <purpose value="Operations"/>
-    <name>
+    <identifier>
         <use value="official"/>
-        <text value="${contactName}"/>
-    </name>
-    <telecom>
-        <system value="email"/>
-        <value value="${email}"/>
-        <use value="work"/>
-    </telecom>
-    <telecom>
-        <system value="phone"/>
-        <value value="${phone}"/>
-        <use value="work"/>
-    </telecom>
+        <system value="http://www.hl7.org/oid/"/>
+        <value value="${urnOid}"/>
+    </identifier>
+    <active value="true"/>
+    <name value="${name}"/>
+    <type>
+        <coding>
+            <system value="http://hl7.org/fhir/organization-type"/>
+            <code value="${role}"/> 
+        </coding>
+    </type>
+    <contact>
+        <purpose value="Operations"/>
+        <name>
+            <use value="official"/>
+            <text value="${contactName}"/>
+        </name>
+        <telecom>
+            <system value="email"/>
+            <value value="${email}"/>
+            <use value="work"/>
+        </telecom>
+        <telecom>
+            <system value="phone"/>
+            <value value="${phone}"/>
+            <use value="work"/>
+        </telecom>
+        <address>
+            <use value="work"/>
+            <type value="both"/>
+            <line value="${addressLine1}"/>
+            <city value="${city}"/>
+            <postalCode value="${postalCode}"/>
+            <country value="USA"/>
+        </address>
+    </contact>
     <address>
         <use value="work"/>
         <type value="both"/>
         <line value="${addressLine1}"/>
         <city value="${city}"/>
+        <state value="${state}"/>
         <postalCode value="${postalCode}"/>
         <country value="USA"/>
+        <extension url="OrgPosition">
+            <valueCodeableConcept>
+                <coding>
+                    <system value="https://sequoiaproject.org/StructureDefinition/Address/Position/1.0.0"/>
+                    <value>
+                        <position>
+                            <longitude value="${lon}"/>
+                            <latitude value="${lat}"/>
+                        </position>
+                    </value>
+                </coding>
+            </valueCodeableConcept>
+        </extension>
     </address>
-</contact>
-<address>
-    <use value="work"/>
-    <type value="both"/>
-    <line value="${addressLine1}"/>
-    <city value="${city}"/>
-    <state value="${state}"/>
-    <postalCode value="${postalCode}"/>
-    <country value="USA"/>
-    <extension url="OrgPosition">
-        <valueCodeableConcept>
-            <coding>
-                <system value="https://sequoiaproject.org/StructureDefinition/Address/Position/1.0.0"/>
-                <value>
-                    <position>
-                        <longitude value="${lon}"/>
-                        <latitude value="${lat}"/>
-                    </position>
-                </value>
-            </coding>
-        </valueCodeableConcept>
-    </extension>
-</address>
-${endpointXCPD}
-${endpointDQ}
-${endpointDR}
+    ${getPartOf(hostOrgOID)}
+    ${endpoints}
+    <managingOrg>
+        <reference value="org.sequoiaproject.fhir.stu3/Organization/${name}">
+    </managingOrg>
 </Organization>`;
 }
 
-function getEndpoint(oid: string, url: string, urlType: ChannelUrl) {
+function getEndpoint(oid: string, urlType: ChannelUrl, url?: string) {
   const channelType = urlType === XCPD_STRING ? "ihe-xcpd" : "ihe-xca";
   const channelName =
     urlType === XCPD_STRING
@@ -187,5 +198,18 @@ function getEndpoint(oid: string, url: string, urlType: ChannelUrl) {
             </extension>
         </extension>
     </Endpoint>
-</contained>`;
+</contained>
+`;
+}
+
+function getPartOf(hostOrgOid?: string): string {
+  const partOfOid = hostOrgOid || metriportOid;
+  return `<partOf>
+        <identifier>
+            <use value="official"/>
+            <type value="HCID"/>
+            <system value="http://www.hl7.org/oid/"/>
+            <value value="urn:oid:${partOfOid}"/>
+        </identifier>
+    </partOf>`;
 }

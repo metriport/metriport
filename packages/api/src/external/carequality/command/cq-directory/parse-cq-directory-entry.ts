@@ -11,14 +11,9 @@ import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQOrgUrls } from "../../shared";
 
 const EARTH_RADIUS = 6378168;
-
-export type XCUrls = {
-  urlXCPD: string;
-  urlDQ?: string;
-  urlDR?: string;
-};
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const parsedOrgs = orgsInput.flatMap(org => {
@@ -40,9 +35,9 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const orgData: CQDirectoryEntryData = {
       id: normalizedOid,
       name: org.name?.value ?? undefined,
-      urlXCPD: url.urlXCPD,
-      urlDQ: url.urlDQ,
-      urlDR: url.urlDR,
+      urlXCPD: url?.urlXCPD,
+      urlDQ: url?.urlDQ,
+      urlDR: url?.urlDR,
       lat,
       lon,
       point,
@@ -74,7 +69,7 @@ function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-function getUrls(contained: Contained): XCUrls | undefined {
+function getUrls(contained: Contained): CQOrgUrls | undefined {
   const endpointMap: Record<string, string> = {};
 
   contained?.forEach(c => {
@@ -90,7 +85,7 @@ function getUrls(contained: Contained): XCUrls | undefined {
 
   if (!urlXCPD) return;
 
-  const urls: XCUrls = {
+  const urls: CQOrgUrls = {
     urlXCPD,
   };
 

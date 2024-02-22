@@ -22,7 +22,9 @@ import {
   handleIHEResponse,
 } from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
-import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
+
+import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
+import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
@@ -80,11 +82,21 @@ router.get(
  * POST /internal/carequality/directory/organization
  *
  * Creates or updates the organization in the Carequality Directory.
+ * Providing no body will use the env vars for the organization details.
  */
 router.post(
   "/directory/organization",
   asyncHandler(async (req: Request, res: Response) => {
-    await createOrUpdateCQOrganization();
+    const body = req.body;
+    let orgDetails;
+    if (body.oid) {
+      orgDetails = cqOrgDetailsSchema.parse(body);
+    } else {
+      const orgDetailsString = Config.getCQOrgDetails();
+      orgDetails = cqOrgDetailsSchema.parse(JSON.parse(orgDetailsString));
+    }
+    await createOrUpdateCQOrganization(orgDetails);
+
     return res.sendStatus(httpStatus.OK);
   })
 );
