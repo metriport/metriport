@@ -7,6 +7,7 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import duration from "dayjs/plugin/duration";
 import dayjs from "dayjs";
 import axios from "axios";
+import { sleep } from "@metriport/shared";
 dayjs.extend(duration);
 
 /**
@@ -26,6 +27,7 @@ const patientId = "";
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
+const SLEEP_TIME = dayjs.duration({ minutes: 5 });
 
 export const internalApi = axios.create({
   baseURL: apiUrl,
@@ -73,10 +75,14 @@ async function main() {
           jobId: `jobId-${i}`,
         },
       });
+
+      console.log(`Request ${i} sent`);
     }
   } catch (error) {
     console.error("Error", error);
   }
+
+  sleep(SLEEP_TIME.milliseconds());
 
   const queryStatus = await metriportApi.getDocumentQueryStatus(patientId);
 
