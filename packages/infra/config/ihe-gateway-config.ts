@@ -9,6 +9,7 @@ export type IHEGatewayProps = {
     _MP_KEYSTORE_KEYPASS: string;
   };
   vpcId: string;
+  certArn: string;
   subdomain: string; // Subdomain for IHE integrations
   /**
    * ID of the existing private hosted zone where the IHE Gateway will be deployed.

@@ -59,18 +59,22 @@ export class IHEStack extends Stack {
 
     // TODO 1377 Setup WAF
 
+    // get the certificate form ACM
+    const certificate = cert.Certificate.fromCertificateArn(
+      this,
+      "IHECertificate",
+      props.config.iheGateway.certArn
+    );
+
     // add domain cert + record
     const iheApiUrl = `${props.config.iheGateway.subdomain}.${props.config.domain}`;
-    const certificate = new cert.Certificate(this, `IHECertificate`, {
-      validation: cert.CertificateValidation.fromDns(publicZone),
-      domainName: iheApiUrl,
-    });
-    api.addDomainName("IHEDomain", {
+
+    api.addDomainName("IHEAPIDomain", {
       domainName: iheApiUrl,
       certificate: certificate,
       securityPolicy: apig.SecurityPolicy.TLS_1_2,
     });
-    new r53.ARecord(this, "IHEDomainRecord", {
+    new r53.ARecord(this, "IHEAPIDomainRecord", {
       recordName: iheApiUrl,
       zone: publicZone,
       target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
