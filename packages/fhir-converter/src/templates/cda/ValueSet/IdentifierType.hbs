@@ -1,0 +1,12 @@
+{{#if code}}
+    {
+        "oid":
+            {{#if (startsWith code '2.16.840.1.113883.4')}}
+                "eClincicalWorks"
+            {{else if (startsWith code '2.16.840.1.113883.3')}}
+                "Cerner"
+            {{else if (startsWith '1.2.840.114350')}}
+                "Epic"
+            {{/if}}
+    }
+{{/if}}

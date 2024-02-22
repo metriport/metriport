@@ -11,7 +11,7 @@
         ],
         "status":{{>ValueSet/DiagnosticReportStatus.hbs code=diagReport.statusCode.code}},
         "code":{{>DataType/CodeableConcept.hbs code=diagReport.code}},
-        "category":{{>DataType/CodeableConcept.hbs code=categoryCode}},
+        "category":[{{>DataType/CodeableConcept.hbs code=categoryCode}}],
         "effectivePeriod":
         {
             "start":"{{formatAsDateTime diagReport.effectiveTime.low.value}}",

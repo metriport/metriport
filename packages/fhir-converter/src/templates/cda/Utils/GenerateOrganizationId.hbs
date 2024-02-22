@@ -1,3 +1,5 @@
-{
-    "Id": "{{generateUUID (toJsonString obj)}}"
-}
+{{#if obj}}
+    {
+        "Id": "{{generateUUID (concatDefined obj.name obj.addr obj.telecom)}}"
+    }
+{{/if}}
