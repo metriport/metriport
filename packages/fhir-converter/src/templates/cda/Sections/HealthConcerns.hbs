@@ -1,7 +1,7 @@
 {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.58')}}
     {{#each (toArray 2_16_840_1_113883_10_20_22_2_58.entry)}}
         {{#each (toArray this.act.entryRelationship) as |healthEntry|}}
-            {{#if healthEntry.observation}}
+            {{#if healthEntry.observation.value.code}}
                 {{>Resources/Condition.hbs conditionEntry=healthEntry.observation ID=(generateUUID (toJsonString healthEntry.observation))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                 	{{>References/Condition/subject.hbs ID=(generateUUID (toJsonString healthEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},

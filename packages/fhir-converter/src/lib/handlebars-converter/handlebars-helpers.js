@@ -215,6 +215,30 @@ var getDateTime = function (dateTimeString) {
   ).toJSON();
 };
 
+// Queue approach to check if all values in the json object are nullFlavor
+const allValuesInObjAreNullFlavor = (obj) => {
+  let queue = [obj];
+  while (queue.length > 0) {
+    let current = queue.shift();
+    if (current && typeof current === 'object') {
+      if (Object.keys(current).length == 1 && current.nullFlavor) {
+        continue;
+      }
+      for (let key in current) {
+        if (current.hasOwnProperty(key)) {
+          if (key === 'classCode'){
+            continue;
+          }
+          queue.push(current[key]);
+        }
+      }
+    } else if (current !== null) {
+      return false;
+    }
+  }
+  return true;
+};
+
 module.exports.internal = {
   getDateTime: getDateTime,
   getDate: getDate,
@@ -240,7 +264,12 @@ module.exports.external = [
       if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional)) {
         return options.inverse(this);
       } else {
-        return options.fn(this);
+        // If the direct check is not sufficient, use the queue-based approach
+        if (allValuesInObjAreNullFlavor(conditional)) {
+          return options.inverse(this);
+        } else {
+          return options.fn(this);
+        }
       }
     },
   },
@@ -1277,5 +1306,18 @@ module.exports.external = [
       }
       return undefined; 
     },
+  },
+  {
+    name: "concatDefined",
+    description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
+    func: function (...args) {
+
+      args.pop();
+      
+      const isDefined = (obj) => {
+        return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
+      };
+      return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
+    }
   },
 ];

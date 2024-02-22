@@ -3,8 +3,7 @@
         {{#with (getFirstCdaSectionsByTemplateId ../msg '2.16.840.1.113883.10.20.22.2.22.1' '2.16.840.1.113883.10.20.22.2.22') as |encounters|}}
                 {{#with (multipleToArray this.[2_16_840_1_113883_10_20_22_2_22_1].entry this.[2_16_840_1_113883_10_20_22_2_22].entry) as |encounterEntries|}}
                     {{#each encounterEntries as |encounterEntry|}}
-                         {{#if encounterEntry.encounter}}
-
+                        {{#if encounterEntry.encounter}}
                             {{!-- only pass reason codes if there is one encounter and so we know the reason for visit applies to it --}}
                             {{#if (eq (length encounterEntries) 1)}}
                                 {{>Resources/Encounter.hbs encounter=encounterEntry.encounter reasonCodes=reasonCodes ID=(generateUUID (toJsonString encounterEntry))}},

@@ -106,8 +106,7 @@ export function convertHtmlTablesToCsv(html: string) {
     }
   }
 
-  const convertedCsv =
-    `Patient Name: ${patientName}\nPatient ID: ${patientId}\n\n` + joinedCsvData;
+  const convertedCsv = `Patient Name: ${patientName}\nPatient ID: ${patientId}\n\n` + joinedCsvData;
 
   return convertedCsv;
 }

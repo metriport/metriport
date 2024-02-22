@@ -38,7 +38,7 @@
             ],
         {{/if}}
 
-        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.entryRelationship.observation.code text=conditionEntry.entryRelationship.observation.text._}}],
+        "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.code}}],
 
         {{! Missing meta}}
         {{! Missing extension}}
