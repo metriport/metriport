@@ -10,15 +10,12 @@ Comments:
  - see example of the request here: https://drive.google.com/drive/folders/1yKVHYyQPhkCHDo9Ow8lpT4vFHq7LY_9O
 
 Last updated: Dec 05 2023</description>
-  <revision>17</revision>
+  <revision>136</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
     <properties class="com.mirth.connect.connectors.http.HttpReceiverProperties" version="4.4.2">
       <pluginProperties>
-        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
-          <authType>NONE</authType>
-        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
         <com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties version="4.4.2">
           <enabled>false</enabled>
           <clientAuthentication>DISABLED</clientAuthentication>
@@ -42,6 +39,9 @@ Last updated: Dec 05 2023</description>
           <implicitFTPS>true</implicitFTPS>
           <useSTARTTLS>false</useSTARTTLS>
         </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
+        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
+          <authType>NONE</authType>
+        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
       </pluginProperties>
       <listenerConnectorProperties version="4.4.2">
         <host>0.0.0.0</host>
@@ -253,7 +253,7 @@ Last updated: Dec 05 2023</description>
   </properties>
   <exportData>
     <metadata>
-      <enabled>true</enabled>
+      <enabled>false</enabled>
       <lastModified>
         <time>1702669031198</time>
         <timezone>America/Vancouver</timezone>

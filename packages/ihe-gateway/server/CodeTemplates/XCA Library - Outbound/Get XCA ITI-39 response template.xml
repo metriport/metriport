@@ -3,22 +3,22 @@
   <name>Get XCA ITI-39 response template</name>
   <revision>2</revision>
   <lastModified>
-    <time>1708660220209</time>
+    <time>1704310828753</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>CHANNEL_POSTPROCESSOR</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
       <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
-      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

@@ -91,6 +91,7 @@ export default class IHEGatewayConstruct extends Construct {
       DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
+      API_BASE_ADDRESS: config.apiBaseAddress,
       INBOUND_PATIENT_DISCOVERY_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
       INBOUND_DOCUMENT_QUERY_URL: getLambdaUrl(documentQueryLambda.functionArn),
       INBOUND_DOCUMENT_RETRIEVAL_URL: getLambdaUrl(documentRetrievalLambda.functionArn),

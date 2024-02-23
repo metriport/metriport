@@ -79,9 +79,9 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     httpPorts: [portInboundPD, portInboundDQ],
   });
 
-  const patientDiscoveryPort = config.ports.patientDiscovery;
-  const documentQueryPort = config.ports.documentQuery;
-  const documentRetrievalPort = config.ports.documentRetrieval ?? documentQueryPort;
+  const patientDiscoveryPort = config.inboundPorts.patientDiscovery;
+  const documentQueryPort = config.inboundPorts.documentQuery;
+  const documentRetrievalPort = config.inboundPorts.documentRetrieval ?? documentQueryPort;
   const buildInboundAddress = (port: number) => `http://${iheGWAddressInbound}:${port}`;
 
   const patientDiscoveryResource = apiResource.addResource("patient-discovery");

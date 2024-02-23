@@ -18,6 +18,10 @@ const Config = {
     return getEnvVar("HOME_COMMUNITY_NAME");
   },
 
+  getApiBaseAddress: function () {
+    return getEnvVar("API_BASE_ADDRESS");
+  },
+
   getInboundPatientDiscoveryURL: function () {
     return getEnvVar("INBOUND_PATIENT_DISCOVERY_URL");
   },

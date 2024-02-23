@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>97c31212-1d89-43fc-a8e4-2233d56c94a9</id>
   <name>Get DocumentEntryPracticeSettingCode slot</name>
-  <revision>1</revision>
+  <revision>5</revision>
   <lastModified>
-    <time>1702923211121</time>
+    <time>1704310828673</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
     </delegate>

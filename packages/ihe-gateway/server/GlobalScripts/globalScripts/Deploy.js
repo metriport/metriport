@@ -15,4 +15,9 @@ if (accessKey && accessKey.length() > 0 && secretKey && secretKey.length() > 0) 
   globalMap.put("SECRET_KEY", secretKey);
 }
 
+const apiBaseAddress = Config.getApiBaseAddress();
+if (apiBaseAddress) {
+  globalMap.put("API_BASE_ADDRESS", apiBaseAddress);
+}
+
 return;
