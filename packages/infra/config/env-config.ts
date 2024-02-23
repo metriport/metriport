@@ -31,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  systemRootOrgName: string;
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;

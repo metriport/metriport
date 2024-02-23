@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>c53ae4ba-023d-42f7-a9a9-20d875536b39</id>
   <name>Is Empty String</name>
-  <revision>2</revision>
+  <revision>1</revision>
   <lastModified>
-    <time>1704310828479</time>
+    <time>1702923210955</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>CHANNEL_DEPLOY</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>GLOBAL_UNDEPLOY</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>CHANNEL_UNDEPLOY</contextType>
       <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>GLOBAL_PREPROCESSOR</contextType>
+      <contextType>GLOBAL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>GLOBAL_DEPLOY</contextType>
       <contextType>CHANNEL_BATCH</contextType>
-      <contextType>GLOBAL_UNDEPLOY</contextType>
-      <contextType>GLOBAL_POSTPROCESSOR</contextType>
-      <contextType>GLOBAL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>CHANNEL_POSTPROCESSOR</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

@@ -3,6 +3,13 @@ import { ECS_CPU, ECS_MEMORY } from "./aws/ecs";
 import { RDSAlarmThresholds } from "./aws/rds";
 
 export type IHEGatewayProps = {
+  secretNames: {
+    LICENSE_KEY: string;
+    _MP_KEYSTORE_STOREPASS: string;
+    _MP_KEYSTORE_KEYPASS: string;
+    AWS_ACCESS_KEY_ID: string;
+    AWS_SECRET_ACCESS_KEY: string;
+  };
   vpcId: string;
   certArn: string;
   subdomain: string; // Subdomain for IHE integrations
@@ -70,5 +77,7 @@ export type IHEGatewayProps = {
      */
     documentRetrieval?: number;
   };
+  keystoreName: string;
+  keystoreType: string;
   snsTopicArn?: string;
 };
