@@ -142,7 +142,7 @@ async function storeInitDocRefInFHIR(
       try {
         const docId = docRef.metriportId ?? "";
 
-        const fhirDocRef = cqToFHIR(docId, docRef, patientId, cqExtension);
+        const fhirDocRef = cqToFHIR(docId, docRef, "preliminary", patientId, cqExtension);
 
         await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {

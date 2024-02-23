@@ -4,9 +4,7 @@ import {
   OutboundDocumentRetrievalResp,
   DocumentReference as IHEGWDocumentReference,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  DocumentReferenceContent,
-} from "@medplum/fhirtypes";
+import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import { cqExtension } from "../../carequality/extension";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
@@ -35,6 +33,7 @@ export function toDocumentReference(documentQueryResult: IHEResults): DocumentRe
 export const cqToFHIR = (
   docId: string,
   docRef: IHEGWDocumentReference,
+  docStatus: "preliminary" | "final",
   patientId: string,
   contentExtension: DataSourceExtension
 ): DocumentReferenceWithId => {
@@ -53,6 +52,7 @@ export const cqToFHIR = (
       value: docId,
     },
     description: docRef.title ?? undefined,
+    docStatus,
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],

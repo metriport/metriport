@@ -170,7 +170,7 @@ async function handleDocReferences(
 
     const docId = docRef.metriportId ?? "";
 
-    const fhirDocRef = cqToFHIR(docId, docRef, patientId, metriportDataSourceExtension);
+    const fhirDocRef = cqToFHIR(docId, docRef, "final", patientId, metriportDataSourceExtension);
     const mergedFHIRDocRef: DocumentReferenceWithId = {
       ...fhirDocRef,
       content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
