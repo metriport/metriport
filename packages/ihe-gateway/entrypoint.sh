@@ -9,6 +9,8 @@ if [ $custom_extension_count != 0 ]; then
 	for extension in $(ls -1 /opt/connect/custom-extensions/*.zip); do
 		unzip -o -q $extension -d /opt/connect/extensions
 	done
+else
+	echo "WARNING: No custom extensions found."
 fi
 
 # set storepass and keypass to 'changeme' so they aren't overwritten later
@@ -78,7 +80,7 @@ if ! [ -z "${LICENSE_KEY+x}" ]; then
 		sed -i "s/^license\.key\s*=\s*.*\$/license.key = ${LICENSE_KEY//\//\\/}/" /opt/connect/conf/mirth.properties
 	fi
 else
-	echo "WARNING: No license key found"
+	echo "WARNING: No license key found."
 fi
 
 # session store
