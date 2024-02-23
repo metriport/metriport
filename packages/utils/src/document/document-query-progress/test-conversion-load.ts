@@ -80,7 +80,6 @@ async function main() {
     }
 
     await Promise.all(promises);
-
   } catch (error) {
     console.error("Error", error);
   }

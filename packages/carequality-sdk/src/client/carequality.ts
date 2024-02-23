@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axiosRetry from "axios-retry";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Agent } from "https";
@@ -9,9 +10,12 @@ import { CarequalityManagementAPI } from "./carequality-api";
 dayjs.extend(duration);
 
 const DEFAULT_AXIOS_TIMEOUT = dayjs.duration(120, "seconds");
+const DEFAULT_MAXIMUM_BACKOFF = dayjs.duration(30, "seconds");
+const BASE_DELAY = dayjs.duration(1, "seconds");
 const MAX_COUNT = 1000;
 const JSON_FORMAT = "json";
 const XML_FORMAT = "xml";
+const DEFAULT_MAX_RETRIES = 3;
 
 export enum APIMode {
   dev = "dev",
@@ -31,10 +35,11 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
   static ORG_ENDPOINT = "/Organization";
   readonly api: AxiosInstance;
   readonly apiKey: string;
+  readonly maxBackoff: number;
   private httpsAgent: Agent;
 
   /**
-   * Creates a new instance of the Carequality API client pertaining to an
+   * Creates a new instance of the Carequality Management API client pertaining to an
    * organization to make requests on behalf of.
    *
    * @param orgCert                 The certificate (public key) for the organization.
@@ -43,7 +48,9 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
    * @param apiKey                  The API key to use for authentication.
    * @param apiMode                 Optional, the mode the client will be running. Defaults to staging.
    * @param options                 Optional parameters
-   * @param options.timeout         Connection timeout in milliseconds, default 120 seconds.
+   * @param options.timeout         Connection timeout in milliseconds, defaults to 120 seconds.
+   * @param options.retries         Number of retries for failed requests, defaults to 3.
+   * @param options.maxBackoff      Number of seconds for the maximum backoff during retry requests, defaults to 30 seconds.
    */
   constructor({
     orgCert,
@@ -58,7 +65,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     rsaPrivateKeyPassword: string;
     apiKey: string;
     apiMode: APIMode;
-    options?: { timeout?: number };
+    options?: { timeout?: number; retries?: number; maxBackoff?: number };
   }) {
     this.httpsAgent = new Agent({
       cert: orgCert,
@@ -80,12 +87,30 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
       default:
         throw new Error("API mode not supported.");
     }
+    this.maxBackoff = options?.maxBackoff
+      ? dayjs.duration(options.maxBackoff, "seconds").asMilliseconds()
+      : DEFAULT_MAXIMUM_BACKOFF.asMilliseconds();
 
     this.api = axios.create({
       timeout: options?.timeout ?? DEFAULT_AXIOS_TIMEOUT.asMilliseconds(),
       baseURL: baseUrl,
       httpsAgent: this.httpsAgent,
     });
+
+    // TODO: #1536 - improved retry logic. Issue: https://github.com/metriport/metriport-internal/issues/1536
+    axiosRetry(this.api, {
+      retries: options?.retries ?? DEFAULT_MAX_RETRIES,
+      retryDelay: retryCount => {
+        const exponentialDelay = Math.pow(2, Math.max(0, retryCount - 1));
+        const jitter = Math.random();
+        const delayWithJitter = (exponentialDelay + jitter) * BASE_DELAY.asMilliseconds();
+        return Math.min(delayWithJitter, this.maxBackoff);
+      },
+      retryCondition: error => {
+        return error.response?.status !== 200 && error.response?.status !== 403; // As per the Carequality Implementation Guide: https://carequality.org/healthcare-directory/operational_best_practices.html#reliability
+      },
+    });
+
     this.apiKey = apiKey;
   }
 
@@ -98,6 +123,22 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
 
   async sendGetRequest(url: string, headers?: Record<string, string>): Promise<AxiosResponse> {
     return this.api.get(url, { headers: this.buildHeaders(headers) });
+  }
+
+  async sendPostRequest(
+    url: string,
+    data: unknown,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
+    return this.api.post(url, data, { headers: this.buildHeaders(headers) });
+  }
+
+  async sendPutRequest(
+    url: string,
+    data: unknown,
+    headers?: Record<string, string>
+  ): Promise<AxiosResponse> {
+    return this.api.put(url, data, { headers: this.buildHeaders(headers) });
   }
 
   /**
@@ -131,7 +172,6 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
-
     return orgs;
   }
 
@@ -147,9 +187,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     query.append("_format", XML_FORMAT);
 
     const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${query.toString()}`;
-    const resp = await this.api.post(url, org, {
-      headers: { "Content-Type": "text/xml" },
-    });
+    const resp = await this.sendPostRequest(url, org, { "Content-Type": "text/xml" });
     return resp.data;
   }
 
@@ -166,9 +204,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
     query.append("_format", XML_FORMAT);
 
     const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}/${oid}?${query.toString()}`;
-    const resp = await this.api.put(url, org, {
-      headers: { "Content-Type": "application/xml" },
-    });
+    const resp = await this.sendPutRequest(url, org, { "Content-Type": "application/xml" });
     return resp.data;
   }
 }

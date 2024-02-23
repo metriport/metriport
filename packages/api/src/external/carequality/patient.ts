@@ -14,7 +14,11 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { makeIheGatewayAPI } from "./api";
-import { searchCQDirectoriesAroundPatientAddresses } from "./command/cq-directory/search-cq-directory";
+import {
+  searchCQDirectoriesAroundPatientAddresses,
+  filterCQOrgsToSearch,
+  toBasicOrgAttributes,
+} from "./command/cq-directory/search-cq-directory";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import {
@@ -24,9 +28,10 @@ import {
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { CQLink } from "./cq-patient-data";
 import { OutboundPatientDiscoveryResp } from "./patient-discovery-result";
-import { cqOrgsToXCPDGateways } from "./organization-conversion";
+import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientDataCarequality } from "./patient-shared";
+import { getCQGateways } from "./command/cq-directory/cq-gateways";
 
 dayjs.extend(duration);
 
@@ -118,12 +123,16 @@ export async function prepareForPatientDiscovery(
 ): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
-  const [organization, nearbyCQOrgs] = await Promise.all([
+  const [organization, nearbyCQOrgs, cqGateways] = await Promise.all([
     getOrganizationOrFail({ cxId }),
     searchCQDirectoriesAroundPatientAddresses({ patient }),
+    getCQGateways(),
   ]);
 
-  const xcpdGateways = cqOrgsToXCPDGateways(nearbyCQOrgs);
+  const cqGatewaysBasicDetails = cqGateways.map(toBasicOrgAttributes);
+  const orgsToSearch = filterCQOrgsToSearch([...nearbyCQOrgs, ...cqGatewaysBasicDetails]);
+  const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
+  const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
   const pdRequest = createPatientDiscoveryRequest({
     patient: fhirPatient,
@@ -149,11 +158,14 @@ export function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[
   return pdResults.flatMap(pd => {
     const id = pd.data.externalGatewayPatient?.id;
     const system = pd.data.externalGatewayPatient?.system;
-    if (!id || !system) return [];
+    const url = pd.data.gateway.url;
+    if (!id || !system || !url) return [];
     return {
       patientId: id,
       systemId: system,
-      ...pd.data.gateway,
+      oid: pd.data.gateway.oid,
+      url,
+      id: pd.data.gateway.id,
     };
   });
 }

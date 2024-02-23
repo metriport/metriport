@@ -53,6 +53,7 @@ export type EnvConfig = {
     };
     envVars?: {
       CQ_ORG_DETAILS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {
