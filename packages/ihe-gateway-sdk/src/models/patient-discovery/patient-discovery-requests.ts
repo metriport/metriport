@@ -8,18 +8,16 @@ const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
 });
 
 // TO EXTERNAL GATEWAY
-export const patientDiscoveryReqToExternalGWSchema = patientDiscoveryDefaultSchema.extend({
+export const outboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema.extend({
   gateways: z.array(XCPDGatewaySchema),
   principalCareProviderIds: z.array(z.string()).optional(),
 });
 
-export type PatientDiscoveryReqToExternalGW = z.infer<typeof patientDiscoveryReqToExternalGWSchema>;
+export type OutboundPatientDiscoveryReq = z.infer<typeof outboundPatientDiscoveryReqSchema>;
 
 // FROM EXTERNAL GATEWAY
-export const patientDiscoveryReqFromExternalGatewaySchema = patientDiscoveryDefaultSchema.omit({
+export const inboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema.omit({
   cxId: true,
 });
 
-export type PatientDiscoveryReqFromExternalGW = z.infer<
-  typeof patientDiscoveryReqFromExternalGatewaySchema
->;
+export type InboundPatientDiscoveryReq = z.infer<typeof inboundPatientDiscoveryReqSchema>;

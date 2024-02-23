@@ -1,19 +1,19 @@
 import {
-  DocumentRetrievalReqFromExternalGW,
-  DocumentRetrievalRespToExternalGW,
+  InboundDocumentRetrievalReq,
+  InboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { validateDR } from "./validating-dr";
 import { IHEGatewayError, constructDRErrorResponse, XDSRegistryError } from "../error";
 
 export async function processIncomingRequest(
-  payload: DocumentRetrievalReqFromExternalGW
-): Promise<DocumentRetrievalRespToExternalGW> {
+  payload: InboundDocumentRetrievalReq
+): Promise<InboundDocumentRetrievalResp> {
   try {
     // validate incoming request + look for patient and get all their documents from s3
     const documents = await validateDR(payload);
 
     // construct response
-    const response: DocumentRetrievalRespToExternalGW = {
+    const response: InboundDocumentRetrievalResp = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),

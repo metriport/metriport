@@ -1,4 +1,4 @@
-import { DocumentQueryReqFromExternalGW } from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
 import { XDSUnknownPatientId } from "../error";
@@ -20,7 +20,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
   }
 }
 
-export async function validateDQ(payload: DocumentQueryReqFromExternalGW): Promise<string[]> {
+export async function validateDQ(payload: InboundDocumentQueryReq): Promise<string[]> {
   validateBasePayload(payload);
   const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 

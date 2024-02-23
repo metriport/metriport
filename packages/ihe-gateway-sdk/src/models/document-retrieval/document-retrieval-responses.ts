@@ -9,51 +9,47 @@ import {
 } from "../shared";
 
 // TO EXTERNAL GATEWAY
-const documentRetrievalRespToExternalGWSuccessfulSchema = baseResponseSchema.extend({
+const inboundDocumentRetrievalRespSuccessfulSchema = baseResponseSchema.extend({
   documentReference: z.array(documentReferenceSchema),
 });
 
-export type DocumentRetrievalRespToExternalGWSuccessful = z.infer<
-  typeof documentRetrievalRespToExternalGWSuccessfulSchema
+export type InboundDocumentRetrievalRespSuccessful = z.infer<
+  typeof inboundDocumentRetrievalRespSuccessfulSchema
 >;
 
-const documentRetrievalRespToExternalGWFaultSchema = baseErrorResponseSchema;
+const inboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema;
 
-export type DocumentRetrievalRespToExternalGWFault = z.infer<
-  typeof documentRetrievalRespToExternalGWFaultSchema
+export type InboundDocumentRetrievalRespFault = z.infer<
+  typeof inboundDocumentRetrievalRespFaultSchema
 >;
 
-export const documentRetrievalRespToExternalGWSchema = z.union([
-  documentRetrievalRespToExternalGWSuccessfulSchema,
-  documentRetrievalRespToExternalGWFaultSchema,
+export const inboundDocumentRetrievalRespSchema = z.union([
+  inboundDocumentRetrievalRespSuccessfulSchema,
+  inboundDocumentRetrievalRespFaultSchema,
 ]);
 
-export type DocumentRetrievalRespToExternalGW = z.infer<
-  typeof documentRetrievalRespToExternalGWSchema
->;
+export type InboundDocumentRetrievalResp = z.infer<typeof inboundDocumentRetrievalRespSchema>;
 
 // FROM EXTERNAL GATEWAY
-const documentRetrievalRespFromExternalGWSuccessfulSchema = baseResponseSchema.extend({
+const outboundDocumentRetrievalRespSuccessfulSchema = baseResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.array(documentReferenceSchema),
 });
 
-const documentRetrievalRespFromExternalGWFaultSchema = baseErrorResponseSchema.extend({
+const outboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema.extend({
   gateway: xcaGatewaySchema,
   documentReference: z.never(),
 });
 
-export const documentRetrievalRespFromExternalGWSchema = z.union([
-  documentRetrievalRespFromExternalGWSuccessfulSchema,
-  documentRetrievalRespFromExternalGWFaultSchema,
+export const outboundDocumentRetrievalRespSchema = z.union([
+  outboundDocumentRetrievalRespSuccessfulSchema,
+  outboundDocumentRetrievalRespFaultSchema,
 ]);
 
-export type DocumentRetrievalRespFromExternalGW = z.infer<
-  typeof documentRetrievalRespFromExternalGWSchema
->;
+export type OutboundDocumentRetrievalResp = z.infer<typeof outboundDocumentRetrievalRespSchema>;
 
-export function isDocumentRetrievalResponse(
+export function isOutboundDocumentRetrievalResponse(
   obj: BaseResponse
-): obj is DocumentRetrievalRespFromExternalGW & { documentReference: DocumentReference[] } {
+): obj is OutboundDocumentRetrievalResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
 }

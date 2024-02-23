@@ -6,7 +6,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";
 import { getAllDocRefMapping } from "../docref-mapping/get-docref-mapping";
-import { getDocuments } from "../../../external/fhir/document/get-documents";
+import { getDocumentsFromFHIR } from "../../../external/fhir/document/get-documents";
 import { toDTO, DocumentReferenceDTO } from "../../../routes/medical/dtos/documentDTO";
 import { Config } from "../../../shared/config";
 
@@ -111,7 +111,7 @@ export const composeDocRefPayload = async (
 ): Promise<DocumentReferenceDTO[]> => {
   const docRefs = await getAllDocRefMapping({ requestId });
   const docRefsIds = docRefs.map(docRef => docRef.id);
-  const documents = await getDocuments({ patientId, cxId, documentIds: docRefsIds });
+  const documents = await getDocumentsFromFHIR({ patientId, cxId, documentIds: docRefsIds });
 
   return toDTO(documents);
 };

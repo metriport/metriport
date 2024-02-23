@@ -1,24 +1,20 @@
-import { processIncomingRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
-import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { patientDiscoveryReqFromExternalGatewaySchema } from "@metriport/ihe-gateway-sdk";
+import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
+import { processIncomingRequest } from "@metriport/core/external/carequality/dr/process-incoming-dr";
 import { APIGatewayProxyEvent } from "aws-lambda";
-
-const apiUrl = getEnvVarOrFail("API_URL");
-const mpi = new MPIMetriportAPI(apiUrl);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
   if (!event.body) {
     return buildResponse(400, { message: "Request body is missing" });
   }
   const payload = JSON.parse(event.body);
-  const baseRequest = patientDiscoveryReqFromExternalGatewaySchema.parse({
+  const baseRequest = inboundDocumentRetrievalReqSchema.parse({
     id: payload.id,
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,
+    documentReference: payload.documentReference,
   });
-  const result = await processIncomingRequest(baseRequest, mpi);
+  const result = await processIncomingRequest(baseRequest);
   return buildResponse(200, result);
 });
 

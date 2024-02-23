@@ -9,7 +9,7 @@ import {
 } from "sequelize";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export abstract class BaseIHEResultModel<T extends Model<any, any>> extends Model<
+export abstract class BaseOutboundRespModel<T extends Model<any, any>> extends Model<
   InferAttributes<T>,
   InferCreationAttributes<T>
 > {

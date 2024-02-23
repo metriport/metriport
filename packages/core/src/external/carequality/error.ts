@@ -1,11 +1,11 @@
 // error-response.ts
 import {
-  DocumentQueryReqFromExternalGW,
-  DocumentQueryRespToExternalGW,
-  DocumentRetrievalReqFromExternalGW,
-  DocumentRetrievalRespToExternalGW,
-  PatientDiscoveryReqFromExternalGW,
-  PatientDiscoveryRespToExternalGW,
+  InboundDocumentQueryReq,
+  InboundDocumentQueryResp,
+  InboundDocumentRetrievalReq,
+  InboundDocumentRetrievalResp,
+  InboundPatientDiscoveryReq,
+  InboundPatientDiscoveryResp,
   BaseErrorResponse,
 } from "@metriport/ihe-gateway-sdk";
 import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
@@ -70,10 +70,7 @@ export class XDSUnknownCommunity extends IHEGatewayError {
 }
 
 function constructBaseErrorResponse(
-  payload:
-    | DocumentQueryReqFromExternalGW
-    | DocumentRetrievalReqFromExternalGW
-    | PatientDiscoveryReqFromExternalGW,
+  payload: InboundDocumentQueryReq | InboundDocumentRetrievalReq | InboundPatientDiscoveryReq,
   error?: IHEGatewayError
 ) {
   const baseResponse: BaseErrorResponse = {
@@ -101,26 +98,26 @@ function constructBaseErrorResponse(
 }
 
 export function constructDQErrorResponse(
-  payload: DocumentQueryReqFromExternalGW,
+  payload: InboundDocumentQueryReq,
   error: IHEGatewayError
-): DocumentQueryRespToExternalGW {
+): InboundDocumentQueryResp {
   return {
     ...constructBaseErrorResponse(payload, error),
   };
 }
 
 export function constructDRErrorResponse(
-  payload: DocumentRetrievalReqFromExternalGW,
+  payload: InboundDocumentRetrievalReq,
   error: IHEGatewayError
-): DocumentRetrievalRespToExternalGW {
+): InboundDocumentRetrievalResp {
   return {
     ...constructBaseErrorResponse(payload, error),
   };
 }
 
 export function constructPDNoMatchResponse(
-  payload: PatientDiscoveryReqFromExternalGW
-): PatientDiscoveryRespToExternalGW {
+  payload: InboundPatientDiscoveryReq
+): InboundPatientDiscoveryResp {
   return {
     ...constructBaseErrorResponse(payload),
     patientMatch: false,
@@ -129,9 +126,9 @@ export function constructPDNoMatchResponse(
 }
 
 export function constructPDErrorResponse(
-  payload: PatientDiscoveryReqFromExternalGW,
+  payload: InboundPatientDiscoveryReq,
   error: IHEGatewayError
-): PatientDiscoveryRespToExternalGW {
+): InboundPatientDiscoveryResp {
   return {
     ...constructBaseErrorResponse(payload, error),
     patientMatch: null,
