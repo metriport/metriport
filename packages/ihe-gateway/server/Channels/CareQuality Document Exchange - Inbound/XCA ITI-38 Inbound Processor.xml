@@ -9,7 +9,7 @@ Note:
  - IHE ITI-38 queries other than FindDocuments are not currently supported (see ITI Vol2a 3.18.4.1.2.4)
 
 Last updated: Dec 26 2023</description>
-  <revision>47</revision>
+  <revision>16</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
