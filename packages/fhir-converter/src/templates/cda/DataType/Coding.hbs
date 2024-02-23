@@ -2,5 +2,7 @@
 	"code":"{{code.code}}",
 	"display": "{{code.displayName}}",
 	"version":"{{code.codeSystemVersion}}",
-	"system":{{>ValueSet/SystemReference.hbs code=code.codeSystem}}
+	{{#with (evaluate 'ValueSet/SystemReference.hbs' code=code.codeSystem) as |system|}}
+		"system": "{{system.oid}}"",
+	{{/with}}
 }

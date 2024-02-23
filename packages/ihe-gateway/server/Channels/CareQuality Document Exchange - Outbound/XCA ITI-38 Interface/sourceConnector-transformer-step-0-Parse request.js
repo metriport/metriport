@@ -45,6 +45,8 @@ if ('string' == typeof json) {
 	error = 'ERROR - ' + ex;
 }
 
+router.routeMessageByChannelId($g('ITI38PROCESSOR'), JSON.stringify(json));
+
 
 // Cease processing in case of an error
 if (error) {

@@ -6,9 +6,9 @@ services:
       dockerfile: Dockerfile
       args:
         # Update this if you're trying to run it on a different platform
-        PLATFORM: "linux/arm64"
+        PLATFORM: "${PLATFORM}"
         ARTIFACT: "${IHE_GW_ARTIFACT_URL}"
-        KEYSTORENAME: "${IHE_GW_KEYSTORENAME}"
+        KEYSTORENAME: "${IHE_GW_KEYSTORE_NAME}"
         ZULUKEY: "${IHE_GW_ZULUKEY}"
       x-bake:
         # TODO 1377 Try to remove 'platforms' or keep it to one value
@@ -16,23 +16,34 @@ services:
           - linux/amd64
           - linux/arm64
       secrets:
-        - store_pass
-        - keystore_pass
-    volumes:
-      - ./config/custom-extensions:/opt/connect/custom-extensions
+        - keystore_storepass
+        - keystore_keypass
     depends_on:
       ihe-postgres:
         condition: service_healthy
     environment:
+      PLATFORM: "${PLATFORM}"
       DATABASE: "postgres"
       DATABASE_USERNAME: "${DATABASE_USERNAME}"
       DATABASE_PASSWORD: "${DATABASE_PASSWORD}"
       DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
       VMOPTIONS: "-Xms2048m,-Xmx3072m"
+      LICENSE_KEY: ${LICENSE_KEY}
+      _MP_KEYSTORE_PATH: ${_MP_KEYSTORE_PATH}
+      _MP_KEYSTORE_STOREPASS: ${_MP_KEYSTORE_STOREPASS}
+      _MP_KEYSTORE_KEYPASS: ${_MP_KEYSTORE_KEYPASS}
+      _MP_KEYSTORE_TYPE: ${_MP_KEYSTORE_TYPE}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME}"
+      INBOUND_PATIENT_DISCOVERY_URL: "${INBOUND_PATIENT_DISCOVERY_URL}"
+      INBOUND_DOCUMENT_QUERY_URL: "${INBOUND_DOCUMENT_QUERY_URL}"
+      INBOUND_DOCUMENT_RETRIEVAL_URL: "${INBOUND_DOCUMENT_RETRIEVAL_URL}"
+      HOME_COMMUNITY_ID: "${HOME_COMMUNITY_ID}"
+      HOME_COMMUNITY_NAME: "${HOME_COMMUNITY_NAME}"
     restart: on-failure
     ports:
+      - "8089:8080"
       - "8443:8443"
       - "8081:8081"
       - "8082:8082"
@@ -42,14 +53,6 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
-      - "8100:8100"
-      - "23067:23067"
-      - "16850:16850"
-      - "16852:16852"
-      - "16853:16853"
-    secrets:
-      - mirth_properties
-      - license_key
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
@@ -70,11 +73,7 @@ services:
 volumes:
   ihe-postgres:
 secrets:
-  mirth_properties:
-    file: ./secret.properties
-  store_pass:
-    file: ./store_pass.secret
-  keystore_pass:
-    file: ./keystore_pass.secret
-  license_key:
-    file: ./license_key.secret
+  keystore_storepass:
+    file: ./keystore_storepass.secret
+  keystore_keypass:
+    file: ./keystore_keypass.secret

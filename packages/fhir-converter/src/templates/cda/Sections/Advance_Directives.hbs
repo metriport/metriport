@@ -2,19 +2,28 @@
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.21')}}
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_21.entry) as |advdirEntry|}}
             {{#if advdirEntry.organizer}}
-                {{>Resources/Consent.hbs consentScope='adr' consentEntry=advdirEntry.organizer ID=(generateUUID (toJsonString advdirEntry.organizer))}},
+                {{>Resources/Consent.hbs consentScope='adr' consentEntry=advdirEntry.organizer.component.observation categoryCode=advdirEntry.organizer.code id=advdirEntry.organizer.id ID=(generateUUID (toJsonString advdirEntry.organizer))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/Consent/patient.hbs ID=(generateUUID (toJsonString advdirEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
 
-                {{#if advdirEntry.organizer.component.observation.reference}}
-                    {{>Resources/DocumentReference2.hbs docref=advdirEntry.organizer.component.observation.reference ID=(generateUUID (toJsonString advdirEntry.organizer.component.observation.reference))}},
-                    {{>References/Consent/sourceReference.hbs ID=(generateUUID (toJsonString advdirEntry.organizer)) REF=(concat 'DocumentReference/' (generateUUID (toJsonString advdirEntry.organizer.component.observation.reference)))}},
-                {{/if}}
                 {{#if advdirEntry.organizer.component.observation.author.assignedAuthor}}
                     {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=advdirEntry.organizer.component.observation.author.assignedAuthor) as |practitionerId|}}
                         {{>Resources/Practitioner.hbs practitioner=advdirEntry.organizer.component.observation.author.assignedAuthor ID=practitionerId.Id}},
                         {{>References/Consent/performer.hbs ID=(generateUUID (toJsonString advdirEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                    {{/with}}
+                {{/if}}
+            {{/if}}
+            {{#if advdirEntry.observation}}
+                {{>Resources/Consent.hbs consentScope='adr' consentEntry=advdirEntry.observation categoryCode=advdirEntry.observation.code id=advdirEntry.observation.id ID=(generateUUID (toJsonString advdirEntry.observation))}},
+                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                    {{>References/Consent/patient.hbs ID=(generateUUID (toJsonString advdirEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
+                {{/with}}
+
+                {{#if advdirEntry.observation.author.assignedAuthor}}
+                    {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=advdirEntry.organizer.component.observation.author.assignedAuthor) as |practitionerId|}}
+                        {{>Resources/Practitioner.hbs practitioner=advdirEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                        {{>References/Consent/performer.hbs ID=(generateUUID (toJsonString advdirEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                     {{/with}}
                 {{/if}}
             {{/if}}

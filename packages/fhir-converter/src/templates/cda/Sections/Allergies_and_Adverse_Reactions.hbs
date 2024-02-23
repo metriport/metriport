@@ -8,6 +8,12 @@
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/AllergyIntolerance/patient.hbs ID=(generateUUID (toJsonString allergyEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
+                    {{#if allergyEntry.observation.author.assignedAuthor}}
+                        {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=allergyEntry.observation.author.assignedAuthor) as |practitionerId|}}
+                            {{>Resources/Practitioner.hbs practitioner=allergyEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                            {{>References/AllergyIntolerance/recorder.hbs ID=(generateUUID (toJsonString allergyEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                        {{/with}}
+                    {{/if}}
                 {{/if}}
             {{/each}}
         {{/each}}

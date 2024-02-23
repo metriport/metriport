@@ -19,7 +19,6 @@ import {
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
 import {
-  isDocumentQueryProgressEqual,
   queryDocumentsAcrossHIEs,
   updateConversionProgress,
 } from "../../command/medical/document/document-query";
@@ -29,12 +28,12 @@ import {
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
+import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
-import { appendDocQueryProgressWithSource } from "../../external/hie/append-doc-query-progress-with-source";
-import { updateSourceConversionProgress } from "../../external/hie/update-source-conversion-progress";
+import { tallyDocQueryProgress } from "../../external/hie/tally-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
@@ -51,6 +50,7 @@ const upload = multer();
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const bucketName = Config.getMedicalDocumentsBucketName();
+const requestIdEmptyOverride = "empty-override";
 
 /** ---------------------------------------------------------------------------
  * POST /internal/docs/re-convert
@@ -142,7 +142,7 @@ router.post(
     // keeping the old logic for now, but we should avoid having these optional parameters that can
     // lead to empty string or `undefined` being used as IDs
     const decomposed = jobId ? parseJobId(jobId) : { requestId: "", documentId: "" };
-    const requestId = decomposed?.requestId ?? "";
+    const requestId = decomposed?.requestId ?? requestIdEmptyOverride;
     const docId = decomposed?.documentId ?? "";
     const hasSource = isMedicalDataSource(source);
 
@@ -153,54 +153,20 @@ router.post(
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
     if (hasSource) {
-      const updatedSourceDocProgress = updateSourceConversionProgress({
+      tallyDocQueryProgress({
         patient: patient,
-        convertResult,
-        source: source,
-      });
-
-      appendDocQueryProgressWithSource({
-        patient: patient,
-        convertProgress: updatedSourceDocProgress,
+        type: "convert",
+        progress: {
+          ...(status === "success" ? { successful: 1 } : { errors: 1 }),
+        },
         requestId,
         source,
       });
     } else {
-      let expectedPatient = await updateConversionProgress({
+      const expectedPatient = await updateConversionProgress({
         patient: { id: patientId, cxId },
         convertResult,
       });
-
-      // START TODO 785 remove this once we're confident with the flow
-      const maxAttempts = 3;
-      let curAttempt = 1;
-      let verifiedSuccess = false;
-      while (curAttempt++ < maxAttempts) {
-        const patientPost = await getPatientOrFail({ id: patientId, cxId });
-        const postDocQueryProgress = patientPost.data.documentQueryProgress;
-        log(`[attempt ${curAttempt}] Status post-update: ${JSON.stringify(postDocQueryProgress)}`);
-        if (
-          !isDocumentQueryProgressEqual(
-            expectedPatient.data.documentQueryProgress,
-            postDocQueryProgress
-          )
-        ) {
-          log(`[attempt ${curAttempt}] Status post-update not expected... trying to update again`);
-          expectedPatient = await updateConversionProgress({
-            patient: { id: patientId, cxId },
-            convertResult,
-          });
-        } else {
-          log(`[attempt ${curAttempt}] Status post-update is as expected!`);
-          verifiedSuccess = true;
-          break;
-        }
-      }
-      if (!verifiedSuccess) {
-        const patientPost = await getPatientOrFail({ id: patientId, cxId });
-        log(`final Status post-update: ${JSON.stringify(patientPost.data.documentQueryProgress)}`);
-      }
-      // END TODO 785
 
       const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
       if (conversionStatus === "completed") {
@@ -226,10 +192,12 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
+    const hie = getFrom("query").optional("hie", req);
     const docQueryProgressRaw = req.body;
     const docQueryProgress = documentQueryProgressSchema.parse(docQueryProgressRaw);
     const downloadProgress = docQueryProgress.download;
     const convertProgress = docQueryProgress.convert;
+    const hasSource = isMedicalDataSource(hie);
 
     if (!downloadProgress && !convertProgress) {
       throw new BadRequestError(`Require at least one of 'download' or 'convert'`);
@@ -240,8 +208,18 @@ router.post(
       patient: { id: patientId, cxId },
       downloadProgress,
       convertProgress,
-      requestId: patient.data.documentQueryProgress?.requestId ?? "",
+      requestId: patient.data.documentQueryProgress?.requestId ?? requestIdEmptyOverride,
     });
+
+    if (hasSource) {
+      await setDocQueryProgress({
+        patient: { id: patientId, cxId },
+        requestId: updatedPatient.data.documentQueryProgress?.requestId ?? requestIdEmptyOverride,
+        downloadProgress,
+        convertProgress,
+        source: hie,
+      });
+    }
 
     return res.json(updatedPatient.data.documentQueryProgress);
   })

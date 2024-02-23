@@ -56,10 +56,15 @@ jobs:
           aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
         working-directory: "./"
 
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            packages/scripts/${{ inputs.script_name }}
+        
       - name: Restart
         run: |
           ./packages/scripts/${{ inputs.script_name }}
-        working-directory: "./"
         env:
           ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
           ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
