@@ -97,6 +97,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
       httpsAgent: this.httpsAgent,
     });
 
+    // TODO: #1536 - improved retry logic. Issue: https://github.com/metriport/metriport-internal/issues/1536
     axiosRetry(this.api, {
       retries: options?.retries ?? DEFAULT_MAX_RETRIES,
       retryDelay: retryCount => {
