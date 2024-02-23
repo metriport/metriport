@@ -18,6 +18,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { cqToFHIR } from "./shared";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { processAsyncError } from "../../../errors";
+import { cqExtension } from "../../carequality/extension";
 
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
@@ -141,7 +142,7 @@ async function storeInitDocRefInFHIR(
       try {
         const docId = docRef.metriportId ?? "";
 
-        const fhirDocRef = cqToFHIR(docId, docRef, patientId, false);
+        const fhirDocRef = cqToFHIR(docId, docRef, patientId, cqExtension);
 
         await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {

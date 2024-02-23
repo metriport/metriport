@@ -12,6 +12,8 @@ import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-r
 import { cqToFHIR } from "./shared";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
+import { DocumentReferenceWithId } from "../../fhir/document";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -162,13 +164,17 @@ async function handleDocReferences(
         errorCountConvertible++;
       }
     }
-    const currentFHIRDocRef = currentFHIRDocRefs.filter(
+    const currentFHIRDocRef = currentFHIRDocRefs.find(
       fhirDocRef => fhirDocRef.id === docRef.metriportId
     );
 
     const docId = docRef.metriportId ?? "";
 
-    const fhirDocRef = cqToFHIR(docId, docRef, patientId, true, currentFHIRDocRef[0]);
+    const fhirDocRef = cqToFHIR(docId, docRef, patientId, metriportDataSourceExtension);
+    const mergedFHIRDocRef: DocumentReferenceWithId = {
+      ...fhirDocRef,
+      content: [...(currentFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
+    };
 
     if (!docRef.fileLocation || !docRef.url || !docRef.contentType) {
       throw new Error(
@@ -183,16 +189,16 @@ async function handleDocReferences(
     };
 
     const transactionEntry: BundleEntry = {
-      resource: fhirDocRef,
+      resource: mergedFHIRDocRef,
       request: {
         method: "PUT",
-        url: fhirDocRef.resourceType + "/" + fhirDocRef.id,
+        url: mergedFHIRDocRef.resourceType + "/" + mergedFHIRDocRef.id,
       },
     };
 
     transactionBundle.entry?.push(transactionEntry);
 
-    ingestIntoSearchEngine({ id: patientId, cxId }, fhirDocRef, file, requestId, log);
+    ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
   }
 
   await upsertDocumentsToFHIRServer(cxId, transactionBundle);

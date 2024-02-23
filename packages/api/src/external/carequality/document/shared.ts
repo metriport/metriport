@@ -11,7 +11,7 @@ import {
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import { cqExtension } from "../../carequality/extension";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
-import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
+import { DataSourceExtension } from "../../fhir/shared/extensions/metriport";
 
 export type DocumentReferenceWithMetriportId = DocumentReference & {
   id: string;
@@ -35,65 +35,47 @@ export function toDocumentReference(documentQueryResult: IHEResults): DocumentRe
 
 export const cqToFHIR = (
   docId: string,
-  doc: IHEGWDocumentReference,
+  docRef: IHEGWDocumentReference,
   patientId: string,
-  hasMetriportContent: boolean,
-  fhirDocRef?: DocumentReferenceFHIR
+  contentExtension: DataSourceExtension
 ): DocumentReferenceWithId => {
   const baseAttachment = {
-    ...(doc.fileName ? { fileName: doc.fileName } : {}),
-    ...(doc.contentType ? { contentType: doc.contentType } : {}),
-    ...(doc.size ? { size: doc.size } : {}),
-    ...(doc.creation ? { creation: doc.creation } : {}),
+    ...(docRef.fileName ? { fileName: docRef.fileName } : {}),
+    ...(docRef.contentType ? { contentType: docRef.contentType } : {}),
+    ...(docRef.size ? { size: docRef.size } : {}),
+    ...(docRef.creation ? { creation: docRef.creation } : {}),
   };
 
   return {
-    ...(fhirDocRef ? { ...fhirDocRef } : {}),
-    ...(!fhirDocRef ? { description: doc.title ?? undefined } : {}),
     id: docId,
     resourceType: "DocumentReference",
     masterIdentifier: {
-      system: doc.homeCommunityId,
+      system: docRef.homeCommunityId,
       value: docId,
     },
+    description: docRef.title ?? undefined,
     subject: toFHIRSubject(patientId),
-    content: generateCQFHIRContent(
-      fhirDocRef?.content,
-      baseAttachment,
-      hasMetriportContent,
-      doc.url
-    ),
+    content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
   };
 };
 
 const generateCQFHIRContent = (
-  content: DocumentReferenceContent[] | undefined,
   baseAttachment: {
     contentType?: string;
     size?: number;
     creation?: string;
     fileName?: string;
   },
-  hasMetriportContent: boolean,
+  contentExtension: DataSourceExtension,
   location: string | null | undefined
 ): DocumentReferenceContent[] => {
   if (!location) return [];
 
-  if (hasMetriportContent && content) {
-    const metriportFHIRContent = createDocReferenceContent({
-      ...baseAttachment,
-      location: location,
-      extension: [metriportDataSourceExtension],
-    });
-
-    return [...content, metriportFHIRContent];
-  }
-
   const cqFHIRContent = createDocReferenceContent({
     ...baseAttachment,
     location: location,
-    extension: [cqExtension],
+    extension: [contentExtension],
   });
 
   return [cqFHIRContent];
