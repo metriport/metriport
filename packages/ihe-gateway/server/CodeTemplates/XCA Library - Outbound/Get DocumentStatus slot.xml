@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>a21f967a-f891-4c59-b7df-2fe0f5bb7297</id>
   <name>Get DocumentStatus slot</name>
-  <revision>1</revision>
+  <revision>5</revision>
   <lastModified>
-    <time>1702923211168</time>
+    <time>1704310828714</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
     </delegate>

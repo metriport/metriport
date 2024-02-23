@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>103ac18a-d774-4b88-819d-c5e703a40445</id>
   <name>Convert HL7v3 Query Parameters to FHIR Patient</name>
-  <revision>1</revision>
+  <revision>2</revision>
   <lastModified>
-    <time>1702923211276</time>
+    <time>1704310828787</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>CHANNEL_POSTPROCESSOR</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
       <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
-      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

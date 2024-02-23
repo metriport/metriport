@@ -90,17 +90,4 @@
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
-  <entry>
-    <string>
-      TEST_MODE
-    </string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value>
-        true
-      </value>
-      <comment>
-        In test mode, channels log all exception errors
-      </comment>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
 </map>

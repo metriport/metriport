@@ -120,7 +120,7 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery/response/response
+ * POST /internal/carequality/patient-discovery/response
  *
  * Receives a Patient Discovery response from the IHE Gateway
  */
