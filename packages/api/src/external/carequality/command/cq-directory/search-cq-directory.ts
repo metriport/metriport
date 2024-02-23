@@ -116,5 +116,7 @@ function constructGatewayExcludeList(): string[] {
 function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
   const urlXCPD = org.urlXCPD;
   if (!urlXCPD) return false;
-  return !cqExcludeList.includes(urlXCPD);
+
+  const isExcluded = cqExcludeList.some(excludedUrl => urlXCPD.startsWith(excludedUrl));
+  return !isExcluded;
 }
