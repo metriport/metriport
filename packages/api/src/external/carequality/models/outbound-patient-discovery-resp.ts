@@ -1,12 +1,12 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
-import { PatientDiscoveryResp } from "../patient-discovery-result";
+import { OutboundPatientDiscoveryResp as OutboundPatientDiscoveryRespCore } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryResp } from "../patient-discovery-result";
 import { ModelSetup } from "../../../models/_default";
 
 export class OutboundPatientDiscoveryRespModel
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extends Model<any, any>
-  implements PatientDiscoveryResp
+  implements OutboundPatientDiscoveryResp
 {
   static NAME = "patient_discovery_result";
   declare id: string;
@@ -14,7 +14,7 @@ export class OutboundPatientDiscoveryRespModel
   declare patientId: string;
   declare status: string;
   declare createdAt: CreationOptional<Date>;
-  declare data: OutboundPatientDiscoveryResp;
+  declare data: OutboundPatientDiscoveryRespCore;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     OutboundPatientDiscoveryRespModel.init(

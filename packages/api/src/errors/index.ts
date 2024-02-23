@@ -8,6 +8,6 @@ export function getErrorMessage(error: unknown) {
 export function processAsyncError(msg: string) {
   return (err: unknown) => {
     console.error(`${msg}: ${getErrorMessage(err)}`);
-    capture.error(err, { extra: { message: msg } });
+    capture.error(err, { extra: { message: msg, err } });
   };
 }

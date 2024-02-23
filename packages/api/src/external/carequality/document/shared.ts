@@ -13,9 +13,8 @@ import { cqExtension } from "../../carequality/extension";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
 import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
 
-export type DocumentWithMetriportId = DocumentReference & {
+export type DocumentReferenceWithMetriportId = DocumentReference & {
   id: string;
-  originalId: string;
 };
 
 type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
@@ -50,12 +49,12 @@ export const cqToFHIR = (
 
   return {
     ...(fhirDocRef ? { ...fhirDocRef } : {}),
-    ...(!fhirDocRef ? { description: doc.title ?? "" } : {}),
+    ...(!fhirDocRef ? { description: doc.title ?? undefined } : {}),
     id: docId,
     resourceType: "DocumentReference",
     masterIdentifier: {
       system: doc.homeCommunityId,
-      value: doc.repositoryUniqueId,
+      value: doc.docUniqueId,
     },
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(fhirDocRef?.content, baseAttachment, doc.url),

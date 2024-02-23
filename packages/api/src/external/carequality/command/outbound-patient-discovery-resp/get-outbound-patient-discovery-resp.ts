@@ -1,19 +1,20 @@
-import { PatientDiscoveryResp } from "../../patient-discovery-result";
+import { OutboundPatientDiscoveryResp } from "../../patient-discovery-result";
 import { OutboundPatientDiscoveryRespModel } from "../../models/outbound-patient-discovery-resp";
 
-export async function getOutboundPatientDiscoveryResps(
-  requestId: string
-): Promise<PatientDiscoveryResp[]> {
-  return await OutboundPatientDiscoveryRespModel.findAll({
+export function getOutboundPatientDiscoveryResps(
+  requestId: string,
+  status: "success" | "failure"
+): Promise<OutboundPatientDiscoveryResp[]> {
+  return OutboundPatientDiscoveryRespModel.findAll({
     where: {
       requestId,
-      status: "success",
+      status,
     },
   });
 }
 
-export async function getPatientDiscoveryRespCount(requestId: string): Promise<number> {
-  return await OutboundPatientDiscoveryRespModel.count({
+export function getOutboundPatientDiscoveryRespCount(requestId: string): Promise<number> {
+  return OutboundPatientDiscoveryRespModel.count({
     where: { requestId },
   });
 }

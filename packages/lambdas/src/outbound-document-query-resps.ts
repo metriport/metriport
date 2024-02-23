@@ -1,9 +1,7 @@
 import * as Sentry from "@sentry/serverless";
 import axios from "axios";
 import { pollIHEGatewayResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
-import {
-  DOC_QUERY_RESULT_TABLE_NAME,
-} from "@metriport/core/external/carequality/ihe-result";
+import { DOC_QUERY_RESULT_TABLE_NAME } from "@metriport/core/external/carequality/ihe-result";
 import { getEnvVarOrFail, getEnvVar, getEnvType } from "@metriport/core/util/env-var";
 import { capture } from "./shared/capture";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -48,7 +46,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
       const resultsData = results.map(result => result.data);
 
-      await api.post(endpointUrl, {
+      api.post(endpointUrl, {
         requestId,
         patientId,
         cxId,

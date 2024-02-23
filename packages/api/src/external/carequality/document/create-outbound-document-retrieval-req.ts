@@ -1,13 +1,13 @@
-import { PurposeOfUse } from "@metriport/shared";
 import { capture } from "@metriport/core/util/notifications";
 import {
   OutboundDocumentRetrievalReq,
   DocumentReference,
   OutboundDocumentQueryResp,
 } from "@metriport/ihe-gateway-sdk";
-import dayjs from "dayjs";
-import { DocumentWithMetriportId } from "./shared";
 import { Organization } from "@metriport/core/domain/organization";
+import dayjs from "dayjs";
+import { DocumentReferenceWithMetriportId } from "./shared";
+import { createPurposeOfUse, isGWValid } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -22,7 +22,7 @@ export function createOutboundDocumentRetrievalReqs({
   requestId: string;
   cxId: string;
   organization: Organization;
-  documentReferences: DocumentWithMetriportId[];
+  documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): OutboundDocumentRetrievalReq[] {
   const orgOid = organization.oid;
@@ -30,21 +30,14 @@ export function createOutboundDocumentRetrievalReqs({
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
+  const patientsWithInvalidGW: string[] = [];
+
   const requests = outboundDocumentQueryResps.reduce(
     (acc: OutboundDocumentRetrievalReq[], documentQueryResp) => {
       const { patientId, gateway } = documentQueryResp;
-      const isGWValid = gateway?.homeCommunityId && gateway?.url;
 
-      if (!isGWValid) {
-        const msg = `Gateway is not valid for patient ${patientId}`;
-
-        capture.message(msg, {
-          extra: {
-            requestId,
-            patientId,
-            cxId,
-          },
-        });
+      if (!isGWValid(gateway)) {
+        if (patientId) patientsWithInvalidGW.push(patientId);
 
         return acc;
       }
@@ -67,7 +60,7 @@ export function createOutboundDocumentRetrievalReqs({
           organization: orgName,
           organizationId: orgOid,
           homeCommunityId: orgOid,
-          purposeOfUse: PurposeOfUse.TREATMENT,
+          purposeOfUse: createPurposeOfUse(),
         },
         gateway: {
           homeCommunityId: gateway.homeCommunityId,
@@ -80,6 +73,19 @@ export function createOutboundDocumentRetrievalReqs({
     },
     []
   );
+
+  if (patientsWithInvalidGW.length > 0) {
+    const msg = `Gateway is not valid for patient ${patientsWithInvalidGW.join(", ")}`;
+    console.error(msg);
+
+    capture.message(msg, {
+      extra: {
+        requestId,
+        patientIds: patientsWithInvalidGW,
+        cxId,
+      },
+    });
+  }
 
   const requestsWithDocRefs = requests.filter(request => request.documentReference.length > 0);
 

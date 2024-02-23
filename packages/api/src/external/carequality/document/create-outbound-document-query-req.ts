@@ -1,8 +1,8 @@
-import { PurposeOfUse } from "@metriport/shared";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { Organization } from "@metriport/core/domain/organization";
 import { CQLink } from "../cq-patient-data";
+import { createPurposeOfUse } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -39,7 +39,7 @@ export function createOutboundDocumentQueryRequests({
         organization: orgName,
         organizationId: orgOid,
         homeCommunityId: orgOid,
-        purposeOfUse: PurposeOfUse.TREATMENT,
+        purposeOfUse: createPurposeOfUse(),
       },
       gateway: {
         homeCommunityId: systemId,

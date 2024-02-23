@@ -51,11 +51,7 @@ export async function pollIHEGatewayResults({
       ),
     ]);
 
-    const iheGatewayResults = await queryIHEGatewayResults(
-      sequelize,
-      resultsTable,
-      requestId
-    );
+    const iheGatewayResults = await queryIHEGatewayResults(sequelize, resultsTable, requestId);
 
     if (raceResult) {
       console.log(
@@ -96,9 +92,9 @@ async function getIHEGatewayResultCount(
 
     return res?.count || 0;
   } catch (error) {
-    const msg = `Failed to get ${resultsTable} result count`;
+    const msg = `Failed to get result count`;
 
-    throw new MetriportError(msg, error);
+    throw new MetriportError(msg, error, { resultsTable });
   }
 }
 

@@ -82,7 +82,7 @@ export function reportFHIRError({
   log: ReturnType<typeof out>["log"];
   extra: Extras;
 }) {
-  const errorTitle = `CDA>FHIR ${context}`;
+  const errorTitle = `FHIR ${context}`;
 
   const mappingError = tryDetermineFhirError(error);
   if (mappingError.type === "mapping") {

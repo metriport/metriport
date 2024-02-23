@@ -21,14 +21,8 @@ export const upsertDocumentToFHIRServer = async (
 
 export const upsertDocumentsToFHIRServer = async (
   cxId: string,
-  transactionBundle: Bundle,
-  log = console.log
+  transactionBundle: Bundle
 ): Promise<void> => {
   const fhir = makeFhirApi(cxId);
-  try {
-    await fhir.executeBatch(transactionBundle);
-  } catch (err) {
-    log(`Error upserting the doc refs transactionBundle on FHIR server: ${errorToString(err)}`);
-    throw err;
-  }
+  await fhir.executeBatch(transactionBundle);
 };

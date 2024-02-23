@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import { Sequelize, DataTypes } from "sequelize";
 import { OutboundDocumentQueryResp as IHEOutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { OutboundDocumentQueryResp } from "../outbound-document-query-resp";
 import { ModelSetup } from "../../../models/_default";
@@ -12,9 +12,38 @@ export class OutboundDocumentQueryRespModel
   declare data: IHEOutboundDocumentQueryResp;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    OutboundDocumentQueryRespModel.init(BaseOutboundRespModel.attributes(), {
-      ...BaseOutboundRespModel.modelOptions(sequelize),
-      tableName: OutboundDocumentQueryRespModel.NAME,
-    });
+    OutboundDocumentQueryRespModel.init(
+      {
+        id: {
+          type: DataTypes.UUID,
+          primaryKey: true,
+        },
+        requestId: {
+          type: DataTypes.UUID,
+          field: "request_id",
+        },
+        patientId: {
+          type: DataTypes.UUID,
+          field: "patient_id",
+        },
+        status: {
+          type: DataTypes.STRING,
+        },
+        data: {
+          type: DataTypes.JSONB,
+        },
+        createdAt: {
+          type: DataTypes.DATE(6),
+        },
+      },
+      {
+        sequelize,
+        freezeTableName: true,
+        underscored: true,
+        timestamps: false,
+        createdAt: "created_at",
+        tableName: OutboundDocumentQueryRespModel.NAME,
+      }
+    );
   };
 }

@@ -4,71 +4,80 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { Config } from "../../../shared/config";
-import { DocumentWithMetriportId } from "../../../external/carequality/document/shared";
-import { getDocuments } from "../../fhir/document/get-documents";
+import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
+import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
 const s3BucketName = Config.getMedicalDocumentsBucketName();
 const parallelS3Queries = 10;
 
-export const getNonExistentDocRefs = async (
-  documents: DocumentWithMetriportId[],
+export async function getNonExistentDocRefs(
+  documents: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string
-): Promise<DocumentWithMetriportId[]> => {
+): Promise<DocumentReferenceWithMetriportId[]> {
   const [{ existingDocRefs, nonExistingDocRefs }, fhirDocRefs] = await Promise.all([
-    filterOutExistingDocRefsS3(documents, patientId, cxId),
-    getDocuments({ cxId, patientId }),
+    checkDocRefsExistInS3(documents, patientId, cxId),
+    getDocumentsFromFHIR({ cxId, patientId }),
   ]);
 
   const foundOnStorageButNotOnFHIR = existingDocRefs.filter(
-    f => !fhirDocRefs.find(d => d.id === f.docUniqueId)
+    f => !fhirDocRefs.find(d => d.id === f.metriportId)
   );
 
   const docsToDownload = nonExistingDocRefs.concat(foundOnStorageButNotOnFHIR);
 
   return docsToDownload;
-};
+}
 
 type ObservedDocRefs = {
-  existingDocRefs: DocumentWithMetriportId[];
-  nonExistingDocRefs: DocumentWithMetriportId[];
+  existingDocRefs: DocumentReferenceWithMetriportId[];
+  nonExistingDocRefs: DocumentReferenceWithMetriportId[];
 };
 
-const filterOutExistingDocRefsS3 = async (
-  documents: DocumentWithMetriportId[],
+async function checkDocRefsExistInS3(
+  documents: DocumentReferenceWithMetriportId[],
   patientId: string,
   cxId: string
-): Promise<ObservedDocRefs> => {
+): Promise<ObservedDocRefs> {
   const successfulDocs: { docId: string; exists: boolean }[] = [];
 
-  await executeAsynchronously(documents, async doc => {
-    try {
-      const fileName = createFileName(cxId, patientId, doc.docUniqueId);
+  await executeAsynchronously(
+    documents,
+    async doc => {
+      try {
+        const metriportId = doc.metriportId;
 
-      const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
+        if (!metriportId) {
+          throw new Error(`Document ${doc.id} does not have a metriportId`);
+        }
 
-      successfulDocs.push({
-        docId: doc.docUniqueId,
-        exists,
-      });
-    } catch (error) {
-      const msg = `Failed to store initial doc ref in FHIR`;
-      console.log(`${msg}: ${errorToString(error)}`);
-      capture.message(msg, {
-        extra: {
-          context: `cq.storeInitDocRefInFHIR`,
-          error,
-          doc,
-          patientId,
-          cxId,
-        },
-      });
-      throw error;
-    }
-  }, { numberOfParallelExecutions: parallelS3Queries });
+        const fileName = createFileName(cxId, patientId, metriportId);
 
+        const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
+
+        successfulDocs.push({
+          docId: metriportId,
+          exists,
+        });
+      } catch (error) {
+        const msg = `Failed to check if document exists in S3`;
+        console.log(`${msg}: ${errorToString(error)}`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.checkDocRefsExistInS3`,
+            error,
+            doc,
+            patientId,
+            cxId,
+          },
+        });
+        throw error;
+      }
+    },
+    { numberOfParallelExecutions: parallelS3Queries }
+  );
 
   const observedDocRefs = documents.reduce(
     (acc: ObservedDocRefs, curr) => {
@@ -89,4 +98,4 @@ const filterOutExistingDocRefsS3 = async (
   );
 
   return observedDocRefs;
-};
+}

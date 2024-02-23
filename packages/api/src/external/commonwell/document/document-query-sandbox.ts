@@ -12,7 +12,7 @@ import { toDTO } from "../../../routes/medical/dtos/documentDTO";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { Util } from "../../../shared/util";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
-import { getDocuments } from "../../fhir/document/get-documents";
+import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
 import { sandboxSleepTime } from "./shared";
@@ -80,7 +80,10 @@ export async function sandboxGetDocRefsAndUpsert({
 
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
-  const existingFhirDocs = await getDocuments({ cxId: organization.cxId, patientId: patient.id });
+  const existingFhirDocs = await getDocumentsFromFHIR({
+    cxId: organization.cxId,
+    patientId: patient.id,
+  });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
   // set initial download/convert totals

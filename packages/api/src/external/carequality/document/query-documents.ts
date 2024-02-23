@@ -55,7 +55,9 @@ export async function getDocumentsFromCQ({
         }),
       })
       .promise()
-      .catch(processAsyncError(`cq.processOutboundDocumentQueryResps`));
+      .catch(
+        processAsyncError("Failed to invoke lambda to process outbound document query responses.")
+      );
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);

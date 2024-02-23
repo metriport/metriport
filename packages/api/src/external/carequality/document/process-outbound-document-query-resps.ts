@@ -8,7 +8,7 @@ import { isConvertible } from "../../fhir-converter/converter";
 import { Config } from "../../../shared/config";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { DocumentWithMetriportId } from "./shared";
+import { DocumentReferenceWithMetriportId } from "./shared";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { makeIheGatewayAPI } from "../api";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
@@ -23,7 +23,7 @@ const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
 const lambdaName = Config.getOutboundDocRetrievalRespsLambdaName();
-const parallelUpsertsToFhir = 100;
+const parallelUpsertsToFhir = 10;
 
 export async function processOutboundDocumentQueryResps({
   requestId,
@@ -70,6 +70,9 @@ export async function processOutboundDocumentQueryResps({
       source: MedicalDataSource.CAREQUALITY,
     });
 
+    // Since we have most of the document contents when doing the document query,
+    // we will store this in FHIR and then upsert the reference to the s3 object in FHIR
+    // when doing the doc retrieval
     await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
 
     const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
@@ -99,7 +102,9 @@ export async function processOutboundDocumentQueryResps({
         }),
       })
       .promise()
-      .catch(processAsyncError(`cq.processOutboundDocumentRetrievalResps`));
+      .catch(
+        processAsyncError("Failed to invoke lambda to start polling for doc retrieval results")
+      );
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     console.log(`${msg}. Error: ${errorToString(error)}`);
@@ -125,11 +130,8 @@ export async function processOutboundDocumentQueryResps({
   }
 }
 
-// Since we have most of the document contents when doing the document query,
-// we will store this in s3 and then upsert the reference to the s3 object in FHIR
-// when doing the doc retrieval
 async function storeInitDocRefInFHIR(
-  docRefs: DocumentWithMetriportId[],
+  docRefs: DocumentReferenceWithMetriportId[],
   cxId: string,
   patientId: string
 ) {
@@ -170,7 +172,7 @@ function addMetriportDocRefID({
   cxId: string;
   requestId: string;
 }) {
-  return async (document: DocumentReference): Promise<DocumentWithMetriportId> => {
+  return async (document: DocumentReference): Promise<DocumentReferenceWithMetriportId> => {
     const documentId = document.docUniqueId;
 
     const { metriportId, originalId } = await mapDocRefToMetriport({
@@ -182,7 +184,7 @@ function addMetriportDocRefID({
     });
     return {
       ...document,
-      originalId: originalId,
+      docUniqueId: originalId,
       id: metriportId,
     };
   };

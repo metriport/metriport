@@ -1,8 +1,11 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   outboundPatientDiscoveryRespSchema,
   outboundDocumentQueryRespSchema,
   outboundDocumentRetrievalRespSchema,
+  isOutboundDocumentQueryResponse,
+  isOutboundDocumentRetrievalResponse,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -13,14 +16,14 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
+import { getIheResultStatus } from "../../external/carequality/ihe-result";
+import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
+import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import {
-  OutboundRespType,
-  handleOutboundResponse,
-} from "../../external/carequality/command/outbound-resp/create-outbound-resp";
 import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -128,10 +131,22 @@ router.get(
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = outboundPatientDiscoveryRespSchema.parse(req.body);
-    await handleOutboundResponse({
-      type: OutboundRespType.OUTBOUND_PATIENT_DISCOVERY_RESP,
-      response: pdResponse,
+    const response = outboundPatientDiscoveryRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in patient discovery response", {
+        extra: { context: "carequality.patient-discovery", response, level: "error" },
+      });
+    }
+
+    const status = getIheResultStatus({ patientMatch: response.patientMatch });
+
+    await createOutboundPatientDiscoveryResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -146,10 +161,28 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const dqResponse = outboundDocumentQueryRespSchema.parse(req.body);
-    await handleOutboundResponse({
-      type: OutboundRespType.OUTBOUND_DOCUMENT_QUERY_RESP,
-      response: dqResponse,
+    const response = outboundDocumentQueryRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in document query response", {
+        extra: { context: "carequality.document-query", response, level: "error" },
+      });
+    }
+
+    let status = "failure";
+
+    if (isOutboundDocumentQueryResponse(response)) {
+      status = getIheResultStatus({
+        docRefLength: response.documentReference?.length,
+      });
+    }
+
+    await createOutboundDocumentQueryResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -164,7 +197,7 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processOutboundDocumentQueryResps(req.body);
+    processOutboundDocumentQueryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -178,10 +211,28 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const drResponse = outboundDocumentRetrievalRespSchema.parse(req.body);
-    await handleOutboundResponse({
-      type: OutboundRespType.OUTBOUND_DOCUMENT_RETRIEVAL_RESP,
-      response: drResponse,
+    const response = outboundDocumentRetrievalRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in document retrieval response", {
+        extra: { context: "carequality.document-retrieval", response, level: "error" },
+      });
+    }
+
+    let status = "failure";
+
+    if (isOutboundDocumentRetrievalResponse(response)) {
+      status = getIheResultStatus({
+        docRefLength: response.documentReference?.length,
+      });
+    }
+
+    await createOutboundDocumentRetrievalResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -196,7 +247,7 @@ router.post(
 router.post(
   "/document-retrieval/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processOutboundDocumentRetrievalResps(req.body);
+    processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

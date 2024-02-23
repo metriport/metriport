@@ -1,8 +1,8 @@
 import { MedicalDataSource } from "@metriport/api-sdk";
 import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
-import { MetriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
+import { DataSourceExtension } from "../fhir/shared/extensions/metriport";
 
-export const cqExtension: MetriportDataSourceExtension = {
+export const cqExtension: DataSourceExtension = {
   ...dataSourceExtensionDefaults,
   valueCoding: {
     ...dataSourceExtensionDefaults.valueCoding,

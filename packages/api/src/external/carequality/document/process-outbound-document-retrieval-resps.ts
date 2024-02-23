@@ -10,7 +10,7 @@ import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { convertCDAToFHIR } from "../../fhir-converter/converter";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "./shared";
-import { getDocuments } from "../../fhir/document/get-documents";
+import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 
 export async function processOutboundDocumentRetrievalResps({
@@ -28,8 +28,8 @@ export async function processOutboundDocumentRetrievalResps({
     let issuesWithGateway = 0;
     let successDocsCount = 0;
 
-    for (const docRetrievalResp of outboundDocRetrievalResps) {
-      try {
+    const resultPromises = await Promise.allSettled(
+      outboundDocRetrievalResps.map(async docRetrievalResp => {
         const { operationOutcome } = docRetrievalResp;
 
         if (operationOutcome?.issue) {
@@ -40,21 +40,24 @@ export async function processOutboundDocumentRetrievalResps({
           successDocsCount += docRetrievalResp.documentReference.length;
         }
         await handleDocReferences(docRetrievalResp.documentReference, requestId, patientId, cxId);
-      } catch (error) {
-        const msg = `Failed to handle doc references in Carequality.`;
-        console.log(`${msg}. Error: ${errorToString(error)}`);
+      })
+    );
 
-        capture.message(msg, {
-          extra: {
-            context: `cq.handleDocReferences`,
-            error,
-            patientId: patientId,
-            requestId,
-            cxId,
-          },
-          level: "error",
-        });
-      }
+    const failed = resultPromises.flatMap(p => (p.status === "rejected" ? p.reason : []));
+
+    if (failed.length > 0) {
+      const msg = `Failed to handle doc references in Carequality`;
+      console.log(`${msg}`);
+
+      capture.message(msg, {
+        extra: {
+          context: `cq.handleDocReferences`,
+          patientId: patientId,
+          requestId,
+          cxId,
+        },
+        level: "error",
+      });
     }
 
     await tallyDocQueryProgress({
@@ -111,7 +114,7 @@ async function handleDocReferences(
 
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
 
-  const currentFHIRDocRefs = await getDocuments({
+  const currentFHIRDocRefs = await getDocumentsFromFHIR({
     cxId,
     patientId,
     documentIds: docRefs.map(doc => doc.metriportId ?? ""),
@@ -192,7 +195,7 @@ async function handleDocReferences(
     ingestIntoSearchEngine({ id: patientId, cxId }, fhirDocRef, file, requestId, log);
   }
 
-  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
+  await upsertDocumentsToFHIRServer(cxId, transactionBundle);
 
   await setDocQueryProgress({
     patient: { id: patientId, cxId: cxId },

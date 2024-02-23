@@ -46,7 +46,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
       const resultsData = results.map(result => result.data);
 
-      await api.post(endpointUrl, {
+      api.post(endpointUrl, {
         requestId,
         patientId,
         cxId,
