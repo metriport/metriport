@@ -3,7 +3,6 @@ import { capitalize, groupBy } from "lodash";
 import { Extras } from "@sentry/types";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
-import ConversionError from "../../../errors/conversion-error";
 
 const timeoutCodes = ["UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT"];
 
