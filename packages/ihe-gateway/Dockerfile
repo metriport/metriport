@@ -25,8 +25,8 @@ RUN curl -SL $ARTIFACT \
 RUN adduser -D -H -u 1000 mirth
 RUN mkdir -p /opt/connect/appdata && chown -R mirth:mirth /opt/connect/appdata
 
+COPY config/custom-extensions /opt/connect/custom-extensions
 VOLUME /opt/connect/appdata
-VOLUME /opt/connect/custom-extensions
 VOLUME /opt/connect/custom-lib
 
 WORKDIR /opt/connect

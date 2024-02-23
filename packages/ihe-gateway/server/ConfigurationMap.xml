@@ -1,15 +1,27 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<map>
+<?xml version="1.0" encoding="UTF-8"?><map>
   <entry>
     <string>
-      HL7v3.XMLSchema
+      SAML.SubjectRole.Code
     </string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>
-        /opt/schemas/HL7V3/NE2008/multicacheschemas/PRPA_IN201305UV02.xsd
+        224608005
       </value>
       <comment>
-        Path to PRPA_IN201305UV02.xsd
+        SAML default value
+      </comment>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
+    <string>
+      TEST_MODE
+    </string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>
+        true
+      </value>
+      <comment>
+        In test mode, channels log all exception errors
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
@@ -28,27 +40,27 @@
   </entry>
   <entry>
     <string>
-      SAML.PurposeOfUse
+      HL7v3.XMLSchema
     </string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>
-        TREATMENT
+        /opt/schemas/HL7V3/NE2008/multicacheschemas/PRPA_IN201305UV02.xsd
       </value>
       <comment>
-        SAML default value
+        Path to PRPA_IN201305UV02.xsd
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
     <string>
-      SAML.SubjectRole.Code
+      INBOUND.QUEUE.SIZE
     </string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>
-        224608005
+        1000
       </value>
       <comment>
-        SAML default value
+        Inbound XCPD, XCA queue throttle setting
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
@@ -67,14 +79,27 @@
   </entry>
   <entry>
     <string>
-      INBOUND.QUEUE.SIZE
+      SAML.PurposeOfUse
     </string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>
-        1000
+        TREATMENT
       </value>
       <comment>
-        Inbound XCPD, XCA queue throttle setting
+        SAML default value
+      </comment>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
+    <string>
+      TEST_MODE
+    </string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>
+        true
+      </value>
+      <comment>
+        In test mode, channels log all exception errors
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>

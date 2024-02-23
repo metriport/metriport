@@ -18,8 +18,6 @@ services:
       secrets:
         - keystore_storepass
         - keystore_keypass
-    volumes:
-      - ./config/custom-extensions:/opt/connect/custom-extensions
     depends_on:
       ihe-postgres:
         condition: service_healthy
@@ -45,7 +43,7 @@ services:
       HOME_COMMUNITY_NAME: "${HOME_COMMUNITY_NAME}"
     restart: on-failure
     ports:
-      - "8080:8080"
+      - "8089:8080"
       - "8443:8443"
       - "8081:8081"
       - "8082:8082"
