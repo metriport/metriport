@@ -19,19 +19,18 @@ export type DocumentReferenceWithMetriportId = DocumentReference & {
 
 type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
 
-// Create a single array of all the document references from all the document query results
-export function combineDocRefs(documentQueryResults: IHEResults[]): DocumentReference[] {
-  return documentQueryResults.reduce((acc: DocumentReference[], curr) => {
-    const documentReferences = curr.documentReference ?? [];
-    const documentReferencesWithUrl = documentReferences.map(docRef => {
-      return {
-        ...docRef,
-        url: curr.gateway.url,
-      };
-    });
+/**
+ * Converts the IHE Gateway results to a IHE DocumentReference Schema
+ */
+export function toDocumentReference(documentQueryResult: IHEResults): DocumentReference[] {
+  const documentReferences = documentQueryResult.documentReference ?? [];
 
-    return [...acc, ...documentReferencesWithUrl];
-  }, []);
+  return documentReferences.map(docRef => {
+    return {
+      ...docRef,
+      url: documentQueryResult.gateway.url,
+    };
+  });
 }
 
 export const cqToFHIR = (

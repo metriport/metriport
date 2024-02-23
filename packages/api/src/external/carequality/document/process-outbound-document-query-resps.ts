@@ -13,7 +13,7 @@ import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { makeIheGatewayAPI } from "../api";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
-import { combineDocRefs } from "./shared";
+import { toDocumentReference } from "./shared";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { cqToFHIR } from "./shared";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -41,7 +41,7 @@ export async function processOutboundDocumentQueryResps({
 
   const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
 
-  const docRefs = combineDocRefs(outboundDocumentQueryResps);
+  const docRefs = outboundDocumentQueryResps.flatMap(toDocumentReference);
 
   const docRefsWithMetriportId = await Promise.all(
     docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
