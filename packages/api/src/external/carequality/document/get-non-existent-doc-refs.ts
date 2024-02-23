@@ -1,5 +1,5 @@
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { createFileName } from "@metriport/core/src/domain/filename";
+import { createFileName } from "@metriport/core/domain/filename";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
