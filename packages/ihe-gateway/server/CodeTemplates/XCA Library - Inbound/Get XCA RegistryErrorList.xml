@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>41ab57cd-1f83-46b2-86a8-ebc674c067f4</id>
   <name>Get XCA RegistryErrorList</name>
-  <revision>2</revision>
+  <revision>1</revision>
   <lastModified>
-    <time>1704310828552</time>
+    <time>1708660220127</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>CHANNEL_BATCH</contextType>
-      <contextType>CHANNEL_POSTPROCESSOR</contextType>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>CHANNEL_DEPLOY</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
