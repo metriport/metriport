@@ -5,11 +5,11 @@ globalChannelMap.put("XCA39INBOUNDPROCESSOR", channelId);
 
 const msg = "XCA-ITI-39 Inbound Processor: Failed start, missing";
 if (!globalMap.containsKey("ACCESS_KEY")) {
-  logger.error(`${msg} ACCESS_KEY`);
+  logger.error(msg + " ACCESS_KEY");
   ChannelUtil.stopChannel(channelId);
 }
 if (!globalMap.containsKey("SECRET_KEY")) {
-  logger.error(`${msg} SECRET_KEY`);
+  logger.error(msg + " SECRET_KEY");
   ChannelUtil.stopChannel(channelId);
 }
 

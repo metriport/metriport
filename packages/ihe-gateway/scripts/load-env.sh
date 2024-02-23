@@ -10,9 +10,13 @@ set -e
 #
 #################################################################################
 
-if [ -f .env ]; then
+if ! [[ $FILE ]]; then
+    FILE=.env
+fi
+
+if [ -f $FILE ]; then
     set -o allexport
-    source .env
+    source $FILE
     set +o allexport
 else
     if [ "$1" == "strict" ]; then
