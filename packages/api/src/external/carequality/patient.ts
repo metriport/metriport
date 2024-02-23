@@ -43,6 +43,7 @@ export function getCQData(
 }
 
 const createContext = "cq.patient.discover";
+
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
 
