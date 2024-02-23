@@ -1,6 +1,7 @@
 import { Sequelize, QueryTypes } from "sequelize";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { capture } from "../../../../util/notifications";
 import { RaceControl, checkIfRaceIsComplete, controlDuration } from "../../../../util/race-control";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { initSequelizeForLambda } from "../../../../util/sequelize";
@@ -53,11 +54,29 @@ export async function pollIHEGatewayResults({
 
     const iheGatewayResults = await queryIHEGatewayResults(sequelize, resultsTable, requestId);
 
-    if (raceResult) {
+    const allGWsCompleted = iheGatewayResults.length === numOfGateways;
+
+    if (raceResult && allGWsCompleted) {
       console.log(
         `${raceResult}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
       );
       raceControl.isRaceInProgress = false;
+    } else if (!allGWsCompleted) {
+      const msg = `IHE gateway results are incomplete.`;
+      console.log(
+        `${msg}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
+      );
+
+      capture.message(msg, {
+        extra: {
+          requestId,
+          patientId,
+          cxId,
+          resultsTable,
+          numOfGateways,
+          iheGatewayResults,
+        },
+      });
     }
 
     return iheGatewayResults;

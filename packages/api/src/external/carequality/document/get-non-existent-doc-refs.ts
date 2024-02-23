@@ -79,23 +79,20 @@ async function checkDocRefsExistInS3(
     { numberOfParallelExecutions: parallelS3Queries }
   );
 
-  const observedDocRefs = documents.reduce(
-    (acc: ObservedDocRefs, curr) => {
-      const matchingDoc = successfulDocs.find(succDoc => succDoc.docId === curr.docUniqueId);
+  const observedDocRefs: ObservedDocRefs = {
+    existingDocRefs: [],
+    nonExistingDocRefs: [],
+  };
 
-      if (matchingDoc && matchingDoc.exists) {
-        acc.existingDocRefs = [...acc.existingDocRefs, curr];
-      } else {
-        acc.nonExistingDocRefs = [...acc.nonExistingDocRefs, curr];
-      }
+  for (const doc of documents) {
+    const matchingDoc = successfulDocs.find(succDoc => succDoc.docId === doc.metriportId);
 
-      return acc;
-    },
-    {
-      existingDocRefs: [],
-      nonExistingDocRefs: [],
+    if (matchingDoc && matchingDoc.exists) {
+      observedDocRefs.existingDocRefs.push(doc);
+    } else {
+      observedDocRefs.nonExistingDocRefs.push(doc);
     }
-  );
+  }
 
   return observedDocRefs;
 }

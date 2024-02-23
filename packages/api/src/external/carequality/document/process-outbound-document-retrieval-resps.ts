@@ -168,7 +168,7 @@ async function handleDocReferences(
 
     const docId = docRef.metriportId ?? "";
 
-    const fhirDocRef = cqToFHIR(docId, docRef, patientId, currentFHIRDocRef[0]);
+    const fhirDocRef = cqToFHIR(docId, docRef, patientId, true, currentFHIRDocRef[0]);
 
     if (!docRef.fileLocation || !docRef.url || !docRef.contentType) {
       throw new Error(

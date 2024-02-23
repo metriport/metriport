@@ -75,7 +75,7 @@ export function createOutboundDocumentRetrievalReqs({
   );
 
   if (patientsWithInvalidGW.length > 0) {
-    const msg = `Gateway is not valid for patient ${patientsWithInvalidGW.join(", ")}`;
+    const msg = `Gateway is not valid for patient(s)`;
     console.error(msg);
 
     capture.message(msg, {

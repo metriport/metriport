@@ -22,7 +22,7 @@ import { processAsyncError } from "../../../errors";
 const region = Config.getAWSRegion();
 const iheGateway = makeIheGatewayAPI();
 const lambdaClient = makeLambdaClient(region);
-const lambdaName = Config.getOutboundDocRetrievalRespsLambdaName();
+const lambdaName = Config.getOutboundDocRetrievalLambdaName();
 const parallelUpsertsToFhir = 10;
 
 export async function processOutboundDocumentQueryResps({
@@ -141,7 +141,7 @@ async function storeInitDocRefInFHIR(
       try {
         const docId = docRef.metriportId ?? "";
 
-        const fhirDocRef = cqToFHIR(docId, docRef, patientId);
+        const fhirDocRef = cqToFHIR(docId, docRef, patientId, false);
 
         await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {

@@ -42,8 +42,8 @@ export function createAPIService({
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
-  outboundDocumentQueryRespsLambda,
-  outboundDocumentRetrievalRespsLambda,
+  outboundDocumentQueryLambda,
+  outboundDocumentRetrievalLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -67,8 +67,8 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  outboundDocumentQueryRespsLambda: ILambda;
-  outboundDocumentRetrievalRespsLambda: ILambda;
+  outboundDocumentQueryLambda: ILambda;
+  outboundDocumentRetrievalLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -152,9 +152,8 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          OUTBOUND_DOC_QUERY_RESPS_LAMBDA_NAME: outboundDocumentQueryRespsLambda.functionName,
-          OUTBOUND_DOC_RETRIEVAL_RESPS_LAMBDA_NAME:
-            outboundDocumentRetrievalRespsLambda.functionName,
+          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -211,8 +210,8 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentQueryRespsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  outboundDocumentRetrievalRespsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

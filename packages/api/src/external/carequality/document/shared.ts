@@ -38,6 +38,7 @@ export const cqToFHIR = (
   docId: string,
   doc: IHEGWDocumentReference,
   patientId: string,
+  hasMetriportContent: boolean,
   fhirDocRef?: DocumentReferenceFHIR
 ): DocumentReferenceWithId => {
   const baseAttachment = {
@@ -54,10 +55,15 @@ export const cqToFHIR = (
     resourceType: "DocumentReference",
     masterIdentifier: {
       system: doc.homeCommunityId,
-      value: doc.docUniqueId,
+      value: docId,
     },
     subject: toFHIRSubject(patientId),
-    content: generateCQFHIRContent(fhirDocRef?.content, baseAttachment, doc.url),
+    content: generateCQFHIRContent(
+      fhirDocRef?.content,
+      baseAttachment,
+      hasMetriportContent,
+      doc.url
+    ),
     extension: [cqExtension],
   };
 };
@@ -70,11 +76,12 @@ const generateCQFHIRContent = (
     creation?: string;
     fileName?: string;
   },
+  hasMetriportContent: boolean,
   location: string | null | undefined
 ): DocumentReferenceContent[] => {
   if (!location) return [];
 
-  if (content) {
+  if (hasMetriportContent && content) {
     const metriportFHIRContent = createDocReferenceContent({
       ...baseAttachment,
       location: location,

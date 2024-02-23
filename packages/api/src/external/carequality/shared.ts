@@ -1,6 +1,6 @@
 import { PurposeOfUse } from "@metriport/shared";
 
-// TODO: adjust when adding purpose of use per cx
+// TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
   return PurposeOfUse.TREATMENT;
 }

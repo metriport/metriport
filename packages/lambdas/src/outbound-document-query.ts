@@ -56,7 +56,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const msg = `Error sending document query results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(error, {
-        extra: { context: `sendOutboundDocumentQueryResps`, error, patientId, requestId, cxId },
+        extra: { context: `sendOutboundDocumentQuery`, error, patientId, requestId, cxId },
       });
     }
   }

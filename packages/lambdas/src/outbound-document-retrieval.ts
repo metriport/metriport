@@ -55,15 +55,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     } catch (error) {
       const msg = `Error sending document retrieval results`;
       console.log(`${msg}: ${errorToString(error)}`);
-      capture.error(error, {
+      capture.message(msg, {
         extra: {
-          context: `sendOutboundDocumentRetrievalResps`,
+          context: `sendOutboundDocumentRetrieval`,
           error,
           patientId,
           requestId,
           cxId,
-          msg,
         },
+        level: "error",
       });
     }
   }
