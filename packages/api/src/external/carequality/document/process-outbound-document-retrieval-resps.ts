@@ -116,7 +116,7 @@ async function handleDocReferences(
 
   const { log } = out(`CQ handleDocReferences - requestId ${requestId}, M patient ${patientId}`);
 
-  const currentFHIRDocRefs = await getDocumentsFromFHIR({
+  const existingFHIRDocRefs = await getDocumentsFromFHIR({
     cxId,
     patientId,
     documentIds: docRefs.map(doc => doc.metriportId ?? ""),
@@ -164,7 +164,7 @@ async function handleDocReferences(
         errorCountConvertible++;
       }
     }
-    const currentFHIRDocRef = currentFHIRDocRefs.find(
+    const draftFHIRDocRef = existingFHIRDocRefs.find(
       fhirDocRef => fhirDocRef.id === docRef.metriportId
     );
 
@@ -173,7 +173,7 @@ async function handleDocReferences(
     const fhirDocRef = cqToFHIR(docId, docRef, patientId, metriportDataSourceExtension);
     const mergedFHIRDocRef: DocumentReferenceWithId = {
       ...fhirDocRef,
-      content: [...(currentFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
+      content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
     };
 
     if (!docRef.fileLocation || !docRef.url || !docRef.contentType) {
