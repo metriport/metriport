@@ -2,12 +2,12 @@ import { Op } from "sequelize";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { capture } from "@metriport/core/util/notifications";
 
-export async function updateCQGateways(gateways: string[]): Promise<void> {
-  console.log(`Found ${gateways.length} gateways in the CQ directory. Updating...`);
+export async function updateCQGateways(gatewayOids: string[]): Promise<void> {
+  console.log(`Found ${gatewayOids.length} gateways in the CQ directory. Updating...`);
   await Promise.allSettled(
-    gateways.map(gateway =>
-      updateCQGateway(gateway).catch(error => {
-        const msg = `Failed to update gateway ${gateway} in the CQ directory. Skipping...`;
+    gatewayOids.map(gatewayOid =>
+      updateCQGateway(gatewayOid).catch(error => {
+        const msg = `Failed to update gateway ${gatewayOid} in the CQ directory. Skipping...`;
         console.log(`${msg}. Cause: ${error}`);
         capture.error(msg, { extra: { context: `cq.directory.updateCQGateways`, error } });
         throw error;
@@ -16,16 +16,14 @@ export async function updateCQGateways(gateways: string[]): Promise<void> {
   );
 }
 
-export async function updateCQGateway(gateway: string): Promise<void> {
+export async function updateCQGateway(gatewayOid: string): Promise<void> {
   await CQDirectoryEntryModel.update(
     {
       gateway: true,
     },
     {
       where: {
-        name: {
-          [Op.like]: `${gateway}%`,
-        },
+        id: gatewayOid,
         urlXCPD: {
           [Op.ne]: "",
         },

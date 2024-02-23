@@ -41,8 +41,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
         for (const org of parsedOrgs) {
-          if (org.managingOrganization) {
-            gatewaysSet.add(org.managingOrganization);
+          if (org.managingOrganizationId) {
+            gatewaysSet.add(org.managingOrganizationId);
           }
         }
         console.log(

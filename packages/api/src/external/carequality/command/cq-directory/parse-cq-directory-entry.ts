@@ -1,18 +1,18 @@
-import {
-  ORG_POSITION,
-  TRANSACTION_URL,
-  XCA_DQ_STRING,
-  XCA_DR_STRING,
-  XCPD_STRING,
-} from "@metriport/carequality-sdk/common/util";
+import { ORG_POSITION, TRANSACTION_URL } from "@metriport/carequality-sdk/common/util";
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { capture } from "@metriport/core/util/notifications";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 
 const EARTH_RADIUS = 6378168;
+
+const XCPD_STRING = "ITI-55";
+const XCA_DQ_STRING = "ITI-38";
+const XCA_DR_STRING = "ITI-39";
+type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
 export type XCUrls = {
   urlXCPD?: string;
@@ -83,7 +83,7 @@ function getUrls(contained: Contained): XCUrls {
 
   contained?.forEach(c => {
     const ext = c?.Endpoint.extension.extension.find(ext => ext.url === TRANSACTION_URL);
-    const type = ext?.valueString?.value;
+    const type = getUrlType(ext?.valueString?.value);
 
     if (type && c?.Endpoint?.address?.value) {
       endpointMap[type] = c.Endpoint.address.value;
@@ -172,4 +172,20 @@ function getNormalizedOid(
   } catch (err) {
     console.log(`${entityDescription} has invalid OID: ${oid}`);
   }
+}
+
+function getUrlType(value: string | undefined): ChannelUrl | undefined {
+  if (!value) return;
+  if (value.includes(XCPD_STRING)) return XCPD_STRING;
+  if (value.includes(XCA_DQ_STRING)) return XCA_DQ_STRING;
+  if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
+
+  if (value.includes("Direct Messaging")) return;
+  const msg = `Unknown CQ Endpoint type`;
+  console.log(msg);
+  capture.message(msg, {
+    extra: { value, context: "parseCQDirectoryEntries" },
+    level: "warning",
+  });
+  return;
 }
