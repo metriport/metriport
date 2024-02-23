@@ -91,7 +91,7 @@ export function reportFHIRError({
     for (const [group, errors] of Object.entries(groupedErrors)) {
       const msg = `${errorTitle} - ${group}`;
       log(`${msg} (docId ${docId}): ${msg}, errors: `, errors);
-      capture.error(new ConversionError(msg, error), {
+      capture.error(msg, {
         extra: {
           ...extra,
           errors,
@@ -99,7 +99,13 @@ export function reportFHIRError({
       });
     }
   } else {
+    const msg = `FHIR error`;
     log(`${errorTitle} (docId ${docId}): ${error}`);
-    capture.error(new ConversionError(errorTitle, error), { extra });
+    capture.error(msg, {
+      extra: {
+        ...extra,
+        error,
+      },
+    });
   }
 }
