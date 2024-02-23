@@ -4,17 +4,23 @@ import { contactSchema } from "./contact";
 import { containedSchema } from "./contained";
 import { meta, objectValue, objectValueOptional, type } from "./shared";
 
-export const managingOrganizationSchema = z.object({
-  reference: z.object({ value: z.string().nullish() }).nullish(),
-});
-export type ManagingOrganization = z.infer<typeof managingOrganizationSchema>;
-
 export const organizationIdentifierSchema = z.object({
   use: objectValueOptional,
   type: objectValueOptional,
   system: objectValue,
   value: objectValue,
 });
+
+export const managingOrganizationSchema = z.object({
+  reference: z.object({ value: z.string().nullish() }).nullish(),
+});
+export type ManagingOrganization = z.infer<typeof managingOrganizationSchema>;
+
+export const partOfSchema = z.object({
+  identifier: organizationIdentifierSchema,
+});
+
+export type PartOf = z.infer<typeof partOfSchema>;
 
 export const organizationSchema = z
   .object({

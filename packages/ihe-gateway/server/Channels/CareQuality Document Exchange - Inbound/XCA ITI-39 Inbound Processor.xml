@@ -6,7 +6,7 @@
  - Generates AWS Lambda request based on the ITI-39 "Cross Gateway Retrieve" SOAP message
 
 Last updated: Dec 27 2023</description>
-  <revision>41</revision>
+  <revision>16</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

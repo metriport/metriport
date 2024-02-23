@@ -31,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  systemRootOrgName: string;
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
@@ -53,6 +54,7 @@ export type EnvConfig = {
     envVars?: {
       CQ_ORG_DETAILS?: string;
       CQ_ORG_URLS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {

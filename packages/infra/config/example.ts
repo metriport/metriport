@@ -14,6 +14,8 @@ export const config: EnvConfig = {
   dbUsername: "my_db_user",
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   fhirServerUrl: "http://localhost:8888",
+  systemRootOID: "2.16.840.1.113883.3.999999",
+  systemRootOrgName: "Name of the Organization",
   providerSecretNames: {
     CRONOMETER_CLIENT_ID: "CRONOMETER_CLIENT_ID",
     CRONOMETER_CLIENT_SECRET: "CRONOMETER_CLIENT_SECRET",
@@ -71,6 +73,8 @@ export const config: EnvConfig = {
     envVars: {
       CQ_ORG_DETAILS: `{"name": "Test org","oid": "1.2.3.1.4.1.11.12.29.2022.1234","addressLine1": "123 Main St","city": "Phoenix","state": "AZ","zip": "12345","lat": "33.12345","lon": "-112.12345","contactName": "Engineering","phone": "(123)-123-1234","email": "support@healthapp.com", "role": "Connection"}`,
       CQ_ORG_URLS: `{"urlXCPD": "https://api.myhealthapp.com/xcpd","urlDQ": "https://api.myhealthapp.com/xca-dq","urlDR": "https://api.myhealthapp.com/xca-dr"}`,
+      CQ_URLS_TO_EXCLUDE:
+        "https://commonwell.com/patient-discovery-routes/,https://ehealthexchange.org/patient-discovery-routes/",
     },
   },
   commonwell: {
@@ -89,6 +93,5 @@ export const config: EnvConfig = {
   generalBucketName: "test-bucket",
   medicalDocumentsBucketName: "test-bucket",
   medicalDocumentsUploadBucketName: "test-upload-bucket",
-  systemRootOID: "2.16.840.1.113883.3.999999",
 };
 export default config;

@@ -102,6 +102,10 @@ export class Config {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
 
+  static getCQUrlsToExclude(): string | undefined {
+    return getEnvVar("CQ_URLS_TO_EXCLUDE");
+  }
+
   static getPlaceIndexName(): string {
     return getEnvVarOrFail("PLACE_INDEX_NAME");
   }

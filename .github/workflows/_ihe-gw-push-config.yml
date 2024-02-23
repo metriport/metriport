@@ -1,5 +1,9 @@
 name: Reusable IHE GW push config to server workflow
 
+# This workflow checks out both the OSS and Internal repos.
+# Because of that, the each step has to indicate the folder in which it should run at - different
+# from regular workflows that only checkout the repo once and run all steps in the same folder.
+
 on:
   workflow_call:
     inputs:
@@ -12,18 +16,40 @@ on:
         type: boolean
         default: false
         description: "whether this workflow should checkout internal's develop/master or a feature branch"
+      AWS_REGION:
+        required: true
+        type: string
+      ECR_REPO_URI:
+        required: true
+        type: string
+      ECS_CLUSTER:
+        required: true
+        type: string
+      IHE_INBOUND_ECS_SERVICE:
+        required: true
+        type: string
+      IHE_OUTBOUND_ECS_SERVICE:
+        required: true
+        type: string
       IHE_GW_FULL_BACKUP_LOCATION:
         required: true
         type: string
       IHE_GW_CONFIG_BUCKET_NAME:
         required: true
         type: string
+      IHE_GW_URL:
+        required: true
+        type: string
     secrets:
+      SERVICE_PAT:
+        required: true
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
       DOCKERHUB_USERNAME:
         required: true
       DOCKERHUB_TOKEN:
-        required: true
-      IHE_GW_URL:
         required: true
       IHE_GW_USER:
         required: true
@@ -31,7 +57,8 @@ on:
         required: true
 
 jobs:
-  lint-build-test:
+  update-ihe-db:
+    name: Update IHE DB
     runs-on: ubuntu-latest
     steps:
       - name: Log Environment
@@ -45,6 +72,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          path: metriport
 
       # checkout the internal repo to get configs - default branches
       - name: Checkout internal default branch
@@ -91,15 +120,55 @@ jobs:
           distribution: "zulu"
           java-version: 17
 
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        working-directory: "./"
+
       - name: Push configs to IHE Gateway
         env:
           ENV_TYPE: ${{ inputs.deploy_env }}
           IHE_GW_CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
           IHE_GW_FULL_BACKUP_LOCATION: ${{ inputs.IHE_GW_FULL_BACKUP_LOCATION }}
-          IHE_GW_URL: ${{ secrets.IHE_GW_URL }}
+          IHE_GW_URL: ${{ inputs.IHE_GW_URL }}
           IHE_GW_USER: ${{ secrets.IHE_GW_USER }}
           IHE_GW_PASSWORD: ${{ secrets.IHE_GW_PASSWORD }}
+          # https://notestoself.dev/posts/github-action-s3-botocore-awsrequest-process-255-error/
+          AWS_EC2_METADATA_DISABLED: true
+        shell: bash
+        # These are designed to run in the packages/ihe-gateway folder
         run: |
           ./scripts/init.sh
           ./scripts/push-to-server.sh
-        working-directory: "metriport/packages/ihe-gateway"
+        working-directory: "./metriport/packages/ihe-gateway"
+
+  restart-outbound:
+    name: Restart Outbound instances
+    runs-on: ubuntu-latest
+    needs: update-ihe-db
+    steps:
+      - env:
+          AWS_REGION: ${{ inputs.AWS_REGION }}
+          ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
+          ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ inputs.IHE_OUTBOUND_ECS_SERVICE }}
+        shell: bash
+        run: |
+          ./restart-ecs.sh
+        working-directory: "./metriport/packages/scripts"
+
+  restart-inbound:
+    name: Restart Inbound instances
+    runs-on: ubuntu-latest
+    needs: update-ihe-db
+    steps:
+      - env:
+          AWS_REGION: ${{ inputs.AWS_REGION }}
+          ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
+          ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ inputs.IHE_INBOUND_ECS_SERVICE }}
+        shell: bash
+        run: |
+          ./restart-ecs.sh
+        working-directory: "./metriport/packages/scripts"

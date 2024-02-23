@@ -43,7 +43,7 @@ If you do add extensions, you might need to add a license key to a `.env` file:
 
 ```shell
 $ touch .env
-$ echo "IHE_GW_LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
+$ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 ```
 
 ### Launch
@@ -76,3 +76,15 @@ To push configs and backup to the server (after you pulled from Git remote, for 
 ```shell
 $ ./scripts/push-to-server.sh
 ```
+
+### Managing Cloud instances
+
+For now configs are pushed to cloud environment from the local environment:
+
+```shell
+$ ./scripts/push-to-cloud.sh -e [production|staging]
+```
+
+This requires a `.env.[production|staging]` on the local environment.
+
+This script will upload/push configs to the cloud instance and restart both inbound and outbound instances.

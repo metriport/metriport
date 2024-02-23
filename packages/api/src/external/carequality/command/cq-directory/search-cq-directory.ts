@@ -2,18 +2,21 @@ import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
 import { Sequelize } from "sequelize";
+import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
+const cqExcludeList: string[] = constructGatewayExcludeList();
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
   id: string;
   lon: number | undefined;
   lat: number | undefined;
-  urlXCPD: string;
+  urlXCPD: string | undefined;
   urlDQ: string | undefined;
   urlDR: string | undefined;
+  active: boolean;
 };
 
 /**
@@ -93,5 +96,27 @@ export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDeta
     urlXCPD: org.urlXCPD,
     urlDQ: org.urlDQ,
     urlDR: org.urlDR,
+    active: org.active,
   };
+}
+
+export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetails[] {
+  return orgs.filter(org => {
+    if (org.active && hasValidXcpdLink(org)) return org;
+  });
+}
+
+function constructGatewayExcludeList(): string[] {
+  let excludeList: string[] = [];
+  const urlsToExclude = Config.getCQUrlsToExclude();
+  if (urlsToExclude) excludeList = urlsToExclude.split(",");
+  return excludeList;
+}
+
+function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
+  const urlXCPD = org.urlXCPD;
+  if (!urlXCPD) return false;
+
+  const isExcluded = cqExcludeList.some(excludedUrl => urlXCPD.startsWith(excludedUrl));
+  return !isExcluded;
 }

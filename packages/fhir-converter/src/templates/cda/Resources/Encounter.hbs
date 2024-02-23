@@ -10,12 +10,16 @@
             "status":"unknown",
         {{/if}}
 
-        {{#if encounter.code}}
-            "reasonCode":
-            [
-                {{>DataType/CodeableConcept.hbs code=encounter.code}}
-            ],
-        {{/if}}
+        
+        "reasonCode": [
+            {{#each (toArray reasonCodes.reasons)}}
+                {{!-- Handlebars templates primarily deal with string interpolation and HTML generation. 
+                When you try to insert an object directly using Handlebars syntax, it doesn't automatically serialize 
+                the object into a JSON string. Instead, it will attempt to convert the object to a string, often resulting in [object Object] 
+                or similar undesired output. Triple braces prevent the escaping of characters, ensuring that the JSON structure is preserved in the output.--}}
+                {{{toJsonString this}}},
+            {{/each}}
+        ],
         
         "class":{{>DataType/Coding.hbs code=encounter.code}},
         

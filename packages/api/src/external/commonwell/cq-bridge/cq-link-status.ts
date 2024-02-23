@@ -8,6 +8,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getLinkStatusCQ } from "../patient";
 import { CQLinkStatus } from "../patient-shared";
+import { PatientDataCommonwell } from "../patient-shared";
 
 dayjs.extend(duration);
 const PARALLEL_UPDATES = 10;
@@ -61,13 +62,16 @@ export const setCQLinkStatus = async ({
     }
 
     const updatedData = cloneDeep(originalPatient.data);
+    const cwData = {
+      ...updatedData.externalData?.COMMONWELL,
+      cqLinkStatus,
+    } as PatientDataCommonwell;
+
     updatedData.externalData = {
       ...updatedData.externalData,
-      COMMONWELL: {
-        ...updatedData.externalData?.COMMONWELL,
-        cqLinkStatus,
-      },
+      COMMONWELL: cwData,
     };
+
     const updatedPatient = await originalPatient.update({ data: updatedData }, { transaction });
 
     return { patient: updatedPatient, updated: true };

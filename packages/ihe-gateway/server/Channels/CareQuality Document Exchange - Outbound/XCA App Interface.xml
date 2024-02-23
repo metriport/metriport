@@ -6,7 +6,7 @@
  - forwards a single request back to the calling app or DB
 
 Last updated: Nov 30 2023</description>
-  <revision>15</revision>
+  <revision>2</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

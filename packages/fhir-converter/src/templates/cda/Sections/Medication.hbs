@@ -30,7 +30,7 @@
                                         {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Organization/' orgId.Id)}}
                                     {{/with}}
                                 {{/if}}
-                            {{else if medEntry.substanceAdministration.author.assignedAuthor}}
+                            {{else if (and medReq.supply medEntry.substanceAdministration.author.assignedAuthor)}}
                                 {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=medEntry.substanceAdministration.author.assignedAuthor) as |practitionerId|}}
                                     {{>Resources/Practitioner.hbs practitioner=medEntry.substanceAdministration.author.assignedAuthor ID=practitionerId.Id}},
                                     {{>References/MedicationRequest/requester.hbs ID=(generateUUID (toJsonString medReq.supply)) REF=(concat 'Practitioner/' practitionerId.Id)}}

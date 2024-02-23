@@ -1,0 +1,8 @@
+{{!-- ID composed of code, addr, name --}}
+{
+    {{#if location.location.addr}}
+        "Id": "{{generateUUID (concatDefined location.location.addr location.location.name location.code)}}"
+    {{else if location.addr}}
+        "Id": "{{generateUUID (concatDefined location.addr location.playingEntity.name location.code)}}"
+    {{/if}}
+}

@@ -1,18 +1,25 @@
 #!/bin/bash
 set -e
 
+echo "Starting the entrypoint.sh script..."
+
 custom_extension_count=`ls -1 /opt/connect/custom-extensions/*.zip 2>/dev/null | wc -l`
 if [ $custom_extension_count != 0 ]; then
 	echo "Found ${custom_extension_count} custom extensions."
 	for extension in $(ls -1 /opt/connect/custom-extensions/*.zip); do
 		unzip -o -q $extension -d /opt/connect/extensions
 	done
+else
+	echo "WARNING: No custom extensions found."
 fi
 
 # set storepass and keypass to 'changeme' so they aren't overwritten later
 KEYSTORE_PASS=changeme
 sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
 sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
+
+# https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_1/page/connect/connect/topics/c_The_mirth_properties_File_connect_ug.html#:~:text=server.api.allowhttp
+echo -e "\nserver.api.allowhttp = true" >> /opt/connect/conf/mirth.properties
 
 # merge the environment variables into /opt/connect/conf/mirth.properties
 # db type
@@ -65,7 +72,6 @@ if ! [ -z "${KEYSTORE_TYPE+x}" ]; then
 fi
 
 # license key
-LICENSE_KEY=$(cat /run/secrets/license_key 2>/dev/null)
 if ! [ -z "${LICENSE_KEY+x}" ]; then
 	LINE_COUNT=`grep "license.key" /opt/connect/conf/mirth.properties | wc -l`
 	if [ $LINE_COUNT -lt 1 ]; then
@@ -73,6 +79,8 @@ if ! [ -z "${LICENSE_KEY+x}" ]; then
 	else
 		sed -i "s/^license\.key\s*=\s*.*\$/license.key = ${LICENSE_KEY//\//\\/}/" /opt/connect/conf/mirth.properties
 	fi
+else
+	echo "WARNING: No license key found."
 fi
 
 # session store
@@ -182,8 +190,6 @@ if [ -f /run/secrets/mirth_properties ]; then
             fi
         fi
     done <<< "`cat /run/secrets/mirth_properties`"
-else
-		echo "WARNING: No mirth.properties secret found"
 fi
 
 # merge the user's secret vmoptions
