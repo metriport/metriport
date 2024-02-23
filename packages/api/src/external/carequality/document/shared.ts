@@ -5,7 +5,6 @@ import {
   DocumentReference as IHEGWDocumentReference,
 } from "@metriport/ihe-gateway-sdk";
 import {
-  DocumentReference as DocumentReferenceFHIR,
   DocumentReferenceContent,
 } from "@medplum/fhirtypes";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
