@@ -11,6 +11,7 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
+import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
@@ -22,8 +23,6 @@ import {
   handleIHEResponse,
 } from "../../external/carequality/command/ihe-result/create-ihe-result";
 import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
-
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
