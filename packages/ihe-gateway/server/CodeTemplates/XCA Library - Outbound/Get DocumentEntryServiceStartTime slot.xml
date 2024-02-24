@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>b33a12b1-fbf1-4bdf-8bb3-0e7fe686fe4f</id>
   <name>Get DocumentEntryServiceStartTime slot</name>
-  <revision>5</revision>
+  <revision>3</revision>
   <lastModified>
-    <time>1704310828687</time>
+    <time>1708668487186</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
