@@ -88,10 +88,15 @@ export class CQOrganization {
     return buildXmlStringFromTemplate(this.getDetailsAndUrls());
   }
 
-  public toXmlString(): string {
+  public setXmlString(xmlString: string) {
+    this.xmlString = xmlString;
+  }
+
+  public getXmlString(): string {
     if (!this.xmlString) {
-      this.xmlString = this.buildXmlStringFromTemplate();
+      this.setXmlString(this.buildXmlStringFromTemplate());
     }
-    return this.xmlString;
+    if (this.xmlString) return this.xmlString;
+    throw new Error("XML string not set");
   }
 }

@@ -73,7 +73,7 @@ function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-function getUrls(contained: Contained): CQOrgUrls | undefined {
+function getUrls(contained: Contained): CQOrgUrls {
   const endpointMap: Record<string, string> = {};
 
   contained?.forEach(c => {

@@ -38,8 +38,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
         getEndpoint(urnOid, XCA_DR_STRING, urlDR)
       : "";
 
-  return `
-  <Organization>
+  return `<Organization>
     <identifier>
         <use value="official"/>
         <system value="http://www.hl7.org/oid/"/>
@@ -203,13 +202,13 @@ function getEndpoint(oid: string, urlType: ChannelUrl, url?: string) {
 }
 
 function getPartOf(hostOrgOid?: string): string {
-  const partOfOid = hostOrgOid || metriportOid;
+  const oid = hostOrgOid ?? metriportOid;
   return `<partOf>
         <identifier>
             <use value="official"/>
             <type value="HCID"/>
             <system value="http://www.hl7.org/oid/"/>
-            <value value="urn:oid:${partOfOid}"/>
+            <value value="urn:oid:${oid}"/>
         </identifier>
     </partOf>`;
 }

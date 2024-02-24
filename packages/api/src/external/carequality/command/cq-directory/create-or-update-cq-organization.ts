@@ -8,17 +8,18 @@ const cq = makeCarequalityManagementAPI();
 export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Promise<void> {
   if (!cq) throw new Error("Carequality API not initialized");
   const org = CQOrganization.fromDetails(orgDetails);
-  const cqOrgString = org.toXmlString();
-  const orgExists = await doesCQOrganizationExist(org.oid);
+  const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
   if (orgExists) {
-    await updateCQOrganization(cq, cqOrgString, org.oid);
+    await updateCQOrganization(cq, org);
   } else {
-    await registerOrganization(cq, cqOrgString);
+    await registerOrganization(cq, org);
   }
 }
 
-async function doesCQOrganizationExist(oid: string): Promise<boolean> {
-  if (!cq) throw new Error("Carequality API not initialized");
+async function doesOrganizationExistInCQ(
+  cq: CarequalityManagementAPI,
+  oid: string
+): Promise<boolean> {
   const org = await cq.listOrganizations({ count: 1, oid });
   if (org.length > 0) {
     return true;
@@ -28,22 +29,24 @@ async function doesCQOrganizationExist(oid: string): Promise<boolean> {
 
 async function updateCQOrganization(
   cq: CarequalityManagementAPI,
-  cqOrg: string,
-  oid: string
+  cqOrg: CQOrganization
 ): Promise<void> {
-  console.log(`Updating organization in the CQ Directory with OID: ${oid}...`);
+  console.log(`Updating organization in the CQ Directory with OID: ${cqOrg.oid}...`);
   try {
-    await cq.updateOrganization(cqOrg, oid);
+    await cq.updateOrganization(cqOrg.getXmlString(), cqOrg.oid);
   } catch (error) {
     console.log(`Failed to update organization in the CQ Directory. Cause: ${error}`);
     throw error;
   }
 }
 
-async function registerOrganization(cq: CarequalityManagementAPI, cqOrg: string): Promise<void> {
+async function registerOrganization(
+  cq: CarequalityManagementAPI,
+  cqOrg: CQOrganization
+): Promise<void> {
   try {
-    console.log(`Registering organization in the CQ Directory...`);
-    await cq.registerOrganization(cqOrg);
+    console.log(`Registering organization in the CQ Directory with OID: ${cqOrg.oid}...`);
+    await cq.registerOrganization(cqOrg.getXmlString());
   } catch (error) {
     console.log(`Failed to register organization in the CQ Directory. Cause: ${error}`);
     throw error;

@@ -81,19 +81,12 @@ router.get(
  * POST /internal/carequality/directory/organization
  *
  * Creates or updates the organization in the Carequality Directory.
- * Providing no body will use the env vars for the organization details.
  */
 router.post(
   "/directory/organization",
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
-    let orgDetails;
-    if (body.oid) {
-      orgDetails = cqOrgDetailsSchema.parse(body);
-    } else {
-      const orgDetailsString = Config.getCQOrgDetails();
-      orgDetails = cqOrgDetailsSchema.parse(JSON.parse(orgDetailsString));
-    }
+    const orgDetails = cqOrgDetailsSchema.parse(body);
     await createOrUpdateCQOrganization(orgDetails);
 
     return res.sendStatus(httpStatus.OK);
