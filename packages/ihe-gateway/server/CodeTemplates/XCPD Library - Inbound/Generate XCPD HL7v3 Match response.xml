@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>e5fda4be-5064-440c-9aed-14bf1474ba07</id>
   <name>Generate XCPD HL7v3 Match response</name>
-  <revision>7</revision>
+  <revision>12</revision>
   <lastModified>
-    <time>1707781166717</time>
+    <time>1708722416153</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

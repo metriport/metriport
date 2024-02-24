@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>683a3246-5a5b-4b31-ade5-2c881bad5a88</id>
   <name>Get XCA ITI-39 DocumentRequest element</name>
-  <revision>2</revision>
+  <revision>3</revision>
   <lastModified>
-    <time>1704310828740</time>
+    <time>1708668487226</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
