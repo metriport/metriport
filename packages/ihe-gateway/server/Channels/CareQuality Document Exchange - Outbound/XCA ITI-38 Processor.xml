@@ -10,7 +10,7 @@
 TODO: Update SAML Attributes
 
 Last updated: Dec 07 2023</description>
-  <revision>51</revision>
+  <revision>56</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -406,7 +406,7 @@ Last updated: Dec 07 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708735243578</time>
+        <time>1708744532459</time>
         <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>

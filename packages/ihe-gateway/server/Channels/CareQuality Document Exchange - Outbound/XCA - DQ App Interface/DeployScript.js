@@ -6,7 +6,7 @@ globalMap.put('XCADQAPPINTERFACE', channelId);
 
 const baseAddress = globalMap.get("API_BASE_ADDRESS");
 if (!baseAddress) {
-  logger.error("XCA - DQ App Interface: Failed start, missing API_BASE_ADDRESS");
+  logger.error("XCPD App Interface: Failed start, missing API_BASE_ADDRESS");
   ChannelUtil.stopChannel(channelId);
   return;
 }

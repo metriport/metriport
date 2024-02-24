@@ -1,70 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?><map>
   <entry>
-    <string/>
+    <string>
+      SAML.SubjectRole.Code
+    </string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>
+        224608005
+      </value>
+      <comment>
+        SAML default value
+      </comment>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
+    <string>
+      TEST_MODE
+    </string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>
+        true
+      </value>
+      <comment>
+        In test mode, channels log all exception errors
+      </comment>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
+    <string>
+      SAML.SubjectRole.Display
+    </string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>
+        Administrative healthcare staff
+      </value>
+      <comment>
+        SAML default value
+      </comment>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
+    <string>
+      HL7v3.XMLSchema
+    </string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value>
         /opt/schemas/HL7V3/NE2008/multicacheschemas/PRPA_IN201305UV02.xsd
-</value>
+      </value>
+      <comment>
+        Path to PRPA_IN201305UV02.xsd
+      </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
-    <string>      IHE.XMLSchema</string>
+    <string>
+      INBOUND.QUEUE.SIZE
+    </string>
     <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>Path to IHE XDS.b_DocumentRepository.xsd
-      
-</comment>
+      <value>
+        1000
+      </value>
+      <comment>
+        Inbound XCPD, XCA queue throttle setting
+      </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
-    <string>      SAML.SubjectRole.Display</string>
+    <string>
+      IHE.XMLSchema
+    </string>
     <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>SAML default value
-      
-</comment>
+      <value>
+        /opt/schemas/IHE/XDS.b_DocumentRepository.xsd
+      </value>
+      <comment>
+        Path to IHE XDS.b_DocumentRepository.xsd
+      </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
-    <string>      TEST_MODE</string>
+    <string>
+      SAML.PurposeOfUse
+    </string>
     <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>In test mode, channels log all exception errors
-      
-</comment>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
-    <string>      SAML.SubjectRole.Code</string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>SAML default value
-      
-</comment>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
-    <string>      HL7v3.XMLSchema</string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
-    <string>      SAML.PurposeOfUse</string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>SAML default value
-      
-</comment>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
-    <string>      INBOUND.QUEUE.SIZE</string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value/>
-      <comment>Inbound XCPD, XCA queue throttle setting
-      
-</comment>
+      <value>
+        TREATMENT
+      </value>
+      <comment>
+        SAML default value
+      </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
 </map>

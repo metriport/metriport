@@ -6,7 +6,7 @@
  - forwards a single request back to the calling app or DB
 
 Last updated: Nov 30 2023</description>
-  <revision>6</revision>
+  <revision>11</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -127,7 +127,7 @@ Last updated: Nov 30 2023</description>
         <username/>
         <password/>
         <content>${message.encodedData}</content>
-        <contentType>application/json</contentType>
+        <contentType>text/plain</contentType>
         <dataTypeBinary>false</dataTypeBinary>
         <charset>UTF-8</charset>
         <socketTimeout>30000</socketTimeout>
@@ -227,7 +227,7 @@ Last updated: Nov 30 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708741847829</time>
+        <time>1708744710630</time>
         <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
