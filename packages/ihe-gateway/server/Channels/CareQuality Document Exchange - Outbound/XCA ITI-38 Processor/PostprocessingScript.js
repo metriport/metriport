@@ -18,7 +18,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 	var _response = getXCA38ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
 	
 	// Send the response back to the app
-	var result = router.routeMessageByChannelId(globalMap.get('XCAAPPINTERFACE'), JSON.stringify(_response));
+	var result = router.routeMessageByChannelId(globalMap.get('XCADQAPPINTERFACE'), JSON.stringify(_response));
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Processor: Postprocessor - ' + ex);
