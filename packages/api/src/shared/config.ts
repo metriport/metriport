@@ -264,12 +264,24 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getOutboundDocumentQueryLambdaName(): string {
-    return getEnvVarOrFail("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
+  static getIheGatewayUrl(): string | undefined {
+    return getEnvVar("IHE_GATEWAY_URL");
+  }
+  static getIheGatewayPortPD(): string | undefined {
+    return getEnvVar("IHE_GATEWAY_PORT_PD");
+  }
+  static getIheGatewayPortDQ(): string | undefined {
+    return getEnvVar("IHE_GATEWAY_PORT_DQ");
+  }
+  static getIheGatewayPortDR(): string | undefined {
+    return getEnvVar("IHE_GATEWAY_PORT_DR");
   }
 
-  static getOutboundDocRetrievalLambdaName(): string {
-    return getEnvVarOrFail("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
+  static getOutboundDocumentQueryLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
+  }
+  static getOutboundDocRetrievalLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
