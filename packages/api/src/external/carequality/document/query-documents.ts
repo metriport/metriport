@@ -1,20 +1,23 @@
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { errorToString } from "@metriport/core/util/error/shared";
-import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "@metriport/core/domain/patient";
-import { Config } from "../../../shared/config";
-import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
-import { makeIheGatewayAPI } from "../api";
+import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
-import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { errorToString } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { processAsyncError } from "../../../errors";
+import { Config } from "../../../shared/config";
+import { isCQDirectEnabledForCx } from "../../aws/appConfig";
+import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
+import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
-const iheGateway = makeIheGatewayAPI();
 const lambdaName = Config.getOutboundDocumentQueryLambdaName();
+const iheGateway = makeIheGatewayAPIForDocQuery();
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -23,11 +26,19 @@ export async function getDocumentsFromCQ({
   requestId: string;
   patient: Patient;
 }) {
-  if (!iheGateway) return;
+  const { log } = out(`CQ DQ - requestId ${requestId}, M patient ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+
+  const interrupt = buildInterrupt({ patientId, cxId, log });
+  if (!iheGateway) return interrupt(`IHE GW not available`);
+  if (!lambdaName) return interrupt(`IHE DR lambda not available`);
+  if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const organization = await getOrganizationOrFail({ cxId: patient.cxId });
-    const cqPatientData = await getCQPatientData({ id: patient.id, cxId: patient.cxId });
+    const [organization, cqPatientData] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getCQPatientData({ id: patient.id, cxId }),
+    ]);
 
     const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
@@ -39,11 +50,12 @@ export async function getDocumentsFromCQ({
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
+    log(`Starting document query`);
     await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequests });
 
-    // We invoke the lambda that will start polling for the results
-    // from the IHE Gateway and process them
-    await lambdaClient
+    // This lambda polls for the results from the IHE Gateway and process them.
+    // Intentionally asynchronous.
+    lambdaClient
       .invoke({
         FunctionName: lambdaName,
         InvocationType: "Event",
@@ -59,8 +71,8 @@ export async function getDocumentsFromCQ({
         processAsyncError("Failed to invoke lambda to process outbound document query responses.")
       );
   } catch (error) {
-    const msg = `Failed to query and process documents - Carequality.`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
+    const msg = `Failed to query and process documents - Carequality`;
+    log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
@@ -79,4 +91,22 @@ export async function getDocumentsFromCQ({
     });
     throw error;
   }
+}
+
+function buildInterrupt({
+  patientId,
+  cxId,
+  log,
+}: {
+  patientId: string;
+  cxId: string;
+  log: typeof console.log;
+}) {
+  return async (reason: string): Promise<void> => {
+    log(reason + ", skipping DQ");
+    await resetDocQueryProgress({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.CAREQUALITY,
+    });
+  };
 }
