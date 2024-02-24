@@ -1,4 +1,14 @@
+import { PurposeOfUse } from "@metriport/shared";
 import z from "zod";
+
+// TODO: adjust when we support multiple POUs
+export function createPurposeOfUse() {
+  return PurposeOfUse.TREATMENT;
+}
+
+export function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
+  return !!gateway.homeCommunityId && !!gateway.url;
+}
 
 export const cqOrgUrlsSchema = z.object({
   urlXCPD: z.string().optional(),

@@ -1,5 +1,9 @@
-import { PatientDiscoveryReqToExternalGW } from "@metriport/ihe-gateway-sdk";
-import { sleep } from "@metriport/shared";
+import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import {
+  RaceControl,
+  checkIfRaceIsComplete,
+  controlDuration,
+} from "@metriport/core/util/race-control";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -18,12 +22,12 @@ import {
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import {
-  getPatientDiscoveryResultCount,
-  getPatientDiscoveryResults,
-} from "./command/patient-discovery-result/get-patient-discovery-result";
+  getOutboundPatientDiscoveryRespCount,
+  getOutboundPatientDiscoveryResps,
+} from "./command/outbound-patient-discovery-resp/get-outbound-patient-discovery-resp";
 import { createPatientDiscoveryRequest } from "./create-pd-request";
 import { CQLink } from "./cq-patient-data";
-import { PatientDiscoveryResult } from "./patient-discovery-result";
+import { OutboundPatientDiscoveryResp } from "./patient-discovery-result";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientDataCarequality } from "./patient-shared";
@@ -39,9 +43,9 @@ export function getCQData(
 }
 
 const createContext = "cq.patient.discover";
+
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
-type RaceControl = { isRaceInProgress: boolean };
 
 export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
   const { log } = Util.out(`CQ discover - M patientId ${patient.id}`);
@@ -60,10 +64,18 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const raceControl: RaceControl = { isRaceInProgress: true };
     // Run the patient discovery until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
-      controlDuration(),
-      checkNumberOfResults(raceControl, pdRequest.id, pdRequest.gateways.length), // TODO: #1372 - set up an event listener for XCPD completion instead of polling
+      controlDuration(
+        PATIENT_DISCOVERY_TIMEOUT.asMilliseconds(),
+        `Patient discovery reached timeout after ${PATIENT_DISCOVERY_TIMEOUT.asMilliseconds()} ms`
+      ),
+      checkIfRaceIsComplete(
+        () => isPDComplete(pdRequest.id, numGateways),
+        raceControl,
+        `Patient discovery results came back in full (${pdRequest.gateways.length} gateways). RequestID: ${pdRequest.id}`,
+        CHECK_DB_INTERVAL.asMilliseconds()
+      ),
     ]);
-    const pdResults = await getPatientDiscoveryResults(pdRequest.id);
+    const pdResults = await getOutboundPatientDiscoveryResps(pdRequest.id, "success");
     if (raceResult) {
       log(
         `${raceResult}. Got ${pdResults.length} successes out of ${numGateways} gateways for PD. RequestID: ${pdRequest.id}`
@@ -109,7 +121,7 @@ export async function remove(patient: Patient): Promise<void> {
 export async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
-): Promise<PatientDiscoveryReqToExternalGW> {
+): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
   const [organization, nearbyCQOrgs, cqGateways] = await Promise.all([
@@ -136,14 +148,14 @@ export async function prepareForPatientDiscovery(
 
 export async function handlePatientDiscoveryResults(
   patient: Patient,
-  pdResults: PatientDiscoveryResult[]
+  pdResults: OutboundPatientDiscoveryResp[]
 ): Promise<void> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
   if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 }
 
-export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
+export function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
   return pdResults.flatMap(pd => {
     const id = pd.data.externalGatewayPatient?.id;
     const system = pd.data.externalGatewayPatient?.system;
@@ -159,29 +171,7 @@ export function buildCQLinks(pdResults: PatientDiscoveryResult[]): CQLink[] {
   });
 }
 
-async function controlDuration(): Promise<string> {
-  const timeout = PATIENT_DISCOVERY_TIMEOUT.asMilliseconds();
-  await sleep(timeout);
-  return `Patient discovery reached timeout after ${timeout} ms`;
-}
-
-async function checkNumberOfResults(
-  raceControl: RaceControl,
-  requestId: string,
-  numberOfGateways: number
-): Promise<string | undefined> {
-  while (raceControl.isRaceInProgress) {
-    const isComplete = await isPDComplete(requestId, numberOfGateways);
-    if (isComplete) {
-      const msg = `Patient discovery results came back in full (${numberOfGateways} gateways). RequestID: ${requestId}`;
-      raceControl.isRaceInProgress = false;
-      return msg;
-    }
-    await sleep(CHECK_DB_INTERVAL.asMilliseconds());
-  }
-}
-
 async function isPDComplete(requestId: string, numGatewaysInRequest: number): Promise<boolean> {
-  const pdResultCount = await getPatientDiscoveryResultCount(requestId);
+  const pdResultCount = await getOutboundPatientDiscoveryRespCount(requestId);
   return pdResultCount >= numGatewaysInRequest;
 }

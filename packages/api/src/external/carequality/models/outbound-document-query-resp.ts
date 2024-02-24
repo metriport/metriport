@@ -1,20 +1,18 @@
-import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
-import { PatientDiscoveryRespFromExternalGW } from "@metriport/ihe-gateway-sdk";
-import { PatientDiscoveryResult } from "../patient-discovery-result";
+import { Sequelize, DataTypes } from "sequelize";
+import { OutboundDocumentQueryResp as IHEOutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryResp } from "../outbound-document-query-resp";
 import { ModelSetup } from "../../../models/_default";
+import { BaseOutboundRespModel } from "../../../models/medical/outbound-resp";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export class PatientDiscoveryResultModel extends Model<any, any> implements PatientDiscoveryResult {
-  static NAME = "patient_discovery_result";
-  declare id: string;
-  declare requestId: string;
-  declare patientId: string;
-  declare status: string;
-  declare createdAt: CreationOptional<Date>;
-  declare data: PatientDiscoveryRespFromExternalGW;
+export class OutboundDocumentQueryRespModel
+  extends BaseOutboundRespModel<OutboundDocumentQueryRespModel>
+  implements OutboundDocumentQueryResp
+{
+  static NAME = "document_query_result";
+  declare data: IHEOutboundDocumentQueryResp;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
-    PatientDiscoveryResultModel.init(
+    OutboundDocumentQueryRespModel.init(
       {
         id: {
           type: DataTypes.UUID,
@@ -44,7 +42,7 @@ export class PatientDiscoveryResultModel extends Model<any, any> implements Pati
         underscored: true,
         timestamps: false,
         createdAt: "created_at",
-        tableName: PatientDiscoveryResultModel.NAME,
+        tableName: OutboundDocumentQueryRespModel.NAME,
       }
     );
   };

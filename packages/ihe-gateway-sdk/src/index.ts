@@ -1,47 +1,46 @@
 export { IHEGateway, APIMode } from "./client/ihe-gateway";
 export {
-  patientDiscoveryReqToExternalGWSchema,
-  patientDiscoveryReqFromExternalGatewaySchema,
-  PatientDiscoveryReqFromExternalGW,
-  PatientDiscoveryReqToExternalGW,
+  outboundPatientDiscoveryReqSchema,
+  OutboundPatientDiscoveryReq,
+  inboundPatientDiscoveryReqSchema,
+  InboundPatientDiscoveryReq,
 } from "./models/patient-discovery/patient-discovery-requests";
 export {
-  patientDiscoveryRespToExternalGWSchema,
-  patientDiscoveryRespFromExternalGWSchema,
-  PatientDiscoveryRespFromExternalGW,
-  PatientDiscoveryRespToExternalGW,
+  inboundPatientDiscoveryRespSchema,
+  InboundPatientDiscoveryResp,
+  outboundPatientDiscoveryRespSchema,
+  OutboundPatientDiscoveryResp,
 } from "./models/patient-discovery/patient-discovery-responses";
-
 export {
-  documentQueryReqToExternalGWSchema,
-  documentQueryReqFromExternalGWSchema,
-  DocumentQueryReqFromExternalGW,
-  DocumentQueryReqToExternalGW,
+  outboundDocumentQueryReqSchema,
+  OutboundDocumentQueryReq,
+  inboundDocumentQueryReqSchema,
+  InboundDocumentQueryReq,
 } from "./models/document-query/document-query-requests";
 export {
-  documentQueryRespToExternalGWSchema,
-  documentQueryRespFromExternalGWSchema,
-  DocumentQueryRespFromExternalGW,
-  DocumentQueryRespToExternalGW,
-  isDocumentQueryResponse,
-  DocumentQueryRespToExternalGWSuccessful,
-  DocumentQueryRespToExternalGWFault,
+  outboundDocumentQueryRespSchema,
+  OutboundDocumentQueryResp,
+  isOutboundDocumentQueryResponse,
+  inboundDocumentQueryRespSchema,
+  InboundDocumentQueryResp,
+  InboundDocumentQueryRespSuccessful,
+  InboundDocumentQueryRespFault,
 } from "./models/document-query/document-query-responses";
 
 export {
-  documentRetrievalReqToExternalGWSchema,
-  documentRetrievalReqFromExternalGWSchema,
-  DocumentRetrievalReqFromExternalGW,
-  DocumentRetrievalReqToExternalGW,
+  outboundDocumentRetrievalReqSchema,
+  OutboundDocumentRetrievalReq,
+  inboundDocumentRetrievalReqSchema,
+  InboundDocumentRetrievalReq,
 } from "./models/document-retrieval/document-retrieval-requests";
 export {
-  documentRetrievalRespToExternalGWSchema,
-  documentRetrievalRespFromExternalGWSchema,
-  DocumentRetrievalRespFromExternalGW,
-  DocumentRetrievalRespToExternalGW,
-  isDocumentRetrievalResponse,
-  DocumentRetrievalRespToExternalGWSuccessful,
-  DocumentRetrievalRespToExternalGWFault,
+  outboundDocumentRetrievalRespSchema,
+  OutboundDocumentRetrievalResp,
+  isOutboundDocumentRetrievalResponse,
+  inboundDocumentRetrievalRespSchema,
+  InboundDocumentRetrievalResp,
+  InboundDocumentRetrievalRespSuccessful,
+  InboundDocumentRetrievalRespFault,
 } from "./models/document-retrieval/document-retrieval-responses";
 
 export {

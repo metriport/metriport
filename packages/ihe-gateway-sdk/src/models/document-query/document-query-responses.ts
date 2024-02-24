@@ -9,26 +9,24 @@ import {
 } from "../shared";
 
 // TO EXTERNAL GATEWAY
-const documentQueryRespToExternalGWSuccessfulSchema = baseResponseSchema.extend({
+const inboundDocumentQueryRespSuccessfulSchema = baseResponseSchema.extend({
   extrinsicObjectXmls: z.array(z.string()),
 });
 
-export type DocumentQueryRespToExternalGWSuccessful = z.infer<
-  typeof documentQueryRespToExternalGWSuccessfulSchema
+export type InboundDocumentQueryRespSuccessful = z.infer<
+  typeof inboundDocumentQueryRespSuccessfulSchema
 >;
 
-const documentQueryRespToExternalGWFaultSchema = baseErrorResponseSchema;
+const inboundDocumentQueryRespFaultSchema = baseErrorResponseSchema;
 
-export type DocumentQueryRespToExternalGWFault = z.infer<
-  typeof documentQueryRespToExternalGWFaultSchema
->;
+export type InboundDocumentQueryRespFault = z.infer<typeof inboundDocumentQueryRespFaultSchema>;
 
-export const documentQueryRespToExternalGWSchema = z.union([
-  documentQueryRespToExternalGWSuccessfulSchema,
-  documentQueryRespToExternalGWFaultSchema,
+export const inboundDocumentQueryRespSchema = z.union([
+  inboundDocumentQueryRespSuccessfulSchema,
+  inboundDocumentQueryRespFaultSchema,
 ]);
 
-export type DocumentQueryRespToExternalGW = z.infer<typeof documentQueryRespToExternalGWSchema>;
+export type InboundDocumentQueryResp = z.infer<typeof inboundDocumentQueryRespSchema>;
 
 // FROM EXTERNAL GATEWAY
 const documentQueryRespFromExternalSuccessfulSchema = baseResponseSchema.extend({
@@ -41,15 +39,15 @@ const documentQueryRespFromExternalFaultSchema = baseErrorResponseSchema.extend(
   gateway: xcaGatewaySchema,
 });
 
-export const documentQueryRespFromExternalGWSchema = z.union([
+export const outboundDocumentQueryRespSchema = z.union([
   documentQueryRespFromExternalSuccessfulSchema,
   documentQueryRespFromExternalFaultSchema,
 ]);
 
-export type DocumentQueryRespFromExternalGW = z.infer<typeof documentQueryRespFromExternalGWSchema>;
+export type OutboundDocumentQueryResp = z.infer<typeof outboundDocumentQueryRespSchema>;
 
-export function isDocumentQueryResponse(
+export function isOutboundDocumentQueryResponse(
   obj: BaseResponse
-): obj is DocumentQueryRespFromExternalGW & { documentReference: DocumentReference[] } {
+): obj is OutboundDocumentQueryResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;
 }

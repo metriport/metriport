@@ -76,7 +76,8 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
   return date.toISOString();
 }
 
-export const toFHIR = (
+// TODO: Move to external/commonwell
+export const cwToFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,
   patient: Pick<Patient, "id">
@@ -210,9 +211,9 @@ export function createDocReferenceContent({
 }: {
   contentType?: string;
   size?: number;
-  fileName: string;
+  fileName?: string;
   location: string;
-  creation: string;
+  creation?: string;
   extension: Extension[];
   format?: string | string[];
 }): DocumentReferenceContent {

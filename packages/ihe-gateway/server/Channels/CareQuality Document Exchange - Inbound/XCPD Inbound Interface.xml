@@ -11,7 +11,7 @@ Note:
  - If 'Validate WS-Security' is set to 'Yes,' Mirth Interop rejects failing messages with the SOAP Fault message but does not increase the channel's Received and Sent count.
 
 Last updated: Jan 10 2024</description>
-  <revision>17</revision>
+  <revision>120</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

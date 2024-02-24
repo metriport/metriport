@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>be68f08b-fecf-4c1d-bd75-e7c2ec79cb14</id>
   <name>Read document from AWS S3 bucket</name>
-  <revision>1</revision>
+  <revision>7</revision>
   <lastModified>
-    <time>1708660220167</time>
+    <time>1707781166805</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
     </delegate>

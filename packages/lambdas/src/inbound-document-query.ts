@@ -1,4 +1,4 @@
-import { documentQueryReqFromExternalGWSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { processIncomingRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
 import { APIGatewayProxyEvent } from "aws-lambda";
@@ -8,7 +8,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
     return buildResponse(400, { message: "Request body is missing" });
   }
   const payload = JSON.parse(event.body);
-  const baseRequest = documentQueryReqFromExternalGWSchema.parse({
+  const baseRequest = inboundDocumentQueryReqSchema.parse({
     id: payload.id,
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,

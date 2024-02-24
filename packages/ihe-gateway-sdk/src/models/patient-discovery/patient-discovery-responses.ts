@@ -13,53 +13,46 @@ const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
 });
 
 // TO EXTERNAL GATEWAY
-const patientDiscoveryRespToExternalGWSuccessfulSchema =
+const inboundPatientDiscoveryRespSuccessfulSchema =
   patientDiscoveryRespSuccessfulDefaultSchema.extend({
     patientMatchDegree: z.number().optional(),
     externalGatewayPatient: externalGatewayPatientSchema,
   });
 
-const patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema = baseResponseSchema.extend({
+const inboundPatientDiscoveryRespSuccessfulNoMatchSchema = baseResponseSchema.extend({
   patientMatch: z.literal(false),
   xcpdHomeCommunityId: z.string(),
 });
 
-const patientDiscoveryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
+const inboundPatientDiscoveryRespFaultSchema = baseErrorResponseSchema.extend({
   patientMatch: z.literal(null),
   xcpdHomeCommunityId: z.string(),
 });
 
-export const patientDiscoveryRespToExternalGWSchema = z.union([
-  patientDiscoveryRespToExternalGWSuccessfulSchema,
-  patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema,
-  patientDiscoveryRespToExternalGWFaultSchema,
+export const inboundPatientDiscoveryRespSchema = z.union([
+  inboundPatientDiscoveryRespSuccessfulSchema,
+  inboundPatientDiscoveryRespSuccessfulNoMatchSchema,
+  inboundPatientDiscoveryRespFaultSchema,
 ]);
 
-export type PatientDiscoveryRespToExternalGW = z.infer<
-  typeof patientDiscoveryRespToExternalGWSchema
->;
+export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscoveryRespSchema>;
 
 // FROM EXTERNAL GATEWAY
-const patientDiscoveryRespFromExternalGWDefaultSchema = baseResponseSchema.extend({
+const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   gateway: XCPDGatewaySchema,
   patientResourceId: z.string(),
 });
 
-const patientDiscoveryRespFromExternalGWSuccessfulSchema =
-  patientDiscoveryRespFromExternalGWDefaultSchema.merge(
-    patientDiscoveryRespSuccessfulDefaultSchema
-  );
+const outboundPatientDiscoveryRespSuccessfulSchema =
+  outboundPatientDiscoveryRespDefaultSchema.merge(patientDiscoveryRespSuccessfulDefaultSchema);
 
-const patientDiscoveryRespFromExternalGWFaultSchema =
-  patientDiscoveryRespFromExternalGWDefaultSchema.extend({
-    patientMatch: z.literal(false).or(z.literal(null)),
-  });
+const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
+  patientMatch: z.literal(false).or(z.literal(null)),
+});
 
-export const patientDiscoveryRespFromExternalGWSchema = z.union([
-  patientDiscoveryRespFromExternalGWSuccessfulSchema,
-  patientDiscoveryRespFromExternalGWFaultSchema,
+export const outboundPatientDiscoveryRespSchema = z.union([
+  outboundPatientDiscoveryRespSuccessfulSchema,
+  outboundPatientDiscoveryRespFaultSchema,
 ]);
 
-export type PatientDiscoveryRespFromExternalGW = z.infer<
-  typeof patientDiscoveryRespFromExternalGWSchema
->;
+export type OutboundPatientDiscoveryResp = z.infer<typeof outboundPatientDiscoveryRespSchema>;

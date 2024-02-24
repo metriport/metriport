@@ -56,6 +56,7 @@ export class IHEStack extends Stack {
         allowHeaders: ["*"],
       },
     });
+    const apiRootV1 = api.root.addResource("v1");
 
     // TODO 1377 Setup WAF
 
@@ -108,7 +109,7 @@ export class IHEStack extends Stack {
       config: props.config,
       vpc,
       zoneName: props.config.host,
-      apiResource: api.root,
+      apiResource: apiRootV1,
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
