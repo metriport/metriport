@@ -7,7 +7,7 @@
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules",
     "dev": "NODE_EXTRA_CA_CERTS=opensearch-root-ca.pem ts-node-dev --transpile-only --respawn --inspect=0.0.0.0:9229 --project tsconfig.dev.json --files src/app.ts",
-    "start": "ts-node dist/app.js",
+    "start": "node dist/app.js",
     "start-opensearch": "docker compose -f docker-compose-opensearch.yml -p opensearch up -d && docker cp opensearch-node1:/usr/share/opensearch/config/root-ca.pem ./opensearch-root-ca.pem",
     "start-docker-compose": "docker compose -f docker-compose.dev.yml up --build -d && npm run start-opensearch",
     "start-dependencies": "docker compose -f docker-compose.dev.yml up postgres dynamodb -d && npm run start-opensearch",
