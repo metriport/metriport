@@ -10,7 +10,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		var contentList = [];
 		var operationOutcome = null;
 		channelMap.put('RESULT', '0 doc');
-
+logger.info("1")
 		// Process possible errors
 		if (xml.*::RegistryResponse.*::RegistryErrorList.length() > 0) try {
 			operationOutcome = processRegistryErrorList(xml.*::RegistryResponse.*::RegistryErrorList);
@@ -72,6 +72,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			contentList.push(attachment);
 		}
 
+		logger.info("1")
 		// TODO: Process and generate OperationOutcome
 
 		if (contentList.length > 0) {
@@ -82,6 +83,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 	} catch(ex) {
+logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 	}
 

@@ -8,11 +8,11 @@
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

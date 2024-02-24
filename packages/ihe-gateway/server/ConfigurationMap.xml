@@ -78,6 +78,12 @@
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>
   <entry>
+    <string>S3.BucketName</string>
+    <com.mirth.connect.util.ConfigurationProperty>
+      <value>mirth.test</value>
+    </com.mirth.connect.util.ConfigurationProperty>
+  </entry>
+  <entry>
     <string>
       SAML.PurposeOfUse
     </string>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
   <id>e02bebab-c1b0-4960-be7f-4dd5d063f749</id>
   <name>XCA Library - Inbound</name>
-  <revision>1</revision>
+  <revision>6</revision>
   <lastModified>
-    <time>1706741135643</time>
+    <time>1708811158592</time>
     <timezone>GMT</timezone>
   </lastModified>
   <description>Cross-Community Access (XCA) library
@@ -47,9 +47,6 @@ Last updated: Jan 02 2024</description>
     </codeTemplate>
     <codeTemplate version="4.4.2">
       <id>e8649d95-f5fd-4b03-9b26-68ddf23b4ab2</id>
-    </codeTemplate>
-    <codeTemplate version="4.4.2">
-      <id>be68f08b-fecf-4c1d-bd75-e7c2ec79cb14</id>
     </codeTemplate>
   </codeTemplates>
 </codeTemplateLibrary>
