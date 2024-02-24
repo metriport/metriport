@@ -1,11 +1,11 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  outboundPatientDiscoveryRespSchema,
-  outboundDocumentQueryRespSchema,
-  outboundDocumentRetrievalRespSchema,
   isOutboundDocumentQueryResponse,
   isOutboundDocumentRetrievalResponse,
+  outboundDocumentQueryRespSchema,
+  outboundDocumentRetrievalRespSchema,
+  outboundPatientDiscoveryRespSchema,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -14,22 +14,23 @@ import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
+import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
-import { getIheResultStatus } from "../../external/carequality/ihe-result";
-import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
-import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
-import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
-import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
+import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
+import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
+import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
+import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
+import { getIheResultStatus } from "../../external/carequality/ihe-result";
+import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
-import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 
 dayjs.extend(duration);
 const router = Router();
@@ -88,7 +89,10 @@ router.get(
 router.post(
   "/directory/organization",
   asyncHandler(async (req: Request, res: Response) => {
-    await createOrUpdateCQOrganization();
+    const body = req.body;
+    const orgDetails = cqOrgDetailsSchema.parse(body);
+    await createOrUpdateCQOrganization(orgDetails);
+
     return res.sendStatus(httpStatus.OK);
   })
 );
