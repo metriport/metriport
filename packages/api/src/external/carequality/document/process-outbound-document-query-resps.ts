@@ -36,7 +36,7 @@ export async function processOutboundDocumentQueryResps({
   cxId: string;
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): Promise<void> {
-  const { log } = out(`CQ DR - requestId ${requestId}, M patient ${patientId}`);
+  const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!iheGateway) return interrupt(`IHE GW not available`);

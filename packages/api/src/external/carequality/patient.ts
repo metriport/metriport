@@ -44,7 +44,7 @@ export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ seconds: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
 
 export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
-  const baseLogMessage = `CQ PD - M patientId ${patient.id}`;
+  const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
   const { cxId } = patient;
 
@@ -100,7 +100,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
 
     log(`Completed.`);
   } catch (error) {
-    const msg = `Failed to carry out patient discovery`;
+    const msg = `Error on Patient Discovery`;
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {

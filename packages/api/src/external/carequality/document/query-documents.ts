@@ -26,7 +26,7 @@ export async function getDocumentsFromCQ({
   requestId: string;
   patient: Patient;
 }) {
-  const { log } = out(`CQ DQ - requestId ${requestId}, M patient ${patient.id}`);
+  const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
 
   const interrupt = buildInterrupt({ patientId, cxId, log });
