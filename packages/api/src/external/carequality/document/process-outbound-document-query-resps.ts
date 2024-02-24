@@ -146,8 +146,10 @@ function buildInterrupt({
   log: typeof console.log;
 }) {
   return async (reason: string): Promise<void> => {
-    log("[Programming error] " + reason + ", skipping DR");
-    capture.error("Programming error processing CQ Doc Retrieval", {
+    // Error because it shouldn't try to DR if it can't execute, it should be interrupted at DQ
+    const msg = "Programming error processing CQ Doc Retrieval";
+    log(`${msg}: ${reason}; skipping DR`);
+    capture.error(msg, {
       extra: { requestId, patientId, cxId, reason },
     });
     await setDocQueryProgress({

@@ -40,15 +40,8 @@ dayjs.extend(duration);
 const context = "cq.patient.discover";
 const iheGateway = makeIheGatewayAPIForPatientDiscovery();
 
-export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
+export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ seconds: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 5 });
-
-export function getCQData(
-  data: PatientExternalData | undefined
-): PatientDataCarequality | undefined {
-  if (!data) return undefined;
-  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
-}
 
 export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
   const baseLogMessage = `CQ PD - M patientId ${patient.id}`;
@@ -120,12 +113,19 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
   }
 }
 
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
+}
+
 export async function remove(patient: Patient): Promise<void> {
   console.log(`Deleting CQ data - M patientId ${patient.id}`);
   await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
 
-export async function prepareForPatientDiscovery(
+async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
 ): Promise<OutboundPatientDiscoveryReq> {
@@ -153,7 +153,7 @@ export async function prepareForPatientDiscovery(
   return pdRequest;
 }
 
-export async function handlePatientDiscoveryResults(
+async function handlePatientDiscoveryResults(
   patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
 ): Promise<void> {
@@ -162,7 +162,7 @@ export async function handlePatientDiscoveryResults(
   if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 }
 
-export function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
+function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
   return pdResults.flatMap(pd => {
     const id = pd.data.externalGatewayPatient?.id;
     const system = pd.data.externalGatewayPatient?.system;

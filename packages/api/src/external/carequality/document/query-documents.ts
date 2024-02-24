@@ -40,6 +40,10 @@ export async function getDocumentsFromCQ({
       getCQPatientData({ id: patient.id, cxId }),
     ]);
 
+    if (!cqPatientData || cqPatientData.data.links.length <= 0) {
+      return interrupt(`Patient has no CQ links, skipping DQ`);
+    }
+
     const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
       cxId: patient.cxId,
