@@ -2,11 +2,11 @@
 // You only have access to the globalMap and globalChannelMap here to persist data
 
 // Store for the XCA ITI-39 Processors
-globalMap.put('XCADRAPPINTERFACE', channelId);
+globalMap.put("XCADRAPPINTERFACE", channelId);
 
 const baseAddress = globalMap.get("API_BASE_ADDRESS");
 if (!baseAddress) {
-  logger.error("XCPD App Interface: Failed start, missing API_BASE_ADDRESS");
+  logger.error("XCA - DR App Interface: Failed start, missing API_BASE_ADDRESS");
   ChannelUtil.stopChannel(channelId);
   return;
 }
