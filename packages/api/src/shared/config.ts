@@ -265,16 +265,16 @@ export class Config {
   }
 
   static getIheGatewayUrl(): string | undefined {
-    return getEnvVar("IHE_GATEWAY_URL");
+    return getEnvVar("IHE_GW_URL");
   }
   static getIheGatewayPortPD(): string | undefined {
-    return getEnvVar("IHE_GATEWAY_PORT_PD");
+    return getEnvVar("IHE_GW_PORT_PD");
   }
   static getIheGatewayPortDQ(): string | undefined {
-    return getEnvVar("IHE_GATEWAY_PORT_DQ");
+    return getEnvVar("IHE_GW_PORT_DQ");
   }
   static getIheGatewayPortDR(): string | undefined {
-    return getEnvVar("IHE_GATEWAY_PORT_DR");
+    return getEnvVar("IHE_GW_PORT_DR");
   }
 
   static getOutboundDocumentQueryLambdaName(): string | undefined {
