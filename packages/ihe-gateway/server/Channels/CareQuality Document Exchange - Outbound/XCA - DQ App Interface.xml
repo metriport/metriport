@@ -6,7 +6,7 @@
  - forwards a single request back to the calling app or DB
 
 Last updated: Nov 30 2023</description>
-  <revision>4</revision>
+  <revision>6</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -104,7 +104,7 @@ Last updated: Nov 30 2023</description>
           <queueBufferSize>1000</queueBufferSize>
           <reattachAttachments>true</reattachAttachments>
         </destinationConnectorProperties>
-        <host>http://host.docker.internal:8080/internal/carequality/document-query/response</host>
+        <host>${URL}</host>
         <useProxyServer>false</useProxyServer>
         <proxyAddress/>
         <proxyPort/>
@@ -227,7 +227,7 @@ Last updated: Nov 30 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708735206041</time>
+        <time>1708741847829</time>
         <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
