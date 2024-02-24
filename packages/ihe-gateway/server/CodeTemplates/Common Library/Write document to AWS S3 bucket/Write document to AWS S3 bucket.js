@@ -12,6 +12,10 @@ function xcaWriteToFile(path, document, metadata) {
   try {
     var bucketName = Config.getS3BucketName();
     var client = getAWSS3Client();
+logger.info("really irst")
+var decoded = FileUtil.decode(document);
+var decodedAsString = Packages.java.lang.String(decoded);
+logger.info(decodedAsString)
 
     // Specify file's metadata
     var meta = java.util.HashMap();
