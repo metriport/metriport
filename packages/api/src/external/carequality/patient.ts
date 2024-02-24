@@ -2,18 +2,19 @@ import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import {
   checkIfRaceIsComplete,
   controlDuration,
   RaceControl,
 } from "@metriport/core/util/race-control";
 import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { Product } from "../../domain/product";
 import { analytics, EventTypes } from "../../shared/analytics";
-import { capture } from "../../shared/notifications";
 import { isCQDirectEnabledForCx } from "../aws/appConfig";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 import { getCQGateways } from "./command/cq-directory/cq-gateways";
@@ -36,7 +37,7 @@ import { PatientDataCarequality } from "./patient-shared";
 
 dayjs.extend(duration);
 
-const createContext = "cq.patient.discover";
+const context = "cq.patient.discover";
 const iheGateway = makeIheGatewayAPIForPatientDiscovery();
 
 export const PATIENT_DISCOVERY_TIMEOUT = dayjs.duration({ minutes: 0.25 });
@@ -50,19 +51,23 @@ export function getCQData(
 }
 
 export async function discover(patient: Patient, facilityNPI: string): Promise<void> {
-  const { log } = out(`CQ PD - M patientId ${patient.id}`);
+  const baseLogMessage = `CQ PD - M patientId ${patient.id}`;
+  const { log: outerLog } = out(baseLogMessage);
   const { cxId } = patient;
 
-  if (!iheGateway) return log(`IHE GW not available, skipping PD`);
-  if (!(await isCQDirectEnabledForCx(cxId))) return log(`CQ disabled for cx ${cxId}, skipping PD`);
+  if (!iheGateway) return outerLog(`IHE GW not available, skipping PD`);
+  if (!(await isCQDirectEnabledForCx(cxId))) {
+    return outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+  }
 
   try {
     const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI);
     const numGateways = pdRequest.gateways.length;
 
-    log(`Kicking off patient discovery. RequestID: ${pdRequest.id}`);
-    // Intentionally asynchronous - we will be checking for the results in the database
-    iheGateway.startPatientDiscovery(pdRequest);
+    const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
+
+    log(`Kicking off patient discovery`);
+    await iheGateway.startPatientDiscovery(pdRequest);
 
     const raceControl: RaceControl = { isRaceInProgress: true };
     // Run the patient discovery until it either times out, or all the results are in the database
@@ -74,15 +79,13 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
       checkIfRaceIsComplete(
         () => isPDComplete(pdRequest.id, numGateways),
         raceControl,
-        `Patient discovery results came back in full (${pdRequest.gateways.length} gateways). RequestID: ${pdRequest.id}`,
+        `Patient discovery results came back in full (${pdRequest.gateways.length} gateways)`,
         CHECK_DB_INTERVAL.asMilliseconds()
       ),
     ]);
     const pdResults = await getOutboundPatientDiscoveryResps(pdRequest.id, "success");
     if (raceResult) {
-      log(
-        `${raceResult}. Got ${pdResults.length} successes out of ${numGateways} gateways for PD. RequestID: ${pdRequest.id}`
-      );
+      log(`${raceResult}. Got ${pdResults.length} successes out of ${numGateways} gateways for PD`);
       raceControl.isRaceInProgress = false;
     }
     analytics({
@@ -96,22 +99,23 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     });
 
     if (pdResults.length === 0) {
-      log(`No patient discovery results found. RequestID: ${pdRequest.id}`);
+      log(`No patient discovery results found.`);
       return;
     }
-    log(`Starting to handle patient discovery results. RequestID: ${pdRequest.id}`);
+    log(`Starting to handle patient discovery results`);
     await handlePatientDiscoveryResults(patient, pdResults);
-  } catch (err) {
+
+    log(`Completed.`);
+  } catch (error) {
     const msg = `Failed to carry out patient discovery`;
-    log(msg, err);
-    capture.message(msg, {
+    outerLog(`${msg} - ${errorToString(error)}`);
+    capture.error(msg, {
       extra: {
         facilityNPI,
         patientId: patient.id,
-        context: createContext,
-        error: err,
+        context,
+        error,
       },
-      level: "error",
     });
   }
 }
