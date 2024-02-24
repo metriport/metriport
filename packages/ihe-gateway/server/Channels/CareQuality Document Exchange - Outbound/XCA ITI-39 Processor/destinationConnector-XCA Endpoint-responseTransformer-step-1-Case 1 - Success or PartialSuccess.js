@@ -78,7 +78,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			channelMap.put('RESULT', contentList.length + ' doc(s)');
 			var _response = getXCA39ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
 			_response.documentReference = contentList;
-			var result = router.routeMessageByChannelId(globalMap.get('XCAAPPINTERFACE'), JSON.stringify(_response));
+			var result = router.routeMessageByChannelId(globalMap.get('XCADRAPPINTERFACE'), JSON.stringify(_response));
 		}
 
 	} catch(ex) {

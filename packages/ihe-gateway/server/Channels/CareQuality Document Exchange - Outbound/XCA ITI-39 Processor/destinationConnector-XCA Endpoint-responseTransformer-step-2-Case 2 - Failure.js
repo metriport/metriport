@@ -10,7 +10,7 @@ if ('Failure' == queryResponseCode.toString()) {
 		if (operationOutcome) {
 			channelMap.put('RESULT', operationOutcome.issue.length + ' issue(s)');
 			var _response = getXCA39ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
-			var result = router.routeMessageByChannelId(globalMap.get('XCAAPPINTERFACE'), JSON.stringify(_response));
+			var result = router.routeMessageByChannelId(globalMap.get('XCADRAPPINTERFACE'), JSON.stringify(_response));
 		}
 		
 	} catch(ex) {
