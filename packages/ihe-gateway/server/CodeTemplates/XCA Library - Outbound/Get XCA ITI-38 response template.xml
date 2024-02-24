@@ -9,15 +9,15 @@
   <contextSet>
     <delegate>
       <contextType>CHANNEL_BATCH</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
       <contextType>CHANNEL_DEPLOY</contextType>
-      <contextType>CHANNEL_UNDEPLOY</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>CHANNEL_UNDEPLOY</contextType>
       <contextType>CHANNEL_ATTACHMENT</contextType>
     </delegate>
   </contextSet>

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
   <id>c209459e-8282-4ac7-88cb-42cdeec33805</id>
   <name>Common Library</name>
-  <revision>23</revision>
+  <revision>24</revision>
   <lastModified>
-    <time>1708811158589</time>
+    <time>1708812101217</time>
     <timezone>GMT</timezone>
   </lastModified>
   <description>Common library for all channels
@@ -29,9 +29,7 @@ Last updated: Dec 27 2023</description>
     <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
   </enabledChannelIds>
   <disabledChannelIds>
-    <string>2c8dca0f-5798-481b-8598-4547e319e031</string>
-    <string>bd17ccd3-bad0-4214-a034-6cda769113f6</string>
-    <string>10379c95-0f8f-4c0e-8e63-de0f307f7ccc</string>
+    <string>8240f77a-19d4-4225-90fc-ed1c232286c3</string>
   </disabledChannelIds>
   <codeTemplates>
     <codeTemplate version="4.4.2">
@@ -84,6 +82,9 @@ Last updated: Dec 27 2023</description>
     </codeTemplate>
     <codeTemplate version="4.4.2">
       <id>b9697713-d517-4288-a2a8-bd6923b0bf6d</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>00903944-3070-4bc2-8324-a13c4124295d</id>
     </codeTemplate>
   </codeTemplates>
 </codeTemplateLibrary>
