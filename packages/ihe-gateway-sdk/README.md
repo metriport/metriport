@@ -1,6 +1,6 @@
 # `ihe-gateway-sdk`
 
-SDK for use to connect to the Metriport IHE Gateway - by Metriport Inc.
+SDK to connect to the Metriport IHE Gateway - by Metriport Inc.
 
 ## Usage
 
@@ -9,7 +9,7 @@ import {
   IHEGateway
 } from "@metriport/ihe-gateway-sdk";
 
-const iheGateway = new IHEGateway();
+const iheGateway = new IHEGateway({ url });
 ```
 
 ```

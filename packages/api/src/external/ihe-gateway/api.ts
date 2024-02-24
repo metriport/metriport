@@ -1,16 +1,10 @@
-import { APIMode as IHEGatewayAPIMode, IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { Config } from "../../shared/config";
 
 /**
  * Creates a new instance of the IHE Gateway client.
  */
 
-const envMap: Record<string, IHEGatewayAPIMode> = {
-  dev: IHEGatewayAPIMode.dev,
-  staging: IHEGatewayAPIMode.integration,
-  prod: IHEGatewayAPIMode.production,
-};
-const env = envMap[Config.getEnvType()];
 const url = Config.getIheGatewayUrl();
 
 export function makeIheGatewayAPIForPatientDiscovery(): IHEGateway | undefined {
@@ -27,9 +21,10 @@ export function makeIheGatewayAPIForDocRetrieval(): IHEGateway | undefined {
 }
 
 function makeIheGatewayAPI(port?: string): IHEGateway | undefined {
-  if (env && url && port) {
-    const specificUrl = `${url}:${port}`;
-    return new IHEGateway(env, { url: specificUrl });
+  if (url && port) {
+    const specificUrl = new URL(url);
+    specificUrl.port = port;
+    return new IHEGateway({ url: specificUrl.toString() });
   }
   return undefined;
 }

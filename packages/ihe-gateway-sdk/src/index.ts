@@ -1,4 +1,4 @@
-export { IHEGateway, APIMode } from "./client/ihe-gateway";
+export { IHEGateway } from "./client/ihe-gateway";
 export {
   outboundPatientDiscoveryReqSchema,
   OutboundPatientDiscoveryReq,
