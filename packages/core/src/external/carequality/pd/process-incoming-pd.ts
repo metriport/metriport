@@ -29,7 +29,7 @@ function constructMatchResponse(
       system: "000", // TBD	- what is this
     },
     patientResource: convertPatientToFHIR(patient),
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
 

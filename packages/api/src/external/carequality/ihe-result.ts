@@ -8,14 +8,26 @@ export interface BaseResultDomain extends BaseDomainCreate {
 
 export type IHEResultStatus = "success" | "failure";
 
-export function getIheResultStatus({
+export function getPDResultStatus({
   patientMatch,
-  docRefLength,
 }: {
   patientMatch?: boolean | null;
-  docRefLength?: number;
 }): IHEResultStatus {
-  // explicitly checking for a boolean value for patientMatch because it can be undefined
-  if (patientMatch === true && docRefLength !== undefined && docRefLength >= 1) return "success";
+  if (patientMatch === true) return "success";
+  return "failure";
+}
+
+export function getDQResultStatus(
+  params: Parameters<typeof getDocumentResultStatus>[0]
+): IHEResultStatus {
+  return getDocumentResultStatus(params);
+}
+export function getDRResultStatus(
+  params: Parameters<typeof getDocumentResultStatus>[0]
+): IHEResultStatus {
+  return getDocumentResultStatus(params);
+}
+function getDocumentResultStatus({ docRefLength }: { docRefLength?: number }): IHEResultStatus {
+  if (docRefLength !== undefined && docRefLength >= 1) return "success";
   return "failure";
 }
