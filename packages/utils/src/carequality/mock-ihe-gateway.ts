@@ -1,9 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-incoming-dq";
-import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-incoming-dr";
-import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-incoming-pd";
+import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
+import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
+import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 

@@ -1,6 +1,6 @@
 import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
-import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-incoming-dr";
+import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
 import { APIGatewayProxyEvent } from "aws-lambda";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
