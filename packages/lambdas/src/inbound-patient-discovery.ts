@@ -1,4 +1,4 @@
-import { processIncomingRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
+import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
@@ -18,7 +18,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,
   });
-  const result = await processIncomingRequest(baseRequest, mpi);
+  const result = await processInboundPatientDiscovery(baseRequest, mpi);
   return buildResponse(200, result);
 });
 

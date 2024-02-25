@@ -1,12 +1,12 @@
 import { InboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
-import { S3Utils } from "../../aws/s3";
 import { Config } from "../../../util/config";
+import { S3Utils } from "../../aws/s3";
 import { XDSUnknownPatientId } from "../error";
-import { validateBasePayload, extractPatientUniqueId } from "../shared";
+import { extractPatientUniqueId, validateBasePayload } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
-export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
+function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
   try {
     const decodedString = extractPatientUniqueId(patientIdB64);
     const [cxId, id] = decodedString.split("/");
@@ -20,7 +20,7 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
   }
 }
 
-export async function validateDQ(payload: InboundDocumentQueryReq): Promise<string[]> {
+export async function findDocumentReferences(payload: InboundDocumentQueryReq): Promise<string[]> {
   validateBasePayload(payload);
   const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 

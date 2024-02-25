@@ -48,7 +48,7 @@ export const outboundDocumentRetrievalRespSchema = z.union([
 
 export type OutboundDocumentRetrievalResp = z.infer<typeof outboundDocumentRetrievalRespSchema>;
 
-export function isOutboundDocumentRetrievalResponse(
+export function isSuccessfulOutboundDocRetrievalResponse(
   obj: BaseResponse
 ): obj is OutboundDocumentRetrievalResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;

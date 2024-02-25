@@ -1,8 +1,8 @@
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  isOutboundDocumentQueryResponse,
-  isOutboundDocumentRetrievalResponse,
+  isSuccessfulOutboundDocQueryResponse,
+  isSuccessfulOutboundDocRetrievalResponse,
   outboundDocumentQueryRespSchema,
   outboundDocumentRetrievalRespSchema,
   outboundPatientDiscoveryRespSchema,
@@ -26,7 +26,11 @@ import { createOutboundDocumentRetrievalResp } from "../../external/carequality/
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
-import { getIheResultStatus } from "../../external/carequality/ihe-result";
+import {
+  getDQResultStatus,
+  getDRResultStatus,
+  getPDResultStatus,
+} from "../../external/carequality/ihe-result";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
@@ -143,7 +147,7 @@ router.post(
       });
     }
 
-    const status = getIheResultStatus({ patientMatch: response.patientMatch });
+    const status = getPDResultStatus({ patientMatch: response.patientMatch });
 
     await createOutboundPatientDiscoveryResp({
       id: uuidv7(),
@@ -174,9 +178,8 @@ router.post(
     }
 
     let status = "failure";
-
-    if (isOutboundDocumentQueryResponse(response)) {
-      status = getIheResultStatus({
+    if (isSuccessfulOutboundDocQueryResponse(response)) {
+      status = getDQResultStatus({
         docRefLength: response.documentReference?.length,
       });
     }
@@ -224,9 +227,8 @@ router.post(
     }
 
     let status = "failure";
-
-    if (isOutboundDocumentRetrievalResponse(response)) {
-      status = getIheResultStatus({
+    if (isSuccessfulOutboundDocRetrievalResponse(response)) {
+      status = getDRResultStatus({
         docRefLength: response.documentReference?.length,
       });
     }

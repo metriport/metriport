@@ -20,7 +20,7 @@ export {
 export {
   outboundDocumentQueryRespSchema,
   OutboundDocumentQueryResp,
-  isOutboundDocumentQueryResponse,
+  isSuccessfulOutboundDocQueryResponse,
   inboundDocumentQueryRespSchema,
   InboundDocumentQueryResp,
   InboundDocumentQueryRespSuccessful,
@@ -36,7 +36,7 @@ export {
 export {
   outboundDocumentRetrievalRespSchema,
   OutboundDocumentRetrievalResp,
-  isOutboundDocumentRetrievalResponse,
+  isSuccessfulOutboundDocRetrievalResponse,
   inboundDocumentRetrievalRespSchema,
   InboundDocumentRetrievalResp,
   InboundDocumentRetrievalRespSuccessful,
