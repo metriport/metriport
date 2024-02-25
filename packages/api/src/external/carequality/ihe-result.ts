@@ -13,8 +13,7 @@ export function getPDResultStatus({
 }: {
   patientMatch?: boolean | null;
 }): IHEResultStatus {
-  if (patientMatch === true) return "success";
-  return "failure";
+  return patientMatch ? "success" : "failure";
 }
 
 export function getDQResultStatus(
