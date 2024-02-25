@@ -20,9 +20,6 @@ try {
 
 	xml = new XML(soap.toString());
 
-	logger.info("below")
-	logger.info(xml)
-
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
 		

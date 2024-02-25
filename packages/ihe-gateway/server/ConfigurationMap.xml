@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?><map>
   <entry>
-    <string/>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value>
-        /opt/schemas/HL7V3/NE2008/multicacheschemas/PRPA_IN201305UV02.xsd
-</value>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
     <string>      IHE.XMLSchema</string>
     <com.mirth.connect.util.ConfigurationProperty>
       <value/>
