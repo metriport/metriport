@@ -156,7 +156,7 @@ export function createAPIService({
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
           ...(iheGateway
             ? {
-                IHE_GW_URL: `${iheGateway.outboundSubdomain}.${props.config.domain}`,
+                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
                 IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
                 IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
                 IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
