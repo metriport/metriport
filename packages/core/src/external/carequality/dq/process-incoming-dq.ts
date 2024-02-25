@@ -1,39 +1,28 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { validateDQ } from "./validating-dq";
-import {
-  XDSUnknownPatientId,
-  XDSUnknownCommunity,
-  XDSMissingHomeCommunityId,
-  XDSRegistryError,
-  constructDQErrorResponse,
-} from "../error";
+import { constructDQErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
+import { findDocumentReferences } from "./find-document-reference";
 
-export async function processIncomingRequest(
+export async function processInboundDocumentQuery(
   payload: InboundDocumentQueryReq
 ): Promise<InboundDocumentQueryResp> {
   try {
-    // validate incoming request + look for patient and get all their documents from s3
-    const documentContents = await validateDQ(payload);
+    const documentContents = await findDocumentReferences(payload);
 
-    // construct response
     const response: InboundDocumentQueryResp = {
       id: payload.id,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       extrinsicObjectXmls: documentContents,
     };
-
     return response;
   } catch (error) {
-    if (
-      error instanceof XDSUnknownPatientId ||
-      error instanceof XDSUnknownCommunity ||
-      error instanceof XDSMissingHomeCommunityId ||
-      error instanceof XDSRegistryError
-    ) {
+    if (error instanceof IHEGatewayError) {
       return constructDQErrorResponse(payload, error);
     } else {
-      return constructDQErrorResponse(payload, new XDSRegistryError());
+      return constructDQErrorResponse(
+        payload,
+        new XDSRegistryError("Internal Server Error", error)
+      );
     }
   }
 }

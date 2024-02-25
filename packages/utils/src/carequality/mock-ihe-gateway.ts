@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
-import { processIncomingRequest as processIncomingDrRequest } from "@metriport/core/external/carequality/dr/process-incoming-dr";
-import { processIncomingRequest as processIncomingDqRequest } from "@metriport/core/external/carequality/dq/process-incoming-dq";
-import { processIncomingRequest as processIncomingPdRequest } from "@metriport/core/external/carequality/pd/process-incoming-pd";
+// Keep dotenv import and config before everything else
+import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-incoming-dq";
+import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-incoming-dr";
+import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-incoming-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
@@ -18,7 +19,7 @@ app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 app.post("/pd/v1", async (req: Request, res: Response) => {
   try {
-    const response = await processIncomingPdRequest(req.body, mpi);
+    const response = await processInboundPatientDiscovery(req.body, mpi);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,7 +30,7 @@ app.post("/pd/v1", async (req: Request, res: Response) => {
 
 app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
-    const response = await processIncomingDqRequest(req.body);
+    const response = await processInboundDocumentQuery(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,7 +41,7 @@ app.post("/dq/v1", async (req: Request, res: Response) => {
 
 app.post("/dr/v1", async (req: Request, res: Response) => {
   try {
-    const response = await processIncomingDrRequest(req.body);
+    const response = await processInboundDocumentRetrieval(req.body);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

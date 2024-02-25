@@ -33,7 +33,7 @@ function constructMatchResponse(
   };
 }
 
-export async function processIncomingRequest(
+export async function processInboundPatientDiscovery(
   payload: InboundPatientDiscoveryReq,
   mpi: MPI
 ): Promise<InboundPatientDiscoveryResp> {
