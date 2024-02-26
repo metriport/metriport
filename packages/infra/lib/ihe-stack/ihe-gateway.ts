@@ -1,11 +1,12 @@
 import { StackProps } from "aws-cdk-lib";
-import * as apig from "aws-cdk-lib/aws-apigateway";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import { IBucket } from "aws-cdk-lib/aws-s3";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpUrlIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { isProd } from "../shared/util";
@@ -16,7 +17,7 @@ interface IHEGatewayProps extends StackProps {
   config: EnvConfig;
   vpc: ec2.IVpc;
   zoneName: string;
-  apiResource: apig.IResource;
+  apiGateway: apigwv2.HttpApi;
   documentQueryLambda: Lambda;
   documentRetrievalLambda: Lambda;
   patientDiscoveryLambda: Lambda;
@@ -32,7 +33,7 @@ const portInboundPD = 9091;
 const portInboundDQ = 9092;
 
 export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void {
-  const { config: mainConfig, apiResource } = props;
+  const { config: mainConfig, apiGateway } = props;
 
   const config = mainConfig.iheGateway;
   if (!config) throw new Error("Missing IHE Gateway config");
@@ -84,20 +85,18 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
   const documentRetrievalPort = config.inboundPorts.documentRetrieval ?? documentQueryPort;
   const buildInboundAddress = (port: number) => `http://${iheGWAddressInbound}:${port}`;
 
-  const patientDiscoveryResource = apiResource.addResource("patient-discovery");
-  proxyToServer(patientDiscoveryResource, buildInboundAddress(patientDiscoveryPort));
-
-  const documentQueryResource = apiResource.addResource("document-query");
-  proxyToServer(documentQueryResource, buildInboundAddress(documentQueryPort));
-
-  const documentRetrievalResource = apiResource.addResource("document-retrieval");
-  proxyToServer(documentRetrievalResource, buildInboundAddress(documentRetrievalPort));
+  addProxyRoute("/v1/patient-discovery", buildInboundAddress(patientDiscoveryPort), apiGateway);
+  addProxyRoute("/v1/document-query", buildInboundAddress(documentQueryPort), apiGateway);
+  addProxyRoute("/v1/document-retrieval", buildInboundAddress(documentRetrievalPort), apiGateway);
 }
 
-function proxyToServer(resource: apig.Resource, serverAddress: string) {
-  const httpIntegration = new apig.HttpIntegration(serverAddress, {
-    proxy: true,
-    httpMethod: "ANY",
+function addProxyRoute(path: string, serverAddress: string, apiGateway: apigwv2.HttpApi) {
+  const integration = new HttpUrlIntegration(`${path}Integration`, serverAddress, {
+    method: apigwv2.HttpMethod.ANY,
   });
-  resource.addMethod("ANY", httpIntegration);
+  apiGateway.addRoutes({
+    path,
+    methods: [apigwv2.HttpMethod.ANY],
+    integration,
+  });
 }
