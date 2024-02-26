@@ -50,7 +50,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var detectedFileType = type[0];
 				var detectedExtension = type[1];
 
-				var fileName = [request.cxId, request.patientId, attachment.docUniqueId + detectedExtension].join('_');
+				var fileName = [request.cxId, request.patientId, attachment.metriportId + detectedExtension].join('_');
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
 				var docExists = xcaReadFromFile(filePath.toString());
 
@@ -85,6 +85,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 	} catch(ex) {
+logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 	}
 
