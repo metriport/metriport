@@ -56,11 +56,11 @@ export class IHEStack extends Stack {
       props.config.iheGateway.ownershipVerificationCertArn
     );
 
-    const trustStoreBucket = new s3.Bucket(this, "TruststoreBucket", {
-      bucketName: props.config.iheGateway?.trustStoreBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
+    const trustStoreBucket = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway?.trustStoreBucketName
+    );
 
     const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
 
