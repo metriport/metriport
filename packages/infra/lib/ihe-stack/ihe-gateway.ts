@@ -85,9 +85,9 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
   const documentRetrievalPort = config.inboundPorts.documentRetrieval ?? documentQueryPort;
   const buildInboundAddress = (port: number) => `http://${iheGWAddressInbound}:${port}`;
 
-  addProxyRoute("v1/patient-discovery", buildInboundAddress(patientDiscoveryPort), apiGateway);
-  addProxyRoute("v1/document-query", buildInboundAddress(documentQueryPort), apiGateway);
-  addProxyRoute("v1/document-retrieval", buildInboundAddress(documentRetrievalPort), apiGateway);
+  addProxyRoute("/v1/patient-discovery", buildInboundAddress(patientDiscoveryPort), apiGateway);
+  addProxyRoute("/v1/document-query", buildInboundAddress(documentQueryPort), apiGateway);
+  addProxyRoute("/v1/document-retrieval", buildInboundAddress(documentRetrievalPort), apiGateway);
 }
 
 function addProxyRoute(path: string, serverAddress: string, apiGateway: apigwv2.HttpApi) {
