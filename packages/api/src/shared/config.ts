@@ -194,6 +194,10 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
 
+  static getSystemRootOrgName(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_ORG_NAME");
+  }
+
   static getGatewayEndpoint(): string {
     return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
   }

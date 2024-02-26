@@ -8,6 +8,7 @@ import { Config } from "../../shared/config";
 import { CQOrgDetailsWithUrls } from "./shared";
 
 const metriportOid = Config.getSystemRootOID();
+const metriportName = Config.getSystemRootOrgName();
 
 export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
   const {
@@ -102,7 +103,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
     ${getPartOf(hostOrgOID)}
     ${endpoints}
     <managingOrg>
-        <reference value="org.sequoiaproject.fhir.stu3/Organization/${name}">
+        <reference value="org.sequoiaproject.fhir.stu3/Organization/${metriportName}">
     </managingOrg>
 </Organization>`;
 }
