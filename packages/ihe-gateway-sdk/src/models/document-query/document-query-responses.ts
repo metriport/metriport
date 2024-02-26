@@ -35,7 +35,7 @@ const documentQueryRespFromExternalSuccessfulSchema = baseResponseSchema.extend(
 });
 
 const documentQueryRespFromExternalFaultSchema = baseErrorResponseSchema.extend({
-  documentReference: z.never(),
+  documentReference: z.never().or(z.literal(undefined)),
   gateway: xcaGatewaySchema,
 });
 
