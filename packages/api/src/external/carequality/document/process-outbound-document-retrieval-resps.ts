@@ -40,8 +40,8 @@ export async function processOutboundDocumentRetrievalResps({
 
         if (docRetrievalResp.documentReference) {
           successDocsCount += docRetrievalResp.documentReference.length;
+          await handleDocReferences(docRetrievalResp.documentReference, requestId, patientId, cxId);
         }
-        await handleDocReferences(docRetrievalResp.documentReference, requestId, patientId, cxId);
       })
     );
 
