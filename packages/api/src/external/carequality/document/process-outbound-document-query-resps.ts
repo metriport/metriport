@@ -1,13 +1,10 @@
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
-import { processAsyncError } from "../../../errors";
-import { Config } from "../../../shared/config";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { cqExtension } from "../../carequality/extension";
@@ -15,43 +12,43 @@ import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
+import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
 
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region);
-const lambdaName = Config.getOutboundDocRetrievalLambdaName();
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
+const resultPoller = makeOutboundResultPoller();
 
 export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
-  outboundDocumentQueryResps,
+  results,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
+  results: OutboundDocumentQueryResp[];
 }): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });
   if (!iheGateway) return interrupt(`IHE GW not available`);
-  if (!lambdaName) return interrupt(`IHE DR lambda not available`);
+  if (!resultPoller.isDREnabled()) return interrupt(`IHE DR result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
-
-    const docRefs = outboundDocumentQueryResps.flatMap(toDocumentReference);
+    const docRefs = results.flatMap(toDocumentReference);
     const docRefsWithMetriportId = await Promise.all(
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );
 
-    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
+    const [docsToDownload, organization] = await Promise.all([
+      getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId),
+      getOrganizationOrFail({ cxId }),
+    ]);
 
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
@@ -83,7 +80,7 @@ export async function processOutboundDocumentQueryResps({
       cxId,
       organization,
       documentReferences: docsToDownload,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResps: results,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
@@ -92,23 +89,12 @@ export async function processOutboundDocumentQueryResps({
       outboundDocumentRetrievalReq: documentRetrievalRequests,
     });
 
-    // This lambda polls for the results from the IHE Gateway and process them.
-    // Intentionally asynchronous.
-    lambdaClient
-      .invoke({
-        FunctionName: lambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify({
-          requestId,
-          patientId: patientId,
-          cxId: cxId,
-          numOfGateways: documentRetrievalRequests.length,
-        }),
-      })
-      .promise()
-      .catch(
-        processAsyncError("Failed to invoke lambda to start polling for doc retrieval results")
-      );
+    await resultPoller.pollOutboundDocRetrievalResults({
+      requestId,
+      patientId: patientId,
+      cxId: cxId,
+      numOfGateways: documentRetrievalRequests.length,
+    });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);
@@ -217,6 +203,7 @@ function addMetriportDocRefID({
       ...document,
       docUniqueId: originalId,
       id: metriportId,
+      metriportId,
     };
   };
 }

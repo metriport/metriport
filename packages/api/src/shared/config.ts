@@ -280,7 +280,7 @@ export class Config {
   static getOutboundDocumentQueryLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
   }
-  static getOutboundDocRetrievalLambdaName(): string | undefined {
+  static getOutboundDocumentRetrievalLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 

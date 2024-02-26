@@ -16,14 +16,15 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
 		var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), null);
 		// Dec 20: xcpdPatientId to gatewayPatientId
-		_response.gatewayPatientId = {"id":"", "system":""};
-		_response.gatewayPatientId.id = subject1.*::patient.*::id.@extension.toString();
-		_response.gatewayPatientId.system = subject1.*::patient.*::id.@root.toString();
+		// Feb 25: gatewayPatientId to externalGatewayPatient
+		_response.externalGatewayPatient = {"id":"", "system":""};
+		_response.externalGatewayPatient.id = subject1.*::patient.*::id.@extension.toString();
+		_response.externalGatewayPatient.system = subject1.*::patient.*::id.@root.toString();
 
 		// A special case when the responder provided the asOtherIDs node
-		if (0 == String(_response.gatewayPatientId.id).length || 0 == String(_response.gatewayPatientId.system).length) {
-			_response.gatewayPatientId.id = subject1.*::patient.*::patientPerson.*::asOtherIDs.*::id.@extension.toString();
-			_response.gatewayPatientId.system = subject1.*::patient.*::patientPerson.*::asOtherIDs.*::id.@root.toString();
+		if (0 == String(_response.externalGatewayPatient.id).length || 0 == String(_response.externalGatewayPatient.system).length) {
+			_response.externalGatewayPatient.id = subject1.*::patient.*::patientPerson.*::asOtherIDs.*::id.@extension.toString();
+			_response.externalGatewayPatient.system = subject1.*::patient.*::patientPerson.*::asOtherIDs.*::id.@root.toString();
 		}
 
 		_response.patientMatch = true;
