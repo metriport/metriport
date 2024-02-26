@@ -12,6 +12,8 @@ export type IHEGatewayProps = {
   };
   vpcId: string;
   certArn: string;
+  trustStoreBucketName: string;
+  trustStoreKey: string;
   subdomain: string; // Subdomain for IHE integrations
   outboundSubdomain: string; // Subdomain for Outbound IHE integrations
   /**
