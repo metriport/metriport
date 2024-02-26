@@ -36,6 +36,7 @@ export class IHEStack extends Stack {
     if (!props.config.iheGateway) {
       throw new Error("Must define IHE properties!");
     }
+    const iheApiUrl = `${props.config.iheGateway.subdomain}.${props.config.domain}`;
 
     // get the public zone
     const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
@@ -50,19 +51,16 @@ export class IHEStack extends Stack {
     );
 
     // get the ownership Certificate from ACM.
-    const ownershipCertificate = cert.Certificate.fromCertificateArn(
-      this,
-      "OwnershipVerificationCertificate",
-      props.config.iheGateway.ownershipVerificationCertArn
-    );
+    const ownershipCertificate = new cert.Certificate(this, "OwnershipVerificationCertificate", {
+      domainName: iheApiUrl,
+      validation: cert.CertificateValidation.fromDns(publicZone),
+    });
 
     const trustStoreBucket = s3.Bucket.fromBucketName(
       this,
       "TruststoreBucket",
       props.config.iheGateway?.trustStoreBucketName
     );
-
-    const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
 
     // get the medical documents bucket
     const medicalDocumentsBucket = s3.Bucket.fromBucketName(
