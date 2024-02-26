@@ -1,15 +1,16 @@
-import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import { sleep } from "@metriport/core/util/sleep";
-import { QueryTypes, Sequelize } from "sequelize";
-import { Config } from "../../../../shared/config";
-import { capture } from "../../../../shared/notifications";
-import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
-import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
-import { cqDirectoryEntryTemp, cqDirectoryEntry, cqDirectoryEntryBackup } from "./shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { QueryTypes, Sequelize } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
+import { Config } from "../../../../shared/config";
+import { capture } from "../../../../shared/notifications";
+import { makeCarequalityManagementAPI } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
+import { updateCQGateways } from "./cq-gateways";
+import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
+import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
+import { cqDirectoryEntry, cqDirectoryEntryBackup, cqDirectoryEntryTemp } from "./shared";
 
 dayjs.extend(duration);
 const BATCH_SIZE = 1000;
@@ -27,17 +28,23 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
   let currentPosition = 0;
   let isDone = false;
+  const cq = makeCarequalityManagementAPI();
+  if (!cq) throw new Error("Carequality API not initialized");
+  const gatewaysSet = new Set<string>();
 
   try {
     await createTempCQDirectoryTable();
     while (!isDone) {
       try {
-        const apiKey = Config.getCQApiKey();
-        const cq = new Carequality(apiKey); // TODO: use the prod API mode - https://github.com/metriport/metriport-internal/issues/1350
         const orgs = await cq.listOrganizations({ start: currentPosition, count: BATCH_SIZE });
         if (orgs.length < BATCH_SIZE) isDone = true; // if CQ directory returns less than BATCH_SIZE number of orgs, that means we've hit the end
         currentPosition += BATCH_SIZE;
         const parsedOrgs = parseCQDirectoryEntries(orgs);
+        for (const org of parsedOrgs) {
+          if (org.managingOrganizationId) {
+            gatewaysSet.add(org.managingOrganizationId);
+          }
+        }
         console.log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
@@ -62,6 +69,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await renameCQDirectoryTablesAndUpdateIndexes();
+    await updateCQGateways(Array.from(gatewaysSet));
     console.log("CQ directory successfully rebuilt! :)");
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;

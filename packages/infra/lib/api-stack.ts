@@ -8,6 +8,7 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
+import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -132,12 +133,10 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // Application-wide feature flags
     //-------------------------------------------
-    const {
-      appConfigAppId,
-      appConfigConfigId,
-      cxsWithEnhancedCoverageFeatureFlag,
-      cxsWithCQDirectFeatureFlag,
-    } = createAppConfigStack(this, { config: props.config });
+    const { appConfigAppId, appConfigConfigId } = createAppConfigStack({
+      stack: this,
+      props: { config: props.config },
+    });
 
     //-------------------------------------------
     // Aurora Database for backend data
@@ -333,7 +332,16 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+    const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
+    const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -351,6 +359,10 @@ export class APIStack extends Stack {
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
         alarmAction: slackNotification?.alarmAction,
+        appConfigEnvVars: {
+          appId: appConfigAppId,
+          configId: appConfigConfigId,
+        },
       });
     }
 
@@ -389,7 +401,8 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      documentQueryResultsLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       searchIngestionQueue: ccdaSearchQueue,
@@ -399,8 +412,6 @@ export class APIStack extends Stack {
       appConfigEnvVars: {
         appId: appConfigAppId,
         configId: appConfigConfigId,
-        cxsWithEnhancedCoverageFeatureFlag,
-        cxsWithCQDirectFeatureFlag,
       },
       cookieStore,
     });
@@ -457,7 +468,12 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
-    documentQueryResultsLambda.addEnvironment(
+    outboundDocumentQueryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
+    outboundDocumentRetrievalLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
@@ -1110,7 +1126,7 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  private setupDocumentQueryResults(ownProps: {
+  private setupOutboundDocumentQuery(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -1120,10 +1136,10 @@ export class APIStack extends Stack {
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
-    const documentQueryResultsLambda = createLambda({
+    const outboundDocumentQueryLambda = createLambda({
       stack: this,
-      name: "DocumentQueryResults",
-      entry: "document-query-results",
+      name: "OutboundDocumentQuery",
+      entry: "outbound-document-query",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -1136,7 +1152,36 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    return documentQueryResultsLambda;
+    return outboundDocumentQueryLambda;
+  }
+
+  private setupOutboundDocumentRetrieval(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const outboundDocumentRetrievalLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentRetrieval",
+      entry: "outbound-document-retrieval",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return outboundDocumentRetrievalLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
@@ -1204,8 +1249,20 @@ export class APIStack extends Stack {
     envType: EnvType;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    appConfigEnvVars: {
+      appId: string;
+      configId: string;
+    };
   }): Lambda {
-    const { lambdaLayers, vpc, sentryDsn, envType, alarmAction, medicalDocumentsBucket } = ownProps;
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      appConfigEnvVars,
+    } = ownProps;
 
     const lambdaTimeout = MAXIMUM_LAMBDA_TIMEOUT.minus(Duration.seconds(5));
     const axiosTimeout = lambdaTimeout.minus(Duration.seconds(5));
@@ -1220,6 +1277,8 @@ export class APIStack extends Stack {
         AXIOS_TIMEOUT_SECONDS: axiosTimeout.toSeconds().toString(),
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         PDF_CONVERT_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
+        APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared, lambdaLayers.chromium],
@@ -1228,6 +1287,21 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    fhirToMedicalRecordLambda.role?.attachInlinePolicy(
+      new iam.Policy(this, "FhirLambdaPermissionsForAppConfig", {
+        statements: [
+          new iam.PolicyStatement({
+            actions: [
+              "appconfig:StartConfigurationSession",
+              "appconfig:GetLatestConfiguration",
+              "appconfig:GetConfiguration",
+            ],
+            resources: ["*"],
+          }),
+        ],
+      })
+    );
 
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 

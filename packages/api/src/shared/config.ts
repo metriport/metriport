@@ -86,8 +86,24 @@ export class Config {
     return getEnvVar("API_GW_USAGE_PLAN_ID");
   }
 
-  static getCQApiKey(): string {
-    return getEnvVarOrFail("CQ_API_KEY");
+  static getCQManagementApiKey(): string {
+    return getEnvVarOrFail("CQ_MANAGEMENT_API_KEY");
+  }
+
+  static getCQOrgPrivateKey(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
+  }
+
+  static getCQOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
+  }
+
+  static getCQOrgCertificate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
+  }
+
+  static getCQUrlsToExclude(): string | undefined {
+    return getEnvVar("CQ_URLS_TO_EXCLUDE");
   }
 
   static getPlaceIndexName(): string {
@@ -248,8 +264,24 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getDocQueryResultsLambdaName(): string {
-    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
+  static getIheGatewayUrl(): string | undefined {
+    return getEnvVar("IHE_GW_URL");
+  }
+  static getIheGatewayPortPD(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_PD");
+  }
+  static getIheGatewayPortDQ(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_DQ");
+  }
+  static getIheGatewayPortDR(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_DR");
+  }
+
+  static getOutboundDocumentQueryLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
+  }
+  static getOutboundDocRetrievalLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
@@ -268,8 +300,8 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INDEX");
   }
 
-  static getCQOrgDetails(): string | undefined {
-    return getEnvVar("CQ_ORG_DETAILS");
+  static getCQOrgUrls(): string {
+    return getEnvVarOrFail("CQ_ORG_URLS");
   }
 
   static getCWManagementUrl(): string | undefined {
@@ -288,11 +320,5 @@ export class Config {
   }
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
-  }
-  static getCxsWithEnhancedCoverageFeatureFlagName(): string {
-    return getEnvVarOrFail("CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG");
-  }
-  static getCxsWithCQDirectFeatureFlagName(): string {
-    return getEnvVarOrFail("CXS_WITH_CQ_DIRECT_FEATURE_FLAG");
   }
 }

@@ -1,4 +1,5 @@
 import { EnvType } from "../lib/env-type";
+import { IHEGatewayProps } from "./ihe-gateway-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -30,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  systemRootOrgName: string;
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
@@ -44,10 +46,14 @@ export type EnvConfig = {
   };
   carequality?: {
     secretNames?: {
-      CQ_API_KEY?: string;
+      CQ_MANAGEMENT_API_KEY: string;
+      CQ_ORG_PRIVATE_KEY: string;
+      CQ_ORG_CERTIFICATE: string;
+      CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {
-      CQ_ORG_DETAILS?: string;
+      CQ_ORG_URLS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {
@@ -95,15 +101,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  iheGateway?: {
-    vpcId: string;
-    certArn: string;
-    ownershipVerificationCertArn: string;
-    subdomain: string; // Subdomain for IHE integrations
-    snsTopicArn?: string;
-    trustStoreBucketName: string;
-    trustStoreKey: string;
-  };
+  iheGateway?: IHEGatewayProps;
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {

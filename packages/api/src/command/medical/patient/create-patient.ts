@@ -1,13 +1,13 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "../../../errors";
-import cwCommands from "../../../external/commonwell";
 import cqCommands from "../../../external/carequality";
+import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { addCoordinatesToAddresses } from "./add-coordinates";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -46,14 +46,13 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // TODO: #393 declarative, event-based integration
-  // Intentionally asynchronous - it takes too long to perform
+  // Intentionally asynchronous
   cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
 
-  // Intentionally asynchronous - it takes too long to perform
+  // Intentionally asynchronous
   cqCommands.patient
     .discover(newPatient, facility.data.npi)
-    .catch(processAsyncError(`cq.patient.discover`));
+    .catch(processAsyncError(`cq.patient.create`));
 
   return newPatient;
 };

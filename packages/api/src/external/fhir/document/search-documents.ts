@@ -5,7 +5,7 @@ import { capture } from "../../../shared/notifications";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
 import { isMetriportExtension } from "../shared/extensions/metriport";
-import { getDocuments } from "./get-documents";
+import { getDocumentsFromFHIR } from "./get-documents";
 
 export async function searchDocuments({
   cxId,
@@ -18,7 +18,7 @@ export async function searchDocuments({
   dateRange?: { from?: string; to?: string };
   contentFilter?: string;
 }): Promise<DocumentReference[]> {
-  const fhirDocs = await getDocuments({ cxId, patientId, from, to });
+  const fhirDocs = await getDocumentsFromFHIR({ cxId, patientId, from, to });
 
   const docs = await Promise.allSettled([
     searchOnCCDAFiles(fhirDocs, cxId, patientId, contentFilter),

@@ -13,13 +13,49 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require('he');
 const convert = require("convert-units");
+const path = require('path');
 
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
-const decimal_regex = /-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?/;
+const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
+
 // Some helpers will be referenced in other helpers and declared outside the export below.
+
+var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) {
+  try {
+    var getNamespace = require("cls-hooked").getNamespace;
+    var session = getNamespace(constants.CLS_NAMESPACE);
+    var handlebarsInstance = session.get(constants.CLS_KEY_HANDLEBAR_INSTANCE);
+    let templateLocation = session.get(constants.CLS_KEY_TEMPLATE_LOCATION);
+
+    var partial = handlebarsInstance.partials[templatePath];
+
+    if (typeof partial !== "function") {
+      var content = fs.readFileSync(templateLocation + "/" + templatePath);
+
+      // register partial with compilation output
+      handlebarsInstance.registerPartial(
+        templatePath,
+        handlebarsInstance.compile(content.toString())
+      );
+      partial = handlebarsInstance.partials[templatePath];
+    }
+    var result = partial(inObj.hash);
+    var processedResult = JSON.parse(jsonProcessor.Process(result));
+
+    // Check if the processedResult is undefined or an empty object
+    if (!returnEmptyObject && (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))) {
+      return undefined;
+    }
+
+    return processedResult;
+  } catch (err) {
+    throw `helper "evaluateTemplate" : ${err}`;
+  }
+}
+
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
   for (var s = 0; s < segmentIds.length - 1; s++) {
@@ -179,6 +215,30 @@ var getDateTime = function (dateTimeString) {
   ).toJSON();
 };
 
+// Queue approach to check if all values in the json object are nullFlavor
+const allValuesInObjAreNullFlavor = (obj) => {
+  let queue = [obj];
+  while (queue.length > 0) {
+    let current = queue.shift();
+    if (current && typeof current === 'object') {
+      if (Object.keys(current).length == 1 && current.nullFlavor) {
+        continue;
+      }
+      for (let key in current) {
+        if (current.hasOwnProperty(key)) {
+          if (key === 'classCode'){
+            continue;
+          }
+          queue.push(current[key]);
+        }
+      }
+    } else if (current !== null) {
+      return false;
+    }
+  }
+  return true;
+};
+
 module.exports.internal = {
   getDateTime: getDateTime,
   getDate: getDate,
@@ -204,7 +264,12 @@ module.exports.external = [
       if ((!options.hash.includeZero && !conditional) || HandlebarsUtils.isEmpty(conditional)) {
         return options.inverse(this);
       } else {
-        return options.fn(this);
+        // If the direct check is not sufficient, use the queue-based approach
+        if (allValuesInObjAreNullFlavor(conditional)) {
+          return options.inverse(this);
+        } else {
+          return options.fn(this);
+        }
       }
     },
   },
@@ -364,12 +429,13 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes another string: contains parentStr childStr",
-    func: function (parentStr, childStr) {
+    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
       }
-      return parentStr.toString().includes(childStr);
+      parentStr = parentStr.toString();
+      return childStrs.some(childStr => parentStr.includes(childStr));
     },
   },
   {
@@ -478,30 +544,16 @@ module.exports.external = [
   },
   {
     name: "evaluate",
-    description: "Returns template result object: evaluate templatePath inObj",
+    description: "Returns template  result object: evaluate templatePath inObj",
     func: function (templatePath, inObj) {
-      try {
-        var getNamespace = require("cls-hooked").getNamespace;
-        var session = getNamespace(constants.CLS_NAMESPACE);
-        var handlebarsInstance = session.get(constants.CLS_KEY_HANDLEBAR_INSTANCE);
-        let templateLocation = session.get(constants.CLS_KEY_TEMPLATE_LOCATION);
-
-        var partial = handlebarsInstance.partials[templatePath];
-
-        if (typeof partial !== "function") {
-          var content = fs.readFileSync(templateLocation + "/" + templatePath);
-
-          // register partial with compilation output
-          handlebarsInstance.registerPartial(
-            templatePath,
-            handlebarsInstance.compile(content.toString())
-          );
-          partial = handlebarsInstance.partials[templatePath];
-        }
-        return JSON.parse(jsonProcessor.Process(partial(inObj.hash)));
-      } catch (err) {
-        throw `helper "evaluate" : ${err}`;
-      }
+      return evaluateTemplate(templatePath, inObj);
+    },
+  },
+  {
+    name: "optionalEvaluate",
+    description: "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
+    func: function (templatePath, inObj) {
+      return evaluateTemplate(templatePath, inObj, true);
     },
   },
   {
@@ -521,16 +573,30 @@ module.exports.external = [
   },
   {
     name: "multipleToArray",
-    description: "Returns an array combining all given objects: multipleToArray obj1 obj2 …",
     func: function (...vals) {
-        var combinedArr = [];
-        vals.forEach(function(val) {
-            if (Array.isArray(val)) {
-                combinedArr.push(...val);
-            } else if (val) {
+        const uniqueSet = new Set();
+        const combinedArr = [];
+
+        // Flatten the input arrays
+        const flatVals = vals.flat();
+
+        for (let i = 0; i < flatVals.length; i++) {
+            const val = flatVals[i];
+            let hash;
+
+            if (typeof val === 'object' && val !== null) {
+                // Attempt to create a unique hash for objects
+                hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
+            } else {
+                // Use primitive value directly
+                hash = val;
+            }
+
+            if (!uniqueSet.has(hash)) {
+                uniqueSet.add(hash);
                 combinedArr.push(val);
             }
-        });
+        }
 
         return combinedArr;
     },
@@ -592,15 +658,13 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
-
-        for (var t = 0; t < templateIds.length - 1; t++) {
-          //-1 because templateIds includes the full message at the end
+  
+        for (var t = 0; t < templateIds.length - 1; t++) { // -1 because templateIds includes the full message at the end
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             let sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
-            if (
-              sectionObj.templateId &&
-              JSON.stringify(sectionObj.templateId).includes(templateIds[t])
-            ) {
+            let templateIdsArray = Array.isArray(sectionObj.templateId) ? sectionObj.templateId : [sectionObj.templateId];
+            const hasExactMatch = templateIdsArray.some(templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]);
+            if (hasExactMatch) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
               break;
             }
@@ -616,15 +680,18 @@ module.exports.external = [
     name: "getAllCdaSectionsByTemplateId",
     description:
       "Returns all instances (non-alphanumeric chars replace by '_' in name) of the sections by template id e.g. getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.14' '1.3.6.1.4.1.19376.1.5.3.1.3.1': getFirstCdaSectionsByTemplateId message templateId1 templateId2 …",
-    func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
+    func: function getAllCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = [];
+        if (templateIds.length <= 0) return ret;
+        if (msg?.ClinicalDocument?.component?.structuredBody?.component === undefined) return ret;
+
         // -1 because templateIds includes the full message at the end
         for (var t = 0; t < templateIds.length - 1; t++) {
           for (var i = 0; i < msg.ClinicalDocument.component.structuredBody.component.length; i++) {
             const sectionObj = msg.ClinicalDocument.component.structuredBody.component[i].section;
             if (
-              sectionObj.templateId &&
+              sectionObj?.templateId &&
               JSON.stringify(sectionObj.templateId).includes(templateIds[t])
             ) {
               var item = {};
@@ -859,7 +926,7 @@ module.exports.external = [
       try {
         return getDateTime(dateTimeString);
       } catch (err) {
-        throw `helper "formatAsDateTime" : ${err}`;
+        console.log(`helper "formatAsDateTime" : ${err}`);
       }
     },
   },
@@ -1162,5 +1229,95 @@ module.exports.external = [
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
       return match ? match[0] : '';
     },
+  },
+  {
+    name: "extractAndMapTableData",
+    description: "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
+    func: function (json) {
+        if (!json || !json.table || !json.table.thead || !json.table.tbody) {
+            return undefined;
+        }
+
+        const getHeaders = (thead) => {
+            if (!thead.tr || !thead.tr.th) return [];
+            return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
+        };
+
+        // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
+        const getRowData = (tr, headers) => {
+            if (!tr || !tr.td || headers.length === 0) return undefined;
+            const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
+            const rowData = {};
+            tdArray.forEach((td, index) => {
+                if (!td) return;
+                if (td.paragraph) {
+                    const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
+                    const textValues = paragraphArray.map(paragraph => {
+                        if (!paragraph || !paragraph.content) return "";
+                        const contentArray = Array.isArray(paragraph.content) ? paragraph.content : [paragraph.content];
+                        return concatenateTextValues(contentArray);
+                    }).join('\n');
+                    rowData[headers[index]] = textValues;
+                } else {
+                    rowData[headers[index]] = td._ || "";
+                }
+            });
+            return rowData;
+        };
+
+        const concatenateTextValues = (content) => {
+            if (!content) return '';
+            const contentArray = Array.isArray(content) ? content : [content];
+            return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
+        };
+
+        const headers = getHeaders(json.table.thead);
+        if (headers.length === 0) return undefined;
+
+        const trArray = Array.isArray(json.table.tbody.tr) ? json.table.tbody.tr : [json.table.tbody.tr];
+        if (trArray.length === 0) return undefined;
+
+        const mappedData = trArray.map(tr => getRowData(tr, headers));
+        if (mappedData === "") return undefined;
+
+        return mappedData;
+    },
+  },
+  {
+    name: "convertMappedDataToPlainText",
+    description: "Converts mapped data to plain text format.",
+    func: function (mappedData) {
+      if (!mappedData || mappedData.length === 0) return "";
+      return mappedData.map(entry => {
+        return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
+      }).join('\n\n');
+    },
+  },
+  {
+    name: "coalesce",
+    description: "Returns the first non-null/undefined value from the list of provided arguments.",
+    func: function (...args) {
+      // Last argument is Handlebars options object, so we exclude it
+      const values = args.slice(0, -1);
+      for (let value of values) {
+        if (value !== undefined) {
+          return value;
+        }
+      }
+      return undefined; 
+    },
+  },
+  {
+    name: "concatDefined",
+    description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
+    func: function (...args) {
+
+      args.pop();
+      
+      const isDefined = (obj) => {
+        return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
+      };
+      return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
+    }
   },
 ];

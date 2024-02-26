@@ -1,9 +1,9 @@
 import { DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
 import { MedicalDataSource } from "@metriport/api-sdk";
 import { dataSourceExtensionDefaults } from "../fhir/shared/extensions/extension";
-import { MetriportDataSourceExtension } from "../fhir/shared/extensions/metriport";
+import { DataSourceExtension } from "../fhir/shared/extensions/metriport";
 
-export const cwExtension: MetriportDataSourceExtension = {
+export const cwExtension: DataSourceExtension = {
   ...dataSourceExtensionDefaults,
   valueCoding: {
     ...dataSourceExtensionDefaults.valueCoding,

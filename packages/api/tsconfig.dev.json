@@ -2,6 +2,7 @@
   // don't worry about strictness while in development
   "extends": "./tsconfig",
   "compilerOptions": {
+    "sourceMap": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false
   }

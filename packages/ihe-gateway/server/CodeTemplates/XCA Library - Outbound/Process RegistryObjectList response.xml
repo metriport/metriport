@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>a0dc9cf4-d1f8-47d5-acde-7f241f5d955a</id>
   <name>Process RegistryObjectList response</name>
-  <revision>2</revision>
+  <revision>3</revision>
   <lastModified>
-    <time>1704310828765</time>
+    <time>1708668487244</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

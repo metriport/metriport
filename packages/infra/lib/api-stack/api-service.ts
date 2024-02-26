@@ -27,7 +27,6 @@ interface ApiServiceProps extends StackProps {
   version: string | undefined;
 }
 
-// TODO move these parameters to object properties
 export function createAPIService({
   stack,
   props,
@@ -43,7 +42,8 @@ export function createAPIService({
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
-  documentQueryResultsLambda,
+  outboundDocumentQueryLambda,
+  outboundDocumentRetrievalLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -67,7 +67,8 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  documentQueryResultsLambda: ILambda;
+  outboundDocumentQueryLambda: ILambda;
+  outboundDocumentRetrievalLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -77,8 +78,6 @@ export function createAPIService({
   appConfigEnvVars: {
     appId: string;
     configId: string;
-    cxsWithEnhancedCoverageFeatureFlag: string;
-    cxsWithCQDirectFeatureFlag: string;
   };
   cookieStore: secret.ISecret | undefined;
 }): {
@@ -103,6 +102,8 @@ export function createAPIService({
     props.config.connectWidgetUrl != undefined
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
+
+  const iheGateway = props.config.iheGateway;
 
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   // Run some servers on fargate containers
@@ -153,7 +154,16 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
+          ...(iheGateway
+            ? {
+                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
+                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
+                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
+                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
+              }
+            : undefined),
+          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -171,8 +181,11 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
-          ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
-            CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
+          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
+            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
+          }),
+          ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
+            CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
           }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
@@ -181,9 +194,6 @@ export function createAPIService({
           // app config
           APPCONFIG_APPLICATION_ID: appConfigEnvVars.appId,
           APPCONFIG_CONFIGURATION_ID: appConfigEnvVars.configId,
-          CXS_WITH_CQ_DIRECT_FEATURE_FLAG: appConfigEnvVars.cxsWithCQDirectFeatureFlag,
-          CXS_WITH_ENHANCED_COVERAGE_FEATURE_FLAG:
-            appConfigEnvVars.cxsWithEnhancedCoverageFeatureFlag,
           ...(coverageEnhancementConfig && {
             CW_MANAGEMENT_URL: coverageEnhancementConfig.managementUrl,
           }),
@@ -213,7 +223,8 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

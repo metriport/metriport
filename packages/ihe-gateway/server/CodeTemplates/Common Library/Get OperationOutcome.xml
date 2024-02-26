@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>9f662a05-8a40-4419-8b19-3ad5593952e1</id>
   <name>Get OperationOutcome</name>
-  <revision>5</revision>
+  <revision>1</revision>
   <lastModified>
-    <time>1704310828439</time>
+    <time>1706741135777</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>GLOBAL_DEPLOY</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>CHANNEL_ATTACHMENT</contextType>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>GLOBAL_DEPLOY</contextType>
-      <contextType>CHANNEL_BATCH</contextType>
-      <contextType>GLOBAL_UNDEPLOY</contextType>
-      <contextType>GLOBAL_POSTPROCESSOR</contextType>
-      <contextType>GLOBAL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>GLOBAL_POSTPROCESSOR</contextType>
+      <contextType>GLOBAL_UNDEPLOY</contextType>
+      <contextType>GLOBAL_PREPROCESSOR</contextType>
       <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

@@ -1,4 +1,4 @@
-import { DocumentReference } from "@medplum/fhirtypes";
+import { DocumentReference, Bundle } from "@medplum/fhirtypes";
 import { errorToString } from "../../../shared/log";
 import { makeFhirApi } from "../api/api-factory";
 
@@ -17,4 +17,12 @@ export const upsertDocumentToFHIRServer = async (
     log(`Error upserting the doc ref on FHIR server: ${docRef.id} - ${errorToString(err)}`);
     throw err;
   }
+};
+
+export const upsertDocumentsToFHIRServer = async (
+  cxId: string,
+  transactionBundle: Bundle
+): Promise<void> => {
+  const fhir = makeFhirApi(cxId);
+  await fhir.executeBatch(transactionBundle);
 };

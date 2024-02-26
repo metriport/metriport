@@ -1,9 +1,11 @@
-import { Carequality } from "@metriport/carequality-sdk/client/carequality";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
-  patientDiscoveryRespFromExternalGWSchema,
-  documentQueryRespFromExternalGWSchema,
-  documentRetrievalRespFromExternalGWSchema,
+  isSuccessfulOutboundDocQueryResponse,
+  isSuccessfulOutboundDocRetrievalResponse,
+  outboundDocumentQueryRespSchema,
+  outboundDocumentRetrievalRespSchema,
+  outboundPatientDiscoveryRespSchema,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -11,21 +13,28 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { makeCarequalityManagementAPI } from "../../external/carequality/api";
+import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
+import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
+import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
+import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
-  IHEResultType,
-  handleIHEResponse,
-} from "../../external/carequality/command/ihe-result/create-ihe-result";
-import { createOrUpdateCQOrganization } from "../../external/carequality/organization";
+  getDQResultStatus,
+  getDRResultStatus,
+  getPDResultStatus,
+} from "../../external/carequality/ihe-result";
+import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
-import { processDocumentQueryResults } from "../../external/carequality/document/process-document-query-results";
 
 dayjs.extend(duration);
 const router = Router();
@@ -55,8 +64,8 @@ router.get(
   "/directory/organization/:oid",
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    const apiKey = Config.getCQApiKey();
-    const cq = new Carequality(apiKey);
+    const cq = makeCarequalityManagementAPI();
+    if (!cq) throw new Error("Carequality API not initialized");
     const oid = getFrom("params").orFail("oid", req);
     const resp = await cq.listOrganizations({ count: 1, oid });
     const org = parseCQDirectoryEntries(resp);
@@ -84,7 +93,10 @@ router.get(
 router.post(
   "/directory/organization",
   asyncHandler(async (req: Request, res: Response) => {
-    await createOrUpdateCQOrganization();
+    const body = req.body;
+    const orgDetails = cqOrgDetailsSchema.parse(body);
+    await createOrUpdateCQOrganization(orgDetails);
+
     return res.sendStatus(httpStatus.OK);
   })
 );
@@ -120,17 +132,29 @@ router.get(
 // BELOW ARE THE ROUTES PERTAINING TO THE IHE-GATEWAY
 
 /**
- * POST /internal/carequality/patient-discovery/response/response
+ * POST /internal/carequality/patient-discovery/response
  *
  * Receives a Patient Discovery response from the IHE Gateway
  */
 router.post(
   "/patient-discovery/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const pdResponse = patientDiscoveryRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.PATIENT_DISCOVERY_RESP_FROM_EXTERNAL_GW,
-      response: pdResponse,
+    const response = outboundPatientDiscoveryRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in patient discovery response", {
+        extra: { context: "carequality.patient-discovery", response, level: "error" },
+      });
+    }
+
+    const status = getPDResultStatus({ patientMatch: response.patientMatch });
+
+    await createOutboundPatientDiscoveryResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -145,10 +169,27 @@ router.post(
 router.post(
   "/document-query/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const dqResponse = documentQueryRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_QUERY_RESP_FROM_EXTERNAL_GW,
-      response: dqResponse,
+    const response = outboundDocumentQueryRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in document query response", {
+        extra: { context: "carequality.document-query", response, level: "error" },
+      });
+    }
+
+    let status = "failure";
+    if (isSuccessfulOutboundDocQueryResponse(response)) {
+      status = getDQResultStatus({
+        docRefLength: response.documentReference?.length,
+      });
+    }
+
+    await createOutboundDocumentQueryResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
 
     return res.sendStatus(httpStatus.OK);
@@ -163,7 +204,7 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
-    await processDocumentQueryResults(req.body);
+    processOutboundDocumentQueryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -177,11 +218,42 @@ router.post(
 router.post(
   "/document-retrieval/response",
   asyncHandler(async (req: Request, res: Response) => {
-    const drResponse = documentRetrievalRespFromExternalGWSchema.parse(req.body);
-    await handleIHEResponse({
-      type: IHEResultType.DOCUMENT_RETRIEVAL_RESP_FROM_EXTERNAL_GW,
-      response: drResponse,
+    const response = outboundDocumentRetrievalRespSchema.parse(req.body);
+
+    if (!response.patientId) {
+      capture.message("Patient ID not found in document retrieval response", {
+        extra: { context: "carequality.document-retrieval", response, level: "error" },
+      });
+    }
+
+    let status = "failure";
+    if (isSuccessfulOutboundDocRetrievalResponse(response)) {
+      status = getDRResultStatus({
+        docRefLength: response.documentReference?.length,
+      });
+    }
+
+    await createOutboundDocumentRetrievalResp({
+      id: uuidv7(),
+      requestId: response.id,
+      patientId: response.patientId ?? "",
+      status,
+      response,
     });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/document-retrieval/results
+ *
+ * Receives Document Retrieval results from the doc retrieval results lambda
+ */
+router.post(
+  "/document-retrieval/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

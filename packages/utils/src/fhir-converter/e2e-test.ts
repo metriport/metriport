@@ -3,7 +3,6 @@ dotenv.config();
 // keep that ^ on top
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import {
-  generalResources,
   resourcesSearchableByPatient,
   resourcesSearchableBySubject,
   ResourceTypeForConsolidation,
@@ -57,7 +56,7 @@ dayjs.extend(duration);
 
 const cdaLocation = ``;
 const converterBaseUrl = "http://localhost:8777";
-const fhirBaseUrl = "http://localhost:8888";
+const fhirBaseUrl = "http://localhost:8889";
 const parallelConversions = 10;
 // Execute 1 batch at a time to avoid concurrency when upserting resources (resulting in 409/Conflict), which
 // lead to inconsistent results in resource creation/count.
@@ -75,6 +74,8 @@ const timestamp = dayjs().toISOString();
 const fhirExtension = `.json`;
 const logsFolderName = `runs/fhir-converter-e2e/${timestamp}`;
 const outputFolderName = `${logsFolderName}/output`;
+const totalResourceCountStatsLocation = `${logsFolderName}/total-resource-counts.json`;
+const totalResourceCountPostFHIRInsertStatsLocation = `${logsFolderName}/total-resource-counts-post-fhir-insert.json`;
 
 type Params = {
   cleanup?: boolean;
@@ -128,51 +129,49 @@ export async function main() {
     console.log(`>>> ${nonXMLBodyCount} files were skipped because they have nonXMLBody`);
   }
 
-  if (!useFhirServer) {
-    const stats = await countResourcesPerDirectory(cdaLocation, fhirExtension);
-    console.log(`Resources: ${JSON.stringify(stats.countPerType, null, 2)}`);
-    console.log(`Total: ${stats.total}`);
-    storeStats(stats);
-    return;
-  }
+  const totalResourceCountStats = await countResourcesPerDirectory(outputFolderName, fhirExtension);
+  storeStats(totalResourceCountStats, totalResourceCountStatsLocation);
+  console.log(`Resources: ${JSON.stringify(totalResourceCountStats.countPerType, null, 2)}`);
+  console.log(`Total: ${totalResourceCountStats.total}`);
 
   if (cleanup) await removeAllPartitionsFromFHIRServer();
+  if (useFhirServer) {
+    // Create tenant at FHIR server
+    await createTenant();
 
-  // Create tenant at FHIR server
-  await createTenant();
+    const fhirFileNames = getFileNames({
+      folder: outputFolderName,
+      recursive: true,
+      extension: fhirExtension,
+    });
+    console.log(`Found ${fhirFileNames.length} JSON files.`);
 
-  const fhirFileNames = getFileNames({
-    folder: outputFolderName,
-    recursive: true,
-    extension: fhirExtension,
-  });
-  console.log(`Found ${fhirFileNames.length} JSON files.`);
+    const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
 
-  const relativeJSONFileNames = fhirFileNames.map(f => f.replace(outputFolderName, ""));
+    // Insert JSON files into FHIR server
+    await insertBundlesIntoFHIRServer(relativeJSONFileNames);
 
-  // Insert JSON files into FHIR server
-  await insertBundlesIntoFHIRServer(relativeJSONFileNames);
+    // Get stats from FHIR Server
+    const stats = await getStatusFromFHIRServer();
+    console.log(`Resources: `, stats.resources);
+    console.log(`Total resources: ${stats.total}`);
+    storeStats(stats, totalResourceCountPostFHIRInsertStatsLocation);
 
-  // Get stats from FHIR Server
-  const stats = await getStatusFromFHIRServer();
-  console.log(`Resources: `, stats.resources);
-  console.log(`Total resources: ${stats.total}`);
-  storeStats(stats);
-
-  const duration = Date.now() - startedAt;
-  const durationMin = dayjs.duration(duration).asMinutes();
-  console.log(`Total time: ${duration} ms / ${durationMin} min`);
-
+    const duration = Date.now() - startedAt;
+    const durationMin = dayjs.duration(duration).asMinutes();
+    console.log(`Total time: ${duration} ms / ${durationMin} min`);
+  }
+  // IMPORTANT leave this here since scripts greps this line to get location for diffing stats
+  console.log(`File1 Location: ${totalResourceCountStatsLocation}`);
   return;
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-function storeStats(stats: any) {
+function storeStats(stats: any, statsLocation: string) {
   writeFileContents(
-    `${logsFolderName}/stats.json`,
+    statsLocation,
     JSON.stringify(
       {
-        cdaLocation: cdaLocation,
         ...stats,
       },
       null,
@@ -289,14 +288,16 @@ async function getStatusFromFHIRServer() {
 }
 
 async function getResourceCount() {
-  const { resourcesByPatient, resourcesBySubject } = getResourcesFilter();
+  const { resourcesByPatient, resourcesBySubject, generalResourcesNoFilter } = getResourcesFilter();
   const summaryCount = "&_summary=count";
 
   const result = await Promise.allSettled([
-    ...[...resourcesByPatient, ...resourcesBySubject].map(async resource => {
-      const res = await fhirApi.search(resource, summaryCount);
-      return { resourceType: resource, count: res.total ?? 0 };
-    }),
+    ...[...resourcesByPatient, ...resourcesBySubject, ...generalResourcesNoFilter].map(
+      async resource => {
+        const res = await fhirApi.search(resource, summaryCount);
+        return { resourceType: resource, count: res.total ?? 0 };
+      }
+    ),
   ]);
 
   return result;
@@ -305,7 +306,12 @@ async function getResourceCount() {
 function getResourcesFilter() {
   const resourcesByPatient = resourcesSearchableByPatient;
   const resourcesBySubject = resourcesSearchableBySubject;
-  const generalResourcesNoFilter = generalResources;
+  const generalResourcesNoFilter = [
+    "Practitioner",
+    "Organization",
+    "Medication",
+    "Location",
+  ] as const;
   return {
     resourcesByPatient,
     resourcesBySubject,

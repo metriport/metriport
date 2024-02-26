@@ -46,6 +46,7 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
+    if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
     const newId = uuid.v4();
@@ -163,6 +164,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         log(`Getting contents from bucket ${s3BucketName}, key ${s3FileName}`);
         const downloadStart = Date.now();
         const payloadRaw = await s3Utils.getFileContentsAsString(s3BucketName, s3FileName);
+        if (payloadRaw.includes("nonXMLBody")) {
+          const msg = "XML document is unstructured CDA with nonXMLBody";
+          console.log(`${msg}, skipping...`);
+          capture.message(msg, {
+            extra: { context: lambdaName, fileName: s3FileName, patientId, cxId, jobId },
+            level: "warning",
+          });
+          await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
+          return;
+        }
         const payloadClean = cleanUpPayload(payloadRaw);
         metrics.download = {
           duration: Date.now() - downloadStart,
@@ -197,6 +208,24 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           duration: Date.now() - conversionStart,
           timestamp: new Date(),
         };
+
+        const preProcessedFilename = `${s3FileName}.from_converter.json`;
+
+        try {
+          await s3Utils.s3
+            .upload({
+              Bucket: conversionResultBucketName,
+              Key: preProcessedFilename,
+              Body: JSON.stringify(conversionResult),
+              ContentType: "application/fhir+json",
+            })
+            .promise();
+        } catch (error) {
+          console.log(`Error uploading pre-processed file: ${error}`);
+          capture.error(error, {
+            extra: { context: lambdaName, preProcessedFilename, patientId, cxId, jobId },
+          });
+        }
 
         await cloudWatchUtils.reportMemoryUsage();
 

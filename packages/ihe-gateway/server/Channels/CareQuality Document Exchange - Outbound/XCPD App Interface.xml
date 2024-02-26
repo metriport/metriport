@@ -6,7 +6,7 @@
  - forwards a single request back to the calling app or DB
 
 Last updated: Nov 23 2023</description>
-  <revision>24</revision>
+  <revision>8</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -58,8 +58,32 @@ Last updated: Nov 23 2023</description>
     <connector version="4.4.2">
       <metaDataId>2</metaDataId>
       <name>App Interface</name>
-      <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="4.4.2">
-        <pluginProperties/>
+      <properties class="com.mirth.connect.connectors.http.HttpDispatcherProperties" version="4.4.2">
+        <pluginProperties>
+          <com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties version="4.4.2">
+            <enabled>false</enabled>
+            <clientAuthentication>DISABLED</clientAuthentication>
+            <hostnameVerificationEnabled>true</hostnameVerificationEnabled>
+            <trustAllCertificates>false</trustAllCertificates>
+            <trustedCertificates>
+              <trustedCertificateAliases/>
+              <trustCACerts>true</trustCACerts>
+            </trustedCertificates>
+            <localCertificateAlias/>
+            <ocspEnabled>false</ocspEnabled>
+            <ocspURI/>
+            <ocspHardFail>false</ocspHardFail>
+            <crlEnabled>false</crlEnabled>
+            <crlURI/>
+            <crlHardFail>false</crlHardFail>
+            <subjectDNValidationEnabled>false</subjectDNValidationEnabled>
+            <trustedSubjectDNs class="linked-hash-map"/>
+            <hideIssuerDNs>false</hideIssuerDNs>
+            <allowExpiredCertificates>false</allowExpiredCertificates>
+            <implicitFTPS>true</implicitFTPS>
+            <useSTARTTLS>false</useSTARTTLS>
+          </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
+        </pluginProperties>
         <destinationConnectorProperties version="4.4.2">
           <queueEnabled>false</queueEnabled>
           <sendFirst>false</sendFirst>
@@ -80,12 +104,38 @@ Last updated: Nov 23 2023</description>
           <queueBufferSize>1000</queueBufferSize>
           <reattachAttachments>true</reattachAttachments>
         </destinationConnectorProperties>
-        <channelId>none</channelId>
-        <channelTemplate>${message.encodedData}</channelTemplate>
-        <mapVariables/>
+        <host>${URL}</host>
+        <useProxyServer>false</useProxyServer>
+        <proxyAddress/>
+        <proxyPort/>
+        <method>post</method>
+        <headers class="linked-hash-map"/>
+        <parameters class="linked-hash-map"/>
+        <useHeadersVariable>false</useHeadersVariable>
+        <headersVariable/>
+        <useParametersVariable>false</useParametersVariable>
+        <parametersVariable/>
+        <responseXmlBody>false</responseXmlBody>
+        <responseParseMultipart>true</responseParseMultipart>
+        <responseIncludeMetadata>false</responseIncludeMetadata>
+        <responseBinaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</responseBinaryMimeTypes>
+        <responseBinaryMimeTypesRegex>true</responseBinaryMimeTypesRegex>
+        <multipart>false</multipart>
+        <useAuthentication>false</useAuthentication>
+        <authenticationType>Basic</authenticationType>
+        <usePreemptiveAuthentication>false</usePreemptiveAuthentication>
+        <username/>
+        <password/>
+        <content>${message.encodedData}</content>
+        <contentType>application/json</contentType>
+        <dataTypeBinary>false</dataTypeBinary>
+        <charset>UTF-8</charset>
+        <socketTimeout>30000</socketTimeout>
       </properties>
       <transformer version="4.4.2">
         <elements/>
+        <inboundTemplate encoding="base64"/>
+        <outboundTemplate encoding="base64"/>
         <inboundDataType>JSON</inboundDataType>
         <outboundDataType>JSON</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
@@ -121,7 +171,7 @@ Last updated: Nov 23 2023</description>
       <filter version="4.4.2">
         <elements/>
       </filter>
-      <transportName>Channel Writer</transportName>
+      <transportName>HTTP Sender</transportName>
       <mode>DESTINATION</mode>
       <enabled>true</enabled>
       <waitForPrevious>true</waitForPrevious>
@@ -179,8 +229,8 @@ Last updated: Nov 23 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1703092575893</time>
-        <timezone>America/Vancouver</timezone>
+        <time>1708721460550</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>

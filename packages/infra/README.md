@@ -13,7 +13,9 @@ The `cdk.json` file tells the CDK Toolkit how to execute the app.
 - `cdk diff` compare deployed stack with current state
 - `cdk synth` emits the synthesized CloudFormation template
 
-## Creating a Certificate for IHE
+## IHE Stack
+
+### Creating a Certificate for IHE
 
 1. **Download Certificate and Private Key**
 

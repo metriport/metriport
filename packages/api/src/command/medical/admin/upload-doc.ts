@@ -1,5 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { randomInt } from "@metriport/shared/common/numbers";
@@ -78,13 +79,13 @@ export async function createAndUploadDocReference({
       },
     ],
     masterIdentifier: {
-      system: "urn:ietf:rfc:3986",
+      system: IETF_URI,
       value: docId,
     },
     identifier: [
       {
         use: "official",
-        system: "urn:ietf:rfc:3986",
+        system: IETF_URI,
         value: docId,
       },
     ],
@@ -140,7 +141,20 @@ export async function updateDocumentReference({
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
-    const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
+    const refDate = dayjs();
+    const updatedDocumentReference = cloneDeep(docRefDraft);
+    const metriportContent = createDocReferenceContent({
+      contentType: fileData.mimeType,
+      size: fileData.size,
+      creation: refDate.toISOString(),
+      fileName: fileData.originalName,
+      location: fileData.locationUrl,
+      extension: [metriportDataSourceExtension],
+    });
+
+    updatedDocumentReference.extension = [metriportDataSourceExtension];
+    updatedDocumentReference.content = [metriportContent];
+    updatedDocumentReference.docStatus = "final";
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
@@ -151,23 +165,4 @@ export async function updateDocumentReference({
     capture.error(msg, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
     return undefined;
   }
-}
-
-function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
-  const refDate = dayjs();
-  const amendedDocRef = cloneDeep(doc);
-  const metriportContent = createDocReferenceContent({
-    contentType: fileData.mimeType,
-    size: fileData.size,
-    creation: refDate.toISOString(),
-    fileName: fileData.originalName,
-    location: fileData.locationUrl,
-    extension: [metriportDataSourceExtension],
-  });
-
-  amendedDocRef.extension = [metriportDataSourceExtension];
-  amendedDocRef.content = [metriportContent];
-  amendedDocRef.docStatus = "amended";
-
-  return amendedDocRef;
 }

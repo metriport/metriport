@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+      "extendedDiagnostics": true,
+      "strict": true,
+      "target": "ES6",
+      "module": "CommonJS",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "declaration": true,
+      "noUnusedParameters": true,
+      "outDir": "dist",
+  },
+  "include": [
+      "src",
+      "__test__"
+  ],
+  "exclude": []
+}

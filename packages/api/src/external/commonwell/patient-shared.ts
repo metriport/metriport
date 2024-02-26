@@ -16,7 +16,6 @@ import { getPatientWithDependencies } from "../../command/medical/patient/get-pa
 import { Facility } from "../../domain/medical/facility";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import BadRequestError from "../../errors/bad-request";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
@@ -35,8 +34,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
-    public cqLinkStatus?: CQLinkStatus,
-    public documentQueryProgress?: DocumentQueryProgress
+    public cqLinkStatus?: CQLinkStatus
   ) {
     super();
   }

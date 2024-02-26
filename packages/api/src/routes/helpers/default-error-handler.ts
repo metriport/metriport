@@ -1,13 +1,17 @@
 import { OperationOutcomeError } from "@medplum/core";
+import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
+import { MetriportError as MetriportErrorFromCore } from "@metriport/core/util/error/metriport-error";
 import { ErrorRequestHandler } from "express";
 import httpStatus from "http-status";
 import { ZodError } from "zod";
 import MetriportError from "../../errors/metriport-error";
-import { getDetailFromOutcomeError } from "@metriport/core/external/fhir/shared/index";
 import { isClientError } from "../../shared/http";
 import { capture } from "../../shared/notifications";
 import { httpResponseBody } from "../util";
 import { isReportClientErrors } from "./report-client-errors";
+import { out } from "@metriport/core/util/log";
+
+const { log } = out(`error-handler`);
 
 // Errors in Metriport are based off of https://www.rfc-editor.org/rfc/rfc7807
 // This is specifically how the fields are used:
@@ -40,6 +44,10 @@ const zodResponseBody = (err: ZodError): string => {
   });
 };
 
+function isMetriportError(err: unknown): err is MetriportErrorFromCore {
+  return err instanceof MetriportError || err instanceof MetriportErrorFromCore;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,12 +57,12 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     capture.error(err, {
       extra: {
         error: err,
-        ...(err instanceof MetriportError ? err.additionalInfo : {}),
+        ...(isMetriportError(err) ? err.additionalInfo : {}),
       },
     });
   }
 
-  if (err instanceof MetriportError) {
+  if (isMetriportError(err)) {
     return res.contentType("json").status(err.status).send(metriportResponseBody(err));
   }
   if (err instanceof ZodError) {
@@ -68,7 +76,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     } else {
       const detail = getDetailFromOutcomeError(err);
       if (status > 499) {
-        console.log(`Error on FHIR: ${detail}`);
+        log(`Error on FHIR: ${detail}`);
       }
       return res
         .contentType("json")
@@ -96,7 +104,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
         name: httpStatus[err.statusCode],
       });
   }
-  console.log(`Error: ${err}`);
+  log(`Error: ${err}`);
   const internalErrStatus = httpStatus.INTERNAL_SERVER_ERROR;
   return res
     .contentType("json")

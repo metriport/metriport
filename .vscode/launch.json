@@ -1,30 +1,45 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "command": "ts-node ./packages/api/src/app.ts",
-            "name": "Run Api App",
-            "request": "launch",
-            "type": "node-terminal"
-        },
-        {
-          "name": "Docker: Attach to Node",
-          "type": "node",
-          "request": "attach",
-          "port": 9229,
-          "address": "0.0.0.0",
-          "sourceMapPathOverrides": {
-            "/usr/src/app/packages/api/*": "${workspaceRoot}/packages/api/*"
-          },
-          "localRoot": "${workspaceFolder}/packages/api",
-          "remoteRoot": "/usr/src/app/packages/api"
-        },
-        {
-          "name": "Run Widget in Chrome",
-          "type": "chrome",
-          "request": "launch",
-          "url": "http://localhost:3001",
-          "webRoot": "${workspaceFolder}/packages/connect-widget/"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run API",
+      "command": "npm run dev -w packages/api",
+      "request": "launch",
+      "type": "node-terminal"
+    },
+    {
+      "name": "Run & Debug API",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/packages/api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "dev"]
+    },
+    {
+      "name": "Debug API - Attach to Node",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "address": "127.0.0.1"
+    },
+    {
+      "name": "Debug API - Attach to Docker",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "address": "0.0.0.0",
+      "sourceMapPathOverrides": {
+        "/usr/src/app/packages/api/*": "${workspaceFolder}/packages/api/*"
+      },
+      "localRoot": "${workspaceFolder}/packages/api",
+      "remoteRoot": "/usr/src/app/packages/api"
+    },
+    {
+      "name": "Run Widget in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3001",
+      "webRoot": "${workspaceFolder}/packages/connect-widget/"
+    }
+  ]
 }

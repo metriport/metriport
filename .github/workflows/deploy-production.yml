@@ -68,7 +68,7 @@ jobs:
   api-prod:
     if: needs.files-changed.outputs.api == 'true'
     needs: files-changed
-    uses: ./.github/workflows/_deploy_api.yml
+    uses: ./.github/workflows/_deploy-api.yml
     with:
       deploy_env: "production"
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
@@ -83,7 +83,7 @@ jobs:
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
   api-sandbox:
-    uses: ./.github/workflows/_deploy_api.yml
+    uses: ./.github/workflows/_deploy-api.yml
     needs: [api-prod]
     if: ${{ !failure() && needs.api-prod.result == 'success' }}
     with:
@@ -101,15 +101,17 @@ jobs:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   infra-api-lambdas:
-    uses: ./.github/workflows/_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy-cdk.yml
     if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' || needs.files-changed.outputs.fhir-converter == 'true' }}
     needs: files-changed
     with:
       deploy_env: "production"
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_PRODUCTION }}
       cdk_stack: ${{ vars.API_STACK_NAME_PRODUCTION }}
+      # TODO 1377 uncomment this line when the IHE stack is ready for production
+      # ihe_cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_PRODUCTION }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -118,16 +120,17 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
+      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
   infra-api-lambdas-sandbox:
-    uses: ./.github/workflows/_deploy_cdk.yml
+    uses: ./.github/workflows/_deploy-cdk.yml
     needs: [infra-api-lambdas]
     if: ${{ !failure() && needs.infra-api-lambdas.result == 'success' }}
     with:
       deploy_env: "sandbox"
-      location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_SANDBOX }}
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
-      INFRA_CONFIG: ${{ vars.INFRA_CONFIG_SANDBOX  }}
+      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -136,6 +139,8 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
+      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
 
   release:
     uses: ./.github/workflows/_release.yml
@@ -149,10 +154,6 @@ jobs:
   e2e-tests:
     uses: ./.github/workflows/_e2e-tests.yml
     needs: release
-    # run even if one of the dependencies didn't
-    # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
-    # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.api-prod.result == 'success' || needs.infra-api-lambdas.result == 'success') }}
     with:
       deploy_env: "production"
       api_url: ${{ vars.API_URL_PRODUCTION }}

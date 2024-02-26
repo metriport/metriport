@@ -1,24 +1,30 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.3.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.3.1')}}
-            {{#each (toArray 2_16_840_1_113883_10_20_22_2_3_1.entry) as |drEntry|}}
-                {{>Resources/DiagnosticReport.hbs diagReport=drEntry.organizer ID=(generateUUID (toJsonString drEntry.organizer))}},
-                {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                	{{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
-                {{/with}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.3')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.3.1' '2.16.840.1.113883.10.20.22.2.3')}}
+        {{#with (coalesce 2_16_840_1_113883_10_20_22_2_3_1.code 2_16_840_1_113883_10_20_22_2_3.code) as |categoryCode|}}
+            {{#each (multipleToArray ../2_16_840_1_113883_10_20_22_2_3_1.entry ../2_16_840_1_113883_10_20_22_2_3.entry) as |drEntry|}}
+                {{#if drEntry.organizer}}
+                    {{>Resources/DiagnosticReport.hbs diagReport=drEntry.organizer categoryCode=categoryCode ID=(generateUUID (toJsonString drEntry.organizer))}},
+                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
+                    {{/with}}
+                {{/if}}
                 {{#if drEntry.organizer.performer}}
                      {{#if drEntry.organizer.performer.assignedEntity}}
+                        {{!-- should we use author.assignedAuthor or performer.assignedEntity? Not sure which one is generally fuller  --}}
                         {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
                             {{>Resources/Practitioner.hbs practitioner=drEntry.organizer.performer.assignedEntity ID=practitionerId.Id}},
                             {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Practitioner/' practitionerId.Id)}}
                         {{/with}}
                          {{#if drEntry.organizer.performer.assignedEntity.representedOrganization}}
-                            {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=(generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization))}},
-                            {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Organization/' (generateUUID (toJsonString drEntry.organizer.performer.assignedEntity.representedOrganization)))}}
-                         {{/if}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=drEntry.organizer.performer.assignedEntity.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                                {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
                     {{/if}}
                 {{/if}}
 
-                {{#each (toArray this.organizer.component) as |obsEntry|}}
+                {{#each (toArray drEntry.organizer.component) as |obsEntry|}}
                     {{#if obsEntry.observation}}
                         {{>Resources/Observation.hbs observationCategory="laboratory" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}},                   
                         {{>References/DiagnosticReport/result.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Observation/' (generateUUID (toJsonString obsEntry.observation)))}},
@@ -27,12 +33,32 @@
                         {{/with}}
                         {{#if obsEntry.observation.author.assignedAuthor}}
                             {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=obsEntry.observation.author.assignedAuthor) as |practitionerId|}}
-                                {{!--assert aaa toJsonString this.Id--}}
-                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id )}},        
+                                {{>Resources/Practitioner.hbs practitioner=obsEntry.observation.author.assignedAuthor ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id )}},                           
                             {{/with}}
+                            {{#if obsEntry.observation.author.assignedAuthor.representedOrganization}}
+                                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=obsEntry.observation.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                    {{>Resources/Organization.hbs org=obsEntry.observation.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                    {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                                {{/with}}
+                            {{/if}}
+                        {{!-- else should use author from top level --}}
+                        {{else if drEntry.organizer.performer.assignedEntity}}
+                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=drEntry.organizer.performer.assignedEntity) as |practitionerId|}}
+                                {{>Resources/Practitioner.hbs practitioner=drEntry.organizer.performer.assignedEntity ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}}
+                            {{/with}}
+                            {{#if drEntry.organizer.performer.assignedEntity.representedOrganization}}
+                                {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=drEntry.organizer.performer.assignedEntity.representedOrganization) as |orgId|}}
+                                    {{>Resources/Organization.hbs org=drEntry.organizer.performer.assignedEntity.representedOrganization ID=orgId.Id}},
+                                    {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                                {{/with}}
+                            {{/if}}
                         {{/if}}
                     {{/if}}
+                    {{!--  TODO I think we are missing obsEntry.procedure here --}}
                 {{/each}}
             {{/each}}
         {{/with}}
+    {{/with}}
 {{/if}}

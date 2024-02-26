@@ -4,6 +4,7 @@ import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { cqDirectoryEntryTemp } from "./shared";
 
 const keys = createKeys();
+const number_of_keys = keys.split(",").length;
 
 function createKeys(): string {
   const id: keyof Pick<CQDirectoryEntryModel, "id"> = "id";
@@ -17,6 +18,12 @@ function createKeys(): string {
   const state: keyof Pick<CQDirectoryEntryModel, "state"> = "state";
   const data: keyof Pick<CQDirectoryEntryModel, "data"> = "data";
   const createdAt: keyof Pick<CQDirectoryEntryModel, "createdAt"> = "createdAt";
+  const managingOrganization: keyof Pick<CQDirectoryEntryModel, "managingOrganization"> =
+    "managingOrganization";
+  const managingOrganizationId: keyof Pick<CQDirectoryEntryModel, "managingOrganizationId"> =
+    "managingOrganizationId";
+  const gateway: keyof Pick<CQDirectoryEntryModel, "gateway"> = "gateway";
+  const active: keyof Pick<CQDirectoryEntryModel, "active"> = "active";
   const lastUpdatedAtCQ: keyof Pick<CQDirectoryEntryModel, "lastUpdatedAtCQ"> = "lastUpdatedAtCQ";
 
   const allKeys = [
@@ -31,6 +38,10 @@ function createKeys(): string {
     state,
     data,
     createdAt ? "created_at" : undefined,
+    managingOrganization ? "managing_organization" : undefined,
+    managingOrganizationId ? "managing_organization_id" : undefined,
+    gateway ? "gateway" : undefined,
+    active ? "active" : undefined,
     lastUpdatedAtCQ ? "last_updated_at_cq" : undefined,
   ];
 
@@ -42,13 +53,15 @@ export async function bulkInsertCQDirectoryEntries(
   orgDataArray: CQDirectoryEntryData[]
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
-  const placeholders = orgDataArray.map(() => `(${new Array(12).fill("?").join(", ")})`).join(", ");
+  const placeholders = orgDataArray
+    .map(() => `(${new Array(number_of_keys).fill("?").join(", ")})`)
+    .join(", ");
   const date = new Date().toISOString();
 
   const flattenedData = orgDataArray.flatMap(entry => [
     entry.id,
     entry.name,
-    entry.urlXCPD,
+    entry.urlXCPD ?? null,
     entry.urlDQ ?? null,
     entry.urlDR ?? null,
     entry.lat ?? null,
@@ -57,6 +70,10 @@ export async function bulkInsertCQDirectoryEntries(
     entry.state ?? null,
     entry.data ? JSON.stringify(entry.data) : null,
     date,
+    entry.managingOrganization ?? null,
+    entry.managingOrganizationId ?? null,
+    entry.gateway ?? false,
+    entry.active ?? false,
     entry.lastUpdatedAtCQ ?? null,
   ]);
 

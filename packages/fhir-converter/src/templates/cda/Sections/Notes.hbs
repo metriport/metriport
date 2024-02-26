@@ -1,11 +1,14 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65')}}
-    {{#with (getAllCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.65') as |sections|}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5')}}
+    {{#with (getAllCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.65' '1.3.6.1.4.1.19376.1.5.3.1.3.5') as |sections|}}
+            {{!-- sections here is already an array so this is not a bug --}}
             {{#each sections}}
-                {{#each (toArray 2_16_840_1_113883_10_20_22_2_65.entry) as |note|}}
-                    {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
-                    {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
-                        {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
-                    {{/with}}
+                {{#each (multipleToArray this.[2_16_840_1_113883_10_20_22_2_65].entry this.[1_3_6_1_4_1_19376_1_5_3_1_3_5].entry) as |note|}}
+                    {{#if note.act}}
+                        {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
+                        {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
+                            {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
+                        {{/with}}
+                    {{/if}}
 
                     {{!-- TODO need to add references, author, etc --}}
                     {{#if note.act.author.assignedAuthor}}
@@ -13,10 +16,14 @@
                             {{>Resources/Practitioner.hbs practitioner=note.act.author.assignedAuthor ID=practitionerId.Id}},
                             {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Practitioner/' practitionerId.Id)}},
                         {{/with}}
-                        {{>Resources/Organization.hbs org=note.act.author.assignedAuthor.representedOrganization ID=(generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization))}},
-                        {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Organization/' (generateUUID (toJsonString note.act.author.assignedAuthor.representedOrganization)))}},
+                    {{/if}}
+                    {{#if note.act.author.assignedAuthor.representedOrganization}}
+                        {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=note.act.author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=note.act.author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/DiagnosticReport/performer.hbs ID=(generateUUID (toJsonString  note.act)) REF=(concat 'Organization/' orgId.Id)}},
+                        {{/with}}
                     {{/if}}   
                 {{/each}}
             {{/each}}
-        {{/with}}
+        {{/with}}        
 {{/if}}

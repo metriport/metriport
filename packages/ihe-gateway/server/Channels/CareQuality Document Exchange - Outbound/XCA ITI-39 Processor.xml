@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Jan 12 2024</description>
-  <revision>58</revision>
+  <revision>36</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -409,8 +409,8 @@ Last updated: Jan 12 2024</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1705084343958</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1708797473837</time>
+        <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>

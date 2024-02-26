@@ -8,8 +8,8 @@ import { Effect, PolicyStatement } from "aws-cdk-lib/aws-iam";
 import {
   Architecture,
   Code,
-  ILayerVersion,
   Function as Lambda,
+  ILayerVersion,
   Runtime,
   SingletonFunction,
 } from "aws-cdk-lib/aws-lambda";
@@ -18,7 +18,7 @@ import { FilterPattern } from "aws-cdk-lib/aws-logs";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { METRICS_NAMESPACE, getConfig } from "./config";
+import { getConfig, METRICS_NAMESPACE } from "./config";
 
 export const DEFAULT_LAMBDA_TIMEOUT = Duration.seconds(30);
 export const MAXIMUM_LAMBDA_TIMEOUT = Duration.minutes(15);
@@ -175,4 +175,8 @@ export function addErrorAlarmToLambdaFunc(
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
   alarmAction && alarm.addAlarmAction(alarmAction);
+}
+
+export function getLambdaUrl({ arn, region }: { arn: string; region: string }) {
+  return `https://lambda.${region}.amazonaws.com/2015-03-31/functions/${arn}/invocations`;
 }

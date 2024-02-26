@@ -6,12 +6,12 @@ import { isCommonwellContent } from "../../../commonwell/extension";
 import { dataSourceExtensionDefaults } from "./extension";
 
 // URL is required: https://www.hl7.org/fhir/R4/extensibility.html#Extension.url
-export type MetriportDataSourceExtension = Omit<Extension, "url" | "valueCoding"> &
+export type DataSourceExtension = Omit<Extension, "url" | "valueCoding"> &
   Required<Pick<Extension, "url">> & {
     valueCoding: Omit<Coding, "system" | "code"> & DeepRequired<Pick<Coding, "system" | "code">>;
   };
 
-export const metriportDataSourceExtension: MetriportDataSourceExtension = {
+export const metriportDataSourceExtension: DataSourceExtension = {
   ...dataSourceExtensionDefaults,
   valueCoding: {
     ...dataSourceExtensionDefaults.valueCoding,

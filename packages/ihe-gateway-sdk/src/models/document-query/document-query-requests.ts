@@ -23,13 +23,13 @@ const documentQueryDefaultReqSchema = baseRequestSchema.extend({
 });
 
 // TO EXTERNAL GATEWAY
-export const documentQueryReqToExternalGWSchema = documentQueryDefaultReqSchema.extend({
+export const outboundDocumentQueryReqSchema = documentQueryDefaultReqSchema.extend({
   gateway: xcaGatewaySchema,
 });
 
-export type DocumentQueryReqToExternalGW = z.infer<typeof documentQueryReqToExternalGWSchema>;
+export type OutboundDocumentQueryReq = z.infer<typeof outboundDocumentQueryReqSchema>;
 
 // FROM EXTERNAL GATEWAY
-export const documentQueryReqFromExternalGWSchema = documentQueryDefaultReqSchema;
+export const inboundDocumentQueryReqSchema = documentQueryDefaultReqSchema;
 
-export type DocumentQueryReqFromExternalGW = z.infer<typeof documentQueryReqFromExternalGWSchema>;
+export type InboundDocumentQueryReq = z.infer<typeof inboundDocumentQueryReqSchema>;

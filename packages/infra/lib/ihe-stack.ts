@@ -3,17 +3,17 @@ import { CfnOutput } from "aws-cdk-lib";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
 import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
-import { HttpLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
-import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import * as s3 from "aws-cdk-lib/aws-s3";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -56,12 +56,11 @@ export class IHEStack extends Stack {
       props.config.iheGateway.ownershipVerificationCertArn
     );
 
-    // get the truststore bucket from S3
-    const bucket = s3.Bucket.fromBucketName(
-      this,
-      "TruststoreBucket",
-      props.config.iheGateway?.trustStoreBucketName
-    );
+    const trustStoreBucket = new s3.Bucket(this, "TruststoreBucket", {
+      bucketName: props.config.iheGateway?.trustStoreBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
+    });
 
     const iheApiUrl = `${props.config.iheGateway?.subdomain}.${props.config.domain}`;
 
@@ -77,7 +76,7 @@ export class IHEStack extends Stack {
       domainName: iheApiUrl,
       certificate: certificate,
       mtls: {
-        bucket: bucket,
+        bucket: trustStoreBucket,
         key: props.config.iheGateway?.trustStoreKey,
       },
       // this ownsership cert is the whole point of this entire migration.
@@ -96,6 +95,8 @@ export class IHEStack extends Stack {
       disableExecuteApiEndpoint: true,
     });
 
+    // TODO 1377 Setup WAF
+
     new r53.ARecord(this, "IHEAPIDomainRecordv2", {
       recordName: iheApiUrl,
       zone: publicZone,
@@ -109,39 +110,38 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
-    // TODO 1377 When we have the IHE GW infra in place, let's update these so lambdas get triggered by the IHE GW instead of API GW
-    const dqLambda = this.setupDocumentQueryLambda(
+    const documentQueryLambda = this.setupDocumentQueryLambda(
       props,
       lambdaLayers,
       vpc,
       medicalDocumentsBucket,
       alarmSnsAction
     );
-    const drLambda = this.setupDocumentRetrievalLambda(
+    const documentRetrievalLambda = this.setupDocumentRetrievalLambda(
       props,
       lambdaLayers,
       vpc,
       medicalDocumentsBucket,
       alarmSnsAction
     );
-    const pdLambda = this.setupPatientDiscoveryLambda(props, lambdaLayers, vpc, alarmSnsAction);
+    const patientDiscoveryLambda = this.setupPatientDiscoveryLambda(
+      props,
+      lambdaLayers,
+      vpc,
+      alarmSnsAction
+    );
 
-    // v2
-    apigw2.addRoutes({
-      path: "/xca/dq",
-      methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("dqIntegration", dqLambda),
-    });
-    apigw2.addRoutes({
-      path: "/xca/dr",
-      methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("drIntegration", drLambda),
-    });
-
-    apigw2.addRoutes({
-      path: "/pd",
-      methods: [apigwv2.HttpMethod.ANY],
-      integration: new HttpLambdaIntegration("pdIntegration", pdLambda),
+    createIHEGateway(this, {
+      ...props,
+      config: props.config,
+      vpc,
+      zoneName: props.config.host,
+      apiGateway: apigw2,
+      documentQueryLambda,
+      documentRetrievalLambda,
+      patientDiscoveryLambda,
+      medicalDocumentsBucket,
+      alarmAction: alarmSnsAction,
     });
 
     //-------------------------------------------
@@ -166,8 +166,8 @@ export class IHEStack extends Stack {
   ): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
-      name: "DocumentQuery",
-      entry: "document-query",
+      name: "IHEInboundDocumentQuery",
+      entry: "ihe-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -191,8 +191,8 @@ export class IHEStack extends Stack {
   ): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
-      name: "DocumentRetrieval",
-      entry: "document-retrieval",
+      name: "IHEInboundDocumentRetrieval",
+      entry: "ihe-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -215,8 +215,8 @@ export class IHEStack extends Stack {
   ): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
-      name: "PatientDiscovery",
-      entry: "patient-discovery",
+      name: "IHEInboundPatientDiscovery",
+      entry: "ihe-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {

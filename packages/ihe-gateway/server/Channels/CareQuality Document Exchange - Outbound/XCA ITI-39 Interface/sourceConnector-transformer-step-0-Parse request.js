@@ -50,3 +50,5 @@ if (error) {
 	channelMap.put('NOTE', error);
 	throw error;
 }
+
+router.routeMessageByChannelId($g('ITI39PROCESSOR'), JSON.stringify(json));

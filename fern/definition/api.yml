@@ -9,5 +9,3 @@ environments:
 default-environment: Production
 error-discrimination:
   strategy: status-code
-audiences: 
-  - public
