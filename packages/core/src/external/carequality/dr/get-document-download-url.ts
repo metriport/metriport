@@ -12,7 +12,7 @@ import { XDSRegistryError } from "../error";
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
-export async function validateDR(
+export async function getDocumentDownloadURL(
   payload: InboundDocumentRetrievalReq
 ): Promise<DocumentReference[]> {
   validateBasePayload(payload);
@@ -29,6 +29,7 @@ async function retrievePreSignedUrls(documentIds: string[]): Promise<DocumentRef
   const s3Utils = new S3Utils(region);
   const documentReferences: DocumentReference[] = [];
 
+  // TODO consider making this more robust, so if one fails we still return the rest
   for (const id of documentIds) {
     const url = await s3Utils.getSignedUrl({
       bucketName: medicalDocumentsBucketName,

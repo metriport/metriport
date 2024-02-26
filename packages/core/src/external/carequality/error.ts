@@ -121,7 +121,7 @@ export function constructPDNoMatchResponse(
   return {
     ...constructBaseErrorResponse(payload),
     patientMatch: false,
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
 
@@ -132,6 +132,6 @@ export function constructPDErrorResponse(
   return {
     ...constructBaseErrorResponse(payload, error),
     patientMatch: null,
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }

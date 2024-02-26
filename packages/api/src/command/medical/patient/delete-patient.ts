@@ -34,8 +34,7 @@ export const deletePatient = async (
     const fhirApi = makeFhirApi(cxId);
 
     try {
-      // TODO: #393 move to declarative, event-based integration
-      // Synchronous bc it needs to run after the Patient is deleted (it needs patient data from the DB)
+      // These need to run before the Patient is deleted (need patient data from the DB)
       await Promise.all([
         cwCommands.patient.remove(patient, facilityId).catch(err => {
           if (err.response?.status !== 404) throw err;
@@ -45,20 +44,18 @@ export const deletePatient = async (
         fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
         cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
       ]);
-
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      capture.error(err, {
+      await patient.destroy();
+    } catch (error) {
+      capture.error("Failed to delete patient", {
         extra: {
           context: deleteContext,
           patientId: patient.id,
           facilityId,
           options,
-          err,
+          error,
         },
       });
-      throw err;
+      throw error;
     }
-    await patient.destroy();
   }
 };

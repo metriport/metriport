@@ -6,6 +6,7 @@ import { Coordinates } from "@metriport/core/external/aws/location";
 import { capture } from "@metriport/core/util/notifications";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQOrgUrls } from "../../shared";
 
 const EARTH_RADIUS = 6378168;
 
@@ -13,12 +14,6 @@ const XCPD_STRING = "ITI-55";
 const XCA_DQ_STRING = "ITI-38";
 const XCA_DR_STRING = "ITI-39";
 type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
-
-export type XCUrls = {
-  urlXCPD?: string;
-  urlDQ?: string;
-  urlDR?: string;
-};
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const parsedOrgs = orgsInput.flatMap(org => {
@@ -78,7 +73,7 @@ function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-function getUrls(contained: Contained): XCUrls {
+function getUrls(contained: Contained): CQOrgUrls {
   const endpointMap: Record<string, string> = {};
 
   contained?.forEach(c => {
@@ -90,7 +85,7 @@ function getUrls(contained: Contained): XCUrls {
     }
   });
 
-  const urls: XCUrls = {};
+  const urls: CQOrgUrls = {};
   const urlXCPD = endpointMap[XCPD_STRING];
   const urlDQ = endpointMap[XCA_DQ_STRING];
   const urlDR = endpointMap[XCA_DR_STRING];

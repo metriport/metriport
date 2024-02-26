@@ -46,7 +46,7 @@ export const outboundDocumentQueryRespSchema = z.union([
 
 export type OutboundDocumentQueryResp = z.infer<typeof outboundDocumentQueryRespSchema>;
 
-export function isOutboundDocumentQueryResponse(
+export function isSuccessfulOutboundDocQueryResponse(
   obj: BaseResponse
 ): obj is OutboundDocumentQueryResp & { documentReference: DocumentReference[] } {
   return "documentReference" in obj;

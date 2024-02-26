@@ -13,7 +13,7 @@ export async function resetDocQueryProgress({
   patient,
   source,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
 }): Promise<void> {
   const patientFilter = {

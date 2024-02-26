@@ -9,7 +9,7 @@ import {
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
   patientResource: z.object({}),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
 // TO EXTERNAL GATEWAY
@@ -21,12 +21,12 @@ const inboundPatientDiscoveryRespSuccessfulSchema =
 
 const inboundPatientDiscoveryRespSuccessfulNoMatchSchema = baseResponseSchema.extend({
   patientMatch: z.literal(false),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
 const inboundPatientDiscoveryRespFaultSchema = baseErrorResponseSchema.extend({
   patientMatch: z.literal(null),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
 export const inboundPatientDiscoveryRespSchema = z.union([
@@ -40,7 +40,7 @@ export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscovery
 // FROM EXTERNAL GATEWAY
 const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   gateway: XCPDGatewaySchema,
-  patientResourceId: z.string(),
+  patientId: z.string(),
 });
 
 const outboundPatientDiscoveryRespSuccessfulSchema =
