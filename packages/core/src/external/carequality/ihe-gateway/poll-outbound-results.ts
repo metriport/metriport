@@ -1,3 +1,7 @@
+import {
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
+} from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
@@ -6,10 +10,7 @@ import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
 import { initSequelizeForLambda } from "../../../util/sequelize";
-import {
-  OutboundDocumentQueryRespTableEntry,
-  OutboundDocumentRetrievalRespTableEntry,
-} from "./outbound-result";
+import { OutboundDocumentQueryRespTableEntry } from "./outbound-result";
 
 dayjs.extend(duration);
 
@@ -30,24 +31,24 @@ type PollOutboundResults = {
 
 export async function pollOutboundDocQueryResults(
   params: PollOutboundResults
-): Promise<OutboundDocumentQueryRespTableEntry[]> {
+): Promise<OutboundDocumentQueryResp[]> {
   const results = await pollResults({
     ...params,
     resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
-  return results as OutboundDocumentQueryRespTableEntry[];
+  return (results as OutboundDocumentQueryRespTableEntry[]).map(r => r.data);
 }
 
 export async function pollOutboundDocRetrievalResults(
   params: PollOutboundResults
-): Promise<OutboundDocumentRetrievalRespTableEntry[]> {
+): Promise<OutboundDocumentRetrievalResp[]> {
   const results = await pollResults({
     ...params,
     resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
-  return results as OutboundDocumentRetrievalRespTableEntry[];
+  return (results as OutboundDocumentQueryRespTableEntry[]).map(r => r.data);
 }
 
 async function pollResults({

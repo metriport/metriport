@@ -4,7 +4,7 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { getPatientWithDependencies } from "../../../command/medical/patient/get-patient";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { cqExtension } from "../../carequality/extension";
@@ -25,12 +25,12 @@ export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
-  outboundDocumentQueryResps,
+  results,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
+  results: OutboundDocumentQueryResp[];
 }): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
@@ -40,14 +40,15 @@ export async function processOutboundDocumentQueryResps({
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const { organization } = await getPatientWithDependencies({ id: patientId, cxId });
-
-    const docRefs = outboundDocumentQueryResps.flatMap(toDocumentReference);
+    const docRefs = results.flatMap(toDocumentReference);
     const docRefsWithMetriportId = await Promise.all(
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );
 
-    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
+    const [docsToDownload, organization] = await Promise.all([
+      getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId),
+      getOrganizationOrFail({ cxId }),
+    ]);
 
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
@@ -79,7 +80,7 @@ export async function processOutboundDocumentQueryResps({
       cxId,
       organization,
       documentReferences: docsToDownload,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResps: results,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
@@ -88,7 +89,7 @@ export async function processOutboundDocumentQueryResps({
       outboundDocumentRetrievalReq: documentRetrievalRequests,
     });
 
-    await resultPoller.pollOutboundDocQueryResults({
+    await resultPoller.pollOutboundDocRetrievalResults({
       requestId,
       patientId: patientId,
       cxId: cxId,
@@ -202,6 +203,7 @@ function addMetriportDocRefID({
       ...document,
       docUniqueId: originalId,
       id: metriportId,
+      metriportId,
     };
   };
 }

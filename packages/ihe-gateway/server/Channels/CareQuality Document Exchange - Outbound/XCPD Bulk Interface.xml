@@ -250,7 +250,7 @@ Last updated: Dec 08 2023</description>
   </properties>
   <exportData>
     <metadata>
-      <enabled>false</enabled>
+      <enabled>true</enabled>
       <lastModified>
         <time>1708710346392</time>
         <timezone>America/Winnipeg</timezone>

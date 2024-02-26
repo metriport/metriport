@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -9,7 +10,9 @@ import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
+import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { CQLink } from "../cq-patient-data";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
@@ -40,11 +43,28 @@ export async function getDocumentsFromCQ({
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
 
+    const linksWithDqUrl: CQLink[] = [];
+    const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
+      const gateway = await getCQDirectoryEntryOrFail(patientLink.oid);
+      if (!gateway.urlDQ) {
+        log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
+        return;
+      }
+      linksWithDqUrl.push({
+        ...patientLink,
+        url: gateway.urlDQ,
+      });
+    };
+    await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
+      numberOfParallelExecutions: 20,
+    });
+
     const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
-      cxId: patient.cxId,
+      patientId,
+      cxId,
       organization,
-      cqLinks: cqPatientData?.data.links ?? [],
+      cqLinks: linksWithDqUrl,
     });
 
     // We send the request to IHE Gateway to initiate the doc query.

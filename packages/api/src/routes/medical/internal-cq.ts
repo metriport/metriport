@@ -1,4 +1,6 @@
+import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   isSuccessfulOutboundDocQueryResponse,
@@ -33,7 +35,6 @@ import {
 } from "../../external/carequality/ihe-result";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
 import { asyncHandler, getFrom } from "../util";
 
 dayjs.extend(duration);
@@ -172,9 +173,10 @@ router.post(
     const response = outboundDocumentQueryRespSchema.parse(req.body);
 
     if (!response.patientId) {
-      capture.message("Patient ID not found in document query response", {
-        extra: { context: "carequality.document-query", response, level: "error" },
+      capture.error("Patient ID not found in outbound DQ response", {
+        extra: { context: "carequality.outbound.document-query", response },
       });
+      throw new BadRequestError("Missing patientId");
     }
 
     let status = "failure";
@@ -187,7 +189,7 @@ router.post(
     await createOutboundDocumentQueryResp({
       id: uuidv7(),
       requestId: response.id,
-      patientId: response.patientId ?? "",
+      patientId: response.patientId,
       status,
       response,
     });
@@ -221,9 +223,10 @@ router.post(
     const response = outboundDocumentRetrievalRespSchema.parse(req.body);
 
     if (!response.patientId) {
-      capture.message("Patient ID not found in document retrieval response", {
-        extra: { context: "carequality.document-retrieval", response, level: "error" },
+      capture.error("Patient ID not found in outbound DR response", {
+        extra: { context: "carequality.outbound.document-retrieval", response },
       });
+      throw new BadRequestError("Missing patientId");
     }
 
     let status = "failure";
@@ -236,7 +239,7 @@ router.post(
     await createOutboundDocumentRetrievalResp({
       id: uuidv7(),
       requestId: response.id,
-      patientId: response.patientId ?? "",
+      patientId: response.patientId,
       status,
       response,
     });
