@@ -25,11 +25,6 @@ interface IHEGatewayProps extends StackProps {
 }
 
 const name = "IHEGateway";
-const portOutboundPD = 8082;
-const portOutboundDQ = 8084;
-const portOutboundDR = 8086;
-const portInboundPD = 9091;
-const portInboundDQ = 9092;
 
 export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void {
   const { config: mainConfig, apiResource } = props;
@@ -65,7 +60,11 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     db,
     name: `${name}Outbound`,
     dnsSubdomain: "outbound",
-    httpPorts: [portOutboundPD, portOutboundDQ, portOutboundDR],
+    httpPorts: [
+      config.outboundPorts.patientDiscovery,
+      config.outboundPorts.documentQuery,
+      config.outboundPorts.documentRetrieval,
+    ],
   });
   const { serverAddress: iheGWAddressInbound } = new IHEGatewayConstruct(stack, {
     ...props,
@@ -76,7 +75,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     db,
     name: `${name}Inbound`,
     dnsSubdomain: "inbound",
-    httpPorts: [portInboundPD, portInboundDQ],
+    httpPorts: [config.inboundPorts.patientDiscovery, config.inboundPorts.documentQuery],
   });
 
   const patientDiscoveryPort = config.inboundPorts.patientDiscovery;
