@@ -6,7 +6,7 @@
  - Generates ITI-55 "Cross Gateway Patient Discovery Response" SOAP message based on the AWS Lambda response
 
 Last updated: Dec 18 2023</description>
-  <revision>28</revision>
+  <revision>42</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

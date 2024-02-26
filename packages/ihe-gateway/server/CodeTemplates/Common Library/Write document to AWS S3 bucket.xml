@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>00903944-3070-4bc2-8324-a13c4124295d</id>
   <name>Write document to AWS S3 bucket</name>
-  <revision>14</revision>
+  <revision>26</revision>
   <lastModified>
-    <time>1708722415949</time>
+    <time>1708898683551</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
       <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>GLOBAL_POSTPROCESSOR</contextType>
+      <contextType>GLOBAL_PREPROCESSOR</contextType>
+      <contextType>GLOBAL_UNDEPLOY</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>CHANNEL_UNDEPLOY</contextType>
+      <contextType>GLOBAL_DEPLOY</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

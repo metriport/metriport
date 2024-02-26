@@ -12,6 +12,8 @@ function xcaWriteToFile(path, document, metadata) {
   try {
     var bucketName = Config.getS3BucketName();
     var client = getAWSS3Client();
+    var decoded = FileUtil.decode(document);
+    var decodedAsString = Packages.java.lang.String(decoded);
 
     // Specify file's metadata
     var meta = java.util.HashMap();
@@ -25,7 +27,7 @@ function xcaWriteToFile(path, document, metadata) {
       .metadata(meta)
       .build();
     var requestBody = Packages.software.amazon.awssdk.core.sync.RequestBody.fromBytes(
-      java.lang.String(document.toString()).getBytes()
+      java.lang.String(decodedAsString).getBytes()
     );
 
     result = client.putObject(putRequest, requestBody);
