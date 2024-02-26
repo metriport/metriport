@@ -12,7 +12,6 @@ export type IHEGatewayProps = {
   };
   vpcId: string;
   certArn: string;
-  ownershipVerificationCertArn: string;
   trustStoreBucketName: string;
   trustStoreKey: string;
   subdomain: string; // Subdomain for IHE integrations
