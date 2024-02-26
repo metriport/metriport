@@ -189,7 +189,7 @@ jobs:
   release:
     uses: ./.github/workflows/_release.yml
     # TODO 1377 revert this
-    # needs: [api, infra-api-lambdas-sandbox, ihe-gw-config]
+    # needs: [api-sandbox, infra-api-lambdas-sandbox, ihe-gw-config]
     needs: [api-sandbox, infra-api-lambdas-sandbox, ihe-gw-server]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
