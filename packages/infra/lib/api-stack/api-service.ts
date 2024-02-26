@@ -137,6 +137,7 @@ export function createAPIService({
             : {}),
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
           SYSTEM_ROOT_OID: props.config.systemRootOID,
+          SYSTEM_ROOT_ORG_NAME: props.config.systemRootOrgName,
           ...props.config.commonwell.envVars,
           ...(props.config.slack ? props.config.slack : undefined),
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
