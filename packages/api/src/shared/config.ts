@@ -16,7 +16,7 @@ export const getEnvVarOrFail = (varName: string): string => coreGetEnvVarOrFail(
 export class Config {
   // env config
   static readonly PROD_ENV = "production";
-  static readonly DEV_ENV = "dev";
+  static readonly DEV_ENV = "development";
   static readonly SANDBOX_ENV = "sandbox";
   static readonly STAGING_ENV = "staging";
   static readonly SANDBOX_USER_LIMIT = 10;
