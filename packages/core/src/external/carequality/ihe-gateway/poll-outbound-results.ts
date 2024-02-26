@@ -1,18 +1,18 @@
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";
-import { MetriportError } from "../../../../util/error/metriport-error";
-import { errorToString } from "../../../../util/error/shared";
-import { capture } from "../../../../util/notifications";
-import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../../util/race-control";
-import { initSequelizeForLambda } from "../../../../util/sequelize";
+import { MetriportError } from "../../../util/error/metriport-error";
+import { errorToString } from "../../../util/error/shared";
+import { capture } from "../../../util/notifications";
+import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
+import { initSequelizeForLambda } from "../../../util/sequelize";
 import {
   DOC_QUERY_RESULT_TABLE_NAME,
   DOC_RETRIEVAL_RESULT_TABLE_NAME,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
   REQUEST_ID_COLUMN,
-} from "../../ihe-result";
+} from "./ihe-result";
 
 dayjs.extend(duration);
 

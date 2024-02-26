@@ -1,4 +1,4 @@
-import { pollOutboundDRResults } from "@metriport/core/external/carequality/command/documents/send-ihe-gateway-results";
+import { pollOutboundDRResults } from "@metriport/core/external/carequality/ihe-gateway/poll-outbound-results";
 import { getEnvType, getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import * as Sentry from "@sentry/serverless";
