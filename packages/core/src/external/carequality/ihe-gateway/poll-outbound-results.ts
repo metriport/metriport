@@ -7,49 +7,47 @@ import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
 import { initSequelizeForLambda } from "../../../util/sequelize";
 import {
-  DOC_QUERY_RESULT_TABLE_NAME,
-  DOC_RETRIEVAL_RESULT_TABLE_NAME,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
-  REQUEST_ID_COLUMN,
-} from "./ihe-result";
+  OutboundDocumentQueryRespTableEntry,
+  OutboundDocumentRetrievalRespTableEntry,
+} from "./outbound-result";
 
 dayjs.extend(duration);
-
-// TODO 1350 rename/move this file to external/ihe-gateway/poll-outbound-results.ts
 
 const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
-export type PollOutboundResults = {
+const REQUEST_ID_COLUMN = "request_id";
+const DOC_QUERY_RESULT_TABLE_NAME = "document_query_result";
+const DOC_RETRIEVAL_RESULT_TABLE_NAME = "document_retrieval_result";
+
+type PollOutboundResults = {
   requestId: string;
   patientId: string;
   cxId: string;
   numOfGateways: number;
   dbCreds: string;
-  endpointUrl: string;
 };
 
-export async function pollOutboundDQResults(
+export async function pollOutboundDocQueryResults(
   params: PollOutboundResults
-): Promise<OutboundDocumentQueryResp[]> {
+): Promise<OutboundDocumentQueryRespTableEntry[]> {
   const results = await pollResults({
     ...params,
     resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
-  return results as OutboundDocumentQueryResp[];
+  return results as OutboundDocumentQueryRespTableEntry[];
 }
 
-export async function pollOutboundDRResults(
+export async function pollOutboundDocRetrievalResults(
   params: PollOutboundResults
-): Promise<OutboundDocumentQueryResp[]> {
+): Promise<OutboundDocumentRetrievalRespTableEntry[]> {
   const results = await pollResults({
     ...params,
     resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
-  return results as OutboundDocumentRetrievalResp[];
+  return results as OutboundDocumentRetrievalRespTableEntry[];
 }
 
 async function pollResults({
@@ -58,7 +56,6 @@ async function pollResults({
   cxId,
   numOfGateways,
   dbCreds,
-  endpointUrl,
   resultsTable,
 }: PollOutboundResults & {
   resultsTable: string;
@@ -112,7 +109,7 @@ async function pollResults({
     return iheGatewayResults;
   } catch (error) {
     const msg = `Failed to post ihe gateway results - table: ${resultsTable}`;
-    console.log(`${msg} - endpoint ${endpointUrl}. Error: ${errorToString(error)}`);
+    console.log(`${msg}. Error: ${errorToString(error)}`);
     throw new MetriportError(msg, error, { requestId, patientId, cxId, numOfGateways });
   }
 }

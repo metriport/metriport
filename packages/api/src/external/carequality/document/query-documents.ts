@@ -1,23 +1,19 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
-import { processAsyncError } from "../../../errors";
-import { Config } from "../../../shared/config";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
+import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region);
-const lambdaName = Config.getOutboundDocumentQueryLambdaName();
 const iheGateway = makeIheGatewayAPIForDocQuery();
+const resultPoller = makeOutboundResultPoller();
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -31,7 +27,7 @@ export async function getDocumentsFromCQ({
 
   const interrupt = buildInterrupt({ patientId, cxId, log });
   if (!iheGateway) return interrupt(`IHE GW not available`);
-  if (!lambdaName) return interrupt(`IHE DR lambda not available`);
+  if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
@@ -57,23 +53,12 @@ export async function getDocumentsFromCQ({
     log(`Starting document query`);
     await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequests });
 
-    // This lambda polls for the results from the IHE Gateway and process them.
-    // Intentionally asynchronous.
-    lambdaClient
-      .invoke({
-        FunctionName: lambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify({
-          requestId,
-          patientId: patient.id,
-          cxId: patient.cxId,
-          numOfGateways: documentQueryRequests.length,
-        }),
-      })
-      .promise()
-      .catch(
-        processAsyncError("Failed to invoke lambda to process outbound document query responses.")
-      );
+    await resultPoller.pollOutboundDocQueryResults({
+      requestId,
+      patientId: patient.id,
+      cxId: patient.cxId,
+      numOfGateways: documentQueryRequests.length,
+    });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;
     log(`${msg}. Error: ${errorToString(error)}`);
