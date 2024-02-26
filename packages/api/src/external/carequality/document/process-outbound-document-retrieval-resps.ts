@@ -19,19 +19,19 @@ export async function processOutboundDocumentRetrievalResps({
   requestId,
   patientId,
   cxId,
-  outboundDocRetrievalResps,
+  results,
 }: {
   requestId: string;
   patientId: string;
   cxId: string;
-  outboundDocRetrievalResps: OutboundDocumentRetrievalResp[];
+  results: OutboundDocumentRetrievalResp[];
 }): Promise<void> {
   try {
     let issuesWithGateway = 0;
     let successDocsCount = 0;
 
     const resultPromises = await Promise.allSettled(
-      outboundDocRetrievalResps.map(async docRetrievalResp => {
+      results.map(async docRetrievalResp => {
         const { operationOutcome } = docRetrievalResp;
 
         if (operationOutcome?.issue) {

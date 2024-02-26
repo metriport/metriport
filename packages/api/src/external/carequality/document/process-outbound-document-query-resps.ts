@@ -16,6 +16,7 @@ import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poll
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
+import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -75,12 +76,38 @@ export async function processOutboundDocumentQueryResps({
     // when doing the doc retrieval
     await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
 
+    const respWithDRUrl: OutboundDocumentQueryResp[] = [];
+
+    const replaceDqUrlWithDrUrl = async (
+      outboundDocumentQueryResp: OutboundDocumentQueryResp
+    ): Promise<void> => {
+      const gateway = await getCQDirectoryEntryOrFail(
+        outboundDocumentQueryResp.gateway.homeCommunityId
+      );
+
+      if (!gateway.urlDR) {
+        console.log(`Gateway ${gateway.id} has no DR URL, skipping...`);
+        return;
+      }
+      respWithDRUrl.push({
+        ...outboundDocumentQueryResp,
+        gateway: {
+          ...outboundDocumentQueryResp.gateway,
+          url: gateway.urlDR,
+        },
+      });
+    };
+
+    await executeAsynchronously(results, replaceDqUrlWithDrUrl, {
+      numberOfParallelExecutions: 20,
+    });
+
     const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
       requestId,
       cxId,
       organization,
       documentReferences: docsToDownload,
-      outboundDocumentQueryResps: results,
+      outboundDocumentQueryResps: respWithDRUrl,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
