@@ -29,11 +29,11 @@ function constructMatchResponse(
       system: "000", // TBD	- what is this
     },
     patientResource: convertPatientToFHIR(patient),
-    xcpdHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
+    gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
 
-export async function processIncomingRequest(
+export async function processInboundPatientDiscovery(
   payload: InboundPatientDiscoveryReq,
   mpi: MPI
 ): Promise<InboundPatientDiscoveryResp> {

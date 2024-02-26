@@ -16,16 +16,14 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
-import cwCommands from "../../external/commonwell";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -118,24 +116,14 @@ router.put(
     }
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
       ...getETag(req),
       id,
+      facilityId,
     };
 
     const updatedPatient = await updatePatient(patientUpdate);
-
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(updatedPatient);
-    await upsertPatientToFHIRServer(updatedPatient.cxId, fhirPatient);
-
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient
-      .update(updatedPatient, facilityId)
-      .catch(processAsyncError(`cw.patient.update`));
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })

@@ -1,6 +1,6 @@
 {
   "name": "@metriport/ihe-gateway-sdk",
-  "version": "0.4.7-alpha.0",
+  "version": "0.5.0-alpha.0",
   "description": "SDK to interact with other IHE Gateways - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",

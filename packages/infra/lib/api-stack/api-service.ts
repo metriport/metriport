@@ -103,6 +103,8 @@ export function createAPIService({
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
+  const iheGateway = props.config.iheGateway;
+
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -152,6 +154,14 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
+          ...(iheGateway
+            ? {
+                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
+                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
+                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
+                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
+              }
+            : undefined),
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
@@ -171,8 +181,8 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
-          ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
-            CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
+          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
+            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
           }),
           ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
             CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,

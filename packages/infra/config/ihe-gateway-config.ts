@@ -13,6 +13,7 @@ export type IHEGatewayProps = {
   vpcId: string;
   certArn: string;
   subdomain: string; // Subdomain for IHE integrations
+  outboundSubdomain: string; // Subdomain for Outbound IHE integrations
   /**
    * ID of the existing private hosted zone where the IHE Gateway will be deployed.
    */
@@ -80,6 +81,11 @@ export type IHEGatewayProps = {
      * Optional in case its shared with document query
      */
     documentRetrieval?: number;
+  };
+  outboundPorts: {
+    patientDiscovery: number;
+    documentQuery: number;
+    documentRetrieval: number;
   };
   keystoreName: string;
   keystoreType: string;

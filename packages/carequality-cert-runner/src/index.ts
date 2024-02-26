@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { IHEGateway, APIMode } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as dotenv from "dotenv";
 import { Command } from "commander";
@@ -48,6 +48,7 @@ async function main() {
   const options = program.opts();
   dotenv.config({ path: options["envFile"] });
 
+  const iheGatewayUrl = getEnvVarOrFail("IHE_GATEWAY_URL");
   const xcpdGatewayId = getEnvVarOrFail("XCPD_GATEWAY_ID");
   const xcpdGatewayOid = getEnvVarOrFail("XCPD_GATEWAYS_OID");
   const xcpdGatewayUrl = getEnvVarOrFail("XCPD_GATEWAYS_URL");
@@ -55,7 +56,7 @@ async function main() {
   const orgName = getEnvVarOrFail("ORG_NAME");
   const orgOid = getEnvVarOrFail("ORG_OID");
 
-  const iheGateway = new IHEGateway(APIMode.dev);
+  const iheGateway = new IHEGateway({ url: iheGatewayUrl });
 
   const patient = generatePatient(
     [
