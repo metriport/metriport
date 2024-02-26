@@ -1,22 +1,58 @@
-import { Sequelize, QueryTypes } from "sequelize";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { capture } from "../../../../util/notifications";
-import { RaceControl, checkIfRaceIsComplete, controlDuration } from "../../../../util/race-control";
+import { QueryTypes, Sequelize } from "sequelize";
 import { MetriportError } from "../../../../util/error/metriport-error";
-import { initSequelizeForLambda } from "../../../../util/sequelize";
 import { errorToString } from "../../../../util/error/shared";
-import { REQUEST_ID_COLUMN } from "../../ihe-result";
-import { OutboundDocumentQueryResp, OutboundDocumentRetrievalResp } from "../../ihe-result";
+import { capture } from "../../../../util/notifications";
+import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../../util/race-control";
+import { initSequelizeForLambda } from "../../../../util/sequelize";
+import {
+  DOC_QUERY_RESULT_TABLE_NAME,
+  DOC_RETRIEVAL_RESULT_TABLE_NAME,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
+  REQUEST_ID_COLUMN,
+} from "../../ihe-result";
 
 dayjs.extend(duration);
 
-export const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
+// TODO 1350 rename/move this file to external/ihe-gateway/poll-outbound-results.ts
+
+const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
 
-export type TableResult = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
+export type PollOutboundResults = {
+  requestId: string;
+  patientId: string;
+  cxId: string;
+  numOfGateways: number;
+  dbCreds: string;
+  endpointUrl: string;
+};
 
-export async function pollIHEGatewayResults({
+export async function pollOutboundDQResults(
+  params: PollOutboundResults
+): Promise<OutboundDocumentQueryResp[]> {
+  const results = await pollResults({
+    ...params,
+    resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
+  });
+  // Since we're not using Sequelize models, we need to cast the results to the correct type
+  return results as OutboundDocumentQueryResp[];
+}
+
+export async function pollOutboundDRResults(
+  params: PollOutboundResults
+): Promise<OutboundDocumentQueryResp[]> {
+  const results = await pollResults({
+    ...params,
+    resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
+  });
+  // Since we're not using Sequelize models, we need to cast the results to the correct type
+  return results as OutboundDocumentRetrievalResp[];
+}
+
+async function pollResults({
   requestId,
   patientId,
   cxId,
@@ -24,15 +60,9 @@ export async function pollIHEGatewayResults({
   dbCreds,
   endpointUrl,
   resultsTable,
-}: {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  numOfGateways: number;
-  dbCreds: string;
-  endpointUrl: string;
+}: PollOutboundResults & {
   resultsTable: string;
-}): Promise<TableResult[]> {
+}): Promise<object[]> {
   const sequelize = initSequelizeForLambda(dbCreds);
 
   const raceControl: RaceControl = { isRaceInProgress: true };
@@ -45,14 +75,14 @@ export async function pollIHEGatewayResults({
         `IHE gateway reached timeout after ${CONTROL_TIMEOUT.asMilliseconds()} ms`
       ),
       checkIfRaceIsComplete(
-        () => isIheGatewayResultsComplete(sequelize, resultsTable, requestId, numOfGateways),
+        () => isResultsComplete(sequelize, resultsTable, requestId, numOfGateways),
         raceControl,
         `IHE gateway results came back in full (${numOfGateways} links).`,
         CHECK_DB_INTERVAL.asMilliseconds()
       ),
     ]);
 
-    const iheGatewayResults = await queryIHEGatewayResults(sequelize, resultsTable, requestId);
+    const iheGatewayResults = await getResults(sequelize, resultsTable, requestId);
 
     const allGWsCompleted = iheGatewayResults.length === numOfGateways;
 
@@ -87,17 +117,17 @@ export async function pollIHEGatewayResults({
   }
 }
 
-async function isIheGatewayResultsComplete(
+async function isResultsComplete(
   sequelize: Sequelize,
   resultsTable: string,
   requestId: string,
   numOfGatewaysInRequest: number
 ): Promise<boolean> {
-  const iheResultCount = await getIHEGatewayResultCount(sequelize, resultsTable, requestId);
+  const iheResultCount = await getResultsCount(sequelize, resultsTable, requestId);
   return iheResultCount >= numOfGatewaysInRequest;
 }
 
-async function getIHEGatewayResultCount(
+async function getResultsCount(
   sequelize: Sequelize,
   resultsTable: string,
   requestId: string
@@ -117,21 +147,20 @@ async function getIHEGatewayResultCount(
   }
 }
 
-async function queryIHEGatewayResults(
+async function getResults(
   sequelize: Sequelize,
   resultsTable: string,
   requestId: string
-): Promise<TableResult[]> {
+): Promise<object[]> {
   try {
     const query = `SELECT * FROM ${resultsTable} WHERE ${REQUEST_ID_COLUMN} = '${requestId}' ORDER BY created_at DESC;`;
-    const res = (await sequelize.query(query, {
+    const results = await sequelize.query(query, {
       type: QueryTypes.SELECT,
-    })) as TableResult[];
+    });
 
-    return res;
+    return results;
   } catch (error) {
-    const msg = `Failed to query ${resultsTable} results. Error: ${error}`;
-
+    const msg = `Failed to query table ${resultsTable}`;
     throw new MetriportError(msg, error);
   }
 }
