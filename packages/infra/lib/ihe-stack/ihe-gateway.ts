@@ -92,7 +92,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
 
 function addProxyRoute(path: string, serverAddress: string, apiGateway: apigwv2.HttpApi) {
   const integration = new HttpUrlIntegration(`${path}Integration`, serverAddress, {
-    method: apigwv2.HttpMethod.ANY, // Assuming you want to proxy any HTTP method
+    method: apigwv2.HttpMethod.ANY,
   });
   apiGateway.addRoutes({
     path,
