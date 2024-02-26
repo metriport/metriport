@@ -38,7 +38,7 @@ const outboundDocumentRetrievalRespSuccessfulSchema = baseResponseSchema.extend(
 
 const outboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema.extend({
   gateway: xcaGatewaySchema,
-  documentReference: z.array(documentReferenceSchema).nullish(),
+  documentReference: z.never().or(z.literal(undefined)),
 });
 
 export const outboundDocumentRetrievalRespSchema = z.union([
