@@ -43,14 +43,15 @@
     "node-fetch": "^2.6.12",
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
+    "sequelize": "^6.37.1",
     "uuid": "^9.0.0",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@metriport/core": "file:packages/core",
+    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",
