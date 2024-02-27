@@ -22,6 +22,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Postprocessor - ' + ex);
+	throw ex;
 }
 
 

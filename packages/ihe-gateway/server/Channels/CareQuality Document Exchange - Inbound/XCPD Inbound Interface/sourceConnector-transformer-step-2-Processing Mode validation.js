@@ -20,4 +20,5 @@ try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: Processing Mode Validation - ' + ex);
+	throw ex;
 }

@@ -49,4 +49,5 @@ try {
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: Query parameters - ' + ex);
+	throw ex;
 }

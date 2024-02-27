@@ -29,29 +29,8 @@ try {
 
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
-		
-		// Case 6: The Initiating Gateway shall accept a SOAP fault representing a transmission error
-		soapFaultCode = xml.*::Body.*::Fault.*::Code.*::Value.toString();
-		soapReason = xml.*::Body.*::Fault.*::Reason.*::Text.toString();
-		
+
 		channelMap.put('ACK', 'SOAP_FAULT');
-		channelMap.put('RESULT', soapReason);
-
-		// Generate response to be sent to the app
-		var operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
-		var issue = {
-					 "severity": "fatal",
-					 "code": "structure",
-					 "details": {"text": ""}
-				};
-		issue.details.text = soapReason.toString();
-		operationOutcome.issue.push(issue);
-
-		var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
-		
-		// Send the response back to the app
-		var result = router.routeMessageByChannelId(globalMap.get('XCPDAPPINTERFACE'), JSON.stringify(_response));
-		
 		return;
 		
 	} else {
@@ -77,4 +56,5 @@ try {
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response - ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());
+	throw ex;
 }

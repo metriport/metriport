@@ -85,8 +85,8 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 	} catch(ex) {
-logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+		throw ex;
 	}
 
 	// Stop further processing

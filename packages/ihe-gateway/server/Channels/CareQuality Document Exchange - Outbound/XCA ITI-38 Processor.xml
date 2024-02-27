@@ -10,7 +10,7 @@
 TODO: Update SAML Attributes
 
 Last updated: Dec 07 2023</description>
-  <revision>77</revision>
+  <revision>78</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -300,6 +300,12 @@ Last updated: Dec 07 2023</description>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-2-CASE 2: Failure.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>catch-all</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-3-catch-all.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
         <outboundTemplate encoding="base64"/>
@@ -406,8 +412,8 @@ Last updated: Dec 07 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708746065665</time>
-        <timezone>America/New_York</timezone>
+        <time>1709074732734</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>7</pruneMetaDataDays>

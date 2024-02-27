@@ -21,4 +21,5 @@ if (configurationMap.containsKey('INBOUND.QUEUE.SIZE')) try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: Message Throttling - ' + ex);
+	throw ex;
 }

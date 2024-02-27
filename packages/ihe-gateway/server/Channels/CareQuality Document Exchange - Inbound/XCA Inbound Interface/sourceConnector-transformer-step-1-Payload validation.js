@@ -32,6 +32,7 @@ if (payload) {
 	
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA Inbound Interface: XML Schema validation - ' + ex);
+		throw ex;
 	}	
 }
 
