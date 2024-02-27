@@ -28,6 +28,10 @@ export class IHEStack extends Stack {
     if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
     const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
 
+    new apigwv2.VpcLink(this, "HttpVpcLink", {
+      vpc: vpc,
+    });
+
     const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
 
     //-------------------------------------------
