@@ -3,6 +3,12 @@ var http = $('responseStatusLine');
 http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
 channelMap.put('HTTP', http.toString());
 
+// https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_2/page/connect/connect/topics/c_Common_Scenarios_connect_ug.html
+//if (responseStatus == QUEUED && connectorMessage.getSendAttempts() >= 2) {
+//	responseStatus = ERROR;
+//	responseStatusMessage = 'Maximum send attempts exceeded.';
+//}
+
 // Decode and parse XCPD ITI-55 (Cross Gateway Patient Discovery Response) message
 var xml = null;
 

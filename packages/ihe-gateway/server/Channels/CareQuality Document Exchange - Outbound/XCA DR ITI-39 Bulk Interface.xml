@@ -10,7 +10,7 @@ Comments:
  - see example of the request here: https://drive.google.com/drive/folders/1yKVHYyQPhkCHDo9Ow8lpT4vFHq7LY_9O
 
 Last updated: Dec 05 2023</description>
-  <revision>46</revision>
+  <revision>47</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -48,8 +48,8 @@ Last updated: Dec 05 2023</description>
         <port>8085</port>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
-        <responseVariable>None</responseVariable>
-        <respondAfterProcessing>true</respondAfterProcessing>
+        <responseVariable>Auto-generate (Before processing)</responseVariable>
+        <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
         <processingThreads>10</processingThreads>
@@ -255,8 +255,8 @@ Last updated: Dec 05 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1702669031198</time>
-        <timezone>America/Vancouver</timezone>
+        <time>1709002449506</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
