@@ -15,7 +15,7 @@ if ! [[ $DOT_ENV_FILE ]]; then
 fi
 echo "Loading environment variables from $DOT_ENV_FILE"
 
-if [ -f $FILE ]; then
+if [ -f $DOT_ENV_FILE ]; then
     set -o allexport
     source $DOT_ENV_FILE
     set +o allexport
