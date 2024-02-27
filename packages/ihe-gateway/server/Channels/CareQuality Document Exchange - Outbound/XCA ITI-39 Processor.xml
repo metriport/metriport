@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Jan 12 2024</description>
-  <revision>77</revision>
+  <revision>78</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -130,7 +130,7 @@ Last updated: Jan 12 2024</description>
         <port>{urn:ihe:iti:xds-b:2007}RespondingGateway_Retrieve_Port_Soap</port>
         <operation>RespondingGateway_CrossGatewayRetrieve</operation>
         <locationURI>${URL}</locationURI>
-        <socketTimeout>30000</socketTimeout>
+        <socketTimeout>60000</socketTimeout>
         <useAuthentication>false</useAuthentication>
         <username/>
         <password/>
@@ -409,8 +409,8 @@ Last updated: Jan 12 2024</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708956880097</time>
-        <timezone>America/New_York</timezone>
+        <time>1709002526347</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
