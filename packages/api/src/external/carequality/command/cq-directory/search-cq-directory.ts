@@ -101,9 +101,15 @@ export function toBasicOrgAttributes(org: CQDirectoryEntryModel): CQOrgBasicDeta
 }
 
 export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetails[] {
-  return orgs.filter(org => {
-    if (org.active && hasValidXcpdLink(org)) return org;
-  });
+  const uniqueOrgsById = new Map<string, CQOrgBasicDetails>();
+  for (const org of orgs) {
+    if (org.active && hasValidXcpdLink(org)) {
+      if (!uniqueOrgsById.has(org.id)) {
+        uniqueOrgsById.set(org.id, org);
+      }
+    }
+  }
+  return Array.from(uniqueOrgsById.values());
 }
 
 function constructGatewayExcludeList(): string[] {
