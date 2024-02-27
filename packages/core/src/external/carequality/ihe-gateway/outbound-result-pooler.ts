@@ -6,6 +6,9 @@ export type PollOutboundResults = {
 };
 
 export abstract class OutboundResultPoller {
+  abstract isPDEnabled(): boolean;
+  abstract pollOutboundPatientDiscoveryResults(params: PollOutboundResults): Promise<void>;
+
   abstract isDQEnabled(): boolean;
   abstract pollOutboundDocQueryResults(params: PollOutboundResults): Promise<void>;
 

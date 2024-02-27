@@ -11,6 +11,7 @@ import {
   pollOutboundDocQueryResults,
   pollOutboundDocRetrievalResults,
 } from "@metriport/core/external/carequality/ihe-gateway/poll-outbound-results";
+import axios from "axios";
 
 dayjs.extend(duration);
 
@@ -23,13 +24,18 @@ const patientDiscoveryResultTableName = "patient_discovery_result";
 
 const dbCreds = JSON.parse(sqlDBCreds);
 
-const PATIENT_SLEEP = dayjs.duration({ minutes: 1 });
-const DOC_STATUS_SLEEP = dayjs.duration({ minutes: 1 });
+const DOC_STATUS_SLEEP = dayjs.duration({ seconds: 30 });
+const PATIENT_SLEEP = dayjs.duration({ seconds: 30 });
 
 const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
+});
+
+export const internalApi = axios.create({
+  baseURL: apiUrl,
+  headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
 });
 
 const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
@@ -69,9 +75,16 @@ async function main() {
     await sleep(PATIENT_SLEEP.asMilliseconds());
 
     const cqPatientDataQuery = `SELECT * FROM ${cqPatientDataTableName} WHERE id = '${newPatient.id}'`;
-    const cqPatientDataResults = await sequelize.query(cqPatientDataQuery, {
+    let cqPatientDataResults = await sequelize.query(cqPatientDataQuery, {
       type: QueryTypes.SELECT,
     });
+
+    while (cqPatientDataResults.length === 0) {
+      await sleep(PATIENT_SLEEP.asMilliseconds());
+      cqPatientDataResults = await sequelize.query(cqPatientDataQuery, {
+        type: QueryTypes.SELECT,
+      });
+    }
 
     const cqPatientData = cqPatientDataResults[0] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     console.log("cqPatientData:", cqPatientData);
@@ -130,7 +143,16 @@ async function main() {
 
     await sleep(DOC_STATUS_SLEEP.asMilliseconds());
 
-    const docQueryStatus = await metriportAPI.getDocumentQueryStatus(newPatient.id);
+    let docQueryStatus = await metriportAPI.getDocumentQueryStatus(newPatient.id);
+
+    while (
+      docQueryStatus.download?.status === "processing" &&
+      docQueryStatus.convert?.status === "processing"
+    ) {
+      await sleep(DOC_STATUS_SLEEP.asMilliseconds());
+      console.log("Document query status:", JSON.stringify(docQueryStatus, null, 2));
+      docQueryStatus = await metriportAPI.getDocumentQueryStatus(newPatient.id);
+    }
 
     console.log("Document query status:", docQueryStatus);
   } catch (error) {
@@ -138,7 +160,10 @@ async function main() {
   }
 
   console.log("Deleting patient...");
-  await metriportAPI.deletePatient(patientId, facilityId);
+
+  await internalApi.delete(`/internal/patient/${patientId}`, {
+    params: { cxId, facilityId },
+  });
 
   console.log("E2E validation complete");
   process.exit(0);

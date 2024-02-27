@@ -1,4 +1,4 @@
-import { OutboundPatientDiscoveryResp } from "../../patient-discovery-result";
+import { OutboundPatientDiscoveryResp } from "../../outbound-patient-discovery-resp";
 import { OutboundPatientDiscoveryRespModel } from "../../models/outbound-patient-discovery-resp";
 
 export function getOutboundPatientDiscoveryResps(

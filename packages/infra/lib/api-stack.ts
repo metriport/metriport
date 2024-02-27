@@ -332,6 +332,15 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
       lambdaLayers,
       vpc: this.vpc,
@@ -401,6 +410,7 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
@@ -468,6 +478,11 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
+    outboundPatientDiscoveryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
     outboundDocumentQueryLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
@@ -1124,6 +1139,35 @@ export class APIStack extends Stack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupOutboundPatientDiscovery(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const outboundPatientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "OutboundPatientDiscovery",
+      entry: "outbound-patient-discovery",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return outboundPatientDiscoveryLambda;
   }
 
   private setupOutboundDocumentQuery(ownProps: {

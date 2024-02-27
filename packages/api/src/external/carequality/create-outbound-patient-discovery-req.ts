@@ -5,7 +5,7 @@ import dayjs from "dayjs";
 import { createPurposeOfUse } from "./shared";
 
 // TODO: https://github.com/metriport/metriport/pull/1302#discussion_r1422870828
-export function createPatientDiscoveryRequest({
+export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
   xcpdGateways,

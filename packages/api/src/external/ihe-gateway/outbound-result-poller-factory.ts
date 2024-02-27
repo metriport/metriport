@@ -5,9 +5,11 @@ import { Config } from "../../shared/config";
 
 export function makeOutboundResultPoller(): OutboundResultPoller {
   if (Config.isCloudEnv()) {
+    const patientDiscoveryLambdaName = Config.getOutboundPatientDiscoveryLambdaName();
     const docQueryLambdaName = Config.getOutboundDocumentQueryLambdaName();
     const docRetrievalLambdaName = Config.getOutboundDocumentRetrievalLambdaName();
     return new OutboundResultPoolerLambda({
+      patientDiscoveryLambdaName,
       docQueryLambdaName,
       docRetrievalLambdaName,
     });

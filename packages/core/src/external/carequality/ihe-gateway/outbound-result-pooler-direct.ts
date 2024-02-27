@@ -3,6 +3,7 @@ import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poo
 import {
   pollOutboundDocQueryResults,
   pollOutboundDocRetrievalResults,
+  pollOutboundPatientDiscoveryResults,
 } from "./poll-outbound-results";
 
 const api = axios.create();
@@ -14,6 +15,7 @@ const api = axios.create();
  * sends the results to the API.
  */
 export class OutboundResultPoolerDirect extends OutboundResultPoller {
+  private readonly patientDiscoveryResultsUrl: string;
   private readonly docQueryResultsUrl: string;
   private readonly docRetrievalResultsUrl: string;
   readonly isValid: boolean;
@@ -23,18 +25,40 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
     try {
       new URL(apiUrl);
       this.isValid = true;
+      this.patientDiscoveryResultsUrl = `${apiUrl}/internal/carequality/patient-discovery/results`;
       this.docQueryResultsUrl = `${apiUrl}/internal/carequality/document-query/results`;
       this.docRetrievalResultsUrl = `${apiUrl}/internal/carequality/document-retrieval/results`;
     } catch (error) {
       this.isValid = false;
+      this.patientDiscoveryResultsUrl = `invalid`;
       this.docQueryResultsUrl = `invalid`;
       this.docRetrievalResultsUrl = `invalid`;
     }
   }
 
+  isPDEnabled(): boolean {
+    return this.isValid;
+  }
+
+  async pollOutboundPatientDiscoveryResults(params: PollOutboundResults): Promise<void> {
+    if (!this.isPDEnabled()) throw new Error(`PD polling is not enabled`);
+    const results = await pollOutboundPatientDiscoveryResults({
+      ...params,
+      dbCreds: this.dbCreds,
+    });
+    const { requestId, patientId, cxId } = params;
+    await api.post(this.patientDiscoveryResultsUrl, {
+      requestId,
+      patientId,
+      cxId,
+      results,
+    });
+  }
+
   isDQEnabled(): boolean {
     return this.isValid;
   }
+
   async pollOutboundDocQueryResults(params: PollOutboundResults): Promise<void> {
     if (!this.isDQEnabled()) throw new Error(`DQ polling is not enabled`);
     const results = await pollOutboundDocQueryResults({
