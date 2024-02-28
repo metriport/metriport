@@ -22,7 +22,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   const result = await processInboundPatientDiscovery(baseRequest, mpi);
   return buildResponse(200, result);
 });
-
 const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
   headers: { "Content-Type": "application/json" },
