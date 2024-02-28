@@ -1,20 +1,26 @@
-import {
-  DocumentReference,
-  OutboundDocumentQueryResp,
-  OutboundDocumentRetrievalResp,
-  DocumentReference as IHEGWDocumentReference,
-} from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceContent } from "@medplum/fhirtypes";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
+import {
+  DocumentReference,
+  DocumentReference as IHEGWDocumentReference,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
+} from "@metriport/ihe-gateway-sdk";
 import { cqExtension } from "../../carequality/extension";
-import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
+import { createDocReferenceContent, DocumentReferenceWithId } from "../../fhir/document";
 import { DataSourceExtension } from "../../fhir/shared/extensions/metriport";
 
 export type DocumentReferenceWithMetriportId = DocumentReference & {
-  id: string;
+  metriportId: string;
 };
 
 type IHEResults = OutboundDocumentQueryResp | OutboundDocumentRetrievalResp;
+
+export function containsMetriportId(
+  docRef: IHEGWDocumentReference
+): docRef is DocumentReferenceWithMetriportId {
+  return docRef.metriportId != undefined;
+}
 
 /**
  * Converts the IHE Gateway results to a IHE DocumentReference Schema
