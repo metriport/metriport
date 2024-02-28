@@ -4,9 +4,10 @@ import crypto from "crypto";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
-import { isNoWebhookPongEnabledForCx } from "../../external/aws/appConfig";
+import { isWebhookPongDisabledForCx } from "../../external/aws/appConfig";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { EventTypes, analytics } from "../../shared/analytics";
@@ -16,7 +17,6 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
-import { z } from "zod";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -219,12 +219,14 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
     },
   };
 
+  const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
+  if (isWebhookPongDisabled) return true;
+
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
 
-  const isNoWebhookPongEnabled = await isNoWebhookPongEnabledForCx(cxId);
   if (!res) return false;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return isNoWebhookPongEnabled || (res.pong && res.pong === ping) ? true : false;
+  return res.pong === ping ? true : false;
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {
