@@ -10,7 +10,7 @@ const mpi = new MPIMetriportAPI(apiUrl);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
   if (!event.body) {
-    return buildResponse(400, { message: "Request body is missing" });
+    return buildResponse(400, { message: "The Request body is missing" });
   }
   const payload = JSON.parse(event.body);
   const baseRequest = inboundPatientDiscoveryReqSchema.parse({
@@ -22,7 +22,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProx
   const result = await processInboundPatientDiscovery(baseRequest, mpi);
   return buildResponse(200, result);
 });
-
 const buildResponse = (status: number, body?: unknown) => ({
   statusCode: status,
   headers: { "Content-Type": "application/json" },

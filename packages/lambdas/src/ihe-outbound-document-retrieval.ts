@@ -30,17 +30,23 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       }
 
       const pooler = new OutboundResultPoolerDirect(apiUrl, dbCreds);
-      await pooler.pollOutboundDocQueryResults({
+      await pooler.pollOutboundDocRetrievalResults({
         requestId,
         patientId,
         cxId,
         numOfGateways,
       });
     } catch (error) {
-      const msg = `Error sending document query results`;
+      const msg = `Error sending document retrieval results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(msg, {
-        extra: { context: `lambda.outbound-document-query`, error, patientId, requestId, cxId },
+        extra: {
+          context: `lambda.ihe-outbound-document-retrieval`,
+          error,
+          patientId,
+          requestId,
+          cxId,
+        },
       });
     }
   }
