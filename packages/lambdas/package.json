@@ -41,6 +41,7 @@
     "lodash": "^4.17.21",
     "nanoid": "^3.3.6",
     "node-fetch": "^2.6.12",
+    "pg": "^8.11.3",
     "puppeteer-core": "18.0.5",
     "saxon-js": "^2.5.0",
     "sequelize": "^6.37.1",
