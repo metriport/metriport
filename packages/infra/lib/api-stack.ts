@@ -1200,7 +1200,7 @@ export class APIStack extends Stack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(30),
+      timeout: Duration.minutes(15),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -1234,7 +1234,7 @@ export class APIStack extends Stack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(30),
+      timeout: Duration.minutes(15),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -1292,7 +1292,7 @@ export class APIStack extends Stack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(30),
+      timeout: Duration.minutes(15),
       vpc,
       alarmSnsAction: alarmAction,
     });
