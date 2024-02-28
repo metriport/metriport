@@ -177,7 +177,7 @@ export const processRequest = async (
 };
 
 const webhookResponseSchema = z.object({
-  pong: z.string(),
+  pong: z.string().optional(),
 });
 
 type WebhookResponseSchema = z.infer<typeof webhookResponseSchema>;
@@ -219,14 +219,13 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
     },
   };
 
-  const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
-  if (isWebhookPongDisabled) return true;
-
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
+  const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
 
+  if (isWebhookPongDisabled) return true;
   if (!res) return false;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return res.pong === ping ? true : false;
+  return res.pong && res.pong === ping ? true : false;
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {
