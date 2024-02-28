@@ -102,11 +102,6 @@ export async function queryAndProcessDocuments({
       isCQDirectEnabledForCx(patientParam.cxId),
     ]);
 
-    if (!patient && isECEnabledForThisCx) {
-      log(`Couldn't get CW Data for Patient, but EC is enabled for CX, skipping DQ.`);
-      return;
-    }
-
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
