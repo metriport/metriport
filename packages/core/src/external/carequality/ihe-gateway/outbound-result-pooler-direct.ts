@@ -1,4 +1,9 @@
 import axios from "axios";
+import {
+  OutboundPatientDiscoveryResp,
+  OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalResp,
+} from "@metriport/ihe-gateway-sdk";
 import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-pooler";
 import {
   pollOutboundDocQueryResults,
@@ -7,6 +12,27 @@ import {
 } from "./poll-outbound-results";
 
 const api = axios.create();
+
+export type OutboundPatientDiscoveryRespResults = {
+  patientId: string;
+  cxId: string;
+  requestId: string;
+  results: OutboundPatientDiscoveryResp[];
+};
+
+export type OutboundDocQueryRespResults = {
+  patientId: string;
+  cxId: string;
+  requestId: string;
+  results: OutboundDocumentQueryResp[];
+};
+
+export type OutboundDocRetrievalRespResults = {
+  patientId: string;
+  cxId: string;
+  requestId: string;
+  results: OutboundDocumentRetrievalResp[];
+};
 
 /**
  * Direct DB access implementation of OutboundResultPooler.
@@ -47,12 +73,15 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
       dbCreds: this.dbCreds,
     });
     const { requestId, patientId, cxId } = params;
-    await api.post(this.patientDiscoveryResultsUrl, {
+
+    const payload: OutboundPatientDiscoveryRespResults = {
       requestId,
       patientId,
       cxId,
       results,
-    });
+    };
+
+    await api.post(this.patientDiscoveryResultsUrl, payload);
   }
 
   isDQEnabled(): boolean {
@@ -66,12 +95,15 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
       dbCreds: this.dbCreds,
     });
     const { requestId, patientId, cxId } = params;
-    await api.post(this.docQueryResultsUrl, {
+
+    const payload: OutboundDocQueryRespResults = {
       requestId,
       patientId,
       cxId,
       results,
-    });
+    };
+
+    await api.post(this.docQueryResultsUrl, payload);
   }
 
   isDREnabled(): boolean {
@@ -84,11 +116,14 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
       dbCreds: this.dbCreds,
     });
     const { requestId, patientId, cxId } = params;
-    await api.post(this.docRetrievalResultsUrl, {
+
+    const payload: OutboundDocRetrievalRespResults = {
       requestId,
       patientId,
       cxId,
       results,
-    });
+    };
+
+    await api.post(this.docRetrievalResultsUrl, payload);
   }
 }

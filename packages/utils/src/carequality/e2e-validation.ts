@@ -67,6 +67,25 @@ const testPatient: PatientCreate = {
   ],
 };
 
+type Link = {
+  id: string;
+  oid: string;
+  url: string;
+  systemId: string;
+  patientId: string;
+};
+
+type CQPatientData = {
+  id: string;
+  cx_id: string;
+  data: {
+    links: Link[];
+  };
+  created_at: string;
+  updated_at: string;
+  version: number;
+};
+
 async function main() {
   let patientId = "";
 
@@ -92,8 +111,8 @@ async function main() {
       });
     }
 
-    const cqPatientData = cqPatientDataResults[0] as any; // eslint-disable-line @typescript-eslint/no-explicit-any
-    console.log("cqPatientData:", cqPatientData);
+    const cqPatientData = cqPatientDataResults[0] as CQPatientData;
+    console.log("cqPatientData:", JSON.stringify(cqPatientData, null, 2));
     const links = cqPatientData.data.links;
 
     if (cqPatientDataResults.length === 0) {
@@ -156,8 +175,8 @@ async function main() {
     let docQueryStatus = await metriportAPI.getDocumentQueryStatus(newPatient.id);
 
     while (
-      docQueryStatus.download?.status === "processing" &&
-      docQueryStatus.convert?.status === "processing"
+      (docQueryStatus.download && docQueryStatus.download?.status === "processing") ||
+      (docQueryStatus.convert && docQueryStatus.convert?.status === "processing")
     ) {
       await sleep(DOC_STATUS_SLEEP.asMilliseconds());
       console.log("Document query status:", JSON.stringify(docQueryStatus, null, 2));

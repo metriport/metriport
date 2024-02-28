@@ -1148,9 +1148,9 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    dbCluster: rds.DatabaseCluster;
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
       ownProps;
@@ -1166,7 +1166,7 @@ export class APIStack extends Stack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(5),
+      timeout: Duration.minutes(15),
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -1182,9 +1182,9 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    dbCluster: rds.DatabaseCluster;
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
       ownProps;
@@ -1216,9 +1216,9 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    dbCluster: rds.DatabaseCluster;
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
       ownProps;
@@ -1292,7 +1292,7 @@ export class APIStack extends Stack {
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(15),
+      timeout: Duration.minutes(5),
       vpc,
       alarmSnsAction: alarmAction,
     });

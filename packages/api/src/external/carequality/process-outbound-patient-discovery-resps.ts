@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
+import { OutboundPatientDiscoveryRespResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
@@ -17,12 +18,7 @@ export async function processOutboundPatientDiscoveryResps({
   patientId,
   cxId,
   results,
-}: {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  results: OutboundPatientDiscoveryResp[];
-}): Promise<void> {
+}: OutboundPatientDiscoveryRespResults): Promise<void> {
   const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
