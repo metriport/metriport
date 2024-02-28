@@ -338,6 +338,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -347,6 +348,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
     });
 
     const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
@@ -356,6 +358,7 @@ export class APIStack extends Stack {
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
@@ -1147,8 +1150,10 @@ export class APIStack extends Stack {
     dbCredsSecret: secret.ISecret;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
+      ownProps;
 
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
@@ -1166,6 +1171,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    dbCluster.connections.allowDefaultPortFrom(outboundPatientDiscoveryLambda);
     dbCredsSecret.grantRead(outboundPatientDiscoveryLambda);
 
     return outboundPatientDiscoveryLambda;
@@ -1178,8 +1184,10 @@ export class APIStack extends Stack {
     dbCredsSecret: secret.ISecret;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
+      ownProps;
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
@@ -1197,6 +1205,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentQueryLambda);
     dbCredsSecret.grantRead(outboundDocumentQueryLambda);
 
     return outboundDocumentQueryLambda;
@@ -1209,8 +1218,10 @@ export class APIStack extends Stack {
     dbCredsSecret: secret.ISecret;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
+    dbCluster: rds.DatabaseCluster;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
+      ownProps;
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
@@ -1228,6 +1239,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentRetrievalLambda);
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
