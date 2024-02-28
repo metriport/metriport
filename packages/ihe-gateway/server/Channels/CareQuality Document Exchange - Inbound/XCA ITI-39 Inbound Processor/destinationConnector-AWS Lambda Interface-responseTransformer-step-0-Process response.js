@@ -31,5 +31,5 @@ try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Processor: ' + ex);
-	return;
+	throw ex;
 }

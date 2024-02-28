@@ -1,19 +1,22 @@
-import { makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { errorToString } from "@metriport/core/util/error/shared";
-import { capture } from "@metriport/core/util/notifications";
 import { Patient } from "@metriport/core/domain/patient";
-import { Config } from "../../../shared/config";
-import { createCQDocumentQueryRequests } from "./document-query-request";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
-import { makeIheGatewayAPI } from "../api";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { errorToString } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
+import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
+import { isCQDirectEnabledForCx } from "../../aws/appConfig";
+import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
+import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
+import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
+import { CQLink } from "../cq-patient-data";
+import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 
-const region = Config.getAWSRegion();
-const lambdaClient = makeLambdaClient(region);
-const iheGateway = makeIheGatewayAPI();
-const lambdaName = Config.getDocQueryResultsLambdaName();
+const iheGateway = makeIheGatewayAPIForDocQuery();
+const resultPoller = makeOutboundResultPoller();
 
 export async function getDocumentsFromCQ({
   requestId,
@@ -22,41 +25,63 @@ export async function getDocumentsFromCQ({
   requestId: string;
   patient: Patient;
 }) {
-  if (!iheGateway) return;
+  const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
+  const { cxId, id: patientId } = patient;
+
+  const interrupt = buildInterrupt({ patientId, cxId, log });
+  if (!iheGateway) return interrupt(`IHE GW not available`);
+  if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
+  if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const organization = await getOrganizationOrFail({ cxId: patient.cxId });
-    const cqPatientData = await getCQPatientData({ id: patient.id, cxId: patient.cxId });
+    const [organization, cqPatientData] = await Promise.all([
+      getOrganizationOrFail({ cxId }),
+      getCQPatientData({ id: patient.id, cxId }),
+    ]);
 
-    const documentQueryRequests = createCQDocumentQueryRequests({
+    if (!cqPatientData || cqPatientData.data.links.length <= 0) {
+      return interrupt(`Patient has no CQ links, skipping DQ`);
+    }
+
+    const linksWithDqUrl: CQLink[] = [];
+    const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
+      const gateway = await getCQDirectoryEntryOrFail(patientLink.oid);
+      if (!gateway.urlDQ) {
+        log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
+        return;
+      }
+      linksWithDqUrl.push({
+        ...patientLink,
+        url: gateway.urlDQ,
+      });
+    };
+    await executeAsynchronously(cqPatientData.data.links, addDqUrlToCqLink, {
+      numberOfParallelExecutions: 20,
+    });
+
+    const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
-      cxId: patient.cxId,
+      patientId,
+      cxId,
       organization,
-      cqLinks: cqPatientData?.data.links ?? [],
+      cqLinks: linksWithDqUrl,
     });
 
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    await iheGateway.startDocumentsQuery({ documentQueryReqToExternalGW: documentQueryRequests });
+    log(`Starting document query`);
+    await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequests });
 
-    // We invoke the lambda that will start polling for the results
-    // from the IHE Gateway and process them
-    await lambdaClient
-      .invoke({
-        FunctionName: lambdaName,
-        InvocationType: "Event",
-        Payload: JSON.stringify({
-          requestId,
-          patientId: patient.id,
-          cxId: patient.cxId,
-          numOfLinks: documentQueryRequests.length,
-        }),
-      })
-      .promise();
+    await resultPoller.pollOutboundDocQueryResults({
+      requestId,
+      patientId: patient.id,
+      cxId: patient.cxId,
+      numOfGateways: documentQueryRequests.length,
+    });
   } catch (error) {
-    const msg = `Failed to query and process documents - Carequality.`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
+    const msg = `Failed to query and process documents - Carequality`;
+    log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
@@ -75,4 +100,22 @@ export async function getDocumentsFromCQ({
     });
     throw error;
   }
+}
+
+function buildInterrupt({
+  patientId,
+  cxId,
+  log,
+}: {
+  patientId: string;
+  cxId: string;
+  log: typeof console.log;
+}) {
+  return async (reason: string): Promise<void> => {
+    log(reason + ", skipping DQ");
+    await resetDocQueryProgress({
+      patient: { id: patientId, cxId },
+      source: MedicalDataSource.CAREQUALITY,
+    });
+  };
 }

@@ -1,24 +1,19 @@
-import {
-  ORG_POSITION,
-  TRANSACTION_URL,
-  XCA_DQ_STRING,
-  XCA_DR_STRING,
-  XCPD_STRING,
-} from "@metriport/carequality-sdk/common/util";
+import { ORG_POSITION, TRANSACTION_URL } from "@metriport/carequality-sdk/common/util";
 import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
-import { Organization } from "@metriport/carequality-sdk/models/organization";
+import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { capture } from "@metriport/core/util/notifications";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
+import { CQOrgUrls } from "../../shared";
 
 const EARTH_RADIUS = 6378168;
 
-export type XCUrls = {
-  urlXCPD: string;
-  urlDQ?: string;
-  urlDR?: string;
-};
+const XCPD_STRING = "ITI-55";
+const XCA_DQ_STRING = "ITI-38";
+const XCA_DR_STRING = "ITI-39";
+type ChannelUrl = typeof XCPD_STRING | typeof XCA_DQ_STRING | typeof XCA_DR_STRING;
 
 export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryEntryData[] {
   const parsedOrgs = orgsInput.flatMap(org => {
@@ -27,27 +22,31 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const normalizedOid = getOid(org);
     if (!normalizedOid) return [];
 
-    const url = getUrls(org.contained);
-    if (!url?.urlXCPD) return [];
-
+    const urls = getUrls(org.contained);
     const coordinates = org.address ? getCoordinates(org.address) : undefined;
     const lat = coordinates ? coordinates.lat : undefined;
     const lon = coordinates ? coordinates.lon : undefined;
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
-
+    const managingOrganization = org.managingOrg ? getManagingOrg(org.managingOrg) : undefined;
+    const managingOrganizationId = getManagingOrgId(org);
     const state = getState(org.address);
+    const active = org.active?.value ?? false;
 
     const orgData: CQDirectoryEntryData = {
       id: normalizedOid,
       name: org.name?.value ?? undefined,
-      urlXCPD: url.urlXCPD,
-      urlDQ: url.urlDQ,
-      urlDR: url.urlDR,
+      urlXCPD: urls?.urlXCPD,
+      urlDQ: urls?.urlDQ,
+      urlDR: urls?.urlDR,
       lat,
       lon,
       point,
       state,
       data: org,
+      managingOrganization,
+      managingOrganizationId,
+      gateway: false,
+      active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
     return orgData;
@@ -74,34 +73,45 @@ function convertDegreesToRadians(degrees: number): number {
   return (degrees * Math.PI) / 180;
 }
 
-function getUrls(contained: Contained): XCUrls | undefined {
+function getUrls(contained: Contained): CQOrgUrls {
   const endpointMap: Record<string, string> = {};
 
   contained?.forEach(c => {
     const ext = c?.Endpoint.extension.extension.find(ext => ext.url === TRANSACTION_URL);
-    const type = ext?.valueString?.value;
+    const type = getUrlType(ext?.valueString?.value);
 
     if (type && c?.Endpoint?.address?.value) {
       endpointMap[type] = c.Endpoint.address.value;
     }
   });
 
+  const urls: CQOrgUrls = {};
   const urlXCPD = endpointMap[XCPD_STRING];
+  const urlDQ = endpointMap[XCA_DQ_STRING];
+  const urlDR = endpointMap[XCA_DR_STRING];
 
-  if (!urlXCPD) return;
-
-  const urls: XCUrls = {
-    urlXCPD,
-  };
-
-  if (endpointMap[XCA_DQ_STRING]) {
-    urls.urlDQ = endpointMap[XCA_DQ_STRING];
+  if (isValidUrl(urlXCPD)) {
+    urls.urlXCPD = urlXCPD;
   }
-  if (endpointMap[XCA_DR_STRING]) {
-    urls.urlDR = endpointMap[XCA_DR_STRING];
+  if (isValidUrl(urlDQ)) {
+    urls.urlDQ = urlDQ;
+  }
+  if (isValidUrl(urlDR)) {
+    urls.urlDR = urlDR;
   }
 
   return urls;
+}
+
+function isValidUrl(url: string | undefined): boolean {
+  if (!url) return false;
+
+  try {
+    new URL(url);
+    return true;
+  } catch (e) {
+    return false;
+  }
 }
 
 function getCoordinates(address: Address[]): Coordinates | undefined {
@@ -122,12 +132,55 @@ function getState(addresses: Address[] | undefined): string | undefined {
   return;
 }
 
+function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
+  const parts = managingOrg?.reference?.value?.split("/");
+  return parts ? parts[parts.length - 1] : undefined;
+}
+
 function getOid(org: Organization): string | undefined {
-  const oid = org?.identifier?.value?.value;
+  if (!org?.identifier || !org.name) return;
+  return getNormalizedOid(org, `Organization ${org?.name?.value ?? ""}`);
+}
+
+function getManagingOrgId(org: Organization): string | undefined {
+  if (!org?.partOf) return;
+  const name = org?.name?.value ?? undefined;
+  return getNormalizedOid(org.partOf, `Managing Organization ${name ? "of " + name : ""}`);
+}
+
+type IdentifiableEntity = {
+  identifier?: {
+    value?: {
+      value?: string;
+    };
+  };
+};
+
+function getNormalizedOid(
+  entity: IdentifiableEntity,
+  entityDescription: string
+): string | undefined {
+  const oid = entity?.identifier?.value?.value;
   if (!oid) return;
   try {
     return normalizeOid(oid);
   } catch (err) {
-    console.log(`Organization ${org?.name?.value} has invalid OID: ${oid}`);
+    console.log(`${entityDescription} has invalid OID: ${oid}`);
   }
+}
+
+function getUrlType(value: string | undefined): ChannelUrl | undefined {
+  if (!value) return;
+  if (value.includes(XCPD_STRING)) return XCPD_STRING;
+  if (value.includes(XCA_DQ_STRING)) return XCA_DQ_STRING;
+  if (value.includes(XCA_DR_STRING)) return XCA_DR_STRING;
+
+  if (value.includes("Direct Messaging")) return;
+  const msg = `Unknown CQ Endpoint type`;
+  console.log(msg);
+  capture.message(msg, {
+    extra: { value, context: "parseCQDirectoryEntries" },
+    level: "warning",
+  });
+  return;
 }

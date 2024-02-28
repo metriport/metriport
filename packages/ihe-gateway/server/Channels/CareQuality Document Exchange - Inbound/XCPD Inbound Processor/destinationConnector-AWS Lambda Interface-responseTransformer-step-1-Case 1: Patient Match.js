@@ -32,6 +32,7 @@ if (msg.patientMatch) {
 	
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: Patient Match - ' + ex);
+		throw ex;
 	}
 
 	return;

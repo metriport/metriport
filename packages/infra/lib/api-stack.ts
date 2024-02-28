@@ -332,7 +332,16 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+    const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
+    const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -392,7 +401,8 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      documentQueryResultsLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       searchIngestionQueue: ccdaSearchQueue,
@@ -458,7 +468,12 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
-    documentQueryResultsLambda.addEnvironment(
+    outboundDocumentQueryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
+    outboundDocumentRetrievalLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
@@ -1111,7 +1126,7 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  private setupDocumentQueryResults(ownProps: {
+  private setupOutboundDocumentQuery(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
@@ -1121,10 +1136,10 @@ export class APIStack extends Stack {
   }): Lambda {
     const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
 
-    const documentQueryResultsLambda = createLambda({
+    const outboundDocumentQueryLambda = createLambda({
       stack: this,
-      name: "DocumentQueryResults",
-      entry: "document-query-results",
+      name: "OutboundDocumentQuery",
+      entry: "outbound-document-query",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -1137,7 +1152,36 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    return documentQueryResultsLambda;
+    return outboundDocumentQueryLambda;
+  }
+
+  private setupOutboundDocumentRetrieval(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+
+    const outboundDocumentRetrievalLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentRetrieval",
+      entry: "outbound-document-retrieval",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    return outboundDocumentRetrievalLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {

@@ -101,7 +101,7 @@ export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
 export const XCPDGatewaySchema = z.object({
   oid: z.string(),
-  url: z.string(),
+  url: z.string().optional(),
   id: z.string().optional(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
@@ -110,11 +110,10 @@ export type XCPDGateways = XCPDGateway[];
 
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
-  docUniqueId: z.string(),
+  docUniqueId: z.string(), // TODO rename to externalGatewayDocId
   repositoryUniqueId: z.string(),
   fileName: z.string().nullish(),
-  bucketName: z.string().nullish(),
-  isNew: z.boolean().nullish(),
+  fileLocation: z.string().nullish(),
   size: z.number().nullish(),
   urn: z.string().nullish(),
   metriportId: z.string().nullish(),
@@ -122,8 +121,9 @@ export const documentReferenceSchema = z.object({
   newDocumentUniqueId: z.string().nullish(),
   contentType: z.string().nullish(),
   language: z.string().nullish(),
-  uri: z.string().nullish(),
   url: z.string().nullish(),
+  uri: z.string().nullish(),
+  isNew: z.boolean().nullish(),
   creation: z.string().nullish(),
   title: z.string().nullish(),
 });

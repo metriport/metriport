@@ -1,4 +1,3 @@
-import { Document } from "@metriport/commonwell-sdk";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { getOrCreateDocRefMapping } from "../command/medical/docref-mapping/get-docref-mapping";
 
@@ -6,17 +5,16 @@ export const mapDocRefToMetriport = async ({
   cxId,
   patientId,
   requestId,
-  document,
+  documentId,
   source,
 }: {
   cxId: string;
   patientId: string;
   requestId: string;
-  document: Document;
+  documentId: string;
   source: MedicalDataSource;
 }): Promise<{ originalId: string; metriportId: string }> => {
-  const id = document.content?.masterIdentifier?.value || document.id;
-  const docRef = { cxId, patientId, requestId, externalId: id, source };
+  const docRef = { cxId, patientId, requestId, externalId: documentId, source };
   const existingDocRef = await getOrCreateDocRefMapping(docRef);
-  return { originalId: id, metriportId: existingDocRef.id };
+  return { originalId: documentId, metriportId: existingDocRef.id };
 };

@@ -46,6 +46,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: Postprocessor - ' + ex);
+	throw ex;
 }
 
 

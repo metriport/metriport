@@ -52,7 +52,8 @@ export type EnvConfig = {
       CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {
-      CQ_ORG_DETAILS?: string;
+      CQ_ORG_URLS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {

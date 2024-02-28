@@ -7,7 +7,7 @@
  - takes individual requests and sends to the XCPD Interface channel
 
 Last updated: Dec 08 2023</description>
-  <revision>17</revision>
+  <revision>46</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -36,9 +36,6 @@ Last updated: Dec 08 2023</description>
           <implicitFTPS>true</implicitFTPS>
           <useSTARTTLS>false</useSTARTTLS>
         </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
-        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
-          <authType>NONE</authType>
-        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
         <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
           <authType>NONE</authType>
         </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
@@ -255,8 +252,8 @@ Last updated: Dec 08 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1702669001833</time>
-        <timezone>America/Vancouver</timezone>
+        <time>1708710346392</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>

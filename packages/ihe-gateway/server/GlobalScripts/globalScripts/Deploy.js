@@ -15,4 +15,14 @@ if (accessKey && accessKey.length() > 0 && secretKey && secretKey.length() > 0) 
   globalMap.put("SECRET_KEY", secretKey);
 }
 
+const apiBaseAddress = Config.getApiBaseAddress();
+if (apiBaseAddress) {
+  globalMap.put("API_BASE_ADDRESS", apiBaseAddress);
+}
+
+// https://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Runtime.html
+logger.info("Free memory:  " + java.lang.Runtime.getRuntime().freeMemory());
+logger.info("Total memory: " + java.lang.Runtime.getRuntime().totalMemory());
+logger.info("Max memory:   " + java.lang.Runtime.getRuntime().maxMemory());
+
 return;

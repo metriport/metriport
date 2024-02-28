@@ -12,11 +12,18 @@ export type IHEGatewayProps = {
   };
   vpcId: string;
   certArn: string;
+  trustStoreBucketName: string;
+  trustStoreKey: string;
   subdomain: string; // Subdomain for IHE integrations
+  outboundSubdomain: string; // Subdomain for Outbound IHE integrations
   /**
    * ID of the existing private hosted zone where the IHE Gateway will be deployed.
    */
   privateZoneId: string;
+  /**
+   * Address of the API's load balancer.
+   */
+  apiBaseAddress: string;
   ecs: {
     // Watch out for the combination of vCPUs and memory, more vCPU requires more memory
     // https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size
@@ -69,13 +76,18 @@ export type IHEGatewayProps = {
     minSlowLogDurationInMs: number;
     alarmThresholds?: RDSAlarmThresholds;
   };
-  ports: {
+  inboundPorts: {
     patientDiscovery: number;
     documentQuery: number;
     /**
      * Optional in case its shared with document query
      */
     documentRetrieval?: number;
+  };
+  outboundPorts: {
+    patientDiscovery: number;
+    documentQuery: number;
+    documentRetrieval: number;
   };
   keystoreName: string;
   keystoreType: string;

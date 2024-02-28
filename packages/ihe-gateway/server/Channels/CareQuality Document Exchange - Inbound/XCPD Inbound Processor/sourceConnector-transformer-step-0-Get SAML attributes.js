@@ -23,4 +23,5 @@ try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: SAML Processing - ' + ex);
+	throw ex;
 }

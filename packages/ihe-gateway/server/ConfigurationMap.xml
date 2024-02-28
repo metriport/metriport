@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?><map>
+<?xml version="1.0" encoding="UTF-8"?>
+<map>
   <entry>
     <string>
       SAML.SubjectRole.Code
@@ -87,19 +88,6 @@
       </value>
       <comment>
         SAML default value
-      </comment>
-    </com.mirth.connect.util.ConfigurationProperty>
-  </entry>
-  <entry>
-    <string>
-      TEST_MODE
-    </string>
-    <com.mirth.connect.util.ConfigurationProperty>
-      <value>
-        true
-      </value>
-      <comment>
-        In test mode, channels log all exception errors
       </comment>
     </com.mirth.connect.util.ConfigurationProperty>
   </entry>

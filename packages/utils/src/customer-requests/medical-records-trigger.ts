@@ -51,11 +51,14 @@ async function main() {
   );
   const startedAt = Date.now();
 
+  let index = 0;
+  const total = patientIds.length;
   for (const patientId of patientIds) {
-    console.log(`Calling for patient ${patientId}...`);
+    console.log(`Calling for patient ${index + 1}/${total}. ID: ${patientId}...`);
     await api.post(`/medical/v1/patient/${patientId}/consolidated/query`, undefined, {
       params: { resources: resources && resources.join(","), fromDate, toDate, conversionType },
     });
+    index++;
     await sleep(timeBetweenPatients);
   }
 

@@ -187,7 +187,7 @@ jobs:
         if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.location_services_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -202,7 +202,7 @@ jobs:
         if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.location_services_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -227,7 +227,7 @@ jobs:
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "diff"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.ihe_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -243,7 +243,7 @@ jobs:
         if: inputs.ihe_cdk_stack != null
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.ihe_cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -261,7 +261,7 @@ jobs:
         if: inputs.location_services_cdk_stack != null
         with:
           cdk_action: "diff"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:
@@ -273,7 +273,7 @@ jobs:
         uses: metriport/deploy-with-cdk@master
         with:
           cdk_action: "deploy --verbose --require-approval never"
-          cdk_version: "2.87.0"
+          cdk_version: "2.122.0"
           cdk_stack: "${{ inputs.cdk_stack }}"
           cdk_env: "${{ inputs.deploy_env }}"
         env:

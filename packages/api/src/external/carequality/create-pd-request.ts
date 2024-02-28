@@ -1,8 +1,8 @@
-import { PatientDiscoveryReqToExternalGW, XCPDGateway } from "@metriport/ihe-gateway-sdk";
-import { PurposeOfUse } from "@metriport/carequality-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
+import { createPurposeOfUse } from "./shared";
 
 // TODO: https://github.com/metriport/metriport/pull/1302#discussion_r1422870828
 export function createPatientDiscoveryRequest({
@@ -19,7 +19,7 @@ export function createPatientDiscoveryRequest({
   facilityNPI: string;
   orgName: string;
   orgOid: string;
-}): PatientDiscoveryReqToExternalGW {
+}): OutboundPatientDiscoveryReq {
   const user = `${orgName} System User`;
 
   return {
@@ -38,7 +38,7 @@ export function createPatientDiscoveryRequest({
       organization: orgName,
       organizationId: orgOid,
       homeCommunityId: orgOid,
-      purposeOfUse: PurposeOfUse.TREATMENT,
+      purposeOfUse: createPurposeOfUse(),
     },
     patientResource: patient,
   };

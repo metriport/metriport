@@ -102,6 +102,10 @@ export class Config {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
   }
 
+  static getCQUrlsToExclude(): string | undefined {
+    return getEnvVar("CQ_URLS_TO_EXCLUDE");
+  }
+
   static getPlaceIndexName(): string {
     return getEnvVarOrFail("PLACE_INDEX_NAME");
   }
@@ -190,6 +194,10 @@ export class Config {
     return getEnvVarOrFail("SYSTEM_ROOT_OID");
   }
 
+  static getSystemRootOrgName(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_ORG_NAME");
+  }
+
   static getGatewayEndpoint(): string {
     return getEnvVarOrFail("CW_GATEWAY_ENDPOINT");
   }
@@ -260,8 +268,24 @@ export class Config {
     return getEnvVar("FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME");
   }
 
-  static getDocQueryResultsLambdaName(): string {
-    return getEnvVarOrFail("DOC_QUERY_RESULTS_LAMBDA_NAME");
+  static getIheGatewayUrl(): string | undefined {
+    return getEnvVar("IHE_GW_URL");
+  }
+  static getIheGatewayPortPD(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_PD");
+  }
+  static getIheGatewayPortDQ(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_DQ");
+  }
+  static getIheGatewayPortDR(): string | undefined {
+    return getEnvVar("IHE_GW_PORT_DR");
+  }
+
+  static getOutboundDocumentQueryLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
+  }
+  static getOutboundDocumentRetrievalLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME");
   }
 
   static getSearchIngestionQueueUrl(): string {
@@ -280,8 +304,8 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INDEX");
   }
 
-  static getCQOrgDetails(): string | undefined {
-    return getEnvVar("CQ_ORG_DETAILS");
+  static getCQOrgUrls(): string | undefined {
+    return getEnvVar("CQ_ORG_URLS");
   }
 
   static getCWManagementUrl(): string | undefined {

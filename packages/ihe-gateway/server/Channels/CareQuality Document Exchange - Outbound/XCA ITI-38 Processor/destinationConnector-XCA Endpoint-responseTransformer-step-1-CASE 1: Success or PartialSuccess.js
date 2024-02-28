@@ -21,7 +21,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		if (operationOutcome) _response.operationOutcome = operationOutcome;
 	}
 
-	var result = router.routeMessageByChannelId(globalMap.get('XCAAPPINTERFACE'), JSON.stringify(_response));
+	var result = router.routeMessageByChannelId(globalMap.get('XCADQAPPINTERFACE'), JSON.stringify(_response));
 
 	// Stop further processing
 	return;

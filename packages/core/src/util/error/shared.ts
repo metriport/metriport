@@ -1,4 +1,5 @@
 import { inspect } from "node:util";
+import { capture } from "../notifications";
 
 export type ErrorToStringOptions = { detailed: boolean };
 
@@ -26,4 +27,15 @@ export function detailedErrorToString(err: any): string {
     `${additionalInfo ? ` (${additionalInfo})` : ""}` +
     `${causeMessage ? `; caused by ${causeMessage}` : ""}`
   );
+}
+
+export function getErrorMessage(error: unknown) {
+  return errorToString(error);
+}
+
+export function processAsyncError(msg: string) {
+  return (err: unknown) => {
+    console.error(`${msg}: ${getErrorMessage(err)}`);
+    capture.error(err, { extra: { message: msg, err } });
+  };
 }

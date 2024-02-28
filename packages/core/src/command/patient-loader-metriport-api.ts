@@ -1,8 +1,7 @@
+import { PatientDTO, USState } from "@metriport/api-sdk";
 import axios from "axios";
 import { Patient } from "../domain/patient";
-import { PatientDTO } from "@metriport/api-sdk";
-import { USState } from "@metriport/api-sdk";
-
+import { errorToString } from "../util/error/shared";
 import { FindBySimilarity, GetOne, PatientLoader } from "./patient-loader";
 
 /**
@@ -65,7 +64,7 @@ export class PatientLoaderMetriportAPI implements PatientLoader {
       patients.forEach(validatePatient);
       return patients;
     } catch (error) {
-      console.log("Failing on request to internal endpoint", error);
+      console.log(`Failing on request to internal endpoint - ${errorToString(error)}`);
       throw error;
     }
   }

@@ -3,7 +3,7 @@ import { CQDirectoryEntry } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const getCQDirectoryEntry = async (
-  id: Pick<CQDirectoryEntry, "id">
+  id: CQDirectoryEntry["id"]
 ): Promise<CQDirectoryEntryModel | undefined> => {
   const org = await CQDirectoryEntryModel.findOne({
     where: { id },
@@ -12,9 +12,11 @@ export const getCQDirectoryEntry = async (
 };
 
 export async function getCQDirectoryEntryOrFail(
-  id: Pick<CQDirectoryEntry, "id">
+  id: CQDirectoryEntry["id"]
 ): Promise<CQDirectoryEntryModel> {
   const organization = await getCQDirectoryEntry(id);
-  if (!organization) throw new NotFoundError(`Could not find CQ organization`, undefined, id);
+  if (!organization) {
+    throw new NotFoundError(`Could not find CQ organization`, undefined, { oid: id });
+  }
   return organization;
 }

@@ -9,13 +9,13 @@ import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { CWDocumentWithMetriportData } from "../../../commonwell/document/shared";
 import { makePeriod } from "../../shared/__tests__/date";
-import { getBestDateFromCWDocRef, toFHIR } from "../index";
+import { getBestDateFromCWDocRef, cwToFHIR } from "../index";
 
 beforeEach(() => {
   jest.restoreAllMocks();
 });
 
-describe("toFHIR", () => {
+describe("cwToFHIR", () => {
   it("returns format on attachment", async () => {
     const cwDoc = makeDocument();
     const expectedFormat = `format/${uuidv4()}`;
@@ -34,7 +34,7 @@ describe("toFHIR", () => {
       },
     };
     const patient = makePatient();
-    const res = toFHIR(uuidv4(), doc, patient);
+    const res = cwToFHIR(uuidv4(), doc, patient);
     expect(res).toBeTruthy();
     expect(res.content).toBeTruthy();
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion

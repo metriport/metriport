@@ -3,21 +3,21 @@
   <name>Process XCA ITI-38 AdhocQueryRequest</name>
   <revision>1</revision>
   <lastModified>
-    <time>1708660220146</time>
+    <time>1706741135899</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>CHANNEL_POSTPROCESSOR</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
       <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
       <contextType>CHANNEL_DEPLOY</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
       <contextType>CHANNEL_BATCH</contextType>
     </delegate>
   </contextSet>
