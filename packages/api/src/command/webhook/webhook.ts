@@ -176,9 +176,11 @@ export const processRequest = async (
   return false;
 };
 
-const webhookResponseSchema = z.object({
-  pong: z.string().optional(),
-});
+const webhookResponseSchema = z
+  .object({
+    pong: z.string().optional(),
+  })
+  .or(z.string());
 
 type WebhookResponseSchema = z.infer<typeof webhookResponseSchema>;
 
