@@ -1158,7 +1158,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1187,7 +1187,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1216,7 +1216,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
