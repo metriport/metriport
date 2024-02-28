@@ -16,6 +16,7 @@ import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
 import { updateWebhookRequestStatus } from "./webhook-request";
+import { z } from "zod";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -175,13 +176,18 @@ export const processRequest = async (
   return false;
 };
 
+const webhookResponseSchema = z.object({
+  pong: z.string(),
+});
+
+type WebhookResponseSchema = z.infer<typeof webhookResponseSchema>;
+
 export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> => {
+): Promise<WebhookResponseSchema> => {
   try {
     const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
     const res = await axios.post(url, payload, {
@@ -193,7 +199,8 @@ export const sendPayload = async (
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
     });
-    return res.data;
+    const webhookResponse = webhookResponseSchema.parse(res.data);
+    return webhookResponse;
   } catch (err) {
     // Don't change this error message, it's used to detect if the webhook is working or not
     throw new WebhookError(`Failed to send payload`, err);
@@ -217,7 +224,7 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   const isNoWebhookPongEnabled = await isNoWebhookPongEnabledForCx(cxId);
   if (!res) return false;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return isNoWebhookPongEnabled ?? (res.pong && res.pong === ping);
+  return isNoWebhookPongEnabled || (res.pong && res.pong === ping) ? true : false;
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {
