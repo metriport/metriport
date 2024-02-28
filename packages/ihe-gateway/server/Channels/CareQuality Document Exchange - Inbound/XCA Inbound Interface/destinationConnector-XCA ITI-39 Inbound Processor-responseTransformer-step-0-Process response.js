@@ -37,6 +37,7 @@ if (channelMap.containsKey('MTOM')) {
 		}
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA Inbound Interface: ITI-39 response processing - ' + ex);
+		throw ex;
 	}
 
 	multipart.setAttachments(multipartAttachmentList);

@@ -10,13 +10,14 @@ set -e
 #
 #################################################################################
 
-if ! [[ $FILE ]]; then
-    FILE=.env
+if ! [[ $DOT_ENV_FILE ]]; then
+    DOT_ENV_FILE=.env
 fi
+echo "Loading environment variables from $DOT_ENV_FILE"
 
-if [ -f $FILE ]; then
+if [ -f $DOT_ENV_FILE ]; then
     set -o allexport
-    source $FILE
+    source $DOT_ENV_FILE
     set +o allexport
 else
     if [ "$1" == "strict" ]; then

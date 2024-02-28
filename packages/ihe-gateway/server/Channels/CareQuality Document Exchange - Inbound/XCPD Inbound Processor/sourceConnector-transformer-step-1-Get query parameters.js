@@ -42,4 +42,5 @@ try {
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: Query parameters - ' + ex);
+	throw ex;
 }

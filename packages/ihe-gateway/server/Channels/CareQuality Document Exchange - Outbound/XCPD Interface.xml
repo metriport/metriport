@@ -6,15 +6,12 @@
  - expects to receive a single requests to be transmitted to the XCPD ITI-55 Processor channel
 
 Last updated: Dec 20 2023</description>
-  <revision>46</revision>
+  <revision>47</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
     <properties class="com.mirth.connect.connectors.http.HttpReceiverProperties" version="4.4.2">
       <pluginProperties>
-        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
-          <authType>NONE</authType>
-        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
         <com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties version="4.4.2">
           <enabled>false</enabled>
           <clientAuthentication>DISABLED</clientAuthentication>
@@ -38,6 +35,9 @@ Last updated: Dec 20 2023</description>
           <implicitFTPS>true</implicitFTPS>
           <useSTARTTLS>false</useSTARTTLS>
         </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
+        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
+          <authType>NONE</authType>
+        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
       </pluginProperties>
       <listenerConnectorProperties version="4.4.2">
         <host>0.0.0.0</host>
@@ -45,7 +45,7 @@ Last updated: Dec 20 2023</description>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
         <responseVariable>None</responseVariable>
-        <respondAfterProcessing>true</respondAfterProcessing>
+        <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
         <processingThreads>10</processingThreads>
@@ -251,8 +251,8 @@ Last updated: Dec 20 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1703089636245</time>
-        <timezone>America/Vancouver</timezone>
+        <time>1708993973587</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>

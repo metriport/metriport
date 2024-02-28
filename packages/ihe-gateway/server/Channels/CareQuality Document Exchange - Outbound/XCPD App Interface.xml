@@ -6,7 +6,7 @@
  - forwards a single request back to the calling app or DB
 
 Last updated: Nov 23 2023</description>
-  <revision>26</revision>
+  <revision>27</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -14,10 +14,10 @@ Last updated: Nov 23 2023</description>
       <pluginProperties/>
       <sourceConnectorProperties version="4.4.2">
         <responseVariable>Auto-generate (Before processing)</responseVariable>
-        <respondAfterProcessing>true</respondAfterProcessing>
+        <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
-        <processingThreads>5</processingThreads>
+        <processingThreads>10</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
             <string>Default Resource</string>
@@ -229,7 +229,7 @@ Last updated: Nov 23 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708721460550</time>
+        <time>1709074667131</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>

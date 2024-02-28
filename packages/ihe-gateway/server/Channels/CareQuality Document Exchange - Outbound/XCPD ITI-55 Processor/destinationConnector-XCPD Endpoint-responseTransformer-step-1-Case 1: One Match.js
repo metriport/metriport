@@ -44,4 +44,5 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case1) - ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());
+	throw ex;
 }

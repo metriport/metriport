@@ -26,8 +26,7 @@ Help()
 
 Execute()
 {
-  FILE=".env.$1"
-  echo "Loading environment variables from $FILE"
+  DOT_ENV_FILE=".env.$1"
   source ./scripts/push-to-server.sh
 
   echo "Restarting the outbound service"

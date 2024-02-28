@@ -24,6 +24,12 @@ Initialize the repository with the command below; it will download required file
 $ ./scripts/init.sh
 ```
 
+To initialize to a specific environment, set the environment variable `ENV_TYPE`:
+
+```shell
+$ ENV_TYPE=production ./scripts/init.sh
+```
+
 To build the server container for the first time, run the command below, which will spin up the
 IHE GW as well as a Postgres instance:
 

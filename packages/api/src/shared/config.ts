@@ -307,8 +307,8 @@ export class Config {
     return getEnvVarOrFail("SEARCH_INDEX");
   }
 
-  static getCQOrgUrls(): string {
-    return getEnvVarOrFail("CQ_ORG_URLS");
+  static getCQOrgUrls(): string | undefined {
+    return getEnvVar("CQ_ORG_URLS");
   }
 
   static getCWManagementUrl(): string | undefined {

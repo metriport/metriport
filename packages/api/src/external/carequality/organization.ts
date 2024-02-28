@@ -2,11 +2,13 @@ import { Config } from "../../shared/config";
 import { buildXmlStringFromTemplate } from "./organization-template";
 import { CQOrgDetails, CQOrgUrls, cqOrgUrlsSchema } from "./shared";
 
+const cqOrgUrlsString = Config.getCQOrgUrls();
+
 /**
  * Represents an organization to be registered / updated in the Carequality directory.
  */
 export class CQOrganization {
-  static urls = cqOrgUrlsSchema.parse(JSON.parse(Config.getCQOrgUrls()));
+  static urls = cqOrgUrlsString ? cqOrgUrlsSchema.parse(JSON.parse(cqOrgUrlsString)) : {};
   xmlString: string | undefined;
 
   constructor(

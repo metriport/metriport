@@ -110,7 +110,7 @@ export type XCPDGateways = XCPDGateway[];
 
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
-  docUniqueId: z.string(),
+  docUniqueId: z.string(), // TODO rename to externalGatewayDocId
   repositoryUniqueId: z.string(),
   fileName: z.string().nullish(),
   fileLocation: z.string().nullish(),

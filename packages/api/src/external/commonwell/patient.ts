@@ -9,10 +9,11 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { Facility } from "../../domain/medical/facility";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { errorToString } from "@metriport/shared/common/error";
+import { Facility } from "../../domain/medical/facility";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
@@ -272,17 +273,18 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       personId,
       createContext
     );
-  } catch (err) {
-    console.error(`Failed to update patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
+    capture.error(error, {
       extra: {
         facilityId,
         patientId: patient.id,
         cwReference: commonWell?.lastReferenceHeader,
         context: updateContext,
+        error,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
