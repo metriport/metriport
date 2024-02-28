@@ -17,7 +17,6 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -1158,7 +1157,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
+        DB_CREDS: dbCredsSecret.secretArn,
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1166,6 +1165,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    dbCredsSecret.grantRead(outboundPatientDiscoveryLambda);
 
     return outboundPatientDiscoveryLambda;
   }
@@ -1187,7 +1188,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
+        DB_CREDS: dbCredsSecret.secretArn,
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1195,6 +1196,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    dbCredsSecret.grantRead(outboundDocumentQueryLambda);
 
     return outboundDocumentQueryLambda;
   }
@@ -1216,7 +1219,7 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: JSON.stringify(ecs.Secret.fromSecretsManager(dbCredsSecret)),
+        DB_CREDS: dbCredsSecret.secretArn,
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1224,6 +1227,8 @@ export class APIStack extends Stack {
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
   }
