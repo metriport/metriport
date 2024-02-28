@@ -4,9 +4,10 @@ import crypto from "crypto";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
-import { isNoWebhookPongEnabledForCx } from "../../external/aws/appConfig";
+import { isWebhookPongDisabledForCx } from "../../external/aws/appConfig";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { EventTypes, analytics } from "../../shared/analytics";
@@ -175,13 +176,20 @@ export const processRequest = async (
   return false;
 };
 
+const webhookResponseSchema = z
+  .object({
+    pong: z.string().optional(),
+  })
+  .or(z.string());
+
+type WebhookResponseSchema = z.infer<typeof webhookResponseSchema>;
+
 export const sendPayload = async (
   payload: unknown,
   url: string,
   apiKey: string,
   timeout = DEFAULT_TIMEOUT_SEND_PAYLOAD_MS
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<any> => {
+): Promise<WebhookResponseSchema> => {
   try {
     const hmac = crypto.createHmac("sha256", apiKey).update(JSON.stringify(payload)).digest("hex");
     const res = await axios.post(url, payload, {
@@ -193,7 +201,8 @@ export const sendPayload = async (
       timeout,
       maxRedirects: 0, // disable redirects to prevent SSRF
     });
-    return res.data;
+    const webhookResponse = webhookResponseSchema.parse(res.data);
+    return webhookResponse;
   } catch (err) {
     // Don't change this error message, it's used to detect if the webhook is working or not
     throw new WebhookError(`Failed to send payload`, err);
@@ -213,9 +222,12 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   };
 
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
-  const isNoWebhookPongEnabled = await isNoWebhookPongEnabledForCx(cxId);
+  if (!res) return false;
+
+  const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
+  if (isWebhookPongDisabled) return true;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return res && (isNoWebhookPongEnabled || (res.pong && res.pong === ping));
+  return typeof res !== "string" && res.pong && res.pong === ping ? true : false;
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {

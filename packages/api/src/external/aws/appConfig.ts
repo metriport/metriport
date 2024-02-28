@@ -106,7 +106,7 @@ export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
 }
 
-export async function isNoWebhookPongEnabledForCx(cxId: string): Promise<boolean> {
+export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
 }
