@@ -5,7 +5,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 	if (xml.*::DocumentResponse.length() > 0) try {
 
-    		var bucketName = Config.getS3BucketName();
+		var bucketName = Config.getS3BucketName();
 		var request = channelMap.get('REQUEST');
 		var contentList = [];
 		var operationOutcome = null;
@@ -31,7 +31,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			attachment.repositoryUniqueId = entry.*::RepositoryUniqueId.toString().replace('urn:uuid:', '');
 			attachment.docUniqueId = entry.*::DocumentUniqueId.toString().replace('urn:uuid:', '');
 			attachment.metriportId = idMapping[attachment.docUniqueId.toString()];
-               attachment.fileLocation = bucketName;
+			attachment.fileLocation = bucketName;
 
 			// Responding Gateways which support the Persistence of Retrieved Documents Option shall specify the NewRepositoryUniqueId element
 			// indicating the document is available for later retrieval and be able to return exactly the same document in all future retrieve
@@ -85,8 +85,8 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 	} catch(ex) {
-logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+		throw ex;
 	}
 
 	// Stop further processing

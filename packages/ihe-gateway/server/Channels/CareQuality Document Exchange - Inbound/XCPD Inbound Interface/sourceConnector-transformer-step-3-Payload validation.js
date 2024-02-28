@@ -42,6 +42,7 @@ if (configurationMap.containsKey('HL7v3.XMLSchema')) try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: XML Schema validation - ' + ex);
+	throw ex;
 }
 
 // Validate that the value of processingModeCode is set to "T"
@@ -59,4 +60,5 @@ if ('T' !== payload.*::processingModeCode.@code.toString()) try {
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: ProcessMode validation - ' + ex);
+	throw ex;
 }

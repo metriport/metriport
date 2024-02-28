@@ -45,4 +45,5 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case5) - ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());	
+	throw ex;
 }

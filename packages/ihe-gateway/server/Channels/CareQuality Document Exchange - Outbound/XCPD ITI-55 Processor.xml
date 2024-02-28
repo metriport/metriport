@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Dec 20 2023</description>
-  <revision>49</revision>
+  <revision>50</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -306,7 +306,7 @@ Last updated: Dec 20 2023</description>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
             <name>Case 3: Multiple matches need refinement</name>
             <sequenceNumber>3</sequenceNumber>
-            <enabled>true</enabled>
+            <enabled>false</enabled>
             <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-3-Case 3: Multiple matches need refinement.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
@@ -320,6 +320,12 @@ Last updated: Dec 20 2023</description>
             <sequenceNumber>5</sequenceNumber>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-5-Case 5: Application Error.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>catch-all</name>
+            <sequenceNumber>6</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-6-catch-all.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
@@ -432,8 +438,8 @@ Last updated: Dec 20 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1704995347958</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1709065124441</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>

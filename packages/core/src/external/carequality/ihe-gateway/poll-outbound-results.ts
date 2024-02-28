@@ -15,7 +15,7 @@ import { OutboundDocumentQueryRespTableEntry } from "./outbound-result";
 dayjs.extend(duration);
 
 const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
-const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 30 });
+const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 10 });
 
 const REQUEST_ID_COLUMN = "request_id";
 const DOC_QUERY_RESULT_TABLE_NAME = "document_query_result";

@@ -1,10 +1,10 @@
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { createFileName } from "@metriport/core/domain/filename";
+import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
-import { Config } from "../../../shared/config";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
+import { Config } from "../../../shared/config";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 
 const region = Config.getAWSRegion();
@@ -47,18 +47,12 @@ async function checkDocRefsExistInS3(
     documents,
     async doc => {
       try {
-        const metriportId = doc.metriportId;
-
-        if (!metriportId) {
-          throw new Error(`Document ${doc.id} does not have a metriportId`);
-        }
-
-        const fileName = createFileName(cxId, patientId, metriportId);
+        const fileName = createFileName(cxId, patientId, doc.metriportId);
 
         const { exists } = await s3Utils.getFileInfoFromS3(fileName, s3BucketName);
 
         successfulDocs.push({
-          docId: metriportId,
+          docId: doc.metriportId,
           exists,
         });
       } catch (error) {

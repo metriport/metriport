@@ -12,4 +12,5 @@ try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA Inbound Interface: SAML Processing - ' + ex);
+	throw ex;
 }

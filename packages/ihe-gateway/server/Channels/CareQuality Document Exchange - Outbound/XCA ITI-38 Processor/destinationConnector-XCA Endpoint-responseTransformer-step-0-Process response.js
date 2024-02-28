@@ -24,28 +24,7 @@ try {
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
 		
-		// Case 3: The Initiating Gateway shall accept a SOAP fault representing a transmission error
-		soapFaultCode = xml.*::Body.*::Fault.*::Code.*::Value.toString();
-		soapReason = xml.*::Body.*::Fault.*::Reason.*::Text.toString();
-		if (soapReason) soapReason = xml.*::Reason.*::Text.toString();
 		channelMap.put('QACK', 'SOAP_FAULT');
-		channelMap.put('RESULT', soapReason);
-
-		// Generate response to be sent to the app
-		var operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
-		var issue = {
-					 "severity": "fatal",
-					 "code": "structure",
-					 "details": {"text": ""}
-				};
-		issue.details.text = soapReason.toString();
-		operationOutcome.issue.push(issue);
-
-		var _response = getXCA38ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
-		
-		// Send the response back to the app
-		var result = router.routeMessageByChannelId(globalMap.get('XCADQAPPINTERFACE'), JSON.stringify(_response));
-
 		// Stop further processing
 		return;
 		
@@ -65,4 +44,5 @@ try {
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response - ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());
+	throw ex;
 }

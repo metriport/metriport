@@ -15,6 +15,7 @@ if ('Failure' == queryResponseCode.toString()) {
 		
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case2) - ' + ex);
+		throw ex;
 	}
 
 	// Stop further processing
