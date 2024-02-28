@@ -33,7 +33,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(msg, {
         extra: {
-          context: `lambda.outbound-document-retrieval`,
+          context: `lambda.ihe-outbound-document-retrieval`,
           error,
           patientId,
           requestId,

@@ -165,7 +165,7 @@ export class IHEStack extends Stack {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentQuery",
-      entry: "ihe-document-query",
+      entry: "ihe-inbound-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -190,7 +190,7 @@ export class IHEStack extends Stack {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentRetrieval",
-      entry: "ihe-document-retrieval",
+      entry: "ihe-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -214,7 +214,7 @@ export class IHEStack extends Stack {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "IHEInboundPatientDiscovery",
-      entry: "ihe-patient-discovery",
+      entry: "ihe-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
