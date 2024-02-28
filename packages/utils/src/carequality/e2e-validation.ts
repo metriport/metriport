@@ -45,18 +45,24 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 const testPatient: PatientCreate = {
-  firstName: "NWHINONE",
-  lastName: "NWHINZZZTESTPATIENT",
-  dob: "1981-01-01",
+  firstName: "Don",
+  lastName: "Bassett",
+  dob: "1958-04-06",
   genderAtBirth: "M",
   personalIdentifiers: [],
   address: [
     {
-      zip: "35080",
-      addressLine1: "1100 Test Street",
-      state: USState.AL,
-      city: "Helena",
+      zip: "60005",
+      addressLine1: "12155 SW Broadway",
+      state: USState.IL,
+      city: "Beaverton",
       country: "USA",
+    },
+  ],
+  contact: [
+    {
+      phone: "503-629-5541",
+      email: "dbassett@aol.com",
     },
   ],
 };
@@ -127,12 +133,16 @@ async function main() {
 
     console.log("Document query results found:", documentQueryResults);
 
+    const successDocQueryResults = documentQueryResults.filter(
+      result => result.documentReference && result.documentReference.length > 0
+    );
+
     const documentRetrievalResults = await pollOutboundDocRetrievalResults({
       patientId: newPatient.id,
       cxId,
       dbCreds: sqlDBCreds,
       requestId: docQuery.requestId ?? "",
-      numOfGateways: links.length,
+      numOfGateways: successDocQueryResults.length,
     });
 
     if (documentRetrievalResults.length === 0) {
