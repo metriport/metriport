@@ -59,7 +59,7 @@ export class IHEStack extends Stack {
     const trustStoreBucket = s3.Bucket.fromBucketName(
       this,
       "TruststoreBucket",
-      props.config.iheGateway?.trustStoreBucketName
+      props.config.iheGateway.trustStoreBucketName
     );
 
     // get the medical documents bucket
@@ -75,7 +75,7 @@ export class IHEStack extends Stack {
       certificate: certificate,
       mtls: {
         bucket: trustStoreBucket,
-        key: props.config.iheGateway?.trustStoreKey,
+        key: props.config.iheGateway.trustStoreKey,
       },
       // this ownsership cert is the whole point of this entire migration.
       ownershipCertificate: ownershipCertificate,

@@ -138,7 +138,7 @@ async function handleDocReferences(
 
     if (shouldConvert) {
       try {
-        if (!docRef.fileLocation || !docRef.fileName) {
+        if (!docRef.fileLocation || !docRef.url) {
           throw new Error(`File location or file name is missing for doc ${docRef.metriportId}`);
         }
 
@@ -151,7 +151,7 @@ async function handleDocReferences(
             id: docRef.metriportId ?? "",
             content: { mimeType: docRef.contentType ?? "" },
           },
-          s3FileName: docRef.fileName,
+          s3FileName: docRef.url,
           s3BucketName: docRef.fileLocation,
           requestId,
           source: MedicalDataSource.CAREQUALITY,
