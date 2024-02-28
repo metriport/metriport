@@ -222,8 +222,8 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   const res = await sendPayload(payload, url, key, DEFAULT_TIMEOUT_SEND_TEST_MS);
   const isWebhookPongDisabled = await isWebhookPongDisabledForCx(cxId);
 
-  if (isWebhookPongDisabled) return true;
   if (!res) return false;
+  if (isWebhookPongDisabled) return true;
   // check for a matching pong response, unless FF is enabled to skip that check
   return res.pong && res.pong === ping ? true : false;
 };
