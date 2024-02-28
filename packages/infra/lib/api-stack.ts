@@ -1139,7 +1139,7 @@ export class APIStack extends Stack {
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
       name: "OutboundDocumentQuery",
-      entry: "outbound-document-query",
+      entry: "ihe-outbound-document-query",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -1168,7 +1168,7 @@ export class APIStack extends Stack {
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
       name: "OutboundDocumentRetrieval",
-      entry: "outbound-document-retrieval",
+      entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
