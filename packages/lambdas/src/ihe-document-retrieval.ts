@@ -5,7 +5,7 @@ import { APIGatewayProxyEvent } from "aws-lambda";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
   if (!event.body) {
-    return buildResponse(400, { message: "Request body is missing" });
+    return buildResponse(400, { message: "The Request body is missing" });
   }
   const payload = JSON.parse(event.body);
   const baseRequest = inboundDocumentRetrievalReqSchema.parse({
