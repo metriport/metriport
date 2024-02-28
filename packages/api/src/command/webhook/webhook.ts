@@ -227,7 +227,7 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   if (!res) return false;
   if (isWebhookPongDisabled) return true;
   // check for a matching pong response, unless FF is enabled to skip that check
-  return res.pong && res.pong === ping ? true : false;
+  return typeof res !== "string" && res.pong && res.pong === ping ? true : false;
 };
 
 export const isWebhookDisabled = (meta?: unknown): boolean => {
