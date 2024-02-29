@@ -49,3 +49,11 @@ export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[
     },
   });
 }
+
+export async function getGatewaysAndNonGateways(): Promise<{
+  gateways: CQDirectoryEntryModel[];
+  nonGateways: CQDirectoryEntryModel[];
+}> {
+  const cqOrgs = await getOrganizationsWithXCPD();
+  return { gateways: cqOrgs.filter(o => o.gateway), nonGateways: cqOrgs.filter(o => !o.gateway) };
+}
