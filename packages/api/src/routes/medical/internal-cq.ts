@@ -26,6 +26,7 @@ import {
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
+import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
@@ -157,6 +158,20 @@ router.post(
       status,
       response,
     });
+
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/patient-discovery/results
+ *
+ * Receives Patient Discovery results from the patient discovery results lambda
+ */
+router.post(
+  "/patient-discovery/results",
+  asyncHandler(async (req: Request, res: Response) => {
+    processOutboundPatientDiscoveryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

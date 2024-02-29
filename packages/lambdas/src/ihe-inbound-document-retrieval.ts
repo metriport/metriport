@@ -1,20 +1,20 @@
-import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
-import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
+import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
 import { APIGatewayProxyEvent } from "aws-lambda";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayProxyEvent) => {
   if (!event.body) {
-    return buildResponse(400, { message: "Request body is missing" });
+    return buildResponse(400, { message: "The Request body is missing" });
   }
   const payload = JSON.parse(event.body);
-  const baseRequest = inboundDocumentQueryReqSchema.parse({
+  const baseRequest = inboundDocumentRetrievalReqSchema.parse({
     id: payload.id,
     timestamp: payload.timestamp,
     samlAttributes: payload.samlAttributes,
-    externalGatewayPatient: payload.externalGatewayPatient,
+    documentReference: payload.documentReference,
   });
-  const result = await processInboundDocumentQuery(baseRequest);
+  const result = await processInboundDocumentRetrieval(baseRequest);
   return buildResponse(200, result);
 });
 

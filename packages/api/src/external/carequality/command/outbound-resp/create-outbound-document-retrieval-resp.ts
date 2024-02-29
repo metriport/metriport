@@ -2,13 +2,13 @@ import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
 import { OutboundDocumentRetrievalRespModel } from "../../models/outbound-document-retrieval-resp";
 import { DefaultPayload } from "./shared";
 
-export type CreateDocumentRetrievalRespPayload = DefaultPayload & {
+export type CreateDocumentRetrievalRespParam = DefaultPayload & {
   status: string;
   response: OutboundDocumentRetrievalResp;
 };
 
 export async function createOutboundDocumentRetrievalResp(
-  payload: CreateDocumentRetrievalRespPayload
+  payload: CreateDocumentRetrievalRespParam
 ): Promise<OutboundDocumentRetrievalRespModel> {
   return await OutboundDocumentRetrievalRespModel.create({
     id: payload.id,

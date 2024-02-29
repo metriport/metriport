@@ -1,16 +1,18 @@
-import { OutboundResultPoller } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler";
-import { OutboundResultPoolerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler-direct";
-import { OutboundResultPoolerLambda } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler-lambda";
+import { OutboundResultPoller } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
+import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { OutboundResultPollerLambda } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-lambda";
 import { Config } from "../../shared/config";
 
 export function makeOutboundResultPoller(): OutboundResultPoller {
   if (Config.isCloudEnv()) {
+    const patientDiscoveryLambdaName = Config.getOutboundPatientDiscoveryLambdaName();
     const docQueryLambdaName = Config.getOutboundDocumentQueryLambdaName();
     const docRetrievalLambdaName = Config.getOutboundDocumentRetrievalLambdaName();
-    return new OutboundResultPoolerLambda({
+    return new OutboundResultPollerLambda({
+      patientDiscoveryLambdaName,
       docQueryLambdaName,
       docRetrievalLambdaName,
     });
   }
-  return new OutboundResultPoolerDirect(Config.getApiUrl(), Config.getDBCreds());
+  return new OutboundResultPollerDirect(Config.getApiUrl(), Config.getDBCreds());
 }

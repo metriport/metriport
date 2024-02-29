@@ -42,6 +42,7 @@ export function createAPIService({
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
+  outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
   medicalDocumentsUploadBucket,
@@ -67,6 +68,7 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
+  outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
@@ -163,6 +165,7 @@ export function createAPIService({
                 IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
               }
             : undefined),
+          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
           OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
           OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
@@ -224,6 +227,7 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 

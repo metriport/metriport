@@ -2,13 +2,13 @@ import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { OutboundPatientDiscoveryRespModel } from "../../models/outbound-patient-discovery-resp";
 import { DefaultPayload } from "./shared";
 
-export type CreatePatientDiscoverRespPayload = DefaultPayload & {
+export type CreatePatientDiscoverRespParam = DefaultPayload & {
   status: string;
   response: OutboundPatientDiscoveryResp;
 };
 
 export async function createOutboundPatientDiscoveryResp(
-  payload: CreatePatientDiscoverRespPayload
+  payload: CreatePatientDiscoverRespParam
 ): Promise<OutboundPatientDiscoveryRespModel> {
   return await OutboundPatientDiscoveryRespModel.create({
     id: payload.id,

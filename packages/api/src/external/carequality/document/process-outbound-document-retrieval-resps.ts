@@ -1,10 +1,10 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
@@ -20,12 +20,7 @@ export async function processOutboundDocumentRetrievalResps({
   patientId,
   cxId,
   results,
-}: {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  results: OutboundDocumentRetrievalResp[];
-}): Promise<void> {
+}: OutboundDocRetrievalRespParam): Promise<void> {
   try {
     let issuesWithGateway = 0;
     let successDocsCount = 0;
