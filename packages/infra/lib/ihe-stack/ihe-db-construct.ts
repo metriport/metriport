@@ -48,10 +48,10 @@ export default class IHEDBConstruct extends Construct {
     const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
       version: rds.AuroraPostgresEngineVersion.VER_14_7,
     });
-    // TODO 1377 validate that it copies the props from the default group
     const parameterGroup = new rds.ParameterGroup(this, "IHE_GW_DB_Params", {
       engine: dbEngine,
       parameters: {
+        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
         log_min_duration_statement: config.rds.minSlowLogDurationInMs.toString(),
       },
     });
