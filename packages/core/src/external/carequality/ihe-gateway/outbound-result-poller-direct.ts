@@ -13,21 +13,21 @@ import {
 
 const api = axios.create();
 
-export type OutboundPatientDiscoveryRespPayload = {
+export type OutboundPatientDiscoveryRespParam = {
   patientId: string;
   cxId: string;
   requestId: string;
   results: OutboundPatientDiscoveryResp[];
 };
 
-export type OutboundDocQueryRespPayload = {
+export type OutboundDocQueryRespParam = {
   patientId: string;
   cxId: string;
   requestId: string;
   results: OutboundDocumentQueryResp[];
 };
 
-export type OutboundDocRetrievalRespPayload = {
+export type OutboundDocRetrievalRespParam = {
   patientId: string;
   cxId: string;
   requestId: string;
@@ -74,7 +74,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundPatientDiscoveryRespPayload = {
+    const payload: OutboundPatientDiscoveryRespParam = {
       requestId,
       patientId,
       cxId,
@@ -96,7 +96,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundDocQueryRespPayload = {
+    const payload: OutboundDocQueryRespParam = {
       requestId,
       patientId,
       cxId,
@@ -117,7 +117,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundDocRetrievalRespPayload = {
+    const payload: OutboundDocRetrievalRespParam = {
       requestId,
       patientId,
       cxId,

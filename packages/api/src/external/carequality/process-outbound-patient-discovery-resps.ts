@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
-import { OutboundPatientDiscoveryRespPayload } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
@@ -18,7 +18,7 @@ export async function processOutboundPatientDiscoveryResps({
   patientId,
   cxId,
   results,
-}: OutboundPatientDiscoveryRespPayload): Promise<void> {
+}: OutboundPatientDiscoveryRespParam): Promise<void> {
   const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
