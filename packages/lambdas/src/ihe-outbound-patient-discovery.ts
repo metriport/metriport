@@ -27,7 +27,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const dbCreds = await getSecretValueOrFail(dbCredsArn, region);
 
       const poller = new OutboundResultPollerDirect(apiUrl, dbCreds);
-      await poller.pollOutboundDocRetrievalResults({
+      await poller.pollOutboundPatientDiscoveryResults({
         requestId,
         patientId,
         cxId,
@@ -35,16 +35,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         maxPollingDuration: parseInt(maxPollingDuration),
       });
     } catch (error) {
-      const msg = `Error sending document retrieval results`;
+      const msg = `Error sending patient discovery results`;
       console.log(`${msg}: ${errorToString(error)}`);
       capture.error(msg, {
-        extra: {
-          context: `lambda.ihe-outbound-document-retrieval`,
-          error,
-          patientId,
-          requestId,
-          cxId,
-        },
+        extra: { context: `lambda.outbound-patient-discovery`, error, patientId, requestId, cxId },
       });
     }
   }

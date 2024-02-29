@@ -1,4 +1,5 @@
 import {
+  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
@@ -10,7 +11,11 @@ import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
 import { initSequelizeForLambda } from "../../../util/sequelize";
-import { OutboundDocumentQueryRespTableEntry } from "./outbound-result";
+import {
+  OutboundPatientDiscoveryRespTableEntry,
+  OutboundDocumentQueryRespTableEntry,
+  OutboundDocumentRetrievalRespTableEntry,
+} from "./outbound-result";
 
 dayjs.extend(duration);
 
@@ -18,6 +23,7 @@ const CONTROL_TIMEOUT = dayjs.duration({ minutes: 15 });
 const CHECK_DB_INTERVAL = dayjs.duration({ seconds: 10 });
 
 const REQUEST_ID_COLUMN = "request_id";
+const PATIENT_DISCOVERY_RESULT_TABLE_NAME = "patient_discovery_result";
 const DOC_QUERY_RESULT_TABLE_NAME = "document_query_result";
 const DOC_RETRIEVAL_RESULT_TABLE_NAME = "document_retrieval_result";
 
@@ -27,7 +33,19 @@ type PollOutboundResults = {
   cxId: string;
   numOfGateways: number;
   dbCreds: string;
+  maxPollingDuration?: number;
 };
+
+export async function pollOutboundPatientDiscoveryResults(
+  params: PollOutboundResults
+): Promise<OutboundPatientDiscoveryResp[]> {
+  const results = await pollResults({
+    ...params,
+    resultsTable: PATIENT_DISCOVERY_RESULT_TABLE_NAME,
+  });
+  // Since we're not using Sequelize models, we need to cast the results to the correct type
+  return (results as OutboundPatientDiscoveryRespTableEntry[]).map(r => r.data);
+}
 
 export async function pollOutboundDocQueryResults(
   params: PollOutboundResults
@@ -48,7 +66,7 @@ export async function pollOutboundDocRetrievalResults(
     resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
-  return (results as OutboundDocumentQueryRespTableEntry[]).map(r => r.data);
+  return (results as OutboundDocumentRetrievalRespTableEntry[]).map(r => r.data);
 }
 
 async function pollResults({
@@ -56,6 +74,7 @@ async function pollResults({
   patientId,
   cxId,
   numOfGateways,
+  maxPollingDuration,
   dbCreds,
   resultsTable,
 }: PollOutboundResults & {
@@ -69,8 +88,10 @@ async function pollResults({
     // Run the table count until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
       controlDuration(
-        CONTROL_TIMEOUT.asMilliseconds(),
-        `IHE gateway reached timeout after ${CONTROL_TIMEOUT.asMilliseconds()} ms`
+        maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds(),
+        `IHE gateway reached timeout after ${
+          maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds()
+        } ms`
       ),
       checkIfRaceIsComplete(
         () => isResultsComplete(sequelize, resultsTable, requestId, numOfGateways),

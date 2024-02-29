@@ -17,7 +17,6 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -332,6 +331,17 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      maxPollingDuration: Duration.minutes(15),
+    });
+
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
       lambdaLayers,
       vpc: this.vpc,
@@ -339,6 +349,8 @@ export class APIStack extends Stack {
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      maxPollingDuration: Duration.minutes(15),
     });
 
     const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
@@ -348,6 +360,8 @@ export class APIStack extends Stack {
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      maxPollingDuration: Duration.minutes(15),
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
@@ -401,6 +415,7 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
@@ -468,6 +483,11 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
+    outboundPatientDiscoveryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
     outboundDocumentQueryLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
@@ -1126,15 +1146,73 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
+  private setupOutboundPatientDiscovery(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundPatientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "OutboundPatientDiscovery",
+      entry: "ihe-outbound-patient-discovery",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundPatientDiscoveryLambda);
+    dbCredsSecret.grantRead(outboundPatientDiscoveryLambda);
+
+    return outboundPatientDiscoveryLambda;
+  }
+
   private setupOutboundDocumentQuery(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
@@ -1143,14 +1221,21 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(5),
+      timeout: maxPollingDuration,
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentQueryLambda);
+    dbCredsSecret.grantRead(outboundDocumentQueryLambda);
 
     return outboundDocumentQueryLambda;
   }
@@ -1160,10 +1245,21 @@ export class APIStack extends Stack {
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
@@ -1172,14 +1268,21 @@ export class APIStack extends Stack {
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(5),
+      timeout: maxPollingDuration,
       vpc,
       alarmSnsAction: alarmAction,
     });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentRetrievalLambda);
+    dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
   }

@@ -1,6 +1,6 @@
 import { DataTypes, Sequelize, Model, CreationOptional } from "sequelize";
 import { OutboundPatientDiscoveryResp as OutboundPatientDiscoveryRespCore } from "@metriport/ihe-gateway-sdk";
-import { OutboundPatientDiscoveryResp } from "../patient-discovery-result";
+import { OutboundPatientDiscoveryResp } from "../outbound-patient-discovery-resp";
 import { ModelSetup } from "../../../models/_default";
 
 export class OutboundPatientDiscoveryRespModel

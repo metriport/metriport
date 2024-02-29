@@ -1,4 +1,5 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -27,12 +28,7 @@ export async function processOutboundDocumentQueryResps({
   patientId,
   cxId,
   results,
-}: {
-  requestId: string;
-  patientId: string;
-  cxId: string;
-  results: OutboundDocumentQueryResp[];
-}): Promise<void> {
+}: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
   const interrupt = buildInterrupt({ requestId, patientId, cxId, log });

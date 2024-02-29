@@ -281,6 +281,9 @@ export class Config {
     return getEnvVar("IHE_GW_PORT_DR");
   }
 
+  static getOutboundPatientDiscoveryLambdaName(): string | undefined {
+    return getEnvVar("OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME");
+  }
   static getOutboundDocumentQueryLambdaName(): string | undefined {
     return getEnvVar("OUTBOUND_DOC_QUERY_LAMBDA_NAME");
   }
