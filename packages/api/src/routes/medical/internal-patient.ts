@@ -127,7 +127,7 @@ router.post(
   "/update-all/commonwell",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds = [] } = updateAllSchema.parse(req.body);
+    const { patientIds } = updateAllSchema.parse(req.body);
 
     const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
 
@@ -150,7 +150,7 @@ router.post(
   "/update-all/carequality",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds = [] } = updateAllSchema.parse(req.body);
+    const { patientIds } = updateAllSchema.parse(req.body);
 
     const { failedUpdateCount } = await new PatientUpdaterCarequality().updateAll(cxId, patientIds);
 

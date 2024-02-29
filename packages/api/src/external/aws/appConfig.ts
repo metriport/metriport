@@ -103,6 +103,7 @@ export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<bool
 
 export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithCQDirectEnabled = await getCxsWithCQDirectFeatureFlagValue();
+  return true;
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
 }
 
