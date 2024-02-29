@@ -13,6 +13,7 @@ const lambdaName = getEnvVar("AWS_LAMBDA_FUNCTION_NAME");
 const dbCredsArn = getEnvVarOrFail("DB_CREDS");
 const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
+const maxPollingDuration = getEnvVarOrFail("MAX_POLLING_DURATION");
 
 capture.setExtra({ lambdaName: lambdaName });
 
@@ -31,6 +32,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         patientId,
         cxId,
         numOfGateways,
+        maxPollingDuration: parseInt(maxPollingDuration),
       });
     } catch (error) {
       const msg = `Error sending patient discovery results`;
