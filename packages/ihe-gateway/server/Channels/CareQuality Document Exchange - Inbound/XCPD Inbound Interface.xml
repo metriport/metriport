@@ -40248,7 +40248,7 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
       <expandedJsonFormat>true</expandedJsonFormat>
       <autoConvertSOAPToJSON>false</autoConvertSOAPToJSON>
       <autoConvertJSONResponseToXML>false</autoConvertJSONResponseToXML>
-      <validateSAML>true</validateSAML>
+      <validateSAML>false</validateSAML>
       <validationSSLProperties class="com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties" version="4.4.2">
         <enabled>true</enabled>
         <clientAuthentication>DISABLED</clientAuthentication>
@@ -40501,7 +40501,7 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1704995297079</time>
+        <time>1709240229140</time>
         <timezone>America/Los_Angeles</timezone>
       </lastModified>
       <pruningSettings>

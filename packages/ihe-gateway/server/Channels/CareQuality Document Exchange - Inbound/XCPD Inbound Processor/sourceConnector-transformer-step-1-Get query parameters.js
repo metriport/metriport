@@ -1,5 +1,5 @@
 var request = {};
-
+logger.info("1")
 try {
 	
 	var prpa = msg.*::Body.*::PRPA_IN201305UV02;
@@ -39,6 +39,8 @@ try {
 	}
 
 	channelMap.put('REQUEST', JSON.stringify(request));
+	var sanity = channelMap.get('REQUEST');
+
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: Query parameters - ' + ex);

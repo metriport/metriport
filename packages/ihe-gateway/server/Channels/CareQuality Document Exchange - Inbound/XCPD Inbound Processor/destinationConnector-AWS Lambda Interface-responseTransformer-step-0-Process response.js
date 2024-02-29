@@ -1,4 +1,5 @@
 // Store the HTTP code only
+logger.info("3");
 var http = $('responseStatusLine');
 http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
 channelMap.put('HTTP', http.toString());
