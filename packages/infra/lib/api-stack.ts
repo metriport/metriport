@@ -171,7 +171,11 @@ export class APIStack extends Stack {
 
     const dbCluster = new rds.DatabaseCluster(this, "APIDB", {
       engine: dbEngine,
-      instanceProps: { vpc: this.vpc, instanceType: new InstanceType("serverless") },
+      instanceProps: {
+        vpc: this.vpc,
+        instanceType: new InstanceType("serverless"),
+        enablePerformanceInsights: true,
+      },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
