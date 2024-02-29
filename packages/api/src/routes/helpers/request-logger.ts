@@ -4,6 +4,11 @@ import { getLocalStorage } from "@metriport/core/util/local-storage";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
+const blackListedRoutes = [
+  "/internal/carequality/document-query/response",
+  "/internal/carequality/patient-discovery/response",
+  "/internal/carequality/patient-discovery/response",
+];
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
@@ -12,6 +17,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     const url = req.baseUrl + req.path;
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params = req.params && Object.keys(req.params).length ? req.params : undefined;
+
+    if (isBlackListed(url)) {
+      return next();
+    }
+
     console.log(
       "%s ..........Begins %s %s %s %s",
       reqId,
@@ -20,7 +30,9 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       toString(params),
       toString(query)
     );
+
     const startHrTime = process.hrtime();
+
     res.on("close", () => {
       const elapsedHrTime = process.hrtime(startHrTime);
       const elapsedTimeInMs = elapsedHrTime[0] * 1000 + elapsedHrTime[1] / 1e6;
@@ -38,6 +50,10 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
     next();
   });
 };
+
+function isBlackListed(url: string): boolean {
+  return blackListedRoutes.some(route => url.includes(route));
+}
 
 function toString(obj: unknown): string {
   return obj ? ` ${JSON.stringify(obj)}` : "";
