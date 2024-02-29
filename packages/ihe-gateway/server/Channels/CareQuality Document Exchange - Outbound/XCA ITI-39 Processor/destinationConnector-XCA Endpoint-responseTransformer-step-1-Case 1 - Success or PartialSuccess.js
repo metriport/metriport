@@ -46,13 +46,13 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 			try {
 
-				var type = detectFileType(entry.*::Document.toString());
-				var detectedFileType = type[0];
-				var detectedExtension = type[1];
+				const type = detectFileType(entry.*::Document.toString());
+				const detectedFileType = type[0];
+				const detectedExtension = type[1];
 
-				var fileName = [request.cxId, request.patientId, attachment.metriportId + detectedExtension].join('_');
-				var filePath = [request.cxId, request.patientId, fileName].join('/');
-				var docExists = xcaReadFromFile(filePath.toString());
+				const fileName = [request.cxId, request.patientId, attachment.metriportId, "cq" + detectedExtension].join('_');
+				const filePath = [request.cxId, request.patientId, fileName].join('/');
+				const docExists = xcaReadFromFile(filePath.toString());
 
 				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
