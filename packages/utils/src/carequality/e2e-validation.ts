@@ -27,7 +27,7 @@ const dbCreds = JSON.parse(sqlDBCreds);
 const DOC_STATUS_SLEEP = dayjs.duration({ seconds: 30 });
 const PATIENT_SLEEP = dayjs.duration({ seconds: 30 });
 
-const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
+const facilityId: string = "018a6a9c-196c-786f-a5cb-c33751ede0aa"; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -45,24 +45,18 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
 });
 
 const testPatient: PatientCreate = {
-  firstName: "Don",
-  lastName: "Bassett",
-  dob: "1958-04-06",
+  firstName: "NWHINONE",
+  lastName: "NWHINZZZTESTPATIENT",
+  dob: "1981-01-01",
   genderAtBirth: "M",
   personalIdentifiers: [],
   address: [
     {
-      zip: "60005",
-      addressLine1: "12155 SW Broadway",
-      state: USState.IL,
-      city: "Beaverton",
+      zip: "35080",
+      addressLine1: "1100 Test Street",
+      state: USState.AL,
+      city: "Helena",
       country: "USA",
-    },
-  ],
-  contact: [
-    {
-      phone: "503-629-5541",
-      email: "dbassett@aol.com",
     },
   ],
 };
@@ -175,8 +169,9 @@ async function main() {
     let docQueryStatus = await metriportAPI.getDocumentQueryStatus(newPatient.id);
 
     while (
-      (docQueryStatus.download && docQueryStatus.download?.status === "processing") ||
-      (docQueryStatus.convert && docQueryStatus.convert?.status === "processing")
+      !docQueryStatus.download ||
+      docQueryStatus.download.status === "processing" ||
+      docQueryStatus.convert?.status === "processing"
     ) {
       await sleep(DOC_STATUS_SLEEP.asMilliseconds());
       console.log("Document query status:", JSON.stringify(docQueryStatus, null, 2));

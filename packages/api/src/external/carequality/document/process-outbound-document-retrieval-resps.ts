@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
-import { OutboundDocRetrievalRespResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler-direct";
+import { OutboundDocRetrievalRespPayload } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -20,7 +20,7 @@ export async function processOutboundDocumentRetrievalResps({
   patientId,
   cxId,
   results,
-}: OutboundDocRetrievalRespResults): Promise<void> {
+}: OutboundDocRetrievalRespPayload): Promise<void> {
   try {
     let issuesWithGateway = 0;
     let successDocsCount = 0;

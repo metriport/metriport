@@ -1,5 +1,5 @@
-import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler";
-import { OutboundResultPoolerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-pooler-direct";
+import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
+import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { getEnvType, getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";
@@ -26,8 +26,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     try {
       const dbCreds = await getSecretValueOrFail(dbCredsArn, region);
 
-      const pooler = new OutboundResultPoolerDirect(apiUrl, dbCreds);
-      await pooler.pollOutboundPatientDiscoveryResults({
+      const poller = new OutboundResultPollerDirect(apiUrl, dbCreds);
+      await poller.pollOutboundPatientDiscoveryResults({
         requestId,
         patientId,
         cxId,

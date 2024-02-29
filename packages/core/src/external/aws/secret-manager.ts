@@ -1,4 +1,5 @@
 import * as AWS from "aws-sdk";
+import { MetriportError } from "../../util/error/metriport-error";
 
 export function makeSecretManagerClient(region: string) {
   return new AWS.SecretsManager({ region });
@@ -17,7 +18,7 @@ export async function getSecretValue(
 export async function getSecretValueOrFail(secretArn: string, region: string): Promise<string> {
   const secret = await getSecretValue(secretArn, region);
   if (!secret) {
-    throw new Error(`Secret not found for ${secretArn}`);
+    throw new MetriportError(`Secret not found `, undefined, { secretArn });
   }
 
   return secret;

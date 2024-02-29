@@ -1,7 +1,7 @@
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
 import { makeLambdaClient } from "../../aws/lambda";
-import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-pooler";
+import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region);
@@ -9,7 +9,7 @@ const lambdaClient = makeLambdaClient(region);
 /**
  * Executes lambdas to poll for the results of outbound document query and retrieval requests.
  */
-export class OutboundResultPoolerLambda extends OutboundResultPoller {
+export class OutboundResultPollerLambda extends OutboundResultPoller {
   private readonly patientDiscoveryLambdaName: string | undefined;
   private readonly docQueryLambdaName: string | undefined;
   private readonly docRetrievalLambdaName: string | undefined;

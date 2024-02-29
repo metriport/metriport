@@ -4,7 +4,7 @@ import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-pooler";
+import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 import {
   pollOutboundDocQueryResults,
   pollOutboundDocRetrievalResults,
@@ -13,21 +13,21 @@ import {
 
 const api = axios.create();
 
-export type OutboundPatientDiscoveryRespResults = {
+export type OutboundPatientDiscoveryRespPayload = {
   patientId: string;
   cxId: string;
   requestId: string;
   results: OutboundPatientDiscoveryResp[];
 };
 
-export type OutboundDocQueryRespResults = {
+export type OutboundDocQueryRespPayload = {
   patientId: string;
   cxId: string;
   requestId: string;
   results: OutboundDocumentQueryResp[];
 };
 
-export type OutboundDocRetrievalRespResults = {
+export type OutboundDocRetrievalRespPayload = {
   patientId: string;
   cxId: string;
   requestId: string;
@@ -35,12 +35,12 @@ export type OutboundDocRetrievalRespResults = {
 };
 
 /**
- * Direct DB access implementation of OutboundResultPooler.
+ * Direct DB access implementation of OutboundResultPoller.
  *
  * Polls the results of outbound document query and retrieval requests directly from the DB and
  * sends the results to the API.
  */
-export class OutboundResultPoolerDirect extends OutboundResultPoller {
+export class OutboundResultPollerDirect extends OutboundResultPoller {
   private readonly patientDiscoveryResultsUrl: string;
   private readonly docQueryResultsUrl: string;
   private readonly docRetrievalResultsUrl: string;
@@ -74,7 +74,7 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundPatientDiscoveryRespResults = {
+    const payload: OutboundPatientDiscoveryRespPayload = {
       requestId,
       patientId,
       cxId,
@@ -96,7 +96,7 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundDocQueryRespResults = {
+    const payload: OutboundDocQueryRespPayload = {
       requestId,
       patientId,
       cxId,
@@ -117,7 +117,7 @@ export class OutboundResultPoolerDirect extends OutboundResultPoller {
     });
     const { requestId, patientId, cxId } = params;
 
-    const payload: OutboundDocRetrievalRespResults = {
+    const payload: OutboundDocRetrievalRespPayload = {
       requestId,
       patientId,
       cxId,

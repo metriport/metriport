@@ -350,6 +350,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
+      maxPollingDuration: Duration.minutes(15),
     });
 
     const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
@@ -360,6 +361,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
+      maxPollingDuration: Duration.minutes(15),
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
@@ -1150,9 +1152,9 @@ export class APIStack extends Stack {
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
     dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
-    maxPollingDuration: Duration;
   }): Lambda {
     const {
       lambdaLayers,
@@ -1168,12 +1170,12 @@ export class APIStack extends Stack {
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
       name: "OutboundPatientDiscovery",
-      entry: "outbound-patient-discovery",
+      entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration.toString(),
+        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1194,11 +1196,20 @@ export class APIStack extends Stack {
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
     dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
-      ownProps;
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
 
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
@@ -1208,10 +1219,11 @@ export class APIStack extends Stack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(15),
+      timeout: maxPollingDuration,
       vpc,
       alarmSnsAction: alarmAction,
     });
@@ -1228,11 +1240,20 @@ export class APIStack extends Stack {
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
     dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction, dbCluster } =
-      ownProps;
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
 
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
@@ -1242,10 +1263,11 @@ export class APIStack extends Stack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(15),
+      timeout: maxPollingDuration,
       vpc,
       alarmSnsAction: alarmAction,
     });
