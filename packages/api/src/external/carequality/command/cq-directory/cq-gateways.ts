@@ -39,3 +39,13 @@ export async function getCQGateways(): Promise<CQDirectoryEntryModel[]> {
     },
   });
 }
+
+export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[]> {
+  return CQDirectoryEntryModel.findAll({
+    where: {
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+    },
+  });
+}

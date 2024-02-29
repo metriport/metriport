@@ -33,7 +33,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
 }: {
   patient: Patient;
   radiusInMiles?: number;
-}): Promise<CQOrgBasicDetails[]> {
+}): Promise<CQDirectoryEntryModel[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
   const coordinates = patient.data.address.flatMap(address => address.coordinates ?? []);
@@ -44,7 +44,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
     radiusInMeters,
   });
 
-  return orgs.map(toBasicOrgAttributes);
+  return orgs;
 }
 
 /**
