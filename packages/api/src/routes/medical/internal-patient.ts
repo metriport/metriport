@@ -42,6 +42,7 @@ import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-l
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
+import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import {
@@ -129,6 +130,29 @@ router.post(
     const { patientIds = [] } = updateAllSchema.parse(req.body);
 
     const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
+
+    return res.status(status.OK).json({ failedUpdateCount });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/update-all/carequality
+ *
+ * Triggers an update for all of a cx's patients without changing any
+ * demographics. The point of this is to trigger an outbound XCPD for
+ * Carequality so new patient links are formed.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
+ * @return count of update failues, 0 if all successful
+ */
+router.post(
+  "/update-all/carequality",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const { patientIds = [] } = updateAllSchema.parse(req.body);
+
+    const { failedUpdateCount } = await new PatientUpdaterCarequality().updateAll(cxId, patientIds);
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
