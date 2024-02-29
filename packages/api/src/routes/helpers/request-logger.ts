@@ -6,7 +6,7 @@ import { analyzeRoute } from "./request-analytics";
 const asyncLocalStorage = getLocalStorage("reqId");
 const blackListedRoutes = [
   "/internal/carequality/document-query/response",
-  "/internal/carequality/patient-discovery/response",
+  "/internal/carequality/document-retrieval/response",
   "/internal/carequality/patient-discovery/response",
 ];
 
