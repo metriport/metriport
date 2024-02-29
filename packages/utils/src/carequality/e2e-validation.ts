@@ -27,7 +27,7 @@ const dbCreds = JSON.parse(sqlDBCreds);
 const DOC_STATUS_SLEEP = dayjs.duration({ seconds: 30 });
 const PATIENT_SLEEP = dayjs.duration({ seconds: 30 });
 
-const facilityId: string = "018a6a9c-196c-786f-a5cb-c33751ede0aa"; // eslint-disable-line @typescript-eslint/no-inferrable-types
+const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-inferrable-types
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,

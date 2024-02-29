@@ -1175,7 +1175,10 @@ export class APIStack extends Stack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1219,7 +1222,10 @@ export class APIStack extends Stack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
@@ -1263,7 +1269,10 @@ export class APIStack extends Stack {
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
-        MAX_POLLING_DURATION: maxPollingDuration.toMilliseconds().toString(),
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
