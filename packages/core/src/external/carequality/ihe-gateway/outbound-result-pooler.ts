@@ -3,6 +3,7 @@ export type PollOutboundResults = {
   patientId: string;
   cxId: string;
   numOfGateways: number;
+  maxPollingDuration?: number;
 };
 
 export abstract class OutboundResultPoller {

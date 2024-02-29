@@ -33,6 +33,7 @@ type PollOutboundResults = {
   cxId: string;
   numOfGateways: number;
   dbCreds: string;
+  maxPollingDuration?: number;
 };
 
 export async function pollOutboundPatientDiscoveryResults(
@@ -73,6 +74,7 @@ async function pollResults({
   patientId,
   cxId,
   numOfGateways,
+  maxPollingDuration,
   dbCreds,
   resultsTable,
 }: PollOutboundResults & {
@@ -86,8 +88,10 @@ async function pollResults({
     // Run the table count until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
       controlDuration(
-        CONTROL_TIMEOUT.asMilliseconds(),
-        `IHE gateway reached timeout after ${CONTROL_TIMEOUT.asMilliseconds()} ms`
+        maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds(),
+        `IHE gateway reached timeout after ${
+          maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds()
+        } ms`
       ),
       checkIfRaceIsComplete(
         () => isResultsComplete(sequelize, resultsTable, requestId, numOfGateways),
