@@ -972,10 +972,10 @@
           "type": "metric",
           "properties": {
               "metrics": [
-                  [ "AWS/ECS", "MemoryUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "MemoryUtilization Maximum", "region": "us-west-1" } ],
-                  [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "CPUUtilization", ".", ".", ".", ".", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "label": "CPUUtilization Avg", "region": "us-west-1", "color": "#98df8a" } ]
+                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
+                  [ "...", { "stat": "Average", "label": "CPUUtilization Avg", "region": "us-west-1", "color": "#aec7e8" } ],
+                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "region": "us-west-1", "yAxis": "right" } ],
+                  [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
               ],
               "view": "timeSeries",
               "stacked": false,
