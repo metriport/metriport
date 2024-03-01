@@ -91,5 +91,10 @@ export type IHEGatewayProps = {
   };
   keystoreName: string;
   keystoreType: string;
+  /**
+   * Maximum amount of connections to the database.
+   * To be passed to `database.max-connections`.
+   */
+  maxDbConnections: number;
   snsTopicArn?: string;
 };

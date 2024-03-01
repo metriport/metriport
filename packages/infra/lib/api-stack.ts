@@ -157,16 +157,29 @@ export class APIStack extends Stack {
       },
     });
     const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
-    // aurora serverlessv2 db
+    const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.VER_14_7,
+    });
+    const parameterGroup = new rds.ParameterGroup(this, "APIDB_Params", {
+      engine: dbEngine,
+      parameters: {
+        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
+        log_min_duration_statement: "3000", // TODO move this and other parameters to env config
+      },
+    });
+
     const dbCluster = new rds.DatabaseCluster(this, "APIDB", {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_14_4,
-      }),
-      instanceProps: { vpc: this.vpc, instanceType: new InstanceType("serverless") },
+      engine: dbEngine,
+      instanceProps: {
+        vpc: this.vpc,
+        instanceType: new InstanceType("serverless"),
+        enablePerformanceInsights: true,
+      },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
+      parameterGroup,
     });
     const minDBCap = this.isProd(props) ? 2 : 0.5;
     const maxDBCap = this.isProd(props) ? 16 : 2;

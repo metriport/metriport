@@ -12,8 +12,8 @@ function getAWSS3Client() {
 
 		var accessKey = java.lang.String(globalMap.get('ACCESS_KEY'));
 		var secretKey = java.lang.String(globalMap.get('SECRET_KEY'));		
-
-		var region = Packages.software.amazon.awssdk.regions.Region.US_EAST_2;
+		var region = Packages.software.amazon.awssdk.regions.Region.of(java.lang.String(globalMap.get('REGION')));
+		
 		var clientBuilder = Packages.software.amazon.awssdk.services.s3.S3Client.builder();
 		clientBuilder.region(region);		
 		

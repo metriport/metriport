@@ -42,7 +42,7 @@ on:
         required: true
         type: string
       IHE_GW_CONFIG_BUCKET_NAME:
-        required: true
+        required: false
         type: string
     secrets:
       AWS_ACCESS_KEY_ID:
@@ -60,9 +60,9 @@ on:
       SERVICE_PAT:
         required: true
       IHE_GW_KEYSTORE_STOREPASS:
-        required: true
+        required: false
       IHE_GW_KEYSTORE_KEYPASS:
-        required: true
+        required: false
 
 jobs:
   deploy:

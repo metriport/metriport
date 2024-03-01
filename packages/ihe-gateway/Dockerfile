@@ -18,6 +18,7 @@ RUN wget --quiet https://cdn.azul.com/public_keys/alpine-signing@azul.com-5d5dc4
 
 ENV JAVA_HOME=/usr/lib/jvm/zulu17
 
+# TODO try this out: FROM nextgenhealthcare/connect:4.4.2
 RUN curl -SL $ARTIFACT \
     | tar -xzC /opt \
     && mv "/opt/Mirth Connect" /opt/connect
