@@ -17,13 +17,3 @@ _MP_KEYSTORE_TYPE=$IHE_GW_KEYSTORE_TYPE
 set +o allexport
 
 docker compose -f docker-compose.yml up -d $1
-
-echo "Waiting for the server to start..."
-until curl -s -f -o /dev/null $IHE_GW_URL
-do
-  sleep 1
-  echo -n "."
-done
-echo
-
-source ./scripts/push-to-server.sh

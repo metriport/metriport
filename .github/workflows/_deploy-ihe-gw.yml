@@ -7,11 +7,11 @@ on:
         description: "the environment we're deploying to, either 'staging', 'production', or 'sandbox'"
         required: true
         type: string
-      script_name:
-        description: "the name of the script under the scripts/ folder to run"
+      is-branch-to-staging:
         required: false
-        type: string
-        default: "deploy-api.sh"
+        type: boolean
+        default: false
+        description: "whether this workflow should checkout internal's develop/master or a feature branch"
       ECR_REPO_URI:
         description: "The URI of the ECR repository to push the Docker image to"
         required: true
@@ -41,6 +41,9 @@ on:
         required: true
         type: string
       IHE_GW_CONFIG_BUCKET_NAME:
+        required: true
+        type: string
+      IHE_GW_FULL_BACKUP_LOCATION:
         required: true
         type: string
     secrets:
@@ -81,12 +84,54 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Checkout
-        uses: actions/checkout@v3
+
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
-        shell: bash
+          shell: bash
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: metriport
+
+      # checkout the internal repo to get configs - default branches
+      - name: Checkout internal default branch
+        uses: actions/checkout@v3
+        if: ${{ inputs.is-branch-to-staging == false }}
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ (inputs.deploy_env == 'production' || inputs.deploy_env == 'sandbox') && 'master' || 'develop' }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/ihe-gw
+      # checkout the internal repo to get configs - feature branch when "branching to staging"
+      - name: Determine which internal branch to checkout
+        if: ${{ inputs.is-branch-to-staging == true }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.SERVICE_PAT }}
+        run: |
+          set +e # don't stop on failure
+          gh api /repos/metriport/metriport-internal/branches/${{ github.ref_name }} --silent
+          RESULT=$?
+          if [ $RESULT -eq 0 ]; then
+            INTERNAL_BRANCH=${{ github.ref }}
+          else
+            INTERNAL_BRANCH=develop
+          fi
+          echo "Internal branch for checkout: $INTERNAL_BRANCH"
+          echo "INTERNAL_BRANCH=$INTERNAL_BRANCH" >> $GITHUB_ENV
+      - name: Checkout internal feature branch
+        uses: actions/checkout@v3
+        if: ${{ inputs.is-branch-to-staging == true }}
+        with:
+          repository: metriport/metriport-internal
+          ref: ${{ env.INTERNAL_BRANCH }}
+          token: ${{ secrets.SERVICE_PAT }} # secret token from user 'metriport-service'
+          path: metriport-internal
+          sparse-checkout: |
+            config-oss/ihe-gw
 
       - name: Setup AWS CLI
         run: |
@@ -103,7 +148,7 @@ jobs:
       - name: Deploy
         run: |
           ./packages/scripts/deploy-ihe-gw.sh
-        working-directory: "./"
+        working-directory: "metriport"
         env:
           ENV_TYPE: ${{ inputs.deploy_env }}
           ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
@@ -117,3 +162,4 @@ jobs:
           IHE_GW_CONFIG_BUCKET_NAME: ${{ inputs.IHE_GW_CONFIG_BUCKET_NAME }}
           IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
           IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
+          IHE_GW_FULL_BACKUP_LOCATION: ${{ inputs.IHE_GW_FULL_BACKUP_LOCATION }}

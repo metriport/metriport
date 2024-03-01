@@ -104,6 +104,7 @@ export default class IHEGatewayConstruct extends Construct {
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
       DATABASE_MAX_CONNECTIONS: config.maxDbConnections.toString(),
+      IHE_GW_USER: config.adminUsername,
     };
 
     const ecrRepo = ecr.Repository.fromRepositoryName(scope, `${id}EcrRepo`, ecrRepoName);
