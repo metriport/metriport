@@ -15,6 +15,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			operationOutcome = processRegistryErrorList(xml.*::RegistryResponse.*::RegistryErrorList);
 		} catch(ex) {
 			if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+			channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP1', ex.toString());
 		}
 
 		// MetriportID mapping
@@ -69,6 +70,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 					 "details": {"text": ""}
 				};
 				issue.details.text = ex.toString();
+				channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP2', ex.toString());
 				if (!operationOutcome) operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
 				operationOutcome.issue.push(issue);
 			}
@@ -86,6 +88,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+		channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP3', ex.toString());
 		throw ex;
 	}
 
