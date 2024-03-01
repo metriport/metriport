@@ -137,7 +137,7 @@ router.post(
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
-    const { log } = Util.out(`Doc conversion status - patient ${patientId}`);
+    const { log } = Util.out(`Doc conversion status - patient ${patientId}, job ${jobId}`);
 
     // keeping the old logic for now, but we should avoid having these optional parameters that can
     // lead to empty string or `undefined` being used as IDs
@@ -146,7 +146,10 @@ router.post(
     const docId = decomposed?.documentId ?? "";
     const hasSource = isMedicalDataSource(source);
 
-    log(`Converted document ${docId} with status ${convertResult}, details: ${details}`);
+    log(
+      `Converted document ${docId} with status ${convertResult}, source: ${source}, ` +
+        `details: ${details}, result: ${JSON.stringify(convertResult)}`
+    );
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const docQueryProgress = patient.data.documentQueryProgress;
