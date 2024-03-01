@@ -1061,7 +1061,7 @@
           "type": "metric",
           "properties": {
               "metrics": [
-                  [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "ihe-db", { "stat": "Average" } ],
+                  [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1" } ],
                   [ ".", "VolumeWriteIOPs", ".", ".", { "stat": "Average", "region": "us-west-1", "yAxis": "right" } ]
               ],
               "view": "timeSeries",
@@ -1072,12 +1072,13 @@
               "annotations": {
                   "horizontal": [
                       {
-                          "label": "VolumeReadIOPs >= 100000 for 1 datapoints within 5 minutes",
+                          "label": "VolumeReadIOPs >= 100,000 for 1 dpts / 5 minutes",
                           "value": 100000
                       },
                       {
-                          "label": "VolumeWriteIOPs >= 40000 for 1 datapoints within 5 minutes",
-                          "value": 40000
+                          "label": "VolumeWriteIOPs >= 40,000 for 1 dpts / 5 minutes",
+                          "value": 40000,
+                          "yAxis": "right"
                       }
                   ]
               }
