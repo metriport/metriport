@@ -26,6 +26,7 @@ services:
       DATABASE: "postgres"
       DATABASE_USERNAME: "${DATABASE_USERNAME}"
       DATABASE_PASSWORD: "${DATABASE_PASSWORD}"
+      DATABASE_MAX_CONNECTIONS: "${DATABASE_MAX_CONNECTIONS}"
       DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
       VMOPTIONS: "-Xms2048m,-Xmx3072m"
       LICENSE_KEY: ${LICENSE_KEY}
