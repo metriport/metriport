@@ -1,12 +1,12 @@
 import { StackProps } from "aws-cdk-lib";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
+import { HttpAlbIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import * as ecs from "aws-cdk-lib/aws-ecs";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import { IBucket } from "aws-cdk-lib/aws-s3";
-import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
-import { HttpUrlIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { isProd } from "../shared/util";
@@ -67,7 +67,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
       config.outboundPorts.documentRetrieval,
     ],
   });
-  const { serverAddress: iheGWAddressInbound } = new IHEGatewayConstruct(stack, {
+  const { pdListener, dqListener, drListener } = new IHEGatewayConstruct(stack, {
     ...props,
     mainConfig,
     config,
@@ -79,23 +79,44 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     httpPorts: [config.inboundPorts.patientDiscovery, config.inboundPorts.documentQuery],
   });
 
-  const patientDiscoveryPort = config.inboundPorts.patientDiscovery;
-  const documentQueryPort = config.inboundPorts.documentQuery;
-  const documentRetrievalPort = config.inboundPorts.documentRetrieval ?? documentQueryPort;
-  const buildInboundAddress = (port: number) => `http://${iheGWAddressInbound}:${port}`;
+  // setup a private link so the API GW can talk to the ALB
+  const vpcLink = new apigwv2.VpcLink(stack, "IHEAPIGWVPCLink", {
+    vpc: props.vpc,
+  });
 
-  addProxyRoute("/v1/patient-discovery", buildInboundAddress(patientDiscoveryPort), apiGateway);
-  addProxyRoute("/v1/document-query", buildInboundAddress(documentQueryPort), apiGateway);
-  addProxyRoute("/v1/document-retrieval", buildInboundAddress(documentRetrievalPort), apiGateway);
-}
+  //http://localhost:9091/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery?wsdl
 
-function addProxyRoute(path: string, serverAddress: string, apiGateway: apigwv2.HttpApi) {
-  const integration = new HttpUrlIntegration(`${path}Integration`, serverAddress, {
-    method: apigwv2.HttpMethod.ANY,
+  apiGateway.addRoutes({
+    path: "/v1/patient-discovery",
+    integration: new HttpAlbIntegration(`IHEGWPDIntegration`, pdListener, {
+      vpcLink,
+      parameterMapping: new apigwv2.ParameterMapping().overwritePath(
+        apigwv2.MappingValue.custom(
+          "/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery?wsdl"
+        )
+      ),
+    }),
   });
   apiGateway.addRoutes({
-    path,
-    methods: [apigwv2.HttpMethod.ANY],
-    integration,
+    path: "/v1/document-query",
+    integration: new HttpAlbIntegration(`IHEGWDQIntegration`, dqListener, {
+      vpcLink,
+      parameterMapping: new apigwv2.ParameterMapping().overwritePath(
+        apigwv2.MappingValue.custom(
+          "/Gateway/DocumentQuery/3_0/NhinService/RespondingGateway_Query_Service/DocQuery"
+        )
+      ),
+    }),
+  });
+  apiGateway.addRoutes({
+    path: "/v1//document-retrieval",
+    integration: new HttpAlbIntegration(`IHEGWDQIntegration`, drListener, {
+      vpcLink,
+      parameterMapping: new apigwv2.ParameterMapping().overwritePath(
+        apigwv2.MappingValue.custom(
+          "/Gateway/DocumentRetrieve/3_0/NhinService/RespondingGateway_Retrieve_Service/DocRetrieve"
+        )
+      ),
+    }),
   });
 }

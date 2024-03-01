@@ -7,6 +7,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateTaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import {
+  ApplicationListener,
   ApplicationLoadBalancer,
   ApplicationProtocol,
   HealthCheck,
@@ -51,6 +52,9 @@ const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 export default class IHEGatewayConstruct extends Construct {
   public readonly server: ecs.IFargateService;
   public readonly serverAddress: string;
+  public readonly pdListener: ApplicationListener;
+  public readonly dqListener: ApplicationListener;
+  public readonly drListener: ApplicationListener;
 
   constructor(scope: Construct, props: IHEGatewayConstructProps) {
     super(scope, `${props.name}Construct`);
@@ -146,6 +150,10 @@ export default class IHEGatewayConstruct extends Construct {
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
+    let patientDiscoveryListener: ApplicationListener;
+    let documentQueryListener: ApplicationListener;
+    let documentRetrievalListener: ApplicationListener;
+
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 2,
@@ -164,6 +172,19 @@ export default class IHEGatewayConstruct extends Construct {
         port,
         protocol: ApplicationProtocol.HTTP,
       });
+      if (
+        port === props.mainConfig.iheGateway?.inboundPorts.patientDiscovery ||
+        port === props.mainConfig.iheGateway?.outboundPorts.patientDiscovery
+      ) {
+        patientDiscoveryListener = listener;
+      } else if (port === props.mainConfig.iheGateway?.inboundPorts.documentQuery) {
+        documentQueryListener = listener;
+        documentRetrievalListener = listener;
+      } else if (port === props.mainConfig.iheGateway?.outboundPorts.documentQuery) {
+        documentQueryListener = listener;
+      } else if (port === props.mainConfig.iheGateway?.outboundPorts.documentRetrieval) {
+        documentRetrievalListener = listener;
+      }
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
         containerName,
@@ -187,6 +208,12 @@ export default class IHEGatewayConstruct extends Construct {
     service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    this.pdListener = patientDiscoveryListener!;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    this.dqListener = documentQueryListener!;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    this.drListener = documentRetrievalListener!;
     this.serverAddress = alb.loadBalancerDnsName;
 
     new r53.CnameRecord(this, `${id}PrivateRecord`, {
