@@ -7,6 +7,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateTaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import {
+  ApplicationListener,
   ApplicationLoadBalancer,
   ApplicationProtocol,
   HealthCheck,
@@ -39,7 +40,9 @@ export interface IHEGatewayConstructProps {
   medicalDocumentsBucket: IBucket;
   name: string;
   dnsSubdomain: string;
-  httpPorts: number[];
+  pdPort: number;
+  dqPort: number;
+  drPort: number;
 }
 
 const maxPortsPerLB = 5;
@@ -51,6 +54,9 @@ const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 export default class IHEGatewayConstruct extends Construct {
   public readonly server: ecs.IFargateService;
   public readonly serverAddress: string;
+  public readonly pdListener: ApplicationListener;
+  public readonly dqListener: ApplicationListener;
+  public readonly drListener: ApplicationListener;
 
   constructor(scope: Construct, props: IHEGatewayConstructProps) {
     super(scope, `${props.name}Construct`);
@@ -68,12 +74,14 @@ export default class IHEGatewayConstruct extends Construct {
       medicalDocumentsBucket,
       name,
       dnsSubdomain,
-      httpPorts,
+      pdPort,
+      dqPort,
+      drPort,
     } = props;
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
-
+    const httpPorts = [pdPort, dqPort, drPort];
     if (httpPorts.length > maxPortsOnProps) {
       throw new Error(`This construct can have at most ${maxPortsOnProps} HTTP ports`);
     }
@@ -148,6 +156,10 @@ export default class IHEGatewayConstruct extends Construct {
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
+    let patientDiscoveryListener: ApplicationListener | undefined = undefined;
+    let documentQueryListener: ApplicationListener | undefined = undefined;
+    let documentRetrievalListener: ApplicationListener | undefined = undefined;
+
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 2,
@@ -166,6 +178,13 @@ export default class IHEGatewayConstruct extends Construct {
         port,
         protocol: ApplicationProtocol.HTTP,
       });
+      if (port === pdPort) {
+        patientDiscoveryListener = listener;
+      } else if (port === dqPort) {
+        documentQueryListener = listener;
+      } else if (port === drPort) {
+        documentRetrievalListener = listener;
+      }
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
         containerName,
@@ -189,6 +208,12 @@ export default class IHEGatewayConstruct extends Construct {
     service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
+    if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
+      throw new Error("PD, DQ, and DR listeners need to be defined");
+    }
+    this.pdListener = patientDiscoveryListener;
+    this.dqListener = documentQueryListener;
+    this.drListener = documentRetrievalListener;
     this.serverAddress = alb.loadBalancerDnsName;
 
     new r53.CnameRecord(this, `${id}PrivateRecord`, {
