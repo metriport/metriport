@@ -84,8 +84,6 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     vpc: props.vpc,
   });
 
-  //http://localhost:9091/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery?wsdl
-
   apiGateway.addRoutes({
     path: "/v1/patient-discovery",
     integration: new HttpAlbIntegration(`IHEGWPDIntegration`, pdListener, {
