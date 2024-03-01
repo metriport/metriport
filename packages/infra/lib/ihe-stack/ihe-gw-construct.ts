@@ -40,7 +40,9 @@ export interface IHEGatewayConstructProps {
   medicalDocumentsBucket: IBucket;
   name: string;
   dnsSubdomain: string;
-  httpPorts: number[];
+  pdPort: number;
+  dqPort: number;
+  drPort: number;
 }
 
 const maxPortsPerLB = 5;
@@ -72,12 +74,14 @@ export default class IHEGatewayConstruct extends Construct {
       medicalDocumentsBucket,
       name,
       dnsSubdomain,
-      httpPorts,
+      pdPort,
+      dqPort,
+      drPort,
     } = props;
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
-
+    const httpPorts = [pdPort, dqPort, drPort];
     if (httpPorts.length > maxPortsOnProps) {
       throw new Error(`This construct can have at most ${maxPortsOnProps} HTTP ports`);
     }
@@ -152,9 +156,9 @@ export default class IHEGatewayConstruct extends Construct {
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
-    let patientDiscoveryListener: ApplicationListener;
-    let documentQueryListener: ApplicationListener;
-    let documentRetrievalListener: ApplicationListener;
+    let patientDiscoveryListener: ApplicationListener | undefined = undefined;
+    let documentQueryListener: ApplicationListener | undefined = undefined;
+    let documentRetrievalListener: ApplicationListener | undefined = undefined;
 
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
@@ -174,17 +178,11 @@ export default class IHEGatewayConstruct extends Construct {
         port,
         protocol: ApplicationProtocol.HTTP,
       });
-      if (
-        port === props.mainConfig.iheGateway?.inboundPorts.patientDiscovery ||
-        port === props.mainConfig.iheGateway?.outboundPorts.patientDiscovery
-      ) {
+      if (port === pdPort) {
         patientDiscoveryListener = listener;
-      } else if (port === props.mainConfig.iheGateway?.inboundPorts.documentQuery) {
+      } else if (port === dqPort) {
         documentQueryListener = listener;
-        documentRetrievalListener = listener;
-      } else if (port === props.mainConfig.iheGateway?.outboundPorts.documentQuery) {
-        documentQueryListener = listener;
-      } else if (port === props.mainConfig.iheGateway?.outboundPorts.documentRetrieval) {
+      } else if (port === drPort) {
         documentRetrievalListener = listener;
       }
       const targetGroupId = `${id}-TG-${port}`;
@@ -210,12 +208,12 @@ export default class IHEGatewayConstruct extends Construct {
     service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.pdListener = patientDiscoveryListener!;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.dqListener = documentQueryListener!;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    this.drListener = documentRetrievalListener!;
+    if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
+      throw new Error("PD, DQ, and DR listeners need to be defined");
+    }
+    this.pdListener = patientDiscoveryListener;
+    this.dqListener = documentQueryListener;
+    this.drListener = documentRetrievalListener;
     this.serverAddress = alb.loadBalancerDnsName;
 
     new r53.CnameRecord(this, `${id}PrivateRecord`, {

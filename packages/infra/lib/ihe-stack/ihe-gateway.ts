@@ -61,11 +61,9 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     db,
     name: `${name}Outbound`,
     dnsSubdomain: "outbound",
-    httpPorts: [
-      config.outboundPorts.patientDiscovery,
-      config.outboundPorts.documentQuery,
-      config.outboundPorts.documentRetrieval,
-    ],
+    pdPort: config.outboundPorts.patientDiscovery,
+    dqPort: config.outboundPorts.documentQuery,
+    drPort: config.outboundPorts.documentRetrieval,
   });
   const { pdListener, dqListener, drListener } = new IHEGatewayConstruct(stack, {
     ...props,
@@ -76,7 +74,9 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     db,
     name: `${name}Inbound`,
     dnsSubdomain: "inbound",
-    httpPorts: [config.inboundPorts.patientDiscovery, config.inboundPorts.documentQuery],
+    pdPort: config.inboundPorts.patientDiscovery,
+    dqPort: config.inboundPorts.documentQuery,
+    drPort: config.inboundPorts.documentRetrieval ?? config.inboundPorts.documentQuery,
   });
 
   // setup a private link so the API GW can talk to the ALB
