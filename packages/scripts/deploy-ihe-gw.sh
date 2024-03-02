@@ -39,7 +39,7 @@ FOLDER=packages/ihe-gateway
 pushd ${FOLDER}
 
 echo "Initializing the IHE GW repo"
-./scripts/init.sh
+source ./scripts/init.sh
 
 echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
