@@ -42,8 +42,8 @@ export async function queryDocumentsAcrossHIEs({
   facilityId,
   override,
   cxDocumentRequestMetadata,
-  // START TODO #1572 - remove
   forceQuery = false,
+  // START TODO #1572 - remove
   commonwell = false,
   carequality = false,
 }: // END TODO #1572 - remove
