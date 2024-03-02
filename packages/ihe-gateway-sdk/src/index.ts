@@ -1,62 +1,61 @@
 export { IHEGateway } from "./client/ihe-gateway";
 export {
-  outboundPatientDiscoveryReqSchema,
-  OutboundPatientDiscoveryReq,
-  inboundPatientDiscoveryReqSchema,
-  InboundPatientDiscoveryReq,
-} from "./models/patient-discovery/patient-discovery-requests";
-export {
-  inboundPatientDiscoveryRespSchema,
-  InboundPatientDiscoveryResp,
-  outboundPatientDiscoveryRespSchema,
-  OutboundPatientDiscoveryResp,
-} from "./models/patient-discovery/patient-discovery-responses";
-export {
-  outboundDocumentQueryReqSchema,
-  OutboundDocumentQueryReq,
-  inboundDocumentQueryReqSchema,
   InboundDocumentQueryReq,
+  inboundDocumentQueryReqSchema,
+  OutboundDocumentQueryReq,
+  outboundDocumentQueryReqSchema,
 } from "./models/document-query/document-query-requests";
 export {
-  outboundDocumentQueryRespSchema,
-  OutboundDocumentQueryResp,
-  isSuccessfulOutboundDocQueryResponse,
-  inboundDocumentQueryRespSchema,
   InboundDocumentQueryResp,
-  InboundDocumentQueryRespSuccessful,
   InboundDocumentQueryRespFault,
+  inboundDocumentQueryRespSchema,
+  InboundDocumentQueryRespSuccessful,
+  isSuccessfulOutboundDocQueryResponse,
+  OutboundDocumentQueryResp,
+  outboundDocumentQueryRespSchema,
 } from "./models/document-query/document-query-responses";
-
 export {
-  outboundDocumentRetrievalReqSchema,
-  OutboundDocumentRetrievalReq,
-  inboundDocumentRetrievalReqSchema,
   InboundDocumentRetrievalReq,
+  inboundDocumentRetrievalReqSchema,
+  OutboundDocumentRetrievalReq,
+  outboundDocumentRetrievalReqSchema,
 } from "./models/document-retrieval/document-retrieval-requests";
 export {
-  outboundDocumentRetrievalRespSchema,
-  OutboundDocumentRetrievalResp,
-  isSuccessfulOutboundDocRetrievalResponse,
-  inboundDocumentRetrievalRespSchema,
   InboundDocumentRetrievalResp,
-  InboundDocumentRetrievalRespSuccessful,
   InboundDocumentRetrievalRespFault,
+  inboundDocumentRetrievalRespSchema,
+  InboundDocumentRetrievalRespSuccessful,
+  isSuccessfulOutboundDocRetrievalResponse,
+  OutboundDocumentRetrievalResp,
+  outboundDocumentRetrievalRespSchema,
 } from "./models/document-retrieval/document-retrieval-responses";
-
 export {
-  npiStringSchema,
+  InboundPatientDiscoveryReq,
+  inboundPatientDiscoveryReqSchema,
+  OutboundPatientDiscoveryReq,
+  outboundPatientDiscoveryReqSchema,
+} from "./models/patient-discovery/patient-discovery-requests";
+export {
+  InboundPatientDiscoveryResp,
+  inboundPatientDiscoveryRespSchema,
+  OutboundPatientDiscoveryResp,
+  outboundPatientDiscoveryRespSchema,
+} from "./models/patient-discovery/patient-discovery-responses";
+export {
+  BaseErrorResponse,
+  BaseRequest,
+  baseRequestSchema,
+  BaseResponse,
+  DocumentReference,
+  isBaseErrorResponse,
   NPIString,
   NPIStringArray,
   npiStringArraySchema,
+  npiStringSchema,
   oidStringSchema,
-  BaseRequest,
-  BaseErrorResponse,
-  baseRequestSchema,
-  DocumentReference,
   OperationOutcome,
-  BaseResponse,
+  SamlAttributes,
   XCAGateway,
   XCPDGateway,
   XCPDGateways,
-  isBaseErrorResponse,
 } from "./models/shared";
