@@ -1,16 +1,17 @@
+import { Organization } from "@metriport/core/domain/organization";
 import { capture } from "@metriport/core/util/notifications";
 import {
-  OutboundDocumentRetrievalReq,
-  DocumentReference,
   OutboundDocumentQueryResp,
+  OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
-import { Organization } from "@metriport/core/domain/organization";
 import dayjs from "dayjs";
-import { DocumentReferenceWithMetriportId } from "./shared";
+import { chunk } from "lodash";
 import { createPurposeOfUse, isGWValid } from "../shared";
+import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
+export const maxDocRefsPerDocRetrievalRequest = 5;
 
 export function createOutboundDocumentRetrievalReqs({
   requestId,
@@ -30,6 +31,9 @@ export function createOutboundDocumentRetrievalReqs({
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
+  const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
+    documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
+
   const patientsWithInvalidGW: string[] = [];
 
   const requests = outboundDocumentQueryResps.reduce(
@@ -38,15 +42,10 @@ export function createOutboundDocumentRetrievalReqs({
 
       if (!isGWValid(gateway)) {
         if (patientId) patientsWithInvalidGW.push(patientId);
-
         return acc;
       }
 
-      const requestDocReferences: DocumentReference[] = documentReferences.filter(
-        docRef => docRef.homeCommunityId === gateway.homeCommunityId
-      );
-
-      const request: OutboundDocumentRetrievalReq = {
+      const baseRequest: Omit<OutboundDocumentRetrievalReq, "documentReference"> = {
         id: requestId,
         cxId: cxId,
         patientId: patientId,
@@ -66,10 +65,18 @@ export function createOutboundDocumentRetrievalReqs({
           homeCommunityId: gateway.homeCommunityId,
           url: gateway.url,
         },
-        documentReference: requestDocReferences,
       };
 
-      return [...acc, request];
+      const docRefsForCurrentGateway = getDocRefsOfGateway(gateway);
+      const docRefChunks = chunk(docRefsForCurrentGateway, maxDocRefsPerDocRetrievalRequest);
+      const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
+        return {
+          ...baseRequest,
+          documentReference: chunk,
+        };
+      });
+
+      return [...acc, ...request];
     },
     []
   );
