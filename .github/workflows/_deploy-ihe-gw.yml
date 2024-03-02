@@ -89,11 +89,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: metriport
-      - name: Log Git Ref
-        run: |
-          echo "Git ref: $(git rev-parse HEAD)"
-          shell: bash
-        working-directory: "./"
   
       # checkout the internal repo to get configs - default branches
       - name: Checkout internal default branch
