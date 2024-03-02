@@ -42,14 +42,22 @@ export async function queryDocumentsAcrossHIEs({
   facilityId,
   override,
   cxDocumentRequestMetadata,
+  // START TODO #1572 - remove
   forceQuery = false,
-}: {
+  commonwell = false,
+  carequality = false,
+}: // END TODO #1572 - remove
+{
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
+  // START TODO #1572 - remove
+  commonwell?: boolean;
+  carequality?: boolean;
+  // END TODO #1572 - remove
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -79,18 +87,22 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  getDocumentsFromCW({
-    patient,
-    facilityId,
-    forceDownload: override,
-    forceQuery,
-    requestId,
-  }).catch(emptyFunction);
+  if (commonwell) {
+    getDocumentsFromCW({
+      patient,
+      facilityId,
+      forceDownload: override,
+      forceQuery,
+      requestId,
+    }).catch(emptyFunction);
+  }
 
-  getDocumentsFromCQ({
-    patient,
-    requestId,
-  }).catch(emptyFunction);
+  if (carequality) {
+    getDocumentsFromCQ({
+      patient,
+      requestId,
+    }).catch(emptyFunction);
+  }
 
   return createQueryResponse("processing", updatedPatient);
 }
