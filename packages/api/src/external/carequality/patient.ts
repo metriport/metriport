@@ -21,6 +21,7 @@ import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-dis
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 
 dayjs.extend(duration);
 
@@ -45,6 +46,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
 
     log(`Kicking off patient discovery`);
+    await updatePatientDiscoveryStatus({ patient, status: "processing" });
     await iheGateway.startPatientDiscovery(pdRequest);
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -55,6 +57,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {

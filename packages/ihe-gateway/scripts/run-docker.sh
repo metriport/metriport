@@ -17,8 +17,3 @@ _MP_KEYSTORE_TYPE=$IHE_GW_KEYSTORE_TYPE
 set +o allexport
 
 docker compose -f docker-compose.yml up -d $1
-
-echo "Waiting for the server to start..."
-sleep 5
-
-source ./scripts/push-to-server.sh

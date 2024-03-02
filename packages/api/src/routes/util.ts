@@ -8,16 +8,15 @@ import { out } from "@metriport/core/util/log";
 
 const { log } = out("asyncHandler");
 
-export const asyncHandler =
-  (
-    f: (
-      req: Request,
-      res: Response,
-      next: NextFunction
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) => Promise<Response<any, Record<string, any>> | void>
-  ) =>
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export function asyncHandler(
+  f: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<Response<any, Record<string, any>> | void>
+) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
@@ -26,10 +25,11 @@ export const asyncHandler =
       next(err);
     }
   };
+}
 
 // https://www.rfc-editor.org/rfc/rfc7807 w/ Metriport extension, { name?: string }
 export type HttpResponseBody = { status: number; title: string; detail?: string; name?: string };
-export const httpResponseBody = ({
+export function httpResponseBody({
   status,
   title,
   detail,
@@ -39,14 +39,14 @@ export const httpResponseBody = ({
   title: string;
   detail?: string;
   name?: string;
-}): HttpResponseBody => {
+}): HttpResponseBody {
   return {
     status,
     title,
     detail,
     name,
   };
-};
+}
 
 export const getFromQuery = (prop: string, req: Request): string | undefined => {
   const value = req.query[prop];

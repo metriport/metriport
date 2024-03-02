@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { CQLink } from "./cq-patient-data";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 
 dayjs.extend(duration);
 
@@ -22,10 +23,12 @@ export async function processOutboundPatientDiscoveryResps({
   const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
+  const patient = { id: patientId, cxId };
 
   try {
     if (results.length === 0) {
       log(`No patient discovery results found.`);
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
       return;
     }
 
@@ -38,10 +41,12 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
     log(`Completed.`);
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
         patientId,

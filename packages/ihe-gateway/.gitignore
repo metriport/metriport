@@ -4,6 +4,7 @@ secret.properties
 dist
 certs
 custom-extensions
+FullBackup*.xml
 # logs
 .install4j
 # Compiled class file
