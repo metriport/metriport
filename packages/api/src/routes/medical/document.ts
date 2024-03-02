@@ -125,7 +125,6 @@ router.post(
       facilityId,
       override,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
-      forceQuery: false,
       commonwell,
       carequality,
     });
