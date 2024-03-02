@@ -159,6 +159,7 @@ export default class IHEGatewayConstruct extends Construct {
     let patientDiscoveryListener: ApplicationListener | undefined = undefined;
     let documentQueryListener: ApplicationListener | undefined = undefined;
     let documentRetrievalListener: ApplicationListener | undefined = undefined;
+    const portToListener: { [key: number]: ApplicationListener } = {};
 
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
@@ -173,11 +174,16 @@ export default class IHEGatewayConstruct extends Construct {
       theLB: ApplicationLoadBalancer,
       healthcheckInterval: Duration
     ) => {
-      const listener = theLB.addListener(`${id}Listener_${port}`, {
-        open: false,
-        port,
-        protocol: ApplicationProtocol.HTTP,
-      });
+      const existingListener = portToListener[port];
+      // ensure we're only creating unique listeners
+      const listener =
+        existingListener ??
+        theLB.addListener(`${id}Listener_${port}`, {
+          open: false,
+          port,
+          protocol: ApplicationProtocol.HTTP,
+        });
+      portToListener[port] = listener;
       if (port === pdPort) {
         patientDiscoveryListener = listener;
       } else if (port === dqPort) {
@@ -185,6 +191,8 @@ export default class IHEGatewayConstruct extends Construct {
       } else if (port === drPort) {
         documentRetrievalListener = listener;
       }
+      // don't create a new TG if this listener was already created on the same port
+      if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
         containerName,
