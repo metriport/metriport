@@ -186,7 +186,7 @@ export default class IHEGatewayConstruct extends Construct {
       portToListener[port] = listener;
       if (port === pdPort) {
         patientDiscoveryListener = listener;
-      } else if (port === dqPort) {
+      } else if (port === dqPort && !existingListener) {
         documentQueryListener = listener;
       } else if (port === drPort) {
         documentRetrievalListener = listener;
