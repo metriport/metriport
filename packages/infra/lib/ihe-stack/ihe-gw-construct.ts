@@ -159,6 +159,7 @@ export default class IHEGatewayConstruct extends Construct {
     let patientDiscoveryListener: ApplicationListener | undefined = undefined;
     let documentQueryListener: ApplicationListener | undefined = undefined;
     let documentRetrievalListener: ApplicationListener | undefined = undefined;
+    const portToListener: { [key: string]: ApplicationListener } = {};
 
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
@@ -173,11 +174,15 @@ export default class IHEGatewayConstruct extends Construct {
       theLB: ApplicationLoadBalancer,
       healthcheckInterval: Duration
     ) => {
-      const listener = theLB.addListener(`${id}Listener_${port}`, {
-        open: false,
-        port,
-        protocol: ApplicationProtocol.HTTP,
-      });
+      // ensure we're only creating unique listeners
+      const listener =
+        portToListener[port] ??
+        theLB.addListener(`${id}Listener_${port}`, {
+          open: false,
+          port,
+          protocol: ApplicationProtocol.HTTP,
+        });
+      portToListener[port] = listener;
       if (port === pdPort) {
         patientDiscoveryListener = listener;
       } else if (port === dqPort) {
