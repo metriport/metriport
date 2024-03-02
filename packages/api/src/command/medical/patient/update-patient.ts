@@ -23,7 +23,11 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export async function updatePatient(
   patientUpdate: PatientUpdateCmd,
-  emit = true
+  emit = true,
+  // START TODO #1572 - remove
+  commonwell?: boolean,
+  carequality?: boolean
+  // END TODO #1572 - remove
 ): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
 
@@ -36,12 +40,16 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // Intentionally asynchronous
-  cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
+  if (commonwell) {
+    cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
+  }
 
   // Intentionally asynchronous
-  cqCommands.patient
-    .discover(result, facility.data.npi)
-    .catch(processAsyncError(`cq.patient.update`));
+  if (carequality) {
+    cqCommands.patient
+      .discover(result, facility.data.npi)
+      .catch(processAsyncError(`cq.patient.update`));
+  }
 
   return result;
 }

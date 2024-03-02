@@ -13,7 +13,13 @@ type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
-export const createPatient = async (patient: PatientCreateCmd): Promise<Patient> => {
+export const createPatient = async (
+  patient: PatientCreateCmd,
+  // START TODO #1572 - remove
+  commonwell?: boolean,
+  carequality?: boolean
+  // END TODO #1572 - remove
+): Promise<Patient> => {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -47,12 +53,16 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
   const newPatient = await PatientModel.create(patientCreate);
 
   // Intentionally asynchronous
-  cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
+  if (commonwell) {
+    cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
+  }
 
   // Intentionally asynchronous
-  cqCommands.patient
-    .discover(newPatient, facility.data.npi)
-    .catch(processAsyncError(`cq.patient.create`));
+  if (carequality) {
+    cqCommands.patient
+      .discover(newPatient, facility.data.npi)
+      .catch(processAsyncError(`cq.patient.create`));
+  }
 
   return newPatient;
 };
