@@ -195,7 +195,6 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ inputs.AWS_REGION }}
-
       # Location Stack DEPLOY
       - name: Deploy Location Services CDK stack
         uses: metriport/deploy-with-cdk@master

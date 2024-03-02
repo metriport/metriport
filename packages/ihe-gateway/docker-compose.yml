@@ -23,13 +23,16 @@ services:
         condition: service_healthy
     environment:
       PLATFORM: "${PLATFORM}"
+      VMOPTIONS: "-Xms2048m,-Xmx3072m"
       DATABASE: "postgres"
       DATABASE_USERNAME: "${DATABASE_USERNAME}"
       DATABASE_PASSWORD: "${DATABASE_PASSWORD}"
       DATABASE_MAX_CONNECTIONS: "${DATABASE_MAX_CONNECTIONS}"
       DATABASE_URL: "jdbc:postgresql://ihe-postgres:5432/db"
-      VMOPTIONS: "-Xms2048m,-Xmx3072m"
       LICENSE_KEY: ${LICENSE_KEY}
+      ENV_TYPE: "${ENV_TYPE}"
+      IHE_GW_USER: ${IHE_GW_USER}
+      IHE_GW_PASSWORD: ${IHE_GW_PASSWORD}
       _MP_KEYSTORE_PATH: ${_MP_KEYSTORE_PATH}
       _MP_KEYSTORE_STOREPASS: ${_MP_KEYSTORE_STOREPASS}
       _MP_KEYSTORE_KEYPASS: ${_MP_KEYSTORE_KEYPASS}

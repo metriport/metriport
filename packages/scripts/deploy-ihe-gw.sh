@@ -41,9 +41,6 @@ pushd ${FOLDER}
 echo "Initializing the IHE GW repo"
 ./scripts/init.sh
 
-echo "Loading environment variables"
-source ./scripts/load-env.sh
-
 echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
 

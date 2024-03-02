@@ -21,8 +21,15 @@ if [ -f $DOT_ENV_FILE ]; then
     set +o allexport
 else
     if [ "$1" == "strict" ]; then
-        echo "Error: No .env file found"
+        echo "Error: No $DOT_ENV_FILE file found"
         exit 1
     fi
-    echo "Warning: No .env file found, expecting env vars to be set"
+    echo "Warning: No $DOT_ENV_FILE file found, expecting env vars to be set"
+fi
+
+if [[ -z "${ENV_TYPE}" ]]; then
+    echo "Warning: ENV_TYPE is missing, default to 'staging'"
+    set -o allexport
+    ENV_TYPE="staging"
+    set +o allexport
 fi
