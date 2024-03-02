@@ -174,9 +174,10 @@ export default class IHEGatewayConstruct extends Construct {
       theLB: ApplicationLoadBalancer,
       healthcheckInterval: Duration
     ) => {
+      const existingListener = portToListener[port];
       // ensure we're only creating unique listeners
       const listener =
-        portToListener[port] ??
+        existingListener ??
         theLB.addListener(`${id}Listener_${port}`, {
           open: false,
           port,
@@ -190,6 +191,8 @@ export default class IHEGatewayConstruct extends Construct {
       } else if (port === drPort) {
         documentRetrievalListener = listener;
       }
+      // don't create a new TG if this listener was already created on the same port
+      if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
         containerName,
