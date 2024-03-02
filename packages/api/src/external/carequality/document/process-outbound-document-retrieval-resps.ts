@@ -169,6 +169,7 @@ async function handleDocReferences(
       );
       const mergedFHIRDocRef: DocumentReferenceWithId = {
         ...fhirDocRef,
+        description: fhirDocRef.description ?? draftFHIRDocRef?.description,
         content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
       };
 
