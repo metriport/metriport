@@ -159,7 +159,7 @@ export default class IHEGatewayConstruct extends Construct {
     let patientDiscoveryListener: ApplicationListener | undefined = undefined;
     let documentQueryListener: ApplicationListener | undefined = undefined;
     let documentRetrievalListener: ApplicationListener | undefined = undefined;
-    const portToListener: { [key: string]: ApplicationListener } = {};
+    const portToListener: { [key: number]: ApplicationListener } = {};
 
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
