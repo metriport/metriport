@@ -57,12 +57,26 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
-        attachment.isNew = !docExists
-        attachment.contentType = detectedFileType;
+                attachment.isNew = !docExists
+                attachment.contentType = detectedFileType;
 
+				var documentEncodedString = entry.*::Document.toString();
+				var decoded = FileUtil.decode(documentEncodedString);
+				var decodedAsString = Packages.java.lang.String(decoded);
+				
+				// Parse the document header for some metadata
+				try {
+					var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+					if (title) attachment.title = title;
+	
+					var fileSize = decodedAsString.getBytes("UTF-8").length;
+					if (fileSize) attachment.size = parseInt(fileSize);
 
-				var result = xcaWriteToFile(filePath.toString(), entry.*::Document.toString(), attachment);
-
+				} catch (ex) {
+					logger.error("Error decoding document: " + ex);
+				}
+				
+				var result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
 			} catch(ex) {
 				var issue = {
 					 "severity": "fatal",
