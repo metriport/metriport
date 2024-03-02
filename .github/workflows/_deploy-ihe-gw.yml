@@ -92,7 +92,7 @@ jobs:
       - name: Log Git Ref
         run: |
           echo "Git ref: $(git rev-parse HEAD)"
-          shell: bash
+        shell: bash
         working-directory: "metriport"
   
       # checkout the internal repo to get configs - default branches
