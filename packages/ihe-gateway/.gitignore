@@ -20,7 +20,7 @@ FullBackup*.xml
 .mtj.tmp/
 
 # Package Files #
-*.jar
+config/custom-extensions/*.jar
 *.war
 *.nar
 *.ear
