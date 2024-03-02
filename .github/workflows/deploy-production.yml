@@ -153,11 +153,11 @@ jobs:
     uses: ./.github/workflows/_deploy-ihe-gw.yml
     with:
       deploy_env: "production"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_PRODUCTION }}
+      ECR_REPO_URI: ${{ vars.IHE_ECR_REPO_URI_PRODUCTION }}
+      ECS_CLUSTER: ${{ vars.IHE_ECS_CLUSTER_PRODUCTION }}
       IHE_INBOUND_ECS_SERVICE: ${{ vars.IHE_INBOUND_ECS_SERVICE_PRODUCTION }}
       IHE_OUTBOUND_ECS_SERVICE: ${{ vars.IHE_OUTBOUND_ECS_SERVICE_PRODUCTION }}
-      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+      AWS_REGION: ${{ vars.IHE_REGION_PRODUCTION }}
       IHE_GW_ARTIFACT_URL: ${{ vars.IHE_GW_ARTIFACT_URL }}
       IHE_GW_KEYSTORE_NAME: ${{ vars.IHE_GW_KEYSTORE_NAME_PRODUCTION }}
       IHE_GW_ZULUKEY: ${{ vars.IHE_GW_ZULUKEY }}
