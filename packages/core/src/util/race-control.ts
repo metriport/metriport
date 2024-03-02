@@ -3,7 +3,7 @@ import { sleep } from "@metriport/shared";
 export type RaceControl = { isRaceInProgress: boolean };
 
 export async function checkIfRaceIsComplete(
-  isRaceComplete: () => Promise<boolean>,
+  isRaceComplete: () => Promise<boolean> | boolean,
   raceControl: RaceControl,
   completeMsg: string,
   sleepIntervalMS: number
