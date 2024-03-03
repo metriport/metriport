@@ -22,8 +22,27 @@ export async function processOutboundDocumentRetrievalResps({
   results,
 }: OutboundDocRetrievalRespParam): Promise<void> {
   try {
+    let newDocRefCount = 0;
     let issuesWithGateway = 0;
     let successDocsCount = 0;
+
+    for (const docRetrievalResp of results) {
+      newDocRefCount += docRetrievalResp.documentReference?.length ?? 0;
+    }
+
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId: cxId },
+      downloadProgress: {
+        total: newDocRefCount,
+        status: "processing",
+      },
+      convertProgress: {
+        total: newDocRefCount,
+        status: "processing",
+      },
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+    });
 
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
@@ -64,15 +83,6 @@ export async function processOutboundDocumentRetrievalResps({
         errors: issuesWithGateway,
       },
       type: "download",
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
-
-    await setDocQueryProgress({
-      patient: { id: patientId, cxId: cxId },
-      downloadProgress: {
-        status: "completed",
-      },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
