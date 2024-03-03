@@ -63,19 +63,28 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var documentEncodedString = entry.*::Document.toString();
 				var decoded = FileUtil.decode(documentEncodedString);
 				var decodedAsString = Packages.java.lang.String(decoded);
-				
+
+        if (!decodedAsString) {
+          const errorMessage = 'Error with decoded document';
+          logger.error(errorMessage + ' ' + fileName);
+          throw new Error(errorMessage);
+        }
+
 				// Parse the document header for some metadata
 				try {
-					var title = decodedAsString.split("<title>")[1].split("</title>")[0];
-					if (title) attachment.title = title;
-	
+          const hasTitle = decodedAsString.indexOf("<title>") > -1;
+          if (hasTitle) {
+					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+					  if (title) attachment.title = title;
+          }
+
 					var fileSize = decodedAsString.getBytes("UTF-8").length;
 					if (fileSize) attachment.size = parseInt(fileSize);
 
 				} catch (ex) {
 					logger.error("Error decoding document: " + ex);
 				}
-				
+
 				var result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
 			} catch(ex) {
 				var issue = {
