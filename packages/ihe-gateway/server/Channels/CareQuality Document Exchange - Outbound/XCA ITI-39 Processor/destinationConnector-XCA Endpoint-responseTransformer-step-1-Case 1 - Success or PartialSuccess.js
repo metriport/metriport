@@ -72,8 +72,11 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				// Parse the document header for some metadata
 				try {
-					var title = decodedAsString.split("<title>")[1].split("</title>")[0];
-					if (title) attachment.title = title;
+          var hasTitle = decodedAsString.indexOf("<title>") > -1;
+          if (hasTitle) {
+					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+					  if (title) attachment.title = title;
+          }
 
 					var fileSize = decodedAsString.getBytes("UTF-8").length;
 					if (fileSize) attachment.size = parseInt(fileSize);
