@@ -6,7 +6,7 @@ import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export const DEFAULT_RADIUS_IN_MILES = 50;
-const cqExcludeList: string[] = constructGatewayExcludeList();
+const cqExcludeListLowerCased: string[] = constructGatewayExcludeList();
 
 export type CQOrgBasicDetails = {
   name: string | undefined;
@@ -112,17 +112,22 @@ export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetai
   return Array.from(uniqueOrgsById.values());
 }
 
+/**
+ * Returns a list of lower cased URLs to exclude from the Carequality Directory search.
+ */
 function constructGatewayExcludeList(): string[] {
   let excludeList: string[] = [];
   const urlsToExclude = Config.getCQUrlsToExclude();
   if (urlsToExclude) excludeList = urlsToExclude.split(",");
-  return excludeList;
+  return excludeList.map(url => url.toLowerCase());
 }
 
 function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
   const urlXCPD = org.urlXCPD;
   if (!urlXCPD) return false;
 
-  const isExcluded = cqExcludeList.some(excludedUrl => urlXCPD.startsWith(excludedUrl));
+  const isExcluded = cqExcludeListLowerCased.some(excludedUrl =>
+    urlXCPD.startsWith(excludedUrl.toLowerCase())
+  );
   return !isExcluded;
 }
