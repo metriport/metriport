@@ -126,8 +126,8 @@ function hasValidXcpdLink(org: Pick<CQOrgBasicDetails, "urlXCPD">) {
   const urlXCPD = org.urlXCPD;
   if (!urlXCPD) return false;
 
-  const isExcluded = cqExcludeListLowerCased.some(excludedUrl =>
-    urlXCPD.startsWith(excludedUrl.toLowerCase())
+  const isExcluded = cqExcludeListLowerCased.some(excludedUrlLowered =>
+    urlXCPD.toLowerCase().startsWith(excludedUrlLowered)
   );
   return !isExcluded;
 }
