@@ -132,12 +132,12 @@ while read -r keyvalue; do
 			# if key does not exist in mirth.properties append it at bottom
 			LINE_COUNT=`grep "^${ACTUAL_KEY}" /opt/connect/conf/mirth.properties | wc -l`
 			if [ $LINE_COUNT -lt 1 ]; then
-				# echo "key ${ACTUAL_KEY} not found in mirth.properties, appending. Value = ${VALUE}"
-				echo -e "\n${ACTUAL_KEY} = ${VALUE//\//\\/}" >> /opt/connect/conf/mirth.properties
+				# echo "... key ${ACTUAL_KEY} not found in mirth.properties, appending. Value = ${VALUE}"
+				echo -e "\n${ACTUAL_KEY} = ${VALUE}" >> /opt/connect/conf/mirth.properties
 			else # otherwise key exists, overwrite it
-				# echo "key ${ACTUAL_KEY} exists, overwriting. Value = ${VALUE}"
+				# echo "... key ${ACTUAL_KEY} exists, overwriting. Value = ${VALUE}"
 				ESCAPED_KEY="${ACTUAL_KEY//./\\.}"
-				sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${ACTUAL_KEY} = ${VALUE//\//\\/}/" /opt/connect/conf/mirth.properties
+				sed -i "s|^${ESCAPED_KEY}\s*=\s*.*\$|${ACTUAL_KEY} = ${VALUE}|" /opt/connect/conf/mirth.properties
 			fi
 		fi
 	fi
