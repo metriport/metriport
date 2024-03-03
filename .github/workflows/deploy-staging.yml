@@ -57,6 +57,9 @@ jobs:
             ihe-gw-server:
               - "packages/ihe-gateway/Dockerfile"
               - "packages/ihe-gateway/entrypoint.sh"
+              - "packages/ihe-gateway/config"
+              - "packages/ihe-gateway/scripts"
+              - "packages/ihe-gateway/server"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
               - "packages/fhir-converter/Dockerfile"
