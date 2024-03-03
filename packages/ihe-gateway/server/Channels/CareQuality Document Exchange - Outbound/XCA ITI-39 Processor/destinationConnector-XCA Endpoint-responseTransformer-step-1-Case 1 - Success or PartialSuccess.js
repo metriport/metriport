@@ -65,14 +65,14 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var decodedAsString = Packages.java.lang.String(decoded);
 
         if (!decodedAsString) {
-          var errorMessage = 'Error with decoded document';
+          const errorMessage = 'Error with decoded document';
           logger.error(errorMessage + ' ' + fileName);
           throw new Error(errorMessage);
         }
 
 				// Parse the document header for some metadata
 				try {
-          var hasTitle = decodedAsString.indexOf("<title>") > -1;
+          const hasTitle = decodedAsString.indexOf("<title>") > -1;
           if (hasTitle) {
 					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
 					  if (title) attachment.title = title;
