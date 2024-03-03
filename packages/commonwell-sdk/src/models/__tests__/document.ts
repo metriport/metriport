@@ -41,8 +41,8 @@ type MakeDocumentContent = DeepPartial<DocumentContent> &
 export function makeDocumentContent(params?: MakeDocumentContent): DocumentContent {
   const containedOrgId = faker.string.nanoid();
   const containedPractionerId = faker.string.nanoid();
-  const from = faker.date.past({ years: 5 });
-  const to = faker.date.between({ from, to: faker.date.recent() });
+  const to = faker.date.recent();
+  const from = faker.date.past({ years: 5, refDate: to });
   return {
     resourceType: "DocumentReference",
     contained: params?.contained ?? [
