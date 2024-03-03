@@ -80,6 +80,7 @@ export default class IHEGatewayConstruct extends Construct {
     } = props;
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
+    const dbReadonlyAddress = db.server.clusterReadEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
     const httpPorts = [pdPort, dqPort, drPort];
     if (httpPorts.length > maxPortsOnProps) {
@@ -90,15 +91,22 @@ export default class IHEGatewayConstruct extends Construct {
       return getLambdaUrlShared({ region: mainConfig.region, arn });
     };
 
+    // Env vars are passed to IHE GW through _MP_ prefixed env vars, see entrypoint.sh
     const secretManagerSecrets = buildSecrets(this, config.secretNames);
     const secrets: ApplicationLoadBalancedTaskImageOptions["secrets"] = {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+      _MP_DATABASE__READONLY_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
       ...secretsToECS(secretManagerSecrets),
     };
     const environment: ApplicationLoadBalancedTaskImageOptions["environment"] = {
       DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
+      DATABASE_MAX_CONNECTIONS: config.maxDbConnections.toString(),
+      _MP_DATABASE__READONLY: `postgres`,
+      _MP_DATABASE__READONLY_URL: `jdbc:postgresql://${dbReadonlyAddress}/${dbIdentifier}`,
+      _MP_DATABASE__READONLY_USERNAME: config.rds.userName,
+      _MP_DATABASE__READONLY_MAX_CONNECTIONS: config.maxDbConnections.toString(),
       API_BASE_ADDRESS: config.apiBaseAddress,
       AWS_REGION: mainConfig.region,
       INBOUND_PATIENT_DISCOVERY_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
@@ -108,10 +116,8 @@ export default class IHEGatewayConstruct extends Construct {
       HOME_COMMUNITY_ID: mainConfig.systemRootOID,
       HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
       VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
-      // Env vars are passed to IHE GW through _MP_ prefixed env vars, see entrypoint.sh
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
-      DATABASE_MAX_CONNECTIONS: config.maxDbConnections.toString(),
       IHE_GW_USER: config.adminUsername,
     };
 
