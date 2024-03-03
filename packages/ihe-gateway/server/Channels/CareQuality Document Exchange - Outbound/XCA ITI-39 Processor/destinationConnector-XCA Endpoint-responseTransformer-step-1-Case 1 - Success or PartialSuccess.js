@@ -66,7 +66,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
         if (!decodedAsString) {
           var errorMessage = 'Error with decoded document';
-          logger.error(errorMessage + fileName);
+          logger.error(errorMessage + ' ' + fileName);
           throw new Error(errorMessage);
         }
 
