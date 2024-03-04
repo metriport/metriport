@@ -80,7 +80,7 @@ export async function processOutboundDocumentQueryResps({
       const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
 
       if (!gateway) {
-        const msg = `Doc Retrieval - Gateway not found`;
+        const msg = `Gateway not found - Doc Retrieval`;
         console.log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
         capture.message(msg, {
           extra: {

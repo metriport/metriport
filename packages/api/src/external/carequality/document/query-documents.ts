@@ -48,7 +48,7 @@ export async function getDocumentsFromCQ({
       const gateway = await getCQDirectoryEntry(patientLink.oid);
 
       if (!gateway) {
-        const msg = `Doc Query - Gateway not found`;
+        const msg = `Gateway not found - Doc Query`;
         console.log(`${msg}: ${patientLink.oid} skipping...`);
         capture.message(msg, {
           extra: {
