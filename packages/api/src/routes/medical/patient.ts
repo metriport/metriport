@@ -69,7 +69,7 @@ router.post(
     const facilityId = getFromQueryOrFail("facilityId", req);
     // START TODO #1572 - remove
     const commonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    // const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
     // END TODO #1572 - remove
     const payload = patientCreateSchema.parse(req.body);
 
@@ -89,7 +89,7 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, commonwell, true);
+    const patient = await createPatient(patientCreate, commonwell, carequality);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -115,7 +115,7 @@ router.put(
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     // START TODO #1572 - remove
     const commonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    // const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
     // END TODO #1572 - remove
     const payload = patientUpdateSchema.parse(req.body);
 
@@ -132,7 +132,7 @@ router.put(
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(patientUpdate, true, commonwell, true);
+    const updatedPatient = await updatePatient(patientUpdate, true, commonwell, carequality);
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
