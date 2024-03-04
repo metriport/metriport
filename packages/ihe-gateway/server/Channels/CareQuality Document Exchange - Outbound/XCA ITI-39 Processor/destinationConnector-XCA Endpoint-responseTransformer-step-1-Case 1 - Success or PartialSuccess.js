@@ -72,10 +72,8 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				// Parse the document header for some metadata
 				try {
-          const hasTitle = decodedAsString.indexOf("<title>") > -1;
-          if (hasTitle) {
-            const firstTitle = decodedAsString.split("<title>")[1];
-            if (!firstTitle) return;
+          const firstTitle = decodedAsString.split("<title>")[1];
+          if (firstTitle) {
             const title = firstTitle.split("</title>")[0];
 					  if (title) attachment.title = title;
           }

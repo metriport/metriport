@@ -25,17 +25,16 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 	for each (var trigger in xml.*::['controlActProcess'].*::['reasonOf'].*::['detectedIssueEvent'].*::['triggerFor']) {
 		
 
-		const reason = trigger.*::['actOrderRequired'].*::['code']['@code'].toString() + ' ';
-    channelMap.put('REASON_WARNING', reason);	
+		const reason = trigger.*::['actOrderRequired'].*::['code']['@code'].toString();
 		var issue = {
 					 "severity": "warning",
 					 "code": "invalid",
 					 "details": {"text": ""}
 				};
-		issue.details.text = trigger.*::['actOrderRequired'].*::['code']['@code'].toString();
+		issue.details.text = reason;
 		operationOutcome.issue.push(issue);		
 	}
-
+  channelMap.put('OPERATION_OUTCOME', operationOutcome);
 	var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
 	
 	// Send the response back to the app
