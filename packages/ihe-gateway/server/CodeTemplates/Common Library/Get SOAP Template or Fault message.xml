@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>8ea54297-2fbb-4766-b396-fdda473d9035</id>
   <name>Get SOAP Template or Fault message</name>
-  <revision>3</revision>
+  <revision>1</revision>
   <lastModified>
-    <time>1708668487072</time>
+    <time>1702923210917</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
-      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
-      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
       <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_DEPLOY</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
