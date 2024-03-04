@@ -2,6 +2,7 @@
 // It is recommended that if the responding gateway has more than one close match it should return the special error condition
 
 if (false === msg.patientMatch) {
+	// logger.info("XCPD Inbound Processor: Patient Match - NO patient match");
 
 	// The Responding Gateway finds no patients anywhere close to matching the criteria sent in the query parameters
 	var prpa = getXCPDQueryResponse(msg, payload);

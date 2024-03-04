@@ -33,3 +33,15 @@ if [[ -z "${ENV_TYPE}" ]]; then
     ENV_TYPE="staging"
     set +o allexport
 fi
+
+
+if [ -z "${IHE_GW_URL_OUTBOUND}" ]; then
+  echo "IHE_GW_URL_OUTBOUND is not set, looking for the IHE_GW_URL_INBOUND"
+  if [ -z "${IHE_GW_URL_OUTBOUND}" ]; then
+    echo "WARNING: no IHE GW URL env set"
+  else
+    IHE_GW_URL=$IHE_GW_URL_INBOUND
+  fi
+else
+  IHE_GW_URL=$IHE_GW_URL_OUTBOUND
+fi

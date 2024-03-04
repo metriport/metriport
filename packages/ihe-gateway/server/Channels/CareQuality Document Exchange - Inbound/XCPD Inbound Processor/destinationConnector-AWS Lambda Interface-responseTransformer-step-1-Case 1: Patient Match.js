@@ -1,5 +1,6 @@
 // Only a single entry per assigning authority is allowed
 if (msg.patientMatch) {
+	// logger.info("XCPD Inbound Processor: Patient Match - Found patient match");
 	const senderOID = Config.getHomeCommunityId();
 
 	// The Responding Gateway finds exactly one patient record matching the criteria sent in the query parameters.

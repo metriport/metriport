@@ -7,17 +7,18 @@
 function getXCPDResponseSubject(lambda) {
 
 	const senderOID = Config.getHomeCommunityId();
-	var qualityOfMatch = 99;
+	let qualityOfMatch = 99;
 	try {
 		qualityOfMatch = ('number' == typeof lambda.patientMatchDegree && (lambda.patientMatchDegree > 0 || lambda.patientMatchDegree <= 100)) ? lambda.patientMatchDegree : 99;
 	} catch(ex) {}
 
-	var xml = <subject contextConductionInd="false" typeCode="SUBJ">
+	// TODO `externalGatewayPatient` should prob be `metriportPatient`
+	const xml = <subject contextConductionInd="false" typeCode="SUBJ">
 		          <registrationEvent classCode="REG" moodCode="EVN">
 		            <statusCode code="active"/>
 		            <subject1 typeCode="SBJ">
 		              <patient classCode="PAT">
-		                <id extension={lambda.xcpdPatientId.id.toString()} root={lambda.xcpdPatientId.system.toString()}/>
+		                <id extension={lambda.externalGatewayPatient.id.toString()} root={lambda.externalGatewayPatient.system.toString()}/>
 		                <statusCode code="active"/>
 		                <patientPerson/>
 		                <subjectOf1>
