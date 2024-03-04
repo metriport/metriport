@@ -46,14 +46,29 @@ jobs:
       IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS_STAGING }}
       IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS_STAGING }}
 
-  infra-and-lambdas:
+  infra-api-lambdas:
     uses: ./.github/workflows/_deploy-cdk.yml
     with:
       deploy_env: "staging"
       is-branch-to-staging: true
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  infra-ihe-gw:
+    uses: ./.github/workflows/_deploy-cdk-ihe-gw.yml
+    with:
+      deploy_env: "staging"
+      is-branch-to-staging: true
+      cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
