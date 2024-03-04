@@ -64,17 +64,17 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var decoded = FileUtil.decode(documentEncodedString);
 				var decodedAsString = Packages.java.lang.String(decoded);
 
-        if (!decodedAsString) {
-          const errorMessage = 'Error with decoded document';
-          logger.error(errorMessage + ' ' + fileName);
+        if (!decodedAsString || typeof decodedAsString !== 'string') {
+          const errorMessage = "Decoded document is not a string - file " + fileName;
+          logger.error("Error: " + errorMessage);
           throw new Error(errorMessage);
         }
 
 				// Parse the document header for some metadata
 				try {
-          const hasTitle = decodedAsString.indexOf("<title>") > -1;
-          if (hasTitle) {
-					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+          const firstTitle = decodedAsString.split("<title>")[1];
+          if (firstTitle) {
+            const title = firstTitle.split("</title>")[0];
 					  if (title) attachment.title = title;
           }
 
