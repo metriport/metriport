@@ -14,7 +14,7 @@ import cqCommands from ".";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getPatients, getPatient } from "../../command/medical/patient/get-patient";
-import { PatientDataCarequality } from "./patient-shared";
+import { getCQData } from "./patient";
 
 dayjs.extend(duration);
 
@@ -95,7 +95,7 @@ export class PatientUpdaterCarequality extends PatientUpdater {
       return false;
     }
 
-    const cqExternalData = updatedPatient.data.externalData?.CAREQUALITY as PatientDataCarequality;
+    const cqExternalData = getCQData(updatedPatient.data.externalData);
 
     if (!cqExternalData) {
       return false;
