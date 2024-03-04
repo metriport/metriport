@@ -35,7 +35,7 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 		operationOutcome.issue.push(issue);		
 	}
   channelMap.put('OPERATION_OUTCOME', operationOutcome);
-	var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
+	var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), JSON.stringify(operationOutcome));
 	
 	// Send the response back to the app
 	var result = router.routeMessageByChannelId(globalMap.get('XCPDAPPINTERFACE'), JSON.stringify(_response));
