@@ -13,8 +13,8 @@ import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import cqCommands from ".";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { getPatients } from "../../command/medical/patient/get-patient";
-import { PatientDataCarequality } from "./patient-shared";
+import { getPatients, getPatient } from "../../command/medical/patient/get-patient";
+import { getCQData } from "./patient";
 
 dayjs.extend(duration);
 
@@ -88,8 +88,14 @@ export class PatientUpdaterCarequality extends PatientUpdater {
     }
   }
 
-  private getPatientDiscoveryStatus(patient: Patient): boolean {
-    const cqExternalData = patient.data.externalData?.CAREQUALITY as PatientDataCarequality;
+  private async getPatientDiscoveryStatus(patient: Patient): Promise<boolean> {
+    const updatedPatient = await getPatient({ id: patient.id, cxId: patient.cxId });
+
+    if (!updatedPatient) {
+      return false;
+    }
+
+    const cqExternalData = getCQData(updatedPatient.data.externalData);
 
     if (!cqExternalData) {
       return false;
