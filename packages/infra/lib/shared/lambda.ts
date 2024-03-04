@@ -10,6 +10,7 @@ import {
   Code,
   Function as Lambda,
   ILayerVersion,
+  LambdaInsightsVersion,
   Runtime,
   RuntimeManagementMode,
   SingletonFunction,
@@ -74,6 +75,7 @@ export function createLambda(props: LambdaProps): Lambda {
     ...(props.layers && props.layers.length > 0 ? { layers: props.layers } : {}),
     vpc: props.vpc,
     vpcSubnets: props.subnets ? { subnets: props.subnets } : undefined,
+    insightsVersion: LambdaInsightsVersion.VERSION_1_0_229_0,
     /**
      * Watch out if this is more than 60s while using SQS we likely need to update the
      * queue's VisibilityTimeout so the message is not processed more than once.
