@@ -15,6 +15,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 			operationOutcome = processRegistryErrorList(xml.*::RegistryResponse.*::RegistryErrorList);
 		} catch(ex) {
 			if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+			channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP1', ex.toString());
 		}
 
 		// MetriportID mapping
@@ -56,12 +57,35 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
-        attachment.isNew = !docExists
-        attachment.contentType = detectedFileType;
+                attachment.isNew = !docExists
+                attachment.contentType = detectedFileType;
 
+				var documentEncodedString = entry.*::Document.toString();
+				var decoded = FileUtil.decode(documentEncodedString);
+				var decodedAsString = Packages.java.lang.String(decoded);
 
-				var result = xcaWriteToFile(filePath.toString(), entry.*::Document.toString(), attachment);
+        if (!decodedAsString) {
+          const errorMessage = 'Error with decoded document';
+          logger.error(errorMessage + ' ' + fileName);
+          throw new Error(errorMessage);
+        }
 
+				// Parse the document header for some metadata
+				try {
+          const hasTitle = decodedAsString.indexOf("<title>") > -1;
+          if (hasTitle) {
+					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+					  if (title) attachment.title = title;
+          }
+
+					var fileSize = decodedAsString.getBytes("UTF-8").length;
+					if (fileSize) attachment.size = parseInt(fileSize);
+
+				} catch (ex) {
+					logger.error("Error decoding document: " + ex);
+				}
+
+				var result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
 			} catch(ex) {
 				var issue = {
 					 "severity": "fatal",
@@ -69,6 +93,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 					 "details": {"text": ""}
 				};
 				issue.details.text = ex.toString();
+				channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP2', ex.toString());
 				if (!operationOutcome) operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
 				operationOutcome.issue.push(issue);
 			}
@@ -86,6 +111,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case1) - ' + ex);
+		channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP3', ex.toString());
 		throw ex;
 	}
 

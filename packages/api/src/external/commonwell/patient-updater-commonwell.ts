@@ -15,7 +15,7 @@ const maxNumberOfParallelRequestsToCW = 10;
 export class PatientUpdaterCommonWell extends PatientUpdater {
   public async updateAll(
     cxId: string,
-    patientIds: string[]
+    patientIds?: string[]
   ): Promise<{ failedUpdateCount: number }> {
     let failedUpdateCount = 0;
 

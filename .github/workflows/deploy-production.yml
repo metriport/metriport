@@ -58,6 +58,9 @@ jobs:
             ihe-gw-server:
               - "packages/ihe-gateway/Dockerfile"
               - "packages/ihe-gateway/entrypoint.sh"
+              - "packages/ihe-gateway/config"
+              - "packages/ihe-gateway/scripts"
+              - "packages/ihe-gateway/server"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
               - "packages/fhir-converter/Dockerfile"
@@ -128,8 +131,8 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
-      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
+      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS_PRODUCTION }}
+      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS_PRODUCTION }}
   infra-api-lambdas-sandbox:
     uses: ./.github/workflows/_deploy-cdk.yml
     needs: [infra-api-lambdas]
@@ -138,7 +141,6 @@ jobs:
       deploy_env: "sandbox"
       cdk_stack: ${{ vars.API_STACK_NAME_SANDBOX }}
       AWS_REGION: ${{ vars.API_REGION_SANDBOX  }}
-      IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
       SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -147,8 +149,6 @@ jobs:
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
-      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
 
   ihe-gw-server:
     if: needs.files-changed.outputs.ihe-gw-server == 'true'
@@ -156,46 +156,31 @@ jobs:
     uses: ./.github/workflows/_deploy-ihe-gw.yml
     with:
       deploy_env: "production"
-      ECR_REPO_URI: ${{ vars.ECR_REPO_URI_PRODUCTION }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER_PRODUCTION }}
+      ECR_REPO_URI: ${{ vars.IHE_ECR_REPO_URI_PRODUCTION }}
+      ECS_CLUSTER: ${{ vars.IHE_ECS_CLUSTER_PRODUCTION }}
       IHE_INBOUND_ECS_SERVICE: ${{ vars.IHE_INBOUND_ECS_SERVICE_PRODUCTION }}
       IHE_OUTBOUND_ECS_SERVICE: ${{ vars.IHE_OUTBOUND_ECS_SERVICE_PRODUCTION }}
-      AWS_REGION: ${{ vars.API_REGION_PRODUCTION }}
+      AWS_REGION: ${{ vars.IHE_REGION_PRODUCTION }}
       IHE_GW_ARTIFACT_URL: ${{ vars.IHE_GW_ARTIFACT_URL }}
-      IHE_GW_KEYSTORE_NAME: ${{ vars.IHE_GW_KEYSTORE_NAME }}
+      IHE_GW_KEYSTORE_NAME: ${{ vars.IHE_GW_KEYSTORE_NAME_PRODUCTION }}
       IHE_GW_ZULUKEY: ${{ vars.IHE_GW_ZULUKEY }}
       IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
+      IHE_GW_FULL_BACKUP_LOCATION: ${{ vars.IHE_GW_FULL_BACKUP_LOCATION }}
     secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS }}
-      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS }}
-
-  # ihe-gw-config:
-  #   needs: [files-changed, ihe-gw-server]
-  #   if: ${{ !failure() && needs.files-changed.outputs.ihe-gw-config == 'true' }}
-  #   uses: ./.github/workflows/_ihe-gw-push-config.yml
-  #   with:
-  #     deploy_env: "production"
-  #     IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
-  #     IHE_GW_FULL_BACKUP_LOCATION: ${{ vars.IHE_GW_FULL_BACKUP_LOCATION }}
-  #   secrets:
-  #     IHE_GW_URL: ${{ secrets.IHE_GW_URL_PRODUCTION }}
-  #     IHE_GW_USER: ${{ secrets.IHE_GW_USER }}
-  #     IHE_GW_PASSWORD: ${{ secrets.IHE_GW_PASSWORD }}
+      IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS_PRODUCTION }}
+      IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS_PRODUCTION }}
 
   release:
     uses: ./.github/workflows/_release.yml
-    # TODO 1377 revert this
-    # needs: [api-sandbox, infra-api-lambdas-sandbox, ihe-gw-config]
     needs: [api-sandbox, infra-api-lambdas-sandbox, ihe-gw-server]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    # TODO 1377 revert this
-    # if: ${{ !failure() && (needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.ihe-gw-config.result == 'success') }}
     if: ${{ !failure() && (needs.api-sandbox.result == 'success' || needs.infra-api-lambdas-sandbox.result == 'success' || needs.ihe-gw-server.result == 'success') }}
     secrets: inherit
 

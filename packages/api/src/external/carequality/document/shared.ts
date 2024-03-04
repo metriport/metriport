@@ -50,19 +50,21 @@ export const cqToFHIR = (
     ...(docRef.creation ? { creation: docRef.creation } : {}),
   };
 
-  return {
+  const updatedDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
     masterIdentifier: {
       system: docRef.homeCommunityId,
       value: docId,
     },
-    description: docRef.title ?? undefined,
     docStatus,
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
   };
+  if (docRef.title) updatedDocRef.description = docRef.title;
+
+  return updatedDocRef;
 };
 
 const generateCQFHIRContent = (

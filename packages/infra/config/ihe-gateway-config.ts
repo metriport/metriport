@@ -9,6 +9,7 @@ export type IHEGatewayProps = {
     _MP_KEYSTORE_KEYPASS: string;
     AWS_ACCESS_KEY_ID: string;
     AWS_SECRET_ACCESS_KEY: string;
+    IHE_GW_PASSWORD: string;
   };
   vpcId: string;
   certArn: string;
@@ -91,5 +92,14 @@ export type IHEGatewayProps = {
   };
   keystoreName: string;
   keystoreType: string;
+  /**
+   * Maximum amount of connections to the database.
+   * To be passed to `database.max-connections`.
+   */
+  maxDbConnections: number;
+  /**
+   * IHE GW's Administrator App admin username
+   */
+  adminUsername: string;
   snsTopicArn?: string;
 };

@@ -7,6 +7,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import { FargateTaskDefinition } from "aws-cdk-lib/aws-ecs";
 import { ApplicationLoadBalancedTaskImageOptions } from "aws-cdk-lib/aws-ecs-patterns";
 import {
+  ApplicationListener,
   ApplicationLoadBalancer,
   ApplicationProtocol,
   HealthCheck,
@@ -39,7 +40,9 @@ export interface IHEGatewayConstructProps {
   medicalDocumentsBucket: IBucket;
   name: string;
   dnsSubdomain: string;
-  httpPorts: number[];
+  pdPort: number;
+  dqPort: number;
+  drPort: number;
 }
 
 const maxPortsPerLB = 5;
@@ -51,6 +54,9 @@ const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 export default class IHEGatewayConstruct extends Construct {
   public readonly server: ecs.IFargateService;
   public readonly serverAddress: string;
+  public readonly pdListener: ApplicationListener;
+  public readonly dqListener: ApplicationListener;
+  public readonly drListener: ApplicationListener;
 
   constructor(scope: Construct, props: IHEGatewayConstructProps) {
     super(scope, `${props.name}Construct`);
@@ -68,12 +74,15 @@ export default class IHEGatewayConstruct extends Construct {
       medicalDocumentsBucket,
       name,
       dnsSubdomain,
-      httpPorts,
+      pdPort,
+      dqPort,
+      drPort,
     } = props;
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
+    const dbReadonlyAddress = db.server.clusterReadEndpoint.socketAddress;
     const dbIdentifier = config.rds.dbName;
-
+    const httpPorts = [pdPort, dqPort, drPort];
     if (httpPorts.length > maxPortsOnProps) {
       throw new Error(`This construct can have at most ${maxPortsOnProps} HTTP ports`);
     }
@@ -82,16 +91,24 @@ export default class IHEGatewayConstruct extends Construct {
       return getLambdaUrlShared({ region: mainConfig.region, arn });
     };
 
+    // Env vars are passed to IHE GW through _MP_ prefixed env vars, see entrypoint.sh
     const secretManagerSecrets = buildSecrets(this, config.secretNames);
     const secrets: ApplicationLoadBalancedTaskImageOptions["secrets"] = {
       DATABASE_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
+      _MP_DATABASE__READONLY_PASSWORD: ecs.Secret.fromSecretsManager(db.secret),
       ...secretsToECS(secretManagerSecrets),
     };
     const environment: ApplicationLoadBalancedTaskImageOptions["environment"] = {
       DATABASE: `postgres`,
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
+      DATABASE_MAX_CONNECTIONS: config.maxDbConnections.toString(),
+      _MP_DATABASE__READONLY: `postgres`,
+      _MP_DATABASE__READONLY_URL: `jdbc:postgresql://${dbReadonlyAddress}/${dbIdentifier}`,
+      _MP_DATABASE__READONLY_USERNAME: config.rds.userName,
+      _MP_DATABASE__READONLY_MAX_CONNECTIONS: config.maxDbConnections.toString(),
       API_BASE_ADDRESS: config.apiBaseAddress,
+      AWS_REGION: mainConfig.region,
       INBOUND_PATIENT_DISCOVERY_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
       INBOUND_DOCUMENT_QUERY_URL: getLambdaUrl(documentQueryLambda.functionArn),
       INBOUND_DOCUMENT_RETRIEVAL_URL: getLambdaUrl(documentRetrievalLambda.functionArn),
@@ -99,9 +116,9 @@ export default class IHEGatewayConstruct extends Construct {
       HOME_COMMUNITY_ID: mainConfig.systemRootOID,
       HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
       VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
-      // Env vars are passed to IHE GW through _MP_ prefixed env vars, see entrypoint.sh
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
+      IHE_GW_USER: config.adminUsername,
     };
 
     const ecrRepo = ecr.Repository.fromRepositoryName(scope, `${id}EcrRepo`, ecrRepoName);
@@ -146,6 +163,11 @@ export default class IHEGatewayConstruct extends Construct {
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
+    let patientDiscoveryListener: ApplicationListener | undefined = undefined;
+    let documentQueryListener: ApplicationListener | undefined = undefined;
+    let documentRetrievalListener: ApplicationListener | undefined = undefined;
+    const portToListener: { [key: number]: ApplicationListener } = {};
+
     const healthCheck: HealthCheck = {
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 2,
@@ -159,11 +181,25 @@ export default class IHEGatewayConstruct extends Construct {
       theLB: ApplicationLoadBalancer,
       healthcheckInterval: Duration
     ) => {
-      const listener = theLB.addListener(`${id}Listener_${port}`, {
-        open: false,
-        port,
-        protocol: ApplicationProtocol.HTTP,
-      });
+      const existingListener = portToListener[port];
+      // ensure we're only creating unique listeners
+      const listener =
+        existingListener ??
+        theLB.addListener(`${id}Listener_${port}`, {
+          open: false,
+          port,
+          protocol: ApplicationProtocol.HTTP,
+        });
+      portToListener[port] = listener;
+      if (port === pdPort) {
+        patientDiscoveryListener = listener;
+      } else if (port === dqPort && !existingListener) {
+        documentQueryListener = listener;
+      } else if (port === drPort) {
+        documentRetrievalListener = listener;
+      }
+      // don't create a new TG if this listener was already created on the same port
+      if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
       service.registerLoadBalancerTargets({
         containerName,
@@ -187,6 +223,12 @@ export default class IHEGatewayConstruct extends Construct {
     service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
+    if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
+      throw new Error("PD, DQ, and DR listeners need to be defined");
+    }
+    this.pdListener = patientDiscoveryListener;
+    this.dqListener = documentQueryListener;
+    this.drListener = documentRetrievalListener;
     this.serverAddress = alb.loadBalancerDnsName;
 
     new r53.CnameRecord(this, `${id}PrivateRecord`, {
