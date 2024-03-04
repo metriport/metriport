@@ -45,7 +45,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery = false,
   // START TODO #1572 - remove
   commonwell = false,
-  carequality = false,
+  carequality = true,
 }: // END TODO #1572 - remove
 {
   cxId: string;
