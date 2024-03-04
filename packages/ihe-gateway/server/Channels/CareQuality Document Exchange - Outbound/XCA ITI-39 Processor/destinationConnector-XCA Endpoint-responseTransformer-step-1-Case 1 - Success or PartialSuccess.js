@@ -65,8 +65,8 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var decodedAsString = Packages.java.lang.String(decoded);
 
         if (!decodedAsString || typeof decodedAsString !== 'string') {
-          const errorMessage = 'Error with decoded document';
-          logger.error(errorMessage + ' ' + fileName);
+          const errorMessage = "Decoded document is not a string - file " + fileName;
+          logger.error("Error: " + errorMessage);
           throw new Error(errorMessage);
         }
 
