@@ -24,7 +24,9 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 	
 	for each (var trigger in xml.*::['controlActProcess'].*::['reasonOf'].*::['detectedIssueEvent'].*::['triggerFor']) {
 		
-		reason += trigger.*::['actOrderRequired'].*::['code']['@code'].toString() + ' ';
+
+		const reason = trigger.*::['actOrderRequired'].*::['code']['@code'].toString() + ' ';
+    channelMap.put('REASON_WARNING', reason);	
 		var issue = {
 					 "severity": "warning",
 					 "code": "invalid",

@@ -64,7 +64,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var decoded = FileUtil.decode(documentEncodedString);
 				var decodedAsString = Packages.java.lang.String(decoded);
 
-        if (!decodedAsString) {
+        if (!decodedAsString || typeof decodedAsString !== 'string') {
           const errorMessage = 'Error with decoded document';
           logger.error(errorMessage + ' ' + fileName);
           throw new Error(errorMessage);
@@ -74,7 +74,9 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				try {
           const hasTitle = decodedAsString.indexOf("<title>") > -1;
           if (hasTitle) {
-					  var title = decodedAsString.split("<title>")[1].split("</title>")[0];
+            const firstTitle = decodedAsString.split("<title>")[1];
+            if (!firstTitle) return;
+            const title = firstTitle.split("</title>")[0];
 					  if (title) attachment.title = title;
           }
 
