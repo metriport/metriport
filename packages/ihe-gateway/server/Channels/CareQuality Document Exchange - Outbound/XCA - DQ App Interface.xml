@@ -6,7 +6,7 @@
     - forwards a single request back to the calling app or DB
     
   </description>
-  <revision>34</revision>
+  <revision>33</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
