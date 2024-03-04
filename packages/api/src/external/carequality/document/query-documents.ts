@@ -10,7 +10,7 @@ import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
-import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
@@ -45,11 +45,26 @@ export async function getDocumentsFromCQ({
 
     const linksWithDqUrl: CQLink[] = [];
     const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
-      const gateway = await getCQDirectoryEntryOrFail(patientLink.oid);
-      if (!gateway.urlDQ) {
+      const gateway = await getCQDirectoryEntry(patientLink.oid);
+
+      if (!gateway) {
+        const msg = `Gateway not found`;
+        console.log(`${msg}: ${patientLink.oid} skipping...`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.pd.getCQDirectoryEntry`,
+            patientId,
+            requestId,
+            cxId,
+            gateway: patientLink,
+          },
+        });
+        return;
+      } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
         return;
       }
+
       linksWithDqUrl.push({
         ...patientLink,
         url: gateway.urlDQ,

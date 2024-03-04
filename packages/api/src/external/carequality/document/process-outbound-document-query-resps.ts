@@ -14,7 +14,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
-import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
@@ -77,14 +77,26 @@ export async function processOutboundDocumentQueryResps({
     const replaceDqUrlWithDrUrl = async (
       outboundDocumentQueryResp: OutboundDocumentQueryResp
     ): Promise<void> => {
-      const gateway = await getCQDirectoryEntryOrFail(
-        outboundDocumentQueryResp.gateway.homeCommunityId
-      );
+      const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
 
-      if (!gateway.urlDR) {
+      if (!gateway) {
+        const msg = `Gateway not found`;
+        console.log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.dq.getCQDirectoryEntry`,
+            patientId,
+            requestId,
+            cxId,
+            gateway: outboundDocumentQueryResp.gateway,
+          },
+        });
+        return;
+      } else if (!gateway.urlDR) {
         console.log(`Gateway ${gateway.id} has no DR URL, skipping...`);
         return;
       }
+
       respWithDRUrl.push({
         ...outboundDocumentQueryResp,
         gateway: {
@@ -125,6 +137,7 @@ export async function processOutboundDocumentQueryResps({
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
