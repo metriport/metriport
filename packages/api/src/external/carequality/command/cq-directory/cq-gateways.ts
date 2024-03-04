@@ -50,7 +50,7 @@ export async function getRecordLocatorServiceOrganizations(): Promise<CQDirector
       },
       [Op.or]: [
         {
-          managingOrganizationId: null,
+          managingOrganizationId: { [Op.is]: undefined },
         },
         { managingOrganizationId: { [Op.col]: "id" } },
       ],
@@ -77,15 +77,12 @@ export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]
       urlXCPD: {
         [Op.ne]: "",
       },
-      managingOrganization: Sequelize.where(
-        Sequelize.fn("LOWER", Sequelize.col("managing_organization")),
-        {
-          [Op.ne]: "commonwell",
-        }
-      ),
+      managingOrganization: {
+        [Op.notILike]: "commonwell",
+      },
       managingOrganizationId: {
         [Op.or]: [
-          { [Op.is]: null },
+          { [Op.is]: undefined },
           {
             [Op.in]: Sequelize.literal(`(
                 SELECT id FROM cq_directory_entry
