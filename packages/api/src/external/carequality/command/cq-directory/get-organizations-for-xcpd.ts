@@ -24,11 +24,7 @@ export async function getOrganizationsForXCPD(
   ]);
 
   const sortedSublinks = sortOrgsByNearbyOrder(sublinks, nearbyOrgOrderMap);
-
   const sortedStandalone = sortOrgsByNearbyOrder(standalone, nearbyOrgOrderMap);
-  console.log("sortedStandalone", sortedStandalone.length);
-  for (const org of sortedStandalone) {
-    console.log(org.id, org.name, org.managingOrganization);
-  }
+
   return [...rlsAndEhex, ...sortedSublinks, ...sortedStandalone];
 }
