@@ -1,6 +1,6 @@
-import { Op } from "sequelize";
-import { CQDirectoryEntryModel } from "../../models/cq-directory";
 import { capture } from "@metriport/core/util/notifications";
+import { Op, Sequelize } from "sequelize";
+import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export async function updateCQGateways(gatewayOids: string[]): Promise<void> {
   console.log(`Found ${gatewayOids.length} gateways in the CQ directory. Updating...`);
@@ -32,10 +32,105 @@ export async function updateCQGateway(gatewayOid: string): Promise<void> {
   );
 }
 
-export async function getCQGateways(): Promise<CQDirectoryEntryModel[]> {
+export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[]> {
   return CQDirectoryEntryModel.findAll({
     where: {
-      gateway: true,
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+    },
+  });
+}
+
+export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {
+  const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
+    where: {
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+      [Op.or]: [
+        {
+          managingOrganizationId: null,
+        },
+        { managingOrganizationId: { [Op.col]: "id" } },
+      ],
+    },
+  });
+
+  const eHex: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
+    where: {
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+      managingOrganization: {
+        [Op.like]: "eHealth%",
+      },
+    },
+  });
+
+  return [...rls, ...eHex];
+}
+
+export async function getSublinkOrganizations(): Promise<CQDirectoryEntryModel[]> {
+  return CQDirectoryEntryModel.findAll({
+    where: {
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+      managingOrganization: Sequelize.where(
+        Sequelize.fn("LOWER", Sequelize.col("managing_organization")),
+        {
+          [Op.ne]: "commonwell",
+        }
+      ),
+      managingOrganizationId: {
+        [Op.or]: [
+          { [Op.is]: null },
+          {
+            [Op.in]: Sequelize.literal(`(
+                SELECT id FROM cq_directory_entry
+                WHERE url_xcpd IS NULL
+                AND (managing_organization_id = id OR managing_organization = name)
+            )`),
+          },
+        ],
+      },
+    },
+    order: [
+      Sequelize.literal("CASE WHEN LOWER(managing_organization) = 'epic' THEN 0 ELSE 1 END"),
+      "managing_organization",
+    ],
+  });
+}
+
+export async function getStandaloneOrganizations(): Promise<CQDirectoryEntryModel[]> {
+  return CQDirectoryEntryModel.findAll({
+    where: {
+      urlXCPD: {
+        [Op.ne]: "",
+      },
+      id: {
+        [Op.and]: [
+          {
+            [Op.notIn]: Sequelize.literal(`(
+                SELECT id FROM cq_directory_entry
+                WHERE url_xcpd IS NOT NULL
+                AND (managing_organization_id IS NULL OR managing_organization_id = id)
+            )`),
+          },
+          {
+            [Op.notIn]: Sequelize.literal(`(
+                SELECT id FROM cq_directory_entry
+                WHERE url_xcpd IS NOT NULL
+                AND managing_organization_id IN (
+                    SELECT id FROM cq_directory_entry
+                    WHERE url_xcpd IS NULL
+                    AND (managing_organization_id = id OR managing_organization = name)
+                )
+            )`),
+          },
+        ],
+      },
     },
   });
 }

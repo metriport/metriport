@@ -10,18 +10,18 @@ import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { isCQDirectEnabledForCx } from "../aws/appConfig";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
-import { getCQGateways } from "./command/cq-directory/cq-gateways";
+import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
+import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
   filterCQOrgsToSearch,
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
-import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 
 dayjs.extend(duration);
 
@@ -88,14 +88,24 @@ async function prepareForPatientDiscovery(
 ): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
-  const [organization, nearbyCQOrgs, cqGateways] = await Promise.all([
+  const nearbyOrgs = await searchCQDirectoriesAroundPatientAddresses({ patient });
+  const nearbyWithUrls = nearbyOrgs.filter(org => org.urlXCPD);
+  const orgOrderMap = new Map<string, number>();
+  nearbyWithUrls.forEach((org, index) => {
+    orgOrderMap.set(org.id, index);
+  });
+
+  for (const org of nearbyWithUrls) {
+    console.log(org.id, org.name, org.managingOrganization);
+  }
+
+  const [organization, allOrgs] = await Promise.all([
     getOrganizationOrFail({ cxId }),
-    searchCQDirectoriesAroundPatientAddresses({ patient }),
-    getCQGateways(),
+    getOrganizationsForXCPD(orgOrderMap),
   ]);
 
-  const cqGatewaysBasicDetails = cqGateways.map(toBasicOrgAttributes);
-  const orgsToSearch = filterCQOrgsToSearch([...cqGatewaysBasicDetails, ...nearbyCQOrgs]);
+  const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
+  const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
   const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
