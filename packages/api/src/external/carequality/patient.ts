@@ -12,12 +12,12 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { isCQDirectEnabledForCx } from "../aws/appConfig";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { getGatewaysAndNonGateways } from "./command/cq-directory/cq-gateways";
+import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
   filterCQOrgsToSearch,
   searchCQDirectoriesAroundPatientAddresses,
+  toBasicOrgAttributes,
 } from "./command/cq-directory/search-cq-directory";
-import { sortCQOrganizationsByPrio } from "./command/cq-directory/sort-cq-organizations";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
@@ -89,21 +89,24 @@ async function prepareForPatientDiscovery(
 ): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
-  const [organization, nearbyOrgs, allOrgs] = await Promise.all([
+  const nearbyOrgs = await searchCQDirectoriesAroundPatientAddresses({ patient });
+  const nearbyWithUrls = nearbyOrgs.filter(org => org.urlXCPD);
+  const orgOrderMap = new Map<string, number>();
+  nearbyWithUrls.forEach((org, index) => {
+    orgOrderMap.set(org.id, index);
+  });
+
+  for (const org of nearbyWithUrls) {
+    console.log(org.id, org.name, org.managingOrganization);
+  }
+
+  const [organization, allOrgs] = await Promise.all([
     getOrganizationOrFail({ cxId }),
-    searchCQDirectoriesAroundPatientAddresses({ patient }),
-    getGatewaysAndNonGateways(),
+    getOrganizationsForXCPD(orgOrderMap),
   ]);
 
-  const sortedGateways = sortCQOrganizationsByPrio(allOrgs.gateways);
-  const sortedNearbyOrgs = sortCQOrganizationsByPrio(nearbyOrgs);
-  const sortedOrgs = sortCQOrganizationsByPrio(allOrgs.nonGateways);
-
-  const orgsToSearch = filterCQOrgsToSearch([
-    ...sortedGateways,
-    ...sortedNearbyOrgs,
-    ...sortedOrgs,
-  ]);
+  const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
+  const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
   const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
