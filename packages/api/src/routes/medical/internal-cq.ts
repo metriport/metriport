@@ -107,7 +107,7 @@ router.post(
 /**
  * GET /internal/carequality/directory/nearby-organizations
  *
- * Retrieves the organizations within a specified radius from the patient's address.
+ * Retrieves the organizations with XCPD URLs within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
  * @param req.query.patientId The ID of the patient.
  * @param req.query.radius Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.

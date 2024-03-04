@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
-import { Sequelize } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
@@ -75,9 +75,13 @@ export async function searchCQDirectoriesByRadius({
           ],
         ],
       },
-      where:
-        Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
-        AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`),
+      where: {
+        [Op.and]: [
+          Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
+      AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`),
+          { urlXCPD: { [Op.ne]: "" } },
+        ],
+      },
       order: Sequelize.literal("distance"),
     });
 
