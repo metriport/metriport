@@ -22,11 +22,11 @@ import { rebuildCQDirectory } from "../../external/carequality/command/cq-direct
 import {
   DEFAULT_RADIUS_IN_MILES,
   searchCQDirectoriesAroundPatientAddresses,
+  toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
-import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
 import {
@@ -34,6 +34,7 @@ import {
   getDRResultStatus,
   getPDResultStatus,
 } from "../../external/carequality/ihe-result";
+import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom } from "../util";
@@ -127,7 +128,8 @@ router.get(
       radiusInMiles: radius,
     });
 
-    return res.status(httpStatus.OK).json(orgs);
+    const orgsWithBasicDetails = orgs.map(toBasicOrgAttributes);
+    return res.status(httpStatus.OK).json(orgsWithBasicDetails);
   })
 );
 
