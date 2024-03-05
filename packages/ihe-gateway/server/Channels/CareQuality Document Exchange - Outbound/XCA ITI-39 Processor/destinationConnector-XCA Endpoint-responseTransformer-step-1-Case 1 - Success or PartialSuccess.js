@@ -27,65 +27,75 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		// Process retrieved documents
 		for each (var entry in xml.*::DocumentResponse) {
 
-			var attachment = {};
-			attachment.homeCommunityId = entry.*::HomeCommunityId.toString().replace('urn:oid:', '');
-			attachment.repositoryUniqueId = entry.*::RepositoryUniqueId.toString().replace('urn:uuid:', '');
-			attachment.docUniqueId = entry.*::DocumentUniqueId.toString().replace('urn:uuid:', '');
-			attachment.metriportId = idMapping[attachment.docUniqueId.toString()];
-			attachment.fileLocation = bucketName;
-
-			// Responding Gateways which support the Persistence of Retrieved Documents Option shall specify the NewRepositoryUniqueId element
-			// indicating the document is available for later retrieval and be able to return exactly the same document in all future retrieve
-			// requests for the document identified by NewDocumentUniqueId.
-			var newRepositoryUniqueId = entry.*::NewRepositoryUniqueId.toString();
-			if (newRepositoryUniqueId) attachment.newRepositoryUniqueId = newRepositoryUniqueId.toString();
-
-			var newDocumentUniqueId = entry.*::NewDocumentUniqueId.toString();
-			if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
-
-			// Files are stored in format: <CX_ID>/<PATIENT_ID>/<CX_ID>_<PATIENT_ID>_<DOC_ID>
-
 			try {
+				var attachment = {};
+				attachment.homeCommunityId = entry.*::HomeCommunityId.toString().replace('urn:oid:', '');
+				attachment.repositoryUniqueId = entry.*::RepositoryUniqueId.toString().replace('urn:uuid:', '');
+				attachment.docUniqueId = entry.*::DocumentUniqueId.toString().replace('urn:uuid:', '');
+				attachment.metriportId = idMapping[attachment.docUniqueId.toString()];
+				attachment.fileLocation = bucketName;
 
-				var type = detectFileType(entry.*::Document.toString());
+				const logError = (ex) => {
+					logger.error("Error decoding doc - docUniqueId: " + attachment.docUniqueId + "; metriportId: " +
+						attachment.metriportId + "; " + ex);
+				};
+
+				// Responding Gateways which support the Persistence of Retrieved Documents Option shall specify the NewRepositoryUniqueId element
+				// indicating the document is available for later retrieval and be able to return exactly the same document in all future retrieve
+				// requests for the document identified by NewDocumentUniqueId.
+				var newRepositoryUniqueId = entry.*::NewRepositoryUniqueId.toString();
+				if (newRepositoryUniqueId) attachment.newRepositoryUniqueId = newRepositoryUniqueId.toString();
+
+				var newDocumentUniqueId = entry.*::NewDocumentUniqueId.toString();
+				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
+
+				let decodedAsString = null;
+				try {
+					var documentEncodedString = entry.*::Document.toString();
+					var decoded = FileUtil.decode(documentEncodedString);
+					decodedAsString = new Packages.java.lang.String(decoded);
+				} catch (ex) {
+					logError(ex);
+				}
+				if (!decodedAsString) continue;
+
+				var type = detectFileType(decodedAsString);
 				var detectedFileType = type[0];
 				var detectedExtension = type[1];
-
+				
+				// Files are stored in format: <CX_ID>/<PATIENT_ID>/<CX_ID>_<PATIENT_ID>_<DOC_ID>.<extension>
 				var fileName = [request.cxId, request.patientId, attachment.metriportId + detectedExtension].join('_');
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
+				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
+				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
 				var docExists = xcaReadFromFile(filePath.toString());
 
 				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
-                attachment.isNew = !docExists
-                attachment.contentType = detectedFileType;
-
-				var documentEncodedString = entry.*::Document.toString();
-				var decoded = FileUtil.decode(documentEncodedString);
-				var decodedAsString = Packages.java.lang.String(decoded);
-
-        if (!decodedAsString || typeof decodedAsString !== 'string') {
-          const errorMessage = "Decoded document is not a string - file " + fileName;
-          logger.error("Error: " + errorMessage);
-          throw new Error(errorMessage);
-        }
+				attachment.isNew = !docExists
+				attachment.contentType = detectedFileType;
 
 				// Parse the document header for some metadata
 				try {
-          const firstTitle = decodedAsString.split("<title>")[1];
-          if (firstTitle) {
-            const title = firstTitle.split("</title>")[0];
-					  if (title) attachment.title = title;
-          }
-
-					var fileSize = decodedAsString.getBytes("UTF-8").length;
+					if (detectedFileType === XML_TXT_MIME_TYPE || detectedFileType === XML_APP_MIME_TYPE) {
+						const firstTitle = decodedAsString.split("<title>")[1];
+						if (firstTitle) {
+							const title = firstTitle.split("</title>")[0];
+							if (title) attachment.title = title;
+						}
+					}
+					const fileSize = decodedAsString.getBytes("UTF-8").length;
 					if (fileSize) attachment.size = parseInt(fileSize);
-
 				} catch (ex) {
-					logger.error("Error decoding document: " + ex);
+					logError(ex);
 				}
 
-				var result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
+				const result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
+				contentList.push(attachment);
+
+				// TODO 1350 remove this log
+				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePath.toString() + "): " + result.toString());
+
 			} catch(ex) {
 				var issue = {
 					 "severity": "fatal",
@@ -93,13 +103,16 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 					 "details": {"text": ""}
 				};
 				issue.details.text = ex.toString();
-				channelMap.put('RESPONSE_PROCESSING_ERROR_CASE1_STEP2', ex.toString());
 				if (!operationOutcome) operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
 				operationOutcome.issue.push(issue);
 			}
-
-			contentList.push(attachment);
 		}
+		try {
+			if (operationOutcome) channelMap.put('OperationOutcome', JSON.stringify(operationOutcome));
+		} catch (ex) {
+			logger.error('Error setting OperationOutcome: ' + ex);
+		}
+
 		// TODO: Process and generate OperationOutcome
 
 		if (contentList.length > 0) {
