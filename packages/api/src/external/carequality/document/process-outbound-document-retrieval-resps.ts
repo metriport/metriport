@@ -21,6 +21,9 @@ export async function processOutboundDocumentRetrievalResps({
   cxId,
   results,
 }: OutboundDocRetrievalRespParam): Promise<void> {
+  const { log } = out(
+    `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
+  );
   try {
     let newDocRefCount = 0;
     let issuesWithGateway = 0;
@@ -63,7 +66,7 @@ export async function processOutboundDocumentRetrievalResps({
 
     if (failed.length > 0) {
       const msg = `Failed to handle doc references in Carequality`;
-      console.log(`${msg}`);
+      log(`${msg}`);
 
       capture.message(msg, {
         extra: {
@@ -88,7 +91,7 @@ export async function processOutboundDocumentRetrievalResps({
     });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
+    log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },

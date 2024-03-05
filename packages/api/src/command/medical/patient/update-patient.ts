@@ -8,6 +8,7 @@ import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
+import { Config } from "../../../shared/config";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
@@ -40,7 +41,7 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // Intentionally asynchronous
-  if (commonwell) {
+  if (commonwell || Config.isSandbox()) {
     cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
   }
 

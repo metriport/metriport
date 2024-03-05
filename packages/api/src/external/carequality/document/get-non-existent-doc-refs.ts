@@ -2,6 +2,7 @@ import { createFileName } from "@metriport/core/domain/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReferenceWithMetriportId } from "../../../external/carequality/document/shared";
 import { Config } from "../../../shared/config";
@@ -41,6 +42,7 @@ async function checkDocRefsExistInS3(
   patientId: string,
   cxId: string
 ): Promise<ObservedDocRefs> {
+  const { log } = out(`CQ checkDocRefsExistInS3 - patient ${patientId}`);
   const successfulDocs: { docId: string; exists: boolean }[] = [];
 
   await executeAsynchronously(
@@ -57,7 +59,7 @@ async function checkDocRefsExistInS3(
         });
       } catch (error) {
         const msg = `Failed to check if document exists in S3`;
-        console.log(`${msg}: ${errorToString(error)}`);
+        log(`${msg}: ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
             context: `cq.checkDocRefsExistInS3`,

@@ -70,7 +70,7 @@ export async function processOutboundDocumentQueryResps({
     // Since we have most of the document contents when doing the document query,
     // we will store this in FHIR and then upsert the reference to the s3 object in FHIR
     // when doing the doc retrieval
-    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
+    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
 
     const respWithDRUrl: OutboundDocumentQueryResp[] = [];
 
@@ -81,7 +81,7 @@ export async function processOutboundDocumentQueryResps({
 
       if (!gateway) {
         const msg = `Gateway not found - Doc Retrieval`;
-        console.log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
+        log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
         capture.message(msg, {
           extra: {
             context: `cq.dq.getCQDirectoryEntry`,
@@ -93,7 +93,7 @@ export async function processOutboundDocumentQueryResps({
         });
         return;
       } else if (!gateway.urlDR) {
-        console.log(`Gateway ${gateway.id} has no DR URL, skipping...`);
+        log(`Gateway ${gateway.id} has no DR URL, skipping...`);
         return;
       }
 
@@ -186,7 +186,8 @@ function buildInterrupt({
 async function storeInitDocRefInFHIR(
   docRefs: DocumentReferenceWithMetriportId[],
   cxId: string,
-  patientId: string
+  patientId: string,
+  log: typeof console.log
 ) {
   await executeAsynchronously(
     docRefs,
@@ -199,7 +200,7 @@ async function storeInitDocRefInFHIR(
         await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {
         const msg = `Failed to store initial doc ref in FHIR`;
-        console.log(`${msg}: ${errorToString(error)}`);
+        log(`${msg}: ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
             context: `cq.storeInitDocRefInFHIR`,

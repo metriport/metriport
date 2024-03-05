@@ -4,6 +4,7 @@ import { processAsyncError } from "../../../errors";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
+import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
@@ -53,7 +54,7 @@ export const createPatient = async (
   const newPatient = await PatientModel.create(patientCreate);
 
   // Intentionally asynchronous
-  if (commonwell) {
+  if (commonwell || Config.isSandbox()) {
     cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
   }
 
