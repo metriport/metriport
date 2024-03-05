@@ -3,6 +3,7 @@ import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
@@ -14,7 +15,6 @@ import { Util } from "../../../shared/util";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
-import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
 import { sandboxSleepTime } from "./shared";
 
 const randomDates = [

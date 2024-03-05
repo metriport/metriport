@@ -6,9 +6,9 @@ import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
-import { cqExtension } from "../../carequality/extension";
+import { cqExtension } from "@metriport/core/external/carequality/extension";
+import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { createDocReferenceContent, DocumentReferenceWithId } from "../../fhir/document";
-import { DataSourceExtension } from "../../fhir/shared/extensions/metriport";
 
 export type DocumentReferenceWithMetriportId = DocumentReference & {
   metriportId: string;
@@ -41,7 +41,7 @@ export const cqToFHIR = (
   docRef: IHEGWDocumentReference,
   docStatus: "preliminary" | "final",
   patientId: string,
-  contentExtension: DataSourceExtension
+  contentExtension: MetriportDataSourceExtension
 ): DocumentReferenceWithId => {
   const baseAttachment = {
     ...(docRef.fileName ? { fileName: docRef.fileName } : {}),
@@ -74,7 +74,7 @@ const generateCQFHIRContent = (
     creation?: string;
     fileName?: string;
   },
-  contentExtension: DataSourceExtension,
+  contentExtension: MetriportDataSourceExtension,
   location: string | null | undefined
 ): DocumentReferenceContent[] => {
   if (!location) return [];

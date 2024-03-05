@@ -1,5 +1,6 @@
 import { Bundle, BundleEntry } from "@medplum/fhirtypes";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -10,7 +11,6 @@ import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter"
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
-import { metriportDataSourceExtension } from "../../fhir/shared/extensions/metriport";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { containsMetriportId, cqToFHIR, DocumentReferenceWithMetriportId } from "./shared";
