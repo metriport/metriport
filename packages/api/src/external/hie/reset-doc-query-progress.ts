@@ -54,7 +54,7 @@ export async function resetDocQueryProgress({
     }
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData: resetExternalData,

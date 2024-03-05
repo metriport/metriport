@@ -46,7 +46,7 @@ export async function appendBulkGetDocUrlProgress({
     }
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         bulkGetDocumentsUrlProgress,
