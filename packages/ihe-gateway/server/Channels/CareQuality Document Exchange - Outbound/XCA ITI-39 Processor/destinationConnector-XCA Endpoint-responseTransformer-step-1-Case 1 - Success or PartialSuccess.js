@@ -90,11 +90,11 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 					logError(ex);
 				}
 
-				const result = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
+				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
 				contentList.push(attachment);
 
 				// TODO 1350 remove this log
-				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePath.toString() + "): " + result.toString());
+				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePath.toString() + "): " + resultFromS3.toString());
 
 			} catch(ex) {
 				var issue = {
