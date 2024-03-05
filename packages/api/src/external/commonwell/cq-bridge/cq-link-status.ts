@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { out } from "@metriport/core/util/log";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { cloneDeep } from "lodash";
@@ -44,6 +45,7 @@ export const setCQLinkStatus = async ({
   patientId: string;
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<{ patient: Patient; updated: boolean }> => {
+  const { log } = out(`setCQLinkStatus - patient ${patientId}`);
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const originalPatient = await getPatientOrFail({
       id: patientId,
@@ -55,9 +57,7 @@ export const setCQLinkStatus = async ({
     // Important so we don't trigger WH notif if the CQ link was already done
     const currentCQLinkStatus = getLinkStatusCQ(originalPatient.data.externalData);
     if (currentCQLinkStatus === cqLinkStatus) {
-      console.log(
-        `Patient ${patientId} already has CQ link status ${cqLinkStatus}, skipping update...`
-      );
+      log(`Patient already has CQ link status ${cqLinkStatus}, skipping update...`);
       return { patient: originalPatient, updated: false };
     }
 
