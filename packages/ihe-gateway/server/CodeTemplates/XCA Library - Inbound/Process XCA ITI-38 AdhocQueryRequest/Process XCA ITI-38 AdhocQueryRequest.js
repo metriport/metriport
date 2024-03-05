@@ -22,14 +22,25 @@ function getAdhocQueryRequestOptionFn() {
 		XDSDocumentEntryServiceStopTimeFrom: function(slot) { return processXDSDocumentEntryDateTime(slot);	},
 		XDSDocumentEntryServiceStopTimeTo: function(slot) { return processXDSDocumentEntryDateTime(slot); },
 
-		XDSDocumentEntryPatientId: function(slot) {
+		XDSDocumentEntryPatientId: function (slot) {
 			var result = {};
 			try {
-				var [id,,system] = slot.ValueList.Value.toString().replace(/['"&amp;ISO]/g, '').split('^');
-				result.id = id.toString();
-				result.system = system.toString();
-			} catch(ex) { return null; }
-			return result;			
+				// First, decode any HTML entities
+				var decodedValue = slot.ValueList.Value.toString().replace(/&amp;/g, "&");
+				// Then, remove unwanted characters
+				var cleanedValue = decodedValue.replace(/['"]/g, "");
+				// Split by '^', expecting the format to be id^^^system&000&ISO
+				var parts = cleanedValue.split("^");
+				var id = parts[0];
+				
+				var system = parts[3].split("&")[1];
+				result.id = id;
+				result.system = system;
+			}
+			catch (ex) {
+				return null;
+			}
+			return result;
 		},
 
 		XDSDocumentEntryType: function(slot) { 

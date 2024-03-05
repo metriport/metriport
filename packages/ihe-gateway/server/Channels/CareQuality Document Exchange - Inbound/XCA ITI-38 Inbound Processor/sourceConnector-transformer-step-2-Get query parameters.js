@@ -41,11 +41,20 @@ try {
 		var func = queryRequestOptionFn[slot.@name.toString().slice(1)];
 		if (typeof func === 'function') {
 			var result = func(slot);
+			if (element === "entryPatientId") {
+				element = "externalGatewayPatient";
+				logger.info("CHANGED ELEMENT: " + element);
+				logger.info('Function: ' + func);
+				logger.info('Slot: ' + slot);
+				logger.info('Result: ' + JSON.stringify(result));
+
+			}
 			if (result) request[element] = result;
 		}
 	}
 
 	channelMap.put('REQUEST', JSON.stringify(request));
+	logger.info('XCA ITI-38 Inbound Processor: Query parameters - ' + JSON.stringify(request));
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: Query parameters - ' + ex);

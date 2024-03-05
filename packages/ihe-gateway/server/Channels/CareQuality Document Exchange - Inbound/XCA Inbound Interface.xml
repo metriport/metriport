@@ -5458,7 +5458,7 @@ Last updated: Jan 02 2024
       <expandedJsonFormat>false</expandedJsonFormat>
       <autoConvertSOAPToJSON>false</autoConvertSOAPToJSON>
       <autoConvertJSONResponseToXML>false</autoConvertJSONResponseToXML>
-      <validateSAML>true</validateSAML>
+      <validateSAML>false</validateSAML>
       <validationSSLProperties class="com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties" version="4.4.2">
         <enabled>true</enabled>
         <clientAuthentication>DISABLED</clientAuthentication>
