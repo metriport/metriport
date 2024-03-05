@@ -86,20 +86,16 @@ function isLikelyTextFile(fileBuffer) {
 }
 
 /**
- * The function `detectFileType` uses magic numbers to determine the file type of a given file.
+ * Uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
  * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
  * matches it against known file type headers.
  *
- * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
- * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
- * identify the file type.
- * @returns The function `detectFileType` returns a string representing the detected file type.
+ * @param contents - The contents as string.
+ * @returns returns a string representing the detected file type.
  */
-function detectFileType(document) {
-  var doc = FileUtil.decode(document);
-  var fileBuffer = new java.lang.String(doc).getBytes();
-
+function detectFileType(contents) {
+  const fileBuffer = contents.getBytes();
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&

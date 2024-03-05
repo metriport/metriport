@@ -13,7 +13,9 @@ import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poll
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
+import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
+import { scheduleDocQuery } from "./schedule-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -39,6 +41,11 @@ export async function getDocumentsFromCQ({
       getCQPatientData({ id: patient.id, cxId }),
     ]);
 
+    // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
+    if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
+      await scheduleDocQuery({ requestId, patient });
+      return;
+    }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
@@ -49,7 +56,7 @@ export async function getDocumentsFromCQ({
 
       if (!gateway) {
         const msg = `Gateway not found - Doc Query`;
-        console.log(`${msg}: ${patientLink.oid} skipping...`);
+        log(`${msg}: ${patientLink.oid} skipping...`);
         capture.message(msg, {
           extra: {
             context: `cq.pd.getCQDirectoryEntry`,
