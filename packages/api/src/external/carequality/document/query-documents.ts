@@ -41,12 +41,13 @@ export async function getDocumentsFromCQ({
       getCQPatientData({ id: patient.id, cxId }),
     ]);
 
+    // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
+    if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
+      await scheduleDocQuery({ requestId, patient });
+      return;
+    }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
-      // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
-      if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-        await scheduleDocQuery({ requestId, patient });
-      }
-      return interrupt(`Patient has no CQ links, DQ has been scheduled`);
+      return interrupt(`Patient has no CQ links, skipping DQ`);
     }
 
     const linksWithDqUrl: CQLink[] = [];

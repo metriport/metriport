@@ -53,7 +53,7 @@ export async function updatePatientDiscoveryStatus({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData: updatePatientDiscoveryStatus,
@@ -65,7 +65,7 @@ export async function updatePatientDiscoveryStatus({
       transaction,
     });
 
-    return updatedPatient.dataValues;
+    return updatedPatient;
   });
 
   if (docQueryRequestIdToTrigger) {
