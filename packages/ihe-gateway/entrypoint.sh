@@ -260,6 +260,7 @@ if ! [ -z "${DELAY+x}" ]; then
 fi
 
 # Send configs to server when its available
-IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap strict &
+# IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap strict &
+IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap  &
 
 exec "$@"
