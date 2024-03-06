@@ -81,7 +81,11 @@ export default class IHEGatewayConstruct extends Construct {
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
     const dbReadonlyAddress = db.server.clusterReadEndpoint.socketAddress;
-    const dbIdentifier = config.rds.dbName;
+    // Temporary workaround to connect to the right DB based on the name
+    // TODO As we mature the IHE GW installation, let's review this
+    const dbIdentifier = name.toLocaleLowerCase().includes("inbound")
+      ? config.rds.dbNameInbound
+      : config.rds.dbName;
     const httpPorts = [pdPort, dqPort, drPort];
     if (httpPorts.length > maxPortsOnProps) {
       throw new Error(`This construct can have at most ${maxPortsOnProps} HTTP ports`);
