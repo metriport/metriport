@@ -75,6 +75,7 @@ EXPOSE 8085
 EXPOSE 8086
 EXPOSE 9091
 EXPOSE 9092
+EXPOSE 9093
 
 COPY entrypoint.sh /
 RUN chmod 755 /entrypoint.sh

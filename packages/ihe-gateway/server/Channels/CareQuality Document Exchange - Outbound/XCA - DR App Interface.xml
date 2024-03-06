@@ -4,7 +4,7 @@
   <name>XCA - DR App Interface</name>
   <description>XCA App Interface channel
     - forwards a single request back to the calling app or DB</description>
-  <revision>190</revision>
+  <revision>243</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

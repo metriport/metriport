@@ -3,15 +3,12 @@
   <nextMetaDataId>2</nextMetaDataId>
   <name>Test Channel</name>
   <description/>
-  <revision>1</revision>
+  <revision>17</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
     <properties class="com.mirth.connect.connectors.http.HttpReceiverProperties" version="4.4.2">
       <pluginProperties>
-        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
-          <authType>NONE</authType>
-        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
         <com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties version="4.4.2">
           <enabled>false</enabled>
           <clientAuthentication>DISABLED</clientAuthentication>
@@ -35,6 +32,9 @@
           <implicitFTPS>true</implicitFTPS>
           <useSTARTTLS>false</useSTARTTLS>
         </com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties>
+        <com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties version="4.4.2">
+          <authType>NONE</authType>
+        </com.mirth.connect.plugins.httpauth.NoneHttpAuthProperties>
       </pluginProperties>
       <listenerConnectorProperties version="4.4.2">
         <host>0.0.0.0</host>

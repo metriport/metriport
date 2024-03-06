@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
-  <id>3d78b44c-d132-485a-8423-f5a6c681f249</id>
+  <id>3d78b44c-d132-485a-8423-f5a6c681f248</id>
   <nextMetaDataId>3</nextMetaDataId>
-  <name>XCA Inbound Interface</name>
-  <description>The XCA ITI-38 (Cross Gateway Query) and XCA ITI-39 (Cross Gateway Retrieve) inbound interface
+  <name>XCA ITI-39 Inbound Processor</name>
+  <description>XCA ITI-39 Inbound Processor channel
+ - Generates AWS Lambda request based on the ITI-39 "Cross Gateway Retrieve" SOAP message
 
-The queries SHALL be sent to the following endpoint:
-Cross Gateway Query    - http://[host]:9092/Gateway/DocumentQuery/3_0/NhinService/RespondingGateway_Query_Service/DocQuery
-Cross Gateway Retrieve - http://[host]:9092/Gateway/DocumentRetrieve/3_0/NhinService/RespondingGateway_Retrieve_Service/DocRetrieve
-
-Note:
- - If 'Validate WS-Security' is set to 'Yes,' Mirth Interop rejects failing messages with the SOAP Fault message but does not increase the channel's Received and Sent count.
-
-Last updated: Jan 02 2024
+Last updated: Dec 27 2023</description>
 
 </description>
   <revision>264</revision>

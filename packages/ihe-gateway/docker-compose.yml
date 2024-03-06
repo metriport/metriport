@@ -64,6 +64,7 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
+      - "9093:9093"
       - "8099:8099"
   ihe-postgres:
     image: postgres:14.4-alpine
