@@ -31,7 +31,6 @@ dayjs.extend(duration);
  * the ones seen in ./patients.
  */
 
-
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
@@ -127,7 +126,9 @@ const validateDocQueryProgress = async (
   console.log(
     `The doc query was completed for all patients${
       resetAndRunAgain ? " (resetAndRunAgain)" : ""
-    } - status were all queries successful: ${overallSuccess}. Errors: ${failedPatientQueries.length}`,
+    } - status were all queries successful: ${overallSuccess}. Errors: ${
+      failedPatientQueries.length
+    }`
   );
 };
 
