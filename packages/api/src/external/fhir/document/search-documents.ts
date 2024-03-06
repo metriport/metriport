@@ -1,11 +1,11 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { uniqBy } from "lodash";
+import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { isCarequalityExtension } from "@metriport/core/external/carequality/extension";
+import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
-import { isCarequalityExtension } from "../../carequality/extension";
-import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
-import { isMetriportExtension } from "../shared/extensions/metriport";
 import { getDocumentsFromFHIR } from "./get-documents";
 
 export async function searchDocuments({

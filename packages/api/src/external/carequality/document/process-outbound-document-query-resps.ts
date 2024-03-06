@@ -1,6 +1,7 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,7 +9,6 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
-import { cqExtension } from "../../carequality/extension";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
