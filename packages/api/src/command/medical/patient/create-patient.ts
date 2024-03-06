@@ -1,6 +1,10 @@
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "../../../errors";
+import {
+  isCarequalityStandbyModeEnabled,
+  isCommonwellStandbyModeEnabled,
+} from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
@@ -16,10 +20,8 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export const createPatient = async (
   patient: PatientCreateCmd,
-  // START TODO #1572 - remove
-  commonwell?: boolean,
-  carequality?: boolean
-  // END TODO #1572 - remove
+  forceCommonwell?: boolean,
+  forceCarequality?: boolean
 ): Promise<Patient> => {
   const { cxId, facilityId, externalId } = patient;
 
@@ -53,13 +55,14 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // Intentionally asynchronous
-  if (commonwell || Config.isSandbox()) {
+  const commonwellStandbyModeEnabled = await isCommonwellStandbyModeEnabled();
+  if (!commonwellStandbyModeEnabled || forceCommonwell || Config.isSandbox()) {
     cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
   }
 
   // Intentionally asynchronous
-  if (carequality) {
+  const carequalityStandbyModeEnabled = await isCarequalityStandbyModeEnabled();
+  if (!carequalityStandbyModeEnabled || forceCarequality) {
     cqCommands.patient
       .discover(newPatient, facility.data.npi)
       .catch(processAsyncError(`cq.patient.create`));

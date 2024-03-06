@@ -2,6 +2,10 @@ import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { processAsyncError } from "../../../errors";
 import { patientEvents } from "../../../event/medical/patient-event";
+import {
+  isCarequalityStandbyModeEnabled,
+  isCommonwellStandbyModeEnabled,
+} from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
@@ -26,8 +30,8 @@ export async function updatePatient(
   patientUpdate: PatientUpdateCmd,
   emit = true,
   // START TODO #1572 - remove
-  commonwell?: boolean,
-  carequality?: boolean
+  forceCommonwell?: boolean,
+  forceCarequality?: boolean
   // END TODO #1572 - remove
 ): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
@@ -41,12 +45,14 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // Intentionally asynchronous
-  if (commonwell || Config.isSandbox()) {
+  const commonwellStandbyModeEnabled = await isCommonwellStandbyModeEnabled();
+  if (!commonwellStandbyModeEnabled || forceCommonwell || Config.isSandbox()) {
     cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
   }
 
   // Intentionally asynchronous
-  if (carequality) {
+  const carequalityStandbyModeEnabled = await isCarequalityStandbyModeEnabled();
+  if (!carequalityStandbyModeEnabled || forceCarequality) {
     cqCommands.patient
       .discover(result, facility.data.npi)
       .catch(processAsyncError(`cq.patient.update`));

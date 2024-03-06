@@ -20,12 +20,20 @@ export type SandboxLimitFF = {
   cxIds: never;
 };
 
+export type EnabledFF = {
+  enabled: boolean;
+  cxIds: never;
+  cxIdsAndLimits: never;
+};
+
 export type FeatureFlagDatastore = {
   cxsWithEnhancedCoverageFeatureFlag: CustomerIdsFF;
   cxsWithCQDirectFeatureFlag: CustomerIdsFF;
   cxsWithADHDMRFeatureFlag: CustomerIdsFF;
   cxsWithNoWebhookPongFeatureFlag: CustomerIdsFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;
+  commonwellStandbyModeFeatureFlag: EnabledFF;
+  carequalityStandbyModeFeatureFlag: EnabledFF;
 };
 
 export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
