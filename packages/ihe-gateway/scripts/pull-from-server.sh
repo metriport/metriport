@@ -5,6 +5,14 @@ set -e
 
 source ./scripts/load-env.sh
 
+source ./scripts/load-default-server-url.sh
+
+if [[ -z "${ENV_TYPE}" ]]; then
+  echo "Warning: ENV_TYPE is missing, default to 'staging'"
+  set -o allexport
+  ENV_TYPE="staging"
+  set +o allexport
+fi
 if [ -z "${IHE_GW_FULL_BACKUP_LOCATION}" ]; then
   echo "Error: IHE_GW_FULL_BACKUP_LOCATION is not set, exiting"
   exit 1
@@ -15,10 +23,10 @@ rm -rf ./server/Channels
 rm -rf ./server/CodeTemplates
 rm -rf ./server/GlobalScripts
 
-# "-m" flag: default behavior. Expands everything to the most granular level (Javascript, Sql, etc).
+# "-m" flag = default behavior: Expands everything to the most granular level (Javascript, Sql, etc).
 ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f pull
 
-# "-m" flag: only the FullBackup.xml file, "Equivalent to Mirth Administrator backup and restore"
-./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t $IHE_GW_FULL_BACKUP_LOCATION -m backup -f pull
+# "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
+./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t $IHE_GW_FULL_BACKUP_LOCATION --include-configuration-map -m backup -f pull
 
 mv $IHE_GW_FULL_BACKUP_LOCATION/FullBackup.xml $IHE_GW_FULL_BACKUP_LOCATION/FullBackup-$ENV_TYPE.xml

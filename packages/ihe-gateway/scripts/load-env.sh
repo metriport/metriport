@@ -26,10 +26,3 @@ else
     fi
     echo "Warning: No $DOT_ENV_FILE file found, expecting env vars to be set"
 fi
-
-if [[ -z "${ENV_TYPE}" ]]; then
-    echo "Warning: ENV_TYPE is missing, default to 'staging'"
-    set -o allexport
-    ENV_TYPE="staging"
-    set +o allexport
-fi
