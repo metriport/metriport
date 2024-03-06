@@ -55,6 +55,7 @@ isNumber() {
 }
 
 uploadConfigurationMapRes=999
+
 uploadConfigurationMap() {
   echo "[config] -- Config map only --"
   if [ -f $CONFIG_MAP_FILE ]; then
@@ -76,6 +77,8 @@ uploadConfigurationMap() {
     uploadConfigurationMapRes="not-number"
   elif [[ $res -ge 300 ]] || [[ $res -lt 200 ]]; then
     uploadConfigurationMapRes="not-success"
+  else
+    uploadConfigurationMapRes="success"
   fi
 }
 
@@ -102,6 +105,10 @@ setAllConfigs() {
   echo "[config] -- Full config --"
   # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
+
+  # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
+  sleep 5
+
   # "-m" flag = default behavior: Expands everything to the most granular level (Javascript, Sql, etc).
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f -d push
 }
