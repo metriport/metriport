@@ -1,3 +1,4 @@
+logger.info("sourceConnector-transformer-step-1-Payload validation.js");
 var payload = null, error = null;
 
 if (msg.*::Body.*::AdhocQueryRequest.length() > 0) {
@@ -47,7 +48,7 @@ if (error) {
 		soapFault.soap::Header.wsa::Action = msg.*::Header.*::Action.toString() + 'Response';
 		soapFault.soap::Header.wsa::RelatesTo = msg.*::Header.*::MessageID.toString();
 
-		responseMap.put('XCA_RESPONSE', soapFault.toString());
+		responseMap.put('RESPONSE', soapFault.toString());
 	}
 	destinationSet.removeAll();
 	return;

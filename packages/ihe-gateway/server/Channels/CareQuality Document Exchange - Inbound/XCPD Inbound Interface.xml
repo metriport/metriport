@@ -40315,7 +40315,7 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
           <name>Get Query Paraameters</name>
           <sequenceNumber>5</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-5-Get Query Paraameters.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-5-Get Query Parameters.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"/>
