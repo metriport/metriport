@@ -27,9 +27,9 @@ export function isMetriportContent(content: DocumentReferenceContent): boolean {
   // Metriport is the fallback/default.
   // All doc refs created before this extension was added will have only one content element,
   // stored on S3 (Metriport) and w/o the extension.
-  // So, return true if it's explicitly Metriport or is not explicitly CommonWell.
+  // So, return true if it's explicitly Metriport or is not explicitly CommonWell and Carequality.
   return (
-    content.extension?.some(isMetriportExtension) === true ||
+    content.extension?.some(isMetriportExtension) ||
     (!isCommonwellContent(content) && !isCarequalityContent(content))
   );
 }
