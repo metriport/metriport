@@ -15,9 +15,8 @@
 ###################################################################################################
 
 # Fail on error
-set -o pipefail
-set -o errtrace
-set -e
+set -eo pipefail
+set -eE # same as: `set -o errexit -o errtrace`
 
 cleanup() {
   if containsElement "strict"; then
@@ -30,8 +29,12 @@ cleanup() {
 trap cleanup ERR
 
 CONFIG_MAP_FILE=./server/ConfigurationMap.xml
+MAX_LOGIN_ATTEMPTS=5
+INCORRECT_LOGIN_ATTEMPTS=0
+
 source ./scripts/load-env.sh
 source ./scripts/load-default-server-url.sh
+
 ARGUMENTS=("$@")
 
 containsElement() {
@@ -43,7 +46,16 @@ containsElement() {
   return 1
 }
 
-setConfigurationMap() {
+isNumber() {
+  if [[ $1 =~ ^[0-9]+$ ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+uploadConfigurationMapRes=999
+uploadConfigurationMap() {
   echo "[config] -- Config map only --"
   if [ -f $CONFIG_MAP_FILE ]; then
     CONFIG_MAP=$(cat $CONFIG_MAP_FILE)
@@ -52,20 +64,38 @@ setConfigurationMap() {
     exit 1
   fi
 
-  RESULT=$(curl -s -w '%{response_code}' --request PUT "$IHE_GW_URL/server/configurationMap" \
+  local res=$(curl -s -w '%{response_code}' --request PUT "$IHE_GW_URL/server/configurationMap" \
     --header "X-Requested-With: push-to-server" \
     --header 'Accept: application/xml' \
     --header 'Content-Type: application/xml' \
     -u $IHE_GW_USER:$IHE_GW_PASSWORD \
     --data "$CONFIG_MAP")
 
-  if [[ $RESULT -ge 300 ]] || [[ $RESULT -lt 200 ]]; then
-    echo "[config] Failed to push configuration map to the server - Result: $RESULT"
-    cleanup
-    exit 1
-  else
-    echo "[config] Configuration map pushed to the server."
+  # If its not a number
+  if ! isNumber $res; then
+    uploadConfigurationMapRes="not-number"
+  elif [[ $res -ge 300 ]] || [[ $res -lt 200 ]]; then
+    uploadConfigurationMapRes="not-success"
   fi
+}
+
+setConfigurationMap() {
+  for i in {1..3}; do
+    uploadConfigurationMap
+    if [ $uploadConfigurationMapRes == "not-number" ]; then
+      echo "[config] Failed to push configuration map to the server, trying up to 3 times - Result: $uploadConfigurationMapRes"
+    elif [ $uploadConfigurationMapRes == "not-success" ]; then
+      echo "[config] Failed to push configuration map to the server - Result: $uploadConfigurationMapRes"
+      cleanup
+      exit 1
+    else
+      echo "[config] Configuration map pushed to the server."
+      return
+    fi
+    sleep 1
+  done
+  cleanup
+  exit 1
 }
 
 setAllConfigs() {
@@ -76,9 +106,28 @@ setAllConfigs() {
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f -d push
 }
 
+isApiAvailable() {
+  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
+  if [[ $checkApiResult -lt 100 ]]; then
+    return 1 # not ready
+  elif [[ $checkApiResult -ge 300 ]]; then
+    echo "[config] Failed login to server, trying up to $MAX_LOGIN_ATTEMPTS times - Result: $checkApiResult" >/dev/stderr
+    if [ $INCORRECT_LOGIN_ATTEMPTS -ge $MAX_LOGIN_ATTEMPTS ]; then
+      echo "[config] Too many incorrect login attempts, stopping..."
+      cleanup
+      exit 1
+    fi
+    INCORRECT_LOGIN_ATTEMPTS=$((INCORRECT_LOGIN_ATTEMPTS + 1))
+  fi
+  return 0
+}
+
 waitServerOnline() {
   echo "[config] Waiting for the server to start... (${IHE_GW_URL})"
-  until curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -o /dev/null "$IHE_GW_URL/server/jvm"; do
+  until curl -s -f -o /dev/null $IHE_GW_URL; do
+    sleep 1
+  done
+  until isApiAvailable; do
     sleep 1
   done
   sleep 2
