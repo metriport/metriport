@@ -13,8 +13,8 @@ const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
   "cxsWithADHDMRFeatureFlag",
   "cxsWithIncreasedSandboxLimitFeatureFlag",
   "cxsWithNoWebhookPongFeatureFlag",
-  "commonwellStandbyModeFeatureFlag",
-  "carequalityStandbyModeFeatureFlag",
+  "commonwellFeatureFlag",
+  "carequalityFeatureFlag",
 ];
 
 /**
@@ -132,10 +132,10 @@ export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean>
   return cxIdsWithECEnabled.some(i => i === cxId);
 }
 
-export async function isCommonwellStandbyModeEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("commonwellStandbyModeFeatureFlag");
+export async function isCommonwellEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("commonwellFeatureFlag");
 }
 
-export async function isCarequalityStandbyModeEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("carequalityStandbyModeFeatureFlag");
+export async function isCarequalityEnabled(): Promise<boolean> {
+  return isFeatureFlagEnabled("carequalityFeatureFlag");
 }

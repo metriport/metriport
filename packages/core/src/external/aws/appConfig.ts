@@ -32,8 +32,8 @@ export type FeatureFlagDatastore = {
   cxsWithADHDMRFeatureFlag: CustomerIdsFF;
   cxsWithNoWebhookPongFeatureFlag: CustomerIdsFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;
-  commonwellStandbyModeFeatureFlag: EnabledFF;
-  carequalityStandbyModeFeatureFlag: EnabledFF;
+  commonwellFeatureFlag: EnabledFF;
+  carequalityFeatureFlag: EnabledFF;
 };
 
 export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(

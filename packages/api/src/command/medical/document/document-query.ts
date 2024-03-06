@@ -10,10 +10,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import {
-  isCarequalityStandbyModeEnabled,
-  isCommonwellStandbyModeEnabled,
-} from "../../../external/aws/appConfig";
+import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
@@ -88,8 +85,8 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  const commonwellStandbyModeEnabled = await isCommonwellStandbyModeEnabled();
-  if (!commonwellStandbyModeEnabled || forceCommonwell || Config.isSandbox()) {
+  const commonwellEnabled = await isCommonwellEnabled();
+  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     getDocumentsFromCW({
       patient,
       facilityId,
@@ -99,8 +96,8 @@ export async function queryDocumentsAcrossHIEs({
     }).catch(emptyFunction);
   }
 
-  const carequalityStandbyModeEnabled = await isCarequalityStandbyModeEnabled();
-  if (!carequalityStandbyModeEnabled || forceCarequality) {
+  const carequalityEnabled = await isCarequalityEnabled();
+  if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
       patient,
       requestId,
