@@ -1,5 +1,5 @@
+logger.info("sourcConnector-transformer-step-5-Get query parameters.js");
 var request = {};
-logger.info("1")
 try {
 	
 	var prpa = msg.*::Body.*::PRPA_IN201305UV02;
@@ -29,9 +29,10 @@ try {
 		provider.system = entry.*::value.@root.toString();
 		request.principalCareProviderIds.push(provider);
 	}
-
+	
 	// Convert PRPA ParameterList to FHIR Patient resource
 	var patientResource = convertXCPDQueryToPatientResource(payload.*::controlActProcess.*::queryByParameter.*::parameterList);
+
 	if (patientResource) {
 		// Convert FHIR Patient resource in XML to JSON
 		var target = globalChannelMap.get('PARSER').parseResource(patientResource.toString());

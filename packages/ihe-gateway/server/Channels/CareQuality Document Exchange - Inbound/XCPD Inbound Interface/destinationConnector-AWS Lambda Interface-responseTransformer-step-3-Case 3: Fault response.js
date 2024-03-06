@@ -1,9 +1,5 @@
-// If a responding gateway determines that additional attributes may help to achieve a match, it may respond with a specialized set of error codes,
-// or special conditions that may come up when attempting to respond to a request.
+logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-2-Case 3: Fault Response.js");
 
-// logger.info("XCPD Inbound Processor: Running fault response transformer");
-
-// The Responding Gateway is unable to satisfy the request
 var prpa = getXCPDQueryResponse(msg, payload);
 if (prpa) {
 	// logger.info("XCPD Inbound Processor - Fault: prpa found");
@@ -19,3 +15,4 @@ if (prpa) {
 
 	return;
 }
+// return msg;

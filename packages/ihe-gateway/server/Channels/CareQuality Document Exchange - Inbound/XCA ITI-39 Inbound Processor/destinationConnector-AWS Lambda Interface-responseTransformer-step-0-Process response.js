@@ -1,7 +1,7 @@
 // Store the HTTP code only
-var http = $('responseStatusLine');
-http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
-channelMap.put('HTTP', http.toString());
+// var http = $('responseStatusLine');
+// http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
+// channelMap.put('HTTP', http.toString());
 
 // Generate SOAP Envelope
 var soapTemplate = getSOAPTemplate();

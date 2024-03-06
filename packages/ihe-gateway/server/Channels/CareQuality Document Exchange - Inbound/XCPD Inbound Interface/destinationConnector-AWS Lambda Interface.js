@@ -1,3 +1,4 @@
+logger.info("destinationConnector-AWS Lambda Interface.js");
 const payload = channelMap.get("REQUEST");
 try {
   // TODO make the lambda name dynamic

@@ -15,6 +15,7 @@ function getXCAITI38QueryResponse(request, operationOutcome) {
 		_response.appendChild(registryObjectList);
 		
 		var docList = [];
+		logger.info("getXCAITI38QueryResponse: ", request.metadata);
 
 		request.metadata.forEach(function(entry) {
 			try {
