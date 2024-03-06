@@ -107,14 +107,18 @@ export function aggregateAndSetHIEProgresses(
     ...documentQueryProgress,
     ...(aggregatedDocProgress.convert
       ? {
-          ...documentQueryProgress.convert,
-          ...aggregatedDocProgress.convert,
+          convert: {
+            ...documentQueryProgress.convert,
+            ...aggregatedDocProgress.convert,
+          },
         }
       : {}),
     ...(aggregatedDocProgress.download
       ? {
-          ...documentQueryProgress.download,
-          ...aggregatedDocProgress.download,
+          download: {
+            ...documentQueryProgress.download,
+            ...aggregatedDocProgress.download,
+          },
         }
       : {}),
   };
