@@ -64,7 +64,7 @@ async function getResourcesToDelete(
     const resource = r.resource;
     if (!resource) return false;
     // TODO make this dynamic, get a list of resources to exclude
-    return resource.resourceType !== "DocumentReference";
+    return resource.resourceType !== "DocumentReference" && resource.resourceType !== "Patient";
   });
   return resourcesToDelete;
 }
