@@ -259,8 +259,10 @@ if ! [ -z "${DELAY+x}" ]; then
 	sleep $DELAY
 fi
 
-# Send configs to server when its available
-# IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap strict &
-IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap  &
+# Send configs to server when it is available
+# 1. With 'strict' mode, if it fails to send configs it will kill all Java processes
+IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap strict &
+# 2. Without 'strict' mode, if it fails to send configs it will just leave the script and leave Mirth running
+# IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh configurationMap &
 
 exec "$@"

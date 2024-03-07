@@ -11,6 +11,7 @@
 #   - configurationMap: Only push the configuration map to the server. If not present, push all
 #                       configurations.
 #   - strict: If the server fails to accept the configuration map, stop all Java processes.
+#   - no-ssl-check: Skip the SSL certificate check.
 #
 ###################################################################################################
 
@@ -19,7 +20,7 @@ set -eo pipefail
 set -eE # same as: `set -o errexit -o errtrace`
 
 cleanup() {
-  if containsElement "strict"; then
+  if containsParameter "strict"; then
     echo "[config] Strict mode: stopping all Java processes..."
     pkill java
   else
@@ -37,7 +38,7 @@ source ./scripts/load-default-server-url.sh
 
 ARGUMENTS=("$@")
 
-containsElement() {
+containsParameter() {
   for i in "${ARGUMENTS[@]}"; do
     if [ "$i" == "$1" ]; then
       return 0
@@ -53,8 +54,6 @@ isNumber() {
     return 1
   fi
 }
-
-uploadConfigurationMapRes=999
 
 uploadConfigurationMap() {
   echo "[config] -- Config map only --"
@@ -74,31 +73,34 @@ uploadConfigurationMap() {
 
   # If its not a number
   if ! isNumber $res; then
-    uploadConfigurationMapRes="not-number"
+    return 1
   elif [[ $res -ge 300 ]] || [[ $res -lt 200 ]]; then
-    uploadConfigurationMapRes="not-success"
-  else
-    uploadConfigurationMapRes="success"
+    return 2
   fi
+  return 0
 }
 
 setConfigurationMap() {
-  for i in {1..3}; do
-    uploadConfigurationMap
-    if [ $uploadConfigurationMapRes == "not-number" ]; then
-      echo "[config] Failed to push configuration map to the server, trying up to 3 times - Result: $uploadConfigurationMapRes"
-    elif [ $uploadConfigurationMapRes == "not-success" ]; then
-      echo "[config] Failed to push configuration map to the server - Result: $uploadConfigurationMapRes"
+  local counter=0
+  until uploadConfigurationMap; do
+    local resp=$?
+    if [ $counter -ge 3 ]; then
+      echo "[config] Failed to push configuration map to the server, gave up - Result: $resp"
       cleanup
       exit 1
-    else
-      echo "[config] Configuration map pushed to the server."
-      return
     fi
+    if [ $resp -eq 0 ]; then
+      echo "[config] Configuration map pushed to the server."
+      return 0
+    elif [ $resp -eq 2 ]; then
+      echo "[config] Failed to push configuration map to the server - Result: $resp"
+      cleanup
+      exit 1
+    fi
+    echo "[config] Failed to push configuration map to the server, trying up to 3 times - Result: $resp"
+    counter=$((counter + 1))
     sleep 1
   done
-  cleanup
-  exit 1
 }
 
 setAllConfigs() {
@@ -113,9 +115,33 @@ setAllConfigs() {
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f -d push
 }
 
+hasSSLCerts() {
+  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
+  if [[ $sslCertResp == *"carequality"* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+verifySSLCerts() {
+  echo "[config] Checking if SSL cert is there..."
+  local counter=0
+  until hasSSLCerts; do
+    if [ $counter -ge 3 ]; then
+      echo "[config] SSL cert not found, gave up - Result: $resp"
+      cleanup
+      exit 1
+    fi
+    echo "[config] SSL cert not found, trying up to 3 times - Result: $resp"
+    counter=$((counter + 1))
+    sleep 1
+  done
+}
+
 isApiAvailable() {
   local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
+    echo "[config] Resp from API: ${checkApiResult}"
     return 1 # not ready
   elif [[ $checkApiResult -ge 300 ]]; then
     echo "[config] Failed login to server, trying up to $MAX_LOGIN_ATTEMPTS times - Result: $checkApiResult" >/dev/stderr
@@ -134,6 +160,7 @@ waitServerOnline() {
   until curl -s -f -o /dev/null $IHE_GW_URL; do
     sleep 1
   done
+  echo "[config] Web available, waiting for the API to start... (${IHE_GW_URL})"
   until isApiAvailable; do
     sleep 1
   done
@@ -146,8 +173,16 @@ waitServerOnline() {
 #
 ###################################################################################################
 waitServerOnline
+
+if containsParameter "no-ssl-check"; then
+  echo "[config] Skipping SSL cert check..."
+else
+  verifySSLCerts
+fi
+
 echo "[config] Pushing configs to the server..."
-if containsElement "configurationMap"; then
+
+if containsParameter "configurationMap"; then
   setConfigurationMap
 else
   setAllConfigs
