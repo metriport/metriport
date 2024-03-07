@@ -5,7 +5,7 @@ on:
 
 jobs:
   restart:
-    uses: ./.github/workflows/_restart_api.yml
+    uses: ./.github/workflows/_restart-ecs.yml
     with:
       ECR_REPO_URI: ${{ vars.ECR_REPO_URI_SANDBOX }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER_SANDBOX }}

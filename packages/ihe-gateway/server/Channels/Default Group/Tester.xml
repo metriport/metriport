@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
-  <id>f6899f98-6671-44f9-a764-d5f7c1858f02</id>
+  <id>cbdd09d8-af65-4cc6-869a-8c1617a29881</id>
   <nextMetaDataId>2</nextMetaDataId>
-  <name>XCPD Bulk Interface</name>
-  <description>XCPD Bulk Interface channel
- - expects to receive a JSON array containing requests to be transmitted to the XCPD Interface channel
- - takes individual requests and sends to the XCPD Interface channel
-
-Last updated: Dec 08 2023</description>
-  <revision>128</revision>
+  <name>Tester</name>
+  <description/>
+  <revision>2</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -42,14 +38,14 @@ Last updated: Dec 08 2023</description>
       </pluginProperties>
       <listenerConnectorProperties version="4.4.2">
         <host>0.0.0.0</host>
-        <port>8081</port>
+        <port>8099</port>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
-        <responseVariable>None</responseVariable>
+        <responseVariable>d1</responseVariable>
         <respondAfterProcessing>true</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
-        <processingThreads>10</processingThreads>
+        <processingThreads>1</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
             <string>Default Resource</string>
@@ -58,57 +54,38 @@ Last updated: Dec 08 2023</description>
         </resourceIds>
         <queueBufferSize>1000</queueBufferSize>
       </sourceConnectorProperties>
-      <xmlBody>true</xmlBody>
-      <parseMultipart>false</parseMultipart>
+      <xmlBody>false</xmlBody>
+      <parseMultipart>true</parseMultipart>
       <includeMetadata>false</includeMetadata>
-      <binaryMimeTypes>application/json</binaryMimeTypes>
-      <binaryMimeTypesRegex>false</binaryMimeTypesRegex>
+      <binaryMimeTypes>application/.*(?&lt;!json|xml)$|image/.*|video/.*|audio/.*</binaryMimeTypes>
+      <binaryMimeTypesRegex>true</binaryMimeTypesRegex>
       <responseContentType>application/json</responseContentType>
       <responseDataTypeBinary>false</responseDataTypeBinary>
-      <responseStatusCode>$responseCode</responseStatusCode>
-      <responseHeaders class="linked-hash-map">
-        <entry>
-          <string>X-Intermediary</string>
-          <list>
-            <string>Mirth Connect 4.4.2</string>
-          </list>
-        </entry>
-      </responseHeaders>
+      <responseStatusCode>200</responseStatusCode>
+      <responseHeaders class="linked-hash-map"/>
       <responseHeadersVariable/>
       <useResponseHeadersVariable>false</useResponseHeadersVariable>
       <charset>UTF-8</charset>
-      <contextPath>xcpd</contextPath>
+      <contextPath/>
       <timeout>30000</timeout>
       <staticResources/>
     </properties>
     <transformer version="4.4.2">
       <elements>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name>Parse HTTP request</name>
+          <name>parse-request</name>
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-0-Parse HTTP request.js"/>
-        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
-        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name>Parse entries</name>
-          <sequenceNumber>1</sequenceNumber>
-          <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-1-Parse entries.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-0-parse-request.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"/>
       <outboundTemplate encoding="base64"/>
-      <inboundDataType>XML</inboundDataType>
+      <inboundDataType>JSON</inboundDataType>
       <outboundDataType>JSON</outboundDataType>
-      <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-        <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-          <stripNamespaces>false</stripNamespaces>
-        </serializationProperties>
-        <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-          <splitType>Element_Name</splitType>
-          <elementName/>
-          <level>1</level>
-          <query/>
+      <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+        <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+          <splitType>JavaScript</splitType>
           <batchScript/>
         </batchProperties>
       </inboundProperties>
@@ -130,8 +107,8 @@ Last updated: Dec 08 2023</description>
   <destinationConnectors>
     <connector version="4.4.2">
       <metaDataId>1</metaDataId>
-      <name>Stub</name>
-      <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="4.4.2">
+      <name>Destination 1</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="4.4.2">
         <pluginProperties/>
         <destinationConnectorProperties version="4.4.2">
           <queueEnabled>false</queueEnabled>
@@ -153,9 +130,7 @@ Last updated: Dec 08 2023</description>
           <queueBufferSize>1000</queueBufferSize>
           <reattachAttachments>false</reattachAttachments>
         </destinationConnectorProperties>
-        <channelId>none</channelId>
-        <channelTemplate>${message.encodedData}</channelTemplate>
-        <mapVariables/>
+        <script msync-fileref="destinationConnector-Destination 1.js"/>
       </properties>
       <transformer version="4.4.2">
         <elements/>
@@ -194,7 +169,7 @@ Last updated: Dec 08 2023</description>
       <filter version="4.4.2">
         <elements/>
       </filter>
-      <transportName>Channel Writer</transportName>
+      <transportName>JavaScript Writer</transportName>
       <mode>DESTINATION</mode>
       <enabled>true</enabled>
       <waitForPrevious>true</waitForPrevious>
@@ -214,7 +189,7 @@ Last updated: Dec 08 2023</description>
     <removeOnlyFilteredOnCompletion>false</removeOnlyFilteredOnCompletion>
     <removeAttachmentsOnCompletion>false</removeAttachmentsOnCompletion>
     <initialState>STARTED</initialState>
-    <storeAttachments>false</storeAttachments>
+    <storeAttachments>true</storeAttachments>
     <metaDataColumns>
       <metaDataColumn>
         <name>SOURCE</name>
@@ -225,16 +200,6 @@ Last updated: Dec 08 2023</description>
         <name>TYPE</name>
         <type>STRING</type>
         <mappingName>mirth_type</mappingName>
-      </metaDataColumn>
-      <metaDataColumn>
-        <name>TOTAL</name>
-        <type>STRING</type>
-        <mappingName>TCOUNT</mappingName>
-      </metaDataColumn>
-      <metaDataColumn>
-        <name>OUTCOME</name>
-        <type>STRING</type>
-        <mappingName>NOTE</mappingName>
       </metaDataColumn>
     </metaDataColumns>
     <attachmentProperties version="4.4.2">
@@ -250,23 +215,19 @@ Last updated: Dec 08 2023</description>
   </properties>
   <exportData>
     <metadata>
-      <enabled>true</enabled>
+      <enabled>false</enabled>
       <lastModified>
-        <time>1709753514839</time>
+        <time>1709701230316</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
-        <archiveEnabled>false</archiveEnabled>
-        <pruneErroredMessages>true</pruneErroredMessages>
+        <archiveEnabled>true</archiveEnabled>
+        <pruneErroredMessages>false</pruneErroredMessages>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
     <dependentIds/>
-    <dependencyIds>
-      <string>c240418b-26ef-4836-a857-01c74fb07963</string>
-    </dependencyIds>
+    <dependencyIds/>
     <channelTags/>
   </exportData>
 </channel>

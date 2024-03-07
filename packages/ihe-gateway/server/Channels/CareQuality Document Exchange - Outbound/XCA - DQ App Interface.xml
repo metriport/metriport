@@ -6,7 +6,7 @@
     - forwards a single request back to the calling app or DB
     
   </description>
-  <revision>33</revision>
+  <revision>124</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -227,8 +227,8 @@
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708811127360</time>
-        <timezone>America/New_York</timezone>
+        <time>1709753610426</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -238,7 +238,9 @@
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
+    <dependentIds>
+      <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
+    </dependentIds>
     <dependencyIds/>
     <channelTags/>
   </exportData>

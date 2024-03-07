@@ -44,26 +44,6 @@ Execute() {
    IHE_GW_URL=$IHE_GW_URL_INBOUND
    source ./scripts/push-to-server.sh
 
-   # Can't restart servers after the push because the configs are stored on the filesystem and not in the DB.
-   # To be fixed on https://github.com/metriport/metriport-internal/issues/1564
-   #   echo "Restarting the outbound service"
-   #   set -o allexport
-   #   ECS_SERVICE=$ECS_SERVICE_OUTBOUND
-   #   set +o allexport
-   #   ../scripts/restart-ecs.sh &
-
-   #   echo "Restarting the inbound service"
-   #   set -o allexport
-   #   ECS_SERVICE=$ECS_SERVICE_INBOUND
-   #   set +o allexport
-   #   ../scripts/restart-ecs.sh &
-
-   #   set -o allexport
-   #   ECS_SERVICE=""
-   #   set +o allexport
-
-   #   echo "Waiting for them to finish..."
-   #   wait
    echo "Done."
 }
 
