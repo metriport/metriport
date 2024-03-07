@@ -173,8 +173,9 @@ export default class IHEGatewayConstruct extends Construct {
     const portToListener: { [key: number]: ApplicationListener } = {};
 
     const healthCheck: HealthCheck = {
-      healthyThresholdCount: 2,
-      unhealthyThresholdCount: 2,
+      healthyThresholdCount: 4,
+      unhealthyThresholdCount: 4,
+      interval: Duration.seconds(30),
       path: "/",
       port: "8080",
       protocol: Protocol.HTTP,
