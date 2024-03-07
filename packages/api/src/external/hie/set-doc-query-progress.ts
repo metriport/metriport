@@ -16,7 +16,6 @@ import { getCQData } from "../carequality/patient";
 import { processDocQueryProgressWebhook } from "../../command/medical/document/process-doc-query-webhook";
 
 type StaticProgress = Pick<Progress, "status" | "total">;
-type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
 
 export type SetDocQueryProgress = {
   source: MedicalDataSource;
@@ -93,7 +92,7 @@ export async function setDocQueryProgress({
 export function aggregateAndSetHIEProgresses(
   existingPatient: PatientModel,
   updatedExternalData: PatientExternalData
-): DocumentQueryProgress {
+) {
   const documentQueryProgress = !existingPatient.data.documentQueryProgress
     ? {}
     : existingPatient.data.documentQueryProgress;
@@ -103,24 +102,9 @@ export function aggregateAndSetHIEProgresses(
 
   const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
 
-  const updatedDocumentQueryProgress: DocumentQueryProgress = {
+  const updatedDocumentQueryProgress = {
     ...documentQueryProgress,
-    ...(aggregatedDocProgress.convert
-      ? {
-          convert: {
-            ...documentQueryProgress.convert,
-            ...aggregatedDocProgress.convert,
-          },
-        }
-      : {}),
-    ...(aggregatedDocProgress.download
-      ? {
-          download: {
-            ...documentQueryProgress.download,
-            ...aggregatedDocProgress.download,
-          },
-        }
-      : {}),
+    ...aggregatedDocProgress,
   };
 
   return updatedDocumentQueryProgress;
@@ -153,6 +137,8 @@ export function setHIEDocProgress(
 
   return externalData;
 }
+
+type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
 
 export function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
   download?: RequiredProgress;

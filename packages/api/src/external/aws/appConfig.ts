@@ -13,8 +13,6 @@ const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
   "cxsWithADHDMRFeatureFlag",
   "cxsWithIncreasedSandboxLimitFeatureFlag",
   "cxsWithNoWebhookPongFeatureFlag",
-  "commonwellFeatureFlag",
-  "carequalityFeatureFlag",
 ];
 
 /**
@@ -82,25 +80,6 @@ async function getCxsWithFeatureFlagEnabled(
   return [];
 }
 
-/**
- * Checks whether the specified feature flag is enabled.
- *
- * @returns true if enabled; false otherwise
- */
-async function isFeatureFlagEnabled(featureFlagName: keyof FeatureFlagDatastore): Promise<boolean> {
-  let isEnabled = false;
-  try {
-    const featureFlag = await getFeatureFlagValueLocal(featureFlagName);
-    isEnabled = featureFlag.enabled;
-  } catch (error) {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-  }
-  return isEnabled;
-}
-
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithEnhancedCoverageFeatureFlag");
 }
@@ -130,12 +109,4 @@ export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
 export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
-}
-
-export async function isCommonwellEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("commonwellFeatureFlag");
-}
-
-export async function isCarequalityEnabled(): Promise<boolean> {
-  return isFeatureFlagEnabled("carequalityFeatureFlag");
 }

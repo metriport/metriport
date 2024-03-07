@@ -67,8 +67,10 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    // START TODO #1572 - remove
+    const commonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    // const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    // END TODO #1572 - remove
     const payload = patientCreateSchema.parse(req.body);
 
     if (Config.isSandbox()) {
@@ -87,7 +89,7 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
+    const patient = await createPatient(patientCreate, commonwell, true);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -111,8 +113,10 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    // START TODO #1572 - remove
+    const commonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    // const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
+    // END TODO #1572 - remove
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
@@ -128,12 +132,7 @@ router.put(
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(
-      patientUpdate,
-      true,
-      forceCommonwell,
-      forceCarequality
-    );
+    const updatedPatient = await updatePatient(patientUpdate, true, commonwell, true);
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })

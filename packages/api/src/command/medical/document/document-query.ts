@@ -10,7 +10,6 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
@@ -45,17 +44,21 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
-  forceCommonwell = false,
-  forceCarequality = false,
-}: {
+  // START TODO #1572 - remove
+  commonwell = false,
+  carequality = true,
+}: // END TODO #1572 - remove
+{
   cxId: string;
   patientId: string;
   facilityId?: string;
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
-  forceCommonwell?: boolean;
-  forceCarequality?: boolean;
+  // START TODO #1572 - remove
+  commonwell?: boolean;
+  carequality?: boolean;
+  // END TODO #1572 - remove
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -85,8 +88,7 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  const commonwellEnabled = await isCommonwellEnabled();
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+  if (commonwell || Config.isSandbox()) {
     getDocumentsFromCW({
       patient,
       facilityId,
@@ -96,8 +98,7 @@ export async function queryDocumentsAcrossHIEs({
     }).catch(emptyFunction);
   }
 
-  const carequalityEnabled = await isCarequalityEnabled();
-  if (carequalityEnabled || forceCarequality) {
+  if (carequality) {
     getDocumentsFromCQ({
       patient,
       requestId,

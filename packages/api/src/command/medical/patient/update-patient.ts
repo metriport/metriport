@@ -2,7 +2,6 @@ import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { processAsyncError } from "../../../errors";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
@@ -27,8 +26,8 @@ export async function updatePatient(
   patientUpdate: PatientUpdateCmd,
   emit = true,
   // START TODO #1572 - remove
-  forceCommonwell?: boolean,
-  forceCarequality?: boolean
+  commonwell?: boolean,
+  carequality?: boolean
   // END TODO #1572 - remove
 ): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
@@ -42,14 +41,12 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // Intentionally asynchronous
-  const commonwellEnabled = await isCommonwellEnabled();
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+  if (commonwell || Config.isSandbox()) {
     cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
   }
 
   // Intentionally asynchronous
-  const carequalityEnabled = await isCarequalityEnabled();
-  if (carequalityEnabled || forceCarequality) {
+  if (carequality) {
     cqCommands.patient
       .discover(result, facility.data.npi)
       .catch(processAsyncError(`cq.patient.update`));
