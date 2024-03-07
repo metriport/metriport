@@ -21,7 +21,7 @@ if (msg.patientMatch) {
 		prpa.acknowledgement.typeCode.@code = 'AA';
 		
 		// OK (data found, no errors) is returned in Control Act wrapper
-		prpa.controlActProcess.queryAck.queryResponseCode.@code = 'AA';
+		prpa.controlActProcess.queryAck.queryResponseCode.@code = 'OK';
 
 		delete prpa.controlActProcess.reasonOf;
 
