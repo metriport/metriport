@@ -106,11 +106,9 @@ setConfigurationMap() {
 setAllConfigs() {
   echo "[config] -- Full config --"
   # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
-  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
-
+  # ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
   # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
-  sleep 5
-
+  # sleep 5
   # "-m" flag = default behavior: Expands everything to the most granular level (Javascript, Sql, etc).
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f -d push
 }
@@ -174,12 +172,6 @@ waitServerOnline() {
 ###################################################################################################
 waitServerOnline
 
-if containsParameter "no-ssl-check"; then
-  echo "[config] Skipping SSL cert check..."
-else
-  verifySSLCerts
-fi
-
 echo "[config] Pushing configs to the server..."
 
 if containsParameter "configurationMap"; then
@@ -187,4 +179,11 @@ if containsParameter "configurationMap"; then
 else
   setAllConfigs
 fi
+
+if containsParameter "no-ssl-check"; then
+  echo "[config] Skipping SSL cert check..."
+else
+  verifySSLCerts
+fi
+
 echo "[config] Done."
