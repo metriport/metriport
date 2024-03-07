@@ -57,8 +57,8 @@ rm -rf ./server/Channels
 rm -rf ./server/CodeTemplates
 rm -rf ./server/GlobalScripts
 
-# "-m" flag = default behavior: Expands everything to the most granular level (Javascript, Sql, etc).
-./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f pull
+# "-m" flag = "code" (default behavior): Expands everything to the most granular level (Javascript, Sql, etc).
+./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -m code -f pull
 
 # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
 ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t $IHE_GW_FULL_BACKUP_LOCATION --include-configuration-map -m backup -f pull

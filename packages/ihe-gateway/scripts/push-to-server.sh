@@ -5,11 +5,13 @@
 # Script to push configurations to the IHE Gateway.
 #
 # Usage:
-#   ./scripts/push-to-server.sh [configurationMap] [strict]
+#   ./scripts/push-to-server.sh [configurationMap|<include-full-backup>] [strict] [no-ssl-check]
 #
 # Arguments:
 #   - configurationMap: Only push the configuration map to the server. If not present, push all
 #                       configurations.
+#   - include-full-backup: Include the full backup in the push (only when 'configurationMap' is
+#                          not set).
 #   - strict: If the server fails to accept the configuration map, stop all Java processes.
 #   - no-ssl-check: Skip the SSL certificate check.
 #
@@ -24,7 +26,7 @@ cleanup() {
     echo "[config] Strict mode: stopping all Java processes..."
     pkill java
   else
-    echo "[config] Non-strict mode, just leaving..."
+    echo "[config] Non-strict mode: just leaving..."
   fi
 }
 trap cleanup ERR
@@ -105,12 +107,16 @@ setConfigurationMap() {
 
 setAllConfigs() {
   echo "[config] -- Full config --"
-  # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
-  # ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
-  # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
-  # sleep 5
-  # "-m" flag = default behavior: Expands everything to the most granular level (Javascript, Sql, etc).
-  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -f -d push
+
+  if containsParameter "include-full-backup"; then
+    # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
+    ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
+    # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
+    sleep 5
+  fi
+
+  # "-m" flag = "code" (default behavior): Expands everything to the most granular level (Javascript, Sql, etc).
+  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
 }
 
 hasSSLCerts() {
