@@ -41,12 +41,11 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
 									<HomeCommunityId>{'urn:oid:' + entry.homeCommunityId.toString()}</HomeCommunityId>
 									<RepositoryUniqueId>{entry.repositoryUniqueId.toString()}</RepositoryUniqueId>
 									<DocumentUniqueId>{entry.docUniqueId.toString()}</DocumentUniqueId>
-									
+
 									<Document>{doc64}</Document>
 								</DocumentResponse>;
 				_response.*::RegistryResponse.appendChild(docResponse);
 
-                
             } catch(ex) {
                 if (globalMap.containsKey('TEST_MODE')) logger.error('Code Template: getXCAITI39QueryResponse - ' + ex);
                 var outcome = {"resourceType": "OperationOutcome", "issue": [{"severity": "error", "code": "XDSRegistryError", "details": {"text": "" } }]};
