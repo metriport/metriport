@@ -71,7 +71,7 @@ const initDB = async (): Promise<void> => {
     dialect: dbCreds.engine,
     pool: {
       max: 300,
-      min: 20,
+      min: 50,
       acquire: 30000,
       idle: 10000,
     },

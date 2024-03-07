@@ -15,6 +15,7 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
@@ -45,7 +46,7 @@ export async function queryDocumentsAcrossHIEs({
   forceQuery = false,
   // START TODO #1572 - remove
   commonwell = false,
-  carequality = false,
+  carequality = true,
 }: // END TODO #1572 - remove
 {
   cxId: string;
@@ -87,7 +88,7 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  if (commonwell) {
+  if (commonwell || Config.isSandbox()) {
     getDocumentsFromCW({
       patient,
       facilityId,

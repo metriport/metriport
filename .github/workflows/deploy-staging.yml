@@ -51,15 +51,14 @@ jobs:
               - "packages/core/**"
               - "package*.json"
             ihe-gw-config:
-              - "packages/ihe-gateway/config/**"
-              - "packages/ihe-gateway/scripts/**"
               - "packages/ihe-gateway/server/**"
             ihe-gw-server:
               - "packages/ihe-gateway/Dockerfile"
               - "packages/ihe-gateway/entrypoint.sh"
-              - "packages/ihe-gateway/config"
-              - "packages/ihe-gateway/scripts"
-              - "packages/ihe-gateway/server"
+              - "packages/ihe-gateway/config/custom-extensions/**"
+              - "packages/ihe-gateway/config/custom-libs/**"
+              - "packages/ihe-gateway/config/schemas/**"
+              - "packages/ihe-gateway/scripts/**"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:
               - "packages/fhir-converter/Dockerfile"
@@ -102,7 +101,23 @@ jobs:
       deploy_env: "staging"
       location_services_cdk_stack: ${{ vars.LOCATION_SERVICES_STACK_NAME_STAGING }}
       cdk_stack: ${{ vars.API_STACK_NAME_STAGING }}
-      ihe_cdk_stack: ${{ vars.IHE_STACK_NAME }}
+      AWS_REGION: ${{ vars.API_REGION_STAGING }}
+    secrets:
+      SERVICE_PAT: ${{ secrets.SERVICE_PAT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+  infra-ihe-gw:
+    uses: ./.github/workflows/_deploy-cdk-ihe-gw.yml
+    if: ${{ needs.files-changed.outputs.infra-lambdas == 'true' }}
+    needs: files-changed
+    with:
+      deploy_env: "staging"
+      cdk_stack: ${{ vars.IHE_STACK_NAME }}
       AWS_REGION: ${{ vars.API_REGION_STAGING }}
       IHE_GW_CONFIG_BUCKET_NAME: ${{ vars.IHE_GW_CONFIG_BUCKET_NAME }}
     secrets:
@@ -143,11 +158,11 @@ jobs:
 
   release:
     uses: ./.github/workflows/_release.yml
-    needs: [api, infra-api-lambdas, ihe-gw-server]
+    needs: [api, infra-api-lambdas, infra-ihe-gw, ihe-gw-server]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
-    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.ihe-gw-server.result == 'success') }}
+    if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-ihe-gw.result == 'success' || needs.ihe-gw-server.result == 'success') }}
     secrets: inherit
 
   e2e-tests:

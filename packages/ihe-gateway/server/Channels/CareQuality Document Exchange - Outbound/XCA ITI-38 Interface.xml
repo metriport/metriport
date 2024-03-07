@@ -6,7 +6,7 @@
  - expects to receive a single requests to be transmitted to the XCA ITI-38 [Cross Gateway Query] Processor channel
 
 Last updated: Nov 29 2023</description>
-  <revision>315</revision>
+  <revision>124</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -245,7 +245,7 @@ Last updated: Nov 29 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709002480992</time>
+        <time>1709753540015</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
@@ -256,8 +256,12 @@ Last updated: Nov 29 2023</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>574e7271-1b21-4b79-82c3-fead249fc450</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

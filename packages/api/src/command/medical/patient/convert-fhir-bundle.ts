@@ -11,7 +11,6 @@ import { makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
 import { convertDoc } from "../document/document-download";
@@ -59,23 +58,8 @@ export async function handleBundleToMedicalRecord({
     return buildBundle(patient, url, conversionType);
   }
 
-  const fhir = makeFhirApi(patient.cxId);
-
-  const fhirPatient = await fhir.readResource("Patient", patient.id);
-
-  const bundleWithPatient: Bundle<Resource> = {
-    ...bundle,
-    total: (bundle.total ?? 0) + 1,
-    entry: [
-      {
-        resource: fhirPatient,
-      },
-      ...(bundle.entry ?? []),
-    ],
-  };
-
   const url = await convertFHIRBundleToMedicalRecord({
-    bundle: bundleWithPatient,
+    bundle,
     patient,
     resources,
     dateFrom,

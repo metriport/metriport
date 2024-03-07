@@ -42,7 +42,7 @@ export function createOutboundDocumentQueryRequests({
         purposeOfUse: createPurposeOfUse(),
       },
       gateway: {
-        homeCommunityId: externalGateway.systemId,
+        homeCommunityId: externalGateway.oid,
         url: externalGateway.url,
       },
       externalGatewayPatient: {

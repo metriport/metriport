@@ -4,7 +4,7 @@
   <name>XCA - DR App Interface</name>
   <description>XCA App Interface channel
     - forwards a single request back to the calling app or DB</description>
-  <revision>243</revision>
+  <revision>124</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -225,8 +225,8 @@
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1708811106854</time>
-        <timezone>America/New_York</timezone>
+        <time>1709753616727</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -236,7 +236,9 @@
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
+    <dependentIds>
+      <string>c7b1fb54-6dce-410c-a16a-e3ba6b6c6722</string>
+    </dependentIds>
     <dependencyIds/>
     <channelTags/>
   </exportData>

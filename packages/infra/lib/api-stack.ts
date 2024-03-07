@@ -77,7 +77,7 @@ export class APIStack extends Stack {
     this.alarmAction = slackNotification?.alarmAction;
 
     //-------------------------------------------
-    // VPC + NAT Gateway
+    // VPC + NAT Gateway.
     //-------------------------------------------
     const vpcConstructId = "APIVpc";
     this.vpc = new ec2.Vpc(this, vpcConstructId, {
@@ -352,7 +352,8 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
-      maxPollingDuration: Duration.minutes(15),
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(5),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -363,6 +364,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
+      // TODO move this to a config
       maxPollingDuration: Duration.minutes(15),
     });
 
@@ -374,6 +376,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
+      // TODO move this to a config
       maxPollingDuration: Duration.minutes(15),
     });
 

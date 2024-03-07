@@ -10,10 +10,12 @@ import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
-import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
+import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
+import { scheduleDocQuery } from "./schedule-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -39,17 +41,37 @@ export async function getDocumentsFromCQ({
       getCQPatientData({ id: patient.id, cxId }),
     ]);
 
+    // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
+    if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
+      await scheduleDocQuery({ requestId, patient });
+      return;
+    }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
 
     const linksWithDqUrl: CQLink[] = [];
     const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
-      const gateway = await getCQDirectoryEntryOrFail(patientLink.oid);
-      if (!gateway.urlDQ) {
+      const gateway = await getCQDirectoryEntry(patientLink.oid);
+
+      if (!gateway) {
+        const msg = `Gateway not found - Doc Query`;
+        log(`${msg}: ${patientLink.oid} skipping...`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.pd.getCQDirectoryEntry`,
+            patientId,
+            requestId,
+            cxId,
+            gateway: patientLink,
+          },
+        });
+        return;
+      } else if (!gateway.urlDQ) {
         log(`Gateway ${gateway.id} has no DQ URL, skipping...`);
         return;
       }
+
       linksWithDqUrl.push({
         ...patientLink,
         url: gateway.urlDQ,

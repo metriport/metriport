@@ -40544,7 +40544,9 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
       <userId>1</userId>
     </metadata>
     <dependentIds/>
-    <dependencyIds/>
+    <dependencyIds>
+      <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

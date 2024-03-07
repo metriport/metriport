@@ -1,6 +1,7 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,13 +9,12 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
-import { cqExtension } from "../../carequality/extension";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
-import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
@@ -70,21 +70,33 @@ export async function processOutboundDocumentQueryResps({
     // Since we have most of the document contents when doing the document query,
     // we will store this in FHIR and then upsert the reference to the s3 object in FHIR
     // when doing the doc retrieval
-    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId);
+    await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
 
     const respWithDRUrl: OutboundDocumentQueryResp[] = [];
 
     const replaceDqUrlWithDrUrl = async (
       outboundDocumentQueryResp: OutboundDocumentQueryResp
     ): Promise<void> => {
-      const gateway = await getCQDirectoryEntryOrFail(
-        outboundDocumentQueryResp.gateway.homeCommunityId
-      );
+      const gateway = await getCQDirectoryEntry(outboundDocumentQueryResp.gateway.homeCommunityId);
 
-      if (!gateway.urlDR) {
-        console.log(`Gateway ${gateway.id} has no DR URL, skipping...`);
+      if (!gateway) {
+        const msg = `Gateway not found - Doc Retrieval`;
+        log(`${msg}: ${outboundDocumentQueryResp.gateway.homeCommunityId} skipping...`);
+        capture.message(msg, {
+          extra: {
+            context: `cq.dq.getCQDirectoryEntry`,
+            patientId,
+            requestId,
+            cxId,
+            gateway: outboundDocumentQueryResp.gateway,
+          },
+        });
+        return;
+      } else if (!gateway.urlDR) {
+        log(`Gateway ${gateway.id} has no DR URL, skipping...`);
         return;
       }
+
       respWithDRUrl.push({
         ...outboundDocumentQueryResp,
         gateway: {
@@ -125,6 +137,7 @@ export async function processOutboundDocumentQueryResps({
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -173,7 +186,8 @@ function buildInterrupt({
 async function storeInitDocRefInFHIR(
   docRefs: DocumentReferenceWithMetriportId[],
   cxId: string,
-  patientId: string
+  patientId: string,
+  log: typeof console.log
 ) {
   await executeAsynchronously(
     docRefs,
@@ -186,7 +200,7 @@ async function storeInitDocRefInFHIR(
         await upsertDocumentToFHIRServer(cxId, fhirDocRef);
       } catch (error) {
         const msg = `Failed to store initial doc ref in FHIR`;
-        console.log(`${msg}: ${errorToString(error)}`);
+        log(`${msg}: ${errorToString(error)}`);
         capture.message(msg, {
           extra: {
             context: `cq.storeInitDocRefInFHIR`,

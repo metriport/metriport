@@ -14,4 +14,6 @@ if (!baseAddress) {
 const destinationURL = baseAddress + "/internal/carequality/patient-discovery/response";
 globalChannelMap.put("URL", destinationURL);
 
+logger.info("Deploying " + channelName);
+
 return;
