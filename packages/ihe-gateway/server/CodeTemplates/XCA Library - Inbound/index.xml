@@ -14,8 +14,7 @@ Last updated: Jan 02 2024</description>
   <includeNewChannels>false</includeNewChannels>
   <enabledChannelIds>
     <string>279057c4-65eb-4cbd-ae23-6d9d66de14a0</string>
-    <string>8af32eb7-1153-4c8f-be64-db8cb45ceb1b</string>
-    <string>3d78b44c-d132-485a-8423-f5a6c681f249</string>
+    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a1</string>
   </enabledChannelIds>
   <disabledChannelIds>
     <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
@@ -34,7 +33,6 @@ Last updated: Jan 02 2024</description>
     <string>574e7271-1b21-4b79-82c3-fead249fc450</string>
     <string>ce8aa1cf-5df6-4825-82c9-b51d5b2dfcfa</string>
     <string>ed739638-6120-4aee-bcb2-acc661f2b12b</string>
-    <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
   </disabledChannelIds>
   <codeTemplates>
     <codeTemplate version="4.4.2">

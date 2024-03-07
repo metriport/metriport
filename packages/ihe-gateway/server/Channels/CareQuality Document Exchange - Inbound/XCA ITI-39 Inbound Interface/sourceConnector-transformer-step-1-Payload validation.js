@@ -1,16 +1,12 @@
+logger.info("sourceConnector-transformer-step-1-Payload validation.js");
 var payload = null, error = null;
 
 if (msg.*::Body.*::AdhocQueryRequest.length() > 0) {
-	payload = msg.*::Body.*::AdhocQueryRequest;
-	destinationSet.removeAllExcept('XCA ITI-38 Inbound Processor');
-	
+	error = 'ITI-39 Request on ITI-39 Endpoint';
+
 } else if (msg.*::Body.*::RetrieveDocumentSetRequest.length() > 0) {
-	payload = msg.*::Body.*::RetrieveDocumentSetRequest;
-	destinationSet.removeAllExcept('XCA ITI-39 Inbound Processor');
-	
-} else {
-	error = 'Unknown request type';
-}
+	payload = msg.*::Body.*::RetrieveDocumentSetRequest;	
+} 
 
 if (payload) {
 	channelMap.put('Request', payload);
@@ -47,7 +43,7 @@ if (error) {
 		soapFault.soap::Header.wsa::Action = msg.*::Header.*::Action.toString() + 'Response';
 		soapFault.soap::Header.wsa::RelatesTo = msg.*::Header.*::MessageID.toString();
 
-		responseMap.put('XCA_RESPONSE', soapFault.toString());
+		responseMap.put('RESPONSE', soapFault.toString());
 	}
 	destinationSet.removeAll();
 	return;

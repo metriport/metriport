@@ -3,14 +3,9 @@ var payload = null, error = null;
 
 if (msg.*::Body.*::AdhocQueryRequest.length() > 0) {
 	payload = msg.*::Body.*::AdhocQueryRequest;
-	destinationSet.removeAllExcept('XCA ITI-38 Inbound Processor');
 	
 } else if (msg.*::Body.*::RetrieveDocumentSetRequest.length() > 0) {
-	payload = msg.*::Body.*::RetrieveDocumentSetRequest;
-	destinationSet.removeAllExcept('XCA ITI-39 Inbound Processor');
-	
-} else {
-	error = 'Unknown request type';
+	error = 'ITI-39 Request on ITI-38 Endpoint';
 }
 
 if (payload) {

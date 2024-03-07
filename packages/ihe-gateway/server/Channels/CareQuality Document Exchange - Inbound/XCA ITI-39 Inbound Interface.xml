@@ -48,7 +48,7 @@ Last updated: Jan 02 2024
         <port>9093</port>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
-        <responseVariable>XCA_RESPONSE</responseVariable>
+        <responseVariable>RESPONSE</responseVariable>
         <respondAfterProcessing>true</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>true</firstResponse>
@@ -5503,6 +5503,24 @@ Last updated: Jan 02 2024
           <enabled>true</enabled>
           <script msync-fileref="sourceConnector-transformer-step-1-Payload validation.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Get Saml Attributes</name>
+          <sequenceNumber>2</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-2-Get SAML attributes.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Validate Request</name>
+          <sequenceNumber>3</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-3-Validate request.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Get Query Paraameters</name>
+          <sequenceNumber>4</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-4-Get Query Parameters.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"/>
       <outboundTemplate encoding="base64"/>
@@ -5544,112 +5562,8 @@ Last updated: Jan 02 2024
   <destinationConnectors>
     <connector version="4.4.2">
       <metaDataId>1</metaDataId>
-      <name>XCA ITI-38 Inbound Processor</name>
-      <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="4.4.2">
-        <pluginProperties/>
-        <destinationConnectorProperties version="4.4.2">
-          <queueEnabled>false</queueEnabled>
-          <sendFirst>false</sendFirst>
-          <retryIntervalMillis>10000</retryIntervalMillis>
-          <regenerateTemplate>false</regenerateTemplate>
-          <retryCount>0</retryCount>
-          <rotate>false</rotate>
-          <includeFilterTransformer>false</includeFilterTransformer>
-          <threadCount>1</threadCount>
-          <threadAssignmentVariable/>
-          <validateResponse>false</validateResponse>
-          <resourceIds class="linked-hash-map">
-            <entry>
-              <string>Default Resource</string>
-              <string>[Default Resource]</string>
-            </entry>
-          </resourceIds>
-          <queueBufferSize>1000</queueBufferSize>
-          <reattachAttachments>false</reattachAttachments>
-        </destinationConnectorProperties>
-        <channelId>8af32eb7-1153-4c8f-be64-db8cb45ceb1b</channelId>
-        <channelTemplate>${message.encodedData}</channelTemplate>
-        <mapVariables/>
-      </properties>
-      <transformer version="4.4.2">
-        <elements/>
-        <inboundDataType>XML</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
-            <batchScript/>
-          </batchProperties>
-        </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
-            <batchScript/>
-          </batchProperties>
-        </outboundProperties>
-      </transformer>
-      <responseTransformer version="4.4.2">
-        <elements>
-          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-            <name>Reprocess response</name>
-            <sequenceNumber>0</sequenceNumber>
-            <enabled>true</enabled>
-            <script msync-fileref="destinationConnector-XCA ITI-38 Inbound Processor-responseTransformer-step-0-Reprocess response.js"/>
-          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
-        </elements>
-        <inboundTemplate encoding="base64"/>
-        <outboundTemplate encoding="base64"/>
-        <inboundDataType>XML</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
-            <batchScript/>
-          </batchProperties>
-        </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
-            <batchScript/>
-          </batchProperties>
-        </outboundProperties>
-      </responseTransformer>
-      <filter version="4.4.2">
-        <elements/>
-      </filter>
-      <transportName>Channel Writer</transportName>
-      <mode>DESTINATION</mode>
-      <enabled>true</enabled>
-      <waitForPrevious>true</waitForPrevious>
-    </connector>
-    <connector version="4.4.2">
-      <metaDataId>2</metaDataId>
-      <name>XCA ITI-39 Inbound Processor</name>
-      <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="4.4.2">
+      <name>AWS Lambda Interface</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="4.4.2">
         <pluginProperties/>
         <destinationConnectorProperties version="4.4.2">
           <queueEnabled>false</queueEnabled>
@@ -5671,17 +5585,15 @@ Last updated: Jan 02 2024
           <queueBufferSize>1000</queueBufferSize>
           <reattachAttachments>true</reattachAttachments>
         </destinationConnectorProperties>
-        <channelId>279057c4-65eb-4cbd-ae23-6d9d66de14a1</channelId>
-        <channelTemplate>${message.encodedData}</channelTemplate>
-        <mapVariables/>
+        <script msync-fileref="destinationConnector-AWS Lambda Interface.js"/>
       </properties>
       <transformer version="4.4.2">
         <elements>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-            <name>Set Attributes</name>
+            <name>Set Lambda params</name>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script msync-fileref="destinationConnector-XCA ITI-39 Inbound Processor-transformer-step-0-Set Attributes.js"/>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-transformer-step-0-Set Lambda params.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
@@ -5719,34 +5631,28 @@ Last updated: Jan 02 2024
             <name>Process response</name>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script msync-fileref="destinationConnector-XCA ITI-39 Inbound Processor-responseTransformer-step-0-Process response.js"/>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Process response</name>
+            <sequenceNumber>1</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Extract response.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
-        <inboundTemplate encoding="base64"/>
+        <inboundTemplate encoding="base64">ewoJInJlc291cmNlVHlwZSI6ICJQYXRpZW50IiwKCSJleHRlbnNpb24iOiBbCgkJewoJCQkidXJsIjogImh0dHA6Ly9obDcub3JnL2ZoaXIvU3RydWN0dXJlRGVmaW5pdGlvbi9wYXRpZW50LWJpcnRoUGxhY2UiLAoJCQkidmFsdWVBZGRyZXNzIjogewoJCQkJImNpdHkiOiAiU2VhdHRsZSIsCgkJCQkic3RhdGUiOiAiV0EiCgkJCX0KCQl9LCB7CgkJCSJ1cmwiOiAiaHR0cDovL2hsNy5vcmcvZmhpci9TdHJ1Y3R1cmVEZWZpbml0aW9uL3BhdGllbnQtbW90aGVyc01haWRlbk5hbWUiLAoJCQkidmFsdWVTdHJpbmciOiAiUm9iZXJ0YSIKCQl9CgldLAoJImlkZW50aWZpZXIiOiBbCgkJewoJCQkic3lzdGVtIjogImh0dHA6Ly9obDcub3JnL2ZoaXIvc2lkL3VzLXNzbiIsCgkJCSJ2YWx1ZSI6ICI1NDMtMzQtNTYyMSIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAidXJuOm9pZDoxLjIuODQwLjExNDM1MC4xLjEzLjExNTExLjMuNy4zLjY4ODg4NC4xMDAuMTAwMCIsCgkJCSJ2YWx1ZSI6ICJFVjEyWkdSN0o2SzRNRjgiCgkJfQoJXSwKCSJuYW1lIjogWwoJCXsKCQkJImZhbWlseSI6ICJCYXNzZXR0IiwKCQkJImdpdmVuIjogWwoJCQkJIkRvbiIsICJDLiIKCQkJXQoJCX0sIHsKCQkJImZhbWlseSI6ICJCYXNzZXR0IiwKCQkJImdpdmVuIjogWwoJCQkJIkRvbm55IiwgIkpyIiwgIlJvc3kiCgkJCV0sCgkJCSJwcmVmaXgiOiBbCgkJCQkiRFIiCgkJCV0sCgkJCSJzdWZmaXgiOiBbCgkJCQkiSUlJIgoJCQldCgkJfQoJXSwKCSJ0ZWxlY29tIjogWwoJCXsKCQkJInN5c3RlbSI6ICJwaG9uZSIsCgkJCSJ2YWx1ZSI6ICI1MDMtNjI5LTU1NDEiCgkJfSwgewoJCQkic3lzdGVtIjogInBob25lIiwKCQkJInZhbHVlIjogIjUwMy02OTItODk1NSIsCgkJCSJ1c2UiOiAiaG9tZSIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAiZmF4IiwKCQkJInZhbHVlIjogIjUwMy02OTItODk1NiIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAiZW1haWwiLAoJCQkidmFsdWUiOiAiZGJhc3NldHRAYW9sLmNvbSIsCgkJCSJ1c2UiOiAidGVtcCIKCQl9CgldLAoJImdlbmRlciI6ICJtYWxlIiwKCSJiaXJ0aERhdGUiOiAiMTk1OC0wNC0wNiIsCgkiYWRkcmVzcyI6IFsKCQl7CgkJCSJsaW5lIjogWwoJCQkJIjEyMTU1IEJyb2Fkd2F5IiwgIlNXIgoJCQldLAoJCQkiY2l0eSI6ICJCZWF2ZXJ0b24iLAoJCQkic3RhdGUiOiAiSUwiLAoJCQkicG9zdGFsQ29kZSI6ICI2MDAwNSIsCgkJCSJjb3VudHJ5IjogIlVTQSIKCQl9LCB7CgkJCSJsaW5lIjogWwoJCQkJIjEyMyBNYWluIFN0cmVldCIKCQkJXSwKCQkJImNpdHkiOiAiVEVTVCIsCgkJCSJzdGF0ZSI6ICJJTCIsCgkJCSJwb3N0YWxDb2RlIjogIjYwMDIyIiwKCQkJImNvdW50cnkiOiAiVVNBIgoJCX0KCV0KfQ==</inboundTemplate>
         <outboundTemplate encoding="base64"/>
-        <inboundDataType>XML</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
@@ -5754,7 +5660,7 @@ Last updated: Jan 02 2024
       <filter version="4.4.2">
         <elements/>
       </filter>
-      <transportName>Channel Writer</transportName>
+      <transportName>JavaScript Writer</transportName>
       <mode>DESTINATION</mode>
       <enabled>true</enabled>
       <waitForPrevious>true</waitForPrevious>

@@ -1,5 +1,5 @@
+logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Extract response.js");
 // Process simple SOAP or MTOM responses
-
 if (channelMap.containsKey('MTOM')) {
 
 	// MTOM response with Base64 encoded document contents as separate attachments
@@ -44,10 +44,10 @@ if (channelMap.containsKey('MTOM')) {
 
 	// SN: Undocumented Mirth XCA Interop feature
 	channelMap.put('responseMultipartSettings', multipart);
-	responseMap.put('XCA_RESPONSE', msg.toString());
+	responseMap.put('RESPONSE', msg.toString());
 
 } else {
 	// Simple SOAP response with Base64 encoded documents inline
 	var result = AttachmentUtil.reAttachMessage(msg.toString(), connectorMessage);
-	responseMap.put('XCA_RESPONSE', result.toString());
+	responseMap.put('RESPONSE', result.toString());
 }

@@ -1,3 +1,4 @@
+logger.info("sourceConnector-transformer-step-0-Set Stat.js");
 var header = sourceMap.get('headers').getHeader('Content-Type');
 if (header.indexOf('application/xop+xml') > 0) channelMap.put('MTOM', header.toString());
 
