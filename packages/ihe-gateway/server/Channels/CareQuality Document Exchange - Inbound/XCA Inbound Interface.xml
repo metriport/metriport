@@ -14,7 +14,7 @@ Note:
 Last updated: Jan 02 2024
 
 </description>
-  <revision>48</revision>
+  <revision>121</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -5825,7 +5825,10 @@ Last updated: Jan 02 2024
       <userId>1</userId>
     </metadata>
     <dependentIds/>
-    <dependencyIds/>
+    <dependencyIds>
+      <string>279057c4-65eb-4cbd-ae23-6d9d66de14a0</string>
+      <string>8af32eb7-1153-4c8f-be64-db8cb45ceb1b</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>
