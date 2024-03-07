@@ -73,6 +73,7 @@ export async function tallyDocQueryProgress({
     patient: result.dataValues,
     documentQueryProgress: result.data.documentQueryProgress,
     requestId,
+    progressType: type,
   });
 
   return result;
