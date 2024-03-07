@@ -249,7 +249,6 @@ export async function getConsolidatedPatientData({
 
   const { missingReferences } = getReferencesFromResources({
     resources: filtered,
-    referencesToExclude: ["Patient"],
   });
   const missingRefsOnFHIR = await getReferencesFromFHIR(missingReferences, fhir, log);
 
