@@ -24,7 +24,8 @@ if (msg.hasOwnProperty('operationOutcome')) {
 // Generate RetrieveDocumentSetResponse	
 try {
 
-	var _reponse = (failure) ? getXCAITI39QueryResponse(null, operationOutcome) : getXCAITI39QueryResponse(msg, operationOutcome, channelMap.containsKey('MTOM'));
+	var msgJson = JSON.parse(msg);
+	var _reponse = (failure) ? getXCAITI39QueryResponse(null, operationOutcome) : getXCAITI39QueryResponse(msgJson, operationOutcome, channelMap.containsKey('MTOM'));
 	if (_reponse) {
 		soapTemplate.*::Body.appendChild(_reponse);
 		responseMap.put('RESPONSE', soapTemplate.toString());
@@ -59,7 +60,6 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 		soapTemplate.soap::Header.wsa::Action = 'urn:ihe:iti:2007:CrossGatewayRetrieveResponse';
 		soapTemplate.soap::Header.wsa::RelatesTo = 'urn:uuid:' + channelMap.get('MSG_ID');
 		soapTemplate.*::Body.appendChild(_reponse);
-		
 		responseMap.put('RESPONSE', soapTemplate.toString());
 	}
 

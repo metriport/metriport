@@ -20,7 +20,7 @@ try {
 	payload = new XML(queryRequest.toString());
 	channelMap.put('QUERYREQUEST', queryRequest.toString());
 
-	request.id = payload.@id.toString()
+	request.id = payload.DocumentRequest.Id.toString();
 	request.timestamp = DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss");
 	request.samlAttributes = saml;
 

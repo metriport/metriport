@@ -1,6 +1,8 @@
 // This script executes once when the channel is deployed
 // You only have access to the globalMap and globalChannelMap here to persist data
 
+globalChannelMap.put("XCA39INBOUNDPROCESSOR", channelId);
+
 const msg = "XCA-ITI-39 Inbound Processor: Failed start, missing";
 if (!globalMap.containsKey("ACCESS_KEY")) {
   logger.error(msg + " ACCESS_KEY");

@@ -5634,7 +5634,7 @@ Last updated: Jan 02 2024
             <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-            <name>Process response</name>
+            <name>Extract response</name>
             <sequenceNumber>1</sequenceNumber>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Extract response.js"/>
