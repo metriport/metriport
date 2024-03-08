@@ -1,14 +1,18 @@
-import { Patient } from "@metriport/core/domain/patient";
-import { out } from "@metriport/core/util/log";
+import { Patient, patientDataFromResource } from "@metriport/core/domain/patient";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import {
+  OutboundPatientDiscoveryResp,
+  isOutboundPDRespSuccessful,
+} from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { getPatientByDemo } from "../../command/medical/patient/get-patient";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
-import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { CQLink } from "./cq-patient-data";
 
 dayjs.extend(duration);
 
@@ -63,22 +67,36 @@ async function handlePatientDiscoveryResults(
   pdResults: OutboundPatientDiscoveryResp[]
 ): Promise<void> {
   const { id, cxId } = patient;
-  const cqLinks = buildCQLinks(pdResults);
+  const cqLinks = await buildCQLinks(pdResults);
   if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
 }
 
-function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
-  return pdResults.flatMap(pd => {
-    const id = pd.externalGatewayPatient?.id;
-    const system = pd.externalGatewayPatient?.system;
-    const url = pd.gateway.url;
-    if (!id || !system || !url) return [];
-    return {
-      patientId: id,
-      systemId: system,
-      oid: pd.gateway.oid,
-      url,
-      id: pd.gateway.id,
-    };
-  });
+async function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): Promise<CQLink[]> {
+  const results = await Promise.all(
+    pdResults.map(async pd => {
+      const id = pd.externalGatewayPatient?.id;
+      const system = pd.externalGatewayPatient?.system;
+      const url = pd.gateway.url;
+      let patientExists = undefined;
+
+      if (isOutboundPDRespSuccessful(pd) && pd.patientResource && pd.cxId) {
+        const patientData = patientDataFromResource(pd.patientResource);
+        if (!patientData) return [];
+        patientExists = await getPatientByDemo({
+          cxId: pd.cxId,
+          demo: patientData,
+        });
+      }
+
+      if (!id || !system || !url || !patientExists) return [];
+      return {
+        patientId: id,
+        systemId: system,
+        oid: pd.gateway.oid,
+        url,
+        id: pd.gateway.id,
+      };
+    })
+  );
+  return results.flat();
 }

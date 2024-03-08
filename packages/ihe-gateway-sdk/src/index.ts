@@ -40,6 +40,7 @@ export {
   inboundPatientDiscoveryRespSchema,
   OutboundPatientDiscoveryResp,
   outboundPatientDiscoveryRespSchema,
+  isOutboundPDRespSuccessful,
 } from "./models/patient-discovery/patient-discovery-responses";
 export {
   BaseErrorResponse,

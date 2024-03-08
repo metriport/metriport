@@ -1,11 +1,12 @@
-import { USState } from "./geographic-locations";
-import { BaseDomain, BaseDomainCreate } from "./base-domain";
-import { DocumentQueryProgress } from "./document-query";
-import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { QueryProgress } from "./query-status";
+import { Patient as PatientResource } from "@metriport/ihe-gateway-sdk/models/patient-discovery/patient-discovery-responses";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
+import { BaseDomain, BaseDomainCreate } from "./base-domain";
+import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
 import { Contact } from "./contact";
+import { DocumentQueryProgress } from "./document-query";
+import { USState, getStateEnum } from "./geographic-locations";
+import { QueryProgress } from "./query-status";
 
 export const generalTypes = ["passport", "ssn", "medicare"] as const;
 export const driversLicenseType = ["driversLicense"] as const;
@@ -89,4 +90,45 @@ export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USState[] {
   return patient.data.address.map(getState);
+}
+
+export function patientDataFromResource(patientResource: PatientResource): PatientData | undefined {
+  const firstName = patientResource.name[0]?.given[0];
+  const lastName = patientResource.name[0]?.family;
+  const dob = patientResource.birthDate;
+  const genderAtBirth = mapGender(patientResource.gender);
+  const addresses = getPatientAddresses(patientResource);
+
+  if (!firstName || !lastName || !dob || !genderAtBirth) return;
+  if (!addresses.length) return;
+
+  return {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    address: addresses,
+  };
+}
+
+function mapGender(string: string): "M" | "F" | undefined {
+  if (string === "male") return "M";
+  if (string === "female") return "F";
+  return;
+}
+function getPatientAddresses(patientResource: PatientResource): Address[] {
+  const addresses: Address[] = [];
+  for (const address of patientResource.address) {
+    const state = address.state ? getStateEnum(address.state) : undefined;
+    if (!state) continue;
+    addresses.push({
+      addressLine1: address.line.join(", "),
+      city: address.city,
+      state,
+      zip: address.postalCode,
+      country: address.country,
+    });
+  }
+
+  return addresses;
 }

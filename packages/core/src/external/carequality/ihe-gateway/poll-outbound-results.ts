@@ -107,13 +107,13 @@ async function pollResults({
 
     if (raceResult && allGWsCompleted) {
       console.log(
-        `${raceResult}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
+        `${raceResult}. Got ${iheGatewayResults.length} responses out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
       );
       raceControl.isRaceInProgress = false;
     } else if (!allGWsCompleted) {
       const msg = `IHE gateway results are incomplete.`;
       console.log(
-        `${msg}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
+        `${msg}. Got ${iheGatewayResults.length} responses out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
       );
 
       capture.message(msg, {
