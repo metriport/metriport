@@ -50,10 +50,16 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
 				let decodedAsString = null;
+				let decodedBytes = null;
 				try {
-					var documentEncodedString = entry.*::Document.toString();
-					var decoded = FileUtil.decode(documentEncodedString);
+					var documentEncodedString = entry.*::Document;
+					var decoded = FileUtil.decode(documentEncodedString.toString());
+					// we use decodedAsString to detect the file type
 					decodedAsString = new Packages.java.lang.String(decoded);
+
+					// We use decoded bytes to decode the actual raw document. 
+					var decoder = java.util.Base64.getDecoder();
+    				var decodedBytes = decoder.decode(documentEncodedString);
 				} catch (ex) {
 					logError(ex);
 				}
@@ -84,13 +90,13 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							if (title) attachment.title = title;
 						}
 					}
-					const fileSize = decodedAsString.getBytes("UTF-8").length;
+					const fileSize = decodedAsString.getBytes().length;
 					if (fileSize) attachment.size = parseInt(fileSize);
 				} catch (ex) {
 					logError(ex);
 				}
 
-				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
+				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedBytes, attachment);
 				contentList.push(attachment);
 
 				// TODO 1350 remove this log
@@ -114,6 +120,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 		// TODO: Process and generate OperationOutcome
+		logger.info("contentList " + contentList.length);
 
 		if (contentList.length > 0) {
 			channelMap.put('RESULT', contentList.length + ' doc(s)');

@@ -58,7 +58,6 @@ if (msg.hasOwnProperty('operationOutcome')) {
 // Generate CrossGatewayQueryResponse
 // May contain one or more RegistryError elements
 try {
-	logger.info("msg" + JSON.stringify(msg, null, 2));
 	var _reponse = getXCAITI38QueryResponse((failure) ? null : msg, operationOutcome);
 	if (_reponse) {
 		soapTemplate.*::Body.appendChild(_reponse);
@@ -68,7 +67,4 @@ try {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: Response - ' + ex);
 	throw ex;
 }
-
-logger.info("RESPONSE: " + responseMap.get('RESPONSE'));
-
 

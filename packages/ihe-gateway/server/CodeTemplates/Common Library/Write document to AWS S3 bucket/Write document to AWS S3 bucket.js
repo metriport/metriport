@@ -25,7 +25,7 @@ function xcaWriteToFile(path, documentContents, metadata) {
       .metadata(meta)
       .build();
     var requestBody = Packages.software.amazon.awssdk.core.sync.RequestBody.fromBytes(
-      java.lang.String(documentContents).getBytes()
+      documentContents
     );
 
     result = client.putObject(putRequest, requestBody);
