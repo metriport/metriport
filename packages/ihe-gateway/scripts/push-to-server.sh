@@ -27,7 +27,7 @@ cleanup() {
     echo "[config] Strict mode: stopping all Java processes..."
     pkill java
   else
-    echo "[config] Non-strict mode: just leaving..."
+    echo "[config] Non-strict mode: just leaving the config script..."
   fi
 }
 trap cleanup ERR
