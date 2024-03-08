@@ -48,7 +48,6 @@ export interface IHEGatewayConstructProps {
 const maxPortsPerLB = 5;
 const defaultPorts = [8080];
 const maxPortsOnProps = maxPortsPerLB - defaultPorts.length;
-const healthcheckIntervalDefaultPorts = Duration.seconds(30);
 const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 
 export default class IHEGatewayConstruct extends Construct {
@@ -80,7 +79,6 @@ export default class IHEGatewayConstruct extends Construct {
     } = props;
     const id = name;
     const dbAddress = db.server.clusterEndpoint.socketAddress;
-    const dbReadonlyAddress = db.server.clusterReadEndpoint.socketAddress;
     // Temporary workaround to connect to the right DB based on the name
     // TODO As we mature the IHE GW installation, let's review this
     const dbIdentifier = name.toLocaleLowerCase().includes("inbound")
@@ -107,10 +105,14 @@ export default class IHEGatewayConstruct extends Construct {
       DATABASE_URL: `jdbc:postgresql://${dbAddress}/${dbIdentifier}`,
       DATABASE_USERNAME: config.rds.userName,
       DATABASE_MAX_CONNECTIONS: config.maxDbConnections.toString(),
-      _MP_DATABASE__READONLY: `postgres`,
-      _MP_DATABASE__READONLY_URL: `jdbc:postgresql://${dbReadonlyAddress}/${dbIdentifier}`,
-      _MP_DATABASE__READONLY_USERNAME: config.rds.userName,
-      _MP_DATABASE__READONLY_MAX_CONNECTIONS: config.maxDbConnections.toString(),
+      // This broke the SSL Manager plugin on ECS when we restarted the service
+      // https://github.com/metriport/metriport-internal/issues/1592
+      // _MP_DATABASE__READONLY: `postgres`,
+      // _MP_DATABASE__READONLY_URL: `jdbc:postgresql://${dbReadonlyAddress}/${dbIdentifier}`,
+      // _MP_DATABASE__READONLY_USERNAME: config.rds.userName,
+      // _MP_DATABASE__READONLY_MAX_CONNECTIONS: config.maxDbConnections.toString(),
+      // This disables read only connections
+      _MP_DATABASE_ENABLE__READ__WRITE__SPLIT: `false`,
       API_BASE_ADDRESS: config.apiBaseAddress,
       AWS_REGION: mainConfig.region,
       INBOUND_PATIENT_DISCOVERY_URL: getLambdaUrl(patientDiscoveryLambda.functionArn),
@@ -173,9 +175,9 @@ export default class IHEGatewayConstruct extends Construct {
     const portToListener: { [key: number]: ApplicationListener } = {};
 
     const healthCheck: HealthCheck = {
-      healthyThresholdCount: 4,
-      unhealthyThresholdCount: 4,
-      interval: Duration.seconds(30),
+      healthyThresholdCount: 6,
+      unhealthyThresholdCount: 6,
+      interval: Duration.seconds(10), // default, can be overridden when calling `addPortToLB`
       path: "/",
       port: "8080",
       protocol: Protocol.HTTP,
@@ -184,7 +186,7 @@ export default class IHEGatewayConstruct extends Construct {
     const addPortToLB = (
       port: number,
       theLB: ApplicationLoadBalancer,
-      healthcheckInterval: Duration
+      healthcheckInterval?: Duration
     ) => {
       const existingListener = portToListener[port];
       // ensure we're only creating unique listeners
@@ -217,12 +219,12 @@ export default class IHEGatewayConstruct extends Construct {
           targetGroupName: targetGroupId,
           healthCheck: {
             ...healthCheck,
-            interval: healthcheckInterval,
+            ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
           },
         }),
       });
     };
-    defaultPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalDefaultPorts));
+    defaultPorts.forEach(port => addPortToLB(port, alb));
     httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
 
     service.registerLoadBalancerTargets(...lbTargets);
