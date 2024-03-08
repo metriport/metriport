@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import convert from "convert-units";
-import { Op, Sequelize } from "sequelize";
+import { Sequelize } from "sequelize";
 import { Config } from "../../../../shared/config";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
@@ -30,9 +30,11 @@ export type CQOrgBasicDetails = {
 export async function searchCQDirectoriesAroundPatientAddresses({
   patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
+  mustHaveXcpdLink = false,
 }: {
   patient: Patient;
   radiusInMiles?: number;
+  mustHaveXcpdLink?: boolean;
 }): Promise<CQDirectoryEntryModel[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
@@ -42,6 +44,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   const orgs = await searchCQDirectoriesByRadius({
     coordinates,
     radiusInMeters,
+    mustHaveXcpdLink,
   });
 
   return orgs;
@@ -57,13 +60,24 @@ export async function searchCQDirectoriesAroundPatientAddresses({
 export async function searchCQDirectoriesByRadius({
   coordinates,
   radiusInMeters,
+  mustHaveXcpdLink = false,
 }: {
   coordinates: Coordinates[];
   radiusInMeters: number;
+  mustHaveXcpdLink?: boolean;
 }): Promise<CQDirectoryEntryModel[]> {
   const orgs: CQDirectoryEntryModel[] = [];
 
   for (const coord of coordinates) {
+    // Building the WHERE clause conditionally
+    let whereClause = `earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
+      AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`;
+
+    if (mustHaveXcpdLink) {
+      // Append the condition for urlXCPD only if mustHaveXcpdLink is true
+      whereClause += ` AND url_xcpd IS NOT NULL`;
+    }
+
     const orgsForAddress = await CQDirectoryEntryModel.findAll({
       attributes: {
         include: [
@@ -75,13 +89,7 @@ export async function searchCQDirectoriesByRadius({
           ],
         ],
       },
-      where: {
-        [Op.and]: [
-          Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
-      AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`),
-          { urlXCPD: { [Op.ne]: "" } },
-        ],
-      },
+      where: Sequelize.literal(whereClause),
       order: Sequelize.literal("distance"),
     });
 

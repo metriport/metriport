@@ -88,15 +88,15 @@ async function prepareForPatientDiscovery(
 ): Promise<OutboundPatientDiscoveryReq> {
   const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
-  const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({ patient });
+  const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
+    patient,
+    mustHaveXcpdLink: true,
+  });
   const orgOrderMap = new Map<string, number>();
+
   nearbyOrgsWithUrls.forEach((org, index) => {
     orgOrderMap.set(org.id, index);
   });
-
-  for (const org of nearbyOrgsWithUrls) {
-    console.log(org.id, org.name, org.managingOrganization);
-  }
 
   const [organization, allOrgs] = await Promise.all([
     getOrganizationOrFail({ cxId }),

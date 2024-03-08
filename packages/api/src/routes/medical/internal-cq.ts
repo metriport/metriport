@@ -120,12 +120,14 @@ router.get(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const radiusQuery = getFrom("query").optional("radius", req);
+    const mustHaveXcpdLink = getFrom("query").optional("mustHaveXcpdLink", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const orgs = await searchCQDirectoriesAroundPatientAddresses({
       patient,
       radiusInMiles: radius,
+      mustHaveXcpdLink: mustHaveXcpdLink === "true" ?? false,
     });
 
     const orgsWithBasicDetails = orgs.map(toBasicOrgAttributes);
