@@ -6,7 +6,7 @@ import {
   externalGatewayPatientSchema,
 } from "../shared";
 
-const patientSchema = z.object({
+export const patientSchema = z.object({
   name: z
     .array(
       z.object({

@@ -5,6 +5,10 @@ import { Address } from "@metriport/core/domain/address";
 import { getStateEnum } from "@metriport/core/domain/geographic-locations";
 import { PatientData } from "@metriport/core/domain/patient";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
+import {
+  InboundPatientResource,
+  inboundPatientResourceSchema,
+} from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient-discovery-responses";
 import { QueryTypes, Sequelize } from "sequelize";
 import z from "zod";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
@@ -22,35 +26,11 @@ const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.passwo
   logging: false,
 });
 
-const patientSchema = z.object({
-  name: z
-    .array(
-      z.object({
-        family: z.string().optional(),
-        given: z.array(z.string()).optional(),
-      })
-    )
-    .optional(),
-  gender: z.enum(["male", "female", "unknown"]).optional(),
-  birthDate: z.string().optional(),
-  address: z.array(
-    z.object({
-      line: z.array(z.string()).optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      postalCode: z.string().optional(),
-      country: z.string().optional(),
-    })
-  ),
-});
-
-type Patient = z.infer<typeof patientSchema>;
-
 const rowWithDataSchema = z.object({
   status: z.string(),
   data: z
     .object({
-      patientResource: patientSchema.optional(),
+      patientResource: inboundPatientResourceSchema.optional(),
       timestamp: z.string(),
     })
     .optional(),
@@ -102,7 +82,7 @@ ${numberOfMatches} MPI matches / ${numberOfPatients} returned patients.`
 }
 
 export function patientDataFromResource(
-  patientResource: Patient | undefined
+  patientResource: InboundPatientResource | undefined
 ): PatientData | undefined {
   if (!patientResource) return;
   const humanName = patientResource?.name;
@@ -131,7 +111,7 @@ function mapGender(string: string | undefined): "M" | "F" | undefined {
   return;
 }
 
-function getPatientAddresses(patientResource: Patient | undefined): Address[] {
+function getPatientAddresses(patientResource: InboundPatientResource | undefined): Address[] {
   if (!patientResource) return [];
   const addresses: Address[] = [];
   for (const address of patientResource.address) {
