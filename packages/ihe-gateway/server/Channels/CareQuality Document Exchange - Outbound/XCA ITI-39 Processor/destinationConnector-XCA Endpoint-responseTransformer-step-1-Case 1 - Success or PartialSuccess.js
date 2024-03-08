@@ -120,7 +120,6 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 		// TODO: Process and generate OperationOutcome
-		logger.info("contentList " + contentList.length);
 
 		if (contentList.length > 0) {
 			channelMap.put('RESULT', contentList.length + ' doc(s)');
