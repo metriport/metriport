@@ -7,15 +7,12 @@ import {
 } from "../shared";
 
 const patientSchema = z.object({
-  resourceType: z.literal("Patient"),
   name: z
     .array(
-      z
-        .object({
-          family: z.string().optional(),
-          given: z.array(z.string()).optional(),
-        })
-        .optional()
+      z.object({
+        family: z.string().optional(),
+        given: z.array(z.string()).optional(),
+      })
     )
     .optional(),
   gender: z.enum(["male", "female", "unknown"]).optional(),
