@@ -1,5 +1,4 @@
 // Enforcing limits on incoming requests
-logger.info("sourceConnector-transformer-step-0-Message Throttling.js");
 if (configurationMap.containsKey('INBOUND.QUEUE.SIZE')) try {
 	
 	const maxSize = parseInt(configurationMap.get('INBOUND.QUEUE.SIZE'));

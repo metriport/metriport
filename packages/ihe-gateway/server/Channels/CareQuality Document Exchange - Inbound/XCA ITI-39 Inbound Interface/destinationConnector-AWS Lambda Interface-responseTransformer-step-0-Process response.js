@@ -1,9 +1,3 @@
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js");
-// Store the HTTP code only
-// var http = $('responseStatusLine');
-// http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
-// channelMap.put('HTTP', http.toString());
-
 // Generate SOAP Envelope
 var soapTemplate = getSOAPTemplate();
 var soap = soapTemplate.namespace('soap');

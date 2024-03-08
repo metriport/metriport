@@ -1,4 +1,3 @@
-logger.info("sourceConnector-transformer-step-1-Set Stat.js");
 channelMap.put('MSG_ID', msg.*::Header.*::MessageID.toString().replace('urn:uuid:', ''));
 
 try {

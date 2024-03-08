@@ -15,7 +15,6 @@ function getXCAITI38QueryResponse(request, operationOutcome) {
 		_response.appendChild(registryObjectList);
 		
 		var docList = [];
-		logger.info("getXCAITI38QueryResponse: " + request.extrinsicObjectXmls);
 
 		request.extrinsicObjectXmls.forEach(function(entry) {
 			try {

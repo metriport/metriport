@@ -1,14 +1,5 @@
-// Store the HTTP code only
-// var http = $('responseStatusLine');
-// http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
-// channelMap.put('HTTP', http.toString());
-
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js");
-
-//var request = channelMap.get('SOAP');
 var payload = channelMap.get('PRPA_IN201305UV02');
 
-// Generate SOAP Envelope
 var soapTemplate = getSOAPTemplate();
 var soap = soapTemplate.namespace('soap');
 var wsa = soapTemplate.namespace('wsa');

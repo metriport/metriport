@@ -1,4 +1,3 @@
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Case 1: Patient Match.js");
 // Only a single entry per assigning authority is allowed
 if (msg.patientMatch) {
 	const senderOID = Config.getHomeCommunityId();

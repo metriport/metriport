@@ -1,4 +1,3 @@
-logger.info("sourcConnector-transformer-step-5-Get query parameters.js");
 var request = {};
 try {
 	
@@ -29,10 +28,8 @@ try {
 		provider.system = entry.*::value.@root.toString();
 		request.principalCareProviderIds.push(provider);
 	}
-	
 	// Convert PRPA ParameterList to FHIR Patient resource
 	var patientResource = convertXCPDQueryToPatientResource(payload.*::controlActProcess.*::queryByParameter.*::parameterList);
-
 	if (patientResource) {
 		// Convert FHIR Patient resource in XML to JSON
 		var target = globalChannelMap.get('PARSER').parseResource(patientResource.toString());
@@ -40,8 +37,6 @@ try {
 	}
 
 	channelMap.put('REQUEST', JSON.stringify(request));
-	var sanity = channelMap.get('REQUEST');
-
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Processor: Query parameters - ' + ex);

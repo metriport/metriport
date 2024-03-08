@@ -1,4 +1,3 @@
-logger.info('sourceConnector-transformer-step-3-Validate request.js');
 // Validate if any document is requested
 if (0 == msg.*::Body.*::RetrieveDocumentSetRequest.*::DocumentRequest.length()) {
 

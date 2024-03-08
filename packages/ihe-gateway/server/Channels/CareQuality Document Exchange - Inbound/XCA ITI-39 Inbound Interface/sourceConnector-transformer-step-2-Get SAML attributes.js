@@ -1,5 +1,3 @@
-logger.info("sourceConnector-transformer-step-2-Get SAML attributes.js");
-// JONAHK: might not be needed
 try {
 	// Get request response type
 	var contentType = msg.*::Body.@ContentType.toString();

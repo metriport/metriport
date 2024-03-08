@@ -1,4 +1,3 @@
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js");
 // Store the HTTP code only
 
 // old post processing script from processor

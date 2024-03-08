@@ -1,5 +1,4 @@
 // Remove namespaces
-logger.info("sourceConnector-transformer-step-3-Payload validation.js");
 var prpa = msg.*::Body.*::PRPA_IN201305UV02;
 
 var regex = new RegExp(prpa.namespace().prefix + ':', "g");

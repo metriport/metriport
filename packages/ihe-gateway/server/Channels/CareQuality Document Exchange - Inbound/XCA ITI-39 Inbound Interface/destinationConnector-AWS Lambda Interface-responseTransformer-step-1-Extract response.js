@@ -1,4 +1,3 @@
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Extract response.js");
 // Process simple SOAP or MTOM responses
 if (channelMap.containsKey('MTOM')) {
 

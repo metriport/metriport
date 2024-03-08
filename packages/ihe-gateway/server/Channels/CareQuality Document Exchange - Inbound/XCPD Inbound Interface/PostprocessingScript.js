@@ -1,9 +1,3 @@
-// This script executes once after a message has been processed
-// Responses returned from here will be stored as "Postprocessor" in the response map
-logger.info("XCPD Interface Inbound Postprocessing.js");
-// java.lang.Thread.sleep(30000);
-// This script executes once after a message has been processed
-// Responses returned from here will be stored as "Postprocessor" in the response map
 var dest = responseMap.get(channelMap.get('DEST_ID'));
 
 if (dest && 'ERROR' == dest.getStatus()) try {

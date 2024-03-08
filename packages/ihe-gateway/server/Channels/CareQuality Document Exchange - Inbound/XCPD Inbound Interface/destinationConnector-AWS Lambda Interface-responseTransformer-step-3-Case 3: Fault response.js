@@ -1,5 +1,3 @@
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-2-Case 3: Fault Response.js");
-
 var prpa = getXCPDQueryResponse(msg, payload);
 if (prpa) {
 	// logger.info("XCPD Inbound Processor - Fault: prpa found");
@@ -15,4 +13,3 @@ if (prpa) {
 
 	return;
 }
-// return msg;

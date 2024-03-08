@@ -1,4 +1,3 @@
-logger.info("sourceConnector-transformer-step3--Validate request.js");
 // Queries other than FindDocuments are not currently supported
 if ('urn:uuid:14d4debf-8f97-4251-9a74-a90016b0af0d' !== msg.*::Body.*::AdhocQueryRequest.*::AdhocQuery.@id.toString()) {
 

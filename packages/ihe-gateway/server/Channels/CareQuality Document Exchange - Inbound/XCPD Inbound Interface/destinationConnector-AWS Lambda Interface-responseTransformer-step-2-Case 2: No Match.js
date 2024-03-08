@@ -1,6 +1,5 @@
 // Requiring only a single entry per assigning authority may force a responding community to return zero matches because no single choice is appropriate.
 // It is recommended that if the responding gateway has more than one close match it should return the special error condition
-logger.info("destinationConnector-AWS Lambda Interface-responseTransformer-step-2-Case 2: No Match.js");
 
 if (false === msg.patientMatch) {
 	// logger.info("XCPD Inbound Processor: Patient Match - NO patient match");

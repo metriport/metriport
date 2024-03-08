@@ -1,4 +1,3 @@
-logger.info("sourceConnector-transformer-step-2-Get SAML atttributes.js");
 channelMap.put('MSG_ID', msg.*::Header.*::MessageID.toString().replace('urn:uuid:', ''));
 
 var saml = {
