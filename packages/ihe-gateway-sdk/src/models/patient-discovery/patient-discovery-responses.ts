@@ -6,7 +6,7 @@ import {
   externalGatewayPatientSchema,
 } from "../shared";
 
-export const patientSchema = z.object({
+export const inboundPatientResourceSchema = z.object({
   name: z
     .array(
       z.object({
@@ -28,7 +28,7 @@ export const patientSchema = z.object({
   ),
 });
 
-export type Patient = z.infer<typeof patientSchema>;
+export type InboundPatientResource = z.infer<typeof inboundPatientResourceSchema>;
 
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
@@ -70,7 +70,7 @@ const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
 const outboundPatientDiscoveryRespSuccessfulSchema = outboundPatientDiscoveryRespDefaultSchema
   .merge(patientDiscoveryRespSuccessfulDefaultSchema)
   .extend({
-    patientResource: patientSchema.optional(),
+    patientResource: inboundPatientResourceSchema.optional(),
   });
 
 const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
