@@ -53,16 +53,33 @@ export async function processOutboundDocumentQueryResps({
 
     log(`I have ${docsToDownload.length} docs to download (${convertibleDocCount} convertible)`);
 
+    if (docsToDownload.length === 0) {
+      log(`No new documents to download.`);
+
+      await setDocQueryProgress({
+        patient: { id: patientId, cxId: cxId },
+        downloadProgress: { status: "completed" },
+        requestId,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+
+      return;
+    }
+
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
         status: "processing",
         total: docsToDownload.length,
       },
-      convertProgress: {
-        status: "processing",
-        total: convertibleDocCount,
-      },
+      ...(convertibleDocCount > 0
+        ? {
+            convertProgress: {
+              status: "processing",
+              total: convertibleDocCount,
+            },
+          }
+        : {}),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
