@@ -12,8 +12,9 @@
 #                       configurations.
 #   - include-full-backup: Include the full backup in the push (only when 'configurationMap' is
 #                          not set).
-#   - strict: If the server fails to accept the configuration map, stop all Java processes.
 #   - no-ssl-check: Skip the SSL certificate check.
+#   - strict: If the server fails to accept the configuration map or check the SLL certs, stop
+#             all Java processes.
 #
 ###################################################################################################
 
@@ -26,14 +27,15 @@ cleanup() {
     echo "[config] Strict mode: stopping all Java processes..."
     pkill java
   else
-    echo "[config] Non-strict mode: just leaving..."
+    echo "[config] Non-strict mode: just leaving the config script..."
   fi
 }
 trap cleanup ERR
 
 CONFIG_MAP_FILE=./server/ConfigurationMap.xml
-MAX_LOGIN_ATTEMPTS=5
-INCORRECT_LOGIN_ATTEMPTS=0
+MAX_ATTEMPTS_LOGIN=10
+MAX_ATTEMPTS_VERIFY_SSL_CERT=10
+MAX_ATTEMPTS_PUSH_CONFIG_MAP=10
 
 source ./scripts/load-env.sh
 source ./scripts/load-default-server-url.sh
@@ -58,7 +60,6 @@ isNumber() {
 }
 
 uploadConfigurationMap() {
-  echo "[config] -- Config map only --"
   if [ -f $CONFIG_MAP_FILE ]; then
     CONFIG_MAP=$(cat $CONFIG_MAP_FILE)
   else
@@ -75,19 +76,22 @@ uploadConfigurationMap() {
 
   # If its not a number
   if ! isNumber $res; then
+    echo "[config] Resp pushing configuration map to the server: $res" >/dev/stderr
     return 1
   elif [[ $res -ge 300 ]] || [[ $res -lt 200 ]]; then
+    echo "[config] Resp pushing configuration map to the server: $res" >/dev/stderr
     return 2
   fi
   return 0
 }
 
 setConfigurationMap() {
+  echo "[config] -- Config map only --"
   local counter=0
   until uploadConfigurationMap; do
     local resp=$?
-    if [ $counter -ge 3 ]; then
-      echo "[config] Failed to push configuration map to the server, gave up - Result: $resp"
+    if [ $counter -ge $MAX_ATTEMPTS_PUSH_CONFIG_MAP ]; then
+      echo "[config] Failed to push configuration map to the server, gave up."
       cleanup
       exit 1
     fi
@@ -95,11 +99,11 @@ setConfigurationMap() {
       echo "[config] Configuration map pushed to the server."
       return 0
     elif [ $resp -eq 2 ]; then
-      echo "[config] Failed to push configuration map to the server - Result: $resp"
+      echo "[config] Failed to push configuration map to the server (won't retry)."
       cleanup
       exit 1
     fi
-    echo "[config] Failed to push configuration map to the server, trying up to 3 times - Result: $resp"
+    echo "[config] Failed to push configuration map to the server, trying up to $MAX_ATTEMPTS_PUSH_CONFIG_MAP times..."
     counter=$((counter + 1))
     sleep 1
   done
@@ -124,6 +128,7 @@ hasSSLCerts() {
   if [[ $sslCertResp == *"carequality"* ]]; then
     return 0
   fi
+  echo "[config] SSL cert response: $sslCertResp" >/dev/stderr
   return 1
 }
 
@@ -131,13 +136,13 @@ verifySSLCerts() {
   echo "[config] Checking if SSL cert is there..."
   local counter=0
   until hasSSLCerts; do
-    if [ $counter -ge 3 ]; then
-      echo "[config] SSL cert not found, gave up - Result: $resp"
+    counter=$((counter + 1))
+    if [ $counter -ge $MAX_ATTEMPTS_VERIFY_SSL_CERT ]; then
+      echo "[config] SSL cert not found, gave up."
       cleanup
       exit 1
     fi
-    echo "[config] SSL cert not found, trying up to 3 times - Result: $resp"
-    counter=$((counter + 1))
+    echo "[config] SSL cert not found, trying up to $MAX_ATTEMPTS_VERIFY_SSL_CERT times..."
     sleep 1
   done
 }
@@ -145,30 +150,40 @@ verifySSLCerts() {
 isApiAvailable() {
   local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
-    echo "[config] Resp from API: ${checkApiResult}"
     return 1 # not ready
   elif [[ $checkApiResult -ge 300 ]]; then
-    echo "[config] Failed login to server, trying up to $MAX_LOGIN_ATTEMPTS times - Result: $checkApiResult" >/dev/stderr
-    if [ $INCORRECT_LOGIN_ATTEMPTS -ge $MAX_LOGIN_ATTEMPTS ]; then
-      echo "[config] Too many incorrect login attempts, stopping..."
-      cleanup
-      exit 1
-    fi
-    INCORRECT_LOGIN_ATTEMPTS=$((INCORRECT_LOGIN_ATTEMPTS + 1))
+    echo "[config] Resp login to server: ${checkApiResult}" >/dev/stderr
+    return 2 # failed login
   fi
-  return 0
+  return 0 # ready
 }
 
 waitServerOnline() {
-  echo "[config] Waiting for the server to start... (${IHE_GW_URL})"
+  echo "[config] Waiting for the web server to start... (${IHE_GW_URL})"
   until curl -s -f -o /dev/null $IHE_GW_URL; do
     sleep 1
   done
-  echo "[config] Web available, waiting for the API to start... (${IHE_GW_URL})"
+
+  echo "[config] Web server available, waiting for the API to start... (${IHE_GW_URL})"
+  local counter=0
   until isApiAvailable; do
+    local resp=$?
+    counter=$((counter + 1))
+    if [[ $resp -eq 0 ]]; then
+      # ready
+      sleep 2
+      return 0
+    elif [[ $resp -eq 2 ]]; then
+      # failed login
+      if [ $counter -ge $MAX_ATTEMPTS_LOGIN ]; then
+        echo "[config] Too many incorrect login attempts, gave up."
+        cleanup
+        exit 1
+      fi
+      echo "[config] Failed to push configuration map to the server, trying up to $MAX_ATTEMPTS_LOGIN times..."
+    fi
     sleep 1
   done
-  sleep 2
 }
 
 ###################################################################################################
@@ -178,18 +193,17 @@ waitServerOnline() {
 ###################################################################################################
 waitServerOnline
 
-echo "[config] Pushing configs to the server..."
+if containsParameter "no-ssl-check"; then
+  echo "[config] Skipping SSL cert check"
+else
+  verifySSLCerts
+fi
 
+echo "[config] Pushing configs to the server..."
 if containsParameter "configurationMap"; then
   setConfigurationMap
 else
   setAllConfigs
-fi
-
-if containsParameter "no-ssl-check"; then
-  echo "[config] Skipping SSL cert check..."
-else
-  verifySSLCerts
 fi
 
 echo "[config] Done."

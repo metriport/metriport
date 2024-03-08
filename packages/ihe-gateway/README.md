@@ -28,12 +28,6 @@ Initialize the repository with the command below; it will download required file
 $ ./scripts/init.sh
 ```
 
-Note that these env vars, if set when `init.sh` is called, might prevent it from working as it uses
-AWS CLI that refers to them (to solve, comment them out, run `init.sh`, then re-enable them):
-
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-
 To initialize to a specific environment, set the environment variable `ENV_TYPE`:
 
 ```shell
