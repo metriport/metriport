@@ -114,10 +114,8 @@ router.post(
     const facilityId = getFrom("query").optional("facilityId", req);
     const override = stringToBoolean(getFrom("query").optional("override", req));
     const cxDocumentRequestMetadata = cxRequestMetadataSchema.parse(req.body);
-    // START TODO #1572 - remove
-    const commonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
-    // const carequality = stringToBoolean(getFrom("query").optional("carequality", req));
-    // END TODO #1572 - remove
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
 
     const docQueryProgress = await queryDocumentsAcrossHIEs({
       cxId,
@@ -125,8 +123,8 @@ router.post(
       facilityId,
       override,
       cxDocumentRequestMetadata: cxDocumentRequestMetadata?.metadata,
-      commonwell,
-      carequality: true,
+      forceCommonwell,
+      forceCarequality,
     });
 
     return res.status(OK).json(docQueryProgress);
