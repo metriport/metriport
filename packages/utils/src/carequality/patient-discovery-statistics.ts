@@ -1,14 +1,9 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // // keep that ^ on top
-import { Address } from "@metriport/core/domain/address";
-import { getStateEnum } from "@metriport/core/domain/geographic-locations";
-import { PatientData } from "@metriport/core/domain/patient";
+import { patientDataFromResource } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
-import {
-  InboundPatientResource,
-  inboundPatientResourceSchema,
-} from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient-discovery-responses";
+import { inboundPatientResourceSchema } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient-discovery-responses";
 import { QueryTypes, Sequelize } from "sequelize";
 import z from "zod";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
@@ -79,57 +74,6 @@ async function main() {
     `${numberOfSuccesses} successful matches / ${numberOfRows} PD discovery results. 
 ${numberOfMatches} MPI matches / ${numberOfPatients} returned patients.`
   );
-}
-
-export function patientDataFromResource(
-  patientResource: InboundPatientResource | undefined
-): PatientData | undefined {
-  if (!patientResource) return;
-  const humanName = patientResource?.name;
-  if (!humanName) return;
-  const firstName = humanName[0]?.given?.join(" ");
-  const lastName = humanName[0]?.family;
-  const dob = patientResource.birthDate;
-  const genderAtBirth = mapGender(patientResource.gender);
-  const addresses = getPatientAddresses(patientResource);
-
-  if (!firstName || !lastName || !dob || !genderAtBirth) return;
-  if (!addresses.length) return;
-
-  return {
-    firstName,
-    lastName,
-    dob,
-    genderAtBirth,
-    address: addresses,
-  };
-}
-
-function mapGender(string: string | undefined): "M" | "F" | undefined {
-  if (string === "male") return "M";
-  if (string === "female") return "F";
-  return;
-}
-
-function getPatientAddresses(patientResource: InboundPatientResource | undefined): Address[] {
-  if (!patientResource) return [];
-  const addresses: Address[] = [];
-  for (const address of patientResource.address) {
-    const state = address.state ? getStateEnum(address.state) : undefined;
-    const line = address.line ? address.line.join(", ") : undefined;
-    const city = address.city || undefined;
-    const zip = address.postalCode || undefined;
-    if (!state || !line || !city || !zip) continue;
-
-    addresses.push({
-      addressLine1: line,
-      city,
-      state,
-      zip,
-      country: address.country,
-    });
-  }
-  return addresses;
 }
 
 main();
