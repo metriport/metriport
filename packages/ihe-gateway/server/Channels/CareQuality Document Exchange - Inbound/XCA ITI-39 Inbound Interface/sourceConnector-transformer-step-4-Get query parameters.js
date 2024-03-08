@@ -1,4 +1,3 @@
-logger.info("sorceConnector-transformer-step-4-Get query parameters.js");
 var request = {}, payload = null;
 
 try {

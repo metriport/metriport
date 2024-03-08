@@ -1,4 +1,3 @@
-logger.info("sourceConnector-transformer-step-1-Payload validation.js");
 var payload = null, error = null;
 
 if (msg.*::Body.*::AdhocQueryRequest.length() > 0) {

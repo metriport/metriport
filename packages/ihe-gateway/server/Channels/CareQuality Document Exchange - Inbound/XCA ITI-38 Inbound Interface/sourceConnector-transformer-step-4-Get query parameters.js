@@ -23,7 +23,6 @@ try {
 	if ('ObjectRef' == payload.ResponseOption.@returnType) channelMap.put('OBJECTREF', true);
 
 	request.id = payload.@id.toString()
-	logger.info("request.id in step4 iti38: " + request.id);
 	request.timestamp = DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss");
 	request.samlAttributes = saml;
 

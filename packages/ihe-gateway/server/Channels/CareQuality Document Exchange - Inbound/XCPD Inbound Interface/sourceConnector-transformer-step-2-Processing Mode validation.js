@@ -1,5 +1,4 @@
 // Deferred mode - urn:hl7-org:v3:PRPA_IN201305UV02:Deferred:CrossGatewayPatientDiscovery
-logger.info("sourceConnector-transformer-step-2-Processing Mode validation.js");
 try {
 	
 	var mode = msg.*::Header.*::Action.toString();
