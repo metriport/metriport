@@ -30,18 +30,9 @@ export async function processOutboundDocumentRetrievalResps({
     let successDocsCount = 0;
 
     if (results.length === 0) {
-      const msg = `No results received to process.`;
+      const msg = `Received DR result without entries.`;
 
       log(`${msg}`);
-
-      await setDocQueryProgress({
-        patient: { id: patientId, cxId: cxId },
-        downloadProgress: { status: "completed" },
-        convertProgress: { status: "completed" },
-        requestId,
-        source: MedicalDataSource.CAREQUALITY,
-      });
-
       capture.message(msg, {
         extra: {
           context: `cq.processOutboundDocumentRetrievalResps`,
@@ -51,6 +42,14 @@ export async function processOutboundDocumentRetrievalResps({
           results,
         },
         level: "warning",
+      });
+
+      await setDocQueryProgress({
+        patient: { id: patientId, cxId: cxId },
+        downloadProgress: { status: "completed" },
+        convertProgress: { status: "completed" },
+        requestId,
+        source: MedicalDataSource.CAREQUALITY,
       });
 
       return;
