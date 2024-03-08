@@ -29,6 +29,32 @@ export async function processOutboundDocumentRetrievalResps({
     let issuesWithGateway = 0;
     let successDocsCount = 0;
 
+    if (results.length === 0) {
+      const msg = `Received DR result without entries.`;
+
+      log(`${msg}`);
+      capture.message(msg, {
+        extra: {
+          context: `cq.processOutboundDocumentRetrievalResps`,
+          patientId: patientId,
+          requestId,
+          cxId,
+          results,
+        },
+        level: "warning",
+      });
+
+      await setDocQueryProgress({
+        patient: { id: patientId, cxId: cxId },
+        downloadProgress: { status: "completed" },
+        convertProgress: { status: "completed" },
+        requestId,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+
+      return;
+    }
+
     for (const docRetrievalResp of results) {
       newDocRefCount += docRetrievalResp.documentReference?.length ?? 0;
     }
