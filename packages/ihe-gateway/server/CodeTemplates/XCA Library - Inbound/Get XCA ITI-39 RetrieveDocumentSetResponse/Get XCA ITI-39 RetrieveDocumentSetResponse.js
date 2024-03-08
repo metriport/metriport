@@ -36,13 +36,13 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
                 
                 var doc64 = xcaReadFromFileB64(entry.urn.toString());
                 
-				var docResponse = var docResponse = <DocumentResponse>
-                                                        <HomeCommunityId>{'urn:oid:' + entry.homeCommunityId.toString()}</HomeCommunityId>
-                                                        <RepositoryUniqueId>{entry.repositoryUniqueId.toString()}</RepositoryUniqueId>
-                                                        <DocumentUniqueId>{entry.docUniqueId.toString()}</DocumentUniqueId>
-                                                        <mimeType>{entry.contentType.toString()}</mimeType>
-                                                        <Document>{doc64}</Document>
-                                                    </DocumentResponse>;
+				var docResponse = <DocumentResponse>
+                                    <HomeCommunityId>{'urn:oid:' + entry.homeCommunityId.toString()}</HomeCommunityId>
+                                    <RepositoryUniqueId>{entry.repositoryUniqueId.toString()}</RepositoryUniqueId>
+                                    <DocumentUniqueId>{entry.docUniqueId.toString()}</DocumentUniqueId>
+                                    <mimeType>{entry.contentType.toString()}</mimeType>
+                                    <Document>{doc64}</Document>
+                                </DocumentResponse>;
 				_response.appendChild(docResponse);
 
             } catch(ex) {

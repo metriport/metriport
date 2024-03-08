@@ -59,7 +59,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 					// We use decoded bytes to decode the actual raw document. 
 					var decoder = java.util.Base64.getDecoder();
-    				var decodedBytes = decoder.decode(documentEncodedString);
+    				decodedBytes = decoder.decode(documentEncodedString);
 				} catch (ex) {
 					logError(ex);
 				}
@@ -90,7 +90,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							if (title) attachment.title = title;
 						}
 					}
-					const fileSize = decodedAsString.getBytes().length;
+					const fileSize = decodedBytes.length;
 					if (fileSize) attachment.size = parseInt(fileSize);
 				} catch (ex) {
 					logError(ex);
