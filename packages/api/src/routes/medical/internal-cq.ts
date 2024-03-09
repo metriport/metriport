@@ -37,7 +37,7 @@ import {
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
-import { asyncHandler, getFrom } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 const router = Router();
@@ -120,14 +120,14 @@ router.get(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const radiusQuery = getFrom("query").optional("radius", req);
-    const mustHaveXcpdLink = getFrom("query").optional("mustHaveXcpdLink", req);
+    const mustHaveXcpdLink = getFromQueryAsBoolean("mustHaveXcpdLink", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const orgs = await searchCQDirectoriesAroundPatientAddresses({
       patient,
       radiusInMiles: radius,
-      mustHaveXcpdLink: mustHaveXcpdLink === "true" ?? false,
+      mustHaveXcpdLink,
     });
 
     const orgsWithBasicDetails = orgs.map(toBasicOrgAttributes);
