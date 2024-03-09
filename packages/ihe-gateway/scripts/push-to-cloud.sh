@@ -26,6 +26,7 @@ Help() {
 Execute() {
    DOT_ENV_FILE=".env.$1"
 
+   # TODO 1592 Move this to .ts and upload to one of the running tasks, then restart the service
    echo "\n>>> Pushing to $1 OUTBOUND...\n"
    source ./scripts/load-env.sh
    if [ -z "${IHE_GW_URL_OUTBOUND}" ]; then

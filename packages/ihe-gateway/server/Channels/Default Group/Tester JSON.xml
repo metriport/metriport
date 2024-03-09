@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
-  <id>cbdd09d8-af65-4cc6-869a-8c1617a29881</id>
+  <id>0328da93-3971-4a6c-9544-752bf3fe26ef</id>
   <nextMetaDataId>2</nextMetaDataId>
-  <name>Tester</name>
+  <name>Tester JSON</name>
   <description/>
-  <revision>2</revision>
+  <revision>6</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -217,7 +217,7 @@
     <metadata>
       <enabled>false</enabled>
       <lastModified>
-        <time>1709701230316</time>
+        <time>1710025184201</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
