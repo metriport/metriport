@@ -3,7 +3,7 @@
   <nextMetaDataId>2</nextMetaDataId>
   <name>Tester JSON</name>
   <description/>
-  <revision>4</revision>
+  <revision>6</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -135,51 +135,33 @@
       <transformer version="4.4.2">
         <elements/>
         <inboundDataType>JSON</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
+        <outboundDataType>JSON</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
           <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
             <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
       </transformer>
       <responseTransformer version="4.4.2">
         <elements/>
-        <inboundDataType>XML</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
@@ -235,7 +217,7 @@
     <metadata>
       <enabled>false</enabled>
       <lastModified>
-        <time>1710014272216</time>
+        <time>1710025184201</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
