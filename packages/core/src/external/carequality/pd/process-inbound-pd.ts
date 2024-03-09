@@ -17,6 +17,7 @@ import {
 import { validateFHIRAndExtractPatient } from "./validating-pd";
 
 import { getStateEnum } from "../../../domain/geographic-locations";
+import { normalizeGender, normalizePatient } from "../../../mpi/normalize-patient";
 import { METRIPORT_HOME_COMMUNITY_ID } from "../shared";
 
 function constructMatchResponse(
@@ -60,34 +61,27 @@ export async function processInboundPatientDiscovery(
   }
 }
 
-export function patientDataFromResource(
+export function mapPatientResourceToPatientData(
   patientResource: InboundPatientResource | undefined
 ): PatientData | undefined {
   if (!patientResource) return;
-  const humanName = patientResource?.name;
+  const humanName = patientResource.name;
   if (!humanName) return;
   const firstName = humanName[0]?.given?.join(" ");
   const lastName = humanName[0]?.family;
   const dob = patientResource.birthDate;
-  const genderAtBirth = mapGender(patientResource.gender);
+  const genderAtBirth = normalizeGender(patientResource.gender);
   const addresses = getPatientAddresses(patientResource);
 
-  if (!firstName || !lastName || !dob || !genderAtBirth) return;
-  if (!addresses.length) return;
+  if (!firstName || !lastName || !dob || !genderAtBirth || !addresses.length) return;
 
-  return {
+  return normalizePatient({
     firstName,
     lastName,
     dob,
     genderAtBirth,
     address: addresses,
-  };
-}
-
-function mapGender(string: string | undefined): "M" | "F" | undefined {
-  if (string === "male") return "M";
-  if (string === "female") return "F";
-  return;
+  });
 }
 
 function getPatientAddresses(patientResource: InboundPatientResource | undefined): Address[] {
