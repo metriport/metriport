@@ -71,7 +71,7 @@ uploadConfigurationMap() {
     --header "X-Requested-With: push-to-server" \
     --header 'Accept: application/xml' \
     --header 'Content-Type: application/xml' \
-    -u $IHE_GW_USER:$IHE_GW_PASSWORD \
+    -u $ADMIN_USER:$ADMIN_PASSWORD \
     --data "$CONFIG_MAP")
 
   # If its not a number
@@ -114,17 +114,17 @@ setAllConfigs() {
 
   if containsParameter "include-full-backup"; then
     # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
-    ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
+    ./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server -m backup -f push
     # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
     sleep 5
   fi
 
   # "-m" flag = "code" (default behavior): Expands everything to the most granular level (Javascript, Sql, etc).
-  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
+  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
 }
 
 hasSSLCerts() {
-  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
+  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
   if [[ $sslCertResp == *"carequality"* ]]; then
     return 0
   fi
@@ -148,7 +148,7 @@ verifySSLCerts() {
 }
 
 isApiAvailable() {
-  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
+  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
     return 1 # not ready
   elif [[ $checkApiResult -ge 300 ]]; then

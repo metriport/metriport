@@ -9,7 +9,7 @@ export type IHEGatewayProps = {
     _MP_KEYSTORE_KEYPASS: string;
     AWS_ACCESS_KEY_ID: string;
     AWS_SECRET_ACCESS_KEY: string;
-    IHE_GW_PASSWORD: string;
+    ADMIN_PASSWORD: string;
   };
   vpcId: string;
   certArn: string;
