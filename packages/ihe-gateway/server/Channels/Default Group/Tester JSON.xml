@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
-  <id>cbdd09d8-af65-4cc6-869a-8c1617a29881</id>
+  <id>0328da93-3971-4a6c-9544-752bf3fe26ef</id>
   <nextMetaDataId>2</nextMetaDataId>
-  <name>Tester</name>
+  <name>Tester JSON</name>
   <description/>
-  <revision>2</revision>
+  <revision>4</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -135,33 +135,51 @@
       <transformer version="4.4.2">
         <elements/>
         <inboundDataType>JSON</inboundDataType>
-        <outboundDataType>JSON</outboundDataType>
+        <outboundDataType>XML</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
           <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
             <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
-          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
-            <splitType>JavaScript</splitType>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
       </transformer>
       <responseTransformer version="4.4.2">
         <elements/>
-        <inboundDataType>JSON</inboundDataType>
-        <outboundDataType>JSON</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
-          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
-            <splitType>JavaScript</splitType>
+        <inboundDataType>XML</inboundDataType>
+        <outboundDataType>XML</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
-          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
-            <splitType>JavaScript</splitType>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
+          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
+            <stripNamespaces>false</stripNamespaces>
+          </serializationProperties>
+          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
+            <splitType>Element_Name</splitType>
+            <elementName/>
+            <level>1</level>
+            <query/>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
@@ -217,7 +235,7 @@
     <metadata>
       <enabled>false</enabled>
       <lastModified>
-        <time>1709701230316</time>
+        <time>1710014272216</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>

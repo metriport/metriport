@@ -64,7 +64,8 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
-      - "8099:8099" # Tester channel
+      - "8098:8098" # Channel Tester XML
+      - "8099:8099" # Channel Tester JSON
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres
