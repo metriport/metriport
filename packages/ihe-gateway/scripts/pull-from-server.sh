@@ -19,7 +19,7 @@ if [ -z "${IHE_GW_FULL_BACKUP_LOCATION}" ]; then
 fi
 
 isApiAvailable() {
-  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
+  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
     return 1 # not ready
   elif [[ $checkApiResult -ge 300 ]]; then
@@ -58,10 +58,10 @@ rm -rf ./server/CodeTemplates
 rm -rf ./server/GlobalScripts
 
 # "-m" flag = "code" (default behavior): Expands everything to the most granular level (Javascript, Sql, etc).
-./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -m code -f pull
+./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server --include-configuration-map -m code -f pull
 
 # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
-./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t $IHE_GW_FULL_BACKUP_LOCATION --include-configuration-map -m backup -f pull
+./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t $IHE_GW_FULL_BACKUP_LOCATION --include-configuration-map -m backup -f pull
 
 mv $IHE_GW_FULL_BACKUP_LOCATION/FullBackup.xml $IHE_GW_FULL_BACKUP_LOCATION/FullBackup-$ENV_TYPE.xml
 

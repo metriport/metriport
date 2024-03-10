@@ -37,7 +37,7 @@ import {
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
-import { asyncHandler, getFrom } from "../util";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 const router = Router();
@@ -107,7 +107,7 @@ router.post(
 /**
  * GET /internal/carequality/directory/nearby-organizations
  *
- * Retrieves the organizations within a specified radius from the patient's address.
+ * Retrieves the organizations with XCPD URLs within a specified radius from the patient's address.
  * @param req.query.cxId The ID of the customer organization.
  * @param req.query.patientId The ID of the patient.
  * @param req.query.radius Optional, the radius in miles within which to search for organizations. Defaults to 50 miles.
@@ -120,12 +120,14 @@ router.get(
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
     const radiusQuery = getFrom("query").optional("radius", req);
+    const mustHaveXcpdLink = getFromQueryAsBoolean("mustHaveXcpdLink", req);
     const radius = radiusQuery ? parseInt(radiusQuery) : DEFAULT_RADIUS_IN_MILES;
 
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const orgs = await searchCQDirectoriesAroundPatientAddresses({
       patient,
       radiusInMiles: radius,
+      mustHaveXcpdLink,
     });
 
     const orgsWithBasicDetails = orgs.map(toBasicOrgAttributes);

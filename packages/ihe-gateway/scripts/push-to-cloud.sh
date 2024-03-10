@@ -26,23 +26,24 @@ Help() {
 Execute() {
    DOT_ENV_FILE=".env.$1"
 
-   # outbound
+   # TODO 1592 Move this to .ts and upload to one of the running tasks, then restart the service
+   echo "\n>>> Pushing to $1 OUTBOUND...\n"
    source ./scripts/load-env.sh
    if [ -z "${IHE_GW_URL_OUTBOUND}" ]; then
       echo "Error: IHE_GW_URL_OUTBOUND is not set, exiting"
       exit 1
    fi
    IHE_GW_URL=$IHE_GW_URL_OUTBOUND
-   source ./scripts/push-to-server.sh
+   source ./scripts/push-to-server.sh $@
 
-   # inbound
+   echo "\n>>> Pushing to $1 INBOUND...\n"
    source ./scripts/load-env.sh
    if [ -z "${IHE_GW_URL_INBOUND}" ]; then
       echo "Error: IHE_GW_URL_INBOUND is not set, exiting"
       exit 1
    fi
    IHE_GW_URL=$IHE_GW_URL_INBOUND
-   source ./scripts/push-to-server.sh
+   source ./scripts/push-to-server.sh $@
 
    echo "Done."
 }
