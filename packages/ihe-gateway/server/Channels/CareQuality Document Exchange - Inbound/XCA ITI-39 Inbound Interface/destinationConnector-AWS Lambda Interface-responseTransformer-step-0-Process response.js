@@ -16,10 +16,8 @@ if (msg.hasOwnProperty('operationOutcome')) {
 }
 
 // Generate RetrieveDocumentSetResponse	
-try {
-
-	var msgJson = JSON.parse(msg);
-	var _reponse = (failure) ? getXCAITI39QueryResponse(null, operationOutcome) : getXCAITI39QueryResponse(msgJson, operationOutcome, channelMap.containsKey('MTOM'));
+try {	
+	var _reponse = (failure) ? getXCAITI39QueryResponse(null, operationOutcome) : getXCAITI39QueryResponse(msg, operationOutcome, channelMap.containsKey('MTOM'));
 	if (_reponse) {
 		soapTemplate.*::Body.appendChild(_reponse);
 		responseMap.put('RESPONSE', soapTemplate.toString());
