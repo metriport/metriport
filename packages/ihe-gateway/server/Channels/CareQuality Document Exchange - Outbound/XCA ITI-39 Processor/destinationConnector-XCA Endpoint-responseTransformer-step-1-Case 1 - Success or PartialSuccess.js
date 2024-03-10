@@ -1,6 +1,5 @@
 // If both successes and failures are received from Responding Gateways, the Initiating Gateway shall return both DocumentResponse and
 // RegistryErrorList elements in one response and specify PartialSuccess status.
-
 if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryResponseCode.toString()) {
 
 	if (xml.*::DocumentResponse.length() > 0) try {
@@ -50,8 +49,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
 				const documentEncoded = entry.*::Document;
-				const documentDecoded = decodeBase64(documentEncoded.toString());
-				const parsedFile = parseFileFromString(documentDecoded.toString());
+				const parsedFile = parseFileFromString(documentEncoded);
 				const detectedExtension = parsedFile.extension;
 				const detectedFileType = parsedFile.mimeType;
 				const decodedAsString = parsedFile.decodedString;
@@ -108,7 +106,6 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 		}
 
 		// TODO: Process and generate OperationOutcome
-
 		if (contentList.length > 0) {
 			channelMap.put('RESULT', contentList.length + ' doc(s)');
 			var _response = getXCA39ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
