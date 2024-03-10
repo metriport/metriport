@@ -82,10 +82,13 @@ export async function getXcpdStatisticsForPatient(
     let numberOfMatches = 0;
     let numberOfSuccesses = 0;
     let numberOfPatients = 0;
+    let numberOfPatientResources = 0;
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getXcpdStatistics = async (pd: any) => {
       if (Object.keys(pd.data.patientResource).length == 0) delete pd.data.patientResource;
+      if (pd.data.patientResource) numberOfPatientResources++;
+
       const row = rowWithDataSchema.parse(pd);
       if (row.status === "success") numberOfSuccesses++;
 
@@ -106,7 +109,7 @@ export async function getXcpdStatisticsForPatient(
     if (patientId) console.log(`For patientId ${patientId}.`);
 
     return `${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
-Of the ${numberOfPatients} returned patients, we got ${numberOfMatches} MPI matches.`;
+Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating XCPD statistics.");
