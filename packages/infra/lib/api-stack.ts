@@ -77,7 +77,7 @@ export class APIStack extends Stack {
     this.alarmAction = slackNotification?.alarmAction;
 
     //-------------------------------------------
-    // VPC + NAT Gateway
+    // VPC + NAT Gateway.
     //-------------------------------------------
     const vpcConstructId = "APIVpc";
     this.vpc = new ec2.Vpc(this, vpcConstructId, {

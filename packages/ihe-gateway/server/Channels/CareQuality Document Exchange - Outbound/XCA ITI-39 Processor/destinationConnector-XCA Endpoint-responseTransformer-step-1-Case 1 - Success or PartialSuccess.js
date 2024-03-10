@@ -49,20 +49,14 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var newDocumentUniqueId = entry.*::NewDocumentUniqueId.toString();
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
-				let decodedAsString = null;
-				try {
-					var documentEncodedString = entry.*::Document.toString();
-					var decoded = FileUtil.decode(documentEncodedString);
-					decodedAsString = new Packages.java.lang.String(decoded);
-				} catch (ex) {
-					logError(ex);
-				}
-				if (!decodedAsString) continue;
+				const documentEncoded = entry.*::Document;
+				const documentDecoded = decodeBase64(documentEncoded.toString());
+				const parsedFile = parseFileFromString(documentDecoded.toString());
+				const detectedExtension = parsedFile.extension;
+				const detectedFileType = parsedFile.mimeType;
+				const decodedAsString = parsedFile.decodedString;
+				const decodedBytes = parsedFile.decodedBytes;
 
-				var type = detectFileType(decodedAsString);
-				var detectedFileType = type[0];
-				var detectedExtension = type[1];
-				
 				// Files are stored in format: <CX_ID>/<PATIENT_ID>/<CX_ID>_<PATIENT_ID>_<DOC_ID>.<extension>
 				var fileName = [request.cxId, request.patientId, attachment.metriportId + detectedExtension].join('_');
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
@@ -84,13 +78,13 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							if (title) attachment.title = title;
 						}
 					}
-					const fileSize = decodedAsString.getBytes("UTF-8").length;
+					const fileSize = decodedBytes.length;
 					if (fileSize) attachment.size = parseInt(fileSize);
 				} catch (ex) {
 					logError(ex);
 				}
 
-				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedAsString, attachment);
+				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedBytes, attachment);
 				contentList.push(attachment);
 
 				// TODO 1350 remove this log

@@ -85,6 +85,15 @@ function isLikelyTextFile(fileBuffer) {
   return readableChars / totalChars > threshold;
 }
 
+function isLikelyXML(contents) {
+  if (contents && typeof contents === "string") {
+    if (contents.startsWith("<?xml") || contents.startsWith("<ClinicalDocument")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
@@ -148,9 +157,21 @@ function detectFileType(contents) {
     return [JPEG_MIME_TYPE, JPEG_FILE_EXTENSION];
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
     return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
+  } else if (isLikelyXML(contents)) {
+    return [XML_TXT_MIME_TYPE, XML_FILE_EXTENSION];
   } else if (isLikelyTextFile(fileBuffer)) {
     return [TXT_MIME_TYPE, TXT_FILE_EXTENSION];
   } else {
     return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
   }
+}
+
+function isText(contentType) {
+  return (
+    contentType === TXT_MIME_TYPE ||
+    contentType === HTML_MIME_TYPE ||
+    contentType === XML_TXT_MIME_TYPE ||
+    contentType === JSON_APP_MIME_TYPE ||
+    contentType === JSON_TXT_MIME_TYPE
+  );
 }

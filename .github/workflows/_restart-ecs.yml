@@ -45,9 +45,9 @@ jobs:
       - name: Log Environment
         run: |
           env
-          echo "ECS_CLUSTER: ${{ vars.ECS_CLUSTER_STAGING }}"
-          echo "ECS_SERVICE: ${{ vars.ECS_SERVICE_STAGING }}"
-          echo "AWS_REGION: ${{ vars.API_REGION_STAGING }}"
+          echo "ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}"
+          echo "ECS_SERVICE: ${{ inputs.ECS_SERVICE }}"
+          echo "AWS_REGION: ${{ inputs.AWS_REGION }}"
         shell: bash
 
       - name: Setup AWS CLI

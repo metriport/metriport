@@ -19,14 +19,13 @@ function xcaWriteToFile(path, documentContents, metadata) {
       if ("url" !== key.toString()) meta.put(key.toString(), String(metadata[key]));
     }
 
-    var putRequest = Packages.software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
+    const putRequest = Packages.software.amazon.awssdk.services.s3.model.PutObjectRequest.builder()
       .bucket(bucketName)
       .key(path.toString())
       .metadata(meta)
       .build();
-    var requestBody = Packages.software.amazon.awssdk.core.sync.RequestBody.fromBytes(
-      java.lang.String(documentContents).getBytes()
-    );
+    const requestBody =
+      Packages.software.amazon.awssdk.core.sync.RequestBody.fromBytes(documentContents);
 
     result = client.putObject(putRequest, requestBody);
 

@@ -14,4 +14,6 @@ if (!globalMap.containsKey("SECRET_KEY")) {
   ChannelUtil.stopChannel(channelId);
 }
 
+logger.info("Deploying " + channelName);
+
 return;

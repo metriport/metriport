@@ -36,14 +36,14 @@ services:
       # _MP_DATABASE__READONLY_URL: "jdbc:postgresql://ihe-postgres:5432/db"
       LICENSE_KEY: ${LICENSE_KEY}
       ENV_TYPE: "${ENV_TYPE}"
-      IHE_GW_USER: ${IHE_GW_USER}
-      IHE_GW_PASSWORD: ${IHE_GW_PASSWORD}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       _MP_KEYSTORE_PATH: ${_MP_KEYSTORE_PATH}
       _MP_KEYSTORE_STOREPASS: ${_MP_KEYSTORE_STOREPASS}
       _MP_KEYSTORE_KEYPASS: ${_MP_KEYSTORE_KEYPASS}
       _MP_KEYSTORE_TYPE: ${_MP_KEYSTORE_TYPE}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${IHE_GW_AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${IHE_GW_AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
       S3_BUCKET_NAME: "${S3_BUCKET_NAME}"
       API_BASE_ADDRESS: "${API_BASE_ADDRESS}"
@@ -64,6 +64,8 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
+      - "8098:8098" # Channel Tester XML
+      - "8099:8099" # Channel Tester JSON
   ihe-postgres:
     image: postgres:14.4-alpine
     container_name: ihe-postgres

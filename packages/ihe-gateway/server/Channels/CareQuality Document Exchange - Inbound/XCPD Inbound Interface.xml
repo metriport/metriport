@@ -11,7 +11,7 @@ Note:
  - If 'Validate WS-Security' is set to 'Yes,' Mirth Interop rejects failing messages with the SOAP Fault message but does not increase the channel's Received and Sent count.
 
 Last updated: Jan 10 2024</description>
-  <revision>49</revision>
+  <revision>120</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -40513,7 +40513,9 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
       <userId>1</userId>
     </metadata>
     <dependentIds/>
-    <dependencyIds/>
+    <dependencyIds>
+      <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

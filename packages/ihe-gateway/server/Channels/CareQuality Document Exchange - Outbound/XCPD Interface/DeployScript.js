@@ -3,4 +3,6 @@
 
 globalMap.put('XCPDINTERFACE', channelId);
 
+logger.info("Deploying " + channelName);
+
 return;

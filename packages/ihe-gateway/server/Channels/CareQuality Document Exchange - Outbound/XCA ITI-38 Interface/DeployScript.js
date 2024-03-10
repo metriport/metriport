@@ -4,4 +4,6 @@
 // Store for the XCA Bulk Interface
 globalMap.put('XCAITI38INTERFACE', channelId);
 
+logger.info("Deploying " + channelName);
+
 return;

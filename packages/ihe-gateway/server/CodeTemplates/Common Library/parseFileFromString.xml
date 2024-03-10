@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
+  <id>d7a315bb-35ce-4d66-a1c6-559716b4ea6a</id>
+  <name>parseFileFromString</name>
+  <revision>1</revision>
+  <lastModified>
+    <time>1710006685827</time>
+    <timezone>GMT</timezone>
+  </lastModified>
+  <contextSet>
+    <delegate>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+    </delegate>
+  </contextSet>
+  <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+    <type>FUNCTION</type>
+    <code msync-fileref="parseFileFromString.js"/>
+  </properties>
+</codeTemplate>
