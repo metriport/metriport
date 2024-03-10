@@ -92,10 +92,7 @@ export type IHEGatewayProps = {
   inboundPorts: {
     patientDiscovery: number;
     documentQuery: number;
-    /**
-     * Optional in case its shared with document query
-     */
-    documentRetrieval?: number;
+    documentRetrieval: number;
   };
   outboundPorts: {
     patientDiscovery: number;
