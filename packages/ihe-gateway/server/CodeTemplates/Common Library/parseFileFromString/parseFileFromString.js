@@ -13,9 +13,9 @@
  */
 function parseFileFromString(fileAsString) {
 	// logger.info("[parseFileFromString] fileAsString: " + fileAsString);
-  let decodedString = new Packages.java.lang.String(fileAsString);
+  let decodedString = null;
 	// logger.info("[parseFileFromString] decodedString: " + decodedString);
-  let decodedBytes = java.lang.String(decodedString).getBytes();
+  let decodedBytes = null;
   // We don't know upfront if the file is base64 encoded, so we try to decode it and if it fails
   // we use the original content.
   try {
