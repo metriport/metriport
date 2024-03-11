@@ -8,13 +8,13 @@ groups:
           location: pypi
           package-name: metriport
           token: ${PYPI_TOKEN}
+        github:
+          repository: metriport/metriport-python
         config:
           client_class_name: Metriport
           pydantic_config:
             require_optional_fields: false
           improved_imports: true
-        github: 
-          repository: metriport/metriport-python
   java-sdk:
     generators:
       - name: fernapi/fern-java-sdk
@@ -24,10 +24,10 @@ groups:
           coordinate: com.metriport:metriport-java
           username: ${MAVEN_USERNAME}
           password: ${MAVEN_PASSWORD}
+        github:
+          repository: metriport/metriport-java
         config:
           client-class-name: Metriport
-        github: 
-          repository: metriport/metriport-java
   node-sdk:
     generators:
       - name: fernapi/fern-typescript-node-sdk
@@ -36,12 +36,12 @@ groups:
           location: npm
           package-name: '@metriport/api-sdk'
           token: ${NPM_TOKEN}
+        github:
+          repository: metriport/metriport-node
         config:
           namespaceExport: Metriport
           noSerdeLayer: true
-        github: 
-          repository: metriport/metriport-node
-  test: # fern generate --group test will locally generate the SDKs for testing
+  test:
     generators:
       - name: fernapi/fern-python-sdk
         version: 0.7.5
@@ -54,7 +54,8 @@ groups:
         version: 0.5.20
         output:
           location: local-file-system
-          path: ../packages/sdks/java/tester-local/src/main/java/com/metriport/generated
+          path: >-
+            ../packages/sdks/java/tester-local/src/main/java/com/metriport/generated
         config:
           package-prefix: com.metriport.generated
           client-class-name: Metriport
@@ -67,3 +68,14 @@ groups:
           namespaceExport: Metriport
           outputSourceFiles: true
           noSerdeLayer: true
+  server:
+    audiences:
+      - server
+    generators:
+      - name: fernapi/fern-typescript-express
+        version: 0.9.7
+        output:
+          location: local-file-system
+          path: ../packages/api/src/fern
+        config:
+          outputSourceFiles: true
