@@ -80,7 +80,11 @@ export async function documentUploaderHandler(
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
     const hash = eTag ? eTag : "";
-    const mimeType = contentType ? contentType : "";
+    if (!contentType) {
+      const message = "Failed to get the mime type of the uploaded file";
+      console.log(`${message}: ${contentType}`);
+      throw new MetriportError(message, null, { sourceKey, destinationKey });
+    }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
@@ -95,7 +99,7 @@ export async function documentUploaderHandler(
         docRef,
         metadataFileName,
         destinationBucket,
-        mimeType,
+        mimeType: contentType,
       });
     }
     if (size && size > MAXIMUM_FILE_SIZE) {

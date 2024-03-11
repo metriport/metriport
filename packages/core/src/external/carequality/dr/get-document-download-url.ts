@@ -12,14 +12,14 @@ import { XDSRegistryError } from "../error";
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
-export async function constructDocumentReferences(
+export async function buildDocumentReferences(
   payload: InboundDocumentRetrievalReq
 ): Promise<DocumentReference[]> {
   validateBasePayload(payload);
 
   const documentIds = extractDocumentIds(payload);
   if (documentIds.length === 0) {
-    throw new XDSRegistryError("Valid Dcument ID is not defined");
+    throw new XDSRegistryError("Valid Document ID is not defined");
   }
 
   return await retrieveDocumentReferences(documentIds);
@@ -35,10 +35,15 @@ async function retrieveDocumentReferences(documentIds: string[]): Promise<Docume
       id,
       medicalDocumentsBucketName
     );
+    if (!eTag) {
+      const message = `Failed to retrieve ETag for document`;
+      console.log(`${message}: ${id}`);
+      throw new XDSRegistryError("Document Hash is not defined");
+    }
     const documentReference: DocumentReference = {
       homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
       repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-      docUniqueId: eTag || "",
+      docUniqueId: eTag,
       contentType: contentType,
       size: size,
       urn: id,
