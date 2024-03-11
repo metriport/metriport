@@ -22,6 +22,6 @@ try {
 	saml.purposeOfUse = attributes.*::Attribute.('urn:oasis:names:tc:xspa:1.0:subject:purposeofuse' == @Name).*::AttributeValue.*::PurposeOfUse.@code.toString();
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: SAML Processing - ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Interface: SAML Processing - ' + ex);
 	throw ex;
 }

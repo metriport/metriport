@@ -28,7 +28,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 	}
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: Postprocessor - ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Interface: Step-0 - ' + ex);
 	throw ex;
 }
 
@@ -63,7 +63,7 @@ try {
 		responseMap.put('RESPONSE', soapTemplate.toString());
 	}
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Processor: Response - ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Inbound Interface: Response - ' + ex);
 	throw ex;
 }
 

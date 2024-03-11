@@ -24,7 +24,7 @@ try {
 	}
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Processor: ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Interface: ' + ex);
 	throw ex;
 }
 
@@ -56,7 +56,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 	}
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Processor: Postprocessor - ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Interface: step-0 - ' + ex);
 	throw ex;
 }
 

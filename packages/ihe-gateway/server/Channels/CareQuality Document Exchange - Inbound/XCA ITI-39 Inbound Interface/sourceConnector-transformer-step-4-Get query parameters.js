@@ -37,6 +37,6 @@ try {
 	channelMap.put('REQUEST', JSON.stringify(request));
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Processor: Query parameters - ' + ex);
+	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Interface: Query parameters - ' + ex);
 	throw ex;
 }
