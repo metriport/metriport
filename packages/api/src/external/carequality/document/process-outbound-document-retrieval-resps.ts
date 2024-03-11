@@ -26,7 +26,7 @@ export async function processOutboundDocumentRetrievalResps({
   );
   try {
     let successDocsRetrievedCount = 0;
-    let issuesWithGateway = 0;
+    let issuesWithExternalGateway = 0;
 
     if (results.length === 0) {
       const msg = `Received DR result without entries.`;
@@ -58,14 +58,14 @@ export async function processOutboundDocumentRetrievalResps({
       if (docRetrievalResp.documentReference) {
         successDocsRetrievedCount += docRetrievalResp.documentReference.length;
       } else if (docRetrievalResp.operationOutcome?.issue) {
-        issuesWithGateway += docRetrievalResp.operationOutcome.issue.length;
+        issuesWithExternalGateway += docRetrievalResp.operationOutcome.issue.length;
       }
     }
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
-        total: successDocsRetrievedCount + issuesWithGateway,
+        total: successDocsRetrievedCount + issuesWithExternalGateway,
         status: "processing",
       },
       convertProgress: {
@@ -107,7 +107,7 @@ export async function processOutboundDocumentRetrievalResps({
       patient: { id: patientId, cxId: cxId },
       progress: {
         successful: successDocsRetrievedCount,
-        errors: issuesWithGateway,
+        errors: issuesWithExternalGateway,
       },
       type: "download",
       requestId,
