@@ -86,7 +86,7 @@ function isLikelyTextFile(fileBuffer) {
 }
 
 function isLikelyXML(contents) {
-  if (contents) {
+  if (contents && typeof contents === "object") {
     if (contents.startsWith("<?xml") || contents.startsWith("<ClinicalDocument")) {
       return true;
     }
