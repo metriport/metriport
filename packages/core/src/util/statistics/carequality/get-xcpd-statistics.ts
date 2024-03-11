@@ -4,10 +4,11 @@ dotenv.config();
 import { inboundPatientResourceSchema } from "@metriport/ihe-gateway-sdk";
 import { QueryTypes } from "sequelize";
 import z from "zod";
+import { mapPatientResourceToPatientData } from "../../../external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
-import { executeAsynchronously } from "../../../util/concurrency";
-import { initSequelizeForLambda } from "../../../util/sequelize";
-import { mapPatientResourceToPatientData } from "./process-inbound-pd";
+import { executeAsynchronously } from "../../concurrency";
+import { initSequelizeForLambda } from "../../sequelize";
+import { QueryReplacements } from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
 
@@ -21,12 +22,6 @@ export const rowWithDataSchema = z.object({
     .optional(),
 });
 
-type QueryReplacements = {
-  cxId: string;
-  dateString?: string;
-  patientId?: string;
-};
-
 /**
  * Returns statistics for XCPD, including the following:
  * 1) # of PDs
@@ -37,15 +32,15 @@ type QueryReplacements = {
  * @param apiUrl        The URL of the API.
  * @param sqlDBCreds    The SQL database credentials.
  * @param cxId          The CX ID.
- * @param dateString    The date string.
  * @param patientId     Optional, the patient ID. If not provided, the statistics will be calculated for all patients of the customer organization.
+ * @param dateString    Optional, the date string. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
  */
-export async function getXcpdStatisticsForPatient(
+export async function getXcpdStatistics(
   apiUrl: string,
   sqlDBCreds: string,
   cxId: string,
-  dateString?: string,
-  patientId?: string
+  patientId?: string,
+  dateString?: string
 ): Promise<string> {
   console.log("Starting XCPD statistics calculation...");
   const mpi = new MPIMetriportAPI(apiUrl);
@@ -61,12 +56,12 @@ export async function getXcpdStatisticsForPatient(
   };
 
   if (dateString) {
-    query += `and created_at>:dateString`;
+    query += ` and created_at>:dateString`;
     replacements.dateString = dateString;
   }
 
   if (patientId) {
-    query += `and patient_id=:patientId`;
+    query += ` and patient_id=:patientId`;
     replacements.patientId = patientId;
   }
 
@@ -79,13 +74,19 @@ export async function getXcpdStatisticsForPatient(
     });
 
     const numberOfRows = pdResults.length;
+
+    const patients = new Set();
     let numberOfMatches = 0;
     let numberOfSuccesses = 0;
     let numberOfPatients = 0;
     let numberOfPatientResources = 0;
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getXcpdStatistics = async (pd: any) => {
+    const processXcpdResult = async (pd: any) => {
+      if (!patients.has(pd["patient_id"])) {
+        patients.add(pd["patient_id"]);
+      }
+
       if (!pd.data.patientResource) return;
       numberOfPatientResources++;
 
@@ -104,13 +105,13 @@ export async function getXcpdStatisticsForPatient(
       }
     };
 
-    await executeAsynchronously(pdResults, async pd => getXcpdStatistics(pd), {
+    await executeAsynchronously(pdResults, async pd => processXcpdResult(pd), {
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS,
     });
 
     if (patientId) console.log(`For patientId ${patientId}.`);
 
-    return `${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+    return `For ${patients.size} unique patients, we got ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
 Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
   } catch (err) {
     console.error(err);

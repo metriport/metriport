@@ -1,24 +1,34 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getXcpdStatisticsForPatient } from "@metriport/core/external/carequality/pd/get-statistics";
+import { getXcpdStatistics } from "@metriport/core/util/statistics/carequality/get-xcpd-statistics";
+import { getDqStatistics } from "@metriport/core/util/statistics/carequality/get-dq-statistics";
+import { getDrStatistics } from "@metriport/core/util/statistics/carequality/get-dr-statistics";
+import { getWhStatistics } from "@metriport/core/util/statistics/get-wh-statistics";
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
+
 const patientId = "";
-const dateString = ""; // RECOMMENDED to use in production due to the large amount of data generated on a daily basis
+const dateString = "";
 
 async function main() {
-  const xcpdResultsString = await getXcpdStatisticsForPatient(
+  const xcpdResultsString = await getXcpdStatistics(
     apiUrl,
     sqlDBCreds,
     cxId,
-    dateString,
-    patientId
+    patientId,
+    dateString
   );
   console.log(xcpdResultsString);
+  const dqResultsString = await getDqStatistics(sqlDBCreds, cxId, patientId, dateString);
+  console.log(dqResultsString);
+  const drResultsString = await getDrStatistics(sqlDBCreds, cxId, patientId, dateString);
+  console.log(drResultsString);
+  const whResultsString = await getWhStatistics(sqlDBCreds, cxId, patientId, dateString);
+  console.log(whResultsString);
 }
 
 main();
