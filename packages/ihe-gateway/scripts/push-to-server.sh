@@ -33,8 +33,8 @@ cleanup() {
 trap cleanup ERR
 
 CONFIG_MAP_FILE=./server/ConfigurationMap.xml
-MAX_ATTEMPTS_LOGIN=10
-MAX_ATTEMPTS_VERIFY_SSL_CERT=10
+MAX_ATTEMPTS_LOGIN=20
+MAX_ATTEMPTS_VERIFY_SSL_CERT=15
 MAX_ATTEMPTS_PUSH_CONFIG_MAP=10
 
 source ./scripts/load-env.sh
@@ -184,7 +184,7 @@ waitServerOnline() {
         cleanup
         exit 1
       fi
-      echo "[config] Failed to push configuration map to the server, trying up to $MAX_ATTEMPTS_LOGIN times..."
+      echo "[config] Failed to login to API, trying up to $MAX_ATTEMPTS_LOGIN times..."
     fi
     sleep 1
   done
