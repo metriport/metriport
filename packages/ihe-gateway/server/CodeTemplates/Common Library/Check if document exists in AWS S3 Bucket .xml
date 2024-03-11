@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
+  <id>e55a3d2d-bafe-4225-8194-b2a876e6e67a</id>
+  <name>Check if document exists in AWS S3 Bucket </name>
+  <revision>1</revision>
+  <lastModified>
+    <time>1710182494940</time>
+    <timezone>GMT</timezone>
+  </lastModified>
+  <contextSet>
+    <delegate>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>GLOBAL_UNDEPLOY</contextType>
+      <contextType>CHANNEL_UNDEPLOY</contextType>
+      <contextType>GLOBAL_DEPLOY</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>GLOBAL_PREPROCESSOR</contextType>
+      <contextType>GLOBAL_POSTPROCESSOR</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
+    </delegate>
+  </contextSet>
+  <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+    <type>FUNCTION</type>
+    <code msync-fileref="Check if document exists in AWS S3 Bucket .js"/>
+  </properties>
+</codeTemplate>

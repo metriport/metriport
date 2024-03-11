@@ -62,7 +62,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
 				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
 				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
-				var docExists = xcaReadFromFile(filePath.toString());
+				var docExists = xcaDoesDocumentExist(filePath.toString());
 
 				attachment.fileName = fileName.toString();
 				attachment.url = filePath.toString();
