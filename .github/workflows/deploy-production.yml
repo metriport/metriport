@@ -25,7 +25,6 @@ jobs:
     # Map a step output to a job output
     outputs:
       api: ${{ steps.changes.outputs.api }}
-      ihe-gw-config: ${{ steps.changes.outputs.ihe-gw-config }}
       ihe-gw-server: ${{ steps.changes.outputs.ihe-gw-server }}
       fhir-converter: ${{ steps.changes.outputs.fhir-converter }}
       infra-lambdas: ${{ steps.changes.outputs.infra-lambdas }}
@@ -51,14 +50,11 @@ jobs:
               - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
-            ihe-gw-config:
-              - "packages/ihe-gateway/server/**"
             ihe-gw-server:
               - "packages/ihe-gateway/Dockerfile"
               - "packages/ihe-gateway/entrypoint.sh"
-              - "packages/ihe-gateway/config/custom-extensions/**"
-              - "packages/ihe-gateway/config/custom-libs/**"
-              - "packages/ihe-gateway/config/schemas/**"
+              - "packages/ihe-gateway/config/**"
+              - "packages/ihe-gateway/server/**"
               - "packages/ihe-gateway/scripts/**"
             # Doing them individually because there are other stuff there that we don't want to trigger a deploy b/c of that
             fhir-converter:

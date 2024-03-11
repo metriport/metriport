@@ -133,6 +133,10 @@ hasSSLCerts() {
 }
 
 verifySSLCerts() {
+  if containsParameter "no-ssl-check"; then
+    echo "[config] Skipping SSL cert check"
+    return
+  fi
   echo "[config] Checking if SSL cert is there..."
   local counter=0
   until hasSSLCerts; do
@@ -193,17 +197,15 @@ waitServerOnline() {
 ###################################################################################################
 waitServerOnline
 
-if containsParameter "no-ssl-check"; then
-  echo "[config] Skipping SSL cert check"
-else
-  verifySSLCerts
-fi
-
 echo "[config] Pushing configs to the server..."
 if containsParameter "configurationMap"; then
+  # since we are only pushing the configuration map, we should first check if SSL certs are there
+  verifySSLCerts
   setConfigurationMap
 else
+  # since we are pushing all configurations - which include the SSL certs, let's check certs afterwards
   setAllConfigs
+  verifySSLCerts
 fi
 
 echo "[config] Done."
