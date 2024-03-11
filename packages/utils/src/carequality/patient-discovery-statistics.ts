@@ -11,14 +11,14 @@ const patientId = "";
 const dateString = ""; // RECOMMENDED to use in production due to the large amount of data generated on a daily basis
 
 async function main() {
-  const resultsString = await getXcpdStatisticsForPatient(
+  const xcpdResultsString = await getXcpdStatisticsForPatient(
     apiUrl,
     sqlDBCreds,
     cxId,
     dateString,
     patientId
   );
-  console.log(resultsString);
+  console.log(xcpdResultsString);
 }
 
 main();

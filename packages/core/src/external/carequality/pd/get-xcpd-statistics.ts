@@ -86,8 +86,10 @@ export async function getXcpdStatisticsForPatient(
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const getXcpdStatistics = async (pd: any) => {
+      if (!pd.data.patientResource) return;
+      numberOfPatientResources++;
+
       if (Object.keys(pd.data.patientResource).length == 0) delete pd.data.patientResource;
-      if (pd.data.patientResource) numberOfPatientResources++;
 
       const row = rowWithDataSchema.parse(pd);
       if (row.status === "success") numberOfSuccesses++;
