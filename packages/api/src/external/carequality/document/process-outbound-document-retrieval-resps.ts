@@ -25,9 +25,8 @@ export async function processOutboundDocumentRetrievalResps({
     `CQ processOutboundDocumentRetrievalResps - requestId ${requestId}, patient ${patientId}`
   );
   try {
-    let newDocRefCount = 0;
+    let successDocsRetrievedCount = 0;
     let issuesWithGateway = 0;
-    let successDocsCount = 0;
 
     if (results.length === 0) {
       const msg = `Received DR result without entries.`;
@@ -46,8 +45,8 @@ export async function processOutboundDocumentRetrievalResps({
 
       await setDocQueryProgress({
         patient: { id: patientId, cxId: cxId },
-        downloadProgress: { status: "completed" },
-        convertProgress: { status: "completed" },
+        downloadProgress: { total: 0, status: "completed" },
+        convertProgress: { total: 0, status: "completed" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
       });
@@ -56,17 +55,21 @@ export async function processOutboundDocumentRetrievalResps({
     }
 
     for (const docRetrievalResp of results) {
-      newDocRefCount += docRetrievalResp.documentReference?.length ?? 0;
+      if (docRetrievalResp.documentReference) {
+        successDocsRetrievedCount += docRetrievalResp.documentReference.length;
+      } else if (docRetrievalResp.operationOutcome?.issue) {
+        issuesWithGateway += docRetrievalResp.operationOutcome.issue.length;
+      }
     }
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: {
-        total: newDocRefCount,
+        total: successDocsRetrievedCount + issuesWithGateway,
         status: "processing",
       },
       convertProgress: {
-        total: newDocRefCount,
+        total: successDocsRetrievedCount,
         status: "processing",
       },
       requestId,
@@ -75,15 +78,10 @@ export async function processOutboundDocumentRetrievalResps({
 
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
-        const { operationOutcome } = docRetrievalResp;
-        if (operationOutcome?.issue) {
-          issuesWithGateway += operationOutcome.issue.length;
-        }
         const docRefs = docRetrievalResp.documentReference;
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
           await handleDocReferences(validDocRefs, requestId, patientId, cxId);
-          successDocsCount += docRefs.length;
         }
       })
     );
@@ -108,7 +106,7 @@ export async function processOutboundDocumentRetrievalResps({
     await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       progress: {
-        successful: successDocsCount,
+        successful: successDocsRetrievedCount,
         errors: issuesWithGateway,
       },
       type: "download",
