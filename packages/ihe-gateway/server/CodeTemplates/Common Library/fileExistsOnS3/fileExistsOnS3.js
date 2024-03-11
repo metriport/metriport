@@ -4,7 +4,7 @@
 	@param {String} path - the file path
 	@return {Boolean} return boolean
 */
-function xcaDoesDocumentExist(path) {
+function fileExistsOnS3(path) {
   try {
     var bucketName = Config.getS3BucketName();
 
