@@ -1,9 +1,11 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getDocumentsFromCQ } from "../document/query-documents";
+import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { getCQData } from "../patient";
 
 /**
@@ -39,6 +41,18 @@ export async function updatePatientDiscoveryStatus({
     if (status === "completed") {
       docQueryRequestIdToTrigger = getCQData(externalData)?.scheduledDocQueryRequestId;
       newScheduledDocQueryRequestId = undefined;
+    } else if (status === "failed") {
+      newScheduledDocQueryRequestId = undefined;
+      const scheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
+
+      if (scheduledDocQueryRequestId) {
+        setDocQueryProgress({
+          patient,
+          requestId: scheduledDocQueryRequestId,
+          source: MedicalDataSource.CAREQUALITY,
+          downloadProgress: { status: "failed", total: 0 },
+        });
+      }
     } else {
       newScheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
     }
