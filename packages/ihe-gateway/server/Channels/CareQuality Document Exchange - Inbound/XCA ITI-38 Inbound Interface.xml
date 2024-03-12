@@ -5495,31 +5495,31 @@ Last updated: Jan 02 2024
           <name>Set Stat</name>
           <sequenceNumber>0</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-0-Set Stat.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-0-set-stat.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Payload validation</name>
           <sequenceNumber>1</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-1-Payload validation.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-1-payload-validation.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Get Saml Attributes</name>
           <sequenceNumber>2</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-2-Get SAML atttributes.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-2-get-saml-atttributes.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Validate Request</name>
           <sequenceNumber>3</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-3-Validate request.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-3-validate-request.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Get Query Paraameters</name>
           <sequenceNumber>4</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-4-Get Query Parameters.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-4-get-query-parameters.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"/>
