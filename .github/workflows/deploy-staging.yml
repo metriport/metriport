@@ -11,6 +11,7 @@ on:
       - "packages/commonwell-sdk/**"
       - "packages/core/**"
       - "packages/fhir-converter/**"
+      - "packages/ihe-gateway/**"
       - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
