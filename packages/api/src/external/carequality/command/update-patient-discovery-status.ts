@@ -27,6 +27,8 @@ export async function updatePatientDiscoveryStatus({
   };
 
   let docQueryRequestIdToTrigger: string | undefined = undefined;
+  let newScheduledDocQueryRequestId: string | undefined = undefined;
+  let patientDiscoverFailed = false;
 
   const updatedPatient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
@@ -37,23 +39,11 @@ export async function updatePatientDiscoveryStatus({
 
     const externalData = existingPatient.data.externalData ?? {};
 
-    let newScheduledDocQueryRequestId: string | undefined = undefined;
     if (status === "completed") {
       docQueryRequestIdToTrigger = getCQData(externalData)?.scheduledDocQueryRequestId;
       newScheduledDocQueryRequestId = undefined;
     } else if (status === "failed") {
-      newScheduledDocQueryRequestId = undefined;
-      const scheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
-
-      if (scheduledDocQueryRequestId) {
-        // TODO: define the data to be updated on the patient in setDocQueryProgress so we could call it here too.
-        await setDocQueryProgress({
-          patient,
-          requestId: scheduledDocQueryRequestId,
-          source: MedicalDataSource.CAREQUALITY,
-          downloadProgress: { status: "failed", total: 0 },
-        });
-      }
+      patientDiscoverFailed = true;
     } else {
       newScheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
     }
@@ -82,6 +72,22 @@ export async function updatePatientDiscoveryStatus({
 
     return updatedPatient;
   });
+
+  if (patientDiscoverFailed) {
+    const scheduledDocQueryRequestId = getCQData(
+      updatedPatient.data.externalData
+    )?.scheduledDocQueryRequestId;
+
+    if (scheduledDocQueryRequestId) {
+      // TODO: define the data to be updated on the patient in setDocQueryProgress so we could call it here too.
+      await setDocQueryProgress({
+        patient,
+        requestId: scheduledDocQueryRequestId,
+        source: MedicalDataSource.CAREQUALITY,
+        downloadProgress: { status: "failed", total: 0 },
+      });
+    }
+  }
 
   if (docQueryRequestIdToTrigger) {
     log(`Triggering scheduled document query with requestId ${docQueryRequestIdToTrigger}`);
