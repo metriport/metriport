@@ -7,6 +7,11 @@
 // AE (application error) is returned in QueryAck.queryResponseCode (control act wrapper)
 // There is no RegistrationEvent returned in the response.
 
+var requestId = channelMap.get('MSG_ID');
+var cxId = channelMap.get('CUSTOMER_ID');
+
+var baseLogMessage = "XCPD ITI55 Processor: Response (Case5) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+
 if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryResponseCode.toString()) > -1) try {
 
 	var operationOutcome = getOperationOutcome(channelMap.get('MSG_ID'));
@@ -34,8 +39,11 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 		issue.details.text = reason;
 		operationOutcome.issue.push(issue);		
 	}
+
   channelMap.put('OPERATION_OUTCOME', JSON.stringify(operationOutcome));
 	var _response = getXCPD55ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
+
+  logger.info(baseLogMessage + 'Response: ' + JSON.stringify(_response));
 	
 	// Send the response back to the app
 	var result = router.routeMessageByChannelId(globalMap.get('XCPDAPPINTERFACE'), JSON.stringify(_response));
@@ -44,7 +52,7 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 	return;
 	
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case5) - ' + ex);
+  logger.error(baseLogMessage + 'Error: ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());	
 	throw ex;
 }

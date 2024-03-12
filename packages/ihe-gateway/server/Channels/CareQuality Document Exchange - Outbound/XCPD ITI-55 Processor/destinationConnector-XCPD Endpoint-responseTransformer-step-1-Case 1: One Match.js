@@ -1,7 +1,12 @@
 // CASE 1: The Responding Gateway finds exactly one patient record matching the criteria sent in the query parameters
 // AA (application accept) is returned in Acknowledgement.typeCode (transmission wrapper).
-// OK (data found, no errors) is returned in QueryAck.queryResponseCode (control act wrapper) 
-// One RegistrationEvent (and the associated Patient role, subject of that event) is returned from the patient information source for the patient record found. 
+// OK (data found, no errors) is returned in QueryAck.queryResponseCode (control act wrapper)
+// One RegistrationEvent (and the associated Patient role, subject of that event) is returned from the patient information source for the patient record found.
+
+var requestId = channelMap.get('MSG_ID');
+var cxId = channelMap.get('CUSTOMER_ID');
+
+var baseLogMessage = "XCPD ITI55 Processor: Response (Case1) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
 
 if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
@@ -33,16 +38,18 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
 		var patientResource = getXCPDPatientResource(subject1.toString());
 		if (patientResource) _response.patientResource = patientResource;
-		
+
+    logger.info(baseLogMessage + 'Response: ' + JSON.stringify(_response));
+
 		// Send the response back to the app
 		var result = router.routeMessageByChannelId(globalMap.get('XCPDAPPINTERFACE'), JSON.stringify(_response));
 	}
-	
+
 	// Stop further processing
 	return;
 
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case1) - ' + ex);
+  logger.error(baseLogMessage + 'Error: ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());
 	throw ex;
 }

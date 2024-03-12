@@ -9,6 +9,9 @@ For document searches on the NHIN, it is recommended to use the following elemen
  * Document Creation Time 
 */
 
+const baseLogMessage = "XCPD ITI38 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
+
+
 // XDSDocumentEntryPatientId (REQUIRED) [1..1]
 // Dec 20: xcpdPatientId to gatewayPatientId
 var patientEntry = getXDSDocumentEntryPatientId(
@@ -72,3 +75,6 @@ if (msg.hasOwnProperty("serviceDate")) {
 // XDSDocumentEntryType (OPTIONAL) [0..*]
 var docEntryType = getXDSDocumentEntryType();
 if (docEntryType) parameterList += docEntryType;
+
+logger.info(baseLogMessage + 'Generated query parameters: ' + parameterList.toString());
+
