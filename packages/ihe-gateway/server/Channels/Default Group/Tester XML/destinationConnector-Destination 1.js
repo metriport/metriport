@@ -4,7 +4,7 @@ const msg = channelMap.get("REQ_BODY");
 
 logger.info("[Tester] Got: " + msg.toString());
 
-const res = parseFileFromString(msg.toString());
+const res = parseFileFromString(msg.toString(), false);
 logger.info("[Tester] >>> res: " + JSON.stringify(res));
 
 const fileName = new Date().toISOString();
