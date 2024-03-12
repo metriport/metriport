@@ -3,9 +3,11 @@ dotenv.config();
 // keep that ^ on top
 import { QueryTypes } from "sequelize";
 import { executeAsynchronously } from "../../concurrency";
+import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
 import {
   QueryReplacements,
+  StatisticsProps,
   countContentTypes,
   getYesterdaysTimeFrame,
   mapToString,
@@ -24,15 +26,15 @@ const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
  * @param sqlDBCreds    The SQL database credentials.
  * @param cxId          The CX ID.
  * @param patientId     Optional, the patient ID. If not provided, the statistics will be calculated for all patients of the customer organization.
- * @param dateString    Optional, The date string. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
+ * @param dateString    Optional, The date string. If provided, will return the results from the set date until present. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
  */
-export async function getDqStatistics(
-  sqlDBCreds: string,
-  cxId: string,
-  patientId?: string,
-  dateString?: string
-): Promise<string> {
-  console.log("Starting DQ statistics calculation...");
+export async function getDqStatistics({
+  sqlDBCreds,
+  cxId,
+  patientId,
+  dateString,
+}: StatisticsProps): Promise<string> {
+  out("Starting DQ statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
   let query = `
@@ -76,7 +78,7 @@ export async function getDqStatistics(
     let numberOfDocuments = 0;
     const totalContentTypes = new Map<string, number>();
 
-    // TODO: need to define the type of `dq`
+    // TODO: define the type of `dq`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processDqResult = async (dq: any) => {
       const docRefs = dq.data.documentReference;

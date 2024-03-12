@@ -7,8 +7,9 @@ import z from "zod";
 import { mapPatientResourceToPatientData } from "../../../external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
+import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
-import { QueryReplacements } from "./../shared";
+import { QueryReplacements, StatisticsProps, getYesterdaysTimeFrame } from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
 
@@ -22,6 +23,8 @@ export const rowWithDataSchema = z.object({
     .optional(),
 });
 
+type XcpdStatisticsProps = StatisticsProps & { apiUrl: string };
+
 /**
  * Returns statistics for XCPD, including the following:
  * 1) # of PDs
@@ -33,16 +36,16 @@ export const rowWithDataSchema = z.object({
  * @param sqlDBCreds    The SQL database credentials.
  * @param cxId          The CX ID.
  * @param patientId     Optional, the patient ID. If not provided, the statistics will be calculated for all patients of the customer organization.
- * @param dateString    Optional, the date string. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
+ * @param dateString    Optional, the date string. If provided, will return the results from the set date until present. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
  */
-export async function getXcpdStatistics(
-  apiUrl: string,
-  sqlDBCreds: string,
-  cxId: string,
-  patientId?: string,
-  dateString?: string
-): Promise<string> {
-  console.log("Starting XCPD statistics calculation...");
+export async function getXcpdStatistics({
+  apiUrl,
+  sqlDBCreds,
+  cxId,
+  patientId,
+  dateString,
+}: XcpdStatisticsProps): Promise<string> {
+  out(`Starting XCPD statistics calculation ${patientId ? `For patientId ${patientId}.` : ""}...`);
   const mpi = new MPIMetriportAPI(apiUrl);
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
@@ -58,6 +61,13 @@ export async function getXcpdStatistics(
   if (dateString) {
     query += ` and created_at>:dateString`;
     replacements.dateString = dateString;
+  } else {
+    const [yesterday, today] = getYesterdaysTimeFrame();
+    query += ` and created_at between :yesterday and :today`;
+    if (today && yesterday) {
+      replacements.yesterday = yesterday;
+      replacements.today = today;
+    }
   }
 
   if (patientId) {
@@ -81,6 +91,7 @@ export async function getXcpdStatistics(
     let numberOfPatients = 0;
     let numberOfPatientResources = 0;
 
+    // TODO: define the type of `dr`
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processXcpdResult = async (pd: any) => {
       if (!patients.has(pd["patient_id"])) {
@@ -91,9 +102,10 @@ export async function getXcpdStatistics(
       numberOfPatientResources++;
 
       if (Object.keys(pd.data.patientResource).length == 0) delete pd.data.patientResource;
+      numberOfSuccesses++;
 
       const row = rowWithDataSchema.parse(pd);
-      if (row.status === "success") numberOfSuccesses++;
+      if (row.status !== "success") return;
 
       const patient = mapPatientResourceToPatientData(row.data?.patientResource);
       if (!patient) return;

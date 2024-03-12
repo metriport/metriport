@@ -8,6 +8,13 @@ export type QueryReplacements = {
   today?: string;
 };
 
+export type StatisticsProps = {
+  sqlDBCreds: string;
+  cxId: string;
+  patientId?: string;
+  dateString?: string;
+};
+
 const documentReference = z.object({
   size: z.number().optional(),
   contentType: z.string().optional(),

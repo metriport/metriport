@@ -5,7 +5,7 @@ import { QueryTypes } from "sequelize";
 import z from "zod";
 import { executeAsynchronously } from "../concurrency";
 import { initSequelizeForLambda } from "../sequelize";
-import { QueryReplacements, getYesterdaysTimeFrame } from "./shared";
+import { QueryReplacements, StatisticsProps, getYesterdaysTimeFrame } from "./shared";
 
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
 
@@ -47,14 +47,14 @@ type WebhookResult = z.infer<typeof webhookResultSchema>;
  * @param sqlDBCreds    The SQL database credentials.
  * @param cxId          The CX ID.
  * @param patientId     Optional, the patient ID. If not provided, the statistics will be calculated for all patients of the customer organization.
- * @param dateString    Optional, The date string. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
+ * @param dateString    Optional, The date string. If provided, will return the results from the set date until present. If not provided, the statistics will be calculated for the 24 hr period starting at 25 hr ago.
  */
-export async function getWhStatistics(
-  sqlDBCreds: string,
-  cxId: string,
-  patientId?: string,
-  dateString?: string
-): Promise<string> {
+export async function getWhStatistics({
+  sqlDBCreds,
+  cxId,
+  patientId,
+  dateString,
+}: StatisticsProps): Promise<string> {
   console.log("Starting WH statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
