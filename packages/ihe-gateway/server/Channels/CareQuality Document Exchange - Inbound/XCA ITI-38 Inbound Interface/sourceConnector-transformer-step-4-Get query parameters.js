@@ -37,12 +37,15 @@ try {
 		var element = slot.@name.toString().replace('$XDSDocument','');
 		element = element[0].toLowerCase() + element.slice(1);
 
+
+		const ENTRY_PATIENT_ID = "entryPatientId";
+		const EXTERNAL_GATEWAY_PATIENT = "externalGatewayPatient";
 		// Convert Slot params
 		var func = queryRequestOptionFn[slot.@name.toString().slice(1)];
 		if (typeof func === 'function') {
 			var result = func(slot);
 			// Use constants in the ternary operation
-			element = element === "entryPatientId" ? "externalGatewayPatient" : element;
+			element = element === ENTRY_PATIENT_ID ? EXTERNAL_GATEWAY_PATIENT : element;
 			if (result) request[element] = result;
 		}
 	}
