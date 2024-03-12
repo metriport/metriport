@@ -43,6 +43,7 @@ export async function updatePatientDiscoveryStatus({
       docQueryRequestIdToTrigger = getCQData(externalData)?.scheduledDocQueryRequestId;
       newScheduledDocQueryRequestId = undefined;
     } else if (status === "failed") {
+      newScheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
       patientDiscoverFailed = true;
     } else {
       newScheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
