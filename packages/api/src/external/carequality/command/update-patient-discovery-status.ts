@@ -46,7 +46,8 @@ export async function updatePatientDiscoveryStatus({
       const scheduledDocQueryRequestId = getCQData(externalData)?.scheduledDocQueryRequestId;
 
       if (scheduledDocQueryRequestId) {
-        setDocQueryProgress({
+        // TODO: define the data to be updated on the patient in setDocQueryProgress, so we could call it here too.
+        await setDocQueryProgress({
           patient,
           requestId: scheduledDocQueryRequestId,
           source: MedicalDataSource.CAREQUALITY,
