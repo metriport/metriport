@@ -5507,16 +5507,16 @@ Last updated: Jan 02 2024
           <name>Get Saml Attributes</name>
           <sequenceNumber>2</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-2-Get SAML attributes.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-2-Get Saml Attributes.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Validate Request</name>
           <sequenceNumber>3</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-3-Validate request.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-3-Validate Request.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
-          <name>Get Query Paraameters</name>
+          <name>Get Query Parameters</name>
           <sequenceNumber>4</sequenceNumber>
           <enabled>true</enabled>
           <script msync-fileref="sourceConnector-transformer-step-4-Get Query Parameters.js"/>

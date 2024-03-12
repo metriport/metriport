@@ -5513,7 +5513,7 @@ Last updated: Jan 02 2024
           <name>Validate Request</name>
           <sequenceNumber>3</sequenceNumber>
           <enabled>true</enabled>
-          <script msync-fileref="sourceConnector-transformer-step-3-Validate request.js"/>
+          <script msync-fileref="sourceConnector-transformer-step-3-Validate Request.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
           <name>Get Query Paraameters</name>
