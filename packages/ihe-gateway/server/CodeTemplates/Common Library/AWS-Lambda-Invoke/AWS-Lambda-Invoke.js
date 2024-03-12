@@ -50,6 +50,15 @@ function invokeLambda(functionName, payload) {
 
     const responseString = invokeResponse.payload().asUtf8String();
     const responseJson = JSON.parse(responseString);
+    if (responseJson.statusCode < 200 || responseJson.statusCode >= 300) {
+      logger.info("FunctionError: " + invokeResponse.functionError());
+      logger.info("Payload: " + JSON.stringify(payload));
+      throw new Error(
+        "Error invoking Lambda function: " +
+          functionName
+      );
+    };
+    
     return responseJson;
   } catch (ex) {
     if (globalMap.containsKey("TEST_MODE")) logger.error("Code Template: invokeLambda() - " + ex);

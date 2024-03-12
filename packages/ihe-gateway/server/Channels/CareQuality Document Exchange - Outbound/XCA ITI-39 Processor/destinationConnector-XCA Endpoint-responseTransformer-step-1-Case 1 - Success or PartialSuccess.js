@@ -49,7 +49,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
 				const documentEncoded = entry.*::Document;
-				const parsedFile = parseFileFromString(documentEncoded);
+				const parsedFile = parseFileFromString(documentEncoded, false);
 				const detectedExtension = parsedFile.extension;
 				const detectedFileType = parsedFile.mimeType;
 				const decodedAsString = parsedFile.decodedString;

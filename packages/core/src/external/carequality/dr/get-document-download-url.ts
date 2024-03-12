@@ -38,7 +38,7 @@ async function retrieveDocumentReferences(documentIds: string[]): Promise<Docume
     if (!eTag) {
       const message = `Failed to retrieve ETag for document`;
       console.log(`${message}: ${id}`);
-      throw new XDSRegistryError("Document Hash is not defined");
+      throw new XDSRegistryError("Failed to retrieve Document");
     }
     const documentReference: DocumentReference = {
       homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,

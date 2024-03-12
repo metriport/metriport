@@ -8,7 +8,7 @@ try {
   channelMap.put("RESPONSE", response);
   return JSON.stringify( { response: response });
 } catch (ex) {
-  if (globalMap.containsKey("TEST_MODE")) logger.error("Inbound XCPD Dest Connector - " + ex);
+  if (globalMap.containsKey("TEST_MODE")) logger.error("Test Channel Dest Connector - " + ex);
   channelMap.put("RESPONSE_ERROR", ex.toString());
   throw ex;
 }
