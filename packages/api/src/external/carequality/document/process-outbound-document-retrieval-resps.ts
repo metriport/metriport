@@ -184,7 +184,7 @@ async function handleDocReferences(
       const shouldConvert = isDocConvertible && docRef.isNew;
 
       const docLocation = docRef.fileLocation;
-      const docPath = docRef.url;
+      const docPath = docRef.fileName;
       if (!docLocation || !docPath) {
         throw new MetriportError(`Invalid doc ref: location or path missing.`, undefined, {
           docRefId: docRef.metriportId,

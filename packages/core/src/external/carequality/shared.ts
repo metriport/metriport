@@ -1,6 +1,7 @@
 import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
+import { base64ToString, stringToBase64 } from "../../util/base64";
 
 /*
 CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
@@ -77,19 +78,19 @@ export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.56": USState.WY, // Wyoming Driver's License
 };
 
-export function createPatientUniqueId(internalId: string, patientId: string): string {
-  return btoa(`${internalId}/${patientId}`);
+export function createPatientUniqueId(cxId: string, patientId: string): string {
+  return stringToBase64(`${cxId}/${patientId}`);
 }
 
 export function extractPatientUniqueId(patientId: string): string {
-  return atob(patientId);
+  return base64ToString(patientId);
 }
 
 export function createDocumentUniqueId(documentId: string): string {
-  return btoa(documentId);
+  return stringToBase64(documentId);
 }
 export function extractDocumentUniqueId(documentId: string): string {
-  return atob(documentId);
+  return base64ToString(documentId);
 }
 
 export function validateBasePayload(
