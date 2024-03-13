@@ -15,7 +15,7 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
-import { register } from "./fern";
+import { register } from "@metriport/core/src/fhir-to-cda/fern";
 import { createConverterService } from "./routes/medical/internal-fhir-to-cda";
 
 const app: Application = express();
