@@ -137,11 +137,6 @@ export const aggregateDocQueryProgress = (
     documentQueryProgress.download = {
       ...documentQueryProgress.download,
       ...downloadProgress,
-      ...(downloadProgress.status === "failed" && {
-        total: 0,
-        successful: 0,
-        errors: 0,
-      }),
     };
   } else if (downloadProgress === null) {
     documentQueryProgress.download = undefined;
@@ -151,11 +146,6 @@ export const aggregateDocQueryProgress = (
     documentQueryProgress.convert = {
       ...documentQueryProgress.convert,
       ...convertProgress,
-      ...(convertProgress.status === "failed" && {
-        total: 0,
-        successful: 0,
-        errors: 0,
-      }),
     };
   } else if (convertProgress === null) {
     documentQueryProgress.convert = undefined;
