@@ -75,6 +75,12 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							const title = firstTitle.split("</title>")[0];
 							if (title) attachment.title = title;
 						}
+						const firstEffectiveTime = decodedAsString.split('effectiveTime value="')[1];
+						
+						if (firstEffectiveTime) {
+							const effectiveTime = firstEffectiveTime.split('"')[0];
+							if (effectiveTime) attachment.date = effectiveTime;
+						}
 					}
 					const fileSize = decodedBytes.length;
 					if (fileSize) attachment.size = parseInt(fileSize);

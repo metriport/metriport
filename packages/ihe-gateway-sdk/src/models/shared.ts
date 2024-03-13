@@ -127,5 +127,7 @@ export const documentReferenceSchema = z.object({
   isNew: z.boolean().nullish(),
   creation: z.string().nullish(),
   title: z.string().nullish(),
+  date: z.string().nullish(),
+  authorInstitution: z.string().nullish(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;

@@ -13,7 +13,12 @@ import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
-import { containsMetriportId, cqToFHIR, DocumentReferenceWithMetriportId } from "./shared";
+import {
+  DocumentReferenceWithMetriportId,
+  containsMetriportId,
+  cqToFHIR,
+  formatDate,
+} from "./shared";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -208,6 +213,8 @@ async function handleDocReferences(
         ...fhirDocRef,
         description: fhirDocRef.description ?? draftFHIRDocRef?.description,
         content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
+        contained: [...(draftFHIRDocRef?.contained ?? []), ...(fhirDocRef.contained ?? [])],
+        date: formatDate(fhirDocRef.date) ?? formatDate(draftFHIRDocRef?.date),
       };
 
       if (!docRef.contentType) {
