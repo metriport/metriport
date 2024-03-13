@@ -9,9 +9,10 @@
  * Takes a file content as string and returns the file type, extension and decoded string and bytes.
  *
  * @param {String} fileAsString - the file content as string
+ * @param {Boolean} - Whether it is a nonXNLBody
  * @return {ParsedFile} returns the file type, extension and decoded string and bytes
  */
-function parseFileFromString(fileAsString) {
+function parseFileFromString(fileAsString, isNonXmlBody) {
 	// logger.info("[parseFileFromString] decodedString: " + decodedString);
   let decodedBytes = null;
   // We don't know upfront if the file is base64 encoded, so we try to decode it and if it fails
@@ -24,8 +25,8 @@ function parseFileFromString(fileAsString) {
   }
   if (!decodedBytes) return;
 
-  const decodedString = new Packages.java.lang.String(decodedBytes).toString();
-  const type = detectFileType(decodedBytes, decodedString);
+  const decodedString = String(new Packages.java.lang.String(decodedBytes));
+  const type = detectFileType(decodedBytes, decodedString, isNonXmlBody);
   const mimeType = type[0];
   const extension = type[1];
 
@@ -34,7 +35,7 @@ function parseFileFromString(fileAsString) {
     const cda = new XML(decodedString);
 		var nonXMLBody = cda.*::component.*::nonXMLBody;
 		if (nonXMLBody.length() > 0 && nonXMLBody.*::text.length() > 0) {
-			return parseFileFromString(nonXMLBody.*::text.toString());
+			return parseFileFromString(nonXMLBody.*::text.toString(), true);
 		}
   }
 

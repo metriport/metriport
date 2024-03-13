@@ -1,1 +1,0 @@
-responseMap.put('XCPD_RESPONSE', msg.toString());

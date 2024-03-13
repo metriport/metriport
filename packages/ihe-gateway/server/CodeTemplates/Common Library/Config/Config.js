@@ -22,12 +22,15 @@ const Config = {
     return getEnvVar("API_BASE_ADDRESS");
   },
 
+  // TODO replace this by lambda name
   getInboundPatientDiscoveryURL: function () {
     return getEnvVar("INBOUND_PATIENT_DISCOVERY_URL");
   },
+  // TODO replace this by lambda name
   getInboundDocumentQueryURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_QUERY_URL");
   },
+  // TODO replace this by lambda name
   getInboundDocumentRetrievalURL: function () {
     return getEnvVar("INBOUND_DOCUMENT_RETRIEVAL_URL");
   },

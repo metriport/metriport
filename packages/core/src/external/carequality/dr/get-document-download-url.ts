@@ -12,34 +12,41 @@ import { XDSRegistryError } from "../error";
 const region = Config.getAWSRegion();
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 
-export async function getDocumentDownloadURL(
+export async function buildDocumentReferences(
   payload: InboundDocumentRetrievalReq
 ): Promise<DocumentReference[]> {
   validateBasePayload(payload);
 
   const documentIds = extractDocumentIds(payload);
   if (documentIds.length === 0) {
-    throw new XDSRegistryError("Valid Dcument ID is not defined");
+    throw new XDSRegistryError("Valid Document ID is not defined");
   }
 
-  return await retrievePreSignedUrls(documentIds);
+  return await retrieveDocumentReferences(documentIds);
 }
 
-async function retrievePreSignedUrls(documentIds: string[]): Promise<DocumentReference[]> {
+async function retrieveDocumentReferences(documentIds: string[]): Promise<DocumentReference[]> {
   const s3Utils = new S3Utils(region);
   const documentReferences: DocumentReference[] = [];
 
   // TODO consider making this more robust, so if one fails we still return the rest
   for (const id of documentIds) {
-    const url = await s3Utils.getSignedUrl({
-      bucketName: medicalDocumentsBucketName,
-      fileName: id,
-    });
+    const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(
+      id,
+      medicalDocumentsBucketName
+    );
+    if (!eTag) {
+      const message = `Failed to retrieve ETag for document`;
+      console.log(`${message}: ${id}`);
+      throw new XDSRegistryError("Failed to retrieve Document");
+    }
     const documentReference: DocumentReference = {
       homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
       repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-      docUniqueId: id,
-      urn: url,
+      docUniqueId: eTag,
+      contentType: contentType,
+      size: size,
+      urn: id,
     };
     documentReferences.push(documentReference);
   }

@@ -18,7 +18,7 @@ $ touch .env
 
 Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
 backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (e.g., SSL/Java keystore private key).
+information (e.g., SSL Manager certs/Java keystore private key).
 
 ### Initialization
 

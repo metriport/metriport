@@ -11,7 +11,7 @@ Note:
  - If 'Validate WS-Security' is set to 'Yes,' Mirth Interop rejects failing messages with the SOAP Fault message but does not increase the channel's Received and Sent count.
 
 Last updated: Jan 10 2024</description>
-  <revision>120</revision>
+  <revision>337</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -46,10 +46,10 @@ Last updated: Jan 10 2024</description>
         <port>9091</port>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
-        <responseVariable>XCPD_RESPONSE</responseVariable>
+        <responseVariable>RESPONSE</responseVariable>
         <respondAfterProcessing>true</respondAfterProcessing>
         <processBatch>false</processBatch>
-        <firstResponse>true</firstResponse>
+        <firstResponse>false</firstResponse>
         <processingThreads>10</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
@@ -40248,7 +40248,7 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
       <expandedJsonFormat>true</expandedJsonFormat>
       <autoConvertSOAPToJSON>false</autoConvertSOAPToJSON>
       <autoConvertJSONResponseToXML>false</autoConvertJSONResponseToXML>
-      <validateSAML>true</validateSAML>
+      <validateSAML>false</validateSAML>
       <validationSSLProperties class="com.mirth.connect.plugins.ssl.model.SSLConnectorPluginProperties" version="4.4.2">
         <enabled>true</enabled>
         <clientAuthentication>DISABLED</clientAuthentication>
@@ -40305,6 +40305,18 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
           <enabled>true</enabled>
           <script msync-fileref="sourceConnector-transformer-step-3-Payload validation.js"/>
         </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Get Saml Attributes</name>
+          <sequenceNumber>4</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-4-Get Saml Attributes.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+          <name>Get Query Paraameters</name>
+          <sequenceNumber>5</sequenceNumber>
+          <enabled>true</enabled>
+          <script msync-fileref="sourceConnector-transformer-step-5-Get Query Parameters.js"/>
+        </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
       </elements>
       <inboundTemplate encoding="base64"/>
       <outboundTemplate encoding="base64"/>
@@ -40346,11 +40358,11 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
   <destinationConnectors>
     <connector version="4.4.2">
       <metaDataId>1</metaDataId>
-      <name>XCPD Inbound Processor</name>
-      <properties class="com.mirth.connect.connectors.vm.VmDispatcherProperties" version="4.4.2">
+      <name>AWS Lambda Interface</name>
+      <properties class="com.mirth.connect.connectors.js.JavaScriptDispatcherProperties" version="4.4.2">
         <pluginProperties/>
         <destinationConnectorProperties version="4.4.2">
-          <queueEnabled>true</queueEnabled>
+          <queueEnabled>false</queueEnabled>
           <sendFirst>false</sendFirst>
           <retryIntervalMillis>10000</retryIntervalMillis>
           <regenerateTemplate>false</regenerateTemplate>
@@ -40367,14 +40379,21 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
             </entry>
           </resourceIds>
           <queueBufferSize>1000</queueBufferSize>
-          <reattachAttachments>false</reattachAttachments>
+          <reattachAttachments>true</reattachAttachments>
         </destinationConnectorProperties>
-        <channelId>830d9530-a006-4b9c-9b9b-302065bc2eea</channelId>
-        <channelTemplate>${message.encodedData}</channelTemplate>
-        <mapVariables/>
+        <script msync-fileref="destinationConnector-AWS Lambda Interface.js"/>
       </properties>
       <transformer version="4.4.2">
-        <elements/>
+        <elements>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Set Lambda params</name>
+            <sequenceNumber>0</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-transformer-step-0-Set Lambda params.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+        </elements>
+        <inboundTemplate encoding="base64"/>
+        <outboundTemplate encoding="base64"/>
         <inboundDataType>XML</inboundDataType>
         <outboundDataType>XML</outboundDataType>
         <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
@@ -40408,34 +40427,46 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
             <name>Process response</name>
             <sequenceNumber>0</sequenceNumber>
             <enabled>true</enabled>
-            <script msync-fileref="destinationConnector-XCPD Inbound Processor-responseTransformer-step-0-Process response.js"/>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-0-Process response.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 1: Patient Match</name>
+            <sequenceNumber>1</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-1-Case 1: Patient Match.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 2: No Match</name>
+            <sequenceNumber>2</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-2-Case 2: No Match.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 3: Fault response</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-3-Case 3: Fault response.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>Case 3: Fault response</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-AWS Lambda Interface-responseTransformer-step-3-Case 3: Fault response.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
-        <inboundTemplate encoding="base64"/>
+        <inboundTemplate encoding="base64">ewoJInJlc291cmNlVHlwZSI6ICJQYXRpZW50IiwKCSJleHRlbnNpb24iOiBbCgkJewoJCQkidXJsIjogImh0dHA6Ly9obDcub3JnL2ZoaXIvU3RydWN0dXJlRGVmaW5pdGlvbi9wYXRpZW50LWJpcnRoUGxhY2UiLAoJCQkidmFsdWVBZGRyZXNzIjogewoJCQkJImNpdHkiOiAiU2VhdHRsZSIsCgkJCQkic3RhdGUiOiAiV0EiCgkJCX0KCQl9LCB7CgkJCSJ1cmwiOiAiaHR0cDovL2hsNy5vcmcvZmhpci9TdHJ1Y3R1cmVEZWZpbml0aW9uL3BhdGllbnQtbW90aGVyc01haWRlbk5hbWUiLAoJCQkidmFsdWVTdHJpbmciOiAiUm9iZXJ0YSIKCQl9CgldLAoJImlkZW50aWZpZXIiOiBbCgkJewoJCQkic3lzdGVtIjogImh0dHA6Ly9obDcub3JnL2ZoaXIvc2lkL3VzLXNzbiIsCgkJCSJ2YWx1ZSI6ICI1NDMtMzQtNTYyMSIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAidXJuOm9pZDoxLjIuODQwLjExNDM1MC4xLjEzLjExNTExLjMuNy4zLjY4ODg4NC4xMDAuMTAwMCIsCgkJCSJ2YWx1ZSI6ICJFVjEyWkdSN0o2SzRNRjgiCgkJfQoJXSwKCSJuYW1lIjogWwoJCXsKCQkJImZhbWlseSI6ICJCYXNzZXR0IiwKCQkJImdpdmVuIjogWwoJCQkJIkRvbiIsICJDLiIKCQkJXQoJCX0sIHsKCQkJImZhbWlseSI6ICJCYXNzZXR0IiwKCQkJImdpdmVuIjogWwoJCQkJIkRvbm55IiwgIkpyIiwgIlJvc3kiCgkJCV0sCgkJCSJwcmVmaXgiOiBbCgkJCQkiRFIiCgkJCV0sCgkJCSJzdWZmaXgiOiBbCgkJCQkiSUlJIgoJCQldCgkJfQoJXSwKCSJ0ZWxlY29tIjogWwoJCXsKCQkJInN5c3RlbSI6ICJwaG9uZSIsCgkJCSJ2YWx1ZSI6ICI1MDMtNjI5LTU1NDEiCgkJfSwgewoJCQkic3lzdGVtIjogInBob25lIiwKCQkJInZhbHVlIjogIjUwMy02OTItODk1NSIsCgkJCSJ1c2UiOiAiaG9tZSIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAiZmF4IiwKCQkJInZhbHVlIjogIjUwMy02OTItODk1NiIKCQl9LCB7CgkJCSJzeXN0ZW0iOiAiZW1haWwiLAoJCQkidmFsdWUiOiAiZGJhc3NldHRAYW9sLmNvbSIsCgkJCSJ1c2UiOiAidGVtcCIKCQl9CgldLAoJImdlbmRlciI6ICJtYWxlIiwKCSJiaXJ0aERhdGUiOiAiMTk1OC0wNC0wNiIsCgkiYWRkcmVzcyI6IFsKCQl7CgkJCSJsaW5lIjogWwoJCQkJIjEyMTU1IEJyb2Fkd2F5IiwgIlNXIgoJCQldLAoJCQkiY2l0eSI6ICJCZWF2ZXJ0b24iLAoJCQkic3RhdGUiOiAiSUwiLAoJCQkicG9zdGFsQ29kZSI6ICI2MDAwNSIsCgkJCSJjb3VudHJ5IjogIlVTQSIKCQl9LCB7CgkJCSJsaW5lIjogWwoJCQkJIjEyMyBNYWluIFN0cmVldCIKCQkJXSwKCQkJImNpdHkiOiAiVEVTVCIsCgkJCSJzdGF0ZSI6ICJJTCIsCgkJCSJwb3N0YWxDb2RlIjogIjYwMDIyIiwKCQkJImNvdW50cnkiOiAiVVNBIgoJCX0KCV0KfQ==</inboundTemplate>
         <outboundTemplate encoding="base64"/>
-        <inboundDataType>XML</inboundDataType>
-        <outboundDataType>XML</outboundDataType>
-        <inboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <inboundDataType>JSON</inboundDataType>
+        <outboundDataType>JSON</outboundDataType>
+        <inboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </inboundProperties>
-        <outboundProperties class="com.mirth.connect.plugins.datatypes.xml.XMLDataTypeProperties" version="4.4.2">
-          <serializationProperties class="com.mirth.connect.plugins.datatypes.xml.XMLSerializationProperties" version="4.4.2">
-            <stripNamespaces>false</stripNamespaces>
-          </serializationProperties>
-          <batchProperties class="com.mirth.connect.plugins.datatypes.xml.XMLBatchProperties" version="4.4.2">
-            <splitType>Element_Name</splitType>
-            <elementName/>
-            <level>1</level>
-            <query/>
+        <outboundProperties class="com.mirth.connect.plugins.datatypes.json.JSONDataTypeProperties" version="4.4.2">
+          <batchProperties class="com.mirth.connect.plugins.datatypes.json.JSONBatchProperties" version="4.4.2">
+            <splitType>JavaScript</splitType>
             <batchScript/>
           </batchProperties>
         </outboundProperties>
@@ -40443,7 +40474,7 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
       <filter version="4.4.2">
         <elements/>
       </filter>
-      <transportName>Channel Writer</transportName>
+      <transportName>JavaScript Writer</transportName>
       <mode>DESTINATION</mode>
       <enabled>true</enabled>
       <waitForPrevious>true</waitForPrevious>
@@ -40501,8 +40532,8 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1704995297079</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1709750853085</time>
+        <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -40514,7 +40545,6 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
     </metadata>
     <dependentIds/>
     <dependencyIds>
-      <string>830d9530-a006-4b9c-9b9b-302065bc2eea</string>
     </dependencyIds>
     <channelTags/>
   </exportData>
