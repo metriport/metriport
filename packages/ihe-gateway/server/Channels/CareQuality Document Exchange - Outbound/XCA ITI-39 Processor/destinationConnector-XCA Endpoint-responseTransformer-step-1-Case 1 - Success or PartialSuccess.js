@@ -5,6 +5,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 	if (xml.*::DocumentResponse.length() > 0) try {
 
 		var bucketName = Config.getS3BucketName();
+    var bucketRegion = globalMap.get('REGION');
 		var request = channelMap.get('REQUEST');
 		var contentList = [];
 		var operationOutcome = null;
@@ -61,7 +62,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
 				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
 				var docExists = fileExistsOnS3(filePath.toString());
-				const url = getDocumentUrl(fileName.toString());
+        const url = "https://" + bucketName + ".s3."  + bucketRegion + ".amazonaws.com/" + filePath.toString();
 
 				attachment.fileName = filePath.toString();
 				attachment.url = url;
