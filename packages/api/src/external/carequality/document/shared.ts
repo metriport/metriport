@@ -73,6 +73,7 @@ export const cqToFHIR = (
     extension: [cqExtension],
     contained: contained.length ? contained : undefined,
     date: docRef.date ? formatDate(docRef.date) : undefined,
+    // TODO: Add author
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
 
