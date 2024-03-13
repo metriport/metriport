@@ -61,10 +61,11 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
 				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
 				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
-				var docExists = fileExistsOnS3(filePath.toString());
-        const url = "https://" + bucketName + ".s3."  + bucketRegion + ".amazonaws.com/" + filePath.toString();
+        const filePathString = filePath.toString();
+				var docExists = fileExistsOnS3(filePathString);
+        const url = "https://" + bucketName + ".s3."  + bucketRegion + ".amazonaws.com/" + filePathString;
 
-				attachment.fileName = filePath.toString();
+				attachment.fileName = filePathString;
 				attachment.url = url;
 				attachment.isNew = !docExists
 				attachment.contentType = detectedFileType;
@@ -84,11 +85,11 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 					logError(ex);
 				}
 
-				const resultFromS3 = xcaWriteToFile(filePath.toString(), decodedBytes, attachment);
+				const resultFromS3 = xcaWriteToFile(filePathString, decodedBytes, attachment);
 				contentList.push(attachment);
 
 				// TODO 1350 remove this log
-				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePath.toString() + "): " + resultFromS3.toString());
+				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePathString + "): " + resultFromS3.toString());
 
 			} catch(ex) {
         logger.info('error' + ex);
