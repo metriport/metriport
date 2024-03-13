@@ -8,6 +8,7 @@ import { initSequelizeForLambda } from "../../sequelize";
 import {
   QueryReplacements,
   StatisticsProps,
+  calculateMapStats,
   countContentTypes,
   getYesterdaysTimeFrame,
   mapToString,
@@ -77,6 +78,7 @@ export async function getDqStatistics({
     let numberOfSuccesses = 0;
     let numberOfDocuments = 0;
     const totalContentTypes = new Map<string, number>();
+    const numberOfDocumentsPerPatient = new Map<string, number>();
 
     // TODO: define the type of `dq`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -86,6 +88,10 @@ export async function getDqStatistics({
       if (dq.status === "success") numberOfSuccesses++;
 
       const numberOfDocRefs = docRefs.length;
+      numberOfDocumentsPerPatient.set(
+        dq.patient_id,
+        numberOfDocumentsPerPatient.get(dq.patient_id) || 0 + numberOfDocRefs
+      );
       numberOfDocuments += numberOfDocRefs;
       const contentTypes = countContentTypes(docRefs);
       mergeMaps(totalContentTypes, contentTypes);
@@ -100,9 +106,16 @@ export async function getDqStatistics({
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS,
     });
 
-    return `${numberOfRows} document queries with ${numberOfSuccesses} successes (${
-      (numberOfSuccesses / numberOfRows) * 100
-    } % success rate). ${numberOfDocuments} documents found.\n${mapToString(totalContentTypes)}`;
+    const {
+      numberOfPatientsWithTargetAttribute: numberOfLinked,
+      avgAttributePerPatient: avgLinks,
+    } = calculateMapStats(numberOfDocumentsPerPatient);
+    const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+
+    return `${numberOfLinked} patients with at least 1 document, with an average of ${avgLinks} documents per patient.
+${numberOfRows} document queries with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents found.\n${mapToString(
+      totalContentTypes
+    )}`;
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating DQ statistics.");

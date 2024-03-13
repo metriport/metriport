@@ -65,3 +65,21 @@ export function getYesterdaysTimeFrame() {
 
   return [yesterdaysDate + " " + yesterdaysTime, todaysDate + " " + todaysTime];
 }
+
+export function calculateMapStats(patientMap: Map<string, number>): {
+  numberOfPatientsWithTargetAttribute: number;
+  avgAttributePerPatient: number;
+} {
+  const numPatients = patientMap.size;
+
+  let totalLinks = 0;
+  patientMap.forEach(links => {
+    totalLinks += links;
+  });
+
+  const averageLinks = totalLinks / numPatients;
+  return {
+    numberOfPatientsWithTargetAttribute: numPatients,
+    avgAttributePerPatient: parseFloat(averageLinks.toFixed(2)),
+  };
+}

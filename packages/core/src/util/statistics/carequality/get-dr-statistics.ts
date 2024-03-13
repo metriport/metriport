@@ -8,6 +8,7 @@ import { initSequelizeForLambda } from "../../sequelize";
 import {
   QueryReplacements,
   StatisticsProps,
+  calculateMapStats,
   countContentTypes,
   getYesterdaysTimeFrame,
   mapToString,
@@ -77,6 +78,7 @@ export async function getDrStatistics({
     let numberOfSuccesses = 0;
     let numberOfDocuments = 0;
     const totalContentTypes = new Map<string, number>();
+    const numberOfDocumentsPerPatient = new Map<string, number>();
 
     // TODO: define the type of `dr`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -85,6 +87,10 @@ export async function getDrStatistics({
       if (!docRefs) return;
       if (dr.status === "success") numberOfSuccesses++;
       const numberOfDocRefs = docRefs.length;
+      numberOfDocumentsPerPatient.set(
+        dr.patient_id,
+        numberOfDocumentsPerPatient.get(dr.patient_id) || 0 + numberOfDocRefs
+      );
       numberOfDocuments += numberOfDocRefs;
       const contentTypes = countContentTypes(docRefs);
       mergeMaps(totalContentTypes, contentTypes);
@@ -97,6 +103,17 @@ export async function getDrStatistics({
     await executeAsynchronously(drResults, async dr => processDrResult(dr), {
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DR_PROCESSING_REQUESTS,
     });
+
+    const {
+      numberOfPatientsWithTargetAttribute: numberOfLinked,
+      avgAttributePerPatient: avgLinks,
+    } = calculateMapStats(numberOfDocumentsPerPatient);
+    const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+
+    console.log(
+      `${numberOfLinked} patients with at least 1 document, with an average of ${avgLinks} documents per patient.`
+    );
+    console.log("succe", successRate);
 
     return `${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${(
       (numberOfSuccesses / numberOfRows) *

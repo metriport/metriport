@@ -4,6 +4,7 @@ dotenv.config();
 import { QueryTypes } from "sequelize";
 import z from "zod";
 import { executeAsynchronously } from "../concurrency";
+import { out } from "../log";
 import { initSequelizeForLambda } from "../sequelize";
 import { QueryReplacements, StatisticsProps, getYesterdaysTimeFrame } from "./shared";
 
@@ -55,7 +56,7 @@ export async function getWhStatistics({
   patientId,
   dateString,
 }: StatisticsProps): Promise<string> {
-  console.log("Starting WH statistics calculation...");
+  out("Starting WH statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
   let query = `
@@ -84,7 +85,7 @@ export async function getWhStatistics({
     replacements.patientId = patientId;
   }
 
-  query += " limit 20;";
+  query += ";";
 
   try {
     const whResultsResponse = await sequelize.query(query, {

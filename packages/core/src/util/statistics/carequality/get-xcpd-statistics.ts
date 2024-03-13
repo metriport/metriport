@@ -9,7 +9,12 @@ import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
-import { QueryReplacements, StatisticsProps, getYesterdaysTimeFrame } from "./../shared";
+import {
+  QueryReplacements,
+  StatisticsProps,
+  calculateMapStats,
+  getYesterdaysTimeFrame,
+} from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
 
@@ -84,6 +89,7 @@ export async function getXcpdStatistics({
     });
 
     const numberOfRows = pdResults.length;
+    const numberOfLinksPerPatient = new Map<string, number>();
 
     const patients = new Set();
     let numberOfMatches = 0;
@@ -107,6 +113,11 @@ export async function getXcpdStatistics({
       const row = rowWithDataSchema.parse(pd);
       if (row.status !== "success") return;
 
+      numberOfLinksPerPatient.set(
+        pd["patient_id"],
+        (numberOfLinksPerPatient.get(pd["patient_id"]) || 0) + 1
+      );
+
       const patient = mapPatientResourceToPatientData(row.data?.patientResource);
       if (!patient) return;
 
@@ -121,9 +132,14 @@ export async function getXcpdStatistics({
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS,
     });
 
-    if (patientId) console.log(`For patientId ${patientId}.`);
+    const {
+      numberOfPatientsWithTargetAttribute: numberOfPatientsWithDocuments,
+      avgAttributePerPatient: avgDocumentsPerPatient,
+    } = calculateMapStats(numberOfLinksPerPatient);
+    const coverageRate = ((numberOfPatientsWithDocuments / patients.size) * 100).toFixed(2);
 
-    return `For ${patients.size} unique patients, we got ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+    return `We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+For the ${patients.size} unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
 Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
   } catch (err) {
     console.error(err);

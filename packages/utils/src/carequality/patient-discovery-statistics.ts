@@ -23,12 +23,15 @@ async function main() {
     dateString,
   });
   console.log(xcpdResultsString);
+  // TODO: check cq_patient_data for number of links
   const dqResultsString = await getDqStatistics({ sqlDBCreds, cxId, patientId, dateString });
   console.log(dqResultsString);
   const drResultsString = await getDrStatistics({ sqlDBCreds, cxId, patientId, dateString });
   console.log(drResultsString);
   const whResultsString = await getWhStatistics({ sqlDBCreds, cxId, patientId, dateString });
   console.log(whResultsString);
+
+  // TODO: For v2, look at the FHIR server for some of these stats (thats where we get the records from for our CX anyway)
 }
 
 main();
