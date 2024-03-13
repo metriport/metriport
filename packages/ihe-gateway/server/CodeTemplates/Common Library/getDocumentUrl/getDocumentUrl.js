@@ -24,9 +24,6 @@ function getDocumentUrl(fileName) {
 
     const presignedRequest = presigner.presignGetObject(presignRequest);
 
-    logger.info("Presigned URL: [{}]", presignedRequest.url().toString());
-    logger.info("HTTP method: [{}]", presignedRequest.httpRequest().method());
-
     const url = new java.net.URL(presignedRequest.url().toString());
     const protocol = url.getProtocol();
     const host = url.getHost();
