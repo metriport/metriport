@@ -98,16 +98,16 @@ function generateCQFHIRContained(authorInstitution: string | undefined): Organiz
 
   const org = splitNameAndOid(authorInstitution);
   if (!org) return generateOrganization(authorInstitution);
-  const organization = generateOrganization(org.name, org.oid);
+  const organization = org.name ? generateOrganization(org.name, org.oid) : undefined;
 
   return organization;
 }
 
-export function generateOrganization(name?: string, oid?: string) {
+export function generateOrganization(name: string, oid?: string) {
   const organization: Organization = {
     resourceType: "Organization",
   };
-  if (name) organization.name = name;
+  organization.name = name;
   if (oid) {
     organization.identifier = [
       {

@@ -251,7 +251,9 @@ async function handleDocReferences(
       transactionBundle.entry?.push(transactionEntry);
 
       if (!mergedFHIRDocRef.contained || mergedFHIRDocRef.contained.length === 0) {
-        mergedFHIRDocRef.contained = [generateOrganization(cqOrganization.name)];
+        mergedFHIRDocRef.contained = cqOrganization.name
+          ? [generateOrganization(cqOrganization.name)]
+          : undefined;
       }
 
       ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
