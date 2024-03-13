@@ -13,7 +13,7 @@ export const dbCredsSchema = z.object({
 /**
  * This function is used to initialize sequelize for lambda functions.
  */
-export function initSequelizeForLambda(dbCreds: string) {
+export function initSequelizeForLambda(dbCreds: string, logging = true) {
   const sqlDBCreds = JSON.parse(dbCreds);
   const parsedDbCreds = dbCredsSchema.parse(sqlDBCreds);
 
@@ -31,6 +31,7 @@ export function initSequelizeForLambda(dbCreds: string) {
         acquire: 30000,
         idle: 10000,
       },
+      logging,
     }
   );
   return sequelize;
