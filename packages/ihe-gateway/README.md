@@ -18,7 +18,7 @@ $ touch .env
 
 Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
 backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (e.g., SSL/Java keystore private key).
+information (e.g., SSL Manager certs/Java keystore private key).
 
 ### Initialization
 
@@ -62,6 +62,17 @@ In subsequent runs, you can use the script below - or just run it from Docker De
 
 ```shell
 $ ./scripts/run-docker.sh
+```
+
+### Administrator
+
+To open Administrator windows connected to each task on the cloud, run one of the commands below,
+depending to which type of instance you want to connect to:
+
+```shell
+$ npm run admin -- outbound
+$ npm run admin -- inbound
+$ npm run admin -- all
 ```
 
 ### Development
@@ -112,8 +123,8 @@ service task.
 
 Notable env vars:
 
-- IHE_GW_USER
-- IHE_GW_PASSWORD
+- ADMIN_USER
+- ADMIN_PASSWORD
 - IHE_GW_URL (only for push-to-server and pull-from-server)
 - IHE_GW_FULL_BACKUP_LOCATION (only for pull-from-server)
 

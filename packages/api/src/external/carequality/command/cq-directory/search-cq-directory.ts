@@ -30,9 +30,11 @@ export type CQOrgBasicDetails = {
 export async function searchCQDirectoriesAroundPatientAddresses({
   patient,
   radiusInMiles = DEFAULT_RADIUS_IN_MILES,
+  mustHaveXcpdLink = false,
 }: {
   patient: Patient;
   radiusInMiles?: number;
+  mustHaveXcpdLink?: boolean;
 }): Promise<CQDirectoryEntryModel[]> {
   const radiusInMeters = convert(radiusInMiles).from("mi").to("m");
 
@@ -42,6 +44,7 @@ export async function searchCQDirectoriesAroundPatientAddresses({
   const orgs = await searchCQDirectoriesByRadius({
     coordinates,
     radiusInMeters,
+    mustHaveXcpdLink,
   });
 
   return orgs;
@@ -57,14 +60,29 @@ export async function searchCQDirectoriesAroundPatientAddresses({
 export async function searchCQDirectoriesByRadius({
   coordinates,
   radiusInMeters,
+  mustHaveXcpdLink = false,
 }: {
   coordinates: Coordinates[];
   radiusInMeters: number;
+  mustHaveXcpdLink?: boolean;
 }): Promise<CQDirectoryEntryModel[]> {
   const orgs: CQDirectoryEntryModel[] = [];
 
   for (const coord of coordinates) {
+    const replacements = {
+      lat: coord.lat,
+      lon: coord.lon,
+      radius: radiusInMeters,
+    };
+
+    let whereClause = `earth_box(ll_to_earth(:lat, :lon), :radius) @> point AND earth_distance(ll_to_earth(:lat, :lon), point) < :radius`;
+
+    if (mustHaveXcpdLink) {
+      whereClause += ` AND url_xcpd IS NOT NULL`;
+    }
+
     const orgsForAddress = await CQDirectoryEntryModel.findAll({
+      replacements,
       attributes: {
         include: [
           [
@@ -75,9 +93,7 @@ export async function searchCQDirectoriesByRadius({
           ],
         ],
       },
-      where:
-        Sequelize.literal(`earth_box(ll_to_earth (${coord.lat}, ${coord.lon}), ${radiusInMeters}) @> point
-        AND earth_distance(ll_to_earth (${coord.lat}, ${coord.lon}), point) < ${radiusInMeters}`),
+      where: Sequelize.literal(whereClause),
       order: Sequelize.literal("distance"),
     });
 

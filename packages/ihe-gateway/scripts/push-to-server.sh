@@ -33,8 +33,8 @@ cleanup() {
 trap cleanup ERR
 
 CONFIG_MAP_FILE=./server/ConfigurationMap.xml
-MAX_ATTEMPTS_LOGIN=10
-MAX_ATTEMPTS_VERIFY_SSL_CERT=10
+MAX_ATTEMPTS_LOGIN=20
+MAX_ATTEMPTS_VERIFY_SSL_CERT=15
 MAX_ATTEMPTS_PUSH_CONFIG_MAP=10
 
 source ./scripts/load-env.sh
@@ -71,7 +71,7 @@ uploadConfigurationMap() {
     --header "X-Requested-With: push-to-server" \
     --header 'Accept: application/xml' \
     --header 'Content-Type: application/xml' \
-    -u $IHE_GW_USER:$IHE_GW_PASSWORD \
+    -u $ADMIN_USER:$ADMIN_PASSWORD \
     --data "$CONFIG_MAP")
 
   # If its not a number
@@ -114,17 +114,17 @@ setAllConfigs() {
 
   if containsParameter "include-full-backup"; then
     # "-m" flag = "backup": only the FullBackup.xml file, equivalent to Mirth Administrator backup and restore
-    ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server -m backup -f push
+    ./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server -m backup -f push
     # Wait for the server to process the backup to avoid failing to recognize the SSL certs and other recently loaded configs
     sleep 5
   fi
 
   # "-m" flag = "code" (default behavior): Expands everything to the most granular level (Javascript, Sql, etc).
-  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $IHE_GW_USER -p $IHE_GW_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
+  ./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
 }
 
 hasSSLCerts() {
-  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
+  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
   if [[ $sslCertResp == *"carequality"* ]]; then
     return 0
   fi
@@ -133,6 +133,10 @@ hasSSLCerts() {
 }
 
 verifySSLCerts() {
+  if containsParameter "no-ssl-check"; then
+    echo "[config] Skipping SSL cert check"
+    return
+  fi
   echo "[config] Checking if SSL cert is there..."
   local counter=0
   until hasSSLCerts; do
@@ -148,7 +152,7 @@ verifySSLCerts() {
 }
 
 isApiAvailable() {
-  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $IHE_GW_USER:$IHE_GW_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
+  local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
     return 1 # not ready
   elif [[ $checkApiResult -ge 300 ]]; then
@@ -180,7 +184,7 @@ waitServerOnline() {
         cleanup
         exit 1
       fi
-      echo "[config] Failed to push configuration map to the server, trying up to $MAX_ATTEMPTS_LOGIN times..."
+      echo "[config] Failed to login to API, trying up to $MAX_ATTEMPTS_LOGIN times..."
     fi
     sleep 1
   done
@@ -188,22 +192,20 @@ waitServerOnline() {
 
 ###################################################################################################
 #
-# MAIN LOGIC
+# MAIN LOGIC.
 #
 ###################################################################################################
 waitServerOnline
 
-if containsParameter "no-ssl-check"; then
-  echo "[config] Skipping SSL cert check"
-else
-  verifySSLCerts
-fi
-
 echo "[config] Pushing configs to the server..."
 if containsParameter "configurationMap"; then
+  # since we are only pushing the configuration map, we should first check if SSL certs are there
+  verifySSLCerts
   setConfigurationMap
 else
+  # since we are pushing all configurations - which include the SSL certs, let's check certs afterwards
   setAllConfigs
+  verifySSLCerts
 fi
 
 echo "[config] Done."

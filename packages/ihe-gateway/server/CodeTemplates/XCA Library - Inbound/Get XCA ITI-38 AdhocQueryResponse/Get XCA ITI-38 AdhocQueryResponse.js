@@ -16,7 +16,7 @@ function getXCAITI38QueryResponse(request, operationOutcome) {
 		
 		var docList = [];
 
-		request.metadata.forEach(function(entry) {
+		request.extrinsicObjectXmls.forEach(function(entry) {
 			try {
 				var extrinsicObject = new XML(String(entry).replace(/\\/g,''));
 				docList.push(extrinsicObject.@id.toString());

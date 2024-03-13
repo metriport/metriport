@@ -29,7 +29,7 @@ RUN mkdir -p /opt/connect/appdata && chown -R mirth:mirth /opt/connect/appdata
 # initialization scripts and configs
 COPY scripts /opt/connect/scripts
 COPY server /opt/connect/server
-
+COPY config/custom-libs/aws/*.jar /opt/connect/server-lib/aws
 COPY config/custom-extensions /opt/connect/custom-extensions
 VOLUME /opt/connect/appdata
 VOLUME /opt/connect/custom-lib
@@ -75,6 +75,7 @@ EXPOSE 8085
 EXPOSE 8086
 EXPOSE 9091
 EXPOSE 9092
+EXPOSE 9093
 
 COPY entrypoint.sh /
 RUN chmod 755 /entrypoint.sh

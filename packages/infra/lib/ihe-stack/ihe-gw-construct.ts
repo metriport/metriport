@@ -124,7 +124,7 @@ export default class IHEGatewayConstruct extends Construct {
       VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
-      IHE_GW_USER: config.adminUsername,
+      ADMIN_USER: config.adminUsername,
     };
 
     const ecrRepo = ecr.Repository.fromRepositoryName(scope, `${id}EcrRepo`, ecrRepoName);

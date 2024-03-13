@@ -9,7 +9,7 @@ export type IHEGatewayProps = {
     _MP_KEYSTORE_KEYPASS: string;
     AWS_ACCESS_KEY_ID: string;
     AWS_SECRET_ACCESS_KEY: string;
-    IHE_GW_PASSWORD: string;
+    ADMIN_PASSWORD: string;
   };
   vpcId: string;
   certArn: string;
@@ -92,10 +92,7 @@ export type IHEGatewayProps = {
   inboundPorts: {
     patientDiscovery: number;
     documentQuery: number;
-    /**
-     * Optional in case its shared with document query
-     */
-    documentRetrieval?: number;
+    documentRetrieval: number;
   };
   outboundPorts: {
     patientDiscovery: number;

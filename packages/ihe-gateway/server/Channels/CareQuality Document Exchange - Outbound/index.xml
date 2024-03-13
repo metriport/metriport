@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channelGroup version="4.4.2">
   <id>7a4e6d78-a130-4aa7-9d85-6aa8921c6e65</id>
   <name>CareQuality Document Exchange - Outbound</name>
-  <revision>1</revision>
+  <revision>2</revision>
   <lastModified>
-    <time>1709505265696</time>
+    <time>1708795774760</time>
     <timezone>GMT</timezone>
   </lastModified>
   <description>Outbound CareQuality Query Based Document Exchange
