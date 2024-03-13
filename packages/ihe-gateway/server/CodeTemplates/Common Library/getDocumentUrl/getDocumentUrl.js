@@ -31,10 +31,6 @@ function getDocumentUrl(fileName) {
     const protocol = url.getProtocol();
     const host = url.getHost();
     const path = url.getPath();
-    logger.info(url.getPath().toString());
-    logger.info(url.getHost().toString());
-    logger.info(url.getProtocol().toString());
-    logger.info("above");
     const s3Location = protocol + "://" + host + path;
 
     return s3Location;
