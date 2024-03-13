@@ -55,10 +55,12 @@ export const cqToFHIR = (
 
   const contained: Resource[] = [];
 
-  const containedResources = docRef.authorInstitution
-    ? mapToContainedOrganization(docRef.authorInstitution)
-    : mapToContainedOrganization(orgName);
-  if (containedResources) contained.push(containedResources);
+  if (docRef.authorInstitution) {
+    const organizationFromDocRef = mapToContainedOrganization(docRef.authorInstitution);
+    if (organizationFromDocRef) contained.push(organizationFromDocRef);
+  }
+  const organizationFromCqDirectory = mapToContainedOrganization(orgName);
+  if (organizationFromCqDirectory) contained.push(organizationFromCqDirectory);
 
   const updatedDocRef: DocumentReferenceWithId = {
     id: docId,
