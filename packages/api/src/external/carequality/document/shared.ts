@@ -73,9 +73,9 @@ export const cqToFHIR = (
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
-    contained: contained.length ? contained : undefined,
+    contained: dedupeContainedResources(contained),
     date: docRef.date ? formatDate(docRef.date) : undefined,
-    // TODO: Add author
+    // TODO: #1612 (internal) Add author reference
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
 
@@ -140,4 +140,18 @@ function splitNameAndOid(
   }
 
   return undefined;
+}
+
+export function dedupeContainedResources(combined: Resource[]): Resource[] | undefined {
+  const seen = new Set();
+  const deduped = combined.filter(resource => {
+    const resourceStr = JSON.stringify(resource);
+    if (!seen.has(resourceStr)) {
+      seen.add(resourceStr);
+      return true;
+    }
+    return false;
+  });
+
+  return deduped;
 }
