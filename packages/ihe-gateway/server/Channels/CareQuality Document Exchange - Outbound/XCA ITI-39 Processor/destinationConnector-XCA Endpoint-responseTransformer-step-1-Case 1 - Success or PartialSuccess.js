@@ -61,9 +61,10 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
 				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
 				var docExists = fileExistsOnS3(filePath.toString());
+				const url = getDocumentUrl(fileName.toString());
 
-				attachment.fileName = fileName.toString();
-				attachment.url = filePath.toString();
+				attachment.fileName = filePath.toString();
+				attachment.url = url;
 				attachment.isNew = !docExists
 				attachment.contentType = detectedFileType;
 
@@ -89,6 +90,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePath.toString() + "): " + resultFromS3.toString());
 
 			} catch(ex) {
+        logger.info('error' + ex);
 				var issue = {
 					 "severity": "fatal",
 					 "code": "processing",
