@@ -129,5 +129,12 @@ export const documentReferenceSchema = z.object({
   title: z.string().nullish(),
   date: z.string().nullish(),
   authorInstitution: z.string().nullish(),
+  contained: z
+    .array(
+      z.object({
+        name: z.string().nullish(),
+      })
+    )
+    .nullish(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;

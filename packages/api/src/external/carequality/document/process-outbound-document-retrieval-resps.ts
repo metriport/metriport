@@ -13,11 +13,13 @@ import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
+import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import {
   DocumentReferenceWithMetriportId,
   containsMetriportId,
   cqToFHIR,
   formatDate,
+  generateOrganization,
 } from "./shared";
 
 export async function processOutboundDocumentRetrievalResps({
@@ -84,9 +86,16 @@ export async function processOutboundDocumentRetrievalResps({
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
         const docRefs = docRetrievalResp.documentReference;
+
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
-          await handleDocReferences(validDocRefs, requestId, patientId, cxId);
+          await handleDocReferences(
+            validDocRefs,
+            requestId,
+            patientId,
+            cxId,
+            docRetrievalResp.gateway.homeCommunityId
+          );
         }
       })
     );
@@ -147,7 +156,8 @@ async function handleDocReferences(
   docRefs: DocumentReferenceWithMetriportId[],
   requestId: string,
   patientId: string,
-  cxId: string
+  cxId: string,
+  cqOrganizationId: string
 ) {
   let errorCountConvertible = 0;
   let adjustCountConvertible = 0;
@@ -165,6 +175,8 @@ async function handleDocReferences(
     type: "transaction",
     entry: [],
   };
+
+  const cqOrganization = await getCQDirectoryEntryOrFail(cqOrganizationId);
 
   for (const docRef of docRefs) {
     try {
@@ -237,6 +249,10 @@ async function handleDocReferences(
         },
       };
       transactionBundle.entry?.push(transactionEntry);
+
+      if (!mergedFHIRDocRef.contained || mergedFHIRDocRef.contained.length === 0) {
+        mergedFHIRDocRef.contained = [generateOrganization(cqOrganization.name)];
+      }
 
       ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
     } catch (error) {
