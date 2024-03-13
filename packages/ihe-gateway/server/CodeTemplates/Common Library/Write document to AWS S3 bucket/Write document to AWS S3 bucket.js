@@ -1,3 +1,11 @@
+/**
+	Writes the content of the XCA ITI-39 document to a file
+
+	@param {String} path - the file path
+	@param {String} documentContents - Base64 encoded document
+	@param {Object} metadata - file metadata
+	@return {String} return write result or error string
+*/
 function xcaWriteToFile(path, documentContents, metadata) {
   var result = null;
 
