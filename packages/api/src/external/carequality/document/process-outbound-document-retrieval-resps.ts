@@ -14,13 +14,8 @@ import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-r
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
-import {
-  DocumentReferenceWithMetriportId,
-  containsMetriportId,
-  cqToFHIR,
-  formatDate,
-  generateOrganization,
-} from "./shared";
+import { formatDate } from "../shared";
+import { DocumentReferenceWithMetriportId, containsMetriportId, cqToFHIR } from "./shared";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -219,7 +214,8 @@ async function handleDocReferences(
         docRef,
         "final",
         patientId,
-        metriportDataSourceExtension
+        metriportDataSourceExtension,
+        cqOrganization.name
       );
       const mergedFHIRDocRef: DocumentReferenceWithId = {
         ...fhirDocRef,
@@ -249,12 +245,6 @@ async function handleDocReferences(
         },
       };
       transactionBundle.entry?.push(transactionEntry);
-
-      if (!mergedFHIRDocRef.contained || mergedFHIRDocRef.contained.length === 0) {
-        mergedFHIRDocRef.contained = cqOrganization.name
-          ? [generateOrganization(cqOrganization.name)]
-          : undefined;
-      }
 
       ingestIntoSearchEngine({ id: patientId, cxId }, mergedFHIRDocRef, file, requestId, log);
     } catch (error) {

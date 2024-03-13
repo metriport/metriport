@@ -9,6 +9,9 @@ import {
   OutboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
+import { formatDate } from "../shared";
+
+const regex = /^(.+?)\^+(.+)$/;
 
 export type DocumentReferenceWithMetriportId = DocumentReference & {
   metriportId: string;
@@ -27,13 +30,12 @@ export function containsMetriportId(
  */
 export function toDocumentReference(documentQueryResult: IHEResults): DocumentReference[] {
   const documentReferences = documentQueryResult.documentReference ?? [];
-  const docRefs = documentReferences.map(docRef => {
+  return documentReferences.map(docRef => {
     return {
       ...docRef,
       url: documentQueryResult.gateway.url,
     };
   });
-  return docRefs;
 }
 
 export const cqToFHIR = (
@@ -41,7 +43,8 @@ export const cqToFHIR = (
   docRef: IHEGWDocumentReference,
   docStatus: "preliminary" | "final",
   patientId: string,
-  contentExtension: MetriportDataSourceExtension
+  contentExtension: MetriportDataSourceExtension,
+  orgName?: string
 ): DocumentReferenceWithId => {
   const baseAttachment = {
     ...(docRef.fileName ? { fileName: docRef.fileName } : {}),
@@ -51,8 +54,8 @@ export const cqToFHIR = (
   };
 
   const containedResources = docRef.authorInstitution
-    ? generateCQFHIRContained(docRef.authorInstitution)
-    : undefined;
+    ? mapToContainedOrganization(docRef.authorInstitution)
+    : mapToContainedOrganization(orgName);
   const updatedDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
@@ -93,7 +96,9 @@ const generateCQFHIRContent = (
   return [cqFHIRContent];
 };
 
-function generateCQFHIRContained(authorInstitution: string | undefined): Organization | undefined {
+function mapToContainedOrganization(
+  authorInstitution: string | undefined
+): Organization | undefined {
   if (!authorInstitution) return;
 
   const org = splitNameAndOid(authorInstitution);
@@ -121,30 +126,10 @@ export function generateOrganization(name: string, oid?: string) {
 function splitNameAndOid(
   input: string
 ): { name: string | undefined; oid: string | undefined } | undefined {
-  const regex = /^(.+?)\^+(.+)$/;
   const match = input.match(regex);
 
   if (match && match.length === 3) {
     return { name: match[1], oid: match[2] };
-  }
-
-  return undefined;
-}
-
-export function formatDate(dateString: string | undefined): string | undefined {
-  if (!dateString) return undefined;
-  const preprocessedDate = dateString.replace(/[-:]/g, "");
-  const year = preprocessedDate.slice(0, 4);
-  const month = preprocessedDate.slice(4, 6);
-  const day = preprocessedDate.slice(6, 8);
-  const formattedDate = `${year}-${month}-${day}`;
-
-  try {
-    const date = new Date(formattedDate);
-    return date.toISOString();
-  } catch (error) {
-    const msg = "Error creating date object for document reference";
-    console.log(`${msg}: ${error}`);
   }
 
   return undefined;
