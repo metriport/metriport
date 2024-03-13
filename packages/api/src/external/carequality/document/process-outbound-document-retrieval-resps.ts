@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, Resource, DocumentReference } from "@medplum/fhirtypes";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -221,7 +221,7 @@ async function handleDocReferences(
         ...fhirDocRef,
         description: fhirDocRef.description ?? draftFHIRDocRef?.description,
         content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
-        contained: [...(draftFHIRDocRef?.contained ?? []), ...(fhirDocRef.contained ?? [])],
+        contained: combineAndDedupeContainedResources(draftFHIRDocRef, fhirDocRef),
         date: formatDate(fhirDocRef.date) ?? formatDate(draftFHIRDocRef?.date),
       };
 
@@ -273,4 +273,26 @@ async function handleDocReferences(
     requestId,
     source: MedicalDataSource.CAREQUALITY,
   });
+}
+
+function combineAndDedupeContainedResources(
+  draftFHIRDocRef: DocumentReference | undefined,
+  fhirDocRef: DocumentReferenceWithId
+): Resource[] | undefined {
+  const draftContained = draftFHIRDocRef?.contained ?? [];
+  const fhirContained = fhirDocRef.contained ?? [];
+
+  const combined = [...draftContained, ...fhirContained];
+
+  const seen = new Set();
+  const deduped = combined.filter(resource => {
+    const resourceStr = JSON.stringify(resource);
+    if (!seen.has(resourceStr)) {
+      seen.add(resourceStr);
+      return true;
+    }
+    return false;
+  });
+
+  return deduped;
 }

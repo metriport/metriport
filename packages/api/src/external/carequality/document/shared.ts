@@ -1,4 +1,4 @@
-import { DocumentReferenceContent, Organization } from "@medplum/fhirtypes";
+import { DocumentReferenceContent, Organization, Resource } from "@medplum/fhirtypes";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -53,9 +53,13 @@ export const cqToFHIR = (
     ...(docRef.creation ? { creation: docRef.creation } : {}),
   };
 
+  const contained: Resource[] = [];
+
   const containedResources = docRef.authorInstitution
     ? mapToContainedOrganization(docRef.authorInstitution)
     : mapToContainedOrganization(orgName);
+  if (containedResources) contained.push(containedResources);
+
   const updatedDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
@@ -67,7 +71,7 @@ export const cqToFHIR = (
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
-    contained: containedResources ? [containedResources] : undefined,
+    contained: contained.length ? contained : undefined,
     date: docRef.date ? formatDate(docRef.date) : undefined,
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
