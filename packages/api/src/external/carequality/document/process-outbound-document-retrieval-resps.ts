@@ -68,10 +68,14 @@ export async function processOutboundDocumentRetrievalResps({
         total: successDocsRetrievedCount + issuesWithExternalGateway,
         status: "processing",
       },
-      convertProgress: {
-        total: successDocsRetrievedCount,
-        status: "processing",
-      },
+      ...(successDocsRetrievedCount > 0
+        ? {
+            convertProgress: {
+              total: successDocsRetrievedCount,
+              status: "processing",
+            },
+          }
+        : {}),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -119,8 +123,8 @@ export async function processOutboundDocumentRetrievalResps({
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
-      downloadProgress: { status: "failed", total: 0 },
-      convertProgress: { status: "failed", total: 0 },
+      downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });

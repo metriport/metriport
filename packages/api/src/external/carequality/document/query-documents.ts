@@ -107,7 +107,7 @@ export async function getDocumentsFromCQ({
 
     await setDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
-      downloadProgress: { status: "failed", total: 0 },
+      downloadProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });

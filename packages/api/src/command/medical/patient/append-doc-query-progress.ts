@@ -137,6 +137,9 @@ export const aggregateDocQueryProgress = (
     documentQueryProgress.download = {
       ...documentQueryProgress.download,
       ...downloadProgress,
+      total: downloadProgress.status !== "failed" ? downloadProgress.total : 0,
+      successful: downloadProgress.status !== "failed" ? downloadProgress.successful : 0,
+      errors: downloadProgress.status !== "failed" ? downloadProgress.errors : 0,
     };
   } else if (downloadProgress === null) {
     documentQueryProgress.download = undefined;
@@ -146,6 +149,9 @@ export const aggregateDocQueryProgress = (
     documentQueryProgress.convert = {
       ...documentQueryProgress.convert,
       ...convertProgress,
+      total: convertProgress.status !== "failed" ? convertProgress.total : 0,
+      successful: convertProgress.status !== "failed" ? convertProgress.successful : 0,
+      errors: convertProgress.status !== "failed" ? convertProgress.errors : 0,
     };
   } else if (convertProgress === null) {
     documentQueryProgress.convert = undefined;
