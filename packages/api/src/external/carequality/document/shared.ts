@@ -1,4 +1,4 @@
-import { DocumentReferenceContent, Organization, Resource } from "@medplum/fhirtypes";
+import { DocumentReferenceContent, Organization } from "@medplum/fhirtypes";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import { MetriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
@@ -50,7 +50,9 @@ export const cqToFHIR = (
     ...(docRef.creation ? { creation: docRef.creation } : {}),
   };
 
-  const containedResources = generateCQFHIRContained(docRef);
+  const containedResources = docRef.authorInstitution
+    ? generateCQFHIRContained(docRef.authorInstitution)
+    : undefined;
   const updatedDocRef: DocumentReferenceWithId = {
     id: docId,
     resourceType: "DocumentReference",
@@ -62,7 +64,7 @@ export const cqToFHIR = (
     subject: toFHIRSubject(patientId),
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
-    contained: containedResources,
+    contained: containedResources ? [containedResources] : undefined,
     date: docRef.date ? formatDate(docRef.date) : undefined,
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
@@ -91,25 +93,30 @@ const generateCQFHIRContent = (
   return [cqFHIRContent];
 };
 
-const generateCQFHIRContained = (docRef: IHEGWDocumentReference): Resource[] => {
-  if (!docRef.authorInstitution) return [];
+function generateCQFHIRContained(authorInstitution: string | undefined): Organization | undefined {
+  if (!authorInstitution) return;
 
-  const org = splitNameAndOid(docRef.authorInstitution);
-  if (!org) return [];
+  const org = splitNameAndOid(authorInstitution);
+  if (!org) return generateOrganization(authorInstitution);
+  const organization = generateOrganization(org.name, org.oid);
+
+  return organization;
+}
+
+export function generateOrganization(name?: string, oid?: string) {
   const organization: Organization = {
     resourceType: "Organization",
   };
-  if (org.name) organization.name = org.name;
-  if (org.oid) {
+  if (name) organization.name = name;
+  if (oid) {
     organization.identifier = [
       {
-        value: org.oid,
+        value: oid,
       },
     ];
   }
-
-  return [organization];
-};
+  return organization;
+}
 
 function splitNameAndOid(
   input: string
