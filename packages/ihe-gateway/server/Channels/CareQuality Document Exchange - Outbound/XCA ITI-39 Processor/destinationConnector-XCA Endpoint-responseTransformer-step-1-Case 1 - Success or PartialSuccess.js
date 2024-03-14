@@ -78,12 +78,12 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							var title = firstTitle.split("</title>")[0];
 							if (title) attachment.title = title;
 						}
-						const firstEffectiveTime = decodedAsString.split('<effectiveTime')[1];
+						var firstEffectiveTime = decodedAsString.split('<effectiveTime')[1];
 						
 						if (firstEffectiveTime) {
-							const effectiveTimeValue = firstEffectiveTime.split('value="')[1];
+							var effectiveTimeValue = firstEffectiveTime.split('value="')[1];
 							if (effectiveTimeValue) {
-								const effectiveTime = effectiveTimeValue.split('"')[0];
+								var effectiveTime = effectiveTimeValue.split('"')[0];
 								if (effectiveTime) attachment.date = effectiveTime;
 								logger.info("Effective time: " + effectiveTime);
 							}
