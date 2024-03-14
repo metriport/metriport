@@ -56,6 +56,11 @@ function processRegistryObjectList(list) {
 				if (created) try {
 					attachment.creation = DateUtil.convertDate('yyyyMMddhhmmss', "yyyy-MM-dd'T'hh:mm:ss", created);
 				} catch(ex) {}
+
+				var authorInstitution = entry.*::Classification.*::Slot.("authorInstitution" == @name).*::ValueList.*::Value.toString();
+				if (authorInstitution) try {
+					attachment.authorInstitution = authorInstitution;
+				} catch (ex) {}
 				
 				content.push(attachment);
 			}

@@ -35,7 +35,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				attachment.metriportId = idMapping[attachment.docUniqueId.toString()];
 				attachment.fileLocation = bucketName;
 
-				const logError = (ex) => {
+				var logError = (ex) => {
 					logger.error("Error decoding doc - docUniqueId: " + attachment.docUniqueId + "; metriportId: " +
 						attachment.metriportId + "; " + ex);
 				};
@@ -49,21 +49,21 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				var newDocumentUniqueId = entry.*::NewDocumentUniqueId.toString();
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
-				const documentEncoded = entry.*::Document;
-				const parsedFile = parseFileFromString(documentEncoded, false);
-				const detectedExtension = parsedFile.extension;
-				const detectedFileType = parsedFile.mimeType;
-				const decodedAsString = parsedFile.decodedString;
-				const decodedBytes = parsedFile.decodedBytes;
+				var documentEncoded = entry.*::Document;
+				var parsedFile = parseFileFromString(documentEncoded, false);
+				var detectedExtension = parsedFile.extension;
+				var detectedFileType = parsedFile.mimeType;
+				var decodedAsString = parsedFile.decodedString;
+				var decodedBytes = parsedFile.decodedBytes;
 
 				// Files are stored in format: <CX_ID>/<PATIENT_ID>/<CX_ID>_<PATIENT_ID>_<DOC_ID>.<extension>
 				var fileName = [request.cxId, request.patientId, attachment.metriportId + detectedExtension].join('_');
 				var filePath = [request.cxId, request.patientId, fileName].join('/');
 				// TODO 1350 Create a function to get the attributes using getObjectAttributes() - this is returning the whole file!
 				// https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/s3/S3Client.html#getObjectAttributes(software.amazon.awssdk.services.s3.model.GetObjectAttributesRequest)
-        const filePathString = filePath.toString();
+        var filePathString = filePath.toString();
 				var docExists = fileExistsOnS3(filePathString);
-        const url = "https://" + bucketName + ".s3."  + bucketRegion + ".amazonaws.com/" + filePathString;
+        var url = "https://" + bucketName + ".s3."  + bucketRegion + ".amazonaws.com/" + filePathString;
 
 				attachment.fileName = filePathString;
 				attachment.url = url;
@@ -73,19 +73,29 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				// Parse the document header for some metadata
 				try {
 					if (detectedFileType === XML_TXT_MIME_TYPE || detectedFileType === XML_APP_MIME_TYPE) {
-						const firstTitle = decodedAsString.split("<title>")[1];
+						var firstTitle = decodedAsString.split("<title>")[1];
 						if (firstTitle) {
-							const title = firstTitle.split("</title>")[0];
+							var title = firstTitle.split("</title>")[0];
 							if (title) attachment.title = title;
 						}
+						var firstEffectiveTime = decodedAsString.split('<effectiveTime')[1];
+						
+						if (firstEffectiveTime) {
+							var effectiveTimeValue = firstEffectiveTime.split('value="')[1];
+							if (effectiveTimeValue) {
+								var effectiveTime = effectiveTimeValue.split('"')[0];
+								if (effectiveTime) attachment.date = effectiveTime;
+								logger.info("Effective time: " + effectiveTime);
+							}
+						}
 					}
-					const fileSize = decodedBytes.length;
+					var fileSize = decodedBytes.length;
 					if (fileSize) attachment.size = parseInt(fileSize);
 				} catch (ex) {
 					logError(ex);
 				}
 
-				const resultFromS3 = xcaWriteToFile(filePathString, decodedBytes, attachment);
+				var resultFromS3 = xcaWriteToFile(filePathString, decodedBytes, attachment);
 				contentList.push(attachment);
 
 				// TODO 1350 remove this log
