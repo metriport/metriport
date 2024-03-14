@@ -11,6 +11,11 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
   const patientResource = fhirBundle.entry?.find(
     entry => entry.resource?.resourceType === "Patient"
   )?.resource as Patient;
+
+  const organizationResources = fhirBundle.entry?.find(
+    entry => entry.resource?.resourceType === "Organization"
+  )?.resource as Patient;
+
   const compositions: Composition[] | undefined = fhirBundle.entry
     ?.filter(entry => entry.resource?.resourceType === "Composition")
     .map(entry => entry.resource as Composition);
@@ -35,6 +40,12 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       bundle.entry?.push({
         fullUrl: `urn:uuid:${patientResource.id}`,
         resource: patientResource,
+      });
+    }
+    if (organizationResources) {
+      bundle.entry?.push({
+        fullUrl: `urn:uuid:${organizationResources.id}`,
+        resource: organizationResources,
       });
     }
 

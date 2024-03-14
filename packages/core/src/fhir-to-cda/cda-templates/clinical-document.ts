@@ -19,7 +19,7 @@ const CONSTANTS = {
     displayName: "<NOTE-NAME>",
   },
   title: "<NOTE-TITLE>",
-  effectiveTime: "20230930010705-0500",
+  effectiveTime: "<EFFECTIVE-TIME>", // TODO: Replace with current date. IMPORTANT
   confidentialityCode: {
     code: "N",
     codeSystem: "2.16.840.1.113883.5.25",
@@ -34,7 +34,12 @@ const CONSTANTS = {
   versionNumber: "3",
 };
 
-export function constructClinicalDocumentXML(recordTarget: unknown): string {
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
+export function constructClinicalDocumentXML(
+  recordTarget: unknown,
+  author: unknown,
+  custodian: unknown
+): string {
   const jsonObj = {
     ClinicalDocument: {
       "@_xmlns": "urn:hl7-org:v3",
@@ -45,18 +50,21 @@ export function constructClinicalDocumentXML(recordTarget: unknown): string {
         "@_extension": tid.extension,
       })),
       id: {
+        // REQUIRED
         "@_assigningAuthorityName": CONSTANTS.assigningAuthorityName,
         "@_root": CONSTANTS.idRoot,
       },
       code: {
+        // REQUIRED
         "@_code": CONSTANTS.code.code,
         "@_codeSystem": CONSTANTS.code.codeSystem,
         "@_codeSystemName": CONSTANTS.code.codeSystemName,
         "@_displayName": CONSTANTS.code.displayName,
       },
       title: CONSTANTS.title,
-      effectiveTime: { "@_value": CONSTANTS.effectiveTime },
+      effectiveTime: { "@_value": CONSTANTS.effectiveTime }, // REQUIRED
       confidentialityCode: {
+        // REQUIRED
         "@_code": CONSTANTS.confidentialityCode.code,
         "@_codeSystem": CONSTANTS.confidentialityCode.codeSystem,
         "@_displayName": CONSTANTS.confidentialityCode.displayName,
@@ -68,7 +76,9 @@ export function constructClinicalDocumentXML(recordTarget: unknown): string {
         "@_root": CONSTANTS.setId.root,
       },
       versionNumber: { "@_value": CONSTANTS.versionNumber },
-      recordTarget,
+      recordTarget, // REQUIRED
+      author, // REQUIRED
+      custodian, // REQUIRED
     },
   };
 
