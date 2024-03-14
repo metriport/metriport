@@ -1,5 +1,4 @@
-import { ConverterService } from "@metriport/core/src/fhir-to-cda/fern/api/resources/medical/resources/converter/service/ConverterService";
-import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
+import { ConverterService } from "../../fern/api/resources/medical/resources/converter/service/ConverterService";
 
 export function createConverterService() {
   return new ConverterService({

@@ -1,4 +1,4 @@
-import { Bundle, Composition, Resource, Patient } from '@medplum/fhirtypes'; // Assuming these types are defined
+import { Bundle, Composition, Resource, Patient } from "@medplum/fhirtypes";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.
@@ -6,10 +6,14 @@ import { Bundle, Composition, Resource, Patient } from '@medplum/fhirtypes'; // 
  * @returns {Bundle[]} An array of FHIR bundles, each corresponding to a composition.
  */
 export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
-    // Filter out Composition resources from the bundle
+  // Filter out Composition resources from the bundle
 
-  const patientResource = fhirBundle.entry?.find(entry => entry.resource?.resourceType === 'Patient')?.resource as Patient;
-  const compositions: Composition[] | undefined = fhirBundle.entry?.filter(entry => entry.resource?.resourceType === 'Composition').map(entry => entry.resource as Composition);
+  const patientResource = fhirBundle.entry?.find(
+    entry => entry.resource?.resourceType === "Patient"
+  )?.resource as Patient;
+  const compositions: Composition[] | undefined = fhirBundle.entry
+    ?.filter(entry => entry.resource?.resourceType === "Composition")
+    .map(entry => entry.resource as Composition);
   if (!compositions) {
     return [];
   }
@@ -17,18 +21,20 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
   const bundles: Bundle[] = compositions.map(composition => {
     // Create a new bundle for the composition
     const bundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'document',
-      entry: [{
-        fullUrl: `urn:uuid:${composition.id}`,
-        resource: composition
-      }]
+      resourceType: "Bundle",
+      type: "document",
+      entry: [
+        {
+          fullUrl: `urn:uuid:${composition.id}`,
+          resource: composition,
+        },
+      ],
     };
 
     if (patientResource) {
       bundle.entry?.push({
         fullUrl: `urn:uuid:${patientResource.id}`,
-        resource: patientResource
+        resource: patientResource,
       });
     }
 
@@ -41,7 +47,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
             if (bundle.entry) {
               bundle.entry.push({
                 fullUrl: entry.reference,
-                resource: referencedResource
+                resource: referencedResource,
               });
             }
           }

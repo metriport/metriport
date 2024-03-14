@@ -30,6 +30,6 @@
     "noErrorTruncation": true,
     "resolveJsonModule": true
   },
-  "include": ["./src/**/*", "../core/src/fhir-to-cda/fern"],
+  "include": ["./src/**/*", "src/fern"],
   "exclude": []
 }

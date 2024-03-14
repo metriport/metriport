@@ -1,61 +1,67 @@
-import { XMLBuilder } from "fast-xml-parser";
+// import { XMLBuilder } from "fast-xml-parser";
 import { Patient } from "@medplum/fhirtypes";
- 
-export function constructRecordTargetFromFhirPatient(patient: Patient): string {
-  const jsonObj = {
-    recordTarget: {
-      patientRole: {
-        id: patient.identifier?.map(id => ({
-          "@_root": id.system,
-          "@_extension": id.value,
-          "@_assigningAuthorityName": id.assigner?.display
-        })),
-        addr: patient.address?.map(addr => ({
-            "@_use": addr.use,
-            streetAddressLine: addr.line?.join(' '),
-            city: addr.city,
-            state: addr.state,
-            postalCode: addr.postalCode,
-            country: addr.country,
-            useablePeriod: {
-              "@_xsi:type": "IVL_TS",
-              "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-              low: {"@_value": addr.period?.start},
-              high: {"@_nullFlavor": addr.period?.end ? addr.period.end : "UNK"}
-            }
-          }))[0],
-        telecom: patient.telecom?.map(telecom => ({
-          "@_use": telecom.use,
-          "@_value": telecom.value
-        }))[0],
-        patient: {
-          name: patient.name?.map(name => ({
-            "@_use": name.use,
-            given: name.given?.join(' '),
-            family: name.family,
-            // Assuming validTime mapping requires specific handling; this is a placeholder
-            validTime: {
-              low: {"@_nullFlavor": "UNK"},
-              high: {"@_nullFlavor": "UNK"}
-            }
-          }))[0], // Taking the first name for simplicity; adjust as needed
-          administrativeGenderCode: {
-            "@_code": patient.gender,
-            "@_codeSystem": "2.16.840.1.113883.5.1"
-            // Add other attributes as needed
-          },
-          birthTime: {
-            "@_value": patient.birthDate
-          },
+import { withNullFlavor, withNullFlavorObject } from "./utils";
+
+export function constructRecordTargetFromFhirPatient(patient: Patient): unknown {
+  const recordTarget = {
+    patientRole: {
+      id: patient.identifier?.map(id => ({
+        ...withNullFlavorObject(id.system, "@_root"),
+        ...withNullFlavorObject(id.value, "@_extension"),
+        ...withNullFlavorObject(id.assigner?.display, "@_assigningAuthorityName"),
+      })),
+      addr: patient.address?.map(addr => ({
+        ...withNullFlavorObject(addr.use, "@_use"),
+        streetAddressLine: withNullFlavor(addr.line?.join(" ")),
+        city: withNullFlavor(addr.city),
+        state: withNullFlavor(addr.state),
+        postalCode: withNullFlavor(addr.postalCode),
+        country: withNullFlavor(addr.country),
+        useablePeriod: {
+          "@_xsi:type": "IVL_TS",
+          "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
+          low: withNullFlavor(addr.period?.start, "@_value"),
+          high: withNullFlavor(addr.period?.end, "@_nullFlavor"),
         },
-      }
-    }
+      }))[0],
+      telecom: patient.telecom?.map(telecom => {
+        return {
+          ...withNullFlavorObject(telecom.use, "@_use"),
+          ...withNullFlavorObject(telecom.value, "@_value"),
+        };
+      })[0],
+      patient: {
+        name: patient.name?.map(name => ({
+          ...withNullFlavorObject(name.use, "@_use"),
+          given: withNullFlavor(name.given?.join(" ")),
+          family: withNullFlavor(name.family),
+          validTime: {
+            low: { "@_nullFlavor": "UNK" },
+            high: { "@_nullFlavor": "UNK" },
+          },
+        }))[0],
+        administrativeGenderCode: {
+          ...withNullFlavorObject(patient.gender, "@_code"),
+          "@_codeSystem": "2.16.840.1.113883.5.1",
+        },
+        birthTime: {
+          ...withNullFlavorObject(patient.birthDate, "@_value"),
+        },
+        deceasedInd: withNullFlavorObject(patient.deceasedBoolean?.toString(), "@_value"),
+        maritalStatusCode: {
+          "@_code": patient.maritalStatus?.coding?.[0]?.code || "UNK",
+          "@_codeSystem": "2.16.840.1.113883.5.2",
+          "@_codeSystemName": "MaritalStatusCode",
+          "@_displayName": patient.maritalStatus?.coding?.[0]?.display || "Unknown",
+        },
+        languageCommunication: {
+          languageCode: withNullFlavorObject(
+            patient.communication?.[0]?.language?.coding?.[0]?.code,
+            "@_code"
+          ),
+        },
+      },
+    },
   };
-
-  const builder = new XMLBuilder({
-    format: true,
-    ignoreAttributes: false
-  });
-
-  return builder.build(jsonObj);
+  return recordTarget;
 }
