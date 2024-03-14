@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry } from "@medplum/fhirtypes";
+import { Bundle, BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
 import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -13,7 +13,14 @@ import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
 import { upsertDocumentsToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
-import { containsMetriportId, cqToFHIR, DocumentReferenceWithMetriportId } from "./shared";
+import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
+import { formatDate } from "../shared";
+import {
+  DocumentReferenceWithMetriportId,
+  containsMetriportId,
+  cqToFHIR,
+  dedupeContainedResources,
+} from "./shared";
 
 export async function processOutboundDocumentRetrievalResps({
   requestId,
@@ -79,9 +86,16 @@ export async function processOutboundDocumentRetrievalResps({
     const resultPromises = await Promise.allSettled(
       results.map(async docRetrievalResp => {
         const docRefs = docRetrievalResp.documentReference;
+
         if (docRefs) {
           const validDocRefs = docRefs.filter(containsMetriportId);
-          await handleDocReferences(validDocRefs, requestId, patientId, cxId);
+          await handleDocReferences(
+            validDocRefs,
+            requestId,
+            patientId,
+            cxId,
+            docRetrievalResp.gateway.homeCommunityId
+          );
         }
       })
     );
@@ -142,7 +156,8 @@ async function handleDocReferences(
   docRefs: DocumentReferenceWithMetriportId[],
   requestId: string,
   patientId: string,
-  cxId: string
+  cxId: string,
+  cqOrganizationId: string
 ) {
   let errorCountConvertible = 0;
   let adjustCountConvertible = 0;
@@ -160,6 +175,8 @@ async function handleDocReferences(
     type: "transaction",
     entry: [],
   };
+
+  const cqOrganization = await getCQDirectoryEntryOrFail(cqOrganizationId);
 
   for (const docRef of docRefs) {
     try {
@@ -202,12 +219,15 @@ async function handleDocReferences(
         docRef,
         "final",
         patientId,
-        metriportDataSourceExtension
+        metriportDataSourceExtension,
+        cqOrganization.name
       );
       const mergedFHIRDocRef: DocumentReferenceWithId = {
         ...fhirDocRef,
         description: fhirDocRef.description ?? draftFHIRDocRef?.description,
         content: [...(draftFHIRDocRef?.content ?? []), ...(fhirDocRef.content ?? [])],
+        contained: combineAndDedupeContainedResources(draftFHIRDocRef, fhirDocRef),
+        date: formatDate(fhirDocRef.date) ?? formatDate(draftFHIRDocRef?.date),
       };
 
       if (!docRef.contentType) {
@@ -258,4 +278,15 @@ async function handleDocReferences(
     requestId,
     source: MedicalDataSource.CAREQUALITY,
   });
+}
+
+function combineAndDedupeContainedResources(
+  draftFHIRDocRef: DocumentReference | undefined,
+  fhirDocRef: DocumentReferenceWithId
+): Resource[] | undefined {
+  const draftContained = draftFHIRDocRef?.contained ?? [];
+  const fhirContained = fhirDocRef.contained ?? [];
+  const combined = [...draftContained, ...fhirContained];
+
+  return dedupeContainedResources(combined);
 }
