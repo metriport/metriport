@@ -50,7 +50,7 @@ Last updated: Jan 10 2024</description>
         <respondAfterProcessing>true</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
-        <processingThreads>10</processingThreads>
+        <processingThreads>2</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
             <string>Default Resource</string>
