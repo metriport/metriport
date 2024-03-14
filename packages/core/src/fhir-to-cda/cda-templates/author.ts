@@ -10,7 +10,7 @@ export function constructAuthor(organization: Organization): unknown {
       telecom: organization.telecom?.map(telecom => ({
         ...withNullFlavorObject(telecom.use, "@_use"),
         ...withNullFlavorObject(telecom.value, "@_value"),
-      }))[0], // Assuming we only need the first telecom for simplicity
+      })),
       representedOrganization: constructRepresentedOrganization(organization),
     },
   };

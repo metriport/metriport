@@ -15,7 +15,7 @@ export function constructAddress(address?: Address[]) {
       low: withNullFlavor(addr.period?.start, "@_value"),
       high: withNullFlavor(addr.period?.end, "@_nullFlavor"),
     },
-  }))[0]; // Assuming we only need the first address for simplicity
+  }))[0]; // Using only first address
 }
 
 export function constructRepresentedOrganization(organization: Organization) {
@@ -29,7 +29,7 @@ export function constructRepresentedOrganization(organization: Organization) {
     telecom: organization.telecom?.map(telecom => ({
       ...withNullFlavorObject(telecom.use, "@_use"),
       ...withNullFlavorObject(telecom.value, "@_value"),
-    }))[0], // Assuming we only need the first telecom for simplicity
+    })),
     addr: constructAddress(organization.address),
   };
 }

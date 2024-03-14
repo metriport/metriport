@@ -1,4 +1,4 @@
-import { Bundle, Composition, Resource, Patient } from "@medplum/fhirtypes";
+import { Bundle, Composition, Resource } from "@medplum/fhirtypes";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.
@@ -6,24 +6,34 @@ import { Bundle, Composition, Resource, Patient } from "@medplum/fhirtypes";
  * @returns {Bundle[]} An array of FHIR bundles, each corresponding to a composition.
  */
 export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
-  // Filter out Composition resources from the bundle
-
-  const patientResource = fhirBundle.entry?.find(
-    entry => entry.resource?.resourceType === "Patient"
-  )?.resource as Patient;
-
-  const organizationResources = fhirBundle.entry?.find(
-    entry => entry.resource?.resourceType === "Organization"
-  )?.resource as Patient;
-
   const compositions: Composition[] | undefined = fhirBundle.entry
     ?.filter(entry => entry.resource?.resourceType === "Composition")
     .map(entry => entry.resource as Composition);
+
   if (!compositions) {
     return [];
   }
-  // Map each composition to a new bundle
+
   const bundles: Bundle[] = compositions.map(composition => {
+    const patientReference = composition.subject?.reference;
+    const organizationReference = composition.author?.find(author =>
+      author.reference?.startsWith("Organization/")
+    )?.reference;
+
+    // Find the patient and organization resources in the bundle
+    const patientResource = patientReference
+      ? findResourceInBundle(fhirBundle, patientReference)
+      : undefined;
+    if (!patientResource) {
+      throw new Error("Patient resource not found");
+    }
+    const organizationResource = organizationReference
+      ? findResourceInBundle(fhirBundle, organizationReference)
+      : undefined;
+    if (!organizationResource) {
+      throw new Error("Organization resource not found");
+    }
+
     // Create a new bundle for the composition
     const bundle: Bundle = {
       resourceType: "Bundle",
@@ -33,21 +43,16 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
           fullUrl: `urn:uuid:${composition.id}`,
           resource: composition,
         },
+        {
+          fullUrl: `urn:uuid:${patientResource.id}`,
+          resource: patientResource,
+        },
+        {
+          fullUrl: `urn:uuid:${organizationResource.id}`,
+          resource: organizationResource,
+        },
       ],
     };
-
-    if (patientResource) {
-      bundle.entry?.push({
-        fullUrl: `urn:uuid:${patientResource.id}`,
-        resource: patientResource,
-      });
-    }
-    if (organizationResources) {
-      bundle.entry?.push({
-        fullUrl: `urn:uuid:${organizationResources.id}`,
-        resource: organizationResources,
-      });
-    }
 
     // Extract and add referenced resources to the bundle
     composition.section?.forEach(section => {
@@ -65,6 +70,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
         }
       });
     });
+
     return bundle;
   });
 

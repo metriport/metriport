@@ -1,4 +1,4 @@
-import { Bundle } from "@medplum/fhirtypes"; // Assuming these types are defined
+import { Bundle } from "@medplum/fhirtypes";
 import { splitBundleByCompositions } from "./composition-splitter";
 import { generateCdaFromFhirBundle } from "./cda-generators";
 

@@ -30,6 +30,6 @@
     "noErrorTruncation": true,
     "resolveJsonModule": true
   },
-  "include": ["./src/**/*", "src/fern"],
+  "include": ["./src/**/*"],
   "exclude": []
 }

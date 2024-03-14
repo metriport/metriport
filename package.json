@@ -52,7 +52,7 @@
   ],
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --max-warnings=0 --ignore-path packages/api/.eslintignore"
+      "eslint --max-warnings=0"
     ],
     "*.{ts,tsx,md}": [
       "prettier --list-different"
