@@ -25,7 +25,7 @@ if (['AE','AR'].indexOf(ack.toString()) > -1 || ['AE','QE'].indexOf(queryRespons
 	for each (var trigger in xml.*::['controlActProcess'].*::['reasonOf'].*::['detectedIssueEvent'].*::['triggerFor']) {
 		
 
-		const reason = trigger.*::['actOrderRequired'].*::['code']['@code'].toString();
+		var reason = trigger.*::['actOrderRequired'].*::['code']['@code'].toString();
 		var issue = {
 					 "severity": "warning",
 					 "code": "invalid",
