@@ -1,12 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { QueryTypes } from "sequelize";
 import z from "zod";
 import { executeAsynchronously } from "../concurrency";
 import { out } from "../log";
 import { initSequelizeForLambda } from "../sequelize";
-import { QueryReplacements, StatisticsProps, getYesterdaysTimeFrame } from "./shared";
+import { StatisticsProps, getQueryResults } from "./shared";
 
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
 
@@ -59,40 +58,13 @@ export async function getWhStatistics({
   out("Starting WH statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
-  let query = `
+  try {
+    const baseQuery = `
   SELECT * FROM webhook_request 
   WHERE cx_id=:cxId
   `;
-
-  const replacements: QueryReplacements = {
-    cxId,
-  };
-
-  if (dateString) {
-    query += ` and created_at>:dateString`;
-    replacements.dateString = dateString;
-  } else {
-    const [yesterday, today] = getYesterdaysTimeFrame();
-    query += ` and created_at between :yesterday and :today`;
-    if (today && yesterday) {
-      replacements.yesterday = yesterday;
-      replacements.today = today;
-    }
-  }
-
-  if (patientId) {
-    query += ` and payload->'patients'->0->>'patientId'=:patientId`;
-    replacements.patientId = patientId;
-  }
-
-  query += ";";
-
-  try {
-    const whResultsResponse = await sequelize.query(query, {
-      replacements: replacements,
-      type: QueryTypes.SELECT,
-    });
-    const whResults = webhookResultsSchema.parse(whResultsResponse);
+    const whResponse = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+    const whResults = webhookResultsSchema.parse(whResponse);
 
     const numberOfRows = whResults.length;
 

@@ -2,19 +2,14 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { inboundPatientResourceSchema } from "@metriport/ihe-gateway-sdk";
-import { QueryTypes } from "sequelize";
+import { Sequelize } from "sequelize";
 import z from "zod";
 import { mapPatientResourceToPatientData } from "../../../external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
-import {
-  QueryReplacements,
-  StatisticsProps,
-  calculateMapStats,
-  getYesterdaysTimeFrame,
-} from "./../shared";
+import { StatisticsProps, calculateMapStats, getQueryResults } from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
 
@@ -27,6 +22,16 @@ export const rowWithDataSchema = z.object({
     })
     .optional(),
 });
+
+const cqLinksSchema = z.array(
+  z.object({
+    id: z.string(),
+    cx_id: z.string(),
+    data: z.object({
+      links: z.array(z.object({})).optional(),
+    }),
+  })
+);
 
 type XcpdStatisticsProps = StatisticsProps & { apiUrl: string };
 
@@ -54,39 +59,15 @@ export async function getXcpdStatistics({
   const mpi = new MPIMetriportAPI(apiUrl);
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
-  let query = `
+  try {
+    const baseQuery = `
   SELECT * FROM patient_discovery_result
   WHERE data->>'cxId'=:cxId
   `;
 
-  const replacements: QueryReplacements = {
-    cxId: cxId,
-  };
-
-  if (dateString) {
-    query += ` and created_at>:dateString`;
-    replacements.dateString = dateString;
-  } else {
-    const [yesterday, today] = getYesterdaysTimeFrame();
-    query += ` and created_at between :yesterday and :today`;
-    if (today && yesterday) {
-      replacements.yesterday = yesterday;
-      replacements.today = today;
-    }
-  }
-
-  if (patientId) {
-    query += ` and patient_id=:patientId`;
-    replacements.patientId = patientId;
-  }
-
-  query += ";";
-
-  try {
-    const pdResults = await sequelize.query(query, {
-      replacements: replacements,
-      type: QueryTypes.SELECT,
-    });
+    const pdResults = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+    const { numberOfPatientsWithLinks, avgLinksPerPatient } =
+      await calculateNumberOfLinksPerPatient(sequelize, cxId, patientId, dateString);
 
     const numberOfRows = pdResults.length;
     const numberOfLinksPerPatient = new Map<string, number>();
@@ -140,6 +121,7 @@ export async function getXcpdStatistics({
 
     return `We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
 For the ${patients.size} unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
+${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatient} per patient.
 Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
   } catch (err) {
     console.error(err);
@@ -147,4 +129,44 @@ Of the ${numberOfPatientResources} returned patient resources, we parsed ${numbe
   } finally {
     sequelize.close();
   }
+}
+
+async function queryCqPatientDataForLinks(
+  sequelize: Sequelize,
+  patientId: string | undefined,
+  dateString: string | undefined,
+  cxId: string
+) {
+  const baseQuery = `
+  SELECT * FROM cq_patient_data
+  WHERE cx_id=:cxId
+  `;
+
+  const response = getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+  return response;
+}
+
+async function calculateNumberOfLinksPerPatient(
+  sequelize: Sequelize,
+  cxId: string,
+  dateString?: string,
+  patientId?: string
+) {
+  const linksResults = await queryCqPatientDataForLinks(sequelize, patientId, dateString, cxId);
+  const cqLinks = cqLinksSchema.parse(linksResults);
+  const numberOfCqLinksPerPatient = new Map<string, number>();
+
+  cqLinks.map(result => {
+    const numberOfLinks = result.data.links ? result.data.links.length : 0;
+    numberOfCqLinksPerPatient.set(
+      result["id"],
+      (numberOfCqLinksPerPatient.get(result["id"]) || 0) + numberOfLinks
+    );
+  });
+  const {
+    numberOfPatientsWithTargetAttribute: numberOfPatientsWithLinks,
+    avgAttributePerPatient: avgLinksPerPatient,
+  } = calculateMapStats(numberOfCqLinksPerPatient);
+
+  return { numberOfPatientsWithLinks, avgLinksPerPatient };
 }

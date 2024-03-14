@@ -23,7 +23,6 @@ async function main() {
     dateString,
   });
   console.log(xcpdResultsString);
-  // TODO: check cq_patient_data for number of links
   const dqResultsString = await getDqStatistics({ sqlDBCreds, cxId, patientId, dateString });
   console.log(dqResultsString);
   const drResultsString = await getDrStatistics({ sqlDBCreds, cxId, patientId, dateString });

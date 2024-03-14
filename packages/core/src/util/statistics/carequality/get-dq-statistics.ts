@@ -1,16 +1,14 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { QueryTypes } from "sequelize";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
 import {
-  QueryReplacements,
   StatisticsProps,
   calculateMapStats,
   countContentTypes,
-  getYesterdaysTimeFrame,
+  getQueryResults,
   mapToString,
   mergeMaps,
 } from "../shared";
@@ -38,39 +36,13 @@ export async function getDqStatistics({
   out("Starting DQ statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
-  let query = `
+  try {
+    const baseQuery = `
   SELECT * FROM document_query_result 
   WHERE data->>'cxId'=:cxId
   `;
 
-  const replacements: QueryReplacements = {
-    cxId,
-  };
-
-  if (dateString) {
-    query += ` and created_at>:dateString`;
-    replacements.dateString = dateString;
-  } else {
-    const [yesterday, today] = getYesterdaysTimeFrame();
-    query += ` and created_at between :yesterday and :today`;
-    if (today && yesterday) {
-      replacements.yesterday = yesterday;
-      replacements.today = today;
-    }
-  }
-
-  if (patientId) {
-    query += ` and patient_id=:patientId`;
-    replacements.patientId = patientId;
-  }
-
-  query += ";";
-
-  try {
-    const dqResults = await sequelize.query(query, {
-      replacements: replacements,
-      type: QueryTypes.SELECT,
-    });
+    const dqResults = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
 
     const numberOfRows = dqResults.length;
 
