@@ -1,5 +1,11 @@
 // If both successes and failures are received from Responding Gateways, the Initiating Gateway shall return both DocumentResponse and
 // RegistryErrorList elements in one response and specify PartialSuccess status.
+
+var requestId = channelMap.get('MSG_ID');
+var cxId = channelMap.get('CUSTOMER_ID');
+
+var baseLogMessage = "XCA ITI39 Processor: Response (Case1) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+
 if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryResponseCode.toString()) {
 
 	if (xml.*::DocumentResponse.length() > 0) try {

@@ -14,7 +14,6 @@ json = getBase64Content(msg, 'json');
 
 logger.info(baseLogMessage + 'response: ' + JSON.stringify(json));
 
-
 // Validate request
 if ('string' == typeof json) {
 	error = 'ERROR - ' + json;

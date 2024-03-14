@@ -4,7 +4,7 @@ var json = null, error = null;
 // HTTP 400 Bad Request - by default, the server cannot or will not process the request
 channelMap.put("responseCode", "400");
 
-var baseLogMessage = "XCA Interface: Transformer (Step0) - ";
+var baseLogMessage = "XCA DQ Interface: Transformer (Step0) - ";
 
 // Decode and parse incoming JSON request if sent over HTTP
 if (msg.toString().startsWith('<HttpRequest>')) {
