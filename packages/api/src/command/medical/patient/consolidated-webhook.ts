@@ -43,11 +43,13 @@ export const processConsolidatedDataWebhook = async ({
   status,
   bundle,
   filters,
+  shouldSendWh = true,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
   bundle?: Bundle<Resource>;
   filters?: Filters;
+  shouldSendWh?: boolean;
 }): Promise<void> => {
   const apiType = Product.medical;
   const { id: patientId, cxId, externalId } = patient;
@@ -71,8 +73,7 @@ export const processConsolidatedDataWebhook = async ({
     };
 
     // send it to the customer and update the WH request status
-
-    if (!isWebhookDisabled(currentPatient.data.cxConsolidatedRequestMetadata)) {
+    if (!isWebhookDisabled(currentPatient.data.cxConsolidatedRequestMetadata) && shouldSendWh) {
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: "medical.consolidated-data",
