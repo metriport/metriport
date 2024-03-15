@@ -12,7 +12,7 @@ destinationSet.removeAll();
 // Decode and parse incoming JSON request
 json = getBase64Content(msg, 'json');
 
-logger.info(baseLogMessage + 'response: ' + JSON.stringify(json));
+logger.info(baseLogMessage + 'request: ' + JSON.stringify(json));
 
 // Validate request
 if ('string' == typeof json) {
