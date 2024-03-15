@@ -38,7 +38,8 @@ const CONSTANTS = {
 export function constructClinicalDocumentXML(
   recordTarget: unknown,
   author: unknown,
-  custodian: unknown
+  custodian: unknown,
+  structuredBody: unknown
 ): string {
   const jsonObj = {
     ClinicalDocument: {
@@ -79,6 +80,7 @@ export function constructClinicalDocumentXML(
       recordTarget, // REQUIRED
       author, // REQUIRED
       custodian, // REQUIRED
+      component: structuredBody, // REQUIRED
     },
   };
 

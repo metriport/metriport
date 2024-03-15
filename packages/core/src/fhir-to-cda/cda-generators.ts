@@ -2,6 +2,7 @@ import { Bundle, Patient, Organization } from "@medplum/fhirtypes";
 import { constructRecordTargetFromFhirPatient } from "./cda-templates/record-target";
 import { constructAuthor } from "./cda-templates/author";
 import { constructCustodian } from "./cda-templates/custodian";
+import { constructStructuredBody } from "./cda-templates/structured-body";
 import { constructClinicalDocumentXML } from "./cda-templates/clinical-document";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
@@ -15,6 +16,12 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
   const recordTarget = constructRecordTargetFromFhirPatient(patientResource);
   const author = constructAuthor(organizationResources);
   const custodian = constructCustodian();
-  const clinicalDocument = constructClinicalDocumentXML(recordTarget, author, custodian);
+  const structuredBody = constructStructuredBody(fhirBundle);
+  const clinicalDocument = constructClinicalDocumentXML(
+    recordTarget,
+    author,
+    custodian,
+    structuredBody
+  );
   return clinicalDocument;
 }

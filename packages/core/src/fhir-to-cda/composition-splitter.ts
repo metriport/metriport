@@ -19,7 +19,6 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
     const organizationReference = composition.author?.find(author =>
       author.reference?.startsWith("Organization/")
     )?.reference;
-
     // Find the patient and organization resources in the bundle
     const patientResource = patientReference
       ? findResourceInBundle(fhirBundle, patientReference)

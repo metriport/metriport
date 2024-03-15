@@ -1,6 +1,7 @@
 import express from "express";
 import { json } from "body-parser";
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
+// import * as serializers from "../../../sdks/fhir-validation/serialization";
 
 const app = express();
 const port = 3000; // You can choose any port that suits your setup
@@ -12,6 +13,7 @@ app.use(json());
 app.post("/medical/v1/convert-to-cda", (req, res) => {
   try {
     const fhirBundle = req.body;
+    // serializers.fhir.Bundle.parse(req.body);
     const splitBundles = convertFhirBundleToCda(fhirBundle);
     res.send(splitBundles);
   } catch (error) {
