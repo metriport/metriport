@@ -37,7 +37,8 @@ export async function processOutboundDocumentQueryResps({
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const docRefs = results.flatMap(toDocumentReference);
+    const docRefsPromises = results.map(toDocumentReference);
+    const docRefs = (await Promise.all(docRefsPromises)).flat();
     const docRefsWithMetriportId = await Promise.all(
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );

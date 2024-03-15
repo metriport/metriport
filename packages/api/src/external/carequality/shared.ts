@@ -36,3 +36,22 @@ export const cqOrgDetailsSchema = z.object({
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
+
+export function formatDate(dateString: string | undefined): string | undefined {
+  if (!dateString) return undefined;
+  const preprocessedDate = dateString.replace(/[-:]/g, "");
+  const year = preprocessedDate.slice(0, 4);
+  const month = preprocessedDate.slice(4, 6);
+  const day = preprocessedDate.slice(6, 8);
+  const formattedDate = `${year}-${month}-${day}`;
+
+  try {
+    const date = new Date(formattedDate);
+    return date.toISOString();
+  } catch (error) {
+    const msg = "Error creating date object for document reference";
+    console.log(`${msg}: ${error}`);
+  }
+
+  return undefined;
+}
