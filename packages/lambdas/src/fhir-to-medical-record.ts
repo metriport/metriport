@@ -225,10 +225,14 @@ function shouldSendMrSummaryBasedOnContents(html: string): boolean {
   const sections = document.querySelectorAll("div.section");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sections.forEach((section: any) => {
+  for (const section of sections) {
     const th = section.querySelector("th");
-    if (th) atLeastOneSectionHasContents = true;
-  });
+    const tr = section.querySelector("tr");
+    if (th && tr) {
+      atLeastOneSectionHasContents = true;
+      break;
+    }
+  }
 
   return atLeastOneSectionHasContents;
 }
