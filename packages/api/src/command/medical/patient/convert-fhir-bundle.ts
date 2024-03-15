@@ -67,7 +67,7 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  return { bundle: buildBundle(patient, url, conversionType), shouldSendMr: shouldSendMr };
+  return { bundle: buildBundle(patient, url, conversionType), shouldSendMr };
 }
 
 function buildBundle(
