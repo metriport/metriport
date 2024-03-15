@@ -30,7 +30,7 @@ const MAX_NUMBER_OF_PARALLEL_DR_PROCESSING_REQUESTS = 20;
 export async function getDrStatistics({
   sqlDBCreds,
   cxId,
-  patientId,
+  patientIds,
   dateString,
 }: StatisticsProps): Promise<string> {
   out("Starting DR statistics calculation...");
@@ -41,7 +41,13 @@ export async function getDrStatistics({
   SELECT * FROM document_retrieval_result 
   WHERE data->>'cxId'=:cxId
   `;
-    const drResults = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+    const drResults = await getQueryResults({
+      sequelize,
+      baseQuery,
+      cxId,
+      dateString,
+      patientIds: { ids: patientIds },
+    });
     const numberOfRows = drResults.length;
 
     const stats: { contentTypes: Map<string, number>; numberOfDocRefs: number }[] = [];
@@ -79,6 +85,7 @@ export async function getDrStatistics({
       avgAttributePerPatient: avgLinks,
     } = calculateMapStats(numberOfDocumentsPerPatient);
     const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+    console.log(numberOfDocumentsPerPatient);
 
     console.log(
       `${numberOfLinked} patients with at least 1 document, with an average of ${avgLinks} documents per patient.`

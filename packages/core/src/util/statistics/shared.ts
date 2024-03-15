@@ -4,16 +4,30 @@ import { z } from "zod";
 export type QueryReplacements = {
   cxId: string;
   patientId?: string;
+  patientIds?: string[] | undefined;
   dateString?: string;
   yesterday?: string;
   today?: string;
 };
 
-export type StatisticsProps = {
+export type BaseStatisticsProps = {
   sqlDBCreds: string;
   cxId: string;
-  patientId?: string;
   dateString?: string;
+};
+
+export type StatisticsProps = BaseStatisticsProps & { patientIds: string[] };
+
+export type QueryProps = {
+  sequelize: Sequelize;
+  baseQuery: string;
+  cxId: string;
+  dateString?: string | undefined;
+  patientId?: string | undefined;
+  patientIds?: {
+    ids: string[];
+    columnName?: string;
+  };
 };
 
 const documentReference = z.object({
@@ -92,6 +106,7 @@ function appendDateStringToQueryAndUpdateReplacements(
 ): string {
   if (dateString) {
     query += ` and created_at>:dateString`;
+    replacements.dateString = dateString;
   } else {
     const [yesterday, today] = getYesterdaysTimeFrame();
     query += ` and created_at between :yesterday and :today`;
@@ -113,33 +128,58 @@ function appendPatientIdToQueryAndUpdateReplacements(
   return query;
 }
 
+function appendPatientIdsToQueryAndUpdateReplacements(
+  query: string,
+  patientIds: {
+    ids: string[] | undefined;
+    columnName?: string;
+  },
+  replacements: QueryReplacements
+): string {
+  const column = patientIds.columnName || "patient_id";
+  if (patientIds) {
+    query += ` and ${column} in (:patientIds)`;
+    replacements.patientIds = patientIds.ids;
+  }
+  return query;
+}
+
 export function updateQueryAndReplacements(
   query: string,
   cxId: string,
-  dateString: string | undefined,
-  patientId: string | undefined
+  dateString?: string | undefined,
+  patientId?: string | undefined,
+  patientIds?: {
+    ids: string[] | undefined;
+    columnName?: string;
+  }
 ): { query: string; replacements: QueryReplacements } {
   const replacements: QueryReplacements = {
     cxId: cxId,
   };
   query = appendDateStringToQueryAndUpdateReplacements(query, dateString, replacements);
+  if (patientIds) {
+    query = appendPatientIdsToQueryAndUpdateReplacements(query, patientIds, replacements);
+  }
   query = appendPatientIdToQueryAndUpdateReplacements(query, patientId, replacements);
   query += ";";
   return { query, replacements };
 }
 
-export async function getQueryResults(
-  sequelize: Sequelize,
-  baseQuery: string,
-  cxId: string,
-  dateString?: string,
-  patientId?: string
-) {
+export async function getQueryResults({
+  sequelize,
+  baseQuery,
+  cxId,
+  dateString,
+  patientId,
+  patientIds,
+}: QueryProps) {
   const { query, replacements } = updateQueryAndReplacements(
     baseQuery,
     cxId,
     dateString,
-    patientId
+    patientId,
+    patientIds
   );
 
   const results = await sequelize.query(query, {

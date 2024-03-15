@@ -9,7 +9,7 @@ import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
-import { StatisticsProps, calculateMapStats, getQueryResults } from "./../shared";
+import { BaseStatisticsProps, calculateMapStats, getQueryResults } from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
 
@@ -33,7 +33,7 @@ const cqLinksSchema = z.array(
   })
 );
 
-type XcpdStatisticsProps = StatisticsProps & { apiUrl: string };
+type XcpdStatisticsProps = BaseStatisticsProps & { apiUrl: string; patientId?: string };
 
 /**
  * Returns statistics for XCPD, including the following:
@@ -54,7 +54,7 @@ export async function getXcpdStatistics({
   cxId,
   patientId,
   dateString,
-}: XcpdStatisticsProps): Promise<string> {
+}: XcpdStatisticsProps): Promise<{ string: string; patients: string[] }> {
   out(`Starting XCPD statistics calculation ${patientId ? `For patientId ${patientId}.` : ""}...`);
   const mpi = new MPIMetriportAPI(apiUrl);
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
@@ -65,14 +65,11 @@ export async function getXcpdStatistics({
   WHERE data->>'cxId'=:cxId
   `;
 
-    const pdResults = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
-    const { numberOfPatientsWithLinks, avgLinksPerPatient } =
-      await calculateNumberOfLinksPerPatient(sequelize, cxId, patientId, dateString);
-
+    const pdResults = await getQueryResults({ sequelize, baseQuery, cxId, dateString, patientId });
     const numberOfRows = pdResults.length;
     const numberOfLinksPerPatient = new Map<string, number>();
 
-    const patients = new Set();
+    const patients = new Set<string>();
     let numberOfMatches = 0;
     let numberOfSuccesses = 0;
     let numberOfPatients = 0;
@@ -118,11 +115,21 @@ export async function getXcpdStatistics({
       avgAttributePerPatient: avgDocumentsPerPatient,
     } = calculateMapStats(numberOfLinksPerPatient);
     const coverageRate = ((numberOfPatientsWithDocuments / patients.size) * 100).toFixed(2);
+    const patientsArray = [...patients];
 
-    return `We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+    const { numberOfPatientsWithLinks, avgLinksPerPatient } =
+      await calculateNumberOfLinksPerPatient({
+        sequelize,
+        cxId,
+        patientIds: patientsArray,
+        dateString,
+      });
+
+    const string = `We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
 For the ${patients.size} unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
 ${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatient} per patient.
 Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
+    return { string, patients: patientsArray };
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating XCPD statistics.");
@@ -131,28 +138,49 @@ Of the ${numberOfPatientResources} returned patient resources, we parsed ${numbe
   }
 }
 
-async function queryCqPatientDataForLinks(
-  sequelize: Sequelize,
-  patientId: string | undefined,
-  dateString: string | undefined,
-  cxId: string
-) {
+async function queryCqPatientDataForLinks({
+  sequelize,
+  cxId,
+  dateString,
+  patientIds,
+}: {
+  sequelize: Sequelize;
+  cxId: string;
+  patientIds: {
+    ids: string[];
+    columnName: string;
+  };
+  dateString?: string | undefined;
+}) {
   const baseQuery = `
   SELECT * FROM cq_patient_data
   WHERE cx_id=:cxId
   `;
 
-  const response = getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+  const response = getQueryResults({ sequelize, baseQuery, cxId, dateString, patientIds });
   return response;
 }
 
-async function calculateNumberOfLinksPerPatient(
-  sequelize: Sequelize,
-  cxId: string,
-  dateString?: string,
-  patientId?: string
-) {
-  const linksResults = await queryCqPatientDataForLinks(sequelize, patientId, dateString, cxId);
+async function calculateNumberOfLinksPerPatient({
+  sequelize,
+  cxId,
+  patientIds,
+  dateString,
+}: {
+  sequelize: Sequelize;
+  cxId: string;
+  patientIds: string[];
+  dateString?: string | undefined;
+}) {
+  const linksResults = await queryCqPatientDataForLinks({
+    sequelize,
+    cxId,
+    patientIds: {
+      ids: patientIds,
+      columnName: "id",
+    },
+    dateString,
+  });
   const cqLinks = cqLinksSchema.parse(linksResults);
   const numberOfCqLinksPerPatient = new Map<string, number>();
 

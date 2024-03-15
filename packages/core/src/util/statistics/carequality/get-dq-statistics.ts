@@ -30,7 +30,7 @@ const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
 export async function getDqStatistics({
   sqlDBCreds,
   cxId,
-  patientId,
+  patientIds,
   dateString,
 }: StatisticsProps): Promise<string> {
   out("Starting DQ statistics calculation...");
@@ -42,7 +42,15 @@ export async function getDqStatistics({
   WHERE data->>'cxId'=:cxId
   `;
 
-    const dqResults = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+    const dqResults = await getQueryResults({
+      sequelize,
+      baseQuery,
+      cxId,
+      dateString,
+      patientIds: {
+        ids: patientIds,
+      },
+    });
 
     const numberOfRows = dqResults.length;
 

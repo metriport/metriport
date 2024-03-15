@@ -12,23 +12,27 @@ const cxId = getEnvVarOrFail("CX_ID");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS"); // !!!MAKE SURE TO USE THE READ REPLICA CREDENTIALS!!!
 
 const patientId = "";
-const dateString = "";
+const dateString = "2024-03-14 09:00";
 
 async function main() {
-  const xcpdResultsString = await getXcpdStatistics({
+  const props = { sqlDBCreds, cxId, dateString };
+
+  const xcpdResults = await getXcpdStatistics({
     apiUrl,
-    sqlDBCreds,
-    cxId,
+    ...props,
     patientId,
-    dateString,
   });
-  console.log(xcpdResultsString);
-  const dqResultsString = await getDqStatistics({ sqlDBCreds, cxId, patientId, dateString });
+  console.log(xcpdResults.string);
+
+  const propsWithPatientIds = { ...props, patientIds: xcpdResults.patients };
+  const dqResultsString = await getDqStatistics(propsWithPatientIds);
   console.log(dqResultsString);
-  const drResultsString = await getDrStatistics({ sqlDBCreds, cxId, patientId, dateString });
+  const drResultsString = await getDrStatistics(propsWithPatientIds);
   console.log(drResultsString);
-  const whResultsString = await getWhStatistics({ sqlDBCreds, cxId, patientId, dateString });
+  const whResultsString = await getWhStatistics(propsWithPatientIds);
   console.log(whResultsString);
+
+  console.log("PATIENT IDS\n", xcpdResults.patients);
 
   // TODO: For v2, look at the FHIR server for some of these stats (thats where we get the records from for our CX anyway)
 }

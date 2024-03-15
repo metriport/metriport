@@ -52,7 +52,7 @@ type WebhookResult = z.infer<typeof webhookResultSchema>;
 export async function getWhStatistics({
   sqlDBCreds,
   cxId,
-  patientId,
+  patientIds,
   dateString,
 }: StatisticsProps): Promise<string> {
   out("Starting WH statistics calculation...");
@@ -63,7 +63,13 @@ export async function getWhStatistics({
   SELECT * FROM webhook_request 
   WHERE cx_id=:cxId
   `;
-    const whResponse = await getQueryResults(sequelize, baseQuery, cxId, dateString, patientId);
+    const whResponse = await getQueryResults({
+      sequelize,
+      baseQuery,
+      cxId,
+      dateString,
+      patientIds: { ids: patientIds, columnName: "payload->'patients'->0->>'patientId'" },
+    });
     const whResults = webhookResultsSchema.parse(whResponse);
 
     const numberOfRows = whResults.length;
