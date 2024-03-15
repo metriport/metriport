@@ -29,7 +29,6 @@ if (json) {
 	
 		// Pass to the XCPD Interface channel to process
 		if (0 == errorCount) {			
-      logger.info(entryLogMessage + 'entry: ' + JSON.stringify(entry));
 			var result = router.routeMessageByChannelId($g('XCPDINTERFACE'), JSON.stringify(entry));			
 		} else {
       logger.error(entryLogMessage + 'error: ' + errorCount.toString() + ' error(s) is/are found in the entries');

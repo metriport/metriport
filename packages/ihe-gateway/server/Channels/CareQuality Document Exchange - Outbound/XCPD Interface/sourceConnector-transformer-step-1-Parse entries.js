@@ -29,7 +29,6 @@ xcpdArray.forEach(function(entry) {
 		delete jsonXCPD.gateways;
 		
     if (0 == errorCount) {
-      logger.info(baseLogMessage + 'gateway: ' + JSON.stringify(jsonXCPD));
       var result = router.routeMessageByChannelId($g("ITI55PROCESSOR"), JSON.stringify(jsonXCPD));
     } else {
       channelMap.put(
@@ -38,7 +37,7 @@ xcpdArray.forEach(function(entry) {
       );
     }
   } catch (ex) {
-    logger.error(baseLogMessage + 'error: ' + ex);
+    logger.error(baseLogMessage + 'gw: ' + JSON.stringify(entry) + ', ' + 'error: ' + ex);
   }
 });
 

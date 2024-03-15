@@ -30,9 +30,7 @@ if (json) {
 
 		// Pass to the XCPD Interface channel to process
 		if (0 == errorCount) {
-      logger.info(entryLogMessage + 'entry: ' + JSON.stringify(entry));
 			var result = router.routeMessageByChannelId(globalMap.get('XCAITI38INTERFACE'), JSON.stringify(entry, null, 2));
-
 		} else {
       logger.error(entryLogMessage + 'error: ' + errorCount.toString() + ' error(s) is/are found in the entries');
 			channelMap.put("responseCode", "400");
