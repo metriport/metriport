@@ -43,7 +43,7 @@ export async function handleBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: ConsolidationConversionType;
-}): Promise<Bundle<Resource>> {
+}): Promise<{ bundle: Bundle<Resource>; shouldSendMr: boolean }> {
   const isSandbox = Config.isSandbox();
 
   if (isSandbox) {
@@ -55,10 +55,10 @@ export async function handleBundleToMedicalRecord({
       bucketName: Config.getSandboxSeedBucketName()!,
     });
 
-    return buildBundle(patient, url, conversionType);
+    return { bundle: buildBundle(patient, url, conversionType), shouldSendMr: true };
   }
 
-  const url = await convertFHIRBundleToMedicalRecord({
+  const { url, shouldSendMr } = await convertFHIRBundleToMedicalRecord({
     bundle,
     patient,
     resources,
@@ -67,7 +67,7 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  return buildBundle(patient, url, conversionType);
+  return { bundle: buildBundle(patient, url, conversionType), shouldSendMr: shouldSendMr };
 }
 
 function buildBundle(
@@ -114,7 +114,7 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: ConsolidationConversionType;
-}): Promise<string> {
+}): Promise<{ url: string; shouldSendMr: boolean }> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
@@ -160,7 +160,7 @@ async function convertFHIRBundleToMedicalRecord({
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
 
   const parsedResult = JSON.parse(resultPayload) as ConversionOutput;
-  return parsedResult.url;
+  return { url: parsedResult.url, shouldSendMr: parsedResult.shouldSendMr };
 }
 
 async function processSandboxSeed({
