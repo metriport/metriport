@@ -22,7 +22,7 @@ To ensure the XML is valid, parameters must be in the following order:
 	principalCareProvisionId		-- Not used in XCPD ITI-55 query
 */
 
-const baseLogMessage = "XCPD ITI55 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
+var baseLogMessage = "XCPD ITI55 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
 
 var patient = msg.patientResource;
 var parameterList = new XMLList();

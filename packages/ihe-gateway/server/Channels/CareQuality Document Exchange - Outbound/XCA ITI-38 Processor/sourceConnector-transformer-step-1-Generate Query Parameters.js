@@ -9,7 +9,7 @@ For document searches on the NHIN, it is recommended to use the following elemen
  * Document Creation Time
 */
 
-const baseLogMessage =
+var baseLogMessage =
   "XCA DQ ITI-38 Processor - requestId: " +
   msg.id.toString() +
   ", " +

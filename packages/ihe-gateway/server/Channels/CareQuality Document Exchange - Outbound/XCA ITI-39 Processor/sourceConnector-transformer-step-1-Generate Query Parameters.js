@@ -1,7 +1,7 @@
 // Check for the documentReference list in the incoming message
 if (!msg.hasOwnProperty('documentReference')) throw 'ERROR - The required documentReference is missing. The processing has been stopped.';
 
-const baseLogMessage = "XCPD ITI39 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
+var baseLogMessage = "XCPD ITI39 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
 
 var parameterList = new XMLList();
 
