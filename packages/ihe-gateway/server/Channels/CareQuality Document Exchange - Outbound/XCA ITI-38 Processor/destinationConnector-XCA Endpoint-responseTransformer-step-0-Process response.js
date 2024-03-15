@@ -4,7 +4,7 @@ var xml = null;
 var requestId = channelMap.get('MSG_ID');
 var cxId = channelMap.get('CUSTOMER_ID');
 
-var baseLogMessage = "XCA ITI38 Processor: Response (Case0) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+var baseLogMessage = "XCA DQ ITI-38 Processor: Response (Case0) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
 
 var 	queryResponseCode = '',
 	homeCommunityId = null,

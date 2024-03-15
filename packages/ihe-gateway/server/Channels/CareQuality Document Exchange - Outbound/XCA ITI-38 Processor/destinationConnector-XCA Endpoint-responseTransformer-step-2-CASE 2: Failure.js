@@ -5,13 +5,13 @@
 var requestId = channelMap.get('MSG_ID');
 var cxId = channelMap.get('CUSTOMER_ID');
 
-var baseLogMessage = "XCA ITI38 Processor: Response (Case2) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+var baseLogMessage = "XCA DQ ITI-38 Processor: Response (Case2) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
 
 if ('Failure' == queryResponseCode.toString()) {
 
-	if (xml.*::RegistryErrorList.length() > 0) {	
+	if (xml.*::RegistryErrorList.length() > 0) {
 
-		var operationOutcome = processRegistryErrorList(xml.*::RegistryErrorList);		
+		var operationOutcome = processRegistryErrorList(xml.*::RegistryErrorList);
 		if (operationOutcome) {
 			var _response = getXCA38ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
       logger.info(baseLogMessage + 'Response: ' + JSON.stringify(_response));
@@ -20,5 +20,5 @@ if ('Failure' == queryResponseCode.toString()) {
 	}
 
 	// Stop further processing
-	return;	
+	return;
 }

@@ -6,11 +6,16 @@ For document searches on the NHIN, it is recommended to use the following elemen
  * Class code
  * Practice Setting Code
  * Healthcare Facility Type
- * Document Creation Time 
+ * Document Creation Time
 */
 
-const baseLogMessage = "XCPD ITI38 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
-
+const baseLogMessage =
+  "XCA DQ ITI-38 Processor - requestId: " +
+  msg.id.toString() +
+  ", " +
+  "cxId: " +
+  msg.cxId.toString() +
+  " - ";
 
 // XDSDocumentEntryPatientId (REQUIRED) [1..1]
 // Dec 20: xcpdPatientId to gatewayPatientId
@@ -76,5 +81,4 @@ if (msg.hasOwnProperty("serviceDate")) {
 var docEntryType = getXDSDocumentEntryType();
 if (docEntryType) parameterList += docEntryType;
 
-logger.info(baseLogMessage + 'Generated query parameters: ' + parameterList.toString());
-
+logger.info(baseLogMessage + "Generated query parameters: " + parameterList.toString());

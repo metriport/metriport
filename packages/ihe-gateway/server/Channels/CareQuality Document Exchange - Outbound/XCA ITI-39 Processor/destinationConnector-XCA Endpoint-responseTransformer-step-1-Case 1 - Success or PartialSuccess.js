@@ -4,7 +4,7 @@
 var requestId = channelMap.get('MSG_ID');
 var cxId = channelMap.get('CUSTOMER_ID');
 
-var baseLogMessage = "XCA ITI39 Processor: Response (Case1) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+var baseLogMessage = "XCA DR ITI-39 Processor: Response (Case1) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
 
 if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryResponseCode.toString()) {
 
