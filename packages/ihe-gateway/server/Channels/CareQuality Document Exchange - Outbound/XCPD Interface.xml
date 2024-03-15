@@ -262,8 +262,12 @@ Last updated: Dec 20 2023</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>f6899f98-6671-44f9-a764-d5f7c1858f02</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>
