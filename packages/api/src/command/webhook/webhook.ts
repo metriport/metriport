@@ -1,17 +1,17 @@
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
+import { errorToString } from "@metriport/shared/common/error";
 import Axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
-import { z } from "zod";
+import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
 import { isWebhookPongDisabledForCx } from "../../external/aws/appConfig";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
-import { EventTypes, analytics } from "../../shared/analytics";
-import { errorToString } from "../../shared/log";
+import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
@@ -149,7 +149,7 @@ export const processRequest = async (
     sendAnalytics(status);
     let webhookStatusDetail;
     if (error instanceof WebhookError) {
-      webhookStatusDetail = String(error.cause);
+      webhookStatusDetail = errorToWhStatusDetails(error);
     } else {
       log(`Unexpected error testing webhook`, error);
       webhookStatusDetail = `Internal error: ${error.message}`;
@@ -230,8 +230,15 @@ export const sendTestPayload = async (url: string, key: string, cxId: string): P
   return typeof res !== "string" && res.pong && res.pong === ping ? true : false;
 };
 
-export const isWebhookDisabled = (meta?: unknown): boolean => {
+export function isWebhookDisabled(meta?: unknown): boolean {
   if (!meta) return false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Boolean((meta as any)[webhookDisableFlagName]);
-};
+}
+
+export function errorToWhStatusDetails(error: WebhookError): string {
+  if (error instanceof ZodError || error.cause instanceof ZodError) {
+    return "Invalid response payload";
+  }
+  return errorToString(error);
+}
