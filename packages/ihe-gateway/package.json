@@ -7,22 +7,28 @@
   "scripts": {
     "clean": "rimraf dist",
     "deep-clean": "npm run clean && rimraf node_modules",
-    "admin": "ts-node src/admin",
+    "install-deps": "npm ci --ignore-scripts --no-fund",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
     "typecheck": "tsc --noEmit",
     "lint": "npx eslint . --ext .ts",
     "lint-fix": "npm run lint --fix",
     "prettier-fix": "npx prettier '**/*.ts' --write",
-    "test": "echo \"No test specified yet\""
+    "test": "echo \"No test specified yet\"",
+    "admin": "ts-node src/admin"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-ecs": "^3.529.1",
+    "axios": "^1.3.2",
+    "commander": "^10.0.0",
+    "dayjs": "^1.11.9",
+    "dotenv": "^16.0.3"
+  },
   "devDependencies": {
     "@aws-sdk/client-ecs": "^3.529.1",
-    "@metriport/core": "file:packages/core",
-    "@metriport/shared": "file:packages/shared",
     "@tsconfig/recommended": "^1.0.1",
     "@types/lodash": "^4.14.192",
     "@typescript-eslint/eslint-plugin": "^5.50.0",

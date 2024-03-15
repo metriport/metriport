@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channel version="4.4.2">
   <id>cbdd09d8-af65-4cc6-869a-8c1617a29881</id>
   <nextMetaDataId>2</nextMetaDataId>
-  <name>Tester XML</name>
+  <name>tester-xml</name>
   <description/>
-  <revision>110</revision>
+  <revision>124</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -253,8 +253,8 @@
     <metadata>
       <enabled>false</enabled>
       <lastModified>
-        <time>1710014365306</time>
-        <timezone>America/Winnipeg</timezone>
+        <time>1710368460440</time>
+        <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
         <archiveEnabled>true</archiveEnabled>

@@ -5,16 +5,13 @@
 # Script to push configurations to the IHE Gateway.
 #
 # Usage:
-#   ./scripts/push-to-server.sh [configurationMap|<include-full-backup>] [strict] [no-ssl-check]
+#   ./scripts/push-to-server.sh [configurationMap|<include-full-backup>]
 #
 # Arguments:
 #   - configurationMap: Only push the configuration map to the server. If not present, push all
 #                       configurations.
 #   - include-full-backup: Include the full backup in the push (only when 'configurationMap' is
 #                          not set).
-#   - no-ssl-check: Skip the SSL certificate check.
-#   - strict: If the server fails to accept the configuration map or check the SLL certs, stop
-#             all Java processes.
 #
 ###################################################################################################
 
@@ -23,18 +20,12 @@ set -eo pipefail
 set -eE # same as: `set -o errexit -o errtrace`
 
 cleanup() {
-  if containsParameter "strict"; then
-    echo "[config] Strict mode: stopping all Java processes..."
-    pkill java
-  else
-    echo "[config] Non-strict mode: just leaving the config script..."
-  fi
+  echo "[config] Leaving the config script..."
 }
 trap cleanup ERR
 
 CONFIG_MAP_FILE=./server/ConfigurationMap.xml
 MAX_ATTEMPTS_LOGIN=20
-MAX_ATTEMPTS_VERIFY_SSL_CERT=15
 MAX_ATTEMPTS_PUSH_CONFIG_MAP=10
 
 source ./scripts/load-env.sh
@@ -123,34 +114,6 @@ setAllConfigs() {
   ./scripts/mirthsync.sh -s $IHE_GW_URL -u $ADMIN_USER -p $ADMIN_PASSWORD -i -t ./server --include-configuration-map -m code -f -d push
 }
 
-hasSSLCerts() {
-  local sslCertResp=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD "$IHE_GW_URL/extensions/ssl/all")
-  if [[ $sslCertResp == *"carequality"* ]]; then
-    return 0
-  fi
-  echo "[config] SSL cert response: $sslCertResp" >/dev/stderr
-  return 1
-}
-
-verifySSLCerts() {
-  if containsParameter "no-ssl-check"; then
-    echo "[config] Skipping SSL cert check"
-    return
-  fi
-  echo "[config] Checking if SSL cert is there..."
-  local counter=0
-  until hasSSLCerts; do
-    counter=$((counter + 1))
-    if [ $counter -ge $MAX_ATTEMPTS_VERIFY_SSL_CERT ]; then
-      echo "[config] SSL cert not found, gave up."
-      cleanup
-      exit 1
-    fi
-    echo "[config] SSL cert not found, trying up to $MAX_ATTEMPTS_VERIFY_SSL_CERT times..."
-    sleep 1
-  done
-}
-
 isApiAvailable() {
   local checkApiResult=$(curl -s --header "X-Requested-With: push-to-server" -u $ADMIN_USER:$ADMIN_PASSWORD -w '%{response_code}' -o /dev/null "$IHE_GW_URL/server/jvm")
   if [[ $checkApiResult -lt 100 ]]; then
@@ -199,13 +162,9 @@ waitServerOnline
 
 echo "[config] Pushing configs to the server..."
 if containsParameter "configurationMap"; then
-  # since we are only pushing the configuration map, we should first check if SSL certs are there
-  verifySSLCerts
   setConfigurationMap
 else
-  # since we are pushing all configurations - which include the SSL certs, let's check certs afterwards
   setAllConfigs
-  verifySSLCerts
 fi
 
 echo "[config] Done."
