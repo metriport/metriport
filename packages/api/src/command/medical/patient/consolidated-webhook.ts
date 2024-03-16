@@ -96,7 +96,6 @@ export const processConsolidatedDataWebhook = async ({
         status: "success",
       });
     }
-    // TODO 858 indicate this was not really sent to the customer
     await updateConsolidatedQueryProgress({
       patient,
       progress: { status },

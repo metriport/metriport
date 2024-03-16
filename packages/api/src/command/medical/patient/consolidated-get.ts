@@ -89,7 +89,6 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promis
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
-
     processConsolidatedDataWebhook({
       patient,
       status: "completed",
