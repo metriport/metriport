@@ -71,6 +71,7 @@ export async function handleBundleToMedicalRecord({
   if (!hasContents) {
     console.log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
+    newBundle.total = 0;
   }
   return newBundle;
 }
