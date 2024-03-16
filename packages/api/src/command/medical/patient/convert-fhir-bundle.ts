@@ -43,7 +43,7 @@ export async function handleBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: ConsolidationConversionType;
-}): Promise<{ bundle: Bundle<Resource>; shouldSendMr: boolean }> {
+}): Promise<Bundle<Resource>> {
   const isSandbox = Config.isSandbox();
 
   if (isSandbox) {
@@ -55,10 +55,10 @@ export async function handleBundleToMedicalRecord({
       bucketName: Config.getSandboxSeedBucketName()!,
     });
 
-    return { bundle: buildBundle(patient, url, conversionType), shouldSendMr: true };
+    return buildBundle(patient, url, conversionType);
   }
 
-  const { url, shouldSendMr } = await convertFHIRBundleToMedicalRecord({
+  const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
     bundle,
     patient,
     resources,
@@ -67,7 +67,12 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  return { bundle: buildBundle(patient, url, conversionType), shouldSendMr };
+  const newBundle = buildBundle(patient, url, conversionType);
+  if (!hasContents) {
+    console.log(`No contents in the consolidated data for patient ${patient.id}`);
+    bundle.entry = [];
+  }
+  return newBundle;
 }
 
 function buildBundle(
@@ -114,7 +119,7 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: ConsolidationConversionType;
-}): Promise<{ url: string; shouldSendMr: boolean }> {
+}): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
@@ -158,9 +163,7 @@ async function convertFHIRBundleToMedicalRecord({
     })
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
-
-  const parsedResult = JSON.parse(resultPayload) as ConversionOutput;
-  return { url: parsedResult.url, shouldSendMr: parsedResult.shouldSendMr };
+  return JSON.parse(resultPayload) as ConversionOutput;
 }
 
 async function processSandboxSeed({

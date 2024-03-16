@@ -56,7 +56,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const bundle = await getBundleFromS3(fhirFileName);
 
       const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
-      const shouldSendMr = shouldSendMrSummaryBasedOnContents(html);
+      const hasContents = doesMrSummaryHaveContents(html);
+      log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
       await s3Client
@@ -77,7 +78,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         url = await getSignedUrl(htmlFileName);
       }
 
-      return { url, shouldSendMr };
+      return { url, hasContents };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       log(`Error processing bundle: ${error.message}`);
@@ -217,7 +218,7 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   return [];
 }
 
-function shouldSendMrSummaryBasedOnContents(html: string): boolean {
+function doesMrSummaryHaveContents(html: string): boolean {
   let atLeastOneSectionHasContents = false;
 
   const dom = new JSDOM(html);

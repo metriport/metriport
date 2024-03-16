@@ -87,7 +87,7 @@ export async function startConsolidatedQuery({
 async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promise<void> {
   const { patient, resources, dateFrom, dateTo, conversionType } = params;
   try {
-    const { bundle, filters, shouldSendMr } = await getConsolidated(params);
+    const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
 
     processConsolidatedDataWebhook({
@@ -95,7 +95,6 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promis
       status: "completed",
       bundle,
       filters,
-      shouldSendWh: shouldSendMr,
     }).catch(emptyFunction);
   } catch (error) {
     processConsolidatedDataWebhook({
@@ -121,12 +120,10 @@ export async function getConsolidated({
 }: GetConsolidatedParams): Promise<{
   bundle: Bundle<Resource>;
   filters: Record<string, string | undefined>;
-  shouldSendMr: boolean;
 }> {
   const { log } = Util.out(`getConsolidated - cxId ${patient.cxId}, patientId ${patient.id}`);
   const filters = { resources: resources ? resources.join(", ") : undefined, dateFrom, dateTo };
   try {
-    let shouldSendMr = true;
     let bundle = await getConsolidatedPatientData({
       patient,
       documentIds,
@@ -140,7 +137,7 @@ export async function getConsolidated({
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
       // FHIR bundle to represent that.
-      const resp = await handleBundleToMedicalRecord({
+      bundle = await handleBundleToMedicalRecord({
         bundle,
         patient,
         resources,
@@ -148,10 +145,8 @@ export async function getConsolidated({
         dateTo,
         conversionType,
       });
-      bundle = resp.bundle;
-      shouldSendMr = resp.shouldSendMr;
     }
-    return { bundle, filters, shouldSendMr };
+    return { bundle, filters };
   } catch (error) {
     log(`Failed to get FHIR resources: ${JSON.stringify(filters)}`);
     capture.error(error, {

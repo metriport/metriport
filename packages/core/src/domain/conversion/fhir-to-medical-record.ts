@@ -14,5 +14,5 @@ export type Input = {
 
 export type Output = {
   url: string;
-  shouldSendMr: boolean;
+  hasContents?: boolean;
 };
