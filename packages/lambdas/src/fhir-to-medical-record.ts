@@ -11,6 +11,7 @@ import chromium from "@sparticuz/chromium";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
+import { JSDOM } from "jsdom";
 import puppeteer from "puppeteer-core";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
@@ -55,6 +56,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       const bundle = await getBundleFromS3(fhirFileName);
 
       const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
+      const hasContents = doesMrSummaryHaveContents(html);
+      log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
 
       await s3Client
@@ -75,7 +78,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         url = await getSignedUrl(htmlFileName);
       }
 
-      return { url };
+      return { url, hasContents };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       log(`Error processing bundle: ${error.message}`);
@@ -213,4 +216,24 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
   }
 
   return [];
+}
+
+function doesMrSummaryHaveContents(html: string): boolean {
+  let atLeastOneSectionHasContents = false;
+
+  const dom = new JSDOM(html);
+  const document = dom.window.document;
+  const sections = document.querySelectorAll("div.section");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const section of sections) {
+    const th = section.querySelector("th");
+    const tr = section.querySelector("tr");
+    if (th && tr) {
+      atLeastOneSectionHasContents = true;
+      break;
+    }
+  }
+
+  return atLeastOneSectionHasContents;
 }
