@@ -83,14 +83,19 @@ export async function getDrStatistics({
     });
 
     const {
-      numberOfPatientsWithTargetAttribute: numberOfLinked,
-      avgAttributePerPatient: avgLinks,
+      numberOfPatientsWithTargetAttribute: numberOfPatients,
+      avgAttributePerPatient: avgDownloads,
     } = calculateMapStats(numberOfDocumentsPerPatient);
     const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
 
     return `${tableNameHeader(
       DR_TABLE_NAME
-    )}${numberOfLinked} patients with at least 1 document (${successRate}% success rate), with an average of ${avgLinks} documents per patient.\n${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents downloaded.\n${mapToString(
+    )}${numberOfPatients} patients with at least 1 document (${(
+      (numberOfPatients / patientIds.length) *
+      100
+    ).toFixed(
+      2
+    )}% coverage), with an average of ${avgDownloads} documents per patient.\n${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents downloaded.\n${mapToString(
       totalContentTypes
     )}`;
   } catch (err) {

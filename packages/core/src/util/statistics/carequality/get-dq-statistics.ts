@@ -93,10 +93,11 @@ export async function getDqStatistics({
       avgAttributePerPatient: avgDocumentsPerPatient,
     } = calculateMapStats(numberOfDocumentsPerPatient);
     const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+    const coverage = ((numberOfPatients / patientIds.length) * 100).toFixed(2);
 
     return `${tableNameHeader(
       DQ_TABLE_NAME
-    )}${numberOfPatients} patients with at least 1 document, with an average of ${avgDocumentsPerPatient} documents per patient.
+    )}${numberOfPatients} patients with at least 1 document (${coverage}% coverage), with an average of ${avgDocumentsPerPatient} documents per patient.
 ${numberOfRows} document queries with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents found.\n${mapToString(
       totalContentTypes
     )}`;
