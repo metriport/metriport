@@ -47,8 +47,11 @@ async function retrieveDocumentReferences(
       urn: id,
     };
   });
-  const documentReferences = await Promise.all(documentReferencesPromises);
-  return documentReferences;
+  const documentReferences = await Promise.allSettled(documentReferencesPromises);
+  const successfulDocRefs = documentReferences.flatMap(p =>
+    p.status === "fulfilled" ? p.value : []
+  );
+  return successfulDocRefs;
 }
 
 function extractDocumentIds(payload: InboundDocumentRetrievalReq): [string[], string[]] {
