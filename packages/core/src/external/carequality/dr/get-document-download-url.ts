@@ -30,10 +30,7 @@ async function retrieveDocumentReferences(
   uniqueIds: string[]
 ): Promise<DocumentReference[]> {
   const s3Utils = new S3Utils(region);
-  const documentReferences: DocumentReference[] = [];
-
-  // TODO consider making this more robust, so if one fails we still return the rest
-  documentIds.forEach(async (id, index) => {
+  const documentReferencesPromises = documentIds.map(async (id, index) => {
     const { size, contentType } = await s3Utils.getFileInfoFromS3(id, medicalDocumentsBucketName);
     const uniqueId = uniqueIds[index];
     if (!uniqueId) {
@@ -41,7 +38,7 @@ async function retrieveDocumentReferences(
       console.log(`${message}: ${id}`);
       throw new XDSRegistryError("Failed to retrieve Document");
     }
-    const documentReference: DocumentReference = {
+    return {
       homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
       repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
       docUniqueId: uniqueId,
@@ -49,9 +46,8 @@ async function retrieveDocumentReferences(
       size: size,
       urn: id,
     };
-    documentReferences.push(documentReference);
   });
-
+  const documentReferences = await Promise.all(documentReferencesPromises);
   return documentReferences;
 }
 
