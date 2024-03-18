@@ -5,9 +5,10 @@ import z from "zod";
 import { executeAsynchronously } from "../concurrency";
 import { out } from "../log";
 import { initSequelizeForLambda } from "../sequelize";
-import { StatisticsProps, getQueryResults } from "./shared";
+import { StatisticsProps, getQueryResults, tableNameHeader } from "./shared";
 
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
+const WH_TABLE_NAME = "webhook_request";
 
 const webhookResultSchema = z.object({
   cx_id: z.string(),
@@ -60,7 +61,7 @@ export async function getWhStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM webhook_request 
+  SELECT * FROM ${WH_TABLE_NAME} 
   WHERE cx_id=:cxId
   `;
     const whResponse = await getQueryResults({
@@ -76,7 +77,7 @@ export async function getWhStatistics({
 
     let totalSuccesses = 0;
     const downloads = {
-      number: 0,
+      numberOfDownloads: 0,
       numberOfWebhooks: 0,
       sentSuccessfully: 0,
     };
@@ -98,7 +99,7 @@ export async function getWhStatistics({
       if (wh.type === "medical.document-download") {
         downloads.numberOfWebhooks++;
         for (const patient of whs.patients) {
-          downloads.number += patient.documents ? patient.documents.length : 0;
+          downloads.numberOfDownloads += patient.documents ? patient.documents.length : 0;
           if (wh.status === "success") downloads.sentSuccessfully++;
         }
       } else if (wh.type === "medical.document-conversion") {
@@ -114,7 +115,9 @@ export async function getWhStatistics({
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS,
     });
 
-    return `${numberOfRows} webhook requests with ${totalSuccesses} successes.
+    return `${tableNameHeader(
+      WH_TABLE_NAME
+    )}${numberOfRows} webhook requests with ${totalSuccesses} successes.
     - Downloads: ${JSON.stringify(downloads)}
     - Conversions: ${JSON.stringify(conversions)}
     - Consolidated Data (MR Summary): ${JSON.stringify(mrSummaries)}`;

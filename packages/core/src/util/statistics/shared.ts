@@ -14,6 +14,7 @@ export type BaseStatisticsProps = {
   sqlDBCreds: string;
   cxId: string;
   dateString?: string;
+  patientIds?: string[];
 };
 
 export type StatisticsProps = BaseStatisticsProps & { patientIds: string[] };
@@ -23,9 +24,8 @@ export type QueryProps = {
   baseQuery: string;
   cxId: string;
   dateString?: string | undefined;
-  patientId?: string | undefined;
   patientIds?: {
-    ids: string[];
+    ids: string[] | undefined;
     columnName?: string;
   };
 };
@@ -116,18 +116,6 @@ function appendDateStringToQueryAndUpdateReplacements(
   return query;
 }
 
-function appendPatientIdToQueryAndUpdateReplacements(
-  query: string,
-  patientId: string | undefined,
-  replacements: QueryReplacements
-): string {
-  if (patientId) {
-    query += ` and patient_id=:patientId`;
-    replacements.patientId = patientId;
-  }
-  return query;
-}
-
 function appendPatientIdsToQueryAndUpdateReplacements(
   query: string,
   patientIds: {
@@ -137,7 +125,7 @@ function appendPatientIdsToQueryAndUpdateReplacements(
   replacements: QueryReplacements
 ): string {
   const column = patientIds.columnName || "patient_id";
-  if (patientIds) {
+  if (patientIds && patientIds.ids) {
     query += ` and ${column} in (:patientIds)`;
     replacements.patientIds = patientIds.ids;
   }
@@ -148,7 +136,6 @@ export function updateQueryAndReplacements(
   query: string,
   cxId: string,
   dateString?: string | undefined,
-  patientId?: string | undefined,
   patientIds?: {
     ids: string[] | undefined;
     columnName?: string;
@@ -161,7 +148,6 @@ export function updateQueryAndReplacements(
   if (patientIds) {
     query = appendPatientIdsToQueryAndUpdateReplacements(query, patientIds, replacements);
   }
-  query = appendPatientIdToQueryAndUpdateReplacements(query, patientId, replacements);
   query += ";";
   return { query, replacements };
 }
@@ -171,14 +157,12 @@ export async function getQueryResults({
   baseQuery,
   cxId,
   dateString,
-  patientId,
   patientIds,
 }: QueryProps) {
   const { query, replacements } = updateQueryAndReplacements(
     baseQuery,
     cxId,
     dateString,
-    patientId,
     patientIds
   );
 
@@ -189,3 +173,5 @@ export async function getQueryResults({
 
   return results;
 }
+
+export const tableNameHeader = (tableName: string) => `-----${tableName}-----\n`;

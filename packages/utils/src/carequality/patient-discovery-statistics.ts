@@ -11,16 +11,23 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS"); // !!!MAKE SURE TO USE THE READ REPLICA CREDENTIALS!!!
 
-const patientId = "";
-const dateString = "2024-03-14 09:00";
+const patientIds = [""];
+const dateString = "";
+
+type StatisticsProps = {
+  sqlDBCreds: string;
+  cxId: string;
+  dateString: string;
+  patientIds?: string[];
+};
 
 async function main() {
-  const props = { sqlDBCreds, cxId, dateString };
+  const props: StatisticsProps = { sqlDBCreds, cxId, dateString, patientIds };
+  if (patientIds[0].length === 0) delete props.patientIds;
 
   const xcpdResults = await getXcpdStatistics({
     apiUrl,
     ...props,
-    patientId,
   });
   console.log(xcpdResults.string);
 
@@ -31,8 +38,6 @@ async function main() {
   console.log(drResultsString);
   const whResultsString = await getWhStatistics(propsWithPatientIds);
   console.log(whResultsString);
-
-  console.log("PATIENT IDS\n", xcpdResults.patients);
 
   // TODO: For v2, look at the FHIR server for some of these stats (thats where we get the records from for our CX anyway)
 }

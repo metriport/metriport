@@ -11,9 +11,11 @@ import {
   getQueryResults,
   mapToString,
   mergeMaps,
+  tableNameHeader,
 } from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_DR_PROCESSING_REQUESTS = 20;
+const DR_TABLE_NAME = "document_retrieval_result";
 
 /**
  * Returns statistics for DR, including the following:
@@ -38,7 +40,7 @@ export async function getDrStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM document_retrieval_result 
+  SELECT * FROM ${DR_TABLE_NAME} 
   WHERE data->>'cxId'=:cxId
   `;
     const drResults = await getQueryResults({
@@ -65,7 +67,7 @@ export async function getDrStatistics({
       const numberOfDocRefs = docRefs.length;
       numberOfDocumentsPerPatient.set(
         dr.patient_id,
-        numberOfDocumentsPerPatient.get(dr.patient_id) || 0 + numberOfDocRefs
+        (numberOfDocumentsPerPatient.get(dr.patient_id) || 0) + numberOfDocRefs
       );
       numberOfDocuments += numberOfDocRefs;
       const contentTypes = countContentTypes(docRefs);
@@ -85,17 +87,10 @@ export async function getDrStatistics({
       avgAttributePerPatient: avgLinks,
     } = calculateMapStats(numberOfDocumentsPerPatient);
     const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
-    console.log(numberOfDocumentsPerPatient);
 
-    console.log(
-      `${numberOfLinked} patients with at least 1 document, with an average of ${avgLinks} documents per patient.`
-    );
-    console.log("succe", successRate);
-
-    return `${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${(
-      (numberOfSuccesses / numberOfRows) *
-      100
-    ).toFixed(2)} % success rate). ${numberOfDocuments} documents downloaded.\n${mapToString(
+    return `${tableNameHeader(
+      DR_TABLE_NAME
+    )}${numberOfLinked} patients with at least 1 document (${successRate}% success rate), with an average of ${avgLinks} documents per patient.\n${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents downloaded.\n${mapToString(
       totalContentTypes
     )}`;
   } catch (err) {

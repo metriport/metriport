@@ -11,9 +11,11 @@ import {
   getQueryResults,
   mapToString,
   mergeMaps,
+  tableNameHeader,
 } from "../shared";
 
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
+const DQ_TABLE_NAME = "document_query_result";
 
 /**
  * Returns statistics for DQ, including the following:
@@ -38,7 +40,7 @@ export async function getDqStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM document_query_result 
+  SELECT * FROM ${DQ_TABLE_NAME} 
   WHERE data->>'cxId'=:cxId
   `;
 
@@ -70,7 +72,7 @@ export async function getDqStatistics({
       const numberOfDocRefs = docRefs.length;
       numberOfDocumentsPerPatient.set(
         dq.patient_id,
-        numberOfDocumentsPerPatient.get(dq.patient_id) || 0 + numberOfDocRefs
+        (numberOfDocumentsPerPatient.get(dq.patient_id) || 0) + numberOfDocRefs
       );
       numberOfDocuments += numberOfDocRefs;
       const contentTypes = countContentTypes(docRefs);
@@ -82,17 +84,19 @@ export async function getDqStatistics({
       });
     };
 
-    await executeAsynchronously(dqResults, async dq => processDqResult(dq), {
+    await executeAsynchronously(dqResults, async dq => await processDqResult(dq), {
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS,
     });
 
     const {
-      numberOfPatientsWithTargetAttribute: numberOfLinked,
-      avgAttributePerPatient: avgLinks,
+      numberOfPatientsWithTargetAttribute: numberOfPatients,
+      avgAttributePerPatient: avgDocumentsPerPatient,
     } = calculateMapStats(numberOfDocumentsPerPatient);
     const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
 
-    return `${numberOfLinked} patients with at least 1 document, with an average of ${avgLinks} documents per patient.
+    return `${tableNameHeader(
+      DQ_TABLE_NAME
+    )}${numberOfPatients} patients with at least 1 document, with an average of ${avgDocumentsPerPatient} documents per patient.
 ${numberOfRows} document queries with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents found.\n${mapToString(
       totalContentTypes
     )}`;

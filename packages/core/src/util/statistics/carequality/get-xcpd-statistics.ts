@@ -9,9 +9,16 @@ import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
 import { initSequelizeForLambda } from "../../sequelize";
-import { BaseStatisticsProps, calculateMapStats, getQueryResults } from "./../shared";
+import {
+  BaseStatisticsProps,
+  calculateMapStats,
+  getQueryResults,
+  tableNameHeader,
+} from "./../shared";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
+const CQ_DATA_TABLE_NAME = "cq_patient_data";
+const PD_TABLE_NAME = "patient_discovery_result";
 
 export const rowWithDataSchema = z.object({
   status: z.string(),
@@ -52,20 +59,28 @@ export async function getXcpdStatistics({
   apiUrl,
   sqlDBCreds,
   cxId,
-  patientId,
+  patientIds,
   dateString,
 }: XcpdStatisticsProps): Promise<{ string: string; patients: string[] }> {
-  out(`Starting XCPD statistics calculation ${patientId ? `For patientId ${patientId}.` : ""}...`);
+  out(
+    `Starting XCPD statistics calculation ${patientIds ? `For patient IDs: ${patientIds}.` : ""}...`
+  );
   const mpi = new MPIMetriportAPI(apiUrl);
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
   try {
     const baseQuery = `
-  SELECT * FROM patient_discovery_result
+  SELECT * FROM ${PD_TABLE_NAME}
   WHERE data->>'cxId'=:cxId
   `;
 
-    const pdResults = await getQueryResults({ sequelize, baseQuery, cxId, dateString, patientId });
+    const pdResults = await getQueryResults({
+      sequelize,
+      baseQuery,
+      cxId,
+      dateString,
+      patientIds: { ids: patientIds },
+    });
     const numberOfRows = pdResults.length;
     const numberOfLinksPerPatient = new Map<string, number>();
 
@@ -125,10 +140,16 @@ export async function getXcpdStatistics({
         dateString,
       });
 
-    const string = `We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
-For the ${patients.size} unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
-${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatient} per patient.
-Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.`;
+    const string = `${tableNameHeader(
+      PD_TABLE_NAME
+    )}We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+For the ${
+      patients.size
+    } unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
+Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.
+${tableNameHeader(
+  CQ_DATA_TABLE_NAME
+)}${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatient} per patient.`;
     return { string, patients: patientsArray };
   } catch (err) {
     console.error(err);
@@ -153,7 +174,7 @@ async function queryCqPatientDataForLinks({
   dateString?: string | undefined;
 }) {
   const baseQuery = `
-  SELECT * FROM cq_patient_data
+  SELECT * FROM ${CQ_DATA_TABLE_NAME}
   WHERE cx_id=:cxId
   `;
 
