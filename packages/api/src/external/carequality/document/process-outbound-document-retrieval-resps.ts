@@ -274,7 +274,7 @@ async function handleDocReferences(
     }
   }
 
-  await upsertDocumentsToFHIRServer(cxId, transactionBundle);
+  await upsertDocumentsToFHIRServer(cxId, transactionBundle, log);
 
   await setDocQueryProgress({
     patient: { id: patientId, cxId: cxId },

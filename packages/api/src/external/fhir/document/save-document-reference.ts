@@ -39,7 +39,8 @@ export const upsertDocumentsToFHIRServer = async (
     await executeWithRetriesOrFail(
       async () => await fhir.executeBatch(transactionBundle),
       NUM_RETRIES,
-      WAIT_TIME
+      WAIT_TIME,
+      log
     );
   } catch (error) {
     log(`Error executing batch for the doc ref bundle on FHIR server: ${errorToString(error)}`);
