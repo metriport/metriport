@@ -76,6 +76,6 @@ groups:
         version: 0.9.7
         output:
           location: local-file-system
-          path: ../packages/sdks/fhir-validation
+          path: ../packages/api/src/fern
         config:
           outputSourceFiles: true
