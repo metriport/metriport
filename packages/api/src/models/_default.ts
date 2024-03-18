@@ -11,6 +11,8 @@ import { BaseDomain, BaseDomainNoId } from "@metriport/core/domain/base-domain";
 import VersionMismatchError from "../errors/version-mismatch";
 import { Util } from "../shared/util";
 
+export const MAX_VARCHAR_LENGTH = 255;
+
 export type ModelSetup = (sequelize: Sequelize) => void;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
