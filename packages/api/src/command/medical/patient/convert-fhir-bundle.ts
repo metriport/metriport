@@ -70,7 +70,8 @@ export async function handleBundleToMedicalRecord({
   const newBundle = buildBundle(patient, url, conversionType);
   if (!hasContents) {
     console.log(`No contents in the consolidated data for patient ${patient.id}`);
-    bundle.entry = [];
+    newBundle.entry = [];
+    newBundle.total = 0;
   }
   return newBundle;
 }
