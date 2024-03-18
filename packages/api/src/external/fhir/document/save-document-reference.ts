@@ -3,8 +3,8 @@ import { executeWithRetriesOrFail } from "@metriport/shared";
 import { errorToString } from "../../../shared/log";
 import { makeFhirApi } from "../api/api-factory";
 
-const NUM_RETRIES = 3;
-const WAIT_TIME = 1000;
+const NUM_RETRIES = 5;
+const WAIT_TIME = 200;
 
 export const upsertDocumentToFHIRServer = async (
   cxId: string,
@@ -14,11 +14,7 @@ export const upsertDocumentToFHIRServer = async (
   const fhir = makeFhirApi(cxId);
   try {
     await executeWithRetriesOrFail(
-      async () =>
-        await fhir.updateResource({
-          id: docRef.id,
-          ...docRef,
-        }),
+      async () => await fhir.updateResource(docRef),
       NUM_RETRIES,
       WAIT_TIME,
       log
