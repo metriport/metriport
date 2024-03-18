@@ -50,5 +50,8 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2"
   }
 }
