@@ -8,6 +8,7 @@ const blackListedRoutes = [
   "/internal/carequality/document-query/response",
   "/internal/carequality/document-retrieval/response",
   "/internal/carequality/patient-discovery/response",
+  "/internal/mpi/patient",
 ];
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
