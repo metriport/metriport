@@ -25,6 +25,17 @@ export async function buildDocumentReferences(
   return await retrieveDocumentReferences(documentIds, uniqueIds);
 }
 
+function extractDocumentIds(payload: InboundDocumentRetrievalReq): [string[], string[]] {
+  const documentIds: string[] = [];
+  const uniqueIds: string[] = [];
+
+  for (const documentReference of payload.documentReference) {
+    uniqueIds.push(documentReference.docUniqueId);
+    documentIds.push(extractDocumentUniqueId(documentReference.docUniqueId));
+  }
+  return [documentIds, uniqueIds];
+}
+
 async function retrieveDocumentReferences(
   documentIds: string[],
   uniqueIds: string[]
@@ -52,15 +63,4 @@ async function retrieveDocumentReferences(
     p.status === "fulfilled" ? p.value : []
   );
   return successfulDocRefs;
-}
-
-function extractDocumentIds(payload: InboundDocumentRetrievalReq): [string[], string[]] {
-  const documentIds: string[] = [];
-  const uniqueIds: string[] = [];
-
-  for (const documentReference of payload.documentReference) {
-    uniqueIds.push(documentReference.docUniqueId);
-    documentIds.push(extractDocumentUniqueId(documentReference.docUniqueId));
-  }
-  return [documentIds, uniqueIds];
 }
