@@ -34,7 +34,7 @@ function getSettings(
 
 export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): Lambda | undefined {
   const config = getConfig();
-  if (!config.docQueryChecker) return;
+  if (!config.cqDirectoryRebuilder) return;
 
   const {
     stack,
@@ -48,7 +48,7 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     scheduleExpression,
     url,
     httpTimeout,
-  } = getSettings(props, config.docQueryChecker);
+  } = getSettings(props, config.cqDirectoryRebuilder);
 
   const lambda = createScheduledLambda({
     stack,
