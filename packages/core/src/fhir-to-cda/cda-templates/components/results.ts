@@ -1,4 +1,4 @@
-import { Bundle, DiagnosticReport } from "@medplum/fhirtypes";
+import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
 import {
   withoutNullFlavorObject,
   withNullFlavor,
@@ -15,10 +15,27 @@ import {
   typeCodeAttribute,
   idAttribute,
 } from "../constants";
+import { buildObservations } from "./observations";
+import { findResourceInBundle } from "../../fhir";
 
-function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
+function buildEntriesFromDiagnosticReports(
+  diagnosticReports: DiagnosticReport[],
+  fhirBundle: Bundle
+) {
   return diagnosticReports.map(report => {
     const codeElement = buildCodeCVFromCodeableConcept(report.code);
+    const observations: Observation[] = [];
+    report.result?.forEach(result => {
+      if (!result.reference) {
+        return;
+      }
+      const observation = findResourceInBundle(fhirBundle, result.reference) as
+        | Observation
+        | undefined;
+      if (observation) {
+        observations.push(observation);
+      }
+    });
 
     return {
       entry: {
@@ -44,6 +61,7 @@ function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
           text: {
             reference: withNullFlavor(report.id, valueAttribute),
           },
+          component: buildObservations(observations).map(observation => observation.component),
         },
       },
     };
@@ -99,7 +117,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
             item: items.map(item => item?.item),
           },
         },
-        entry: buildEntriesFromDiagnosticReports(diagnosticReports).map(e => e.entry),
+        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
       },
     },
   };

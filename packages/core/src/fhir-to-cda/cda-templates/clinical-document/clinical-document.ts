@@ -32,7 +32,7 @@ export type ClinicalDocument = {
     recordTarget: CDARecordTarget;
     author: CDAAuthor;
     custodian: CDACustodian;
-    component: unknown; // The structured body or component of the Clinical Document
+    component: unknown;
   };
 };
 
