@@ -15,6 +15,7 @@ import mountRoutes from "./routes/index";
 import { initSentry, isSentryEnabled } from "./sentry";
 import { Config } from "./shared/config";
 import { isClientError } from "./shared/http";
+
 const app: Application = express();
 const version = Config.getVersion();
 

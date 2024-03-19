@@ -68,14 +68,3 @@ groups:
           namespaceExport: Metriport
           outputSourceFiles: true
           noSerdeLayer: true
-  server:
-    audiences:
-      - server
-    generators:
-      - name: fernapi/fern-typescript-express
-        version: 0.9.7
-        output:
-          location: local-file-system
-          path: ../packages/api/src/fern
-        config:
-          outputSourceFiles: true
