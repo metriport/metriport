@@ -20,6 +20,9 @@ _[Release PRs:]_
 
 _[Regular PRs:]_
 
+- [ ] E2E test updated
+- [ ] No need to update E2E tests
+
 - Local
   - [x] _[Indicate how you tested this, on local or staging]_
   - [x] ...
@@ -60,4 +63,3 @@ _[Add and remove items below accordingly]_
 - [ ] _[action n-1]_
 - [ ] _[action n]_
 - [ ] Merge this
-- [ ] Update IHE GW Config

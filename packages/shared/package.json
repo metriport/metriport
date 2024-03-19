@@ -1,6 +1,6 @@
 {
   "name": "@metriport/shared",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "Common code shared across packages - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
@@ -50,5 +50,8 @@
     "prettier-fix": "npx prettier '**/*.ts' --write",
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
     "test:e2e": "E2E=true jest --runInBand --detectOpenHandles --passWithNoTests"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2"
   }
 }

@@ -18,7 +18,7 @@ $ touch .env
 
 Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
 backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (e.g., SSL/Java keystore private key).
+information (e.g., SSL Manager certs/Java keystore private key).
 
 ### Initialization
 
@@ -94,7 +94,7 @@ To push configs and backup to the server (after you pulled from Git remote, for 
 $ ./scripts/push-to-server.sh
 ```
 
-Configs are stored in the Docker image.
+Configs are stored in the Docker image. See the script file for details on usage.
 
 #### Build-time
 

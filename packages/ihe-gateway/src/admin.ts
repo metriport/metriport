@@ -1,13 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { spawn } from "child_process";
 import { Command } from "commander";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { getEcsTasks } from "./ecs";
+import { getEnvVarOrFail } from "./utils";
 
 dayjs.extend(duration);
 
@@ -94,6 +94,7 @@ async function runService(serviceName: string) {
       console.error(`stderr: ${data}`);
     });
   }
+  process.exit(0);
 }
 
 function getParam(value: string): "inbound" | "outbound" | "all" | undefined {

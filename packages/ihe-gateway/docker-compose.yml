@@ -54,6 +54,7 @@ services:
       HOME_COMMUNITY_NAME: "${HOME_COMMUNITY_NAME}"
     restart: on-failure
     ports:
+      - "8071:8071" # Healthcheck channel
       - "8089:8080"
       - "8443:8443"
       - "8081:8081"
@@ -64,6 +65,7 @@ services:
       - "8086:8086"
       - "9091:9091"
       - "9092:9092"
+      - "9093:9093"
       - "8098:8098" # Channel Tester XML
       - "8099:8099" # Channel Tester JSON
   ihe-postgres:

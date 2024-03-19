@@ -71,7 +71,6 @@ export const processConsolidatedDataWebhook = async ({
     };
 
     // send it to the customer and update the WH request status
-
     if (!isWebhookDisabled(currentPatient.data.cxConsolidatedRequestMetadata)) {
       const webhookRequest = await createWebhookRequest({
         cxId,
@@ -97,7 +96,6 @@ export const processConsolidatedDataWebhook = async ({
         status: "success",
       });
     }
-
     await updateConsolidatedQueryProgress({
       patient,
       progress: { status },

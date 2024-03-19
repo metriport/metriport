@@ -18,7 +18,11 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
-import { IHEGatewayProps } from "../../config/ihe-gateway-config";
+import {
+  IHEGatewayEcsProps,
+  IHEGatewayJavaProps,
+  IHEGatewayProps,
+} from "../../config/ihe-gateway-config";
 import { ecrRepoName } from "../ihe-prereq-stack";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
@@ -27,6 +31,8 @@ import IHEDBConstruct from "./ihe-db-construct";
 export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
   config: IHEGatewayProps;
+  configEcs: IHEGatewayEcsProps;
+  configJava: IHEGatewayJavaProps;
   cluster: ecs.Cluster;
   vpc: ec2.IVpc;
   // TODO 1377 Implement this
@@ -48,6 +54,7 @@ export interface IHEGatewayConstructProps {
 const maxPortsPerLB = 5;
 const defaultPorts = [8080];
 const maxPortsOnProps = maxPortsPerLB - defaultPorts.length;
+const healthcheckPort = 8071;
 const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 
 export default class IHEGatewayConstruct extends Construct {
@@ -64,6 +71,8 @@ export default class IHEGatewayConstruct extends Construct {
       vpc,
       mainConfig,
       config,
+      configEcs,
+      configJava,
       cluster,
       privateZone,
       db,
@@ -121,7 +130,7 @@ export default class IHEGatewayConstruct extends Construct {
       S3_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       HOME_COMMUNITY_ID: mainConfig.systemRootOID,
       HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
-      VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
+      VMOPTIONS: `-Xms${configJava.initialHeapSize},-Xmx${configJava.maxHeapSize}`,
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
       ADMIN_USER: config.adminUsername,
@@ -132,8 +141,8 @@ export default class IHEGatewayConstruct extends Construct {
     const image = ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest");
 
     const taskDefinition = new FargateTaskDefinition(this, `${id}TaskDefinition`, {
-      cpu: config.ecs.cpu,
-      memoryLimitMiB: config.ecs.memory,
+      cpu: configEcs.cpu,
+      memoryLimitMiB: configEcs.memory,
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
@@ -161,7 +170,7 @@ export default class IHEGatewayConstruct extends Construct {
     const service = new ecs.FargateService(scope, `${id}FargateService`, {
       cluster,
       taskDefinition,
-      desiredCount: config.ecs.minCapacity,
+      desiredCount: configEcs.minCapacity,
     });
 
     const fargateService = { service, taskDefinition };
@@ -174,13 +183,15 @@ export default class IHEGatewayConstruct extends Construct {
     let documentRetrievalListener: ApplicationListener | undefined = undefined;
     const portToListener: { [key: number]: ApplicationListener } = {};
 
+    // Make sure to allow 2min for the container to start
     const healthCheck: HealthCheck = {
-      healthyThresholdCount: 6,
-      unhealthyThresholdCount: 6,
-      interval: Duration.seconds(10), // default, can be overridden when calling `addPortToLB`
+      healthyThresholdCount: 10,
+      unhealthyThresholdCount: 10,
+      interval: Duration.seconds(12), // default, can be overridden when calling `addPortToLB`
       path: "/",
-      port: "8080",
+      port: healthcheckPort.toString(),
       protocol: Protocol.HTTP,
+      healthyHttpCodes: "200-299",
       timeout: Duration.seconds(5),
     };
     const addPortToLB = (
@@ -275,8 +286,8 @@ export default class IHEGatewayConstruct extends Construct {
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({
-      minCapacity: config.ecs.minCapacity,
-      maxCapacity: config.ecs.maxCapacity,
+      minCapacity: configEcs.minCapacity,
+      maxCapacity: configEcs.maxCapacity,
     });
     scaling.scaleOnCpuUtilization(`${id}AutoscaleCPU`, {
       targetUtilizationPercent: 90,

@@ -3,13 +3,13 @@ import {
   InboundDocumentRetrievalResp,
 } from "@metriport/ihe-gateway-sdk";
 import { constructDRErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
-import { getDocumentDownloadURL } from "./get-document-download-url";
+import { buildDocumentReferences } from "./get-document-download-url";
 
 export async function processInboundDocumentRetrieval(
   payload: InboundDocumentRetrievalReq
 ): Promise<InboundDocumentRetrievalResp> {
   try {
-    const documents = await getDocumentDownloadURL(payload);
+    const documents = await buildDocumentReferences(payload);
 
     const response: InboundDocumentRetrievalResp = {
       id: payload.id,
