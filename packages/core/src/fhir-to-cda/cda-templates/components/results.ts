@@ -4,7 +4,7 @@ import {
   buildCodeCVFromCodeableConcept,
   buildCodeCE,
   buildInstanceIdentifier,
-} from "../utils";
+} from "../commons";
 import { base64ToString } from "../../../util/base64";
 
 function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {

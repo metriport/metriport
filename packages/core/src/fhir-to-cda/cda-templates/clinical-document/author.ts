@@ -1,7 +1,12 @@
 import { Organization } from "@medplum/fhirtypes";
-import { withNullFlavor, withNullFlavorObject } from "./utils";
-import { buildAddress, buildRepresentedOrganization, buildTelecom } from "./commons";
-import { CDAAuthor } from "./types";
+import {
+  withNullFlavor,
+  withNullFlavorObject,
+  buildAddress,
+  buildRepresentedOrganization,
+  buildTelecom,
+} from "../commons";
+import { CDAAuthor } from "../types";
 
 export function buildAuthor(organization: Organization): CDAAuthor {
   const author = {

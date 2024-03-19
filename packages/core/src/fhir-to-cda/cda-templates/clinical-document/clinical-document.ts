@@ -6,8 +6,8 @@ import {
   CDARecordTarget,
   CDACodeCE,
   Entry,
-} from "./types";
-import { buildCodeCE, buildInstanceIdentifier } from "./utils";
+} from "../types";
+import { buildCodeCE, buildInstanceIdentifier } from "../commons";
 
 // Constants for dynamic values
 const CONSTANTS = {
@@ -46,17 +46,17 @@ const CONSTANTS = {
 export type ClinicalDocument = {
   ClinicalDocument: {
     "@_xmlns": string;
-    realmCode: CDACodeCE;
-    typeId: CDAInstanceIdentifier;
-    templateId: CDAInstanceIdentifier[];
+    realmCode?: CDACodeCE;
+    typeId?: CDAInstanceIdentifier;
+    templateId?: CDAInstanceIdentifier[];
     id: CDAInstanceIdentifier;
     code: CDACodeCE;
-    title: string;
+    title?: string;
     effectiveTime: Entry;
     confidentialityCode: CDACodeCE;
-    languageCode: CDACodeCE;
-    setId: CDAInstanceIdentifier;
-    versionNumber: Entry;
+    languageCode?: CDACodeCE;
+    setId?: CDAInstanceIdentifier;
+    versionNumber?: Entry;
     recordTarget: CDARecordTarget;
     author: CDAAuthor;
     custodian: CDACustodian;
@@ -86,21 +86,18 @@ export function buildClinicalDocumentXML(
         })
       ),
       id: buildInstanceIdentifier({
-        // REQUIRED
         assigningAuthorityName: CONSTANTS.assigningAuthorityName,
         root: CONSTANTS.idRoot,
       }),
       code: buildCodeCE({
-        // REQUIRED
         code: CONSTANTS.code.code,
         codeSystem: CONSTANTS.code.codeSystem,
         codeSystemName: CONSTANTS.code.codeSystemName,
         displayName: CONSTANTS.code.displayName,
       }),
       title: CONSTANTS.title,
-      effectiveTime: { "@_value": CONSTANTS.effectiveTime }, // REQUIRED
+      effectiveTime: { "@_value": CONSTANTS.effectiveTime },
       confidentialityCode: buildCodeCE({
-        // REQUIRED
         code: CONSTANTS.confidentialityCode.code,
         codeSystem: CONSTANTS.confidentialityCode.codeSystem,
         displayName: CONSTANTS.confidentialityCode.displayName,
@@ -114,10 +111,10 @@ export function buildClinicalDocumentXML(
         root: CONSTANTS.setId.root,
       }),
       versionNumber: { "@_value": CONSTANTS.versionNumber },
-      recordTarget, // REQUIRED
-      author, // REQUIRED
-      custodian, // REQUIRED
-      component: structuredBody, // REQUIRED
+      recordTarget,
+      author,
+      custodian,
+      component: structuredBody,
     },
   };
 

@@ -1,6 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
-import { buildRepresentedOrganization } from "./commons";
-import { CDACustodian } from "./types";
+import { buildRepresentedOrganization } from "../commons";
+import { CDACustodian } from "../types";
 
 const METRIPORT_ORGANIZATION: Organization = {
   resourceType: "Organization",

@@ -1,12 +1,13 @@
 import { Patient } from "@medplum/fhirtypes";
 import {
+  buildTelecom,
+  buildAddress,
   withNullFlavor,
   withNullFlavorObject,
   buildCodeCE,
   buildInstanceIdentifiersFromIdentifier,
-} from "./utils";
-import { buildTelecom, buildAddress } from "./commons";
-import { CDARecordTarget } from "./types";
+} from "../commons";
+import { CDARecordTarget } from "../types";
 
 function buildPatient(patient: Patient) {
   return {
