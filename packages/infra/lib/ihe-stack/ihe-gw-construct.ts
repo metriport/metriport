@@ -185,9 +185,9 @@ export default class IHEGatewayConstruct extends Construct {
 
     // Make sure to allow 2min for the container to start
     const healthCheck: HealthCheck = {
-      healthyThresholdCount: 12,
-      unhealthyThresholdCount: 12,
-      interval: Duration.seconds(10), // default, can be overridden when calling `addPortToLB`
+      healthyThresholdCount: 10,
+      unhealthyThresholdCount: 10,
+      interval: Duration.seconds(12), // default, can be overridden when calling `addPortToLB`
       path: "/",
       port: healthcheckPort.toString(),
       protocol: Protocol.HTTP,
