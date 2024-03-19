@@ -7,45 +7,17 @@ import {
   CDACodeCE,
   Entry,
 } from "../types";
-import { buildCodeCE, buildInstanceIdentifier } from "../commons";
-
-// Constants for dynamic values
-const CONSTANTS = {
-  realmCode: "US",
-  typeIdExtension: "POCD_HD000040",
-  typeIdRoot: "2.16.840.1.113883.1.3",
-  templateIds: [
-    { root: "1.2.840.114350.1.72.1.51693" },
-    { root: "2.16.840.1.113883.10.20.22.1.1", extension: "2015-08-01" },
-    { root: "2.16.840.1.113883.10.20.22.1.9", extension: "2015-08-01" },
-  ],
-  assigningAuthorityName: "METRIPORT",
-  idRoot: "OUR-ORGANIZATION-ID",
-  code: {
-    code: "<NOTE-TYPE>",
-    codeSystem: "2.16.840.1.113883.6.1",
-    codeSystemName: "LOINC",
-    displayName: "<NOTE-NAME>",
-  },
-  title: "<NOTE-TITLE>",
-  effectiveTime: "<EFFECTIVE-TIME>", // TODO: Replace with current date. IMPORTANT
-  confidentialityCode: {
-    code: "N",
-    codeSystem: "2.16.840.1.113883.5.25",
-    displayName: "Normal",
-  },
-  languageCode: "en-US",
-  setId: {
-    assigningAuthorityName: "METRIPORT",
-    extension: "<OUR-EXTENSION>",
-    root: "<OUR-ID>",
-  },
-  versionNumber: "3",
-};
+import {
+  buildCodeCE,
+  buildInstanceIdentifier,
+  withoutNullFlavorObject,
+  withNullFlavor,
+} from "../commons";
+import { clinicalDocumentConstants, valueAttribute, namespaceAttribute } from "../constants";
 
 export type ClinicalDocument = {
   ClinicalDocument: {
-    "@_xmlns": string;
+    [namespaceAttribute]: string;
     realmCode?: CDACodeCE;
     typeId?: CDAInstanceIdentifier;
     templateId?: CDAInstanceIdentifier[];
@@ -64,6 +36,25 @@ export type ClinicalDocument = {
   };
 };
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+function removeEmptyFields(obj: any): ClinicalDocument {
+  if (typeof obj === "object" && obj !== undefined) {
+    Object.keys(obj).forEach(key => {
+      const value = obj[key];
+      if (value === undefined || value === "") {
+        delete obj[key];
+      } else if (typeof value === "object") {
+        const result = removeEmptyFields(value);
+        if (Object.keys(result).length === 0) {
+          delete obj[key];
+        }
+      }
+    });
+    return obj;
+  }
+  return obj;
+}
+
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
 export function buildClinicalDocumentXML(
   recordTarget: CDARecordTarget,
@@ -74,43 +65,46 @@ export function buildClinicalDocumentXML(
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
       "@_xmlns": "urn:hl7-org:v3",
-      realmCode: buildCodeCE({ code: CONSTANTS.realmCode }),
+      realmCode: buildCodeCE({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
-        extension: CONSTANTS.typeIdExtension,
-        root: CONSTANTS.typeIdRoot,
+        extension: clinicalDocumentConstants.typeIdExtension,
+        root: clinicalDocumentConstants.typeIdRoot,
       }),
-      templateId: CONSTANTS.templateIds.map(tid =>
+      templateId: clinicalDocumentConstants.templateIds.map(tid =>
         buildInstanceIdentifier({
           root: tid.root,
           extension: tid.extension,
         })
       ),
       id: buildInstanceIdentifier({
-        assigningAuthorityName: CONSTANTS.assigningAuthorityName,
-        root: CONSTANTS.idRoot,
+        assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
+        root: clinicalDocumentConstants.idRoot,
       }),
       code: buildCodeCE({
-        code: CONSTANTS.code.code,
-        codeSystem: CONSTANTS.code.codeSystem,
-        codeSystemName: CONSTANTS.code.codeSystemName,
-        displayName: CONSTANTS.code.displayName,
+        code: clinicalDocumentConstants.code.code,
+        codeSystem: clinicalDocumentConstants.code.codeSystem,
+        codeSystemName: clinicalDocumentConstants.code.codeSystemName,
+        displayName: clinicalDocumentConstants.code.displayName,
       }),
-      title: CONSTANTS.title,
-      effectiveTime: { "@_value": CONSTANTS.effectiveTime },
+      title: clinicalDocumentConstants.title,
+      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, valueAttribute),
       confidentialityCode: buildCodeCE({
-        code: CONSTANTS.confidentialityCode.code,
-        codeSystem: CONSTANTS.confidentialityCode.codeSystem,
-        displayName: CONSTANTS.confidentialityCode.displayName,
+        code: clinicalDocumentConstants.confidentialityCode.code,
+        codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
+        displayName: clinicalDocumentConstants.confidentialityCode.displayName,
       }),
       languageCode: buildCodeCE({
-        code: CONSTANTS.languageCode,
+        code: clinicalDocumentConstants.languageCode,
       }),
       setId: buildInstanceIdentifier({
-        assigningAuthorityName: CONSTANTS.setId.assigningAuthorityName,
-        extension: CONSTANTS.setId.extension,
-        root: CONSTANTS.setId.root,
+        assigningAuthorityName: clinicalDocumentConstants.setId.assigningAuthorityName,
+        extension: clinicalDocumentConstants.setId.extension,
+        root: clinicalDocumentConstants.setId.root,
       }),
-      versionNumber: { "@_value": CONSTANTS.versionNumber },
+      versionNumber: withoutNullFlavorObject(
+        clinicalDocumentConstants.versionNumber,
+        valueAttribute
+      ),
       recordTarget,
       author,
       custodian,
@@ -118,10 +112,12 @@ export function buildClinicalDocumentXML(
     },
   };
 
+  const cleanedJsonObj = removeEmptyFields(jsonObj);
+
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
   });
 
-  return builder.build(jsonObj);
+  return builder.build(cleanedJsonObj);
 }

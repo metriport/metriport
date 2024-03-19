@@ -2,22 +2,23 @@ import { Patient } from "@medplum/fhirtypes";
 import {
   buildTelecom,
   buildAddress,
-  withNullFlavor,
-  withNullFlavorObject,
+  withoutNullFlavorObject,
+  withoutNullFlavorString,
   buildCodeCE,
   buildInstanceIdentifiersFromIdentifier,
 } from "../commons";
 import { CDARecordTarget } from "../types";
+import { useAttribute, valueAttribute } from "../constants";
 
 function buildPatient(patient: Patient) {
   return {
     name: patient.name?.map(name => ({
-      ...withNullFlavorObject(name.use, "@_use"),
-      given: withNullFlavor(name.given?.join(" ")),
-      family: withNullFlavor(name.family),
+      ...withoutNullFlavorObject(name.use, useAttribute),
+      given: withoutNullFlavorString(name.given?.join(" ")),
+      family: withoutNullFlavorString(name.family),
       validTime: {
-        low: { "@_nullFlavor": "UNK" },
-        high: { "@_nullFlavor": "UNK" },
+        low: withoutNullFlavorObject(undefined, valueAttribute),
+        high: withoutNullFlavorObject(undefined, valueAttribute),
       },
     })),
     administrativeGenderCode: buildCodeCE({
@@ -25,8 +26,8 @@ function buildPatient(patient: Patient) {
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withNullFlavorObject(patient.birthDate, "@_value"),
-    deceasedInd: withNullFlavorObject(patient.deceasedBoolean?.toString(), "@_value"),
+    birthTime: withoutNullFlavorObject(patient.birthDate, valueAttribute),
+    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
     maritalStatusCode: buildCodeCE({
       code: patient.maritalStatus?.coding?.[0]?.code,
       codeSystem: "2.16.840.1.113883.5.2",

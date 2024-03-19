@@ -1,11 +1,20 @@
 import { Bundle, DiagnosticReport } from "@medplum/fhirtypes";
 import {
-  withNullFlavorObject,
+  withoutNullFlavorObject,
+  withNullFlavor,
   buildCodeCVFromCodeableConcept,
   buildCodeCE,
   buildInstanceIdentifier,
 } from "../commons";
 import { base64ToString } from "../../../util/base64";
+import {
+  valueAttribute,
+  styleCodeAttribute,
+  classCodeAttribute,
+  moodCodeAttribute,
+  typeCodeAttribute,
+  idAttribute,
+} from "../constants";
 
 function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
   return diagnosticReports.map(report => {
@@ -13,10 +22,10 @@ function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
 
     return {
       entry: {
-        "@_typeCode": "DRIV",
+        [typeCodeAttribute]: "DRIV",
         organizer: {
-          "@_classCode": "BATTERY",
-          "@_moodCode": "EVN",
+          [classCodeAttribute]: "BATTERY",
+          [moodCodeAttribute]: "EVN",
           templateId: buildInstanceIdentifier({
             root: "2.16.840.1.113883.10.20.22.4.1",
             extension: "2015-08-01",
@@ -28,14 +37,12 @@ function buildEntriesFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
           statusCode: buildCodeCE({
             code: report.status,
           }),
-          effectiveTime: withNullFlavorObject(
+          effectiveTime: withoutNullFlavorObject(
             report.effectiveDateTime?.replace(/-|:|\.\d+Z$/g, ""),
-            "@_value"
+            valueAttribute
           ),
           text: {
-            reference: {
-              "@_value": report.id,
-            },
+            reference: withNullFlavor(report.id, valueAttribute),
           },
         },
       },
@@ -63,7 +70,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
         return {
           item: {
             content: {
-              "@_ID": report.id,
+              [idAttribute]: report.id,
               "#text": content,
             },
           },
@@ -88,8 +95,8 @@ export function buildResult(fhirBundle: Bundle): unknown {
         title: "Diagnostic Results",
         text: {
           list: {
-            "@_styleCode": "xTOC",
-            item: items.map(item => item.item),
+            [styleCodeAttribute]: "xTOC",
+            item: items.map(item => item?.item),
           },
         },
         entry: buildEntriesFromDiagnosticReports(diagnosticReports).map(e => e.entry),

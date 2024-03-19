@@ -1,3 +1,13 @@
+import {
+  rootAttribute,
+  extensionAttribute,
+  assigningAuthorityNameAttribute,
+  codeAttribute,
+  codeSystemAttribute,
+  codeSystemNameAttribute,
+  displayNameAttribute,
+} from "./constants";
+
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
@@ -21,8 +31,8 @@ export type CDAAddress = {
 };
 
 export type CDAOrganization = {
-  id?: CDAInstanceIdentifier[] | undefined;
-  name?: Entry;
+  id?: CDAInstanceIdentifier[] | Entry;
+  name?: Entry | undefined;
   telecom?: CDATelecom[] | undefined;
   addr?: CDAAddress[] | undefined;
 };
@@ -53,10 +63,10 @@ export type CDAName = {
 };
 
 export type CDACodeCE = {
-  "@_code"?: string;
-  "@_codeSystem"?: string;
-  "@_codeSystemName"?: string;
-  "@_displayName"?: string;
+  [codeAttribute]?: string;
+  [codeSystemAttribute]?: string;
+  [codeSystemNameAttribute]?: string;
+  [displayNameAttribute]?: string;
 };
 
 export interface CDACodeCV extends CDACodeCE {
@@ -66,9 +76,9 @@ export interface CDACodeCV extends CDACodeCE {
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
 export type CDAInstanceIdentifier = {
-  "@_root"?: string;
-  "@_extension"?: string;
-  "@_assigningAuthorityName"?: string;
+  [rootAttribute]?: string;
+  [extensionAttribute]?: string;
+  [assigningAuthorityNameAttribute]?: string;
 };
 
 // TOP Level CDA Section Types
@@ -85,7 +95,7 @@ export type CDACustodian = {
 
 export type CDARecordTarget = {
   patientRole: {
-    id?: CDAInstanceIdentifier[] | undefined;
+    id?: CDAInstanceIdentifier[] | Entry;
     addr?: CDAAddress[] | undefined;
     telecom?: CDATelecom[] | undefined;
     patient: CDAPatientRole;

@@ -5,10 +5,26 @@ import {
   CodeableConcept,
   Identifier,
 } from "@medplum/fhirtypes";
-import { Entry, EntryObject, CDACodeCE, CDACodeCV, CDAInstanceIdentifier } from "./types";
-import { CDAAddress, CDAOrganization, CDATelecom } from "./types";
+import {
+  Entry,
+  EntryObject,
+  CDACodeCE,
+  CDACodeCV,
+  CDAInstanceIdentifier,
+  CDAAddress,
+  CDAOrganization,
+  CDATelecom,
+} from "./types";
+import {
+  rootAttribute,
+  extensionAttribute,
+  assigningAuthorityNameAttribute,
+  valueAttribute,
+  useAttribute,
+  nullFlavorAttribute,
+} from "./constants";
 
-export function withNullFlavorObject(value: string | undefined, key: string): EntryObject {
+export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
   if (value === undefined) {
     return {};
   } else {
@@ -16,11 +32,19 @@ export function withNullFlavorObject(value: string | undefined, key: string): En
   }
 }
 
-export function withNullFlavor(value: string | undefined, key?: string): Entry {
+export function withoutNullFlavorString(value: string | undefined): Entry {
   if (value === undefined) {
-    return { "@_nullFlavor": "UNK" };
+    return {};
   } else {
-    return key ? { [key]: value } : value;
+    return value;
+  }
+}
+
+export function withNullFlavor(value: string | undefined, key: string): Entry {
+  if (value === undefined) {
+    return { [nullFlavorAttribute]: "UNK" };
+  } else {
+    return { [key]: value };
   }
 }
 
@@ -50,7 +74,7 @@ export function buildCodeCVFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined
 ): CDACodeCV | Entry {
   if (!codeableConcept) {
-    return withNullFlavor(codeableConcept);
+    return withoutNullFlavorString(codeableConcept);
   }
 
   const primaryCoding = codeableConcept.coding?.[0];
@@ -64,7 +88,7 @@ export function buildCodeCVFromCodeableConcept(
       })
     : {};
 
-  const translations = codeableConcept.coding?.slice(1).map(coding =>
+  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCE({
       code: coding.code,
       codeSystem: coding.system,
@@ -92,16 +116,20 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CDAInstanceIdentifier {
   const identifier: CDAInstanceIdentifier = {};
-  if (root) identifier["@_root"] = root;
-  if (extension) identifier["@_extension"] = extension;
-  if (assigningAuthorityName) identifier["@_assigningAuthorityName"] = assigningAuthorityName;
+  if (root) identifier[rootAttribute] = root;
+  if (extension) identifier[extensionAttribute] = extension;
+  if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
 
   return identifier;
 }
 
 export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
-): CDAInstanceIdentifier[] | undefined {
+): CDAInstanceIdentifier[] | Entry {
+  if (!identifiers) {
+    return withNullFlavor(undefined, rootAttribute);
+  }
+
   const identifiersArray = Array.isArray(identifiers)
     ? identifiers
     : identifiers
@@ -121,24 +149,22 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
     return [];
   }
   return telecoms.map(telecom => ({
-    use: withNullFlavorObject(telecom.use, "@_use"),
-    value: withNullFlavorObject(telecom.value, "@_value"),
+    use: withoutNullFlavorObject(telecom.use, useAttribute),
+    value: withoutNullFlavorObject(telecom.value, valueAttribute),
   }));
 }
 
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
   return address?.map(addr => ({
-    ...withNullFlavorObject(addr.use, "@_use"),
-    streetAddressLine: withNullFlavor(addr.line?.join(" ")),
-    city: withNullFlavor(addr.city),
-    state: withNullFlavor(addr.state),
-    postalCode: withNullFlavor(addr.postalCode),
-    country: withNullFlavor(addr.country),
+    ...withoutNullFlavorObject(addr.use, useAttribute),
+    streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
+    city: withoutNullFlavorString(addr.city),
+    state: withoutNullFlavorString(addr.state),
+    postalCode: withoutNullFlavorString(addr.postalCode),
+    country: withoutNullFlavorString(addr.country),
     useablePeriod: {
-      "@_xsi:type": "IVL_TS",
-      "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-      low: withNullFlavor(addr.period?.start, "@_value"),
-      high: withNullFlavor(addr.period?.end, "@_nullFlavor"),
+      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
     },
   })); // Using only first address
 }
@@ -148,7 +174,7 @@ export function buildRepresentedOrganization(
 ): CDAOrganization | undefined {
   return {
     id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
-    name: withNullFlavor(organization.name),
+    name: withoutNullFlavorString(organization.name),
     telecom: buildTelecom(organization.telecom),
     addr: buildAddress(organization.address),
   };
