@@ -175,6 +175,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         instanceType: new InstanceType("serverless"),
         enablePerformanceInsights: true,
+        parameterGroup,
       },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
