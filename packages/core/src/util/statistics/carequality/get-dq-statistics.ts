@@ -110,7 +110,7 @@ export async function getDqStatistics({
     ${numberOfRows} document queries with ${numSuccesses} successes (${successRate} % success rate). ${numDocs} documents found.\n${mapToString(
       contentTypesMap
     )}`;
-    console.log(string);
+    out(string);
     return {
       numDqRows: numberOfRows,
       numDqSuccesses: numSuccesses,

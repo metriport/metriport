@@ -107,7 +107,7 @@ export async function getDrStatistics({
     )}% coverage), with an average of ${avgDownloads} documents per patient.\n${numRows} document retrievals with ${numSuccesses} successes (${successRate} % success rate). ${numDocs} documents downloaded.\n${mapToString(
       contentTypesMap
     )}`;
-    console.log(string);
+    out(string);
 
     return {
       numDrRows: numRows,

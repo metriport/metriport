@@ -138,7 +138,7 @@ export async function getWhStatistics({
     - Downloads: ${JSON.stringify(downloads)}
     - Conversions: ${JSON.stringify(conversions)}
     - Consolidated Data (MR Summary): ${JSON.stringify(mrSummaries)}`;
-    console.log(results);
+    out(results);
 
     return {
       numRows: numRows,

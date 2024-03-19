@@ -126,7 +126,6 @@ function appendPatientIdsToQueryAndUpdateReplacements(
 ): string {
   const column = patientIds.columnName || "patient_id";
   if (patientIds && patientIds.ids && patientIds.ids.length > 0) {
-    console.log("patientIds.ids", patientIds.ids);
     query += ` and ${column} in (:patientIds)`;
     replacements.patientIds = patientIds.ids;
   }
