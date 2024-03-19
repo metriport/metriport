@@ -41,6 +41,17 @@ const cqLinksSchema = z.array(
 );
 
 type XcpdStatisticsProps = BaseStatisticsProps & { apiUrl: string; patientId?: string };
+type XcpdStatisticsOutput = {
+  numRows: number;
+  numSuccesses: number;
+  uniquePatients: number;
+  parsedPatients: number;
+  patientsWithLinks: number;
+  coverageRate: string;
+  avgLinksPerPatient: number;
+  patientResources: number;
+  mpiMatches: number;
+};
 
 /**
  * Returns statistics for XCPD, including the following:
@@ -61,7 +72,7 @@ export async function getXcpdStatistics({
   cxId,
   patientIds,
   dateString,
-}: XcpdStatisticsProps): Promise<{ string: string; patients: string[] }> {
+}: XcpdStatisticsProps): Promise<{ patients: string[]; stats: XcpdStatisticsOutput }> {
   out(
     `Starting XCPD statistics calculation ${patientIds ? `For patient IDs: ${patientIds}.` : ""}...`
   );
@@ -81,14 +92,14 @@ export async function getXcpdStatistics({
       dateString,
       patientIds: { ids: patientIds },
     });
-    const numberOfRows = pdResults.length;
-    const numberOfLinksPerPatient = new Map<string, number>();
+    const numRows = pdResults.length;
+    const numLinksPerPatient = new Map<string, number>();
 
     const patients = new Set<string>();
-    let numberOfMatches = 0;
-    let numberOfSuccesses = 0;
-    let numberOfPatients = 0;
-    let numberOfPatientResources = 0;
+    let mpiMatches = 0;
+    let numSuccesses = 0;
+    let numParsedPatients = 0;
+    let numPatientResources = 0;
 
     // TODO: define the type of `dr`
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,26 +109,23 @@ export async function getXcpdStatistics({
       }
 
       if (!pd.data.patientResource) return;
-      numberOfPatientResources++;
+      numPatientResources++;
 
       if (Object.keys(pd.data.patientResource).length == 0) delete pd.data.patientResource;
-      numberOfSuccesses++;
+      numSuccesses++;
 
       const row = rowWithDataSchema.parse(pd);
       if (row.status !== "success") return;
 
-      numberOfLinksPerPatient.set(
-        pd["patient_id"],
-        (numberOfLinksPerPatient.get(pd["patient_id"]) || 0) + 1
-      );
+      numLinksPerPatient.set(pd["patient_id"], (numLinksPerPatient.get(pd["patient_id"]) || 0) + 1);
 
       const patient = mapPatientResourceToPatientData(row.data?.patientResource);
       if (!patient) return;
 
-      numberOfPatients++;
+      numParsedPatients++;
       const matchingPatient = await mpi.findMatchingPatient(patient);
       if (matchingPatient) {
-        numberOfMatches++;
+        mpiMatches++;
       }
     };
 
@@ -126,31 +134,46 @@ export async function getXcpdStatistics({
     });
 
     const {
-      numberOfPatientsWithTargetAttribute: numberOfPatientsWithDocuments,
-      avgAttributePerPatient: avgDocumentsPerPatient,
-    } = calculateMapStats(numberOfLinksPerPatient);
-    const coverageRate = ((numberOfPatientsWithDocuments / patients.size) * 100).toFixed(2);
+      numPatientsWithTargetAttribute: numPatientsWithLinks,
+      avgAttributePerPatient: avgLinksPerPatient,
+    } = calculateMapStats(numLinksPerPatient);
+    const coverageRate = ((numPatientsWithLinks / patients.size) * 100).toFixed(2);
     const patientsArray = [...patients];
 
-    const { numberOfPatientsWithLinks, avgLinksPerPatient } =
-      await calculateNumberOfLinksPerPatient({
-        sequelize,
-        cxId,
-        patientIds: patientsArray,
-        dateString,
-      });
+    const {
+      numberOfPatientsWithTargetAttribute: numberOfPatientsWithLinks,
+      avgAttributePerPatient: avgLinksPerPatientCqData,
+    } = await calculateNumberOfLinksPerPatient({
+      sequelize,
+      cxId,
+      patientIds: patientsArray,
+      dateString,
+    });
 
     const string = `${tableNameHeader(
       PD_TABLE_NAME
-    )}We received ${numberOfRows} PD discovery results with ${numberOfSuccesses} successful matches. 
+    )}We received ${numRows} PD discovery results with ${numSuccesses} successful matches. 
 For the ${
       patients.size
-    } unique patients, we got ${numberOfPatientsWithDocuments} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgDocumentsPerPatient} links per patient.
-Of the ${numberOfPatientResources} returned patient resources, we parsed ${numberOfPatients} patients and got ${numberOfMatches} MPI matches.
+    } unique patients, we got ${numPatientsWithLinks} patients with at least 1 link (${coverageRate}% coverage), and an average of ${avgLinksPerPatient} links per patient.
+Of the ${numPatientResources} returned patient resources, we parsed ${numParsedPatients} patients and got ${mpiMatches} MPI matches.
 ${tableNameHeader(
   CQ_DATA_TABLE_NAME
-)}${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatient} per patient.`;
-    return { string, patients: patientsArray };
+)}${numberOfPatientsWithLinks} patients with at least 1 link, with an average of ${avgLinksPerPatientCqData} per patient.`;
+
+    out(string);
+    const stats = {
+      numRows,
+      numSuccesses,
+      uniquePatients: patients.size,
+      parsedPatients: numParsedPatients,
+      patientsWithLinks: numPatientsWithLinks,
+      coverageRate,
+      avgLinksPerPatient,
+      patientResources: numPatientResources,
+      mpiMatches,
+    };
+    return { patients: patientsArray, stats };
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating XCPD statistics.");
@@ -213,9 +236,9 @@ async function calculateNumberOfLinksPerPatient({
     );
   });
   const {
-    numberOfPatientsWithTargetAttribute: numberOfPatientsWithLinks,
-    avgAttributePerPatient: avgLinksPerPatient,
+    numPatientsWithTargetAttribute: numberOfPatientsWithTargetAttribute,
+    avgAttributePerPatient,
   } = calculateMapStats(numberOfCqLinksPerPatient);
 
-  return { numberOfPatientsWithLinks, avgLinksPerPatient };
+  return { numberOfPatientsWithTargetAttribute, avgAttributePerPatient };
 }

@@ -36,6 +36,24 @@ const webhookResultSchema = z.object({
 const webhookResultsSchema = z.array(webhookResultSchema);
 type WebhookResult = z.infer<typeof webhookResultSchema>;
 
+type WhStatisticsOutput = {
+  numRows: number;
+  numSuccesses: number;
+  downloads: {
+    numDownloads: number;
+    numWebhooks: number;
+    sentSuccessfully: number;
+  };
+  conversions: {
+    numWebhooks: number;
+    sentSuccessfully: number;
+  };
+  mrSummaries: {
+    numWebhooks: number;
+    sentSuccessfully: number;
+  };
+};
+
 /**
  * Returns statistics for WH, including the following:
  * 1) # of WHs
@@ -55,7 +73,7 @@ export async function getWhStatistics({
   cxId,
   patientIds,
   dateString,
-}: StatisticsProps): Promise<string> {
+}: StatisticsProps): Promise<WhStatisticsOutput> {
   out("Starting WH statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
@@ -72,21 +90,20 @@ export async function getWhStatistics({
       patientIds: { ids: patientIds, columnName: "payload->'patients'->0->>'patientId'" },
     });
     const whResults = webhookResultsSchema.parse(whResponse);
-
-    const numberOfRows = whResults.length;
+    const numRows = whResults.length;
 
     let totalSuccesses = 0;
     const downloads = {
-      numberOfDownloads: 0,
-      numberOfWebhooks: 0,
+      numDownloads: 0,
+      numWebhooks: 0,
       sentSuccessfully: 0,
     };
     const conversions = {
-      numberOfWebhooks: 0,
+      numWebhooks: 0,
       sentSuccessfully: 0,
     };
     const mrSummaries = {
-      numberOfWebhooks: 0,
+      numWebhooks: 0,
       sentSuccessfully: 0,
     };
 
@@ -97,16 +114,16 @@ export async function getWhStatistics({
       if (wh.status === "success") totalSuccesses++;
 
       if (wh.type === "medical.document-download") {
-        downloads.numberOfWebhooks++;
+        downloads.numWebhooks++;
         for (const patient of whs.patients) {
-          downloads.numberOfDownloads += patient.documents ? patient.documents.length : 0;
+          downloads.numDownloads += patient.documents ? patient.documents.length : 0;
           if (wh.status === "success") downloads.sentSuccessfully++;
         }
       } else if (wh.type === "medical.document-conversion") {
-        conversions.numberOfWebhooks++;
+        conversions.numWebhooks++;
         if (wh.status === "success") conversions.sentSuccessfully++;
       } else if (wh.type === "medical.consolidated-data") {
-        mrSummaries.numberOfWebhooks++;
+        mrSummaries.numWebhooks++;
         if (wh.status === "success") mrSummaries.sentSuccessfully++;
       }
     };
@@ -115,12 +132,21 @@ export async function getWhStatistics({
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS,
     });
 
-    return `${tableNameHeader(
+    const results = `${tableNameHeader(
       WH_TABLE_NAME
-    )}${numberOfRows} webhook requests with ${totalSuccesses} successes.
+    )}${numRows} webhook requests with ${totalSuccesses} successes.
     - Downloads: ${JSON.stringify(downloads)}
     - Conversions: ${JSON.stringify(conversions)}
     - Consolidated Data (MR Summary): ${JSON.stringify(mrSummaries)}`;
+    console.log(results);
+
+    return {
+      numRows: numRows,
+      numSuccesses: totalSuccesses,
+      downloads,
+      conversions,
+      mrSummaries,
+    };
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating WH statistics.");

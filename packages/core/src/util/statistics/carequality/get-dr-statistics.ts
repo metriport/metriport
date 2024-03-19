@@ -17,6 +17,16 @@ import {
 const MAX_NUMBER_OF_PARALLEL_DR_PROCESSING_REQUESTS = 20;
 const DR_TABLE_NAME = "document_retrieval_result";
 
+type DrStatisticsOutput = {
+  numDrRows: number;
+  numDrSuccesses: number;
+  drSuccessRate: string;
+  patientsWithDocs: number;
+  drCoverage: string;
+  avgDocsPerPatient: number;
+  totalDocsDownloaded: number;
+};
+
 /**
  * Returns statistics for DR, including the following:
  * 1) # of DRs
@@ -34,7 +44,7 @@ export async function getDrStatistics({
   cxId,
   patientIds,
   dateString,
-}: StatisticsProps): Promise<string> {
+}: StatisticsProps): Promise<DrStatisticsOutput> {
   out("Starting DR statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
@@ -50,31 +60,31 @@ export async function getDrStatistics({
       dateString,
       patientIds: { ids: patientIds },
     });
-    const numberOfRows = drResults.length;
+    const numRows = drResults.length;
 
     const stats: { contentTypes: Map<string, number>; numberOfDocRefs: number }[] = [];
-    let numberOfSuccesses = 0;
-    let numberOfDocuments = 0;
-    const totalContentTypes = new Map<string, number>();
-    const numberOfDocumentsPerPatient = new Map<string, number>();
+    let numSuccesses = 0;
+    let numDocs = 0;
+    const contentTypesMap = new Map<string, number>();
+    const docsPerPatientMap = new Map<string, number>();
 
     // TODO: define the type of `dr`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processDrResult = async (dr: any) => {
       const docRefs = dr.data.documentReference;
       if (!docRefs) return;
-      if (dr.status === "success") numberOfSuccesses++;
-      const numberOfDocRefs = docRefs.length;
-      numberOfDocumentsPerPatient.set(
+      if (dr.status === "success") numSuccesses++;
+      const numDocRefs = docRefs.length;
+      docsPerPatientMap.set(
         dr.patient_id,
-        (numberOfDocumentsPerPatient.get(dr.patient_id) || 0) + numberOfDocRefs
+        (docsPerPatientMap.get(dr.patient_id) || 0) + numDocRefs
       );
-      numberOfDocuments += numberOfDocRefs;
+      numDocs += numDocRefs;
       const contentTypes = countContentTypes(docRefs);
-      mergeMaps(totalContentTypes, contentTypes);
+      mergeMaps(contentTypesMap, contentTypes);
       stats.push({
         contentTypes,
-        numberOfDocRefs,
+        numberOfDocRefs: numDocRefs,
       });
     };
 
@@ -82,22 +92,32 @@ export async function getDrStatistics({
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DR_PROCESSING_REQUESTS,
     });
 
-    const {
-      numberOfPatientsWithTargetAttribute: numberOfPatients,
-      avgAttributePerPatient: avgDownloads,
-    } = calculateMapStats(numberOfDocumentsPerPatient);
-    const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+    const { numPatientsWithTargetAttribute: numPatients, avgAttributePerPatient: avgDownloads } =
+      calculateMapStats(docsPerPatientMap);
+    const successRate = ((numSuccesses / numRows) * 100).toFixed(2);
+    const drCoverage = ((numPatients / patientIds.length) * 100).toFixed(2);
 
-    return `${tableNameHeader(
+    const string = `${tableNameHeader(
       DR_TABLE_NAME
-    )}${numberOfPatients} patients with at least 1 document (${(
-      (numberOfPatients / patientIds.length) *
+    )}${numPatients} patients with at least 1 document (${(
+      (numPatients / patientIds.length) *
       100
     ).toFixed(
       2
-    )}% coverage), with an average of ${avgDownloads} documents per patient.\n${numberOfRows} document retrievals with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents downloaded.\n${mapToString(
-      totalContentTypes
+    )}% coverage), with an average of ${avgDownloads} documents per patient.\n${numRows} document retrievals with ${numSuccesses} successes (${successRate} % success rate). ${numDocs} documents downloaded.\n${mapToString(
+      contentTypesMap
     )}`;
+    console.log(string);
+
+    return {
+      numDrRows: numRows,
+      numDrSuccesses: numSuccesses,
+      drSuccessRate: successRate,
+      patientsWithDocs: numPatients,
+      drCoverage,
+      avgDocsPerPatient: avgDownloads,
+      totalDocsDownloaded: numDocs,
+    };
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating DR statistics.");

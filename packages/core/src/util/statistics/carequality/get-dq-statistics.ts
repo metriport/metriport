@@ -17,6 +17,15 @@ import {
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
 const DQ_TABLE_NAME = "document_query_result";
 
+type DqStatisticsOutput = {
+  numDqRows: number;
+  numDqSuccesses: number;
+  patientsWithDocs: number;
+  dqCoverage: string;
+  dqSuccessRate: string;
+  avgDocsPerPatient: number;
+  totalDocsFound: number;
+};
 /**
  * Returns statistics for DQ, including the following:
  * 1) # of DQs
@@ -34,7 +43,7 @@ export async function getDqStatistics({
   cxId,
   patientIds,
   dateString,
-}: StatisticsProps): Promise<string> {
+}: StatisticsProps): Promise<DqStatisticsOutput> {
   out("Starting DQ statistics calculation...");
   const sequelize = initSequelizeForLambda(sqlDBCreds, false);
 
@@ -57,26 +66,26 @@ export async function getDqStatistics({
     const numberOfRows = dqResults.length;
 
     const stats: { contentTypes: Map<string, number>; numberOfDocRefs: number }[] = [];
-    let numberOfSuccesses = 0;
-    let numberOfDocuments = 0;
-    const totalContentTypes = new Map<string, number>();
-    const numberOfDocumentsPerPatient = new Map<string, number>();
+    let numSuccesses = 0;
+    let numDocs = 0;
+    const contentTypesMap = new Map<string, number>();
+    const docsPerPatientMap = new Map<string, number>();
 
     // TODO: define the type of `dq`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const processDqResult = async (dq: any) => {
       const docRefs = dq.data.documentReference;
       if (!docRefs) return;
-      if (dq.status === "success") numberOfSuccesses++;
+      if (dq.status === "success") numSuccesses++;
 
       const numberOfDocRefs = docRefs.length;
-      numberOfDocumentsPerPatient.set(
+      docsPerPatientMap.set(
         dq.patient_id,
-        (numberOfDocumentsPerPatient.get(dq.patient_id) || 0) + numberOfDocRefs
+        (docsPerPatientMap.get(dq.patient_id) || 0) + numberOfDocRefs
       );
-      numberOfDocuments += numberOfDocRefs;
+      numDocs += numberOfDocRefs;
       const contentTypes = countContentTypes(docRefs);
-      mergeMaps(totalContentTypes, contentTypes);
+      mergeMaps(contentTypesMap, contentTypes);
 
       stats.push({
         contentTypes,
@@ -89,18 +98,28 @@ export async function getDqStatistics({
     });
 
     const {
-      numberOfPatientsWithTargetAttribute: numberOfPatients,
-      avgAttributePerPatient: avgDocumentsPerPatient,
-    } = calculateMapStats(numberOfDocumentsPerPatient);
-    const successRate = ((numberOfSuccesses / numberOfRows) * 100).toFixed(2);
+      numPatientsWithTargetAttribute: numberOfPatients,
+      avgAttributePerPatient: avgDocsPerPatient,
+    } = calculateMapStats(docsPerPatientMap);
+    const successRate = ((numSuccesses / numberOfRows) * 100).toFixed(2);
     const coverage = ((numberOfPatients / patientIds.length) * 100).toFixed(2);
 
-    return `${tableNameHeader(
+    const string = `${tableNameHeader(
       DQ_TABLE_NAME
-    )}${numberOfPatients} patients with at least 1 document (${coverage}% coverage), with an average of ${avgDocumentsPerPatient} documents per patient.
-${numberOfRows} document queries with ${numberOfSuccesses} successes (${successRate} % success rate). ${numberOfDocuments} documents found.\n${mapToString(
-      totalContentTypes
+    )}${numberOfPatients} patients with at least 1 document (${coverage}% coverage), with an average of ${avgDocsPerPatient} documents per patient.
+    ${numberOfRows} document queries with ${numSuccesses} successes (${successRate} % success rate). ${numDocs} documents found.\n${mapToString(
+      contentTypesMap
     )}`;
+    console.log(string);
+    return {
+      numDqRows: numberOfRows,
+      numDqSuccesses: numSuccesses,
+      patientsWithDocs: numberOfPatients,
+      dqCoverage: coverage,
+      dqSuccessRate: successRate,
+      avgDocsPerPatient,
+      totalDocsFound: numDocs,
+    };
   } catch (err) {
     console.error(err);
     throw new Error("Error while calculating DQ statistics.");

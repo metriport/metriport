@@ -44,6 +44,7 @@ export async function handleBundleToMedicalRecord({
   dateTo?: string;
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
+  // TODO: RIG THE API HERE TO RETURN THE SANDBOX SEED DATA
   const isSandbox = Config.isSandbox();
 
   if (isSandbox) {

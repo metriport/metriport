@@ -82,7 +82,7 @@ export function getYesterdaysTimeFrame(): [string, string] {
 }
 
 export function calculateMapStats(patientMap: Map<string, number>): {
-  numberOfPatientsWithTargetAttribute: number;
+  numPatientsWithTargetAttribute: number;
   avgAttributePerPatient: number;
 } {
   const numPatients = patientMap.size;
@@ -94,7 +94,7 @@ export function calculateMapStats(patientMap: Map<string, number>): {
 
   const averageLinks = totalLinks / numPatients;
   return {
-    numberOfPatientsWithTargetAttribute: numPatients,
+    numPatientsWithTargetAttribute: numPatients,
     avgAttributePerPatient: parseFloat(averageLinks.toFixed(2)),
   };
 }
@@ -125,7 +125,8 @@ function appendPatientIdsToQueryAndUpdateReplacements(
   replacements: QueryReplacements
 ): string {
   const column = patientIds.columnName || "patient_id";
-  if (patientIds && patientIds.ids) {
+  if (patientIds && patientIds.ids && patientIds.ids.length > 0) {
+    console.log("patientIds.ids", patientIds.ids);
     query += ` and ${column} in (:patientIds)`;
     replacements.patientIds = patientIds.ids;
   }
