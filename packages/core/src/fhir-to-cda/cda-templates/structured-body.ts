@@ -1,9 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { constructResult } from "./components/results";
+import { buildResult } from "./components/results";
 
-export function constructStructuredBody(fhirBundle: Bundle): unknown {
+export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBody = {
-    structuredBody: constructResult(fhirBundle),
+    structuredBody: buildResult(fhirBundle),
   };
   return structuredBody;
 }

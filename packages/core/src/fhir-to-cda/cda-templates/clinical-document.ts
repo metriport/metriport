@@ -1,4 +1,13 @@
 import { XMLBuilder } from "fast-xml-parser";
+import {
+  CDAAuthor,
+  CDACustodian,
+  CDAInstanceIdentifier,
+  CDARecordTarget,
+  CDACodeCE,
+  Entry,
+} from "./types";
+import { buildCodeCE, buildInstanceIdentifier } from "./utils";
 
 // Constants for dynamic values
 const CONSTANTS = {
@@ -34,48 +43,76 @@ const CONSTANTS = {
   versionNumber: "3",
 };
 
+export type ClinicalDocument = {
+  ClinicalDocument: {
+    "@_xmlns": string;
+    realmCode: CDACodeCE;
+    typeId: CDAInstanceIdentifier;
+    templateId: CDAInstanceIdentifier[];
+    id: CDAInstanceIdentifier;
+    code: CDACodeCE;
+    title: string;
+    effectiveTime: Entry;
+    confidentialityCode: CDACodeCE;
+    languageCode: CDACodeCE;
+    setId: CDAInstanceIdentifier;
+    versionNumber: Entry;
+    recordTarget: CDARecordTarget;
+    author: CDAAuthor;
+    custodian: CDACustodian;
+    component: unknown; // The structured body or component of the Clinical Document
+  };
+};
+
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
-export function constructClinicalDocumentXML(
-  recordTarget: unknown,
-  author: unknown,
-  custodian: unknown,
+export function buildClinicalDocumentXML(
+  recordTarget: CDARecordTarget,
+  author: CDAAuthor,
+  custodian: CDACustodian,
   structuredBody: unknown
 ): string {
-  const jsonObj = {
+  const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
       "@_xmlns": "urn:hl7-org:v3",
-      realmCode: { "@_code": CONSTANTS.realmCode },
-      typeId: { "@_extension": CONSTANTS.typeIdExtension, "@_root": CONSTANTS.typeIdRoot },
-      templateId: CONSTANTS.templateIds.map(tid => ({
-        "@_root": tid.root,
-        "@_extension": tid.extension,
-      })),
-      id: {
+      realmCode: buildCodeCE({ code: CONSTANTS.realmCode }),
+      typeId: buildInstanceIdentifier({
+        extension: CONSTANTS.typeIdExtension,
+        root: CONSTANTS.typeIdRoot,
+      }),
+      templateId: CONSTANTS.templateIds.map(tid =>
+        buildInstanceIdentifier({
+          root: tid.root,
+          extension: tid.extension,
+        })
+      ),
+      id: buildInstanceIdentifier({
         // REQUIRED
-        "@_assigningAuthorityName": CONSTANTS.assigningAuthorityName,
-        "@_root": CONSTANTS.idRoot,
-      },
-      code: {
+        assigningAuthorityName: CONSTANTS.assigningAuthorityName,
+        root: CONSTANTS.idRoot,
+      }),
+      code: buildCodeCE({
         // REQUIRED
-        "@_code": CONSTANTS.code.code,
-        "@_codeSystem": CONSTANTS.code.codeSystem,
-        "@_codeSystemName": CONSTANTS.code.codeSystemName,
-        "@_displayName": CONSTANTS.code.displayName,
-      },
+        code: CONSTANTS.code.code,
+        codeSystem: CONSTANTS.code.codeSystem,
+        codeSystemName: CONSTANTS.code.codeSystemName,
+        displayName: CONSTANTS.code.displayName,
+      }),
       title: CONSTANTS.title,
       effectiveTime: { "@_value": CONSTANTS.effectiveTime }, // REQUIRED
-      confidentialityCode: {
+      confidentialityCode: buildCodeCE({
         // REQUIRED
-        "@_code": CONSTANTS.confidentialityCode.code,
-        "@_codeSystem": CONSTANTS.confidentialityCode.codeSystem,
-        "@_displayName": CONSTANTS.confidentialityCode.displayName,
-      },
-      languageCode: { "@_code": CONSTANTS.languageCode },
-      setId: {
-        "@_assigningAuthorityName": CONSTANTS.setId.assigningAuthorityName,
-        "@_extension": CONSTANTS.setId.extension,
-        "@_root": CONSTANTS.setId.root,
-      },
+        code: CONSTANTS.confidentialityCode.code,
+        codeSystem: CONSTANTS.confidentialityCode.codeSystem,
+        displayName: CONSTANTS.confidentialityCode.displayName,
+      }),
+      languageCode: buildCodeCE({
+        code: CONSTANTS.languageCode,
+      }),
+      setId: buildInstanceIdentifier({
+        assigningAuthorityName: CONSTANTS.setId.assigningAuthorityName,
+        extension: CONSTANTS.setId.extension,
+        root: CONSTANTS.setId.root,
+      }),
       versionNumber: { "@_value": CONSTANTS.versionNumber },
       recordTarget, // REQUIRED
       author, // REQUIRED

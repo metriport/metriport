@@ -1,7 +1,22 @@
-import { Organization, Address } from "@medplum/fhirtypes";
-import { withNullFlavor, withNullFlavorObject } from "./utils";
+import { Organization, Address, ContactPoint } from "@medplum/fhirtypes";
+import {
+  withNullFlavor,
+  withNullFlavorObject,
+  buildInstanceIdentifiersFromIdentifier,
+} from "./utils";
+import { CDAAddress, CDAOrganization, CDATelecom } from "./types";
 
-export function constructAddress(address?: Address[]) {
+export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[] {
+  if (!telecoms) {
+    return [];
+  }
+  return telecoms.map(telecom => ({
+    use: withNullFlavorObject(telecom.use, "@_use"),
+    value: withNullFlavorObject(telecom.value, "@_value"),
+  }));
+}
+
+export function buildAddress(address?: Address[]): CDAAddress | undefined {
   return address?.map(addr => ({
     ...withNullFlavorObject(addr.use, "@_use"),
     streetAddressLine: withNullFlavor(addr.line?.join(" ")),
@@ -18,18 +33,13 @@ export function constructAddress(address?: Address[]) {
   }))[0]; // Using only first address
 }
 
-export function constructRepresentedOrganization(organization: Organization) {
+export function buildRepresentedOrganization(
+  organization: Organization
+): CDAOrganization | undefined {
   return {
-    id: organization.identifier?.map(id => ({
-      ...withNullFlavorObject(id.system, "@_root"),
-      ...withNullFlavorObject(id.value, "@_extension"),
-      ...withNullFlavorObject(id.assigner?.display, "@_assigningAuthorityName"),
-    })),
+    id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
     name: withNullFlavor(organization.name),
-    telecom: organization.telecom?.map(telecom => ({
-      ...withNullFlavorObject(telecom.use, "@_use"),
-      ...withNullFlavorObject(telecom.value, "@_value"),
-    })),
-    addr: constructAddress(organization.address),
+    telecom: buildTelecom(organization.telecom),
+    addr: buildAddress(organization.address),
   };
 }

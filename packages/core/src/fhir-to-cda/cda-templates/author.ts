@@ -1,17 +1,16 @@
 import { Organization } from "@medplum/fhirtypes";
-import { withNullFlavorObject } from "./utils";
-import { constructAddress, constructRepresentedOrganization } from "./commons";
+import { withNullFlavor, withNullFlavorObject } from "./utils";
+import { buildAddress, buildRepresentedOrganization, buildTelecom } from "./commons";
+import { CDAAuthor } from "./types";
 
-export function constructAuthor(organization: Organization): unknown {
+export function buildAuthor(organization: Organization): CDAAuthor {
   const author = {
+    time: withNullFlavor(undefined),
     assignedAuthor: {
       id: withNullFlavorObject(organization.id, "@_root"),
-      addr: constructAddress(organization.address),
-      telecom: organization.telecom?.map(telecom => ({
-        ...withNullFlavorObject(telecom.use, "@_use"),
-        ...withNullFlavorObject(telecom.value, "@_value"),
-      })),
-      representedOrganization: constructRepresentedOrganization(organization),
+      addr: buildAddress(organization.address),
+      telecom: buildTelecom(organization.telecom),
+      representedOrganization: buildRepresentedOrganization(organization),
     },
   };
   return author;

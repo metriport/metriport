@@ -1,5 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
-import { constructRepresentedOrganization } from "./commons";
+import { buildRepresentedOrganization } from "./commons";
+import { CDACustodian } from "./types";
 
 const METRIPORT_ORGANIZATION: Organization = {
   resourceType: "Organization",
@@ -22,10 +23,10 @@ const METRIPORT_ORGANIZATION: Organization = {
   ],
 };
 
-export function constructCustodian(): unknown {
+export function buildCustodian(): CDACustodian | undefined {
   const custodian = {
     assignedCustodian: {
-      representedCustodianOrganization: constructRepresentedOrganization(METRIPORT_ORGANIZATION),
+      representedCustodianOrganization: buildRepresentedOrganization(METRIPORT_ORGANIZATION),
     },
   };
   return custodian;
