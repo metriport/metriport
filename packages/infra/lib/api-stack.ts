@@ -8,7 +8,6 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -18,8 +17,10 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -546,6 +547,23 @@ export class APIStack extends Stack {
     // API Gateway
     //-------------------------------------------
 
+    const accessLogDestination = new apig.LogGroupLogDestination(
+      new LogGroup(this, "APIAccessLogGroup", {
+        removalPolicy: RemovalPolicy.RETAIN,
+      })
+    );
+    const accessLogFormat = apig.AccessLogFormat.jsonWithStandardFields({
+      caller: true,
+      httpMethod: true,
+      ip: true,
+      protocol: true,
+      requestTime: true,
+      resourcePath: true,
+      responseLength: true,
+      status: true,
+      user: true,
+    });
+
     // Create the API Gateway
     // example from https://bobbyhadz.com/blog/aws-cdk-api-gateway-example
     const api = new apig.RestApi(this, "api", {
@@ -554,6 +572,10 @@ export class APIStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
+      },
+      deployOptions: {
+        accessLogDestination,
+        accessLogFormat,
       },
     });
 
