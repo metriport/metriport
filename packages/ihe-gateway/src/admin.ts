@@ -94,7 +94,6 @@ async function runService(serviceName: string) {
       console.error(`stderr: ${data}`);
     });
   }
-  process.exit(0);
 }
 
 function getParam(value: string): "inbound" | "outbound" | "all" | undefined {

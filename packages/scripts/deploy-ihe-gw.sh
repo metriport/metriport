@@ -44,23 +44,6 @@ source ./scripts/init.sh
 echo "Building Docker dependencies"
 source ./scripts/build-docker-dependencies.sh
 
-TARBALL=metriport-ihe-gw.tar.gz
-
-rm -rf ${TARBALL}
-
-# Build server tarball
-tar \
-  --exclude='**/*.ts' \
-  --exclude='**/__tests__' \
-  --exclude='**/*.spec*' \
-  --exclude='**/*.test*' \
-  --exclude="**/${TARBALL}" \
-  -czf ${TARBALL} \
-  node_modules \
-  package.json \
-  package-lock.json \
-  dist
-
 echo "Building and pushing Docker image"
 docker buildx build \
   --build-arg "ARTIFACT=$IHE_GW_ARTIFACT_URL" \

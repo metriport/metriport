@@ -1,5 +1,5 @@
 ARG PLATFORM=linux/amd64
-FROM --platform=$PLATFORM public.ecr.aws/docker/library/node:18-alpine
+FROM --platform=$PLATFORM alpine:3
 
 RUN apk update && apk upgrade && apk --no-cache add bash curl
 
@@ -23,15 +23,13 @@ RUN curl -SL $ARTIFACT \
     | tar -xzC /opt \
     && mv "/opt/Mirth Connect" /opt/connect
 
-RUN adduser -D -H mirth
+RUN adduser -D -H -u 1000 mirth
 RUN mkdir -p /opt/connect/appdata && chown -R mirth:mirth /opt/connect/appdata
 
 # initialization scripts and configs
 COPY scripts /opt/connect/scripts
 COPY server /opt/connect/server
 COPY config/custom-libs/aws/*.jar /opt/connect/server-lib/aws
-ADD ./metriport-ihe-gw.tar.gz /opt/connect
-
 COPY config/custom-extensions /opt/connect/custom-extensions
 VOLUME /opt/connect/appdata
 VOLUME /opt/connect/custom-lib
@@ -67,8 +65,6 @@ RUN --mount=type=secret,id=keystore_storepass \
     keytool -noprompt  -trustcacerts -importcert \
     -storepass "$(grep -v '^#' /run/secrets/keystore_storepass)" -alias sequoia5 -cacerts -file /opt/connect/appdata/sequoia5.pem
 RUN (cat mcserver.vmoptions /opt/connect/docs/mcservice-java9+.vmoptions ; echo "") > mcserver_base.vmoptions
-# healthcheck
-EXPOSE 8071
 EXPOSE 8443
 EXPOSE 8080
 EXPOSE 8081

@@ -54,7 +54,6 @@ export interface IHEGatewayConstructProps {
 const maxPortsPerLB = 5;
 const defaultPorts = [8080];
 const maxPortsOnProps = maxPortsPerLB - defaultPorts.length;
-const healthcheckPort = 8071;
 const healthcheckIntervalAdditionalPorts = Duration.seconds(300);
 
 export default class IHEGatewayConstruct extends Construct {
@@ -183,15 +182,13 @@ export default class IHEGatewayConstruct extends Construct {
     let documentRetrievalListener: ApplicationListener | undefined = undefined;
     const portToListener: { [key: number]: ApplicationListener } = {};
 
-    // Make sure to allow 2min for the container to start
     const healthCheck: HealthCheck = {
-      healthyThresholdCount: 10,
-      unhealthyThresholdCount: 10,
-      interval: Duration.seconds(12), // default, can be overridden when calling `addPortToLB`
+      healthyThresholdCount: 6,
+      unhealthyThresholdCount: 6,
+      interval: Duration.seconds(10), // default, can be overridden when calling `addPortToLB`
       path: "/",
-      port: healthcheckPort.toString(),
+      port: "8080",
       protocol: Protocol.HTTP,
-      healthyHttpCodes: "200-299",
       timeout: Duration.seconds(5),
     };
     const addPortToLB = (
