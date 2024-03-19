@@ -80,6 +80,11 @@ export async function documentUploaderHandler(
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
     const hash = eTag ? eTag : "";
+    if (!contentType) {
+      const message = "Failed to get the mime type of the uploaded file";
+      console.log(`${message}: ${contentType}`);
+      throw new MetriportError(message, null, { sourceKey, destinationKey });
+    }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
@@ -94,6 +99,7 @@ export async function documentUploaderHandler(
         docRef,
         metadataFileName,
         destinationBucket,
+        mimeType: contentType,
       });
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
@@ -133,6 +139,7 @@ async function createAndUploadMetadataFile({
   docRef,
   metadataFileName,
   destinationBucket,
+  mimeType,
 }: {
   s3Utils: S3Utils;
   cxId: string;
@@ -143,6 +150,7 @@ async function createAndUploadMetadataFile({
   docRef: DocumentReference;
   metadataFileName: string;
   destinationBucket: string;
+  mimeType: string;
 }): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -163,6 +171,7 @@ async function createAndUploadMetadataFile({
     healthcareFacilityTypeCode,
     documentUniqueId: docId,
     title,
+    mimeType,
   });
 
   console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);

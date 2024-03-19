@@ -48,6 +48,7 @@ export async function checkDocumentQueries(patientIds: string[]): Promise<void> 
         const { status, total = 0 } = prop;
         const isTotalValid = total === calculateTotal(prop);
         const isStatusValid = isValidStatus(status);
+        if (status === "failed") return undefined;
         if (!isTotalValid && !isStatusValid) return "both";
         if (!isTotalValid) return "total";
         if (!isStatusValid) return "status";

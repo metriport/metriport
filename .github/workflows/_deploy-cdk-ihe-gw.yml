@@ -81,7 +81,7 @@ jobs:
           aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
           aws configure set default.region "${{ inputs.AWS_REGION }}"
         working-directory: "./"
-  
+
       # checkout the actual repo
       - name: Checkout
         uses: actions/checkout@v3

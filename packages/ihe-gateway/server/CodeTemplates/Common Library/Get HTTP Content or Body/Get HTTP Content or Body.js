@@ -1,4 +1,14 @@
 /**
+	Decodes a base64 string.
+
+	@param {Object} value - the base64 string
+	@return {Object} base 64 decoded string
+*/
+function decodeBase64(value) {
+	return new java.lang.String(com.mirth.connect.server.userutil.FileUtil.decode(value), "UTF-8")
+}
+
+/**
 	Parse and decodes JSON from the HTTP request
 
 	@param {Object} msg - incoming msg object
@@ -6,13 +16,13 @@
 */
 function getBase64Content(msg) {
 
-	var base64 = null, json = null;
+	let base64 = null, json = null;
 
 	if (msg.hasOwnProperty('Content')) try {
 		
 		// Extract the Base64 encoded HTTP Content
 		if ('Base64' == msg.Content.@encoding.toString()) {
-			base64 = new java.lang.String(com.mirth.connect.server.userutil.FileUtil.decode(msg.Content.toString()), "UTF-8");
+			base64 = decodeBase64(msg.Content.toString());
 		} else {
 			base64 = msg.Content.toString();
 		}
@@ -37,13 +47,13 @@ function getBase64Content(msg) {
 */
 function getBase64Body(msg) {
 
-	var base64 = null, xml = null;
+	let xml = null;
 
 	if (msg.hasOwnProperty('Body')) try {
 		
 		// Extract the Base64 encoded HTTP Body
 		if ('Base64' == msg.Body.@encoding.toString()) {
-			xml = new java.lang.String(com.mirth.connect.server.userutil.FileUtil.decode(msg.Body.toString()), "UTF-8");
+			xml = decodeBase64(msg.Body.toString());
 		} else {
 			xml = msg.Body.toString();
 		}

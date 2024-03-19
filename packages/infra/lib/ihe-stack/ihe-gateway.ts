@@ -56,6 +56,8 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     ...props,
     mainConfig,
     config,
+    configEcs: config.ecs.outbound,
+    configJava: config.java.outbound,
     cluster,
     privateZone,
     db,
@@ -69,6 +71,8 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     ...props,
     mainConfig,
     config,
+    configEcs: config.ecs.inbound,
+    configJava: config.java.inbound,
     cluster,
     privateZone,
     db,
@@ -76,7 +80,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     dnsSubdomain: "inbound",
     pdPort: config.inboundPorts.patientDiscovery,
     dqPort: config.inboundPorts.documentQuery,
-    drPort: config.inboundPorts.documentRetrieval ?? config.inboundPorts.documentQuery,
+    drPort: config.inboundPorts.documentRetrieval,
   });
 
   // setup a private link so the API GW can talk to the ALB
@@ -108,7 +112,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
   });
   apiGateway.addRoutes({
     path: "/v1/document-retrieval",
-    integration: new HttpAlbIntegration(`IHEGWDQIntegration`, drListener, {
+    integration: new HttpAlbIntegration(`IHEGWDRIntegration`, drListener, {
       vpcLink,
       parameterMapping: new apigwv2.ParameterMapping().overwritePath(
         apigwv2.MappingValue.custom(

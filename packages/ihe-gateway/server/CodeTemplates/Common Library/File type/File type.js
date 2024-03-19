@@ -73,7 +73,7 @@ function isLikelyTextFile(fileBuffer) {
   var readableChars = 0;
   var nonReadableChars = 0;
   for (let i = 0; i < fileBuffer.length; i++) {
-    const char = fileBuffer[i];
+    const char = fileBuffer.charCodeAt(i);
     if (char !== undefined && isASCIIChar(char)) {
       readableChars++;
     } else {
@@ -91,11 +91,13 @@ function isLikelyTextFile(fileBuffer) {
  * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
  * matches it against known file type headers.
  *
- * @param contents - The contents as string.
+ * @param fileBuffer - The contents as bytes.
+ * @param decodedString - The contents as string.
+ * @param isNonXmlBody - Whether it is a nonXNLBody
  * @returns returns a string representing the detected file type.
  */
-function detectFileType(contents) {
-  const fileBuffer = contents.getBytes();
+function detectFileType(decodedBytes, decodedString, isNonXmlBody) {
+  let fileBuffer = new Array(6).fill(0).map((_, i) => decodedBytes[i] & 0xFF);
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -148,9 +150,19 @@ function detectFileType(contents) {
     return [JPEG_MIME_TYPE, JPEG_FILE_EXTENSION];
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
     return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
-  } else if (isLikelyTextFile(fileBuffer)) {
+  } else if (isNonXmlBody && isLikelyTextFile(decodedString)) {
     return [TXT_MIME_TYPE, TXT_FILE_EXTENSION];
   } else {
     return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
   }
+}
+
+function isText(contentType) {
+  return (
+    contentType === TXT_MIME_TYPE ||
+    contentType === HTML_MIME_TYPE ||
+    contentType === XML_TXT_MIME_TYPE ||
+    contentType === JSON_APP_MIME_TYPE ||
+    contentType === JSON_TXT_MIME_TYPE
+  );
 }

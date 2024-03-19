@@ -1,0 +1,10 @@
+{
+  "extends": "@tsconfig/node18/tsconfig.json",
+  "compilerOptions": {
+    // Using community best practices with 'extends'
+    "outDir": "./dist",
+    "resolveJsonModule": true
+  },
+  "include": ["./src", "src/.ts"],
+  "exclude": []
+}

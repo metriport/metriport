@@ -29,6 +29,7 @@ export function createExtrinsicObjectXml({
   healthcareFacilityTypeCode,
   documentUniqueId,
   title,
+  mimeType,
 }: {
   createdTime: string;
   hash: string;
@@ -41,6 +42,7 @@ export function createExtrinsicObjectXml({
   healthcareFacilityTypeCode?: CodeableConcept | undefined;
   documentUniqueId: string;
   title?: string | undefined;
+  mimeType: string;
 }) {
   const documentUUID = uuidv7();
   const classCodeNode = classCode?.coding?.[0]?.code || DEFAULT_CLASS_CODE_NODE;
@@ -59,7 +61,7 @@ export function createExtrinsicObjectXml({
     healthcareFacilityTypeCode?.text ||
     DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY;
 
-  const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="text/xml" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+  const metadataXml = `<ExtrinsicObject home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="${mimeType}" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
     <Slot name="creationTime">
       <ValueList>

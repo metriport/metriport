@@ -18,7 +18,11 @@ import * as r53 from "aws-cdk-lib/aws-route53";
 import { IBucket } from "aws-cdk-lib/aws-s3";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
-import { IHEGatewayProps } from "../../config/ihe-gateway-config";
+import {
+  IHEGatewayEcsProps,
+  IHEGatewayJavaProps,
+  IHEGatewayProps,
+} from "../../config/ihe-gateway-config";
 import { ecrRepoName } from "../ihe-prereq-stack";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
@@ -27,6 +31,8 @@ import IHEDBConstruct from "./ihe-db-construct";
 export interface IHEGatewayConstructProps {
   mainConfig: EnvConfig;
   config: IHEGatewayProps;
+  configEcs: IHEGatewayEcsProps;
+  configJava: IHEGatewayJavaProps;
   cluster: ecs.Cluster;
   vpc: ec2.IVpc;
   // TODO 1377 Implement this
@@ -64,6 +70,8 @@ export default class IHEGatewayConstruct extends Construct {
       vpc,
       mainConfig,
       config,
+      configEcs,
+      configJava,
       cluster,
       privateZone,
       db,
@@ -121,10 +129,10 @@ export default class IHEGatewayConstruct extends Construct {
       S3_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       HOME_COMMUNITY_ID: mainConfig.systemRootOID,
       HOME_COMMUNITY_NAME: mainConfig.systemRootOrgName,
-      VMOPTIONS: `-Xms${config.java.initialHeapSize},-Xmx${config.java.maxHeapSize}`,
+      VMOPTIONS: `-Xms${configJava.initialHeapSize},-Xmx${configJava.maxHeapSize}`,
       _MP_KEYSTORE_PATH: `\${dir.appdata}/${config.keystoreName}`,
       _MP_KEYSTORE_TYPE: config.keystoreType,
-      IHE_GW_USER: config.adminUsername,
+      ADMIN_USER: config.adminUsername,
     };
 
     const ecrRepo = ecr.Repository.fromRepositoryName(scope, `${id}EcrRepo`, ecrRepoName);
@@ -132,8 +140,8 @@ export default class IHEGatewayConstruct extends Construct {
     const image = ecs.ContainerImage.fromEcrRepository(ecrRepo, "latest");
 
     const taskDefinition = new FargateTaskDefinition(this, `${id}TaskDefinition`, {
-      cpu: config.ecs.cpu,
-      memoryLimitMiB: config.ecs.memory,
+      cpu: configEcs.cpu,
+      memoryLimitMiB: configEcs.memory,
       runtimePlatform: {
         cpuArchitecture: ecs.CpuArchitecture.X86_64,
         operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
@@ -161,7 +169,7 @@ export default class IHEGatewayConstruct extends Construct {
     const service = new ecs.FargateService(scope, `${id}FargateService`, {
       cluster,
       taskDefinition,
-      desiredCount: config.ecs.minCapacity,
+      desiredCount: configEcs.minCapacity,
     });
 
     const fargateService = { service, taskDefinition };
@@ -275,8 +283,8 @@ export default class IHEGatewayConstruct extends Construct {
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({
-      minCapacity: config.ecs.minCapacity,
-      maxCapacity: config.ecs.maxCapacity,
+      minCapacity: configEcs.minCapacity,
+      maxCapacity: configEcs.maxCapacity,
     });
     scaling.scaleOnCpuUtilization(`${id}AutoscaleCPU`, {
       targetUtilizationPercent: 90,

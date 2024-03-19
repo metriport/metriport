@@ -1,10 +1,12 @@
+import { limitStringLength } from "@metriport/shared";
 import { nanoid } from "nanoid";
 import { processAsyncError } from "../../errors";
 import WebhookError from "../../errors/webhook";
 import { Settings, WEBHOOK_STATUS_BAD_RESPONSE, WEBHOOK_STATUS_OK } from "../../models/settings";
+import { MAX_VARCHAR_LENGTH } from "../../models/_default";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { sendTestPayload } from "../webhook/webhook";
+import { errorToWhStatusDetails, sendTestPayload } from "../webhook/webhook";
 import { getSettingsOrFail } from "./getSettings";
 
 const log = Util.log(`updateSettings`);
@@ -40,10 +42,11 @@ export const updateWebhookStatus = async ({
   webhookEnabled,
   webhookStatusDetail,
 }: UpdateWebhookStatusCommand): Promise<void> => {
+  const statusDetail = limitStringLength(webhookStatusDetail, MAX_VARCHAR_LENGTH);
   await Settings.update(
     {
       webhookEnabled,
-      ...(webhookStatusDetail ? { webhookStatusDetail } : undefined),
+      ...(statusDetail ? { webhookStatusDetail: statusDetail } : undefined),
     },
     { where: { id: cxId } }
   );
@@ -83,22 +86,23 @@ const testWebhook = async ({ cxId, webhookUrl, webhookKey }: TestWebhookCommand)
       webhookEnabled: testOK,
       webhookStatusDetail: testOK ? WEBHOOK_STATUS_OK : WEBHOOK_STATUS_BAD_RESPONSE,
     });
-  } catch (err) {
-    if (err instanceof WebhookError) {
+  } catch (error) {
+    if (error instanceof WebhookError) {
+      const webhookStatusDetail = errorToWhStatusDetails(error);
       await updateWebhookStatus({
         cxId,
         webhookEnabled: false,
-        webhookStatusDetail: String(err.cause),
+        webhookStatusDetail,
       });
     } else {
-      log(`Unexpected error testing webhook: ${err}`);
-      capture.error(err, {
+      log(`Unexpected error testing webhook: ${error}`);
+      capture.error(error, {
         extra: {
           context: "testWebhook",
           cxId,
           webhookUrl,
           webhookKey,
-          err,
+          error,
         },
       });
     }
