@@ -24,18 +24,18 @@ export type CDAOrganization = {
   id?: CDAInstanceIdentifier[] | undefined;
   name?: Entry;
   telecom?: CDATelecom[] | undefined;
-  addr?: CDAAddress | undefined;
+  addr?: CDAAddress[] | undefined;
 };
 
 export type CDAAssignedAuthor = {
   id: Entry;
-  addr?: CDAAddress | undefined;
+  addr?: CDAAddress[] | undefined;
   telecom?: CDATelecom[] | undefined;
   representedOrganization?: CDAOrganization | undefined;
 };
 
 export type CDAPatientRole = {
-  name?: CDAName | undefined;
+  name?: CDAName[] | undefined;
   administrativeGenderCode?: EntryObject;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
@@ -86,7 +86,7 @@ export type CDACustodian = {
 export type CDARecordTarget = {
   patientRole: {
     id?: CDAInstanceIdentifier[] | undefined;
-    addr?: CDAAddress | undefined;
+    addr?: CDAAddress[] | undefined;
     telecom?: CDATelecom[] | undefined;
     patient: CDAPatientRole;
   };

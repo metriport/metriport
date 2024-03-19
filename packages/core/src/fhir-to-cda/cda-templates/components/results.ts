@@ -52,21 +52,26 @@ export function buildResult(fhirBundle: Bundle): unknown {
     .map(entry => entry.resource as DiagnosticReport);
 
   if (!diagnosticReports || diagnosticReports.length === 0) {
-    return null;
+    return undefined;
   }
-  const items = diagnosticReports?.map(report => {
-    const content = report.presentedForm?.[0]?.data
-      ? base64ToString(report.presentedForm[0].data)
-      : "";
-    return {
-      item: {
-        content: {
-          "@_ID": report.id,
-          "#text": content,
-        },
-      },
-    };
-  });
+  const items = diagnosticReports
+    .map(report => {
+      const content = report.presentedForm?.[0]?.data
+        ? base64ToString(report.presentedForm[0].data)
+        : undefined;
+      if (content) {
+        return {
+          item: {
+            content: {
+              "@_ID": report.id,
+              "#text": content,
+            },
+          },
+        };
+      }
+      return undefined;
+    })
+    .filter(item => item !== undefined);
 
   const resultsSection = {
     component: {

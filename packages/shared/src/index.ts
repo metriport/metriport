@@ -6,3 +6,4 @@ export { executeWithRetries, executeWithRetriesOrFail } from "./common/retry";
 export { sleep } from "./common/sleep";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
+export { getPatient, getOrganization } from "./common/fhir";

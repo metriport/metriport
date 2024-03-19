@@ -4,14 +4,16 @@ import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";
 import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
 import { buildClinicalDocumentXML } from "./cda-templates/clinical-document/clinical-document";
+import { findPatientResource, findOrganizationResource } from "./fhir";
+import { MetriportError } from "../util/error/metriport-error";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
-  const patientResource = fhirBundle.entry?.find(
-    entry => entry.resource?.resourceType === "Patient"
-  )?.resource as Patient;
-  const organizationResources = fhirBundle.entry?.find(
-    entry => entry.resource?.resourceType === "Organization"
-  )?.resource as Organization;
+  const patientResource: Patient | undefined = findPatientResource(fhirBundle);
+  const organizationResources: Organization | undefined = findOrganizationResource(fhirBundle);
+
+  if (!patientResource || !organizationResources) {
+    throw new MetriportError("Required resource is missing.", fhirBundle);
+  }
 
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResources);
@@ -19,7 +21,10 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
   const structuredBody = buildStructuredBody(fhirBundle);
 
   if (!recordTarget || !author || !custodian || !structuredBody) {
-    throw new Error("Missing required CDA components. Failed to generate CDA.");
+    throw new MetriportError(
+      "Missing required CDA components. Failed to generate CDA.",
+      fhirBundle
+    );
   }
 
   const clinicalDocument = buildClinicalDocumentXML(

@@ -21,6 +21,6 @@
     "outDir": "./dist",
     "resolveJsonModule": true
   },
-  "include": ["./src", "./src/**/*.json", "../api/src/fern"],
+  "include": ["./src", "./src/**/*.json"],
   "exclude": ["dist", "node_modules"]
 }

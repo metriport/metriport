@@ -126,7 +126,7 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
   }));
 }
 
-export function buildAddress(address?: Address[]): CDAAddress | undefined {
+export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
   return address?.map(addr => ({
     ...withNullFlavorObject(addr.use, "@_use"),
     streetAddressLine: withNullFlavor(addr.line?.join(" ")),
@@ -140,7 +140,7 @@ export function buildAddress(address?: Address[]): CDAAddress | undefined {
       low: withNullFlavor(addr.period?.start, "@_value"),
       high: withNullFlavor(addr.period?.end, "@_nullFlavor"),
     },
-  }))[0]; // Using only first address
+  })); // Using only first address
 }
 
 export function buildRepresentedOrganization(

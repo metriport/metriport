@@ -19,7 +19,7 @@ function buildPatient(patient: Patient) {
         low: { "@_nullFlavor": "UNK" },
         high: { "@_nullFlavor": "UNK" },
       },
-    }))[0],
+    })),
     administrativeGenderCode: buildCodeCE({
       code: patient.gender,
       codeSystem: "2.16.840.1.113883.5.1",
