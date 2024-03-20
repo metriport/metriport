@@ -1,4 +1,12 @@
-import { Bundle, Patient, Resource, Organization, Composition } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  Patient,
+  Resource,
+  Organization,
+  Composition,
+  Observation,
+  DiagnosticReport,
+} from "@medplum/fhirtypes";
 
 function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
@@ -10,6 +18,14 @@ function isOrganization(resource: Resource | undefined): resource is Organizatio
 
 export function isComposition(resource: Resource | undefined): resource is Composition {
   return resource?.resourceType === "Composition";
+}
+
+export function isObservation(resource: Resource | undefined): resource is Observation {
+  return resource?.resourceType === "Observation";
+}
+
+export function isDiagnosticReport(resource: Resource | undefined): resource is DiagnosticReport {
+  return resource?.resourceType === "DiagnosticReport";
 }
 
 export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {

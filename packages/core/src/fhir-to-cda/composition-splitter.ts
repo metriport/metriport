@@ -8,11 +8,11 @@ import { MetriportError } from "../util/error/metriport-error";
  * @returns An array of FHIR bundles, each corresponding to a composition.
  */
 export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
-  const compositions: Composition[] | undefined = fhirBundle.entry
-    ?.filter(entry => isComposition(entry.resource))
-    .map(entry => entry.resource as Composition);
+  const compositions: Composition[] =
+    fhirBundle.entry?.flatMap(entry => (isComposition(entry.resource) ? [entry.resource] : [])) ||
+    [];
 
-  if (!compositions) {
+  if (compositions.length === 0) {
     return [];
   }
 

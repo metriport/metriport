@@ -149,8 +149,8 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
     return [];
   }
   return telecoms.map(telecom => ({
-    use: withoutNullFlavorObject(telecom.use, useAttribute),
-    value: withoutNullFlavorObject(telecom.value, valueAttribute),
+    ...withoutNullFlavorObject(telecom.use, useAttribute),
+    ...withoutNullFlavorObject(telecom.value, valueAttribute),
   }));
 }
 

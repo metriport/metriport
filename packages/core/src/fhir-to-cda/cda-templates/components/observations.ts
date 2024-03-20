@@ -23,8 +23,8 @@ export interface CDAObservation {
         value: Entry;
       };
       priorityCode?: Entry;
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      value?: any[];
+      // TODO support other types of values like CodeableConcept, Quantity, etc.
+      value?: string | undefined;
     };
   };
 }
@@ -32,7 +32,6 @@ export interface CDAObservation {
 export function buildObservations(observations: Observation[]): CDAObservation[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(/-|:|\.\d+Z$/g, "");
-
     return {
       component: {
         observation: {
@@ -50,6 +49,7 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
           effectiveTime: {
             value: withoutNullFlavorString(effectiveTime),
           },
+          value: observation.valueString,
         },
       },
     };

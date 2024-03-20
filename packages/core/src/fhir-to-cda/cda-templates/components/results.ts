@@ -16,7 +16,7 @@ import {
   idAttribute,
 } from "../constants";
 import { buildObservations } from "./observations";
-import { findResourceInBundle } from "../../fhir";
+import { findResourceInBundle, isObservation, isDiagnosticReport } from "../../fhir";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],
@@ -29,10 +29,8 @@ function buildEntriesFromDiagnosticReports(
       if (!result.reference) {
         return;
       }
-      const observation = findResourceInBundle(fhirBundle, result.reference) as
-        | Observation
-        | undefined;
-      if (observation) {
+      const observation = findResourceInBundle(fhirBundle, result.reference);
+      if (isObservation(observation)) {
         observations.push(observation);
       }
     });
@@ -61,7 +59,7 @@ function buildEntriesFromDiagnosticReports(
           text: {
             reference: withNullFlavor(report.id, valueAttribute),
           },
-          component: buildObservations(observations).map(observation => observation.component),
+          component: buildObservations(observations).map(o => o.component),
         },
       },
     };
@@ -69,14 +67,11 @@ function buildEntriesFromDiagnosticReports(
 }
 
 export function buildResult(fhirBundle: Bundle): unknown {
-  const diagnosticReports = fhirBundle.entry
-    ?.filter(
-      (entry): entry is { resource: DiagnosticReport } =>
-        entry.resource?.resourceType === "DiagnosticReport"
-    )
-    .map(entry => entry.resource as DiagnosticReport);
-
-  if (!diagnosticReports || diagnosticReports.length === 0) {
+  const diagnosticReports: DiagnosticReport[] =
+    fhirBundle.entry?.flatMap(entry =>
+      isDiagnosticReport(entry.resource) ? [entry.resource] : []
+    ) || [];
+  if (diagnosticReports.length === 0) {
     return undefined;
   }
   const items = diagnosticReports
