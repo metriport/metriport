@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
-import { resetDocQueryProgress } from "../../hie/reset-doc-query-progress";
+import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
@@ -122,22 +122,4 @@ export async function getDocumentsFromCQ({
     });
     throw error;
   }
-}
-
-function buildInterrupt({
-  patientId,
-  cxId,
-  log,
-}: {
-  patientId: string;
-  cxId: string;
-  log: typeof console.log;
-}) {
-  return async (reason: string): Promise<void> => {
-    log(reason + ", skipping DQ");
-    await resetDocQueryProgress({
-      patient: { id: patientId, cxId },
-      source: MedicalDataSource.CAREQUALITY,
-    });
-  };
 }

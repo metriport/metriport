@@ -3,6 +3,7 @@ import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Organization } from "@metriport/core/domain/organization";
 import { Config, getEnvVarOrFail } from "../../shared/config";
+import { isCWDirectEnabledForCx } from "../aws/appConfig";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import {
@@ -71,6 +72,12 @@ export async function organizationToCommonwell(
 
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
+
+  if (!(await isCWDirectEnabledForCx(org.cxId))) {
+    console.log(`CW Direct is not enabled for org ${org.cxId}, skipping CW org creation`);
+    return;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
@@ -104,6 +111,12 @@ export const create = async (org: Organization): Promise<void> => {
 
 export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
+
+  if (!(await isCWDirectEnabledForCx(org.cxId))) {
+    debug(`CW Direct is not enabled for ${org.cxId}, skipping...`);
+    return;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {

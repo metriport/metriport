@@ -97,14 +97,19 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = await create(
-      patient,
-      facilityId,
-      {
-        organization,
-        facility,
-      }
-    );
+    const cwIds = await create(patient, facilityId, {
+      organization,
+      facility,
+    });
+
+    if (!cwIds) {
+      const msg = `Missing CW IDs while recreating patient at CW`;
+      log(msg);
+      capture.message(msg, { extra: { patientId: patient.id }, level: "error" });
+      return undefined;
+    }
+
+    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = cwIds;
 
     if (originalCWPatientId) {
       const extra = {
