@@ -109,6 +109,11 @@ export async function recreatePatientAtCW(
       facility,
     });
 
+    if (!cwIds) {
+      log(`Missing CW IDs while recreating patient at CW`);
+      return undefined;
+    }
+
     const { commonwellPatientId: newCWPatientId, personId: newPersonId } = cwIds;
 
     if (originalCWPatientId) {
