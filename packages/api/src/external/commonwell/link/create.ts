@@ -7,6 +7,7 @@ import { makeCommonWellAPI } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import { getPatientData } from "../patient-shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 
 const context = "cw.link.create";
 
@@ -16,6 +17,11 @@ export const create = async (
   cxId: string,
   facilityId: string
 ): Promise<void> => {
+  if (!(await isCWEnabledForCx(cxId))) {
+    console.log(`CW is not enabled for cxId: ${cxId}`);
+    return undefined;
+  }
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 

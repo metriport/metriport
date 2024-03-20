@@ -17,7 +17,7 @@ import { Facility } from "../../domain/medical/facility";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { isEnhancedCoverageEnabledForCx, isCWDirectEnabledForCx } from "../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCWEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
@@ -105,9 +105,9 @@ export async function create(
   try {
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
-    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+    if (!(await isCWEnabledForCx(patient.cxId))) {
       debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return;
+      return undefined;
     }
 
     const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
@@ -166,9 +166,9 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   try {
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
-    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+    if (!(await isCWEnabledForCx(patient.cxId))) {
       debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return;
+      return undefined;
     }
 
     const updateData = await setupUpdate(patient, facilityId);
@@ -303,9 +303,9 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   try {
     const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
 
-    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+    if (!(await isCWEnabledForCx(patient.cxId))) {
       debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return;
+      return undefined;
     }
 
     const data = await setupUpdate(patient, facilityId);
