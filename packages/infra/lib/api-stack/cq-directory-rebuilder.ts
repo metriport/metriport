@@ -1,7 +1,7 @@
 import { Duration } from "aws-cdk-lib";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import { IVpc } from "aws-cdk-lib/aws-ec2";
-import { Function as Lambda, Runtime } from "aws-cdk-lib/aws-lambda";
+import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
@@ -24,11 +24,10 @@ function getSettings(
     ...props,
     name: "ScheduledCqDirectoryRebuilder",
     lambdaMemory: 256,
-    lambdaTimeout: Duration.seconds(900), // How long can the lambda run for, max is 900 seconds (15 minutes)
-    runtime: Runtime.NODEJS_18_X,
+    lambdaTimeout: Duration.seconds(60), // How long can the lambda run for, max is 900 seconds (15 minutes)
     scheduleExpression: config.scheduleExpressions, // See: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
     url: `http://${props.apiAddress}/internal/carequality/directory/rebuild`,
-    httpTimeout: Duration.seconds(3),
+    httpTimeout: Duration.seconds(5),
   };
 }
 
@@ -40,7 +39,6 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     stack,
     lambdaLayers,
     vpc,
-    runtime,
     alarmSnsAction,
     name,
     lambdaMemory,
@@ -57,7 +55,6 @@ export function createCqDirectoryRebuilder(props: CqDirectoryRebuilderProps): La
     vpc,
     scheduleExpression,
     url,
-    runtime,
     memory: lambdaMemory,
     timeout: lambdaTimeout,
     alarmSnsAction,
