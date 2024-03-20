@@ -1,6 +1,8 @@
-import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
+import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
+import { capture } from "./shared/capture";
+capture.init();
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   console.log(`Running with: ${event}`);

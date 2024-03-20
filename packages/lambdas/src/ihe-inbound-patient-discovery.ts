@@ -1,8 +1,10 @@
+import * as Sentry from "@sentry/serverless";
 import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
-import * as Sentry from "@sentry/serverless";
+import { capture } from "./shared/capture";
+capture.init();
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const mpi = new MPIMetriportAPI(apiUrl);
