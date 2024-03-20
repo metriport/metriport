@@ -17,7 +17,7 @@ import { Facility } from "../../domain/medical/facility";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCWDirectEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
@@ -100,10 +100,15 @@ export async function create(
     organization: Organization;
     facility: Facility;
   }
-): Promise<{ commonwellPatientId: string; personId: string }> {
+): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+
+    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      return;
+    }
 
     const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
     const orgName = organization.data.name;
@@ -160,6 +165,11 @@ export async function update(patient: Patient, facilityId: string): Promise<void
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
+
+    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      return;
+    }
 
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
@@ -292,6 +302,11 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
+
+    if (!(await isCWDirectEnabledForCx(patient.cxId))) {
+      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      return;
+    }
 
     const data = await setupUpdate(patient, facilityId);
     if (!data) {
