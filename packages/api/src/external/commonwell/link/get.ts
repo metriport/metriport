@@ -27,6 +27,7 @@ import {
   searchPersons,
 } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 
 type NetworkLinks = {
   lola1: PatientNetworkLink[];
@@ -44,6 +45,15 @@ export const get = async (
   cxId: string,
   facilityId: string
 ): Promise<CWPersonLinks> => {
+  if (!(await isCWEnabledForCx(cxId))) {
+    console.log(`CW is not enabled for cxId: ${cxId}`);
+    return {
+      currentLinks: [],
+      potentialLinks: [],
+      networkLinks: undefined,
+    };
+  }
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 

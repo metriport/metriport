@@ -32,7 +32,7 @@ import { Util } from "../../../shared/util";
 import {
   isEnhancedCoverageEnabledForCx,
   isCQDirectEnabledForCx,
-  isCWDirectEnabledForCx,
+  isCWEnabledForCx,
 } from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
@@ -101,8 +101,8 @@ export async function queryAndProcessDocuments({
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
-  const interrupt = buildInterrupt({ patientId, cxId, log });
-  if (!(await isCWDirectEnabledForCx(cxId))) {
+  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
 

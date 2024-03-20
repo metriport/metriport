@@ -10,7 +10,7 @@ const log = Util.log(`App Config - FF`);
 const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
   "cxsWithEnhancedCoverageFeatureFlag",
   "cxsWithCQDirectFeatureFlag",
-  "cxsWithCWDirectFeatureFlag",
+  "cxsWithCWFeatureFlag",
   "cxsWithADHDMRFeatureFlag",
   "cxsWithIncreasedSandboxLimitFeatureFlag",
   "cxsWithNoWebhookPongFeatureFlag",
@@ -110,8 +110,8 @@ export async function getCxsWithCQDirectFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithCQDirectFeatureFlag");
 }
 
-export async function getCxsWithCWDirectFeatureFlagValue(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("cxsWithCWDirectFeatureFlag");
+export async function getCxsWithCWFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithCWFeatureFlag");
 }
 
 export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise<string[]> {
@@ -132,8 +132,8 @@ export async function isCQDirectEnabledForCx(cxId: string): Promise<boolean> {
   return cxIdsWithCQDirectEnabled.some(i => i === cxId);
 }
 
-export async function isCWDirectEnabledForCx(cxId: string): Promise<boolean> {
-  const cxIdsWithCWDirectEnabled = await getCxsWithCWDirectFeatureFlagValue();
+export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithCWDirectEnabled = await getCxsWithCWFeatureFlagValue();
   return cxIdsWithCWDirectEnabled.some(i => i === cxId);
 }
 
