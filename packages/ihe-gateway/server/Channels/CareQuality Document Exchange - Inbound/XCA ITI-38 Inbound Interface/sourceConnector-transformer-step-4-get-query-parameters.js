@@ -8,7 +8,8 @@ try {
 	var namespaces = msg.namespaceDeclarations();
 	namespaces = namespaces.concat(queryRequest.namespaceDeclarations());
 
-	queryRequest = String(queryRequest).replace(/xmlns(?:.*?)?=\".*?\"/g, '');
+	var regexNamespaces = RegExp('xmlns="[^"]*"(?=[^<>]*>)', "g");
+	queryRequest = String(queryRequest).replace(regexNamespaces, '');
 
 	namespaces.forEach(function(entry) {
 		var regex = new RegExp(entry.prefix + ':', "g");
@@ -23,6 +24,11 @@ try {
 	if ('ObjectRef' == payload.ResponseOption.@returnType) channelMap.put('OBJECTREF', true);
 
 	request.id = payload.@id.toString()
+	if (!request.id) {
+		var msgId = msg.*::Header.*::MessageID.toString();
+		msgId = msgId.replace(/^urn:uuid:/, '');
+		request.id = msgId;
+	}
 	request.timestamp = DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss");
 	request.samlAttributes = saml;
 
