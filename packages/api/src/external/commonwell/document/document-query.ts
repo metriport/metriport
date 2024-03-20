@@ -103,7 +103,7 @@ export async function queryAndProcessDocuments({
 
   const interrupt = buildInterrupt({ patientId, cxId, log });
   if (!(await isCWDirectEnabledForCx(cxId))) {
-    return interrupt(`CW Direct is not enabled for cx ${cxId}`);
+    return interrupt(`CW disabled for cx ${cxId}`);
   }
 
   try {

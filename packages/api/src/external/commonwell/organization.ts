@@ -74,7 +74,7 @@ export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWDirectEnabledForCx(org.cxId))) {
-    console.log(`CW Direct is not enabled for org ${org.cxId}, skipping CW org creation`);
+    console.log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
     return;
   }
 
@@ -113,7 +113,7 @@ export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWDirectEnabledForCx(org.cxId))) {
-    debug(`CW Direct is not enabled for ${org.cxId}, skipping...`);
+    debug(`CW disabled for cx ${org.cxId}, skipping...`);
     return;
   }
 

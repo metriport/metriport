@@ -106,7 +106,7 @@ export async function create(
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
     if (!(await isCWDirectEnabledForCx(patient.cxId))) {
-      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
       return;
     }
 
@@ -167,7 +167,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
     if (!(await isCWDirectEnabledForCx(patient.cxId))) {
-      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
       return;
     }
 
@@ -304,7 +304,7 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
 
     if (!(await isCWDirectEnabledForCx(patient.cxId))) {
-      debug(`CW Direct is not enabled for ${patient.cxId}, skipping...`);
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
       return;
     }
 
