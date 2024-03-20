@@ -50,7 +50,8 @@ export async function getMedicalRecordSummaryStatus({
     const [s3HtmlSandboxKey, s3PdfSandboxKey] = await getSandboxFileNames(patientId, cxId);
     s3FileKey = s3HtmlSandboxKey;
     s3PdfFileKey = s3PdfSandboxKey;
-    s3BucketName = Config.getSandboxSeedBucketName();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    s3BucketName = Config.getSandboxSeedBucketName()!;
   }
 
   const [htmlMRInfo, pdfMRInfo] = await Promise.all([
@@ -88,7 +89,8 @@ export async function getMedicalRecordSummary({
   let s3FileKey;
 
   if (Config.isSandbox()) {
-    s3BucketName = Config.getSandboxSeedBucketName();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    s3BucketName = Config.getSandboxSeedBucketName()!;
     if (pdfIsValid || htmlIsValid) {
       const patientName = await getSandboxPatientName(patientId, cxId);
       s3FileKey = createSandboxMRSummaryFileName(patientName, conversionType);

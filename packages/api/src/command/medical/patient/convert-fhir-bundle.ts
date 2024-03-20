@@ -45,7 +45,8 @@ export async function handleBundleToMedicalRecord({
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
   if (Config.isSandbox()) {
-    const bucketName = Config.getSandboxSeedBucketName();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const bucketName = Config.getSandboxSeedBucketName()!;
     const patientMatch = getSandboxSeedData(patient.data.firstName);
     const patientNameLowerCase = patientMatch ? patient.data.firstName.toLowerCase() : "jane";
     const fileName =

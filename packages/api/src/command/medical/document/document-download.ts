@@ -82,7 +82,8 @@ const doesObjExist = async ({
 > => {
   if (Config.isSandbox()) {
     try {
-      const bucketName = Config.getSandboxSeedBucketName();
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const bucketName = Config.getSandboxSeedBucketName()!;
       const head = await s3client
         .headObject({
           Bucket: bucketName,
@@ -132,7 +133,8 @@ export const getSignedURL = async ({
   const bucket =
     bucketName ??
     (Config.isSandbox()
-      ? Config.getSandboxSeedBucketName()
+      ? // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName());
 
   const url = s3client.getSignedUrl("getObject", {
