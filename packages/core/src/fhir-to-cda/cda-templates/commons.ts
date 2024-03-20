@@ -179,3 +179,14 @@ export function buildRepresentedOrganization(
     addr: buildAddress(organization.address),
   };
 }
+
+export function formatDateToCDATimeStamp(dateString: string | undefined): string | undefined {
+  if (!dateString) {
+    return undefined;
+  }
+  const datePart = dateString.replace(/-/g, "");
+  const timePart = "000000";
+  const fractionalSeconds = "0000";
+  const cdaTimeStamp = `${datePart}${timePart}.${fractionalSeconds}`;
+  return cdaTimeStamp;
+}

@@ -6,11 +6,12 @@ import {
   withoutNullFlavorString,
   buildCodeCE,
   buildInstanceIdentifiersFromIdentifier,
+  formatDateToCDATimeStamp,
 } from "../commons";
-import { CDARecordTarget } from "../types";
+import { CDARecordTarget, CDAPatientRole } from "../types";
 import { useAttribute, valueAttribute } from "../constants";
 
-function buildPatient(patient: Patient) {
+function buildPatient(patient: Patient): CDAPatientRole {
   return {
     name: patient.name?.map(name => ({
       ...withoutNullFlavorObject(name.use, useAttribute),
@@ -26,7 +27,7 @@ function buildPatient(patient: Patient) {
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(patient.birthDate, valueAttribute),
+    birthTime: withoutNullFlavorObject(formatDateToCDATimeStamp(patient.birthDate), valueAttribute),
     deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
     maritalStatusCode: buildCodeCE({
       code: patient.maritalStatus?.coding?.[0]?.code,

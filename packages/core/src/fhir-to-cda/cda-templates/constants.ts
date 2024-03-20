@@ -10,13 +10,13 @@ export const clinicalDocumentConstants = {
   assigningAuthorityName: "METRIPORT",
   idRoot: "OUR-ORGANIZATION-ID",
   code: {
-    code: "<NOTE-TYPE>",
+    code: "NOTE-TYPE",
     codeSystem: "2.16.840.1.113883.6.1",
     codeSystemName: "LOINC",
-    displayName: "<NOTE-NAME>",
+    displayName: "NOTE-NAME",
   },
-  title: "<NOTE-TITLE>",
-  effectiveTime: "<EFFECTIVE-TIME>", // TODO: Replace with current date. IMPORTANT
+  title: "NOTE-TITLE",
+  effectiveTime: "20240101", // TODO: Replace with current date. IMPORTANT
   confidentialityCode: {
     code: "N",
     codeSystem: "2.16.840.1.113883.5.25",
@@ -25,8 +25,8 @@ export const clinicalDocumentConstants = {
   languageCode: "en-US",
   setId: {
     assigningAuthorityName: "METRIPORT",
-    extension: "<OUR-EXTENSION>",
-    root: "<OUR-ID>",
+    extension: "OUR-EXTENSION",
+    root: "OUR-ID",
   },
   versionNumber: "3",
 };

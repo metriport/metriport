@@ -76,15 +76,18 @@ export function buildResult(fhirBundle: Bundle): unknown {
   }
   const items = diagnosticReports
     .map(report => {
-      const content = report.presentedForm?.[0]?.data
-        ? base64ToString(report.presentedForm[0].data)
-        : undefined;
-      if (content) {
+      const contentLines = report.presentedForm?.[0]?.data
+        ? base64ToString(report.presentedForm[0].data).split(/\n/)
+        : [];
+      if (contentLines.length > 0) {
+        const contentObjects = contentLines.map(line => ({
+          br: line,
+        }));
         return {
           item: {
             content: {
               [idAttribute]: report.id,
-              "#text": content,
+              br: contentObjects.map(o => o.br),
             },
           },
         };
