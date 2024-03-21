@@ -1,6 +1,7 @@
 // The objective of these tests are to test two things
-// 1. That we generate valid CDA that are CDA->FHIR converter doesn't error on
-// 2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR, we get the same FHIR bundle as the original FHIR bundle
+// 1. That we generate valid CDA that our CDA->FHIR converter doesn't error on. We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
+// 2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR, we get the same FHIR bundle as the original FHIR bundle. Obviously this introduces
+//    a dependency on another converter, but for now its the easiest approach since short of manually having exact string comparisons between two CDAs, we can't know if our CDA is accurate.
 
 import fs from "fs";
 import path from "path";
@@ -57,6 +58,7 @@ fs.readdir(baseInputFolder, (err, files) => {
       outputFolderCDA,
       outputFolderFHIR,
       axios.create({ baseURL: fhirBaseUrl }),
+      fileBaseName,
       ".json"
     ).catch(error => console.error("Error converting CDA to FHIR:", error));
 
@@ -106,6 +108,7 @@ async function convertCdaToFhir(
   inputFolder: string,
   outputFolderFHIR: string,
   api: AxiosInstance,
+  fileBaseName: string,
   fhirExtension: ".json"
 ) {
   if (!fs.existsSync(outputFolderFHIR)) {
@@ -122,8 +125,8 @@ async function convertCdaToFhir(
         const url = `/api/convert/cda/ccd.hbs`;
         const unusedSegments = false;
         const invalidAccess = false;
-        const patientId = "018e157a-ffea-76c3-bc46-2759d7a6ae0f";
-        const fileName = "018e157a-ffea-76c3-bc46-2759d7a6ae0f.xml";
+        const patientId = fileBaseName;
+        const fileName = `${fileBaseName}.xml`;
         const params = { patientId, fileName, unusedSegments, invalidAccess };
         const payload = (cdaContent ?? "").trim();
         const res = await api.post(url, payload, {
