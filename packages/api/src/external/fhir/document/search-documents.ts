@@ -1,8 +1,9 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { uniqBy } from "lodash";
-import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { isCarequalityExtension } from "@metriport/core/external/carequality/extension";
 import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { uniqBy } from "lodash";
+import { isDocStatusReady } from ".";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
@@ -34,7 +35,8 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  return unique;
+  const ready = unique.filter(isDocStatusReady);
+  return ready;
 }
 
 async function searchOnDocumentReferences(
