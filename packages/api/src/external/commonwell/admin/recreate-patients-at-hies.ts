@@ -8,6 +8,7 @@ import { Util } from "../../../shared/util";
 import { makeCommonWellAPI } from "../api";
 import { create, getCWData } from "../patient";
 import { getPatientData } from "../patient-shared";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -61,6 +62,12 @@ export async function recreatePatientAtCW(
   patient: Patient
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
+
+  if (!(await isCWEnabledForCx(patient.cxId))) {
+    log(`CW disabled for cx ${patient.cxId}, skipping...`);
+    return undefined;
+  }
+
   try {
     const facilityId = patient.facilityIds[0];
     if (!facilityId) {
@@ -97,14 +104,17 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = await create(
-      patient,
-      facilityId,
-      {
-        organization,
-        facility,
-      }
-    );
+    const cwIds = await create(patient, facilityId, {
+      organization,
+      facility,
+    });
+
+    if (!cwIds) {
+      log(`Missing CW IDs while recreating patient at CW`);
+      return undefined;
+    }
+
+    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = cwIds;
 
     if (originalCWPatientId) {
       const extra = {

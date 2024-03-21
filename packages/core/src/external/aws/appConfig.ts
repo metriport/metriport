@@ -29,6 +29,7 @@ export type BooleanFF = {
 export type FeatureFlagDatastore = {
   cxsWithEnhancedCoverageFeatureFlag: CustomerIdsFF;
   cxsWithCQDirectFeatureFlag: CustomerIdsFF;
+  cxsWithCWFeatureFlag: CustomerIdsFF;
   cxsWithADHDMRFeatureFlag: CustomerIdsFF;
   cxsWithNoWebhookPongFeatureFlag: CustomerIdsFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;

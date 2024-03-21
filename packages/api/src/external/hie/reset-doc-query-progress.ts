@@ -68,3 +68,23 @@ export async function resetDocQueryProgress({
     });
   });
 }
+
+export function buildInterrupt({
+  patientId,
+  cxId,
+  source,
+  log,
+}: {
+  patientId: string;
+  cxId: string;
+  source: MedicalDataSource;
+  log: typeof console.log;
+}) {
+  return async (reason: string): Promise<void> => {
+    log(reason + ", skipping DQ");
+    await resetDocQueryProgress({
+      patient: { id: patientId, cxId },
+      source,
+    });
+  };
+}

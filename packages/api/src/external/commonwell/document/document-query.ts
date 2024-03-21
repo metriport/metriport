@@ -29,7 +29,11 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import { isEnhancedCoverageEnabledForCx, isCQDirectEnabledForCx } from "../../aws/appConfig";
+import {
+  isEnhancedCoverageEnabledForCx,
+  isCQDirectEnabledForCx,
+  isCWEnabledForCx,
+} from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -42,6 +46,7 @@ import { getPatientWithCWData, PatientWithCWData } from "../patient-external-dat
 import { getPatientDataWithSingleFacility } from "../patient-shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
+import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
@@ -93,20 +98,26 @@ export async function queryAndProcessDocuments({
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
 }): Promise<void> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
+  const { id: patientId, cxId } = patientParam;
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+
+  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  if (!(await isCWEnabledForCx(cxId))) {
+    return interrupt(`CW disabled for cx ${cxId}`);
+  }
 
   try {
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(patientParam.cxId),
-      isCQDirectEnabledForCx(patientParam.cxId),
+      isEnhancedCoverageEnabledForCx(cxId),
+      isCQDirectEnabledForCx(cxId),
     ]);
 
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
-        cxId: patientParam.cxId,
-        patientId: patientParam.id,
+        cxId,
+        patientId,
       });
     }
 
