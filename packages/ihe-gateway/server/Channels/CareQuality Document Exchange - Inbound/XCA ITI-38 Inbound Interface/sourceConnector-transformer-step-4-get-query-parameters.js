@@ -7,6 +7,7 @@ try {
 	// Remove namespaces
 	var namespaces = msg.namespaceDeclarations();
 	namespaces = namespaces.concat(queryRequest.namespaceDeclarations());
+	namespaces = namespaces.concat(queryRequest.*::AdhocQuery.namespaceDeclarations());
 
 	var regexNamespaces = RegExp('xmlns="[^"]*"(?=[^<>]*>)', "g");
 	queryRequest = String(queryRequest).replace(regexNamespaces, '');
