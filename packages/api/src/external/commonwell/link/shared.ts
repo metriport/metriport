@@ -1,6 +1,8 @@
 import {
   CommonWellAPI,
   isLOLA1,
+  isLOLA2,
+  isLOLA3,
   NetworkLink,
   Person,
   RequestMetadata,
@@ -15,6 +17,7 @@ import {
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
+import { getCQDirectoryEntryById } from "../../carequality/command/cq-directory/cq-gateways";
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
   return persons.flatMap<Person>(filterTruthy);
@@ -66,6 +69,32 @@ export async function autoUpgradeNetworkLinks(
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
+    const lola2or3Links = networkLinks._embedded.networkLink
+      .flatMap(filterTruthy)
+      .filter(isLOLA2 || isLOLA3);
+
+    lola2or3Links.forEach(async link => {
+      if (await getCQDirectoryEntryById(link.patient?.identifier?.find(id => id.system)?.system)) {
+        if (link._links?.downgrade?.href) {
+          await commonWell
+            .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
+            .catch(error => {
+              const msg = `Failed to downgrade link`;
+              console.log(`${msg}. Cause: ${error}`);
+              capture.message(msg, {
+                extra: {
+                  commonwellPatientId,
+                  commonwellPersonId,
+                  cwReference: commonWell.lastReferenceHeader,
+                  context: executionContext,
+                },
+                level: "error",
+              });
+              throw error;
+            });
+        }
+      }
+    });
 
     const requests: Promise<NetworkLink>[] = [];
 

@@ -42,6 +42,18 @@ export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[
   });
 }
 
+export async function getCQDirectoryEntryById(
+  id: string | undefined
+): Promise<CQDirectoryEntryModel | undefined> {
+  if (!id) return undefined;
+  const result = await CQDirectoryEntryModel.findOne({
+    where: {
+      id: id,
+    },
+  });
+  return result ?? undefined;
+}
+
 export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {
   const rls: CQDirectoryEntryModel[] = await CQDirectoryEntryModel.findAll({
     where: {
