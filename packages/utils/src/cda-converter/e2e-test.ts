@@ -11,8 +11,7 @@ import { Bundle } from "@medplum/fhirtypes";
 
 const fhirBaseUrl = "http://localhost:8889";
 
-const baseInputFolder =
-  "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/packages/utils/src/cda-converter/test-files/";
+const baseInputFolder = "";
 
 if (!fs.existsSync(baseInputFolder)) {
   console.error("Base input folder does not exist:", baseInputFolder);
@@ -28,7 +27,7 @@ fs.readdir(baseInputFolder, (err, files) => {
   files.forEach(file => {
     const filePath = path.join(baseInputFolder, file);
     if (fs.statSync(filePath).isDirectory()) {
-      return; // Skip directories
+      return;
     }
 
     const fileBaseName = path.basename(file, ".json");
@@ -37,7 +36,6 @@ fs.readdir(baseInputFolder, (err, files) => {
     const outputFolderCDA = path.join(fileSpecificBaseFolder, "output-cda");
     const outputFolderFHIR = path.join(fileSpecificBaseFolder, "output-fhir");
 
-    // Create directories if they don't exist
     [inputJsonBundlesFolder, outputFolderCDA, outputFolderFHIR].forEach(folder => {
       if (!fs.existsSync(folder)) {
         fs.mkdirSync(folder, { recursive: true });
@@ -65,8 +63,6 @@ fs.readdir(baseInputFolder, (err, files) => {
     compareFhirBundles(inputJsonBundlesFolder, outputFolderFHIR);
   });
 });
-
-// The rest of the functions (convertFhirToCda, convertCdaToFhir, compareFhirBundles, etc.) remain unchanged.
 
 export function convertFhirBundleToCdaTesting(fhirBundle: Bundle): {
   cdaDocuments: string[];
