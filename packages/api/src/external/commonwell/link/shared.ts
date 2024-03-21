@@ -47,6 +47,19 @@ export function patientWithCWData(
   return patientWithCW;
 }
 
+async function shouldDowngradeLink(link: NetworkLink): Promise<boolean> {
+  const identifiers = link.patient?.identifier || [];
+  const checkPromises = identifiers.map(async id => {
+    const idSystem = id.system?.replace(/^urn:oid:/, "");
+    if (idSystem) {
+      return (await getCQDirectoryEntryById(idSystem)) !== undefined;
+    }
+    return false;
+  });
+  const results = await Promise.all(checkPromises);
+  return results.includes(true); // true if any of the checks are true
+}
+
 /**
  * This function will automatically upgrade all of the LOLA 1 network links
  * for a given patient to LOLA 2.
@@ -73,10 +86,13 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
-    lola2or3Links.forEach(async link => {
-      if (await getCQDirectoryEntryById(link.patient?.identifier?.find(id => id.system)?.system)) {
-        if (link._links?.downgrade?.href) {
-          await commonWell
+    const downgradeRequests: Promise<NetworkLink>[] = [];
+    for (const link of lola2or3Links) {
+      const shouldDowngrade = await shouldDowngradeLink(link);
+      if (shouldDowngrade && link._links?.downgrade?.href) {
+        console.log(`Downgrading link ${JSON.stringify(link, null, 2)} for ${commonwellPatientId}`);
+        downgradeRequests.push(
+          commonWell
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
             .catch(error => {
               const msg = `Failed to downgrade link`;
@@ -91,16 +107,16 @@ export async function autoUpgradeNetworkLinks(
                 level: "error",
               });
               throw error;
-            });
-        }
+            })
+        );
       }
-    });
+    }
+    await Promise.all(downgradeRequests);
 
-    const requests: Promise<NetworkLink>[] = [];
-
+    const upgradeRequests: Promise<NetworkLink>[] = [];
     lola1Links.forEach(async link => {
       if (link._links?.upgrade?.href) {
-        requests.push(
+        upgradeRequests.push(
           commonWell
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
@@ -120,6 +136,6 @@ export async function autoUpgradeNetworkLinks(
         );
       }
     });
-    await Promise.allSettled(requests);
+    await Promise.allSettled(upgradeRequests);
   }
 }
