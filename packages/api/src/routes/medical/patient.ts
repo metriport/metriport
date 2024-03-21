@@ -47,6 +47,8 @@ import {
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { stringToBoolean } from "@metriport/shared";
+import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
+import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -420,6 +422,16 @@ async function putConsolidated(req: Request, res: Response) {
     patientId: patient.id,
     fhirBundle: validatedBundle,
   });
+  const cdaBundles = convertFhirBundleToCda(validatedBundle);
+  for (const cdaBundle of cdaBundles) {
+    await cdaDocumentUploaderHandler(
+      cxId,
+      patientId,
+      cdaBundle,
+      Config.getMedicalDocumentsBucketName(),
+      Config.getAWSRegion()
+    );
+  }
   return res.json(data);
 }
 

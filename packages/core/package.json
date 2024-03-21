@@ -21,7 +21,8 @@
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js",
     "./mpi/*": "./dist/mpi/*.js",
-    "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js"
+    "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
+    "./shareback/*": "./dist/shareback/*.js"
   },
   "typesVersions": {
     "*": {
@@ -45,6 +46,9 @@
       ],
       "fhir-to-cda/*": [
         "dist/fhir-to-cda/*"
+      ],
+      "shareback/*": [
+        "dist/shareback/*"
       ]
     }
   },
