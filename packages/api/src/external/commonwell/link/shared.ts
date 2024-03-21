@@ -60,7 +60,7 @@ async function shouldDowngradeLink(link: NetworkLink): Promise<boolean> {
   return results.includes(true); // true if any of the checks are true
 }
 
-async function assessCWCQDuplicatesAndDowngrade(
+async function assessIfCWCQDuplicatesAndDowngrade(
   link: NetworkLink,
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata,
@@ -118,7 +118,7 @@ export async function autoUpgradeNetworkLinks(
       .filter(isLOLA2 || isLOLA3);
 
     const downgradeRequests: Promise<NetworkLink | undefined>[] = lola2or3Links.map(link =>
-      assessCWCQDuplicatesAndDowngrade(
+      assessIfCWCQDuplicatesAndDowngrade(
         link,
         commonWell,
         queryMeta,
