@@ -18,7 +18,7 @@ export const create = async (
   facilityId: string
 ): Promise<void> => {
   if (!(await isCWEnabledForCx(cxId))) {
-    console.log(`CW is not enabled for cxId: ${cxId}`);
+    console.log(`CW is disabled for cxId: ${cxId}`);
     return undefined;
   }
 
