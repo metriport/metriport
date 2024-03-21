@@ -46,7 +46,7 @@ export const get = async (
   facilityId: string
 ): Promise<CWPersonLinks> => {
   if (!(await isCWEnabledForCx(cxId))) {
-    console.log(`CW is not enabled for cxId: ${cxId}`);
+    console.log(`CW is disabled for cxId: ${cxId}`);
     return {
       currentLinks: [],
       potentialLinks: [],
