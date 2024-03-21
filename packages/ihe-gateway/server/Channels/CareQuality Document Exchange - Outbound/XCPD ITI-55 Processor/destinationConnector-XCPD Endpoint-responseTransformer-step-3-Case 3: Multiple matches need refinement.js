@@ -4,6 +4,11 @@
 // OK (data found, no errors) is returned in QueryAck.queryResponseCode (control act wrapper)
 // No RegistrationEvent is returned in the response, but the Responding Gateway provides a suggestion in terms of demographics that may help identify a match.
 
+var requestId = channelMap.get('MSG_ID');
+var cxId = channelMap.get('CUSTOMER_ID');
+
+var baseLogMessage = "XCPD ITI55 Processor: Response (Case3) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+
 if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
 	// NHIN: The response to IHE XCPD Cross Gateway Patient Discovery Transaction [ITI-55] may contain multiple entries, 
@@ -14,11 +19,13 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
 	// NHIN: If a responding gateway determines that additional attributes may help to achieve a match, it may respond with a specialized set of error codes.
 
+  logger.info(baseLogMessage + "Multiple matches found - need refinement");
+
 	// Stop further processing
 	responseStatus = ERROR;
 	return;
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case3) - ' + ex);
+  logger.error(baseLogMessage + 'Error: ' + ex);
 	channelMap.put('RESPONSE_ERROR', ex.toString());
 	throw ex;	
 }

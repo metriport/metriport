@@ -1,8 +1,12 @@
 var	totalCount = 0;
 
+var baseLogMessage = "XCA DQ Bulk Interface: Transformer (Step1) - ";
+
 // Loop through all request entries
 if (json) {
 	json.forEach(function(entry) {
+
+    var entryLogMessage = baseLogMessage + 'requestId: ' + entry.id.toString() + ', cxId: ' + entry.cxId.toString() + ' - ';
 
 		totalCount++;
 		var errorCount = 0;
@@ -20,16 +24,15 @@ if (json) {
 			}
 
 		} catch(ex) {
-			if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-38 Bulk Interface: Source - ' + ex);
+      logger.error(entryLogMessage + 'error: ' + ex);
 			errorCount++;
 		}
 
 		// Pass to the XCPD Interface channel to process
 		if (0 == errorCount) {
-
 			var result = router.routeMessageByChannelId(globalMap.get('XCAITI38INTERFACE'), JSON.stringify(entry, null, 2));
-
 		} else {
+      logger.error(entryLogMessage + 'error: ' + errorCount.toString() + ' error(s) is/are found in the entries');
 			channelMap.put("responseCode", "400");
 			channelMap.put('NOTE', 'ERROR - ' + errorCount.toString() + ' error(s) is/are found in the entries');
 		}

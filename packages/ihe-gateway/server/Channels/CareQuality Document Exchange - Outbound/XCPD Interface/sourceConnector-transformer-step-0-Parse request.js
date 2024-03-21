@@ -1,20 +1,23 @@
 var json = null, error = null;
 
-
 // HTTP 400 Bad Request - by default, the server cannot or will not process the request
 channelMap.put("responseCode", "400");
+
+var baseLogMessage = "XCPD Interface: Transformer (Step0) - ";
 
 
 // Decode and parse incoming JSON request if sent over HTTP
 if (msg.toString().startsWith('<HttpRequest>')) {
 	json = getBase64Content(msg, 'json');
+
+  logger.info(baseLogMessage + 'response: ' + JSON.stringify(json));
 } else try {
 	
 	// Parse JSON request if routed from the XCPD Bulk Interface channel
 	json = JSON.parse(msg.toString());
 	
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Interface: Source - ' + ex);
+  logger.error(baseLogMessage + 'error: ' + ex);
 	error = 'ERROR - ' + ex;
 }
 
@@ -39,7 +42,7 @@ if ('string' == typeof json) {
 	}
 	
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Interface: Source - ' + ex);
+  logger.error(baseLogMessage + 'error: ' + ex);
 	error = 'ERROR - ' + ex;
 }
 
@@ -47,5 +50,14 @@ if ('string' == typeof json) {
 // Cease processing in case of an error
 if (error) {
 	channelMap.put('NOTE', error);
+  logger.error(
+    baseLogMessage +
+      "requestId: " +
+      json.id.toString() +
+      "cxId: " +
+      json.cxId.toString() +
+      "err: " +
+      error
+  );
 	throw error;
 }

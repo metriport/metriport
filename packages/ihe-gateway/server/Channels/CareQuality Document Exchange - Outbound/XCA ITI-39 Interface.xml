@@ -6,7 +6,7 @@
  - expects to receive a single requests to be transmitted to the XCA ITI-39 [Cross Gateway Retrieve] Processor channel
 
 Last updated: Nov 14 2023</description>
-  <revision>124</revision>
+  <revision>483</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>

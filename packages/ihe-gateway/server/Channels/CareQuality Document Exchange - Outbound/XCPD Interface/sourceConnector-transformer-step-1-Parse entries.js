@@ -3,6 +3,8 @@ delete json.xcpdGateways;
 
 var errorCount = 0;
 
+var baseLogMessage = "XCPD Interface: Transformer (Step1) - requestId: " + json.id.toString() + ", " + "cxId: " + json.cxId.toString() + " - ";
+
 // Generate XCPD ITI-55 Processor feed for each entry
 xcpdArray.forEach(function(entry) { 
 	
@@ -26,15 +28,17 @@ xcpdArray.forEach(function(entry) {
 
 		delete jsonXCPD.gateways;
 		
-		if (0 == errorCount) {
-			var result = router.routeMessageByChannelId($g('ITI55PROCESSOR'), JSON.stringify(jsonXCPD));
-		} else {
-			channelMap.put('NOTE', 'ERROR - ' + errorCount.toString() + ' error(s) is/are found in the entries');
-		}
-		
-	} catch(ex) {
-		logger.error('XCPD Interface exception: ' + ex);
-	}
+    if (0 == errorCount) {
+      var result = router.routeMessageByChannelId($g("ITI55PROCESSOR"), JSON.stringify(jsonXCPD));
+    } else {
+      channelMap.put(
+        "NOTE",
+        "ERROR - " + errorCount.toString() + " error(s) is/are found in the entries"
+      );
+    }
+  } catch (ex) {
+    logger.error(baseLogMessage + 'gw: ' + JSON.stringify(entry) + ', ' + 'error: ' + ex);
+  }
 });
 
 // Destination is not needed

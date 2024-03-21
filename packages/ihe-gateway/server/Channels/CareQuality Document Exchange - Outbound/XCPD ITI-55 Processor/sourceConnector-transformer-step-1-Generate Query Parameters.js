@@ -22,6 +22,8 @@ To ensure the XML is valid, parameters must be in the following order:
 	principalCareProvisionId		-- Not used in XCPD ITI-55 query
 */
 
+var baseLogMessage = "XCPD ITI55 Processor - requestId: " + msg.id.toString() + ", " + "cxId: " + msg.cxId.toString() + " - ";
+
 var patient = msg.patientResource;
 var parameterList = new XMLList();
 
@@ -35,19 +37,19 @@ if (patient.hasOwnProperty('extension')) {
 		var i = patient.extension.findIndex(function(entry) {return 'http://hl7.org/fhir/StructureDefinition/patient-birthPlace' == entry.url.toString();});
 		birthPlaceAddress = (i > -1) ? patient.extension[i].valueAddress : null;
 	} catch(ex) {
-		if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Source - ' + ex);
+		logger.error(baseLogMessage + 'err: ' + ex);
 	}
 	try {
 		var i = patient.extension.findIndex(function(entry) {return 'http://hl7.org/fhir/StructureDefinition/patient-birthTime' == entry.url.toString();});
 		birthDateTime = (i > -1) ? patient.extension[i].valueDateTime.toString() : null;
 	} catch(ex) {
-		if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Source - ' + ex);
+		logger.error(baseLogMessage + 'err: ' + ex);
 	}
 	try {
 		var i = patient.extension.findIndex(function(entry) {return 'http://hl7.org/fhir/StructureDefinition/patient-mothersMaidenName' == entry.url.toString();});
 		mothersMaidenName = (i > -1) ? patient.extension[i].valueString.toString() : null;
 	} catch(ex) {
-		if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Source - ' + ex);
+		logger.error(baseLogMessage + 'err: ' + ex);
 	}
 }
 
@@ -141,6 +143,8 @@ if (msg.hasOwnProperty('principalCareProviderIds')) {
 		if (provider) parameterList += provider;
 	});
 }
+
+logger.info(baseLogMessage + 'Generated query parameters: ' + parameterList.toString());
 
 // ========== Following parameters are present in PRPA_MT201306UV02 but not used in PRPA_MT201306IHEPCD ==========
 // This query parameter is the death date of a living subject. It is used to find patients who have died on a known date or within a date interval

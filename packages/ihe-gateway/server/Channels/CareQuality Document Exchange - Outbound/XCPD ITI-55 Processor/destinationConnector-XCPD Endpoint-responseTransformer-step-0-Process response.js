@@ -3,6 +3,12 @@ var http = $('responseStatusLine');
 http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
 channelMap.put('HTTP', http.toString());
 
+var requestId = channelMap.get('MSG_ID');
+var cxId = channelMap.get('CUSTOMER_ID');
+
+var baseLogMessage = "XCPD ITI55 Processor: Response (Case0) - requestId: " + requestId.toString() + ", " + "cxId: " + cxId.toString() + " - ";
+
+
 // https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_2/page/connect/connect/topics/c_Common_Scenarios_connect_ug.html
 //if (responseStatus == QUEUED && connectorMessage.getSendAttempts() >= 2) {
 //	responseStatus = ERROR;
@@ -12,7 +18,7 @@ channelMap.put('HTTP', http.toString());
 // Decode and parse XCPD ITI-55 (Cross Gateway Patient Discovery Response) message
 var xml = null;
 
-var 	ack = '', 
+var 	ack = '',
 	queryResponseCode = '',
 	homeCommunityId = null,
 	soapFaultCode = null,
@@ -21,6 +27,8 @@ var 	ack = '',
 try {
 
 	var soap = msg.toString();
+
+  logger.info(baseLogMessage + 'Response: ' + soap);
 
 	// Store for testing
 	channelMap.put('RESPONSE', soap.toString());
@@ -32,7 +40,7 @@ try {
 
 		channelMap.put('ACK', 'SOAP_FAULT');
 		return;
-		
+
 	} else {
 
 		xml = xml.*::Body.*::PRPA_IN201306UV02;
@@ -52,9 +60,9 @@ try {
 		queryResponseCode = xml.*::controlActProcess.*::queryAck.*::queryResponseCode.@code.toString();
 		channelMap.put('QACK', queryResponseCode.toString());
 	}
-	
+
 } catch(ex) {
-	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response - ' + ex);
+  logger.error(baseLogMessage + 'Error: ' + ex)
 	channelMap.put('RESPONSE_ERROR', ex.toString());
 	throw ex;
 }
