@@ -5,8 +5,14 @@ import { setCommonwellId } from "../patient-external-data";
 import { patientWithCWData } from "./shared";
 import { getPatientData } from "../patient-shared";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 
 export const reset = async (patientId: string, cxId: string, facilityId: string) => {
+  if (!(await isCWEnabledForCx(cxId))) {
+    console.log(`CW is disabled for cxId: ${cxId}`);
+    return undefined;
+  }
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
