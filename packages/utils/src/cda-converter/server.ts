@@ -15,6 +15,7 @@ app.post("/medical/v1/convert-to-cda", (req, res) => {
     const fhirBundle = req.body;
     // serializers.fhir.Bundle.parse(req.body);
     const splitBundles = convertFhirBundleToCda(fhirBundle);
+    console.log(splitBundles[1]);
     res.send(splitBundles);
   } catch (error) {
     console.error("Error converting FHIR bundle to CDA:", error);
