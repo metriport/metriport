@@ -60,6 +60,37 @@ async function shouldDowngradeLink(link: NetworkLink): Promise<boolean> {
   return results.includes(true); // true if any of the checks are true
 }
 
+async function assessCWCQDuplicatesAndDowngrade(
+  link: NetworkLink,
+  commonWell: CommonWellAPI,
+  queryMeta: RequestMetadata,
+  commonwellPatientId: string,
+  commonwellPersonId: string,
+  executionContext: string
+): Promise<NetworkLink | undefined> {
+  const shouldDowngrade = await shouldDowngradeLink(link);
+  if (shouldDowngrade && link._links?.downgrade?.href) {
+    console.log(`Downgrading link ${JSON.stringify(link, null, 2)} for ${commonwellPatientId}`);
+    return commonWell
+      .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
+      .catch(error => {
+        const msg = `Failed to downgrade link`;
+        console.log(`${msg}. Cause: ${error}`);
+        capture.message(msg, {
+          extra: {
+            commonwellPatientId,
+            commonwellPersonId,
+            cwReference: commonWell.lastReferenceHeader,
+            context: executionContext,
+          },
+          level: "error",
+        });
+        throw error;
+      });
+  }
+  return undefined;
+}
+
 /**
  * This function will automatically upgrade all of the LOLA 1 network links
  * for a given patient to LOLA 2.
@@ -86,32 +117,17 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
-    const downgradeRequests: Promise<NetworkLink>[] = [];
-    for (const link of lola2or3Links) {
-      const shouldDowngrade = await shouldDowngradeLink(link);
-      if (shouldDowngrade && link._links?.downgrade?.href) {
-        console.log(`Downgrading link ${JSON.stringify(link, null, 2)} for ${commonwellPatientId}`);
-        downgradeRequests.push(
-          commonWell
-            .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
-            .catch(error => {
-              const msg = `Failed to downgrade link`;
-              console.log(`${msg}. Cause: ${error}`);
-              capture.message(msg, {
-                extra: {
-                  commonwellPatientId,
-                  commonwellPersonId,
-                  cwReference: commonWell.lastReferenceHeader,
-                  context: executionContext,
-                },
-                level: "error",
-              });
-              throw error;
-            })
-        );
-      }
-    }
-    await Promise.all(downgradeRequests);
+    const downgradeRequests: Promise<NetworkLink | undefined>[] = lola2or3Links.map(link =>
+      assessCWCQDuplicatesAndDowngrade(
+        link,
+        commonWell,
+        queryMeta,
+        commonwellPatientId,
+        commonwellPersonId,
+        executionContext
+      )
+    );
+    await Promise.allSettled(downgradeRequests);
 
     const upgradeRequests: Promise<NetworkLink>[] = [];
     lola1Links.forEach(async link => {
