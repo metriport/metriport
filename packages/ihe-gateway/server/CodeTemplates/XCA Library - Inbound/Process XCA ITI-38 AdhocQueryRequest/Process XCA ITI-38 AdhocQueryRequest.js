@@ -28,7 +28,7 @@ function getAdhocQueryRequestOptionFn() {
 				// First, decode any HTML entities
 				var decodedValue = slot.ValueList.Value.toString().replace(/&amp;/g, "&");
 				// Then, remove unwanted characters
-				var cleanedValue = decodedValue.replace(/['"]/g, "");
+				var cleanedValue = decodedValue.replace(/['"]/g, "").trim();
 				// Split by '^', expecting the format to be id^^^system&000&ISO
 				var parts = cleanedValue.split("^");
 				var id = parts[0];
