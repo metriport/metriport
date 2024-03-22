@@ -15,7 +15,8 @@ export const create = async (
   personId: string,
   patientId: string,
   cxId: string,
-  facilityId: string
+  facilityId: string,
+  orgIdExcludeList: Set<string>
 ): Promise<void> => {
   if (!(await isCWEnabledForCx(cxId))) {
     console.log(`CW is disabled for cxId: ${cxId}`);
@@ -71,7 +72,14 @@ export const create = async (
       throw new Error("Link has no href");
     }
 
-    await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, personId, context);
+    await autoUpgradeNetworkLinks(
+      commonWell,
+      queryMeta,
+      cwPatientId,
+      personId,
+      context,
+      orgIdExcludeList
+    );
   } catch (error) {
     const msg = `Failed to create CW person link`;
     console.log(`${msg}. Cause: ${error}`);

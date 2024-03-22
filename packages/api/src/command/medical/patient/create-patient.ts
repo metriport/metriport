@@ -10,6 +10,7 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -52,9 +53,13 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
+  const orgIdExcludeList = await getAllCQOrgsIds();
+
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
+    cwCommands.patient
+      .create(newPatient, facilityId, orgIdExcludeList)
+      .catch(processAsyncError(`cw.patient.create`));
   }
 
   // Intentionally asynchronous

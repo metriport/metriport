@@ -17,5 +17,6 @@ export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
   }
   const cookieManager = new CookieManagerOnSecrets(cookieArn, Config.getAWSRegion());
   const cwManagementApi = makeApi({ cookieManager, baseUrl: cwManagementUrl });
-  return new CoverageEnhancerApiLocal(cwManagementApi);
+  const orgIdExcludeList = new Set<string>();
+  return new CoverageEnhancerApiLocal(cwManagementApi, orgIdExcludeList);
 }

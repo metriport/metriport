@@ -15,6 +15,7 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -41,10 +42,14 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
+  const orgIdExcludeList = await getAllCQOrgsIds();
+
   // Intentionally asynchronous
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
+    cwCommands.patient
+      .update(result, facilityId, orgIdExcludeList)
+      .catch(processAsyncError(`cw.patient.update`));
   }
 
   // Intentionally asynchronous

@@ -96,6 +96,7 @@ function getStoreIdsFn(
 export async function create(
   patient: Patient,
   facilityId: string,
+  orgIdExcludeList: Set<string>,
   patientData?: {
     organization: Organization;
     facility: Facility;
@@ -141,6 +142,7 @@ export async function create(
       commonwellPatientId,
       patientRefLink,
       storeIds,
+      orgIdExcludeList,
     });
 
     return { commonwellPatientId, personId };
@@ -161,7 +163,11 @@ export async function create(
   }
 }
 
-export async function update(patient: Patient, facilityId: string): Promise<void> {
+export async function update(
+  patient: Patient,
+  facilityId: string,
+  orgIdExcludeList: Set<string>
+): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
@@ -176,7 +182,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      await create(patient, facilityId);
+      await create(patient, facilityId, orgIdExcludeList);
       return;
     }
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
@@ -199,6 +205,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
         commonwellPatientId,
         patientRefLink,
         storeIds: getStoreIdsFn(patient.id, patient.cxId),
+        orgIdExcludeList,
       });
       return;
     }
@@ -234,6 +241,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
           commonwellPatientId,
           patientRefLink,
           storeIds: getStoreIdsFn(patient.id, patient.cxId),
+          orgIdExcludeList,
         });
         return;
       }
@@ -281,7 +289,8 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       queryMeta,
       commonwellPatientId,
       personId,
-      createContext
+      createContext,
+      orgIdExcludeList
     );
   } catch (error) {
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
@@ -371,6 +380,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId,
   patientRefLink,
   storeIds,
+  orgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
@@ -378,6 +388,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId: string;
   patientRefLink: string;
   storeIds: StoreIdsFunction;
+  orgIdExcludeList: Set<string>;
 }): Promise<string> {
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
@@ -422,7 +433,8 @@ async function findOrCreatePersonAndLink({
     queryMeta,
     commonwellPatientId,
     personId,
-    createContext
+    createContext,
+    orgIdExcludeList
   );
 
   return personId;

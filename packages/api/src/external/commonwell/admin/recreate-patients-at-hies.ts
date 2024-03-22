@@ -9,6 +9,7 @@ import { makeCommonWellAPI } from "../api";
 import { create, getCWData } from "../patient";
 import { getPatientData } from "../patient-shared";
 import { isCWEnabledForCx } from "../../aws/appConfig";
+import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -102,9 +103,11 @@ export async function recreatePatientAtCW(
     const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
+    const orgIdExcludeList = await getAllCQOrgsIds();
+
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await create(patient, facilityId, {
+    const cwIds = await create(patient, facilityId, orgIdExcludeList, {
       organization,
       facility,
     });
