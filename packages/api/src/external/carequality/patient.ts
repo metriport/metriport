@@ -1,9 +1,10 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { Organization } from "@metriport/core/domain/organization";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -86,8 +87,25 @@ async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
 ): Promise<OutboundPatientDiscoveryReq> {
-  const { cxId } = patient;
   const fhirPatient = toFHIR(patient);
+
+  const { organization, xcpdGateways } = await gatherXCPDGateways(patient);
+
+  const pdRequest = createOutboundPatientDiscoveryReq({
+    patient: fhirPatient,
+    cxId: patient.cxId,
+    xcpdGateways,
+    facilityNPI,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+  });
+  return pdRequest;
+}
+
+export async function gatherXCPDGateways(patient: Patient): Promise<{
+  organization: Organization;
+  xcpdGateways: XCPDGateways;
+}> {
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
     mustHaveXcpdLink: true,
@@ -99,7 +117,7 @@ async function prepareForPatientDiscovery(
   });
 
   const [organization, allOrgs] = await Promise.all([
-    getOrganizationOrFail({ cxId }),
+    getOrganizationOrFail({ cxId: patient.cxId }),
     getOrganizationsForXCPD(orgOrderMap),
   ]);
 
@@ -108,13 +126,8 @@ async function prepareForPatientDiscovery(
   const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
   const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
-  const pdRequest = createOutboundPatientDiscoveryReq({
-    patient: fhirPatient,
-    cxId: patient.cxId,
+  return {
+    organization,
     xcpdGateways,
-    facilityNPI,
-    orgName: organization.data.name,
-    orgOid: organization.oid,
-  });
-  return pdRequest;
+  };
 }

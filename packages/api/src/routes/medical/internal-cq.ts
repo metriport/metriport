@@ -35,6 +35,7 @@ import {
   getPDResultStatus,
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
+import { processSubsequentOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
@@ -162,6 +163,14 @@ router.post(
       status,
       response,
     });
+
+    if (response.patientId && response.cxId) {
+      await processSubsequentOutboundPatientDiscoveryResps({
+        requestId: response.id,
+        patientId: response.patientId,
+        cxId: response.cxId,
+      });
+    }
 
     return res.sendStatus(httpStatus.OK);
   })
