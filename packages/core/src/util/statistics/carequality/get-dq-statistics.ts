@@ -93,7 +93,7 @@ export async function getDqStatistics({
       });
     };
 
-    await executeAsynchronously(dqResults, async dq => await processDqResult(dq), {
+    await executeAsynchronously(dqResults, async dq => processDqResult(dq), {
       numberOfParallelExecutions: MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS,
     });
 

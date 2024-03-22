@@ -14,6 +14,7 @@ const cxName = getEnvVarOrFail("CX_NAME");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS"); // !!!MAKE SURE TO USE THE READ REPLICA CREDENTIALS!!!
 
 const patientIds = [""];
+// YYYY-MM-DD HH:mm:ss format in UTC
 const dateString = "";
 
 const meta = "cxId,date";
@@ -45,7 +46,7 @@ function writeResultsToFile(payload: any) {
   const xcpdStats = `${payload.numRows},${payload.numSuccesses},${payload.uniquePatients},${payload.patientsWithLinks},${payload.coverageRate},${payload.avgLinksPerPatient},${payload.patientResources},${payload.parsedPatients},${payload.mpiMatches}`;
   const dqStats = `${payload.numDqRows},${payload.numDqSuccesses},${payload.dqSuccessRate},${payload.patientsWithDocs},${payload.dqCoverage},${payload.avgDocsPerPatient},${payload.totalDocsFound}`;
   const drStats = `${payload.numDrRows},${payload.numDrSuccesses},${payload.drSuccessRate},${payload.patientsWithDocs},${payload.drCoverage},${payload.avgDocsPerPatient},${payload.totalDocsFound}`;
-  const whStats = `${payload.numRows},${payload.numSuccesses},${payload.downloads.numDownloads},${payload.downloads.numWebhooks},${payload.downloads.sentSuccessfully},${payload.conversions.numWebhooks},${payload.conversions.sentSuccessfully},${payload.mrSummaries.numWebhooks},${payload.mrSummaries.sentSuccessfully}`;
+  const whStats = `${payload.numWhRows},${payload.numWhSuccesses},${payload.downloads.numDownloads},${payload.downloads.numWebhooks},${payload.downloads.sentSuccessfully},${payload.conversions.numWebhooks},${payload.conversions.sentSuccessfully},${payload.mrSummaries.numWebhooks},${payload.mrSummaries.sentSuccessfully}`;
   const csvLine = `${meta},${xcpdStats},${dqStats},${drStats},${whStats}\n`;
 
   fs.appendFileSync(`${resultsCsvFileName}`, csvLine);
@@ -60,7 +61,7 @@ type StatisticsProps = {
 
 async function main() {
   if (!fs.existsSync(dirName)) {
-    fs.mkdirSync(`./runs/flow_stats`);
+    fs.mkdirSync(dirName);
   }
 
   const props: StatisticsProps = { sqlDBCreds, cxId, dateString, patientIds };
@@ -71,7 +72,6 @@ async function main() {
     apiUrl,
     ...props,
   });
-  console.log(xcpdResults.stats);
 
   const propsWithPatientIds = { ...props, patientIds: xcpdResults.patients };
   const dqResults = await getDqStatistics(propsWithPatientIds);

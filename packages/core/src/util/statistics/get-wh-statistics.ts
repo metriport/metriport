@@ -37,8 +37,8 @@ const webhookResultsSchema = z.array(webhookResultSchema);
 type WebhookResult = z.infer<typeof webhookResultSchema>;
 
 type WhStatisticsOutput = {
-  numRows: number;
-  numSuccesses: number;
+  numWhRows: number;
+  numWhSuccesses: number;
   downloads: {
     numDownloads: number;
     numWebhooks: number;
@@ -141,8 +141,8 @@ export async function getWhStatistics({
     out(results);
 
     return {
-      numRows: numRows,
-      numSuccesses: totalSuccesses,
+      numWhRows: numRows,
+      numWhSuccesses: totalSuccesses,
       downloads,
       conversions,
       mrSummaries,
