@@ -3,7 +3,8 @@ import type { JestConfigWithTsJest } from "ts-jest";
 
 const isE2E = process.env.E2E === "true";
 
-process.env.ENV_TYPE = "development";
+// WHY TF is this being set?
+// process.env.ENV_TYPE = "development";
 
 const cwd = process.cwd();
 const paths = [cwd, ...(cwd.includes("packages") ? [] : ["packages", "api"])];
