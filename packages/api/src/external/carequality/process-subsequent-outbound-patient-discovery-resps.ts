@@ -13,10 +13,10 @@ import { getOutboundPatientDiscoveryResp } from "./command/outbound-resp/get-out
 
 dayjs.extend(duration);
 
-const context = "cq.patient.subsequent.discover";
+const context = "cq.patient.post-response.discover";
 const resultPoller = makeOutboundResultPoller();
 
-export async function processSubsequentOutboundPatientDiscoveryResps({
+export async function processPostRespOutboundPatientDiscoveryResps({
   requestId,
   patientId,
   cxId,
@@ -25,18 +25,17 @@ export async function processSubsequentOutboundPatientDiscoveryResps({
   requestId: string;
   cxId: string;
 }): Promise<void> {
-  const baseLogMessage = `CQ PD Processing subsequent results - patientId ${patientId}`;
+  const baseLogMessage = `CQ PD post - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
-  const { log: outerLog } = out(baseLogMessage);
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const discoveryStatus = getCQData(patient.data.externalData)?.discoveryStatus;
 
     if (discoveryStatus !== "processing") {
-      log(`Kicking off subsequent patient discovery`);
-      const leftoverGateways = await calculateLeftoverGateways(patient);
+      log(`Kicking off post resp patient discovery`);
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
+      const leftoverGateways = await calculateLeftoverGateways(patient);
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
@@ -46,8 +45,8 @@ export async function processSubsequentOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    const msg = `Error on Processing Subsequent Outbound Patient Discovery Responses`;
-    outerLog(`${msg} - ${errorToString(error)}`);
+    const msg = `Error on Post Resp Outbound PD Responses`;
+    log(`${msg} - ${errorToString(error)}`);
     await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     capture.error(msg, {
       extra: {
