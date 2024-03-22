@@ -356,7 +356,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(10),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
