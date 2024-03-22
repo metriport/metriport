@@ -162,7 +162,7 @@ export async function processOutboundDocumentQueryResps({
 
     capture.message(msg, {
       extra: {
-        context: `cq.processingDocuments`,
+        context: `cq.processOutboundDocumentQueryResps`,
         error,
         patientId: patientId,
         requestId,

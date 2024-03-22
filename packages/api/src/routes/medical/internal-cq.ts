@@ -175,6 +175,7 @@ router.post(
 router.post(
   "/patient-discovery/results",
   asyncHandler(async (req: Request, res: Response) => {
+    // TODO validate the request with the Zod schema, its mostly based on outboundPatientDiscoveryRespSchema
     processOutboundPatientDiscoveryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
@@ -225,6 +226,7 @@ router.post(
 router.post(
   "/document-query/results",
   asyncHandler(async (req: Request, res: Response) => {
+    // TODO validate the request with the Zod schema, its mostly based on outboundDocumentQueryRespSchema
     processOutboundDocumentQueryResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
@@ -275,6 +277,7 @@ router.post(
 router.post(
   "/document-retrieval/results",
   asyncHandler(async (req: Request, res: Response) => {
+    // TODO validate the request with the Zod schema, its mostly based on outboundDocumentRetrievalRespSchema
     processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);

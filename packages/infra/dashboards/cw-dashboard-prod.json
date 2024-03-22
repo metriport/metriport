@@ -1,1145 +1,1145 @@
 {
-  "widgets": [
-      {
-          "height": 8,
-          "width": 10,
-          "y": 2,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-APIFargateService785A4622-fkussZts8xsF", "ClusterName", "APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE", { "color": "#1f77b4", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "API Server",
-              "period": 300,
-              "stat": "Maximum"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 130,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIServiceInfrastructureStack-APIServiceFargateServiceB310B9BA-UVQnWS50I0Bk", "ClusterName", "APIServiceInfrastructureStack-APIServiceCluster4614AF9B-RH7YLj5zWBvG", { "color": "#1f77b4", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "API Internal",
-              "stat": "Maximum",
-              "period": 300
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 20,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "id": "m1", "stat": "Maximum" } ],
-                  [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "FreeableMemory", ".", ".", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                  [ "...", { "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "API DB - CPU/Memory",
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "visible": false,
-                          "label": "cpu alarm",
-                          "value": 90
-                      },
-                      {
-                          "visible": false,
-                          "label": "mem alarm",
-                          "value": 0.15,
-                          "yAxis": "right"
-                      }
-                  ]
-              },
-              "liveData": false
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 140,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/Lambda", "Invocations", "FunctionName", "APIServiceGenerateKeyLambda" ],
-                  [ "...", "APIServicePostConfirmationLambdaLambda" ],
-                  [ "...", "APIServiceRevokeKeyLambda" ],
-                  [ "...", "APIServiceStripeLambdaLambda" ],
-                  [ "...", "CCDAOpenSearchLambda" ],
-                  [ "...", "CdaToVisualizationLambda" ],
-                  [ "...", "CommonWellDocContributionLambda" ],
-                  [ "...", "CWEnhancedCoverageTriggerLambda" ],
-                  [ "...", "DocumentDownloaderLambda" ],
-                  [ "...", "DocumentUploaderLambda" ],
-                  [ "...", "FHIRConverterLambda" ],
-                  [ "...", "FHIRServerLambda" ],
-                  [ "...", "FhirToMedicalRecordLambda" ],
-                  [ "...", "ScheduledAPIQuotaCheckerLambda" ],
-                  [ "...", "ScheduledDBMaintenanceLambda" ],
-                  [ "...", "ScheduledDocumentQueryCheckerLambda" ],
-                  [ "...", "TokenAuthLambda" ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Lambdas Invocations",
-              "stat": "SampleCount",
-              "period": 300
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 149,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/Lambda", "Errors", "FunctionName", "APIServiceGenerateKeyLambda" ],
-                  [ "...", "APIServicePostConfirmationLambdaLambda" ],
-                  [ "...", "APIServiceRevokeKeyLambda" ],
-                  [ "...", "APIServiceStripeLambdaLambda" ],
-                  [ "...", "CCDAOpenSearchLambda" ],
-                  [ "...", "CdaToVisualizationLambda" ],
-                  [ "...", "CommonWellDocContributionLambda" ],
-                  [ "...", "CWEnhancedCoverageTriggerLambda" ],
-                  [ "...", "DocumentDownloaderLambda" ],
-                  [ "...", "DocumentUploaderLambda" ],
-                  [ "...", "FHIRConverterLambda" ],
-                  [ "...", "FHIRServerLambda" ],
-                  [ "...", "FhirToMedicalRecordLambda" ],
-                  [ "...", "ScheduledAPIQuotaCheckerLambda" ],
-                  [ "...", "ScheduledDBMaintenanceLambda" ],
-                  [ "...", "ScheduledDocumentQueryCheckerLambda" ],
-                  [ "...", "TokenAuthLambda" ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Lambdas Errors",
-              "stat": "SampleCount",
-              "period": 300
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 158,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
-                  [ ".", "4XXError", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                  [ ".", "5XXError", ".", ".", { "region": "us-west-1", "yAxis": "right", "color": "#d62728" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Sum",
-              "period": 300,
-              "title": "API Gateway - Requests vs. Responses"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 76,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "FHIRServerStack-FHIRServerFargateService46BCF377-gXh9molzfoo4", "ClusterName", "FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5", { "color": "#1f77b4", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "FHIR Server",
-              "stat": "Maximum",
-              "period": 300
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 130,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "api-service-clusterinstance1", { "yAxis": "left", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "ReadLatency", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
-                  [ ".", "WriteLatency", ".", ".", { "region": "us-west-1", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "Internal DB - RDS"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 0,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# OSS API\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 110,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# OpenSearch\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 74,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# FHIR Server\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 84,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1", "id": "m1", "stat": "Maximum" } ],
-                  [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "FreeableMemory", ".", ".", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                  [ "...", { "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "FHIR DB - RDS"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 138,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# Others\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 28,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1" } ],
-                  [ ".", "CommitLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ],
-                  [ ".", "WriteLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "API DB - Latency",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 20,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "api-cluster", { "id": "m2", "label": "VolumeReadIOPs", "region": "us-west-1" } ],
-                  [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "API DB - IOPS",
-              "liveData": false,
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "VolumeReadIOPs >= 300_000 for 1 datapoints within 5 minutes",
-                          "value": 300000
-                      },
-                      {
-                          "label": "VolumeWriteIOPs >= 60_000 for 1 datapoints within 5 minutes",
-                          "value": 60000,
-                          "yAxis": "right"
-                      }
-                  ]
-              },
-              "yAxis": {
-                  "right": {
-                      "label": ""
-                  },
-                  "left": {
-                      "label": ""
-                  }
-              }
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 100,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# FHIR Converter\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 102,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-FHIRConverterFargateService8CA04E0D-eZf2v9mn6vvJ", "ClusterName", "APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi", { "color": "#1f77b4", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "FHIR Converter",
-              "stat": "Maximum",
-              "period": 300
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 84,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "fhir-server", { "region": "us-west-1", "id": "m1", "label": "VolumeReadIOPs-Billable" } ],
-                  [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "region": "us-west-1", "id": "m2" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "FHIR DB - IOPS",
-              "liveData": false,
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5min",
-                          "value": 800000,
-                          "yAxis": "right"
-                      },
-                      {
-                          "label": "VolumeReadIOPs >= 1_000_000 for 1 datapoints within 5min",
-                          "value": 1000000
-                      }
-                  ]
-              }
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 92,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1" } ],
-                  [ "AWS/RDS", "CommitLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "right", "region": "us-west-1" } ],
-                  [ "AWS/RDS", "WriteLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "right", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "FHIR DB - Latency",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 92,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-FHIRConverterFargateService8CA04E0D-eZf2v9mn6vvJ", "ClusterName", "APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Task Count",
-              "stat": "SampleCount",
-              "period": 60
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 76,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "FHIRServerStack-FHIRServerFargateService46BCF377-gXh9molzfoo4", "ClusterName", "FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Task Count",
-              "stat": "SampleCount",
-              "period": 60
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 130,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIServiceInfrastructureStack-APIServiceFargateServiceB310B9BA-UVQnWS50I0Bk", "ClusterName", "APIServiceInfrastructureStack-APIServiceCluster4614AF9B-RH7YLj5zWBvG", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Task Count",
-              "stat": "SampleCount",
-              "period": 60
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 2,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-APIFargateService785A4622-fkussZts8xsF", "ClusterName", "APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Task Count",
-              "stat": "SampleCount",
-              "period": 60
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 84,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "DB - ACU Utilization",
-              "liveData": false,
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "ACU Utilization >= 80%",
-                          "value": 80
-                      }
-                  ]
-              }
-          }
-      },
-      {
-          "height": 8,
-          "width": 4,
-          "y": 10,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "DB - ACU Utilization",
-              "liveData": false,
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "ACU Utilization >= 80%",
-                          "value": 80
-                      }
-                  ]
-              }
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 102,
-          "x": 14,
-          "type": "log",
-          "properties": {
-              "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi/performance' | fields\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n",
-              "region": "us-west-1",
-              "stacked": false,
-              "title": "containerinsights/FHIRConverterCluster",
-              "view": "table"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 76,
-          "x": 14,
-          "type": "log",
-          "properties": {
-              "query": "SOURCE '/aws/ecs/containerinsights/FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5/performance' | fields\n\n\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n\n\n\n\n#fields\n#  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n#  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n#| filter Type=\"Task\"\n#| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct by TaskId\n",
-              "region": "us-west-1",
-              "stacked": false,
-              "title": "containerinsights/FHIRServerCluster",
-              "view": "table"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 149,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/SQS", "NumberOfMessagesReceived", "QueueName", "FHIRConverterQueue", { "region": "us-west-1" } ],
-                  [ "...", "FHIRServerDLQ", { "yAxis": "right", "region": "us-west-1" } ],
-                  [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
-                  [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Sum",
-              "period": 60,
-              "title": "FHIR Queues - Messages Received"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 167,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "Metriport", "Memory total", "Service", "FHIRServerLambda", { "region": "us-west-1" } ],
-                  [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Lambdas memory",
-              "stat": "Maximum",
-              "period": 300,
-              "yAxis": {
-                  "left": {
-                      "showUnits": false,
-                      "label": "Memory (MB)"
-                  }
-              }
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 158,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/Lambda", "Duration", "FunctionName", "APIServiceGenerateKeyLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "APIServicePostConfirmationLambdaLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "APIServiceRevokeKeyLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "APIServiceStripeLambdaLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "CdaToVisualizationLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
-                  [ "...", "TokenAuthLambda", { "region": "us-west-1" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "title": "Lambdas Duration",
-              "stat": "Average",
-              "period": 300,
-              "yAxis": {
-                  "left": {
-                      "label": "millis",
-                      "showUnits": false
-                  },
-                  "right": {
-                      "label": "millis",
-                      "showUnits": false
-                  }
-              }
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 92,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "fhir-server" ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 60,
-              "title": "FHIR DB - Connections",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 10,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "Metriport", "API Success", { "label": "2xx", "region": "us-west-1" } ],
-                  [ ".", "API Failures", { "label": "3xx | 4xx | 5xx", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Sum",
-              "period": 300,
-              "title": "API Responses (API GW at the bottom)"
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 28,
-          "x": 4,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster" ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 60,
-              "title": "API DB - Connections",
-              "liveData": false
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 140,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "CCDAOpenSearchDLQ", { "region": "us-west-1" } ],
-                  [ "...", "CCDAOpenSearchQueue", { "region": "us-west-1" } ],
-                  [ "...", "FHIRConverterDLQ", { "region": "us-west-1" } ],
-                  [ "...", "FHIRConverterQueue", { "region": "us-west-1" } ],
-                  [ "...", "FHIRServerDLQ", { "region": "us-west-1" } ],
-                  [ "...", "FHIRServerQueue", { "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "SQS Messages Visible"
-          }
-      },
-      {
-          "height": 8,
-          "width": 7,
-          "y": 120,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ES", "SearchableDocuments", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left" } ],
-                  [ ".", "FreeStorageSpace", ".", ".", ".", ".", { "yAxis": "right", "stat": "Minimum" } ],
-                  [ "...", { "yAxis": "right", "stat": "Maximum" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 60,
-              "title": "OpenSearch - Storage",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 7,
-          "y": 112,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ES", "CPUUtilization", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "label": "Nodes CPU", "region": "us-west-1" } ],
-                  [ ".", "MasterCPUUtilization", ".", ".", ".", ".", { "label": "Master CPU", "region": "us-west-1" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "OpenSearch - CPU",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 7,
-          "y": 112,
-          "x": 7,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ES", "JVMMemoryPressure", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left", "region": "us-west-1", "label": "Nodes JVMMemoryPressure" } ],
-                  [ ".", "MasterJVMMemoryPressure", ".", ".", ".", ".", { "yAxis": "left", "region": "us-west-1", "label": "Master JVMMemoryPressure" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "OpenSearch - Memory",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 7,
-          "y": 120,
-          "x": 7,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ES", "SearchLatency", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594" ],
-                  [ ".", "ReadLatency", ".", ".", ".", "." ],
-                  [ ".", "IndexingLatency", ".", ".", ".", "." ],
-                  [ ".", "WriteLatency", ".", ".", ".", "." ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 60,
-              "title": "OpenSearch - Latency",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 7,
-          "y": 112,
-          "x": 14,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ES", "2xx", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "region": "us-west-1" } ],
-                  [ ".", "5xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
-                  [ ".", "3xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
-                  [ ".", "SearchRate", ".", ".", ".", ".", { "region": "us-west-1", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Sum",
-              "period": 60,
-              "title": "OpenSearch - Searches",
-              "liveData": false
-          }
-      },
-      {
-          "height": 8,
-          "width": 10,
-          "y": 2,
-          "x": 14,
-          "type": "log",
-          "properties": {
-              "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
-              "region": "us-west-1",
-              "title": "API Server - Memory by TaskId",
-              "view": "table"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 167,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
-                  [ ".", "Latency", ".", ".", { "yAxis": "right", "region": "us-west-1", "label": "Latency - Avg", "stat": "Average" } ],
-                  [ "...", { "yAxis": "right", "region": "us-west-1", "color": "#2ca02c", "label": "Latency - P99" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "p99",
-              "period": 300,
-              "title": "API Gateway Requests vs. Latency"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 128,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# Internal/Admin\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 18,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# OSS DB\n",
-              "background": "solid"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 52,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# IHE GW Outbound"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 54,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
-                  [ "...", { "label": "CPUUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "yAxis": "right", "region": "us-west-1" } ],
-                  [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "yAxis": "right", "region": "us-west-1", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "CPUUtilization, MemoryUtilization"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 54,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task Count" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "period": 60,
-              "stat": "SampleCount",
-              "title": "Task Count"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 63,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# IHE GW Inbound"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 65,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
-                  [ "...", { "stat": "Average", "label": "CPUUtilization Avg", "region": "us-west-1", "color": "#aec7e8" } ],
-                  [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "region": "us-west-1", "yAxis": "right" } ],
-                  [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Maximum",
-              "period": 300,
-              "title": "CPUUtilization, MemoryUtilization"
-          }
-      },
-      {
-          "height": 9,
-          "width": 12,
-          "y": 65,
-          "x": 12,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task count" } ]
-              ],
-              "sparkline": true,
-              "view": "timeSeries",
-              "region": "us-west-1",
-              "period": 60,
-              "stat": "SampleCount",
-              "stacked": false,
-              "title": "Task Count"
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 38,
-          "x": 0,
-          "type": "log",
-          "properties": {
-              "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE/performance' | SOURCE '/aws/ecs/containerinsights/IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
-              "region": "us-west-1",
-              "stacked": false,
-              "title": "IHE GW Cluster - Memory by TaskId",
-              "view": "table"
-          }
-      },
-      {
-          "height": 2,
-          "width": 24,
-          "y": 36,
-          "x": 0,
-          "type": "text",
-          "properties": {
-              "markdown": "# IHE GW"
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 38,
-          "x": 8,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1", "color": "#d62728" } ]
-              ],
-              "title": "IHE GW DB - ACU Utilization",
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "ACUUtilization >= 80 for 1 datapoints within 5 minutes",
-                          "value": 80
-                      }
-                  ]
-              },
-              "view": "timeSeries",
-              "stacked": false,
-              "period": 300,
-              "region": "us-west-1"
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 38,
-          "x": 16,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1" } ],
-                  [ ".", "VolumeWriteIOPs", ".", ".", { "stat": "Average", "region": "us-west-1", "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "period": 300,
-              "region": "us-west-1",
-              "title": "IHE GW DB - IOPS",
-              "annotations": {
-                  "horizontal": [
-                      {
-                          "label": "VolumeReadIOPs >= 100,000 for 1 dpts / 5 minutes",
-                          "value": 100000
-                      },
-                      {
-                          "label": "VolumeWriteIOPs >= 40,000 for 1 dpts / 5 minutes",
-                          "value": 40000,
-                          "yAxis": "right"
-                      }
-                  ]
-              }
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 45,
-          "x": 0,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "ihe-db", { "region": "us-west-1", "label": "CPUUtilization Maximum", "stat": "Maximum" } ],
-                  [ "...", { "region": "us-west-1", "label": "CPUUtilization Avg", "color": "#aec7e8" } ],
-                  [ ".", "FreeableMemory", ".", ".", { "region": "us-west-1", "label": "FreeableMemory Maximum", "stat": "Maximum", "yAxis": "right" } ],
-                  [ "...", { "region": "us-west-1", "label": "FreeableMemory Avg", "yAxis": "right", "color": "#98df8a" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "period": 300,
-              "stat": "Average",
-              "title": "IHE GW DB - RDS"
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 45,
-          "x": 8,
-          "type": "metric",
-          "properties": {
-              "metrics": [
-                  [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "ihe-db", { "yAxis": "left" } ],
-                  [ ".", "CommitLatency", ".", ".", { "yAxis": "right" } ],
-                  [ ".", "WriteLatency", ".", ".", { "yAxis": "right" } ]
-              ],
-              "view": "timeSeries",
-              "stacked": false,
-              "region": "us-west-1",
-              "stat": "Average",
-              "period": 300,
-              "title": "IHE GW DB - Latency"
-          }
-      },
-      {
-          "height": 7,
-          "width": 8,
-          "y": 45,
-          "x": 16,
-          "type": "metric",
-          "properties": {
-              "view": "timeSeries",
-              "stacked": false,
-              "metrics": [
-                  [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "ihe-db", { "period": 60 } ]
-              ],
-              "region": "us-west-1",
-              "title": "IHE GW DB -Connections"
-          }
-      }
-  ]
+    "widgets": [
+        {
+            "height": 8,
+            "width": 10,
+            "y": 2,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-APIFargateService785A4622-fkussZts8xsF", "ClusterName", "APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE", { "color": "#1f77b4", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "API Server",
+                "period": 300,
+                "stat": "Maximum"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 130,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIServiceInfrastructureStack-APIServiceFargateServiceB310B9BA-UVQnWS50I0Bk", "ClusterName", "APIServiceInfrastructureStack-APIServiceCluster4614AF9B-RH7YLj5zWBvG", { "color": "#1f77b4", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "API Internal",
+                "stat": "Maximum",
+                "period": 300
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 20,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "id": "m1", "stat": "Maximum" } ],
+                    [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "FreeableMemory", ".", ".", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "API DB - CPU/Memory",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "visible": false,
+                            "label": "cpu alarm",
+                            "value": 90
+                        },
+                        {
+                            "visible": false,
+                            "label": "mem alarm",
+                            "value": 0.15,
+                            "yAxis": "right"
+                        }
+                    ]
+                },
+                "liveData": false
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 149,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Invocations", "FunctionName", "APIServiceGenerateKeyLambda" ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda" ],
+                    [ "...", "APIServiceRevokeKeyLambda" ],
+                    [ "...", "APIServiceStripeLambdaLambda" ],
+                    [ "...", "CCDAOpenSearchLambda" ],
+                    [ "...", "CdaToVisualizationLambda" ],
+                    [ "...", "CommonWellDocContributionLambda" ],
+                    [ "...", "CWEnhancedCoverageTriggerLambda" ],
+                    [ "...", "DocumentDownloaderLambda" ],
+                    [ "...", "DocumentUploaderLambda" ],
+                    [ "...", "FHIRConverterLambda" ],
+                    [ "...", "FHIRServerLambda" ],
+                    [ "...", "FhirToMedicalRecordLambda" ],
+                    [ "...", "ScheduledAPIQuotaCheckerLambda" ],
+                    [ "...", "ScheduledDBMaintenanceLambda" ],
+                    [ "...", "ScheduledDocumentQueryCheckerLambda" ],
+                    [ "...", "TokenAuthLambda" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas Invocations",
+                "stat": "SampleCount",
+                "period": 300
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 158,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Errors", "FunctionName", "APIServiceGenerateKeyLambda" ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda" ],
+                    [ "...", "APIServiceRevokeKeyLambda" ],
+                    [ "...", "APIServiceStripeLambdaLambda" ],
+                    [ "...", "CCDAOpenSearchLambda" ],
+                    [ "...", "CdaToVisualizationLambda" ],
+                    [ "...", "CommonWellDocContributionLambda" ],
+                    [ "...", "CWEnhancedCoverageTriggerLambda" ],
+                    [ "...", "DocumentDownloaderLambda" ],
+                    [ "...", "DocumentUploaderLambda" ],
+                    [ "...", "FHIRConverterLambda" ],
+                    [ "...", "FHIRServerLambda" ],
+                    [ "...", "FhirToMedicalRecordLambda" ],
+                    [ "...", "ScheduledAPIQuotaCheckerLambda" ],
+                    [ "...", "ScheduledDBMaintenanceLambda" ],
+                    [ "...", "ScheduledDocumentQueryCheckerLambda" ],
+                    [ "...", "TokenAuthLambda" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas Errors",
+                "stat": "SampleCount",
+                "period": 300
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 167,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
+                    [ ".", "4XXError", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
+                    [ ".", "5XXError", ".", ".", { "region": "us-west-1", "yAxis": "right", "color": "#d62728" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 300,
+                "title": "API Gateway - Requests vs. Responses"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 76,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "FHIRServerStack-FHIRServerFargateService46BCF377-gXh9molzfoo4", "ClusterName", "FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5", { "color": "#1f77b4", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "FHIR Server",
+                "stat": "Maximum",
+                "period": 300
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 130,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", "api-service-clusterinstance1", { "yAxis": "left", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "ReadLatency", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
+                    [ ".", "WriteLatency", ".", ".", { "region": "us-west-1", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "Internal DB - RDS"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 0,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# OSS API\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 110,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# OpenSearch\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 74,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# FHIR Server\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 84,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1", "id": "m1", "stat": "Maximum" } ],
+                    [ "...", { "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "FreeableMemory", ".", ".", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "FHIR DB - RDS"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 138,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# Others\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 28,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1" } ],
+                    [ ".", "CommitLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ ".", "WriteLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "API DB - Latency",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 20,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "api-cluster", { "id": "m2", "label": "VolumeReadIOPs", "region": "us-west-1" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "id": "m1", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "API DB - IOPS",
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "VolumeReadIOPs >= 300_000 for 1 datapoints within 5 minutes",
+                            "value": 300000
+                        },
+                        {
+                            "label": "VolumeWriteIOPs >= 60_000 for 1 datapoints within 5 minutes",
+                            "value": 60000,
+                            "yAxis": "right"
+                        }
+                    ]
+                },
+                "yAxis": {
+                    "right": {
+                        "label": ""
+                    },
+                    "left": {
+                        "label": ""
+                    }
+                }
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 100,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# FHIR Converter\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 102,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-FHIRConverterFargateService8CA04E0D-eZf2v9mn6vvJ", "ClusterName", "APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi", { "color": "#1f77b4", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "FHIR Converter",
+                "stat": "Maximum",
+                "period": 300
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 84,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "fhir-server", { "region": "us-west-1", "id": "m1", "label": "VolumeReadIOPs-Billable" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "yAxis": "right", "region": "us-west-1", "id": "m2" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "FHIR DB - IOPS",
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5min",
+                            "value": 800000,
+                            "yAxis": "right"
+                        },
+                        {
+                            "label": "VolumeReadIOPs >= 1_000_000 for 1 datapoints within 5min",
+                            "value": 1000000
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 92,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1" } ],
+                    [ "AWS/RDS", "CommitLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ "AWS/RDS", "WriteLatency", "DBClusterIdentifier", "fhir-server", { "yAxis": "right", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "FHIR DB - Latency",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 92,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-FHIRConverterFargateService8CA04E0D-eZf2v9mn6vvJ", "ClusterName", "APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Task Count",
+                "stat": "SampleCount",
+                "period": 60
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 76,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "FHIRServerStack-FHIRServerFargateService46BCF377-gXh9molzfoo4", "ClusterName", "FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Task Count",
+                "stat": "SampleCount",
+                "period": 60
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 130,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIServiceInfrastructureStack-APIServiceFargateServiceB310B9BA-UVQnWS50I0Bk", "ClusterName", "APIServiceInfrastructureStack-APIServiceCluster4614AF9B-RH7YLj5zWBvG", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Task Count",
+                "stat": "SampleCount",
+                "period": 60
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 2,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "APIInfrastructureStack-APIFargateService785A4622-fkussZts8xsF", "ClusterName", "APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE", { "color": "#1f77b4", "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Task Count",
+                "stat": "SampleCount",
+                "period": 60
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 84,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "DB - ACU Utilization",
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACU Utilization >= 80%",
+                            "value": 80
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 8,
+            "width": 4,
+            "y": 20,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "API DB - ACU Utilization",
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACU Utilization >= 80%",
+                            "value": 80
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 102,
+            "x": 14,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-FHIRConverterCluster3ED284AD-6lmkKWgYr3oi/performance' | fields\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n",
+                "region": "us-west-1",
+                "stacked": false,
+                "title": "containerinsights/FHIRConverterCluster",
+                "view": "table"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 76,
+            "x": 14,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/FHIRServerStack-FHIRServerClusterC4EE8AC0-00Vo19v9bvc5/performance' | fields\n\n\n\n  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n\n\n\n  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n\n\n\n| filter Type=\"Task\"\n| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct, @timestamp by TaskId, bin(1m) as When\n| sort When desc, TaskId\n| display CpuAvgPct, MemAvgPct, When, TaskId\n\n\n\n\n#fields\n#  CpuUtilized / CpuReserved * 100 as CpuUtilizationPercentage,\n#  MemoryUtilized / MemoryReserved * 100 as MemoryUtilizationPercentage\n#| filter Type=\"Task\"\n#| stats avg(CpuUtilizationPercentage) as CpuAvgPct, avg(MemoryUtilizationPercentage) as MemAvgPct by TaskId\n",
+                "region": "us-west-1",
+                "stacked": false,
+                "title": "containerinsights/FHIRServerCluster",
+                "view": "table"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 140,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/SQS", "NumberOfMessagesReceived", "QueueName", "FHIRConverterQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerDLQ", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 60,
+                "title": "FHIR Queues - Messages Received"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 158,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "Metriport", "Memory total", "Service", "FHIRServerLambda", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas memory",
+                "stat": "Maximum",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "showUnits": false,
+                        "label": "Memory (MB)"
+                    }
+                }
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 149,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Duration", "FunctionName", "APIServiceGenerateKeyLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "APIServiceRevokeKeyLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "APIServiceStripeLambdaLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "CdaToVisualizationLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
+                    [ "...", "TokenAuthLambda", { "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "title": "Lambdas Duration",
+                "stat": "Average",
+                "period": 300,
+                "yAxis": {
+                    "left": {
+                        "label": "millis",
+                        "showUnits": false
+                    },
+                    "right": {
+                        "label": "millis",
+                        "showUnits": false
+                    }
+                }
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 92,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "fhir-server" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "FHIR DB - Connections",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 10,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "Metriport", "API Success", { "label": "2xx", "region": "us-west-1" } ],
+                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 300,
+                "title": "API Responses (API GW at the bottom)"
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 28,
+            "x": 4,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "api-cluster" ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "API DB - Connections",
+                "liveData": false
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 140,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", "CCDAOpenSearchDLQ", { "region": "us-west-1" } ],
+                    [ "...", "CCDAOpenSearchQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterDLQ", { "region": "us-west-1" } ],
+                    [ "...", "FHIRConverterQueue", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerDLQ", { "region": "us-west-1" } ],
+                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "SQS Messages Visible"
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 120,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "SearchableDocuments", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left" } ],
+                    [ ".", "FreeStorageSpace", ".", ".", ".", ".", { "yAxis": "right", "stat": "Minimum" } ],
+                    [ "...", { "yAxis": "right", "stat": "Maximum" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "OpenSearch - Storage",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 112,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "CPUUtilization", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "label": "Nodes CPU", "region": "us-west-1" } ],
+                    [ ".", "MasterCPUUtilization", ".", ".", ".", ".", { "label": "Master CPU", "region": "us-west-1" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "OpenSearch - CPU",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 112,
+            "x": 7,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "JVMMemoryPressure", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "yAxis": "left", "region": "us-west-1", "label": "Nodes JVMMemoryPressure" } ],
+                    [ ".", "MasterJVMMemoryPressure", ".", ".", ".", ".", { "yAxis": "left", "region": "us-west-1", "label": "Master JVMMemoryPressure" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "OpenSearch - Memory",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 120,
+            "x": 7,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "SearchLatency", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594" ],
+                    [ ".", "ReadLatency", ".", ".", ".", "." ],
+                    [ ".", "IndexingLatency", ".", ".", ".", "." ],
+                    [ ".", "WriteLatency", ".", ".", ".", "." ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 60,
+                "title": "OpenSearch - Latency",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 7,
+            "y": 112,
+            "x": 14,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ES", "2xx", "DomainName", "ccdaopensearch-domain", "ClientId", "463519787594", { "region": "us-west-1" } ],
+                    [ ".", "5xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "3xx", ".", ".", ".", ".", { "region": "us-west-1" } ],
+                    [ ".", "SearchRate", ".", ".", ".", ".", { "region": "us-west-1", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Sum",
+                "period": 60,
+                "title": "OpenSearch - Searches",
+                "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 2,
+            "x": 14,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
+                "region": "us-west-1",
+                "title": "API Server - Memory by TaskId",
+                "view": "table"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 167,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
+                    [ ".", "Latency", ".", ".", { "yAxis": "right", "region": "us-west-1", "label": "Latency - Avg", "stat": "Average" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "color": "#2ca02c", "label": "Latency - P99" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "p99",
+                "period": 300,
+                "title": "API Gateway Requests vs. Latency"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 128,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# Internal/Admin\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 18,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# OSS DB\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 52,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW Outbound"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 54,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
+                    [ "...", { "label": "CPUUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "yAxis": "right", "region": "us-west-1" } ],
+                    [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "yAxis": "right", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "CPUUtilization, MemoryUtilization"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 54,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task Count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "period": 60,
+                "stat": "SampleCount",
+                "title": "Task Count"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 63,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW Inbound"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 65,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "label": "CPUUtilization Avg", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "region": "us-west-1", "yAxis": "right" } ],
+                    [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "CPUUtilization, MemoryUtilization"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 65,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "sparkline": true,
+                "view": "timeSeries",
+                "region": "us-west-1",
+                "period": 60,
+                "stat": "SampleCount",
+                "stacked": false,
+                "title": "Task Count"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 0,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
+                "region": "us-west-1",
+                "stacked": false,
+                "title": "IHE GW Cluster - Memory by TaskId",
+                "view": "table"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 36,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 8,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1", "color": "#d62728" } ]
+                ],
+                "title": "IHE GW DB - ACU Utilization",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACUUtilization >= 80 for 1 datapoints within 5 minutes",
+                            "value": 80
+                        }
+                    ]
+                },
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "region": "us-west-1"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 16,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "stat": "Average", "region": "us-west-1", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "region": "us-west-1",
+                "title": "IHE GW DB - IOPS",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "VolumeReadIOPs >= 1,800,000 for 1 dpts / 5 minutes",
+                            "value": 1800000
+                        },
+                        {
+                            "label": "VolumeWriteIOPs >= 1,800,000 for 1 dpts / 5 minutes",
+                            "value": 1800000,
+                            "yAxis": "right"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "ihe-db", { "region": "us-west-1", "label": "CPUUtilization Maximum", "stat": "Maximum" } ],
+                    [ "...", { "region": "us-west-1", "label": "CPUUtilization Avg", "color": "#aec7e8" } ],
+                    [ ".", "FreeableMemory", ".", ".", { "region": "us-west-1", "label": "FreeableMemory Maximum", "stat": "Maximum", "yAxis": "right" } ],
+                    [ "...", { "region": "us-west-1", "label": "FreeableMemory Avg", "yAxis": "right", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "period": 300,
+                "stat": "Average",
+                "title": "IHE GW DB - CPU/Mem"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 8,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "ihe-db", { "yAxis": "left" } ],
+                    [ ".", "CommitLatency", ".", ".", { "yAxis": "right" } ],
+                    [ ".", "WriteLatency", ".", ".", { "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "IHE GW DB - Latency"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 16,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "ihe-db", { "period": 60 } ]
+                ],
+                "region": "us-west-1",
+                "title": "IHE GW DB -Connections"
+            }
+        }
+    ]
 }
