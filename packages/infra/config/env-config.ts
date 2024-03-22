@@ -118,6 +118,9 @@ export type EnvConfig = {
      */
     scheduleExpressions: string | string[];
   };
+  cqDirectoryRebuilder?: {
+    scheduleExpressions: string | string[];
+  };
 } & (
   | {
       environmentType: EnvType.staging | EnvType.production;

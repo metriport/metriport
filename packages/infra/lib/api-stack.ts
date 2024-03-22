@@ -1,14 +1,13 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -18,8 +17,10 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -33,6 +34,7 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
@@ -43,9 +45,9 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -174,6 +176,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         instanceType: new InstanceType("serverless"),
         enablePerformanceInsights: true,
+        parameterGroup,
       },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
@@ -353,7 +356,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(10),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -529,6 +532,14 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    createCqDirectoryRebuilder({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
     cookieStore &&
       cwEnhancedCoverageConnector.setupLambdas({
         stack: this,
@@ -546,6 +557,23 @@ export class APIStack extends Stack {
     // API Gateway
     //-------------------------------------------
 
+    const accessLogDestination = new apig.LogGroupLogDestination(
+      new LogGroup(this, "APIAccessLogGroup", {
+        removalPolicy: RemovalPolicy.RETAIN,
+      })
+    );
+    const accessLogFormat = apig.AccessLogFormat.jsonWithStandardFields({
+      caller: true,
+      httpMethod: true,
+      ip: true,
+      protocol: true,
+      requestTime: true,
+      resourcePath: true,
+      responseLength: true,
+      status: true,
+      user: true,
+    });
+
     // Create the API Gateway
     // example from https://bobbyhadz.com/blog/aws-cdk-api-gateway-example
     const api = new apig.RestApi(this, "api", {
@@ -554,6 +582,10 @@ export class APIStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
+      },
+      deployOptions: {
+        accessLogDestination,
+        accessLogFormat,
       },
     });
 

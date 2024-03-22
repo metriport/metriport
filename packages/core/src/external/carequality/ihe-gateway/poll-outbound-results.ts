@@ -1,7 +1,7 @@
 import {
-  OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
+  OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -12,9 +12,9 @@ import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
 import { initSequelizeForLambda } from "../../../util/sequelize";
 import {
-  OutboundPatientDiscoveryRespTableEntry,
   OutboundDocumentQueryRespTableEntry,
   OutboundDocumentRetrievalRespTableEntry,
+  OutboundPatientDiscoveryRespTableEntry,
 } from "./outbound-result";
 
 dayjs.extend(duration);
@@ -42,6 +42,7 @@ export async function pollOutboundPatientDiscoveryResults(
   const results = await pollResults({
     ...params,
     resultsTable: PATIENT_DISCOVERY_RESULT_TABLE_NAME,
+    context: "Patient Discovery",
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
   return (results as OutboundPatientDiscoveryRespTableEntry[]).map(r => r.data);
@@ -53,6 +54,7 @@ export async function pollOutboundDocQueryResults(
   const results = await pollResults({
     ...params,
     resultsTable: DOC_QUERY_RESULT_TABLE_NAME,
+    context: "Document Query",
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
   return (results as OutboundDocumentQueryRespTableEntry[]).map(r => r.data);
@@ -64,6 +66,7 @@ export async function pollOutboundDocRetrievalResults(
   const results = await pollResults({
     ...params,
     resultsTable: DOC_RETRIEVAL_RESULT_TABLE_NAME,
+    context: "Document Retrieval",
   });
   // Since we're not using Sequelize models, we need to cast the results to the correct type
   return (results as OutboundDocumentRetrievalRespTableEntry[]).map(r => r.data);
@@ -77,26 +80,26 @@ async function pollResults({
   maxPollingDuration,
   dbCreds,
   resultsTable,
+  context,
 }: PollOutboundResults & {
   resultsTable: string;
+  context: string;
 }): Promise<object[]> {
   const sequelize = initSequelizeForLambda(dbCreds);
-
   const raceControl: RaceControl = { isRaceInProgress: true };
+  const maxTimeout = maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds();
 
   try {
     // Run the table count until it either times out, or all the results are in the database
     const raceResult = await Promise.race([
       controlDuration(
-        maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds(),
-        `IHE gateway reached timeout after ${
-          maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds()
-        } ms`
+        maxTimeout,
+        `Timed out waiting for IHE GW ${context}, after ${maxTimeout} ms`
       ),
       checkIfRaceIsComplete(
         () => isResultsComplete(sequelize, resultsTable, requestId, numOfGateways),
         raceControl,
-        `IHE gateway results came back in full (${numOfGateways} links).`,
+        `IHE GW results came back in full (${numOfGateways} links).`,
         CHECK_DB_INTERVAL.asMilliseconds()
       ),
     ]);
@@ -104,18 +107,14 @@ async function pollResults({
     const iheGatewayResults = await getResults(sequelize, resultsTable, requestId);
 
     const allGWsCompleted = iheGatewayResults.length === numOfGateways;
+    const details = `Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`;
 
     if (raceResult && allGWsCompleted) {
-      console.log(
-        `${raceResult}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
-      );
+      console.log(`${raceResult}. ${details}`);
       raceControl.isRaceInProgress = false;
     } else if (!allGWsCompleted) {
-      const msg = `IHE gateway results are incomplete.`;
-      console.log(
-        `${msg}. Got ${iheGatewayResults.length} successes out of ${numOfGateways} gateways for ${resultsTable}. RequestID: ${requestId}`
-      );
-
+      const msg = `IHE GW results are incomplete for ${context}}`;
+      console.log(`${msg}. ${details}`);
       capture.message(msg, {
         extra: {
           requestId,
@@ -124,15 +123,24 @@ async function pollResults({
           resultsTable,
           numOfGateways,
           iheGatewayResults,
+          context,
         },
+        level: "info",
       });
     }
-
+    // TODO Include in the result if it timed out and allGwsCompleted
     return iheGatewayResults;
   } catch (error) {
-    const msg = `Failed to post ihe gateway results - table: ${resultsTable}`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
-    throw new MetriportError(msg, error, { requestId, patientId, cxId, numOfGateways });
+    const msg = `Failed to query IHE GW results`;
+    console.log(`${msg}, ${context} - table: ${resultsTable}. Error: ${errorToString(error)}`);
+    throw new MetriportError(msg, error, {
+      requestId,
+      patientId,
+      cxId,
+      numOfGateways,
+      context,
+      resultsTable,
+    });
   }
 }
 
@@ -160,9 +168,8 @@ async function getResultsCount(
 
     return res?.count || 0;
   } catch (error) {
-    const msg = `Failed to get result count`;
-
-    throw new MetriportError(msg, error, { resultsTable });
+    const msg = `Failed to get result count from table ${resultsTable}`;
+    throw new MetriportError(msg, error, { resultsTable, requestId });
   }
 }
 
@@ -180,6 +187,6 @@ async function getResults(
     return results;
   } catch (error) {
     const msg = `Failed to query table ${resultsTable}`;
-    throw new MetriportError(msg, error);
+    throw new MetriportError(msg, error, { resultsTable, requestId });
   }
 }

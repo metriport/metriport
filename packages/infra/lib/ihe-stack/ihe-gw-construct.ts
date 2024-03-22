@@ -164,6 +164,7 @@ export default class IHEGatewayConstruct extends Construct {
     const alb = new ApplicationLoadBalancer(scope, `${id}ALB`, {
       vpc,
       internetFacing: false,
+      idleTimeout: Duration.minutes(5),
     });
 
     const service = new ecs.FargateService(scope, `${id}FargateService`, {
