@@ -85,6 +85,8 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
+    console.log(`lola1Links: ${JSON.stringify(lola1Links, null, 2)}`);
+    console.log(`lola2or3Links: ${JSON.stringify(lola2or3Links, null, 2)}`);
     const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
       isInsideOrgExcludeList(link, orgIdExcludeList)
     );
@@ -129,6 +131,7 @@ export async function autoUpgradeNetworkLinks(
       link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
+    console.log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade, null, 2)}`);
     lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
         upgradeRequests.push(
