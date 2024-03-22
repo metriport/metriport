@@ -16,7 +16,7 @@ function sortOrgsByNearbyOrder(orgs: CQDirectoryEntryModel[], orderMap: Map<stri
 }
 
 export async function getAllCQOrgsIds(): Promise<Set<string>> {
-  const orgs = await Promise.all([getOrganizationsWithXCPD()]);
+  const orgs = await getOrganizationsWithXCPD();
   const orgsFlat: CQDirectoryEntryModel[] = orgs.flat();
   const orgsSet: Set<string> = new Set();
   orgsFlat.forEach(org => {

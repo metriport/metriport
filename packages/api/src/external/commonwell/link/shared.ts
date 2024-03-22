@@ -18,6 +18,8 @@ import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
 
+const urnOidRegex = /^urn:oid:/;
+
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
   return persons.flatMap<Person>(filterTruthy);
 };
@@ -49,7 +51,7 @@ export function patientWithCWData(
 function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>): boolean {
   const identifiers = link.patient?.identifier || [];
   return identifiers.some(id => {
-    const idSystem = id.system?.replace(/^urn:oid:/, "");
+    const idSystem = id.system?.replace(urnOidRegex, "");
     if (idSystem && orgIdExcludeList.has(idSystem)) {
       console.log(`OrgID ${idSystem} is in the exclude list.`);
       return true;
@@ -115,7 +117,7 @@ export async function autoUpgradeNetworkLinks(
       } else {
         capture.message(`Missing downgrade link for network link`, {
           extra: {
-            link: JSON.stringify(link, null, 2),
+            link: link,
             commonwellPatientId,
             commonwellPersonId,
             context: executionContext,

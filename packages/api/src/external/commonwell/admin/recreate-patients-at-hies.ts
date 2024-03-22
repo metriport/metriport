@@ -45,13 +45,15 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
   }
   const patientsByCustomer = groupBy(patients, "cxId");
 
+  const orgIdExcludeList = await getAllCQOrgsIds();
+
   const res: RecreateResult = {};
   for (const [cxId, patients] of Object.entries(patientsByCustomer)) {
     log(`Found ${patients.length} patients for cxId ${cxId}`);
     const cxRes: Record<string, RecreateResultOfPatient | undefined> = {};
     // TODO consider moving this to Promise.all()
     for (const patient of patients) {
-      cxRes[patient.id] = await recreatePatientAtCW(patient);
+      cxRes[patient.id] = await recreatePatientAtCW(patient, orgIdExcludeList);
     }
     res[cxId] = cxRes;
   }
@@ -60,7 +62,8 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
 }
 
 export async function recreatePatientAtCW(
-  patient: Patient
+  patient: Patient,
+  orgIdExcludeList: Set<string>
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
 
@@ -102,8 +105,6 @@ export async function recreatePatientAtCW(
 
     const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-
-    const orgIdExcludeList = await getAllCQOrgsIds();
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);

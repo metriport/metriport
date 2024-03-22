@@ -34,7 +34,6 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        // Use the cqOrgs from the constructor instead of fetching them here
         await cwCommands.patient.update(patient, facilityId, this.orgIdExcludeList);
       } catch (error) {
         failedUpdateCount++;
