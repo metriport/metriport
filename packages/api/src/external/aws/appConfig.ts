@@ -63,16 +63,15 @@ function getFeatureFlagValueLocal(featureFlagName: keyof FeatureFlagDatastore) {
 /**
  * Returns the list of customers that are enabled for the given feature flag.
  *
- * @returns Array of cxIds or cxIdsAndLimits
+ * @returns Array of string values
  */
 async function getCxsWithFeatureFlagEnabled(
   featureFlagName: keyof FeatureFlagDatastore
 ): Promise<string[]> {
   try {
     const featureFlag = await getFeatureFlagValueLocal(featureFlagName);
-    if (featureFlag.enabled) {
-      if (featureFlag.cxIds) return featureFlag.cxIds;
-      if (featureFlag.cxIdsAndLimits) return featureFlag.cxIdsAndLimits;
+    if (featureFlag.enabled && featureFlag.values) {
+      return featureFlag.values;
     }
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
