@@ -2,6 +2,7 @@ import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { emptyFunction } from "@metriport/shared";
 import {
   isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
@@ -35,6 +36,7 @@ import {
   getPDResultStatus,
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
+import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
@@ -162,6 +164,14 @@ router.post(
       status,
       response,
     });
+
+    if (response.patientId && response.cxId) {
+      processPostRespOutboundPatientDiscoveryResps({
+        requestId: response.id,
+        patientId: response.patientId,
+        cxId: response.cxId,
+      }).catch(emptyFunction);
+    }
 
     return res.sendStatus(httpStatus.OK);
   })
