@@ -62,6 +62,7 @@ import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
+import { getAllCQOrgsIds } from "../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 dayjs.extend(duration);
 
@@ -129,7 +130,11 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
 
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
+    const orgIdExcludeList = await getAllCQOrgsIds();
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell(orgIdExcludeList).updateAll(
+      cxId,
+      patientIds
+    );
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
@@ -209,8 +214,16 @@ router.post(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
+    const orgIdExcludeList = await getAllCQOrgsIds();
+
     if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
+      await cwCommands.link.create(
+        linkCreate.entityId,
+        patientId,
+        cxId,
+        facilityId,
+        orgIdExcludeList
+      );
       return res.sendStatus(status.CREATED);
     }
     throw new BadRequestError(`Unsupported link source: ${linkSource}`);
@@ -336,6 +349,8 @@ router.patch(
     );
     const payload = patchDuplicatesSchema.parse(req.body);
 
+    const orgIdExcludeList = await getAllCQOrgsIds();
+
     const result = await Promise.allSettled(
       Object.entries(payload).flatMap(([cxId, patients]) => {
         return Object.entries(patients).flatMap(async ([patientId, persons]) => {
@@ -350,7 +365,8 @@ router.patch(
             cxId,
             patientId,
             personId,
-            unenrollByDemographics
+            unenrollByDemographics,
+            orgIdExcludeList
           ).catch(e => {
             console.log(`Error: ${e}, ${String(e)}`);
             throw `Failed to patch patient ${patientId} - ${String(e)}`;

@@ -1,6 +1,8 @@
 import {
   CommonWellAPI,
   isLOLA1,
+  isLOLA2,
+  isLOLA3,
   NetworkLink,
   Person,
   RequestMetadata,
@@ -15,6 +17,8 @@ import {
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
+
+const urnOidRegex = /^urn:oid:/;
 
 export const commonwellPersonLinks = (persons: Person[]): Person[] => {
   return persons.flatMap<Person>(filterTruthy);
@@ -44,6 +48,18 @@ export function patientWithCWData(
   return patientWithCW;
 }
 
+function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>): boolean {
+  const identifiers = link.patient?.identifier || [];
+  return identifiers.some(id => {
+    const idSystem = id.system?.replace(urnOidRegex, "");
+    if (idSystem && orgIdExcludeList.has(idSystem)) {
+      console.log(`OrgID ${idSystem} is in the exclude list.`);
+      return true;
+    }
+    return false;
+  });
+}
+
 /**
  * This function will automatically upgrade all of the LOLA 1 network links
  * for a given patient to LOLA 2.
@@ -60,18 +76,67 @@ export async function autoUpgradeNetworkLinks(
   queryMeta: RequestMetadata,
   commonwellPatientId: string,
   commonwellPersonId: string,
-  executionContext: string
+  executionContext: string,
+  orgIdExcludeList: Set<string>
 ) {
   const networkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
+    const lola2or3Links = networkLinks._embedded.networkLink
+      .flatMap(filterTruthy)
+      .filter(isLOLA2 || isLOLA3);
 
-    const requests: Promise<NetworkLink>[] = [];
+    console.log(`lola1Links: ${JSON.stringify(lola1Links)}`);
+    console.log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
+    const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
+      isInsideOrgExcludeList(link, orgIdExcludeList)
+    );
+    const downgradeRequests: Promise<NetworkLink>[] = [];
+    console.log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
+    lola2or3LinksToDowngrade.forEach(async link => {
+      if (link._links?.downgrade?.href) {
+        downgradeRequests.push(
+          commonWell
+            .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
+            .catch(error => {
+              const msg = `Failed to downgrade link`;
+              console.log(`${msg}. Cause: ${error}`);
+              capture.message(msg, {
+                extra: {
+                  commonwellPatientId,
+                  commonwellPersonId,
+                  cwReference: commonWell.lastReferenceHeader,
+                  context: executionContext,
+                },
+                level: "error",
+              });
+              throw error;
+            })
+        );
+      } else {
+        capture.message(`Missing downgrade link for network link`, {
+          extra: {
+            link: link,
+            commonwellPatientId,
+            commonwellPersonId,
+            context: executionContext,
+          },
+          level: "warning",
+        });
+      }
+    });
 
-    lola1Links.forEach(async link => {
+    await Promise.allSettled(downgradeRequests);
+
+    const lola1LinksToUpgrade = lola1Links.filter(
+      link => !isInsideOrgExcludeList(link, orgIdExcludeList)
+    );
+    const upgradeRequests: Promise<NetworkLink>[] = [];
+    console.log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
+    lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
-        requests.push(
+        upgradeRequests.push(
           commonWell
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
@@ -91,6 +156,6 @@ export async function autoUpgradeNetworkLinks(
         );
       }
     });
-    await Promise.allSettled(requests);
+    await Promise.allSettled(upgradeRequests);
   }
 }
