@@ -22,7 +22,8 @@ export async function patchDuplicatedPersonsForPatient(
   cxId: string,
   patientId: string,
   chosenPersonId: string,
-  unenrollByDemographics = false
+  unenrollByDemographics = false,
+  orgIdExcludeList: Set<string>
 ): Promise<void> {
   const context = "patchDuplicatedPersonsForPatient";
   const { log } = Util.out(`${context} ${patientId}`);
@@ -57,7 +58,14 @@ export async function patchDuplicatedPersonsForPatient(
   // link the chosen person to the patient...
   await commonWell.addPatientLink(queryMeta, chosenPersonId, cwPatientUri);
   // ...and upgrade the network links w/ that person's patients
-  await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, chosenPersonId, context);
+  await autoUpgradeNetworkLinks(
+    commonWell,
+    queryMeta,
+    cwPatientId,
+    chosenPersonId,
+    context,
+    orgIdExcludeList
+  );
 
   // update Metriport's DB
   await setCommonwellId({

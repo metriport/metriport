@@ -13,6 +13,13 @@ const maxNumberOfParallelRequestsToCW = 10;
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
 export class PatientUpdaterCommonWell extends PatientUpdater {
+  private orgIdExcludeList: Set<string>;
+
+  constructor(orgIdExcludeList: Set<string>) {
+    super();
+    this.orgIdExcludeList = orgIdExcludeList;
+  }
+
   public async updateAll(
     cxId: string,
     patientIds?: string[]
@@ -27,7 +34,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        await cwCommands.patient.update(patient, facilityId);
+        await cwCommands.patient.update(patient, facilityId, this.orgIdExcludeList);
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CW patient`;
