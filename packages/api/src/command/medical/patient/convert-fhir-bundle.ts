@@ -13,6 +13,7 @@ import duration from "dayjs/plugin/duration";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
+import { createSandboxMRSummaryFileName } from "./shared";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
 dayjs.extend(duration);
@@ -44,15 +45,11 @@ export async function handleBundleToMedicalRecord({
   dateTo?: string;
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
-  if (Config.isSandbox()) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const bucketName = Config.getSandboxSeedBucketName()!;
+  const bucketName = Config.getSandboxSeedBucketName();
+  if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
     const patientNameLowerCase = patientMatch ? patient.data.firstName.toLowerCase() : "jane";
-    const fileName =
-      conversionType === "pdf"
-        ? `${patientNameLowerCase}_MR.html.pdf`
-        : `${patientNameLowerCase}_MR.html`;
+    const fileName = createSandboxMRSummaryFileName(patientNameLowerCase, conversionType);
     const url = await s3Utils.getSignedUrl({
       bucketName,
       fileName,

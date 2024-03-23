@@ -6,6 +6,7 @@ import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidat
 import { Config } from "../../../shared/config";
 import { getSignedURL } from "../document/document-download";
 import { getPatient } from "./get-patient";
+import { createSandboxMRSummaryFileName } from "./shared";
 
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
@@ -44,14 +45,15 @@ export async function getMedicalRecordSummaryStatus({
 }): Promise<MedicalRecordsStatus> {
   let s3FileKey = createMRSummaryFileName(cxId, patientId, "html");
   let s3PdfFileKey = createMRSummaryFileName(cxId, patientId, "pdf");
+  const isSandbox = Config.isSandbox();
+  const seedBucket = Config.getSandboxSeedBucketName();
   let s3BucketName = bucketName;
 
-  if (Config.isSandbox()) {
-    const [s3HtmlSandboxKey, s3PdfSandboxKey] = await getSandboxFileNames(patientId, cxId);
+  if (isSandbox && seedBucket) {
+    const { s3HtmlSandboxKey, s3PdfSandboxKey } = await getSandboxFileNames(patientId, cxId);
     s3FileKey = s3HtmlSandboxKey;
     s3PdfFileKey = s3PdfSandboxKey;
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    s3BucketName = Config.getSandboxSeedBucketName()!;
+    s3BucketName = seedBucket;
   }
 
   const [htmlMRInfo, pdfMRInfo] = await Promise.all([
@@ -86,39 +88,37 @@ export async function getMedicalRecordSummary({
   const htmlIsValid = conversionType === "html" && htmlCreatedAt;
 
   let s3BucketName = bucketName;
-  let s3FileKey;
 
   if (Config.isSandbox()) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     s3BucketName = Config.getSandboxSeedBucketName()!;
     if (pdfIsValid || htmlIsValid) {
       const patientName = await getSandboxPatientName(patientId, cxId);
-      s3FileKey = createSandboxMRSummaryFileName(patientName, conversionType);
+      const s3FileKey = createSandboxMRSummaryFileName(patientName, conversionType);
       const url = await getSignedURL({ bucketName: s3BucketName, fileName: s3FileKey });
       return url;
     }
   }
 
   if (pdfIsValid || htmlIsValid) {
-    s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);
+    const s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);
     const url = await s3Utils.getSignedUrl({ bucketName: s3BucketName, fileName: s3FileKey });
     return url;
   }
   return;
 }
 
-async function getSandboxFileNames(patientId: string, cxId: string): Promise<[string, string]> {
+async function getSandboxFileNames(
+  patientId: string,
+  cxId: string
+): Promise<{ s3HtmlSandboxKey: string; s3PdfSandboxKey: string }> {
   const firstName = await getSandboxPatientName(patientId, cxId);
   const s3HtmlSandboxKey = createSandboxMRSummaryFileName(firstName, "html");
   const s3PdfSandboxKey = createSandboxMRSummaryFileName(firstName, "pdf");
-  return [s3HtmlSandboxKey, s3PdfSandboxKey];
+  return { s3HtmlSandboxKey, s3PdfSandboxKey };
 }
 
 async function getSandboxPatientName(patientId: string, cxId: string) {
   const patient = await getPatient({ id: patientId, cxId });
   return patient ? patient.data.firstName.toLowerCase() : "jane";
-}
-
-function createSandboxMRSummaryFileName(firstName: string, extension: "pdf" | "html"): string {
-  return extension === "pdf" ? `${firstName}_MR.html.pdf` : `${firstName}_MR.html`;
 }

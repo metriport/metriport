@@ -1,6 +1,6 @@
+import { Period } from "@metriport/core/domain/patient";
 import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
-import { Period } from "@metriport/core/domain/patient";
 import BadRequestError from "../../../errors/bad-request";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientUpdateCmd } from "./update-patient";
@@ -34,4 +34,11 @@ function validateIsPast(date: string): boolean {
 function validateDateRange(start: string, end: string): boolean {
   if (dayjs(start).isAfter(end)) throw new BadRequestError(`'start' must be before 'end'`);
   return true;
+}
+
+export function createSandboxMRSummaryFileName(
+  firstName: string,
+  extension: "pdf" | "html"
+): string {
+  return extension === "pdf" ? `${firstName}_MR.html.pdf` : `${firstName}_MR.html`;
 }
