@@ -1,13 +1,13 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import { getPatientData } from "../patient-shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
-import { isCWEnabledForCx } from "../../aws/appConfig";
 
 const context = "cw.link.create";
 
@@ -16,7 +16,7 @@ export const create = async (
   patientId: string,
   cxId: string,
   facilityId: string,
-  orgIdExcludeList: Set<string>
+  getOrgIdExcludeList: () => Promise<Set<string>>
 ): Promise<void> => {
   if (!(await isCWEnabledForCx(cxId))) {
     console.log(`CW is disabled for cxId: ${cxId}`);
@@ -78,7 +78,7 @@ export const create = async (
       cwPatientId,
       personId,
       context,
-      orgIdExcludeList
+      getOrgIdExcludeList
     );
   } catch (error) {
     const msg = `Failed to create CW person link`;

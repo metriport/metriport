@@ -42,19 +42,21 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  const orgIdExcludeList = await getAllCQOrgsIds();
+  // TODO move these to the respective "commands" files so this is fully async
+  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
 
-  // Intentionally asynchronous
-  const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    // Intentionally asynchronous
     cwCommands.patient
-      .update(result, facilityId, orgIdExcludeList)
+      .update(result, facilityId, getAllCQOrgsIds)
       .catch(processAsyncError(`cw.patient.update`));
   }
 
-  // Intentionally asynchronous
-  const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
+    // Intentionally asynchronous
     cqCommands.patient
       .discover(result, facility.data.npi)
       .catch(processAsyncError(`cq.patient.update`));

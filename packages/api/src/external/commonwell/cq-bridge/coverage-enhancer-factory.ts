@@ -18,6 +18,6 @@ export function makeCoverageEnhancer(): CoverageEnhancer | undefined {
   const cookieManager = new CookieManagerOnSecrets(cookieArn, Config.getAWSRegion());
   const cwManagementApi = makeApi({ cookieManager, baseUrl: cwManagementUrl });
   // #TODO we are passing an empty exclude list to accelerate development. All this code should be deprecated soon anyway and this shouldnt be a problem.
-  const orgIdExcludeList = new Set<string>();
+  const orgIdExcludeList = async () => new Set<string>();
   return new CoverageEnhancerApiLocal(cwManagementApi, orgIdExcludeList);
 }

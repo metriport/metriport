@@ -31,6 +31,8 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
+import { getAllCQOrgsIds } from "../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
+import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
@@ -42,7 +44,6 @@ import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-l
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
-import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import {
@@ -62,7 +63,6 @@ import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { getAllCQOrgsIds } from "../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 dayjs.extend(duration);
 
@@ -130,8 +130,7 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
 
-    const orgIdExcludeList = await getAllCQOrgsIds();
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell(orgIdExcludeList).updateAll(
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell(getAllCQOrgsIds).updateAll(
       cxId,
       patientIds
     );
@@ -214,15 +213,13 @@ router.post(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
-    const orgIdExcludeList = await getAllCQOrgsIds();
-
     if (linkSource === MedicalDataSource.COMMONWELL) {
       await cwCommands.link.create(
         linkCreate.entityId,
         patientId,
         cxId,
         facilityId,
-        orgIdExcludeList
+        getAllCQOrgsIds
       );
       return res.sendStatus(status.CREATED);
     }
@@ -349,8 +346,6 @@ router.patch(
     );
     const payload = patchDuplicatesSchema.parse(req.body);
 
-    const orgIdExcludeList = await getAllCQOrgsIds();
-
     const result = await Promise.allSettled(
       Object.entries(payload).flatMap(([cxId, patients]) => {
         return Object.entries(patients).flatMap(async ([patientId, persons]) => {
@@ -366,7 +361,7 @@ router.patch(
             patientId,
             personId,
             unenrollByDemographics,
-            orgIdExcludeList
+            getAllCQOrgsIds
           ).catch(e => {
             console.log(`Error: ${e}, ${String(e)}`);
             throw `Failed to patch patient ${patientId} - ${String(e)}`;

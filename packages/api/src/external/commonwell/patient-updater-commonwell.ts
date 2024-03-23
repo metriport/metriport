@@ -1,11 +1,11 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Patient } from "@metriport/core/domain/patient";
-import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import cwCommands from ".";
+import { getPatients } from "../../command/medical/patient/get-patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { getPatients } from "../../command/medical/patient/get-patient";
 
 const maxNumberOfParallelRequestsToCW = 10;
 
@@ -13,9 +13,7 @@ const maxNumberOfParallelRequestsToCW = 10;
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
 export class PatientUpdaterCommonWell extends PatientUpdater {
-  private orgIdExcludeList: Set<string>;
-
-  constructor(orgIdExcludeList: Set<string>) {
+  constructor(private readonly orgIdExcludeList: () => Promise<Set<string>>) {
     super();
     this.orgIdExcludeList = orgIdExcludeList;
   }

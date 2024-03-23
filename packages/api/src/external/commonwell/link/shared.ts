@@ -65,11 +65,13 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>
  * for a given patient to LOLA 2.
  *
  * @param commonWell - The CommonWell API object
- * @param queryMeta - RequestMetadata - this is the metadata that is passed in from
- * the client.  It contains the user's session token, the user's organization, and the user's userId.
+ * @param queryMeta - RequestMetadata - this is the metadata that is passed in from the client.
+ *    It contains the user's session token, the user's organization, and the user's userId.
  * @param commonwellPatientId - The patient ID in the CommonWell system
  * @param commonwellPersonId - The CommonWell Person ID of the patient
  * @param executionContext - The execution context of the current request.
+ * @param getOrgIdExcludeList - Function to get the list of organization IDs to exclude from
+ *    network links
  */
 export async function autoUpgradeNetworkLinks(
   commonWell: CommonWellAPI,
@@ -77,9 +79,12 @@ export async function autoUpgradeNetworkLinks(
   commonwellPatientId: string,
   commonwellPersonId: string,
   executionContext: string,
-  orgIdExcludeList: Set<string>
+  getOrgIdExcludeList: () => Promise<Set<string>>
 ) {
-  const networkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
+  const [networkLinks, orgIdExcludeList] = await Promise.all([
+    commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
+    getOrgIdExcludeList(),
+  ]);
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
