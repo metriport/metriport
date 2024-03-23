@@ -12,7 +12,7 @@ dayjs.extend(duration);
 
 const context = "cq.patient.post-response.discover";
 const resultPoller = makeOutboundResultPoller();
-const MAX_SAFE_GWS = 10000;
+const MAX_SAFE_GWS = 100000;
 
 export async function processPostRespOutboundPatientDiscoveryResps({
   requestId,
