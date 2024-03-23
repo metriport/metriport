@@ -1,5 +1,4 @@
 import { out } from "@metriport/core/util/log";
-import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
@@ -8,13 +7,12 @@ import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { gatherXCPDGateways } from "./patient";
-import { getOutboundPatientDiscoveryResp } from "./command/outbound-resp/get-outbound-patient-discovery-resp";
 
 dayjs.extend(duration);
 
 const context = "cq.patient.post-response.discover";
 const resultPoller = makeOutboundResultPoller();
+const MAX_SAFE_GWS = 10000;
 
 export async function processPostRespOutboundPatientDiscoveryResps({
   requestId,
@@ -35,13 +33,12 @@ export async function processPostRespOutboundPatientDiscoveryResps({
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
-      const leftoverGateways = await calculateLeftoverGateways(patient);
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
         patientId: patient.id,
         cxId: patient.cxId,
-        numOfGateways: leftoverGateways,
+        numOfGateways: MAX_SAFE_GWS,
       });
     }
   } catch (error) {
@@ -56,11 +53,4 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       },
     });
   }
-}
-
-async function calculateLeftoverGateways(patient: Patient): Promise<number> {
-  const { xcpdGateways } = await gatherXCPDGateways(patient);
-  const results = await getOutboundPatientDiscoveryResp(patient.id);
-
-  return xcpdGateways.length - results.length;
 }
