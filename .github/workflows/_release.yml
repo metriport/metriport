@@ -1,5 +1,8 @@
 name: Reusable Release workflow
 
+# Not being used as of 2024-04-23
+# Left here so we can use it when ready to address https://github.com/metriport/metriport-internal/issues/1636
+
 on:
   workflow_call: # called by other workflows
     secrets:

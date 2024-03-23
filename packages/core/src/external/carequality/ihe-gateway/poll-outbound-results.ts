@@ -113,7 +113,7 @@ async function pollResults({
       console.log(`${raceResult}. ${details}`);
       raceControl.isRaceInProgress = false;
     } else if (!allGWsCompleted) {
-      const msg = `IHE GW results are incomplete for ${context}}`;
+      const msg = `IHE GW results are incomplete for ${context}`;
       console.log(`${msg}. ${details}`);
       capture.message(msg, {
         extra: {
