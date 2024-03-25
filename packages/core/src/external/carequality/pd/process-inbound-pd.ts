@@ -31,7 +31,7 @@ function constructMatchResponse(
     patientMatch: true,
     externalGatewayPatient: {
       id: patient.id,
-      system: "000", // TBD	- what is this
+      system: METRIPORT_HOME_COMMUNITY_ID,
     },
     patientResource: convertPatientToFHIR(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
