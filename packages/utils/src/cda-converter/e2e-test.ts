@@ -12,7 +12,7 @@ import { Bundle } from "@medplum/fhirtypes";
 
 const fhirBaseUrl = "http://localhost:8889";
 
-const baseInputFolder = "";
+const baseInputFolder = "<your-path>/packages/utils/src/cda-converter/test-files/";
 
 if (!fs.existsSync(baseInputFolder)) {
   console.error("Base input folder does not exist:", baseInputFolder);
@@ -26,10 +26,10 @@ fs.readdir(baseInputFolder, (err, files) => {
   }
 
   files.forEach(file => {
-    const filePath = path.join(baseInputFolder, file);
-    if (fs.statSync(filePath).isDirectory()) {
+    if (!file.endsWith(".json")) {
       return;
     }
+    const filePath = path.join(baseInputFolder, file);
 
     const fileBaseName = path.basename(file, ".json");
     const fileSpecificBaseFolder = path.join(baseInputFolder, fileBaseName);
