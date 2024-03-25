@@ -4,6 +4,9 @@ import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { Config } from "../../../shared/config";
+import { getSignedURL } from "../document/document-download";
+import { getPatient } from "./get-patient";
+import { createSandboxMRSummaryFileName } from "./shared";
 
 const awsRegion = Config.getAWSRegion();
 const s3Utils = new S3Utils(awsRegion);
@@ -40,12 +43,22 @@ export async function getMedicalRecordSummaryStatus({
   patientId: string;
   cxId: string;
 }): Promise<MedicalRecordsStatus> {
-  const s3FileKey = createMRSummaryFileName(cxId, patientId, "html");
-  const s3PdfFileKey = createMRSummaryFileName(cxId, patientId, "pdf");
+  let s3FileKey = createMRSummaryFileName(cxId, patientId, "html");
+  let s3PdfFileKey = createMRSummaryFileName(cxId, patientId, "pdf");
+  const isSandbox = Config.isSandbox();
+  const seedBucket = Config.getSandboxSeedBucketName();
+  let s3BucketName = bucketName;
+
+  if (isSandbox && seedBucket) {
+    const { s3HtmlSandboxKey, s3PdfSandboxKey } = await getSandboxFileNames(patientId, cxId);
+    s3FileKey = s3HtmlSandboxKey;
+    s3PdfFileKey = s3PdfSandboxKey;
+    s3BucketName = seedBucket;
+  }
 
   const [htmlMRInfo, pdfMRInfo] = await Promise.all([
-    s3Utils.getFileInfoFromS3(s3FileKey, bucketName),
-    s3Utils.getFileInfoFromS3(s3PdfFileKey, bucketName),
+    s3Utils.getFileInfoFromS3(s3FileKey, s3BucketName),
+    s3Utils.getFileInfoFromS3(s3PdfFileKey, s3BucketName),
   ]);
 
   return {
@@ -74,10 +87,38 @@ export async function getMedicalRecordSummary({
   const pdfIsValid = conversionType === "pdf" && pdfCreatedAt;
   const htmlIsValid = conversionType === "html" && htmlCreatedAt;
 
+  let s3BucketName = bucketName;
+
+  if (Config.isSandbox()) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    s3BucketName = Config.getSandboxSeedBucketName()!;
+    if (pdfIsValid || htmlIsValid) {
+      const patientName = await getSandboxPatientName(patientId, cxId);
+      const s3FileKey = createSandboxMRSummaryFileName(patientName, conversionType);
+      const url = await getSignedURL({ bucketName: s3BucketName, fileName: s3FileKey });
+      return url;
+    }
+  }
+
   if (pdfIsValid || htmlIsValid) {
     const s3FileKey = createMRSummaryFileName(cxId, patientId, conversionType);
-    const url = await s3Utils.getSignedUrl({ bucketName, fileName: s3FileKey });
+    const url = await s3Utils.getSignedUrl({ bucketName: s3BucketName, fileName: s3FileKey });
     return url;
   }
   return;
+}
+
+async function getSandboxFileNames(
+  patientId: string,
+  cxId: string
+): Promise<{ s3HtmlSandboxKey: string; s3PdfSandboxKey: string }> {
+  const firstName = await getSandboxPatientName(patientId, cxId);
+  const s3HtmlSandboxKey = createSandboxMRSummaryFileName(firstName, "html");
+  const s3PdfSandboxKey = createSandboxMRSummaryFileName(firstName, "pdf");
+  return { s3HtmlSandboxKey, s3PdfSandboxKey };
+}
+
+async function getSandboxPatientName(patientId: string, cxId: string) {
+  const patient = await getPatient({ id: patientId, cxId });
+  return patient ? patient.data.firstName.toLowerCase() : "jane";
 }
