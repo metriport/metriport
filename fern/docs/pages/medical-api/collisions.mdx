@@ -1,0 +1,35 @@
+ETag support to prevent mid-air collisions
+
+To prevent updating stale data - which can lead to data loss, we recommend the usage of
+[ETag](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag).
+
+Resources returned by Metriport's Medical API include an `eTag` property, which can later on be sent back to the API
+when performing an update on said data.
+
+The API will then compare that ETag with the one on the repository: if they don't
+match it means data was updated by another process and the server will abort the update and respond with
+[412 - Precondition Failed](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/412); otherwise it will proceed
+updating the resource.
+
+To send the ETag to an `update` endpoint, you can use the `If-Match` HTTP header, or include an `eTag` property
+on the request body. The header takes precedence if both are informed.
+
+The SDK implements this automatically, as long as the data obtained from a `get` or `list` function is updated and sent to
+the respective `update` function. Example:
+
+<CodeBlock title = "Nodejs">
+  ```typescript
+  const await patient = metriportClient.getPatient("...");
+  // logic that updates the patient
+  ...
+  // this update will automatically send the ETag if present on patient
+  await metriportClient.updatePatient(patient, facilityId);
+  ```
+</CodeBlock>
+
+If no ETag is provided the API will perform updates without checking for mid-air collisions.
+
+This technique is also called
+[Optimistic Locking](https://en.wikipedia.org/wiki/Optimistic_concurrency_control#Web_usage).
+
+Note that currently we only support ETag to prevent mid-air collisions, not for caching purposes.
