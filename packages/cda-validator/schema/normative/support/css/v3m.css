@@ -1,0 +1,537 @@
+li {
+	padding-top: 3px;
+	padding-bottom: 3px;
+}
+
+div.breadcrumb {
+	color: White;
+	font-family: Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+}
+/* toc navigation is based on a black background color */
+.toc_table {
+	background-color : Black;
+	border : 1px; 1px; 1px; 1px;
+	border-color : black;
+}
+
+.sectionrule {
+    color: #990000;
+    	border : 0;
+	/* white-space:nowrap;*/
+	width:100%;
+	padding-left: 0px; padding-right: 0px;
+  	margin-left: 0; margin-right: 0;
+	  border-width-left: 0; border-width-right: 0;
+ 	 width: 100%;
+}
+
+.toc_title_row {
+	cursor: hand;
+	background : #000000;
+}
+
+.toc_title_arrow {
+	font-family : sans-serif;
+	font-size: 9pt;
+	color : White;
+}
+
+.toc_title_text {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size : 10pt;
+	color : White;
+}
+
+.toc_row_master {
+	background : white;
+}
+
+.toc_indent_flag_gap {
+		width: 10px; 
+	text-align: left;	
+	vertical-align: top;
+}
+
+.toc_item {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	color: black;
+	font-size : 9pt;
+}
+
+a.toc_link:visited {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	color: #CCCCCC;
+	font-size : 9pt;
+}
+
+a.toc_link {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	color: #CCCCCC;
+	font-size : 9pt;
+}
+/* content tables */
+
+.content_table {
+	background-color : white;
+	border : 1px; 1px; 1px; 1px;
+	border-color : white;
+}
+
+.content_title_row {
+	cursor: hand;
+	#background : #5396C3;
+}
+
+.content_title_arrow {
+	font-family : Webdings;
+	color : White;
+}
+
+.content_title_text {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size : 10pt;
+	color : white;
+	font-weight : bold;
+	font-variant : normal;	
+}
+
+.content_bigtitle_text {
+	font-family : Verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size : 14pt;
+	color : white;
+	font-weight : bold;
+}
+
+.content_row_master {
+	background : white;
+}
+
+/* f2eed6  keep this ...we may use the color for other shading rules */
+
+body.homepage {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	color: black;
+}
+
+body {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	color: black;
+	background: white;
+	background-position: top left;
+	background-attachment: fixed;
+	background-repeat: no-repeat;
+}
+
+p.vocDesc {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 8pt;
+	color: black;
+}
+
+
+:link { color: #00C; background: transparent }
+:visited { color: #609; background: transparent }
+:active { color: #C00; background: transparent }
+
+th, td {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	color: black;
+}
+
+th.booleanTruthTable, td.booleanTruthTable {
+	font-size: 8pt ;
+	}
+table {
+	/*margin-left: 50pt;*/
+	/*margin-bottom: 10pt;*/
+}
+
+
+b.heading {
+	color: maroon;
+}
+
+
+/*The following sectinos were added by Michael Krot, in June 2002*/
+
+/*Header Table is the main table that provides the basic division*/
+table.header{
+	border : 0;
+	/* white-space:nowrap;*/
+	width:100%;
+	padding-left: 0px; padding-right: 0px;
+  	margin-left: 0; margin-right: 0;
+	  border-width-left: 0; border-width-right: 0;
+ 	 width: 100%;
+}
+
+/*Graphic col refers to the  cell that will possibly contain graphic information in the 
+main header table*/
+
+td.graphic_col{
+  width: 17px;
+  vertical-align : top;
+}
+/*Number col refers to the column that typically contains numbered headings*/
+td.number_col{
+	width: 45px;
+	vertical-align : top;
+}
+/*Body col refers the table that contains the bulk of the information in the table*/
+td.body_col{
+	text-align: left;
+		vertical-align : top;
+	white-space: wrap ;
+}
+
+
+
+/*This table is used in numerous places.  Right now it has a green border around it and
+contains a description of something and a link to that object*/
+table.artifactlist{
+	white-space:nowrap;
+	border : thin solid;
+	border-color: #c8d999;
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt;
+  vertical-align : top;
+}
+
+/*This cell is used for the description and by default takes over all remaining space*/
+td.artifactList_desc{
+	width:100%;
+}
+/*This cell is used for the code, or link that takes you to the place in question.*/
+td.artifactList_code{
+	width: 200px;
+	vertical-align:top;
+	text-align : right;
+}
+
+
+/*This table is used for interaction information.  It appears in the Interaction
+section and is only used there*/
+table.interact{
+	white-space:nowrap;
+	border : thin solid;
+	/* border-spacing : 0px; */
+	border-color: #c8d999;
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt; 
+	  vertical-align : top;
+}
+
+/*Type refers to the heading (e.g. Sending Role)*/
+td.interact_type{
+	vertical-align: top;
+	width: 210px; 
+}
+
+/*description is a sentence about the interaction*/
+td.interact_desc{
+  vertical-align : top;
+}
+
+/*code is the link to the object*/
+td.interact_code{
+	width: 90px;
+	vertical-align:top;
+	text-align: right;
+	  vertical-align : top;
+}
+
+/*This table is used for*/ 
+table.resp{
+	white-space:nowrap;
+	border : thin solid;
+	border-spacing : 0px;
+	border-color: #c8d999;
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt;
+}
+
+td.resp_te{
+	width: 90px; 
+	text-align: right;
+}
+td.resp_reason{
+	text-align:left;
+    
+}
+td.resp_in_code{
+	width: 90px;
+	text-align: right;
+}
+
+
+table.hmd{
+	white-space:nowrap;
+	border : thin solid;
+	border-color: #c8d999;
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt;
+}
+
+
+td.hmd_desc{
+	margin-left: 0pt;
+	vertical-align : top;
+	width: 100%; 
+}
+
+td.hmd_code{
+	vertical-align : top;
+	text-align : left;
+	width: 90px;
+}
+
+td.hmd_links{
+	text-align: right;
+	vertical-align : top;
+	width: 170px;	
+}
+
+table.structType{
+	border : thin solid;
+	border-color: #c8d999;
+	border: 0px; 
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt;
+}
+
+td.structType_name{
+	width: 155px; 
+	text-align: right;	
+	vertical-align: top;
+}
+
+td.structType_value{
+	vertical-align: top;
+}
+
+
+/*End section by Michael Krot*/
+
+
+
+table.homepage {
+	margin-left: 0pt;
+	/*margin-bottom: 0pt;*/
+}
+
+table.rimlists {
+	margin-left: 32pt;
+	/*margin-bottom: 0pt;*/
+}
+
+
+
+
+table.standard {
+	border : thin solid;
+	border-color: #c8d999;
+	border: 0px; 
+	padding:0;
+	padding:0; 
+	width:100%;
+	margin-left: 0pt;
+}
+
+.graphic {
+	/*margin-left: 50pt;*/
+	border : thin solid;
+	margin-top: 10pt;
+	margin-bottom: 10pt;
+}
+
+blockquote {
+	margin-left: 50pt;
+	margin-bottom: 5pt;/*20pt;*/
+/* pvb: 20050701: I think 20pt is way too much space on the
+	buttom of blockquotes, I propose we use 5pt, if we have to
+	use anything at all (I would prefer to not have any extra
+	space at the bottom) */
+}
+
+p {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt; 
+	padding-bottom: 10px;
+	/*margin-left: 50pt;*/
+}
+
+span.paragraph {
+	font-family: verdana, Geneva, Arial, Helvetica, sans-serif;
+	font-size: 10pt; 
+	margin-left: 50pt;
+}
+
+h1, h2, h3, h4, h5, h6 { text-align: left; font-family : Arial, Helvetica, sans-serif;}
+
+/* background should be transparent, but WebTV has a bug 
+  note: original h1,h2,h3 color was 005a9c
+*/
+h1, h2, h3, h4, h5, h6 {color: maroon; background: white }
+h1 { font: bold 170%;}
+h2 { font: bold 150%; }
+h3 { font: bold 130%;}
+h4 { font: bold 110%}
+h5 { font: normal 110%}
+h6 { font: italic 110%}
+
+.hide { display: none }
+
+/* div.head { margin-bottom: 1em }
+div.head h1 { margin-top: 2em; clear: both }
+div.head table { margin-left: 2em; margin-top:# 2em }
+div.head img { color: white; border: none } /* remove border from top image */
+
+p.copyright {
+	font-size: 7pt;
+	margin-left : 0pt;
+}
+
+@media screen {  /* hide from IE3 */
+	a:hover { background: #ffa } 
+}
+
+/* pre { margin-left: 2em } */
+dt, dd { margin-top: 0; margin-bottom: 0 } /* opera 3.50 */
+dt { font-weight: bold }
+
+pre, code { font-family: monospace
+} /* navigator 4 requires this */
+
+pre.example {
+	background-color: #f2eed6;
+}
+	
+pre.codefragment {
+	background-color: #ffff76;
+}
+	
+ul {
+/*	margin-left: 70pt;*/
+}
+
+ul.homepage {
+/*	margin-left: 20pt; */
+}
+
+ul.toc {
+/*	margin-left: 70pt;
+	list-style: disc;		/* Mac NS has problem with 'none' 
+	list-style: none; */
+}
+
+ol {
+/*	margin-left: 70pt; */
+}
+
+span.cardinality { font-weight: normal }
+
+li.assocRef {
+	margin-top: 6pt;
+	margin-bottom:6pt ;
+	list-style-type: none ;
+	margin-left: 0pt;
+}
+
+div.listTable { margin-left: 50pt }
+
+td.template {
+	font-size: 80%; 
+	background-color: #B0E0E6; /* find a better color */
+	}
+
+td.example {
+	font-size: 80%; 
+	background-color: #f2eed6;
+	}
+
+td.codefragment {
+	font-size: 90%;
+	background-color: #84fbfb;
+	}
+
+td.requirement {
+	background-color: #F5DEB3; /* find a better color */
+        border: 1 solid #191970;
+	}
+
+td.dtd {
+	background-color: #bedce6 ; /* find a better color */
+	}
+
+td.schema { background-color: #c8d999 ; }
+
+td.exhibit {
+	background-color: #66CCFF;
+}
+
+td.xslt { background-color: #c8d999 ; }
+
+/* div.descriptive {
+	padding-left : 68px;
+} */
+
+
+/* v3dt changes */
+caption { font: 80% sans-serif; }
+
+ul.schema {
+	list-style: disc;		/* Mac NS has problem with 'none' */
+	list-style: none;
+	margin: 1em 1em 1em 1em;
+}
+
+ul.schema ul.schema {
+	list-style: disc;		/* Mac NS has problem with 'none' */
+	list-style: none;
+	margin: 0 0 0 1em;
+}
+#foldheader{cursor:pointer;cursor:hand ; font-weight:normal ;
+list-style-image:url(graphics/fold.gif)}
+#foldinglist{list-style-image:url(graphics/list.gif);margin-top: 0em;margin-bottom: 0em;}
+
+pre {
+	padding: 0px 0px 0px 0px;
+}
+
+/* pvb: from gunther's v3m00.css */
+td.dtdl { background-color: #d9d9d9 ; }
+
+codeelement {font: Helvetica; font-weight: bolder; }
+
+
+#detailsegment {
+	padding-left: 50px;
+	font-family: verdana;
+	font-size: 12px;
+	}
+/*
+	pvb: 20050701: get the toc indenting right
+ */
+ div.toc1 {
+ 	}
+ div.toc2 {
+ 	margin-left: 18px ;
+ 	}
+ div.toc3 {
+ 	margin-left: 48px ;
+ 	}
+}
