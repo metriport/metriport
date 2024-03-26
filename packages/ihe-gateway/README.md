@@ -94,7 +94,7 @@ To push configs and backup to the server (after you pulled from Git remote, for 
 $ ./scripts/push-to-server.sh
 ```
 
-Configs are stored in the Docker image.
+Configs are stored in the Docker image. See the script file for details on usage.
 
 #### Build-time
 
