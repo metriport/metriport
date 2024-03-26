@@ -101,8 +101,16 @@ export async function queryAndProcessDocuments({
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
+  if (Config.isSandbox()) {
+    await sandboxGetDocRefsAndUpsert({
+      patient: patientParam,
+      requestId,
+    });
+    return;
+  }
+
   const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
-  if (!(await isCWEnabledForCx(cxId)) && !Config.isSandbox()) {
+  if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
 
@@ -122,15 +130,6 @@ export async function queryAndProcessDocuments({
     }
 
     const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
-
-    if (Config.isSandbox()) {
-      await sandboxGetDocRefsAndUpsert({
-        organization,
-        patient,
-        requestId,
-      });
-      return;
-    }
 
     const cwData = patient.data.externalData.COMMONWELL;
 

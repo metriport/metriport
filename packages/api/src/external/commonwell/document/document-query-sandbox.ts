@@ -1,5 +1,4 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { getFileExtension } from "@metriport/core/util/mime";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -32,11 +31,9 @@ const randomDates = [
 ];
 
 export async function sandboxGetDocRefsAndUpsert({
-  organization,
   patient,
   requestId,
 }: {
-  organization: Organization;
   patient: Patient;
   requestId: string;
 }): Promise<void> {
@@ -57,7 +54,7 @@ export async function sandboxGetDocRefsAndUpsert({
     });
 
     processPatientDocumentRequest(
-      organization.cxId,
+      patient.cxId,
       patient.id,
       "medical.document-download",
       MAPIWebhookStatus.completed,
@@ -81,7 +78,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
   const existingFhirDocs = await getDocumentsFromFHIR({
-    cxId: organization.cxId,
+    cxId: patient.cxId,
     patientId: patient.id,
   });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
@@ -180,7 +177,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const result = entries.map(d => d.docRef);
 
   processPatientDocumentRequest(
-    organization.cxId,
+    patient.cxId,
     patient.id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
