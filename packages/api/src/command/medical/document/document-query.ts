@@ -12,7 +12,7 @@ import { calculateConversionProgress } from "../../../domain/medical/conversion-
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
+import { getAllCQOrgsIds } from "../../../../src/external/carequality/command/cq-directory/get-organizations-for-xcpd";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
