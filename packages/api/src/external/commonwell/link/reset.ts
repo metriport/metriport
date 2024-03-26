@@ -1,15 +1,17 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { makeCommonWellAPI } from "../api";
 import { oid } from "@metriport/core/domain/oid";
-import { setCommonwellId } from "../patient-external-data";
-import { patientWithCWData } from "./shared";
-import { getPatientData } from "../patient-shared";
+import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
+import { makeCommonWellAPI } from "../api";
+import { setCommonwellId } from "../patient-external-data";
+import { getPatientData } from "../patient-shared";
+import { patientWithCWData } from "./shared";
 
-export const reset = async (patientId: string, cxId: string, facilityId: string) => {
+export async function reset(patientId: string, cxId: string, facilityId: string) {
+  const { log } = out("cw.link.reset");
   if (!(await isCWEnabledForCx(cxId))) {
-    console.log(`CW is disabled for cxId: ${cxId}`);
+    log(`CW is disabled for cxId: ${cxId}`);
     return undefined;
   }
 
@@ -45,8 +47,7 @@ export const reset = async (patientId: string, cxId: string, facilityId: string)
     });
   } catch (error) {
     const msg = `Failure resetting`;
-    console.log(`${msg} - patient id:`, patient.id);
-    console.log(msg, error);
+    log(`${msg} - patient id:`, patient.id);
     throw new Error(msg, { cause: error });
   }
-};
+}

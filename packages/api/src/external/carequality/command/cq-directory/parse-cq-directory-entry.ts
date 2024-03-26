@@ -115,7 +115,8 @@ function isValidUrl(url: string | undefined): boolean {
 }
 
 function getCoordinates(address: Address[]): Coordinates | undefined {
-  const orgPosition = address.find(a => a.extension?.url === ORG_POSITION);
+  const addressArray = Array.isArray(address) ? address : [address];
+  const orgPosition = addressArray.find(a => a.extension?.url === ORG_POSITION);
   const position = orgPosition?.extension?.valueCodeableConcept?.coding?.value?.position;
   if (!position) return;
   const lat = parseFloat(position.latitude.value);

@@ -1,15 +1,15 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
-import { groupBy } from "lodash";
 import { Patient } from "@metriport/core/domain/patient";
+import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { create, getCWData } from "../patient";
 import { getPatientData } from "../patient-shared";
-import { isCWEnabledForCx } from "../../aws/appConfig";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
+import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -45,15 +45,13 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
   }
   const patientsByCustomer = groupBy(patients, "cxId");
 
-  const orgIdExcludeList = await getAllCQOrgsIds();
-
   const res: RecreateResult = {};
   for (const [cxId, patients] of Object.entries(patientsByCustomer)) {
     log(`Found ${patients.length} patients for cxId ${cxId}`);
     const cxRes: Record<string, RecreateResultOfPatient | undefined> = {};
     // TODO consider moving this to Promise.all()
     for (const patient of patients) {
-      cxRes[patient.id] = await recreatePatientAtCW(patient, orgIdExcludeList);
+      cxRes[patient.id] = await recreatePatientAtCW(patient, getCqOrgIdsToDenyOnCw);
     }
     res[cxId] = cxRes;
   }
@@ -63,7 +61,7 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
 
 export async function recreatePatientAtCW(
   patient: Patient,
-  orgIdExcludeList: Set<string>
+  getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
 
@@ -108,7 +106,7 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await create(patient, facilityId, orgIdExcludeList, {
+    const cwIds = await create(patient, facilityId, getOrgIdExcludeList, {
       organization,
       facility,
     });

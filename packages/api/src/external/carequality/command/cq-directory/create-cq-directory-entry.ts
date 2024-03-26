@@ -1,7 +1,6 @@
 import { QueryTypes, Sequelize } from "sequelize";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { cqDirectoryEntryTemp } from "./shared";
 
 const keys = createKeys();
 const number_of_keys = keys.split(",").length;
@@ -50,7 +49,8 @@ function createKeys(): string {
 
 export async function bulkInsertCQDirectoryEntries(
   sequelize: Sequelize,
-  orgDataArray: CQDirectoryEntryData[]
+  orgDataArray: CQDirectoryEntryData[],
+  tableName: string
 ): Promise<void> {
   if (orgDataArray.length === 0) return;
   const placeholders = orgDataArray
@@ -77,7 +77,7 @@ export async function bulkInsertCQDirectoryEntries(
     entry.lastUpdatedAtCQ ?? null,
   ]);
 
-  const query = `INSERT INTO ${cqDirectoryEntryTemp} (${keys}) VALUES ${placeholders};`;
+  const query = `INSERT INTO ${tableName} (${keys}) VALUES ${placeholders};`;
   await sequelize.query(query, {
     replacements: flattenedData,
     type: QueryTypes.INSERT,

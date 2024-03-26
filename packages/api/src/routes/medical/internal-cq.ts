@@ -1,8 +1,8 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
+import { initDBPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { emptyFunction } from "@metriport/shared";
 import {
   isSuccessfulOutboundDocQueryResponse,
   isSuccessfulOutboundDocRetrievalResponse,
@@ -10,13 +10,18 @@ import {
   outboundDocumentRetrievalRespSchema,
   outboundPatientDiscoveryRespSchema,
 } from "@metriport/ihe-gateway-sdk";
+import { emptyFunction } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { uniqBy } from "lodash";
+import multer from "multer";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
+import { setEntriesAsGateway } from "../../external/carequality/command/cq-directory/cq-gateways";
+import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
 import { rebuildCQDirectory } from "../../external/carequality/command/cq-directory/rebuild-cq-directory";
@@ -25,6 +30,7 @@ import {
   searchCQDirectoriesAroundPatientAddresses,
   toBasicOrgAttributes,
 } from "../../external/carequality/command/cq-directory/search-cq-directory";
+import { cqDirectoryEntry } from "../../external/carequality/command/cq-directory/shared";
 import { createOutboundDocumentQueryResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-query-resp";
 import { createOutboundDocumentRetrievalResp } from "../../external/carequality/command/outbound-resp/create-outbound-document-retrieval-resp";
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
@@ -43,6 +49,8 @@ import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 const router = Router();
+const upload = multer();
+const sequelize = initDBPool(Config.getDBCreds());
 
 /**
  * POST /internal/carequality/directory/rebuild
@@ -54,6 +62,48 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     await rebuildCQDirectory();
+    return res.sendStatus(httpStatus.OK);
+  })
+);
+
+/**
+ * POST /internal/carequality/directory/insert
+ *
+ * Inserts organizations from a Carequality Directory bundle into our database.
+ * @param req.file The Carequality Directory to insert, in JSON format; it should include an array
+ *    of Organization resources, property `Bundle.entry` from the original CQ directory payload.
+ */
+router.post(
+  "/directory/insert",
+  upload.single("file"),
+  asyncHandler(async (req: Request, res: Response) => {
+    const file = req.file;
+    if (!file) {
+      throw new BadRequestError("File must be provided");
+    }
+    const bundle = JSON.parse(file.buffer.toString());
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const orgs = bundle.map((e: any) => e.resource.Organization);
+    console.log(`Got ${orgs.length} orgs`);
+
+    const parsedOrgs = parseCQDirectoryEntries(orgs);
+    console.log(`Parsed ${parsedOrgs.length} orgs`);
+
+    const gatewaysSet = new Set<string>();
+    for (const org of parsedOrgs) {
+      if (org.managingOrganizationId) {
+        gatewaysSet.add(org.managingOrganizationId);
+      }
+    }
+
+    // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638
+    const nonDup = uniqBy(parsedOrgs, "id");
+    console.log(`Adding ${nonDup.length} CQ directory entries...`);
+    await bulkInsertCQDirectoryEntries(sequelize, nonDup, cqDirectoryEntry);
+
+    await setEntriesAsGateway(Array.from(gatewaysSet));
+
     return res.sendStatus(httpStatus.OK);
   })
 );

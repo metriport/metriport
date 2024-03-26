@@ -7,13 +7,14 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
 } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
@@ -48,12 +49,12 @@ export function patientWithCWData(
   return patientWithCW;
 }
 
-function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>): boolean {
+function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): boolean {
   const identifiers = link.patient?.identifier || [];
   return identifiers.some(id => {
     const idSystem = id.system?.replace(urnOidRegex, "");
-    if (idSystem && orgIdExcludeList.has(idSystem)) {
-      console.log(`OrgID ${idSystem} is in the exclude list.`);
+    if (idSystem && orgIdExcludeList.includes(idSystem)) {
+      out(`isInsideOrgExcludeList`).log(`OrgID ${idSystem} is in the exclude list.`);
       return true;
     }
     return false;
@@ -65,11 +66,13 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>
  * for a given patient to LOLA 2.
  *
  * @param commonWell - The CommonWell API object
- * @param queryMeta - RequestMetadata - this is the metadata that is passed in from
- * the client.  It contains the user's session token, the user's organization, and the user's userId.
+ * @param queryMeta - RequestMetadata - this is the metadata that is passed in from the client.
+ *    It contains the user's session token, the user's organization, and the user's userId.
  * @param commonwellPatientId - The patient ID in the CommonWell system
  * @param commonwellPersonId - The CommonWell Person ID of the patient
  * @param executionContext - The execution context of the current request.
+ * @param getOrgIdExcludeList - Function to get the list of organization IDs to exclude from
+ *    network links
  */
 export async function autoUpgradeNetworkLinks(
   commonWell: CommonWellAPI,
@@ -77,9 +80,13 @@ export async function autoUpgradeNetworkLinks(
   commonwellPatientId: string,
   commonwellPersonId: string,
   executionContext: string,
-  orgIdExcludeList: Set<string>
+  getOrgIdExcludeList: () => Promise<string[]>
 ) {
-  const networkLinks = await commonWell.getNetworkLinks(queryMeta, commonwellPatientId);
+  const { log } = out("cw.autoUpgradeNetworkLinks");
+  const [networkLinks, orgIdExcludeList] = await Promise.all([
+    commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
+    getOrgIdExcludeList(),
+  ]);
 
   if (networkLinks._embedded && networkLinks._embedded.networkLink?.length) {
     const lola1Links = networkLinks._embedded.networkLink.flatMap(filterTruthy).filter(isLOLA1);
@@ -87,13 +94,13 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
-    console.log(`lola1Links: ${JSON.stringify(lola1Links)}`);
-    console.log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
+    log(`lola1Links: ${JSON.stringify(lola1Links)}`);
+    log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
     const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
       isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const downgradeRequests: Promise<NetworkLink>[] = [];
-    console.log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
+    log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
     lola2or3LinksToDowngrade.forEach(async link => {
       if (link._links?.downgrade?.href) {
         downgradeRequests.push(
@@ -101,7 +108,7 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
             .catch(error => {
               const msg = `Failed to downgrade link`;
-              console.log(`${msg}. Cause: ${error}`);
+              log(`${msg}. Cause: ${error}`);
               capture.message(msg, {
                 extra: {
                   commonwellPatientId,
@@ -133,7 +140,7 @@ export async function autoUpgradeNetworkLinks(
       link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
-    console.log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
+    log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
     lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
         upgradeRequests.push(
@@ -141,7 +148,7 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
               const msg = `Failed to upgrade link`;
-              console.log(`${msg}. Cause: ${error}`);
+              log(`${msg}. Cause: ${error}`);
               capture.message(msg, {
                 extra: {
                   commonwellPatientId,
