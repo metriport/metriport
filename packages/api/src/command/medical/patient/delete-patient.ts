@@ -31,9 +31,11 @@ export const deletePatient = async (patientDelete: PatientDeleteCmd): Promise<vo
     // These need to run before the Patient is deleted (need patient data from the DB)
     await Promise.all([
       cwCommands.patient.remove(patient, facilityId).catch(err => {
-        if (err.response?.status !== 404) throw err;
-        console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
-        processAsyncError(deleteContext);
+        if (err.response?.status === 404) {
+          console.log(`Patient not found @ CW when deleting ${patient.id} , continuing...`);
+          return;
+        }
+        processAsyncError(deleteContext)(err);
       }),
       fhirApi.deleteResource("Patient", patient.id).catch(processAsyncError(deleteContext)),
       cqCommands.patient.remove(patient).catch(processAsyncError(deleteContext)),
