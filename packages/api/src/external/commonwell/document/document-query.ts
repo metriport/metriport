@@ -102,7 +102,7 @@ export async function queryAndProcessDocuments({
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
 
   const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
-  if (!(await isCWEnabledForCx(cxId))) {
+  if (!(await isCWEnabledForCx(cxId)) && !Config.isSandbox()) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
 
