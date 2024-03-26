@@ -59,7 +59,6 @@ import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { update as updatePatient } from "../patient";
-import { getAllCQOrgsIds } from "../../carequality/command/cq-directory/get-organizations-for-xcpd";
 import { getCWData } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
@@ -93,7 +92,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
-  scheduledDocQuery,
+  getAllCQOrgsIds,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -102,7 +101,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  scheduledDocQuery?: boolean;
+  getAllCQOrgsIds?: () => Promise<Set<string>>;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -130,8 +129,9 @@ export async function queryAndProcessDocuments({
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
 
     // If patient has no links in CW then we want to schedule a doc query
-    // and to prevent infinite loops we need to check if we already have a scheduled doc query
-    if (hasNoCWStatus && !scheduledDocQuery) {
+    // and to prevent infinite loops we need to check if the patient has any CQ orgs
+    // as its only called the first time
+    if (hasNoCWStatus && getAllCQOrgsIds) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },

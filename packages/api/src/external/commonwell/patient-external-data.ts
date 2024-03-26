@@ -148,7 +148,6 @@ export async function updatePatientScheduledQueryRequestId({
     queryAndProcessDocuments({
       patient: updatedPatient,
       requestId: scheduledDocQueryRequestId,
-      scheduledDocQuery: true,
     });
   });
 }
