@@ -85,6 +85,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
 }
 
 async function createTempCQDirectoryTable(): Promise<void> {
+  await deleteTempCQDirectoryTable();
   const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} INCLUDING ALL)`;
   await sequelize.query(query, {
     type: QueryTypes.INSERT,

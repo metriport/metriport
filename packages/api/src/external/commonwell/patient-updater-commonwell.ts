@@ -13,7 +13,7 @@ const maxNumberOfParallelRequestsToCW = 10;
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
 export class PatientUpdaterCommonWell extends PatientUpdater {
-  constructor(private readonly orgIdExcludeList: () => Promise<Set<string>>) {
+  constructor(private readonly orgIdExcludeList: () => Promise<string[]>) {
     super();
     this.orgIdExcludeList = orgIdExcludeList;
   }

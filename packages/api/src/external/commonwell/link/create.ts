@@ -16,7 +16,7 @@ export const create = async (
   patientId: string,
   cxId: string,
   facilityId: string,
-  getOrgIdExcludeList: () => Promise<Set<string>>
+  getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> => {
   if (!(await isCWEnabledForCx(cxId))) {
     console.log(`CW is disabled for cxId: ${cxId}`);

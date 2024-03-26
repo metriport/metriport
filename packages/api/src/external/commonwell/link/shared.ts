@@ -7,13 +7,13 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import {
   Patient,
   PatientData,
   PatientExternalData,
   PatientExternalDataEntry,
 } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
@@ -48,11 +48,11 @@ export function patientWithCWData(
   return patientWithCW;
 }
 
-function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: Set<string>): boolean {
+function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): boolean {
   const identifiers = link.patient?.identifier || [];
   return identifiers.some(id => {
     const idSystem = id.system?.replace(urnOidRegex, "");
-    if (idSystem && orgIdExcludeList.has(idSystem)) {
+    if (idSystem && orgIdExcludeList.includes(idSystem)) {
       console.log(`OrgID ${idSystem} is in the exclude list.`);
       return true;
     }
@@ -79,7 +79,7 @@ export async function autoUpgradeNetworkLinks(
   commonwellPatientId: string,
   commonwellPersonId: string,
   executionContext: string,
-  getOrgIdExcludeList: () => Promise<Set<string>>
+  getOrgIdExcludeList: () => Promise<string[]>
 ) {
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),

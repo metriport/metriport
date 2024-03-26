@@ -13,16 +13,17 @@ export async function setEntriesAsGateway(oids: string[]): Promise<void> {
   );
 }
 
-// move this to a function that queries entries not from CW, only need the OID
-// check the json ramil sent to find if we can use the managing_org (name) to filter non-CW entries, or whether its a multi-level recursive structure
-export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getOrganizationIds(excludeManagingOrgs: string[]): Promise<string[]> {
+  const entries = await CQDirectoryEntryModel.findAll({
+    attributes: ["id"],
     where: {
-      urlXCPD: {
-        [Op.ne]: "",
+      managingOrganization: {
+        [Op.notIn]: excludeManagingOrgs,
       },
     },
   });
+  const ids = entries.map(entry => entry.id);
+  return ids;
 }
 
 export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {

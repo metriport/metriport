@@ -96,7 +96,7 @@ function getStoreIdsFn(
 export async function create(
   patient: Patient,
   facilityId: string,
-  getOrgIdExcludeList: () => Promise<Set<string>>,
+  getOrgIdExcludeList: () => Promise<string[]>,
   patientData?: {
     organization: Organization;
     facility: Facility;
@@ -166,7 +166,7 @@ export async function create(
 export async function update(
   patient: Patient,
   facilityId: string,
-  getOrgIdExcludeList: () => Promise<Set<string>>
+  getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
@@ -388,7 +388,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId: string;
   patientRefLink: string;
   storeIds: StoreIdsFunction;
-  getOrgIdExcludeList: () => Promise<Set<string>>;
+  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<string> {
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`

@@ -16,6 +16,7 @@ import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { uniqBy } from "lodash";
 import multer from "multer";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
@@ -95,8 +96,11 @@ router.post(
         gatewaysSet.add(org.managingOrganizationId);
       }
     }
-    console.log(`Adding ${parsedOrgs.length} CQ directory entries...`);
-    await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs, cqDirectoryEntry);
+
+    // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638
+    const nonDup = uniqBy(parsedOrgs, "id");
+    console.log(`Adding ${nonDup.length} CQ directory entries...`);
+    await bulkInsertCQDirectoryEntries(sequelize, nonDup, cqDirectoryEntry);
 
     await setEntriesAsGateway(Array.from(gatewaysSet));
 

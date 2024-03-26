@@ -12,10 +12,10 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { Config } from "../../../shared/config";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -51,7 +51,7 @@ export async function updatePatient(
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     // Intentionally asynchronous
     cwCommands.patient
-      .update(result, facilityId, getAllCQOrgsIds)
+      .update(result, facilityId, getCqOrgIdsToDenyOnCw)
       .catch(processAsyncError(`cw.patient.update`));
   }
 

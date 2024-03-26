@@ -22,13 +22,13 @@ const WAIT_BETWEEN_LINKING_AND_DOC_QUERY = dayjs.duration({ seconds: 30 });
 export class CoverageEnhancerApiLocal extends CoverageEnhancerLocal {
   constructor(
     cwManagementApi: CommonWellManagementAPI,
-    orgIdExcludeList: () => Promise<Set<string>>,
+    getOrgIdExcludeList: () => Promise<string[]>,
     prefix?: string | undefined
   ) {
     super(
       cwManagementApi,
       new PatientLoaderLocal(),
-      new PatientUpdaterCommonWell(orgIdExcludeList),
+      new PatientUpdaterCommonWell(getOrgIdExcludeList),
       new ECUpdaterLocal(),
       capture,
       prefix

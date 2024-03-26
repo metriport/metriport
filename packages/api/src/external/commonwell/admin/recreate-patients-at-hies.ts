@@ -2,7 +2,6 @@ import { organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { groupBy } from "lodash";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
@@ -10,6 +9,7 @@ import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { create, getCWData } from "../patient";
 import { getPatientData } from "../patient-shared";
+import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -51,7 +51,7 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
     const cxRes: Record<string, RecreateResultOfPatient | undefined> = {};
     // TODO consider moving this to Promise.all()
     for (const patient of patients) {
-      cxRes[patient.id] = await recreatePatientAtCW(patient, getAllCQOrgsIds);
+      cxRes[patient.id] = await recreatePatientAtCW(patient, getCqOrgIdsToDenyOnCw);
     }
     res[cxId] = cxRes;
   }
@@ -61,7 +61,7 @@ export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResul
 
 export async function recreatePatientAtCW(
   patient: Patient,
-  getOrgIdExcludeList: () => Promise<Set<string>>
+  getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
 

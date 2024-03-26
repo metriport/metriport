@@ -13,6 +13,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -31,7 +32,6 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
-import { getAllCQOrgsIds } from "../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
@@ -130,10 +130,9 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
 
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell(getAllCQOrgsIds).updateAll(
-      cxId,
-      patientIds
-    );
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell(
+      getCqOrgIdsToDenyOnCw
+    ).updateAll(cxId, patientIds);
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
@@ -219,7 +218,7 @@ router.post(
         patientId,
         cxId,
         facilityId,
-        getAllCQOrgsIds
+        getCqOrgIdsToDenyOnCw
       );
       return res.sendStatus(status.CREATED);
     }
@@ -361,7 +360,7 @@ router.patch(
             patientId,
             personId,
             unenrollByDemographics,
-            getAllCQOrgsIds
+            getCqOrgIdsToDenyOnCw
           ).catch(e => {
             console.log(`Error: ${e}, ${String(e)}`);
             throw `Failed to patch patient ${patientId} - ${String(e)}`;

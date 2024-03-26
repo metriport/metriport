@@ -3,11 +3,11 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "../../../errors";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -62,7 +62,7 @@ export const createPatient = async (
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     // Intentionally asynchronous
     cwCommands.patient
-      .create(newPatient, facilityId, getAllCQOrgsIds)
+      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
       .catch(processAsyncError(`cw.patient.create`));
   }
 
