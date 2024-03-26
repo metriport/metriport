@@ -82,7 +82,9 @@ export async function processOutboundDocumentRetrievalResps({
               status: "processing",
             },
           }
-        : {}),
+        : {
+            convertProgress: { total: 0, status: "completed" },
+          }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
