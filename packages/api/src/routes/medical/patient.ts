@@ -181,7 +181,7 @@ router.delete(
       cxId,
       facilityId,
     };
-    await deletePatient(patientDeleteCmd);
+    await deletePatient(patientDeleteCmd, { allEnvs: true });
 
     return res.sendStatus(status.NO_CONTENT);
   })
