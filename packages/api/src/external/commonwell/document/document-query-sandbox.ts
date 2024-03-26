@@ -46,7 +46,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
     await appendDocQueryProgress({
-      patient: { id: id, cxId: cxId },
+      patient: { id, cxId },
       downloadProgress: {
         status: "completed",
       },
@@ -79,14 +79,14 @@ export async function sandboxGetDocRefsAndUpsert({
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
   const existingFhirDocs = await getDocumentsFromFHIR({
-    cxId: cxId,
+    cxId,
     patientId: id,
   });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
   // set initial download/convert totals
   await appendDocQueryProgress({
-    patient: { id: id, cxId: cxId },
+    patient: { id, cxId },
     downloadProgress: {
       total: entries.length,
       status: "processing",
@@ -129,7 +129,7 @@ export async function sandboxGetDocRefsAndUpsert({
         if (!containsPatient) {
           contained.push({
             resourceType: "Patient",
-            id: id,
+            id,
           });
         }
         entry.docRef.subject = {
@@ -156,7 +156,7 @@ export async function sandboxGetDocRefsAndUpsert({
   // update download progress to completed, convert progress will be updated async
   // by the FHIR converter
   await appendDocQueryProgress({
-    patient: { id: id, cxId: cxId },
+    patient: { id, cxId },
     downloadProgress: {
       total: entries.length,
       status: "completed",
