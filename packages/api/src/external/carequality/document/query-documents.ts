@@ -15,7 +15,7 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { scheduleDocQuery } from "./schedule-document-query";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -43,7 +43,7 @@ export async function getDocumentsFromCQ({
 
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient });
+      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {

@@ -57,6 +57,10 @@ import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { processFhirResponse } from "../../fhir/document/process-fhir-search-response";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
+import { update as updatePatient } from "../patient";
+import { getAllCQOrgsIds } from "../../carequality/command/cq-directory/get-organizations-for-xcpd";
+import { getCWData } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -89,6 +93,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
+  scheduledDocQuery,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -97,6 +102,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
+  scheduledDocQuery?: boolean;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -115,6 +121,29 @@ export async function queryAndProcessDocuments({
   }
 
   try {
+    const { organization, facility } = await getPatientDataWithSingleFacility(
+      patientParam,
+      facilityId
+    );
+
+    const patientCWData = getCWData(patientParam.data.externalData);
+    const hasNoCWStatus = !patientCWData || !patientCWData.status;
+
+    // If patient has no links in CW then we want to schedule a doc query
+    // and to prevent infinite loops we need to check if we already have a scheduled doc query
+    if (hasNoCWStatus && !scheduledDocQuery) {
+      await scheduleDocQuery({
+        requestId,
+        patient: { id: patientId, cxId },
+        source: MedicalDataSource.COMMONWELL,
+      });
+
+      const orgIdExcludeList = await getAllCQOrgsIds();
+
+      await updatePatient(patientParam, facility.id, orgIdExcludeList);
+      return;
+    }
+
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
@@ -128,8 +157,6 @@ export async function queryAndProcessDocuments({
         patientId,
       });
     }
-
-    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
 
     const cwData = patient.data.externalData.COMMONWELL;
 

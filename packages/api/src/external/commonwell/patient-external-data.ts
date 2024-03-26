@@ -10,6 +10,7 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
 import { getCWData, getLinkStatusCQ } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+import { queryAndProcessDocuments } from "./document/document-query";
 
 dayjs.extend(duration);
 
@@ -97,3 +98,57 @@ export const setCommonwellId = async ({
     return updatedPatient.update({ data: updatedData }, { transaction });
   });
 };
+
+export async function updatePatientScheduledQueryRequestId({
+  patient,
+}: {
+  patient: Patient;
+}): Promise<void> {
+  const patientFilter = {
+    id: patient.id,
+    cxId: patient.cxId,
+  };
+
+  const scheduledDocQueryRequestId = getCWData(
+    patient.data.externalData
+  )?.scheduledDocQueryRequestId;
+
+  if (!scheduledDocQueryRequestId) return;
+
+  await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
+
+    const externalData = existingPatient.data.externalData ?? {};
+
+    const updatedExternalData = {
+      ...externalData,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        scheduledDocQueryRequestId: undefined,
+      },
+    };
+
+    const updatedPatient = {
+      ...existingPatient,
+      data: {
+        ...existingPatient.data,
+        externalData: updatedExternalData,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
+
+    queryAndProcessDocuments({
+      patient: updatedPatient,
+      requestId: scheduledDocQueryRequestId,
+      scheduledDocQuery: true,
+    });
+  });
+}

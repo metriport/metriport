@@ -22,7 +22,7 @@ import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import { setCommonwellId } from "./patient-external-data";
+import { setCommonwellId, updatePatientScheduledQueryRequestId } from "./patient-external-data";
 import {
   CQLinkStatus,
   findOrCreatePerson,
@@ -292,6 +292,10 @@ export async function update(
       createContext,
       orgIdExcludeList
     );
+
+    // Update the scheduled query request ID if it exists
+    // and retrigger the scheduled query
+    await updatePatientScheduledQueryRequestId({ patient });
   } catch (error) {
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
     capture.error(error, {
