@@ -1,3 +1,4 @@
+import { out } from "@metriport/core/util/log";
 import { initDBPool } from "@metriport/core/util/sequelize";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
@@ -27,6 +28,7 @@ const sequelize = initDBPool(dbCreds, {
 });
 
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
+  const { log } = out("rebuildCQDirectory");
   let currentPosition = 0;
   let isDone = false;
   const cq = makeCarequalityManagementAPI();
@@ -46,7 +48,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
             gatewaysSet.add(org.managingOrganizationId);
           }
         }
-        console.log(
+        log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
         await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs, cqDirectoryEntryTemp);
@@ -61,7 +63,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
-    console.log(`${msg}, error: ${error}`);
+    log(`${msg}, error: ${error}`);
     capture.message(msg, {
       extra: { context: `rebuildCQDirectory`, error },
       level: "error",
@@ -71,11 +73,11 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   try {
     await renameCQDirectoryTablesAndUpdateIndexes();
     await setEntriesAsGateway(Array.from(gatewaysSet));
-    console.log("CQ directory successfully rebuilt! :)");
+    log("CQ directory successfully rebuilt! :)");
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     await deleteTempCQDirectoryTable();
-    console.log(`${msg}. Cause: ${error}`);
+    log(`${msg}. Cause: ${error}`);
     capture.message(msg, {
       extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
       level: "error",

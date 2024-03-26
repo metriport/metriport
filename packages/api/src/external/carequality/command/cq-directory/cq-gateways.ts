@@ -1,8 +1,9 @@
+import { out } from "@metriport/core/util/log";
 import { Op, Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
 export async function setEntriesAsGateway(oids: string[]): Promise<void> {
-  console.log(`Found ${oids.length} gateways in the CQ directory. Updating...`);
+  out(`setEntriesAsGateway`).log(`Found ${oids.length} gateways in the CQ directory. Updating...`);
   await CQDirectoryEntryModel.update(
     {
       gateway: true,

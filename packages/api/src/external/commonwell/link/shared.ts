@@ -14,6 +14,7 @@ import {
   PatientExternalDataEntry,
 } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { out } from "@metriport/core/util/log";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
@@ -53,7 +54,7 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
   return identifiers.some(id => {
     const idSystem = id.system?.replace(urnOidRegex, "");
     if (idSystem && orgIdExcludeList.includes(idSystem)) {
-      console.log(`OrgID ${idSystem} is in the exclude list.`);
+      out(`isInsideOrgExcludeList`).log(`OrgID ${idSystem} is in the exclude list.`);
       return true;
     }
     return false;
@@ -81,6 +82,7 @@ export async function autoUpgradeNetworkLinks(
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
 ) {
+  const { log } = out("cw.autoUpgradeNetworkLinks");
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
     getOrgIdExcludeList(),
@@ -92,13 +94,13 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
-    console.log(`lola1Links: ${JSON.stringify(lola1Links)}`);
-    console.log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
+    log(`lola1Links: ${JSON.stringify(lola1Links)}`);
+    log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
     const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
       isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const downgradeRequests: Promise<NetworkLink>[] = [];
-    console.log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
+    log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
     lola2or3LinksToDowngrade.forEach(async link => {
       if (link._links?.downgrade?.href) {
         downgradeRequests.push(
@@ -106,7 +108,7 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
             .catch(error => {
               const msg = `Failed to downgrade link`;
-              console.log(`${msg}. Cause: ${error}`);
+              log(`${msg}. Cause: ${error}`);
               capture.message(msg, {
                 extra: {
                   commonwellPatientId,
@@ -138,7 +140,7 @@ export async function autoUpgradeNetworkLinks(
       link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
-    console.log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
+    log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
     lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
         upgradeRequests.push(
@@ -146,7 +148,7 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
               const msg = `Failed to upgrade link`;
-              console.log(`${msg}. Cause: ${error}`);
+              log(`${msg}. Cause: ${error}`);
               capture.message(msg, {
                 extra: {
                   commonwellPatientId,
