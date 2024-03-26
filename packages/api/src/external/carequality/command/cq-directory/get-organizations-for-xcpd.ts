@@ -3,7 +3,6 @@ import {
   getRecordLocatorServiceOrganizations,
   getStandaloneOrganizations,
   getSublinkOrganizations,
-  getOrganizationsWithXCPD,
 } from "./cq-gateways";
 
 function sortOrgsByNearbyOrder(orgs: CQDirectoryEntryModel[], orderMap: Map<string, number>) {
@@ -13,16 +12,6 @@ function sortOrgsByNearbyOrder(orgs: CQDirectoryEntryModel[], orderMap: Map<stri
 
     return orderA - orderB;
   });
-}
-
-export async function getAllCQOrgsIds(): Promise<Set<string>> {
-  const orgs = await getOrganizationsWithXCPD();
-  const orgsFlat: CQDirectoryEntryModel[] = orgs.flat();
-  const orgsSet: Set<string> = new Set();
-  orgsFlat.forEach(org => {
-    orgsSet.add(org.id);
-  });
-  return orgsSet;
 }
 
 export async function getOrganizationsForXCPD(

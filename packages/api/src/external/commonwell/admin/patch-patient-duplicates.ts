@@ -23,7 +23,7 @@ export async function patchDuplicatedPersonsForPatient(
   patientId: string,
   chosenPersonId: string,
   unenrollByDemographics = false,
-  orgIdExcludeList: Set<string>
+  orgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
   const context = "patchDuplicatedPersonsForPatient";
   const { log } = Util.out(`${context} ${patientId}`);
