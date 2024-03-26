@@ -7,13 +7,8 @@ import {
 } from "../../../domain/document/upload";
 import { parseFilePath } from "../../../domain/filename";
 import { MetriportError } from "../../../util/error/metriport-error";
-import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
-import {
-  createPatientUniqueId,
-  METRIPORT_HOME_COMMUNITY_ID,
-  METRIPORT_REPOSITORY_UNIQUE_ID,
-} from "../../carequality/shared";
 import { S3Utils } from "../s3";
+import { createAndUploadMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 
 const api = axios.create();
 
@@ -127,53 +122,4 @@ async function forwardCallToServer(
   console.log(`Server response - status: ${resp.status}`);
   console.log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;
-}
-
-async function createAndUploadMetadataFile({
-  s3Utils,
-  cxId,
-  patientId,
-  docId,
-  hash,
-  size,
-  docRef,
-  metadataFileName,
-  destinationBucket,
-  mimeType,
-}: {
-  s3Utils: S3Utils;
-  cxId: string;
-  patientId: string;
-  docId: string;
-  hash: string;
-  size: string;
-  docRef: DocumentReference;
-  metadataFileName: string;
-  destinationBucket: string;
-  mimeType: string;
-}): Promise<void> {
-  const createdTime = new Date().toISOString();
-  const uniquePatientId = createPatientUniqueId(cxId, patientId);
-  const title = docRef.description;
-  const classCode = docRef.type;
-  const practiceSettingCode = docRef.context?.practiceSetting;
-  const healthcareFacilityTypeCode = docRef.context?.facilityType;
-  console.log(`Creating metadata file for docId: ${docId}`);
-  const extrinsicObjectXml = createExtrinsicObjectXml({
-    createdTime,
-    hash,
-    repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-    homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
-    size,
-    patientId: uniquePatientId,
-    classCode,
-    practiceSettingCode,
-    healthcareFacilityTypeCode,
-    documentUniqueId: docId,
-    title,
-    mimeType,
-  });
-
-  console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
-  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
 }

@@ -1,0 +1,574 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>EntityClass</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D10882-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>EntityClass&nbsp;&nbsp;&nbsp;&nbsp;<img src="../../support/graphics/NormativeStandard.gif" alt="NormativeStandard1"></strong></font><br><p class="vocDesc">Classifies the Entity class and all of its subclasses.  The terminology is hierarchical.  At the top is this  HL7-defined
+                     domain of high-level categories (such as represented by the Entity subclasses). Each of these terms must be harmonized and
+                     is specializable.
+                  </p>
+                  <p class="vocDesc">The value sets beneath are encoded in Entity.code and are drawn from multiple, frequently external, domains that reflect much
+                     more fine-grained typing.
+                  </p>
+                  <p class="vocDesc">This table controls values for structural elements of the HL7 Reference Information Model.  Therefore, it is part of the Normative
+                     Ballot for the RIM.
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name="EntityClassRoot"></a><a name="C-0-D10882-V13922-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>S: EntityClassRoot</strong> (ENT)
+               </td>
+               <td>V13922</td>
+               <td>ENT</td>
+               <td>entity</td>
+               <td>
+                  <p class="vocDesc">Corresponds to the Entity class</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassLivingSubject"></a><a name="C-0-D10882-V13922-V10884-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassLivingSubject</strong> (LIV)
+               </td>
+               <td>V10884</td>
+               <td>LIV</td>
+               <td>living subject</td>
+               <td>
+                  <p class="vocDesc">Anything that essentially has the property of life, independent of current state (a dead human corpse is still essentially
+                     a living subject).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassNonPersonLivingSubject"></a><a name="C-0-D10882-V13922-V10884-V11621-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: EntityClassNonPersonLivingSubject</strong> (NLIV)
+               </td>
+               <td>V11621</td>
+               <td>NLIV</td>
+               <td>non-person living subject</td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10884-V11621-10885-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(ANM)
+                  
+               </td>
+               <td>10885</td>
+               <td>ANM</td>
+               <td>animal</td>
+               <td>
+                  <p class="vocDesc">A living subject from the animal kingdom.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10884-V11621-14028-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(MIC)
+                  
+               </td>
+               <td>14028</td>
+               <td>MIC</td>
+               <td>microorganism</td>
+               <td>
+                  <p class="vocDesc">All single celled living organisms including protozoa, bacteria, yeast, viruses, etc.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10884-V11621-10886-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(PLNT)
+                  
+               </td>
+               <td>10886</td>
+               <td>PLNT</td>
+               <td>plant</td>
+               <td>
+                  <p class="vocDesc">A living subject from the order of plants.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10884-10887-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PSN)
+                  
+               </td>
+               <td>10887</td>
+               <td>PSN</td>
+               <td>person</td>
+               <td>
+                  <p class="vocDesc">A living subject of the species homo sapiens.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassMaterial"></a><a name="C-0-D10882-V13922-V10883-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassMaterial</strong> (MAT)
+               </td>
+               <td>V10883</td>
+               <td>MAT</td>
+               <td>material</td>
+               <td>
+                  <p class="vocDesc">Any thing that has extension in space and mass, may be of living or non-living origin.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassManufacturedMaterial"></a><a name="C-0-D10882-V13922-V10883-V13934-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: EntityClassManufacturedMaterial</strong> (MMAT)
+               </td>
+               <td>V13934</td>
+               <td>MMAT</td>
+               <td>manufactured material</td>
+               <td>
+                  <p class="vocDesc">Corresponds to the ManufacturedMaterial class</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassContainer"></a><a name="C-0-D10882-V13922-V10883-V13934-V11622-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font><strong>S: EntityClassContainer</strong> (CONT)
+               </td>
+               <td>V11622</td>
+               <td>CONT</td>
+               <td>container</td>
+               <td>
+                  <p class="vocDesc">A container of other entities.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10883-V13934-V11622-14029-cpt"></a>5
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; </font>L: &nbsp;(HOLD)
+                  
+               </td>
+               <td>14029</td>
+               <td>HOLD</td>
+               <td>holder</td>
+               <td>
+                  <p class="vocDesc">A type of container that can hold other containers or other holders.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassDevice"></a><a name="C-0-D10882-V13922-V10883-V13934-V11623-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font><strong>S: EntityClassDevice</strong> (DEV)
+               </td>
+               <td>V11623</td>
+               <td>DEV</td>
+               <td>device</td>
+               <td>
+                  <p class="vocDesc">A subtype of ManufacturedMaterial used in an activity, without being substantially changed through that activity.  The kind
+                     of device is identified by the code attribute inherited from Entity.
+                  </p>
+                  <p class="vocDesc"><em>Usage:</em> This includes durable (reusable) medical equipment as well as disposable equipment.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10883-V13934-V11623-16098-cpt"></a>5
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; </font>L: &nbsp;(CER)
+                  
+               </td>
+               <td>16098</td>
+               <td>CER</td>
+               <td>certificate representation</td>
+               <td>
+                  <p class="vocDesc">A physical artifact that stores information about the granting of authorization.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10883-V13934-V11623-13939-cpt"></a>5
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; </font>L: &nbsp;(MODDV)
+                  
+               </td>
+               <td>13939</td>
+               <td>MODDV</td>
+               <td>imaging modality</td>
+               <td>
+                  <p class="vocDesc">Class to contain unique attributes of diagnostic imaging equipment.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10883-10888-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CHEM)
+                  
+               </td>
+               <td>10888</td>
+               <td>CHEM</td>
+               <td>chemical substance</td>
+               <td>
+                  <p class="vocDesc">A substance that is fully defined by an organic or inorganic chemical formula, includes mixtures of other chemical substances.
+                     Refine using, e.g., IUPAC codes.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10883-14027-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(FOOD)
+                  
+               </td>
+               <td>14027</td>
+               <td>FOOD</td>
+               <td>food</td>
+               <td>
+                  <p class="vocDesc">Naturally occurring, processed or manufactured entities that are primarily used as food for humans and animals.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassOrganization"></a><a name="C-0-D10882-V13922-V10889-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassOrganization</strong> (ORG)
+               </td>
+               <td>V10889</td>
+               <td>ORG</td>
+               <td>organization</td>
+               <td>
+                  <p class="vocDesc">A social or legal structure formed by human beings.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="State"></a><a name="C-0-D10882-V13922-V10889-V19455-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: State</strong> (STATE)
+               </td>
+               <td>V19455</td>
+               <td>STATE</td>
+               <td>state</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory, culture, or ethnicity, having sovereignty (to a certain extent)
+                     granted by other states (enclosing or neighboring states). This includes countries (nations), provinces (e.g., one of the
+                     United States of America or a French departement), counties or municipalities. Refine using, e.g., ISO country codes, FIPS-PUB
+                     state codes, etc.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10889-V19455-20093-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(NAT)
+                  
+               </td>
+               <td>20093</td>
+               <td>NAT</td>
+               <td>Nation</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory and known as a nation.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10889-10891-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PUB)
+                  
+               </td>
+               <td>10891</td>
+               <td>PUB</td>
+               <td>public institution</td>
+               <td>
+                  <p class="vocDesc">An agency of the people of a state often assuming some authority over a certain matter. Includes government, governmental
+                     agencies, associations.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassPlace"></a><a name="C-0-D10882-V13922-V10892-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassPlace</strong> (PLC)
+               </td>
+               <td>V10892</td>
+               <td>PLC</td>
+               <td>place</td>
+               <td>
+                  <p class="vocDesc">A physical place or site with its containing structure. May be natural or man-made. The geographic position of a place may
+                     or may not be constant.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10892-16835-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CITY)
+                  
+               </td>
+               <td>16835</td>
+               <td>CITY</td>
+               <td>city or town</td>
+               <td>
+                  <p class="vocDesc">The territory of a city, town or other municipality.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10892-16836-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(COUNTRY)
+                  
+               </td>
+               <td>16836</td>
+               <td>COUNTRY</td>
+               <td>country</td>
+               <td>
+                  <p class="vocDesc">The territory of a sovereign nation.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10892-16837-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(COUNTY)
+                  
+               </td>
+               <td>16837</td>
+               <td>COUNTY</td>
+               <td>county or parish</td>
+               <td>
+                  <p class="vocDesc">The territory of a county, parish or other division of a state or province.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-V10892-16838-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PROVINCE)
+                  
+               </td>
+               <td>16838</td>
+               <td>PROVINCE</td>
+               <td>state or province</td>
+               <td>
+                  <p class="vocDesc">The territory of a state, province, department or other division of a sovereign country.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-16755-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(HCE)
+                  
+               </td>
+               <td>16755</td>
+               <td>HCE</td>
+               <td>health chart entity</td>
+               <td>
+                  <p class="vocDesc">A health chart included to serve as a document receiving entity in the management of medical records.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V13922-11630-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(RGRP)
+                  
+               </td>
+               <td>11630</td>
+               <td>RGRP</td>
+               <td>group</td>
+               <td>
+                  <p class="vocDesc">A grouping of resources (personnel, material, or places) to be used for scheduling purposes.  May be a pool of like-type resources,
+                     a team, or combination of personnel, material and places.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_EntityClassDocumentReceiving"></a><a name="C-0-D10882-V19462-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: x_EntityClassDocumentReceiving</strong></td>
+               <td>V19462</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassOrganization"></a><a name="C-0-D10882-V19462-V10889-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassOrganization</strong> (ORG)
+               </td>
+               <td>V10889</td>
+               <td>ORG</td>
+               <td>organization</td>
+               <td>
+                  <p class="vocDesc">A social or legal structure formed by human beings.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="State"></a><a name="C-0-D10882-V19462-V10889-V19455-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: State</strong> (STATE)
+               </td>
+               <td>V19455</td>
+               <td>STATE</td>
+               <td>state</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory, culture, or ethnicity, having sovereignty (to a certain extent)
+                     granted by other states (enclosing or neighboring states). This includes countries (nations), provinces (e.g., one of the
+                     United States of America or a French departement), counties or municipalities. Refine using, e.g., ISO country codes, FIPS-PUB
+                     state codes, etc.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19462-V10889-V19455-20093-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(NAT)
+                  
+               </td>
+               <td>20093</td>
+               <td>NAT</td>
+               <td>Nation</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory and known as a nation.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19462-V10889-10891-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PUB)
+                  
+               </td>
+               <td>10891</td>
+               <td>PUB</td>
+               <td>public institution</td>
+               <td>
+                  <p class="vocDesc">An agency of the people of a state often assuming some authority over a certain matter. Includes government, governmental
+                     agencies, associations.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19462-16755-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(HCE)
+                  
+               </td>
+               <td>16755</td>
+               <td>HCE</td>
+               <td>health chart entity</td>
+               <td>
+                  <p class="vocDesc">A health chart included to serve as a document receiving entity in the management of medical records.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19462-10887-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PSN)
+                  
+               </td>
+               <td>10887</td>
+               <td>PSN</td>
+               <td>person</td>
+               <td>
+                  <p class="vocDesc">A living subject of the species homo sapiens.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_EntityClassPersonOrOrgReceiving"></a><a name="C-0-D10882-V19463-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: x_EntityClassPersonOrOrgReceiving</strong></td>
+               <td>V19463</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name="EntityClassOrganization"></a><a name="C-0-D10882-V19463-V10889-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: EntityClassOrganization</strong> (ORG)
+               </td>
+               <td>V10889</td>
+               <td>ORG</td>
+               <td>organization</td>
+               <td>
+                  <p class="vocDesc">A social or legal structure formed by human beings.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="State"></a><a name="C-0-D10882-V19463-V10889-V19455-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: State</strong> (STATE)
+               </td>
+               <td>V19455</td>
+               <td>STATE</td>
+               <td>state</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory, culture, or ethnicity, having sovereignty (to a certain extent)
+                     granted by other states (enclosing or neighboring states). This includes countries (nations), provinces (e.g., one of the
+                     United States of America or a French departement), counties or municipalities. Refine using, e.g., ISO country codes, FIPS-PUB
+                     state codes, etc.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19463-V10889-V19455-20093-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(NAT)
+                  
+               </td>
+               <td>20093</td>
+               <td>NAT</td>
+               <td>Nation</td>
+               <td>
+                  <p class="vocDesc">A politically organized body of people bonded by territory and known as a nation.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19463-V10889-10891-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PUB)
+                  
+               </td>
+               <td>10891</td>
+               <td>PUB</td>
+               <td>public institution</td>
+               <td>
+                  <p class="vocDesc">An agency of the people of a state often assuming some authority over a certain matter. Includes government, governmental
+                     agencies, associations.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10882-V19463-10887-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PSN)
+                  
+               </td>
+               <td>10887</td>
+               <td>PSN</td>
+               <td>person</td>
+               <td>
+                  <p class="vocDesc">A living subject of the species homo sapiens.</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>

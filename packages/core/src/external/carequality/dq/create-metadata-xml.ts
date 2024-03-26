@@ -13,6 +13,7 @@ import {
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE,
   DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY,
   METRIPORT_HOME_COMMUNITY_ID,
+  DEFAULT_TITLE,
   createDocumentUniqueId,
 } from "../shared";
 import { uuidv7 } from "../../../util/uuid-v7";
@@ -100,7 +101,7 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title}"/>
+      <LocalizedString charset="UTF-8" value="${title || DEFAULT_TITLE}"/>
     </Name>
     
     <Classification classificationScheme="urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a" classifiedObject="${documentUUID}" id="${uuidv7()}" nodeRepresentation="${classCodeNode}" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">

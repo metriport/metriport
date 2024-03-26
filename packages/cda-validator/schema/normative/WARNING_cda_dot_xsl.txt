@@ -1,0 +1,30 @@
+WARNING_cda_dot_xsl.txt
+
+4/17/2014
+
+A potential security vulnerability to the long-standing CDA style sheet (CDA.xsl or similarly named file) was recently raised and the community took quick action to update the style sheet and address each issue. The original issues were identified here:
+ 
+    http://smartplatforms.org/2014/04/security-vulnerabilities-in-ccda-display/
+
+This erratum addresses a potential vulnerability exposed by use of the style sheet in many current internet applications by preventing malicious insertion of executable code into the display instructions for non-XML clinical documents (allowed as the body in Consolidated CDA), illegal table attributes, and image URIs to potentially hostile sites. 
+When the style sheet was developed and evolved through community efforts, browser support for XSLT stylesheets was not commonly seen as a potential source of vulnerabilities, and JavaScript support was not as consistent or pervasive as it is today.  These are no longer safe assumptions and we have responded to the potential threat by making the following security enhancements:
+
+    * “Sanitizing” references in the nonXMLBody of a CDA document before passing it to an IFRAME. 
+    * Removing table attributes such as “onmouseover” that are legal in XHTML but not allowed in CDA
+    * Allowing only local relative image URIs by default, but providing a parameter to the XSLT stylesheet to re-enable remote image support for those who need it. 
+
+The style sheet updates are not intended as a replacement for other security measures. Recipients should load CDA documents from trusted sources, validate them against both the CDA.xsd schema and appropriate Schematron schemas, scan XML files for potential JavaScript insertion before accepting them from 3rd parties, and stay current with best security practice. The vulnerabilities in the XSLT style sheet are only possible when other security measures are lax.
+ 
+The updated style sheet is available here http://gforge.hl7.org/gf/project/strucdoc/frs/?action=index
+(Please note that in instances where the style sheet is included in a publication package, it has been updated.)
+
+We appreciate the action of the community to raise this issue and encourage all to continue to work to improve this utility. Special thanks to Lantana Consulting Group for working tirelessly to address these concerns quickly and efficiently.
+
+Sincerely,
+Calvin Beebe, Diana Behling, Rick Geimer, Austin Kreisler, Patrick Loyd, and Brett Marquard
+Co-Chairs, Structured Documents Work Group
+
+It is this kind of team work that drives the best solutions for the HL7 community and we greatly appreciate the work of this Work Group and others who participated in this effort. The Technical Steering Committee will develop a going security policy for HL7.
+
+John Quinn
+HL7 Chief Technology Officer

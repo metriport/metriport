@@ -1,0 +1,1988 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
+  <script type="text/javascript" src="../../support/js/tree.js">
+  </script>
+  <script type="text/javascript" src="../../support/js/setTopFrameText.js">
+  </script>
+  <script type="text/javascript">
+                        if (find('heading')) setHeadingTextFromFileName(document.location.href);
+  </script>
+  <title>Package Note to Readers</title>
+  <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css">
+  <style type="text/css">
+  </style>
+</head>
+
+<body>
+
+<table class="header">
+  <tbody>
+    <tr>
+      <td width="100%" colspan="3"><h1>Package Note to Readers</h1>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"></td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"></td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"></td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"><p class="copyright">Last
+        Published: 09/29/2005 10:16 PM</p>
+
+        <p class="copyright">HL7® Version 3 Standard, © 2005 Health Level
+        Seven®, Inc. All Rights Reserved. </p>
+
+        <p class="copyright">HL7 and Health Level Seven are registered
+        trademarks of Health Level Seven, Inc. Reg. U.S. Pat &amp; TM Off </p>
+      </td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"></td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"><hr title="Separator for header">
+      </td>
+    </tr>
+    <tr>
+      <td width="100%" colspan="3"><h2><a name="contents">Table of
+        Contents</a></h2>
+
+        <div class="toc1">
+        1  <a href="#bbforward">Forward</a></div>
+
+        <div class="toc2">
+        1.1  <a href="#bbcopyright">Copyright Notice</a></div>
+
+        <div class="toc2">
+        1.2  <a href="#bbwelcoack">HL7 Special Acknowledgments</a></div>
+
+        <div class="toc2">
+        1.3  <a href="#bbovervcon">Contact Us</a></div>
+
+        <div class="toc1">
+        2  <a href="#ExecSummary">2005 Version 3 Normative Edition
+        Contents</a></div>
+
+        <div class="toc2">
+        2.1  <a href="#ballotitems">Documents in the V3 2005 Normative
+        Edition</a></div>
+
+        <div class="toc3">
+        2.1.1  <a href="#ballotitems_foundation">Foundation Documents</a></div>
+
+        <div class="toc3">
+        2.1.2  <a href="#ballotitems_messaging">Messaging
+        Infrastructure</a></div>
+
+        <div class="toc3">
+        2.1.3  <a href="#ballotitems_transportspecs">Transport
+        Specifications</a></div>
+
+        <div class="toc3">
+        2.1.4  <a href="#ballotitems_its">Implementation Technology
+        Specifications (ITS)</a></div>
+
+        <div class="toc3">
+        2.1.5  <a href="#ballotitems_services">Services</a></div>
+
+        <div class="toc3">
+        2.1.6  <a href="#ballotitems_commondomains">Common Domains</a></div>
+
+        <div class="toc3">
+        2.1.7  <a href="#ballotitems_administrativedomain">Administrative
+        Management Domains</a></div>
+
+        <div class="toc3">
+        2.1.8  <a href="#ballotitems_healthdomains">Health and Clinical
+        Management Domains</a></div>
+
+        <div class="toc1">
+        3  <a href="#bbballo">Reading the HL7 V3 Normative Edition
+        Documents</a></div>
+
+        <div class="toc2">
+        3.1  <a href="#bbballokey">What do the Colors on the Master Table of
+        Contents Mean</a></div>
+
+        <div class="toc2">
+        3.2  <a href="#bbballostatuskey">What do the Colored Symbols in the
+        Documents Mean</a></div>
+
+        <div class="toc1">
+        4  <a href="#bbintro">HL7 Organization Overview</a></div>
+
+        <div class="toc2">
+        4.1  <a href="#bbintromsn">Mission</a></div>
+
+        <div class="toc2">
+        4.2  <a href="#bbintrohl7">What is HL7?</a></div>
+
+        <div class="toc2">
+        4.3  <a href="#bbintrobak">Background</a></div>
+
+        <div class="toc1">
+        5  <a href="#bbv3int">HL7 Version 3 Overview</a></div>
+
+        <div class="toc2">
+        5.1  <a href="#bbv3intwhy">Why a Major New Version?</a></div>
+
+        <div class="toc3">
+        5.1.1  <a href="#bbv3intwhydif">Difficulties with the Existing
+        Process</a></div>
+
+        <div class="toc3">
+        5.1.2  <a href="#bbv3intwhyopp">Opportunities to Improve</a></div>
+
+        <div class="toc2">
+        5.2  <a href="#bbv3intpri">V3 Principles</a></div>
+
+        <div class="toc2">
+        5.3  <a href="#bbv3intnew">What's New with HL7 V3?</a></div>
+
+        <div class="toc2">
+        5.4  <a href="#bbv3intmmd">Managing HL7 V3 Message Development</a></div>
+
+        <div class="toc3">
+        5.4.1  <a href="#bbv3intmmdsco">Project Scope Definition</a></div>
+
+        <div class="toc3">
+        5.4.2  <a href="#bbv3intmmdmet">HL7 V3 Methodology</a></div>
+
+        <div class="toc3">
+        5.4.3  <a href="#bbv3intmmdqap">Quality Assurance Process</a></div>
+
+        <div class="toc1">
+        6  <a href="#bbstart">Getting Started</a></div>
+
+        <div class="toc2">
+        6.1  <a href="#bbstartimp">New Implementer</a></div>
+
+        <div class="toc3">
+        6.1.1  <a href="#bbstartimpbas">Learn the Basics</a></div>
+
+        <div class="toc2">
+        6.2  <a href="#bbstartmgt">Management</a></div>
+
+        <div class="toc3">
+        6.2.1  <a href="#bbstartmgtmgr">Manager</a></div>
+
+        <div class="toc3">
+        6.2.2  <a href="#bbstartmgtpmr">Project Manager</a></div>
+
+        <div class="toc3">
+        6.2.3  <a href="#bbstartmgtmkt">Marketer</a></div>
+
+        <div class="toc3">
+        6.2.4  <a href="#bbstartmgtsit">Construct Site Agreement</a></div>
+
+        <div class="toc3">
+        6.2.5  <a href="#bbstartmgtsig">Sign a Deal</a></div>
+
+        <div class="toc2">
+        6.3  <a href="#bbstartidv">Interface Developer</a></div>
+
+        <div class="toc3">
+        6.3.1  <a href="#bbstartidvian">Interface Analyst</a></div>
+
+        <div class="toc3">
+        6.3.2  <a href="#bbstartidvipg">Interface Programmer</a></div>
+
+        <div class="toc3">
+        6.3.3  <a href="#bbstartidvdev">Develop Interface</a></div>
+
+        <div class="toc2">
+        6.4  <a href="#bbstartsdv">HL7 Standard Developer</a></div>
+
+        <div class="toc3">
+        6.4.1  <a href="#bbstartsdvdev">Develop the Standard</a></div>
+        <hr>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"><img
+        src="../../support/graphics/Reference.gif" alt="Reference1"></td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="bbforward"></a>1 </h2>
+      </td>
+      <td class="body_col"><h2>Forward</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbcopyright"></a>1.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>Copyright Notice</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>This 2005 Health Level Seven V3 Publication is
+        copyrighted by Health Level Seven, Inc. (HL7) and is therefore
+        protected by the Copyright Law of the United States and copyright
+        provisions of various international treaties. The effect of such laws
+        and treaties is that you may not, without a license from Health Level
+        Seven, Inc., copy or distribute HL7's publication Product. HL7
+        Organizational members are authorized to reproduce the publication for
+        internal use in their organization. This authorization use does not
+        include reproduction of any part of this publication for inclusion in
+        products for direct commercial resale. HL7 Individual members may not
+        reproduce any part of this publication. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbwelcoack"></a>1.2
+        </h3>
+      </td>
+      <td class="body_col"><h3>HL7 Special Acknowledgments</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>In addition to acknowledging the Committee
+        Co-chairs and Facilitators, special credit is due a number of
+        contributors:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Special thanks go to George Beeler for serving as
+        the V3 project leader and tools developer, Lloyd McKenzie with IBM for
+        developing the Visio tool set for development of CMETs and Austin
+        Kreisler with SAIC for development of the Publication Database. Helen
+        Stevens is acknowledged for her leadership of the Publishing Committee.
+        The following individuals are also acknowledged for their intellectual
+        contributions: Wes Rishel with Gartner Group, Jim Case with University
+        of California, Ken McCaslin with Quest Diagnostics, and Dale Nelson
+        with Zed-Logic Informatics, LLC. The following individuals are
+        acknowledged for their technical support in the production of this
+        publication: Rikki Holland with Double Click, Ltd, Charlie McCay with
+        Ramsey Systems, Ltd, Karen Van Hentenryck and Mike Craig with HL7,
+        Matthew Stephens with Ramsey Systems, Ltd. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbovervcon"></a>1.3
+        </h3>
+      </td>
+      <td class="body_col"><h3>Contact Us</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>If you have questions regarding this publication
+        you may contact the HL7 office at:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Health Level Seven, Inc. 3300 Washtenaw Avenue,
+        Suite 227, Ann Arbor, MI 48104</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>734-677-7777 (phone) 734-677-6622 (fax) E-mail
+        hq@HL7.org</p>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="ExecSummary"></a>2
+        </h2>
+      </td>
+      <td class="body_col"><h2>2005 Version 3 Normative Edition Contents</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Welcome to the 2005 Normative Edition of the
+        Version 3 (V3) messaging standard. This package is the result of many
+        years of work within the HL7 community and an increasingly focused
+        effort with each new ballot cycle. We believe it is a major step
+        forward for global health information standards. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The document you are currently reading is the
+        Package Note to Readers document, which contains the following
+        sections:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><a href="#bbintro">HL7 Organizational
+        Overview</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 Introduction section provides a brief
+        overview of the HL7 Organization, its mission and philosophy.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><a href="#bbv3int">HL7 Version 3 Overview</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Review this section to understand what HL7 V3 is,
+        why we developed HL7 V3, and the principles underlying the V3
+        Standard.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><a href="#bbstart">Getting Started</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The V3 Publication is composed of two types of
+        documents: Foundation and Domain. The Foundation documents are those
+        documents that are broader in scope and tend to apply to all domain
+        documents. THe V3 Guide, the HL7 Vocabulary Domain and Reference
+        Information Model, for example, are Foundation documents. Domain
+        documents are produced for a specific domain such as pharmacy or
+        scheduling and contain the messages relevant to that domain. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Below is a graphical representation of the
+        Foundation documents.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><br>
+        <img class="graphic" border="0" src="graphics/bb_Backbone.gif"
+        alt="graphics/bb_Backbone.gif"><br>
+        <br>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Version 3 Domains contain specifications for
+        dealing with functional areas of healthcare. For example, Patient
+        Administration, or Medical Redords. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><br>
+        <img class="graphic" border="0" src="graphics/bb_backbone_3.gif"
+        alt="graphics/bb_backbone_3.gif"><br>
+        <br>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Each Domain document has a common structure and
+        contains a common set of artifacts.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><br>
+        <img class="graphic" border="0" src="graphics/bb_backbone_2.gif"
+        alt="graphics/bb_backbone_2.gif"><br>
+        <br>
+        </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="ballotitems"></a>2.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>Documents in the V3 2005 Normative Edition</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The 2005 Normative Edition contains those Version
+        3 Standards that are ANSI Approved, those that have passed Membership
+        Level Ballot and are awaiting final ANSI Approval, and Draft Standards
+        for Trial Use (DSTU). </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_foundation"></a>2.1.1 </h4>
+      </td>
+      <td class="body_col"><h4>Foundation Documents</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Foundation Documents are the basis for all of the
+        other specifications. The RIM is the model on which all V3 Standards
+        are based. Vocabulary defines terms and code sets. The Data Types
+        Abstract Specification specifies the HL7 Version 3 Data Types on an
+        abstract layer, independent of representation. Refinement, Constraints
+        and Localization specifies what the HL7 Technical Committees are
+        permitted to do as part of the Version 3 Refinement process. GELLO is
+        intended to be a standard expression language for decision support. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b><a class="elink" href="../../infrastructure/rim/rim.htm#">HL7
+            Reference Information Model (RIM)</a></b></li>
+          <li><b><a class="elink"
+            href="../../infrastructure/datatypes/datatypes.htm#">Data Types:
+            Abstract Specification</a></b></li>
+          <li><b><a class="elink"
+            href="../../infrastructure/vocabulary/vocabulary.htm#">HL7
+            Vocabulary</a></b></li>
+          <li><b>Refinement, Constraint and Localization</b></li>
+          <li><b>GELLO: A Common Expression Language</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_messaging"></a>2.1.2 </h4>
+      </td>
+      <td class="body_col"><h4>Messaging Infrastructure</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The Master File / Registry domain comprises the
+        classes and attributes needed to support Master Files and Registries.
+        The Message Control Act Infrastructure covers the alternate structures
+        of the message Trigger Event Control Acts in the HL7 Composite Message.
+        The Query Infrastructure domain specifies the formation of information
+        queries and the responses to these queries. Transmission infrastructure
+        describes the information model, messages and interactions related to
+        the assembly of an HL7 v3 composite message. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b>Master File/Registry Infrastructure</b></li>
+          <li><b>Message Control Act Infrastructure</b></li>
+          <li><b>Query Infrastructure</b></li>
+          <li><b>Transmission Infrastructure</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_transportspecs"></a>2.1.3 </h4>
+      </td>
+      <td class="body_col"><h4>Transport Specifications</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Transport Specifications detail how the messages
+        are sent "over the wire."</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b>Transport Specification - ebXML</b></li>
+          <li><b>Transport Specification: MLLP</b></li>
+          <li><b>Web Services Profile</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_its"></a>2.1.4 </h4>
+      </td>
+      <td class="body_col"><h4>Implementation Technology Specifications
+        (ITS)</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The ITS:XML Datatypes specification defines
+        standard representations for data values in XML. The ITS:XML Structures
+        document describes how HL7 V3 compliant messages can be expressed using
+        XML.This UML ITS implements the semantics of the Abstract Data Types
+        specification using UML in such a way that HL7 data types are mapped
+        into the core UML and OCL kernel data types where such mappings are
+        appropriate. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b><a class="elink"
+            href="../../infrastructure/itsxml/datatypes-its-xml.htm#">ITS:XML
+            Datatypes</a></b></li>
+          <li><b><a class="elink"
+            href="../../infrastructure/itsxml/messaging-its-xml.htm#">ITS:XML
+            Structures</a></b></li>
+          <li><b>ITS:UML Data Types</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_services"></a>2.1.5 </h4>
+      </td>
+      <td class="body_col"><h4>Services</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 Common Terminology Services (HL7 CTS)
+        defines an Application Programming Interface (API) that can be used by
+        HL7 Version 3 software when accessing terminological content. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b>Common Terminology Services</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_commondomains"></a>2.1.6 </h4>
+      </td>
+      <td class="body_col"><h4>Common Domains</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>CMETs (Common Message Element Types) are a work
+        product produced by a particular committee for expressing a common,
+        useful and reusable concept. Shared Messages are a work product
+        produced for expressing common, useful and reusable message types. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b>Common Message Element Types</b></li>
+          <li><b>Shared Messages</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_administrativedomain"></a>2.1.7 </h4>
+      </td>
+      <td class="body_col"><h4>Administrative Management Domains</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Administrative Management Domains contain
+        specifications that support Administrative Functions in healthcare
+        facilities.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b>Accounting and Billing</b></li>
+          <li><b>Claims and Reimbursement</b></li>
+          <li><b>Patient Administration</b></li>
+          <li><b>Scheduling</b></li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="ballotitems_healthdomains"></a>2.1.8 </h4>
+      </td>
+      <td class="body_col"><h4>Health and Clinical Management Domains</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The Health and Clinical Managment Domains contain
+        specifications from a variety of healthcare focus areas.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><b><a class="elink"
+            href="../../infrastructure/cda/cda.htm#">Clinical Document
+            Architecture</a></b></li>
+          <li><b>Medical Records</b></li>
+          <li><b>Public Health Reporting</b></li>
+          <li><b>Regulated Studies</b></li>
+        </ul>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="bbballo"></a>3 </h2>
+      </td>
+      <td class="body_col"><h2>Reading the HL7 V3 Normative Edition
+        Documents</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 V3 Normative Edition is best viewed
+        online due to the size of the document and the availability of
+        extensive supporting materials. We are also making the entire package
+        available on CD-ROM. You may also download the documents from the HL7
+        website. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbballokey"></a>3.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>What do the Colors on the Master Table of
+        Contents Mean</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>If you look at menus that appear in the
+        documents, you will notice that six colors are used. The colors
+        indicate the type of document. The different types are enumerated
+        below: </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col">
+        <table width="90%" cellspacing="0" cellpadding="5" border="1">
+          <tbody>
+            <tr>
+              <td colspan="1">Icon</td>
+              <td colspan="1">Description</td>
+            </tr>
+            <tr>
+              <td colspan="1"><p><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-yellow.gif"
+                alt="../../support/graphics/book-closed-yellow.gif"><br>
+                <br>
+                </p>
+              </td>
+              <td colspan="1">Yellow identifies an informative document.
+                Informative documents are balloted according to a procedure
+                outlined by HL7. While calling for consensus, the ballot
+                procedure for informative documents is not as stringent as that
+                for normative documents. Information documents are not
+                submitted to ANSI for approval. </td>
+            </tr>
+            <tr>
+              <td colspan="1"><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-green.gif"
+                alt="../../support/graphics/book-closed-green.gif"><br>
+                <br>
+              </td>
+              <td colspan="1">Green identifies a reference document. Reference
+                documents are not balloted and are included with the ballot
+                material to assist with understanding and comprehension. The
+                Glossary, for example, is a reference document. </td>
+            </tr>
+            <tr>
+              <td colspan="1"><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-red.gif"
+                alt="../../support/graphics/book-closed-red.gif"><br>
+                <br>
+              </td>
+              <td colspan="1">Red identifies a normative document. Normative
+                documents are balloted according to procedures that adhere to
+                ANSI's procedures. Normative documents must pass both a
+                committee and a full membership level ballot. Normative
+                documents, once they've passed membership ballot, are submitted
+                to ANSI for approval. </td>
+            </tr>
+            <tr>
+              <td colspan="1"><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-blue.gif"
+                alt="../../support/graphics/book-closed-blue.gif"><br>
+                <br>
+              </td>
+              <td colspan="1">Blue identifies a group of documents that fall
+                into one or more of the categories listed above. Many of the
+                domain documents are grouped together under a blue section
+                heading. This is simply an easy way to group documents. </td>
+            </tr>
+            <tr>
+              <td colspan="1"><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-gray.gif"
+                alt="../../support/graphics/book-closed-gray.gif"><br>
+                <br>
+              </td>
+              <td colspan="1">Gray identifies a draft only document.
+                Ultimately, this document may become normative, informative or
+                reference but at the time of balloting, a gray book means that
+                this document or document group will be draft only and not
+                ballotable. </td>
+            </tr>
+            <tr>
+              <td colspan="1"><br>
+                <img class="graphic" border="0"
+                src="../../support/graphics/book-closed-orange.gif"
+                alt="../../support/graphics/book-closed-orange.gif"><br>
+                <br>
+              </td>
+              <td colspan="1">Purple identifies a normative document that is
+                (or will be) Draft Standard for Trial Use (DSTU).</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a
+        name="bbballostatuskey"></a>3.2 </h3>
+      </td>
+      <td class="body_col"><h3>What do the Colored Symbols in the Documents
+        Mean</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Within the documents, you may find several icons
+        that are designed or colored in such a way as to introduce the status
+        of that particular item. Most commonly, main headings will have an icon
+        for their ballot status. By hovering over the icons, you will find a
+        descriptive term to better understand what this icon means. Here is a
+        list of the ballot status icons used in these documents. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><a
+        href="graphics/L-bb_backbone_ballotstatus1.gif" target="_blank">Ballot
+        Status Icon Descriptions (link to graphic opens in a new window)</a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p><a
+        href="graphics/L-bb_backbone_ballotstatus2.gif" target="_blank">Ballot
+        Status Icon Descriptions (continued) (link to graphic opens in a new
+        window)</a></p>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="bbintro"></a>4 </h2>
+      </td>
+      <td class="body_col"><h2>HL7 Organization Overview</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbintromsn"></a>4.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>Mission</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>HL7's mission is to provide standards for the
+        exchange, management and integration of data that supports clinical
+        patient care and the management, delivery and evaluation of healthcare
+        services. Specifically, to create flexible, cost effective approaches,
+        standards, guidelines, methodologies, and related services for
+        interoperability between healthcare information systems. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbintrohl7"></a>4.2
+        </h3>
+      </td>
+      <td class="body_col"><h3>What is HL7?</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>HL7 is one of several ANSI-accredited Standards
+        Developing Organizations (SDOs) operating in the healthcare arena. Most
+        SDOs produce standards (sometimes called specifications or protocols)
+        for a particular healthcare domain such as clinical data, pharmacy,
+        medical devices, imaging or insurance (claims processing) transactions.
+        Health Level Seven's domain is clinical and administrative data. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>HL7 is a not-for-profit volunteer organization.
+        Its members - providers, vendors, payers, consultants, government
+        groups, pharmaceutical and others who have an interest in the
+        development and advancement of clinical and administrative standards
+        for healthcare - develop the standards. Like all ANSI-accredited SDOs,
+        HL7 adheres to a strict and well-defined set of operating procedures
+        that ensure consensus, openness and balance of interest. A frequent
+        misconception about HL7 (and presumably about the other SDOs) is that
+        it develops software. In reality, Health Level Seven develops
+        specifications, the most widely used being a messaging standard that
+        enables disparate healthcare applications to exchange key sets of
+        clinical and administrative data. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 Working Group is composed of volunteers
+        who give their time on a personal basis or under sponsorship of their
+        employers. Membership in the HL7 Working Group has been, and continues
+        to be, open to anyone wishing to contribute to the development and
+        refinement of the HL7 standards. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbintrobak"></a>4.3
+        </h3>
+      </td>
+      <td class="body_col"><h3>Background</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The term "Level 7" refers to the highest level of
+        the Open System Interconnection (OSI) model of the International
+        Organization for Standardization (ISO). This is not to say that HL7
+        conforms to ISO defined elements of the OSI's seventh level. Also, HL7
+        does not specify a set of ISO approved specifications to occupy layers
+        1 to 6 under HL7's abstract message specifications. HL7 does, however,
+        correspond to the conceptual definition of an
+        application-to-application interface placed in the seventh layer of the
+        OSI model. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>In the OSI conceptual model, the functions of
+        both communications software and hardware are separated into seven
+        layers, or levels. The HL7 Messaging Standard is primarily focused on
+        the issues that occur within the seventh, or application, level. These
+        are the definitions of the data to be exchanged, the timing of the
+        exchanges, and the communication of certain application-specific errors
+        between the applications. However, of necessity, protocols that refer
+        to the lower layers of the OSI model are sometimes mentioned to help
+        implementers understand the context of the standard. They are also
+        sometimes specified to assist implementers in establishing working
+        HL7-based systems. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>It does not try to assume a particular
+        architecture with respect to the placement of data within applications
+        but is designed to support a central patient care system as well as a
+        more distributed environment where data resides in departmental
+        systems. Instead, HL7 serves as a way for inherently disparate
+        applications and data architectures operating in a heterogeneous system
+        environment to communicate with each other. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>If we consider the multitude of healthcare
+        information systems applications as well as the variety of environments
+        in which healthcare is delivered, it is evident that there are many
+        more interfaces which could benefit from standardization. The
+        interfaces chosen were considered to be of high priority by the members
+        participating in the standards writing process. HL7's intent is to
+        prepare a complete standard for these interfaces, built on a generic
+        framework that is sufficiently robust to support many other interfaces.
+        </p>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="bbv3int"></a>5 </h2>
+      </td>
+      <td class="body_col"><h2>HL7 Version 3 Overview</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbv3intwhy"></a>5.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>Why a Major New Version?</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>HL7 V3, like V2.x, is a standard for exchanging
+        messages among information systems that implement healthcare
+        applications. However, V3 strives to improve the V2 process and its
+        outcomes. The original process for defining HL7 messages was
+        established in 1987. It has served well since. However, as HL7
+        membership grew and its standards became more widely used, HL7 has
+        become aware of opportunities to revolutionize healthcare interface
+        computing. HL7 interfaces substantially reduce costs and implementation
+        times when compared to the industry's experience with proprietary
+        interfaces. However, these costs and times vary considerably by vendor,
+        and the industry sees a need for improvement. Substantial optionality
+        in HL7 makes it difficult to specify precise contract terms for HL7
+        interfaces. This can lead to unrealistic expectations that hurt vendors
+        and buyers equally. The development principles behind HL7 V3 lead to a
+        more robust, fully specified standard. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbv3intwhydif"></a>5.1.1 </h4>
+      </td>
+      <td class="body_col"><h4>Difficulties with the Existing Process</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 V2.x development process is entirely ad
+        hoc. There is no explicit methodology. Members receive no formal
+        guidance in constructing messages. Trigger events and data fields are
+        described solely in natural language. The structural relationships
+        among data fields are not clear. Segments are reused in many messages
+        and message definitions are reused for many trigger events. In order to
+        accommodate this extensive reuse, most data fields are optional.
+        Chapters are inconsistent in their use of trigger events versus status
+        codes. There is no specification as to when a specific kind of
+        healthcare information system should be expected to honor a trigger
+        event or accept a message. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>With V2.x, a Technical Committee creates messages
+        by editing word processing documents directly. The metadata is not
+        available in a structured form until the staff and volunteers tediously
+        extract it from the word processing documents after publication. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>In summary, there is substantial need to improve
+        this old process in order to handle the breadth and complexity of the
+        challenges HL7 faces today. Our industry will benefit because this new
+        process results in a more rigorous specification. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbv3intwhyopp"></a>5.1.2 </h4>
+      </td>
+      <td class="body_col"><h4>Opportunities to Improve</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Fortunately, software practitioners have learned
+        a lot since 1987. There are better methodologies. Computer support is
+        far more available and cost-effective. However, HL7 cannot take
+        advantage of these developments solely by minor tweaks to the old
+        process. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>HL7 spent four years characterizing its revised
+        goals and creating a methodology to adapt modern analysis techniques
+        from system building to message design. Initially the HL7 Board of
+        Directors chartered an independent task force to establish the broad
+        outline of the approach. In January 1996, the Technical Steering
+        Committee (TSC) agreed to adopt the main features of the approach and
+        take over its management. Planning work continued in the Modeling and
+        Methodology Committee and the Control/Query Committee. At the
+        completion of V2.3, in the spring of 1997, the HL7 Technical Committees
+        all began to use the V3 process. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbv3intpri"></a>5.2
+        </h3>
+      </td>
+      <td class="body_col"><h3>V3 Principles</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The HL7 V3 standard development methodology is
+        based on a set of principles providing a common philosophy for all HL7
+        V3 standard developers. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><strong>Internationalization</strong>: V3 shall include
+            mechanisms that support the need for local variants of HL7 messages
+            to be used by HL7 Affiliates. It shall be possible for affiliates
+            to use the messages created by the worldwide HL7 organization. It
+            shall also be possible for affiliates to develop and use localized
+            variants. </li>
+          <li><strong>Legacy Systems Support</strong>: As with prior versions,
+            V3 shall be designed using a technological approach that permits
+            implementation in "legacy systems." These are systems that have
+            been implemented in technical environments that do not necessarily
+            conform to or provide support for recent or pending "open systems"
+            standards, such as those published by ISO, Open Systems Foundation,
+            Object Management Group, etc. Similarly, HL7 will not require
+            proprietary features of any operating system or software vendor. In
+            practical terms, this means that V3 shall be able to exchange
+            messages formatted in strings of printable characters, as is the
+            case for all previous versions. This does not preclude HL7 from
+            deciding to develop variants of its specification that make use of
+            the modern technologies provided that 1) System builders will not
+            be required to buy software from a sole source in order to
+            implement V3, and 2) Messages generated in these formats have the
+            same data content so that translation between the printable
+            character format and other formats is easy. </li>
+          <li><p><strong>Loosely Coupled Systems</strong>: As with HL7 V2.x, V3
+            shall not be a standard for the functionality of the systems that
+            exchange HL7 messages. However, where V3 includes a requirement to
+            accept or send certain data or to send specific messages in
+            response to trigger events or other messages, the application
+            system may have to develop functionality to support those
+            requirements. </p>
+            <p>V3 messages may be sent using many modes and topologies.
+            Messages may be sent in a manner that requires an immediate
+            response, as unsolicited updates through a store and forward
+            network, or in batches where the manner and timing of message
+            transfer is not specified. V3 includes support for "one-to-many,"
+            store-and-forward distribution of messages by an external software
+            agent. </p>
+          </li>
+          <li><p><strong>V2.x Functional Compatibility</strong>: HL7 V3 goals
+            cannot be achieved while maintaining full compatibility with
+            previous versions. However, upon completion, V3 shall cover the
+            information content of the last version in the V2.x series
+            including attributes and trigger events. This should not be
+            construed to mean that all attributes and trigger events will be
+            included in V3 in exactly the same form as within the V2.x series.
+            </p>
+            <p>A network that includes a mixture of systems that implement V2
+            and V3 will require message translation. Because the V2 standards
+            have substantial optionality, the translations will use rules
+            specific to the systems on that network. It is expected that
+            interface engines and other translation software will be able to
+            provide the translations between site-specific interpretations of
+            V2.x and any implementation of V3. </p>
+          </li>
+          <li><p><strong>Upward Compatibility Among V3.x</strong>: HL7 will
+            provide the maximum degree possible of interoperability among
+            systems operating on older and newer versions of HL7 protocols in
+            the V3 family through compatible enhancement. </p>
+            <ul>
+              <li>A message structure that is modified in a newer version of
+                the protocol must be acceptable to a system designed for the
+                prior V3 release. However, a system built for the prior release
+                will only extract the information that was defined for that
+                prior release. </li>
+              <li>A message structure created in accordance with an older
+                version of the V3 protocol must be acceptable to a system
+                designed for a later V3 release. In some cases, this will mean
+                that the system built for the newer release will not receive
+                certain information fields because they were not a part of the
+                older version of the message structure in use by a specific
+                sender. </li>
+              <li>Where compatible enhancement is not possible, HL7 will
+                require evolution in the protocol to happen gradually, so that
+                users can introduce the change into their networks gradually.
+              </li>
+              <li>The messages associated with all interactions that are newly
+                defined in a version of HL7 must not be sent to a receiver that
+                conforms to the older version. </li>
+              <li>A message structure may be declared obsolescent in one
+                release, with a stated alternative message structure. Both the
+                obsolescent message structure and its alternative can be used
+                by all systems supporting that release. </li>
+              <li>The obsolescent message structure may be declared obsolete
+                and dropped when still another HL7 version is issued. </li>
+              <li>An obsolescent message structure may not be declared obsolete
+                for at least two years from the date of the version that first
+                declared it obsolescent. </li>
+              <li>The above notwithstanding, if a new Implementation Technology
+                Specification (ITS) is introduced, HL7 may specify that
+                conformance to the ITS does not require dealing with message
+                structures that are obsolescent when the new ITS is introduced.
+                To the maximum degree possible, these restrictions should not
+                impose limitations on the evolution of the overall reference
+                model. There are no restrictions on making changes to the
+                information model if those changes do not impact the message
+                structures that were described in a prior version of the
+                Standard. </li>
+            </ul>
+          </li>
+          <li><p><strong>Determining Conformance</strong>: Application roles
+            are the basis for conformance claims. An application role is an
+            abstraction that expresses a portion of the messaging behavior of
+            an information system. Application role names are different than
+            the names generally used to describe healthcare information system
+            products, since they describe messaging interfaces as opposed to
+            application behavior. A typical healthcare information system will
+            probably fill several or many application roles. </p>
+            <p>In making a conformance claim, a system developer identifies the
+            application roles to which it wishes to claim conformance. For
+            these application roles, the V3 specification will state directly
+            the trigger events the system shall recognize, messages that the
+            system shall send in response to trigger events or other messages,
+            and the data content of these messages. The specification also
+            states the messages that a system conforming to the application
+            role shall receive and process. </p>
+            <p>All conformance claims shall be sufficiently specific to be used
+            as contractual terms in system acquisitions and to be the basis for
+            testing by an independent testing organization. </p>
+            <p>User sites may contract with vendors to implement deviations
+            from the HL7 conformance claims. Such arrangements are outside the
+            scope of HL7. Such an arrangement will not be considered a failure
+            of the application to conform to HL7. </p>
+            <p>All sequences of messages in V3 shall be related to a trigger
+            event. The trigger event shall be clearly identified in a common
+            field in all messages. </p>
+          </li>
+          <li><strong>Confidentiality of Patient Information</strong>: It is
+            expected that healthcare application systems that implement V3 will
+            be required to have significantly more functionality to protect the
+            confidentiality of patient information than has been common in the
+            past. The new functions may include, but are not limited to,
+            limiting the right to view or transfer selected data to users with
+            specific kinds of authorization and auditing access to patient
+            data. V3 will seek out and adopt industry security standards that
+            support conveying the necessary information from one healthcare
+            application system to another, so that these systems may perform
+            the confidentiality functions. The Functional Committees, the
+            Control Group, and the Modeling and Methodology Committee shall
+            consult with the Security &amp; Accountability SIG while developing
+            the HL7 Data Model and V3 messages. </li>
+          <li><strong>Authenticated Authorization for Services</strong>: It is
+            expected that the healthcare application systems that implement V3
+            will be required to have significantly more functionality to
+            authenticate requests for services and reports of data than has
+            been common in the past. The new functions may include, but are not
+            limited to, electronic signature and authentication of users based
+            on technologies more advanced than passwords. V3 will seek out and
+            reference standards such as X.500 and RFC 1510 to support conveying
+            the necessary information from one healthcare application system to
+            another, so that these systems may perform the authorization and
+            authentication functions. The functional Technical Committees, the
+            Control Group, and the Modeling and Methodology Committee shall
+            consult with the Security &amp; Accountability SIG while developing
+            the HL7 Data Model and V3 transactions. </li>
+          <li><strong>Security, Privacy, Non-Repudiation and
+            Integrity</strong>: It is expected that the technological platforms
+            upon which V3 information systems developers implement applications
+            that use HL7 will be required to have significantly more capability
+            to protect the confidentiality and integrity of patient information
+            than has been common in the past. The new functions may include,
+            but are not limited to, public- and private-key encryption, and
+            correspondent system authentication and non-repudiation. The
+            Control Group is monitoring these developments to ensure that V3
+            can be implemented on technological platforms that support these
+            new functions. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbv3intnew"></a>5.3
+        </h3>
+      </td>
+      <td class="body_col"><h3>What's New with HL7 V3?</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li><strong>HL7 V3 adopts an Object Oriented (OO) approach using
+            Unified Modeling Language (UML) principles.</strong> HL7 employs a
+            completely new development approach with V3. HL7 V3 uses an OO
+            approach that is model and repository-based. This OO approach is
+            supported with trained facilitators, formal education classes, and
+            computerized tools. This approach leads to increased detail,
+            clarity and precision of the specification and finer granularity in
+            the ultimate message. This helps functional committees meet the
+            challenges of de novo interface design, and increases functional
+            breadth and evolution of assumptions. It helps new members become
+            productive in fewer meetings. This is an enormous aid to providing
+            institutional memory and sharing work in progress across committees
+            and to the membership at large. </li>
+          <li><strong>HL7 isn't just Level 7 any more!</strong> After years of
+            implementing HL7 V2.x, HL7 standard developers realized it was
+            virtually impossible to develop a comprehensive standard without
+            including other levels of the International Organization for
+            Standardization (ISO) Open Systems Interconnect (OSI) Model. Today,
+            committees exist for XML, Security &amp; Accountability, Modeling
+            &amp; Methodology, Arden Syntax, CCOW and Vocabulary. </li>
+          <li><strong>Reduced Optionality.</strong> Limiting optionality is a
+            primary goal of HL7 V3. Within HL7 V2.x, almost every field is
+            optional. This optionality is necessary since optionality is
+            defined by segment and segments are reused in multiple messages.
+            Declaration of a data field as optional within a segment allows
+            that segment to be used in many different messages without any
+            further definition. However, the wide use of optionality, while
+            helpful in gaining consensus and in writing a somewhat more compact
+            specification, imposes significant costs on interface implementers.
+            In fact, optionality, as a "feature" of HL7 V 2.x, is associated
+            with most of the issues that V3 is trying to solve. Optionality
+            makes it harder to precisely define the semantics of a specific
+            message and makes it virtually impossible to generate conformance
+            claims for messaging. </li>
+          <li><strong>Conformance to HL7 V3 will be testable.</strong> It is
+            difficult to measure compliance of HL7 V2.x interfaces. Often
+            vendors claim compliance to HL7 without providing any supporting
+            documentation of how they conform. Terms such as HL7-like or
+            HL7-ish are used to describe HL7 interfaces. With HL7 V3,
+            conformance is specified in terms of application roles. Application
+            roles are abstractions that express a portion of the messaging
+            behavior of an information system. A vendor of a healthcare
+            application describes its conformance by asserting that it
+            completely supports all trigger events, messages and data elements
+            associated with one or more application roles. This level of
+            specificity allows clearer pre-contractual understanding between
+            vendors and buyers and will serve as a basis for conformance
+            testing. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbv3intmmd"></a>5.4
+        </h3>
+      </td>
+      <td class="body_col"><h3>Managing HL7 V3 Message Development</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>This section outlines the procedures used to
+        develop the HL7 V3 messages. These procedures are based on the V3
+        Methodology and the HL7 Bylaws. The goal is to assure that the standard
+        is developed expediently, appropriately documented, consistent with the
+        requirements for an approval by a balanced consensus, and that it
+        complies with the requirements for certification by the American
+        National Standards Institute (ANSI). </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbv3intmmdsco"></a>5.4.1 </h4>
+      </td>
+      <td class="body_col"><h4>Project Scope Definition</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>When a functional Technical Committee undertakes
+        a project to develop new normative material in V3 it creates a brief
+        description of the project for approval by the TSC. The project scope
+        statement contains a concise description of the needs to be met by the
+        transactions. This project scope statement is also be used for
+        coordination of projects with other standards organizations. In fact,
+        project scope statements must be reported to the ANSI so that ANSI can
+        fulfill its standards coordination role.<a name="fn-src1"></a><a
+        href="#fn1"><sup style="font-size: smaller">1</sup></a></p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Project scope statements are reviewed by the
+        Architectural Review Board (ARB) and must be approved by the HL7
+        Technical Steering Committee. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbv3intmmdmet"></a>5.4.2 </h4>
+      </td>
+      <td class="body_col"><h4>HL7 V3 Methodology</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The development of V3 messages follows the
+        methodology specified by the HL7 Modeling and Methodology Committee.
+        HL7 may amend the methodology from time to time. The methodology
+        includes a definition of work products delivered by the Technical
+        Committees. Portions of these work products are be designated for three
+        different treatments: </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ol>
+          <li>included as a normative portion of the eventual standard, </li>
+          <li>included as an informative portion of the eventual standard, </li>
+          <li>not included with the standard, but published with minutes and
+            archived. </li>
+        </ol>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The methodology specifies the following
+        requirements. These are annotated to indicate the work products
+        described in the V3 Guide that meet the requirements. The annotations
+        further state whether the work product is normative or informative. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col">
+        <table width="90%" cellspacing="0" cellpadding="5" border="1">
+          <thead>
+            <tr>
+              <th colspan="1">Requirement</th>
+              <th colspan="1">V3 Guide Construct(s)</th>
+              <th colspan="1">Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="1">A means of providing context to the definitions
+                of trigger events</td>
+              <td colspan="1">Storyboards, state diagrams</td>
+              <td colspan="1">Informative</td>
+            </tr>
+            <tr>
+              <td colspan="1">A means of specifying the information content of
+                messages through a common information model that clarifies the
+                definitions and ensures that they are used consistently across
+                all V3 messages defined by all Technical Committees </td>
+              <td colspan="1">Reference Information Model</td>
+              <td colspan="1">Reference</td>
+            </tr>
+            <tr>
+              <td colspan="1">A means of specifying responsibilities of the
+                senders and receivers of messages</td>
+              <td colspan="1">Interaction model</td>
+              <td colspan="1">Normative</td>
+            </tr>
+            <tr>
+              <td colspan="1">A common description of the exact fields of a
+                message and their grouping, sequence, optionality, and
+                cardinality</td>
+              <td colspan="1">Hierarchical Message Descriptions</td>
+              <td colspan="1">Normative</td>
+            </tr>
+            <tr>
+              <td colspan="1">Separate syntax specifications, describing the
+                algorithms used to encode and transmit the messages in an XML
+                based character stream syntax. </td>
+              <td colspan="1">Implementation Technology Specifications</td>
+              <td colspan="1">Normative</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The Modeling and Methodology Committee does not
+        have the right to determine the contents of work products created by
+        the Technical Committees. It serves to facilitate their development,
+        and to negotiate changes among the functional Technical Committees to
+        ensure standard-wide consistency. If disputes cannot be resolved by the
+        Technical Committees and/or the Modeling and Methodology Committee,
+        they shall be resolved by the TSC. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbv3intmmdqap"></a>5.4.3 </h4>
+      </td>
+      <td class="body_col"><h4>Quality Assurance Process</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>In order to ensure the highest quality of the
+        work products produced during the course of V3 message development, the
+        HL7 Board of Directors has created the ARB. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The ARB works with the Technical Committees and
+        Modeling and Methodology Committee to define quality measures for the
+        HL7 work products, measure the work products again them, and that
+        adherence to the defined message development process is documented in a
+        manner consistent with HL7 bylaws and procedures. The ARB does not have
+        the right to amend work products or disallow their distribution. It
+        does have the right to include with any work product a statement
+        describing areas where it has determined that the work product has not
+        met established measures of quality. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>As a general matter, the ARB is expected to
+        include a statement of its findings in an HL7 general ballot package.
+        However, in order to assist Technical Committees, and to avoid delaying
+        the balloting process, the ARB attempts to make any significant
+        comments as early in the ballot cycle as possible. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Disputes with the findings of the ARB are
+        resolved through the TSC and, if necessary, the Board of Directors.</p>
+      </td>
+    </tr>
+    <!--divN/head-->
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h2><a name="bbstart"></a>6 </h2>
+      </td>
+      <td class="body_col"><h2>Getting Started</h2>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The Getting Started section provides guidelines
+        and recommendation for how you should approach the HL7 V3 Publication.
+        Each section below depicts a type of HL7 customer based on his or her
+        relationship to the HL7 standard/organization. Locate the type of user
+        that most closely reflects your experience level. The documentation
+        includes recommended reading that will help you build the HL7 V3
+        knowledge base you desire. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbstartimp"></a>6.1
+        </h3>
+      </td>
+      <td class="body_col"><h3>New Implementer</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>A New Implementer is unfamiliar with HL7
+        terminology, methodology, and organization. A New Implementer may or
+        may not be a member of the HL7 organization. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartimpbas"></a>6.1.1 </h4>
+      </td>
+      <td class="body_col"><h4>Learn the Basics</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Learning the basics means becoming familiar with
+        the basic terminology and methodology behind HL7. You would expect to
+        learn the basic principles upon which HL7 V3 was constructed. Upon
+        completion of this use case, you would be prepared to learn more
+        detailed information about V3. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>While learning the basics, refer to:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>The Overview sections in the Backbone (this document) </li>
+          <li>Glossary </li>
+          <li>HL7 V3 Help Guide </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbstartmgt"></a>6.2
+        </h3>
+      </td>
+      <td class="body_col"><h3>Management</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartmgtmgr"></a>6.2.1 </h4>
+      </td>
+      <td class="body_col"><h4>Manager</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Managers are responsible for hiring qualified HL7
+        analysts and programmers. They must supervise interface development and
+        implementation efforts. They do not need to understand all of the
+        details of creating an HL7 message, but they need to understand the
+        concepts enough to review contacts, conformance statements, and assess
+        the skills of their team. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartmgtpmr"></a>6.2.2 </h4>
+      </td>
+      <td class="body_col"><h4>Project Manager</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The Project Manager is responsible for ensuring
+        the project is completed within budget, on time, and within scope.
+        Project Managers are not interested in all the details of creating an
+        HL7 V3 message, but he needs to understand the concepts enough to
+        review contacts, conformance statements, and assess the skills of his
+        team. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartmgtmkt"></a>6.2.3 </h4>
+      </td>
+      <td class="body_col"><h4>Marketer</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>A Marketer is responsible for selling HL7
+        interfaces. He does not need to know the details, but must understand
+        the major concepts and terminology. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartmgtsit"></a>6.2.4 </h4>
+      </td>
+      <td class="body_col"><h4>Construct Site Agreement</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Constructing a site agreement involves creating a
+        specification for two or more parties to communicate using HL7 messages
+        and documents. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>When constructing a site agreement, refer to:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>Backbone (this document) </li>
+          <li>Glossary </li>
+          <li>Refinement, Extension and Conformance to Version 3 document. </li>
+          <li>The Interaction Model chapter in the V3 Guide </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartmgtsig"></a>6.2.5 </h4>
+      </td>
+      <td class="body_col"><h4>Sign a Deal</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>The deal requires HL7 interfaces, so in order to
+        sign it a basic understanding of trigger events and message types, but
+        not a detailed understanding of message fields, is required. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>When signing a deal, refer to:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>The What's New in V3? section of the Backbone (this document)
+          </li>
+          <li>Refinement, Extension and Conformance to Version 3 document. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbstartidv"></a>6.3
+        </h3>
+      </td>
+      <td class="body_col"><h3>Interface Developer</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartidvian"></a>6.3.1 </h4>
+      </td>
+      <td class="body_col"><h4>Interface Analyst</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Interface Analysts review the interface
+        requirements and write detailed interface specifications.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartidvipg"></a>6.3.2 </h4>
+      </td>
+      <td class="body_col"><h4>Interface Programmer</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Interface Programmers code and test interface
+        based on the interface specifications.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartidvdev"></a>6.3.3 </h4>
+      </td>
+      <td class="body_col"><h4>Develop Interface</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Developing an interface requires gathering the
+        interface requirements, analyzing those requirements, developing
+        detailed interface specifications, coding, and testing the interface
+        against the interface specifications and defining the conformance
+        statement. </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>When developing an interface, you must identify
+        the application section you are working within:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>Health &amp; Clinical Management Section - This includes the
+            Clinical Document Architecture, Medical Records, Public Health
+            Reporting and Regulated Studies domain documents. </li>
+          <li>Administrative Management Section - This includes the Accounting
+            and Billing, Claims &amp; Reimbursement, Patient Administration,and
+            Scheduling domain documents. </li>
+          <li>Specification Infrastructure / Messaging Section - This includes
+            the Master File / Registry, Message Control Act, Query and
+            Transmission Infrastructure domain documents. </li>
+          <li>Common Domains Section - This include the Common Message Element
+            Types and Shared Messages domain documents.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Once you identify the section you can drill down
+        through to the domain messages.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>To complete your message development analysis,
+        you will also need to fully understand:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>XML Implementation Technology Specification - The Implementation
+            Technology Specification describes how HL7 messages are sent using
+            a specific method of encoding. </li>
+          <li>HL7 Vocabulary Domains - HL7 Vocabulary Domains are concepts you
+            are most likely already familiar with. HL7 Vocabulary Domains are
+            the sets of allowable values for a coded field. For example, if a
+            message contains a marital status field, then the vocabulary domain
+            for that field would consist of the allowed values for that field,
+            such as, single, married, divorced, and separated. Each coded
+            attribute in the RIM will be associated with one and only one
+            vocabulary domain. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>For additional reference, be sure to review:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>V3 Glossary </li>
+          <li>The Vocabulary chapter and the HL7 Message Components section of
+            the V3 Guide. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h3><a name="bbstartsdv"></a>6.4
+        </h3>
+      </td>
+      <td class="body_col"><h3>HL7 Standard Developer</h3>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Standard Developers attend HL7 Working Group
+        Meetings and participate in the creation of the HL7 V3 Standard
+        Specification.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"><h4><a
+        name="bbstartsdvdev"></a>6.4.1 </h4>
+      </td>
+      <td class="body_col"><h4>Develop the Standard</h4>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Developing the HL7 Standards involves an
+        understanding of the HL7 Organization and its development methods.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Before committing to HL7 Standards development,
+        review:</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>the scopes and mission statements of each HL7 Technical Committee
+            and Special Interest Group on the HL7 web site: http://www.hl7.org.
+            This will help you pinpoint to which committee your knowledge and
+            interest will be most compatible. </li>
+          <li>V3 Help Guide </li>
+          <li>Reference Information Model </li>
+          <li>HL7 V3 Data Types: Abstract </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Identify the section in which you are most
+        interested.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><ul style="margin-left:20px;">
+          <li>Health &amp; Clinical Management Section - This includes the
+            Clinical Document Architecture, Medical Records, Public Health
+            Reporting and Regulated Studies domain documents. </li>
+          <li>Administrative Management Section - This includes the Accounting
+            and Billing, Claims &amp; Reimbursement, Patient Administration,and
+            Scheduling domain documents. </li>
+          <li>Specification Infrastructure / Messaging Section - This includes
+            the Master File / Registry, Message Control Act, Query and
+            Transmission Infrastructure domain documents. </li>
+          <li>Common Domains Section - This include the Common Message Element
+            Types and Shared Messages domain documents. </li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>Once you identify the section you can drill down
+        to the domain messages.</p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap"> </td>
+      <td class="number_col" nowrap="nowrap"> </td>
+      <td class="body_col"><p>XML Implementation Technology Specification - The
+        XML Implementation Technology Specification defines the representation
+        of HL7 V3 data types and messages in XML, including the method to
+        derive XML DTDs plus additional processing rules from HL7 V3
+        Hierarchical Message Descriptions (HMDs). </p>
+      </td>
+    </tr>
+    <tr>
+      <td class="graphic_col" nowrap="nowrap">  </td>
+      <td class="number_col" nowrap="nowrap">  </td>
+      <td class="body_col"><h2>Endnotes</h2>
+        <ol>
+          <li><a name="fn1"></a> [<a href="#fn-src1">source</a>] The project
+            scope statement should not be confused with the Technical Committee
+            or Special Interest Group charter to which it is related. The TC or
+            SIG charter defines the scope of an HL7 committee and is subject to
+            approval by the HL7 TSC. The key criterion for a project scope
+            statement is that it should be consistent with the charter of the
+            committee that works on it. </li>
+        </ol>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

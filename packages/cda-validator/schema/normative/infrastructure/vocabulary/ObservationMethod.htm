@@ -1,0 +1,3713 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>ObservationMethod</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D14079-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>ObservationMethod&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></font><br><p class="vocDesc">A code that provides additional detail about the means or technique used to ascertain the observation.</p>
+                  <p class="vocDesc"><em>Examples:</em> Blood pressure measurement method: arterial puncture vs. sphygmomanometer (Riva-Rocci), sitting vs. supine position, etc.
+                     
+                  </p>
+                  <p class="vocDesc"><em>Constraints:</em> In all observations the method is already partially specified by the Act.code. In this case, the methodCode NEED NOT be used
+                     at all. The methodCode MAY still be used to identify this method more clearly in addition to what is implied from the Act.code.
+                     However, an information consumer system or process SHOULD NOT depend on this methodCode information for method detail that
+                     is implied by the Act.code. 
+                  </p>
+                  <p class="vocDesc">If the methodCode is used to express method detail that is also implied by the Act.code, the methodCode MUST NOT be in conflict
+                     with the implied method of the Act.code.
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name="DecisionObservationMethod"></a><a name="C-0-D14079-V19378-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: DecisionObservationMethod</strong></td>
+               <td>V19378</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Provides codes for decision methods, initially for assessing the causality of events.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="AlgorithmicDecisionObservationMethod"></a><a name="C-0-D14079-V19378-V19379-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: AlgorithmicDecisionObservationMethod</strong> (ALGM)
+               </td>
+               <td>V19379</td>
+               <td>ALGM</td>
+               <td>algorithm</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the application of an algorithm designed to weigh the different factors involved.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-V19378-V19379-19993-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(BYCL)
+                  
+               </td>
+               <td>19993</td>
+               <td>BYCL</td>
+               <td>bayesian calculation</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the use of Bayesian statistical analysis.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-V19378-19991-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(GINT)
+                  
+               </td>
+               <td>19991</td>
+               <td>GINT</td>
+               <td>global introspection</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision by consideration of the totality of factors involved in order to reach a judgement.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_AdverseEventCausalityAssessmentMethods"></a><a name="C-0-D14079-V19380-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: x_AdverseEventCausalityAssessmentMethods</strong></td>
+               <td>V19380</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Value set provides methods used to assess the causality of adverse events.  New codes should not be added to the domain without
+                     first checking with its steward - the Regulated Clinical Research Information Management (RCRIM) technical committee.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="AlgorithmicDecisionObservationMethod"></a><a name="C-0-D14079-V19380-V19379-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ALGM)
+                  
+               </td>
+               <td>V19379</td>
+               <td>ALGM</td>
+               <td>algorithm</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the application of an algorithm designed to weigh the different factors involved.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-V19380-19993-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(BYCL)
+                  
+               </td>
+               <td>19993</td>
+               <td>BYCL</td>
+               <td>bayesian calculation</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the use of Bayesian statistical analysis.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-V19380-19991-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(GINT)
+                  
+               </td>
+               <td>19991</td>
+               <td>GINT</td>
+               <td>global introspection</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision by consideration of the totality of factors involved in order to reach a judgement.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14080-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0001)
+                  
+               </td>
+               <td>14080</td>
+               <td>0001</td>
+               <td>Complement fixation</td>
+               <td>
+                  <p class="vocDesc">Complement fixation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14081-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0002)
+                  
+               </td>
+               <td>14081</td>
+               <td>0002</td>
+               <td>Computed axial tomography</td>
+               <td>
+                  <p class="vocDesc">Computed axial tomography</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14082-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0003)
+                  
+               </td>
+               <td>14082</td>
+               <td>0003</td>
+               <td>HLAR agar  test</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, High Level Aminoglycoside Resistance agar test</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14083-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0004)
+                  
+               </td>
+               <td>14083</td>
+               <td>0004</td>
+               <td>Macroscopic observation</td>
+               <td>
+                  <p class="vocDesc">Visual, Macroscopic observation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14084-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0005)
+                  
+               </td>
+               <td>14084</td>
+               <td>0005</td>
+               <td>Magnetic resonance</td>
+               <td>
+                  <p class="vocDesc">Computed, Magnetic resonance</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14085-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0006)
+                  
+               </td>
+               <td>14085</td>
+               <td>0006</td>
+               <td>Morphometry</td>
+               <td>
+                  <p class="vocDesc">Computed, Morphometry</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14086-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0007)
+                  
+               </td>
+               <td>14086</td>
+               <td>0007</td>
+               <td>Positron emission tomography</td>
+               <td>
+                  <p class="vocDesc">Computed, Positron emission tomography</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14087-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0008)
+                  
+               </td>
+               <td>14087</td>
+               <td>0008</td>
+               <td>SAMHSA confirmation</td>
+               <td>
+                  <p class="vocDesc">SAMHSA drug assay confirmation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14088-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0009)
+                  
+               </td>
+               <td>14088</td>
+               <td>0009</td>
+               <td>SAMHSA screening</td>
+               <td>
+                  <p class="vocDesc">SAMHSA drug assay screening</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14089-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0010)
+                  
+               </td>
+               <td>14089</td>
+               <td>0010</td>
+               <td>Serum Neutralization</td>
+               <td>
+                  <p class="vocDesc">Serum Neutralization</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14090-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0011)
+                  
+               </td>
+               <td>14090</td>
+               <td>0011</td>
+               <td>Titration</td>
+               <td>
+                  <p class="vocDesc">Titration</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14091-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0012)
+                  
+               </td>
+               <td>14091</td>
+               <td>0012</td>
+               <td>Ultrasound</td>
+               <td>
+                  <p class="vocDesc">Ultrasound</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14092-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0013)
+                  
+               </td>
+               <td>14092</td>
+               <td>0013</td>
+               <td>X-ray crystallography</td>
+               <td>
+                  <p class="vocDesc">X-ray crystallography</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14093-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0014)
+                  
+               </td>
+               <td>14093</td>
+               <td>0014</td>
+               <td>Agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14094-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0015)
+                  
+               </td>
+               <td>14094</td>
+               <td>0015</td>
+               <td>Buffered acidified plate agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Buffered acidified plate</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14095-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0016)
+                  
+               </td>
+               <td>14095</td>
+               <td>0016</td>
+               <td>Card agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Card</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14096-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0017)
+                  
+               </td>
+               <td>14096</td>
+               <td>0017</td>
+               <td>Hemagglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Hemagglutination</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14097-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0018)
+                  
+               </td>
+               <td>14097</td>
+               <td>0018</td>
+               <td>Hemagglutination inhibition</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Hemagglutination inhibition</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14098-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0019)
+                  
+               </td>
+               <td>14098</td>
+               <td>0019</td>
+               <td>Latex agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Latex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14099-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0020)
+                  
+               </td>
+               <td>14099</td>
+               <td>0020</td>
+               <td>Plate agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Plate</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14100-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0021)
+                  
+               </td>
+               <td>14100</td>
+               <td>0021</td>
+               <td>Rapid agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Rapid Plate</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14101-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0022)
+                  
+               </td>
+               <td>14101</td>
+               <td>0022</td>
+               <td>RBC agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, RBC</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14102-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0023)
+                  
+               </td>
+               <td>14102</td>
+               <td>0023</td>
+               <td>Rivanol agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Rivanol</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14103-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0024)
+                  
+               </td>
+               <td>14103</td>
+               <td>0024</td>
+               <td>Tube agglutination</td>
+               <td>
+                  <p class="vocDesc">Agglutination, Tube</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14104-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0025)
+                  
+               </td>
+               <td>14104</td>
+               <td>0025</td>
+               <td>Bioassay</td>
+               <td>
+                  <p class="vocDesc">Bioassay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14105-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0026)
+                  
+               </td>
+               <td>14105</td>
+               <td>0026</td>
+               <td>Animal Inoculation</td>
+               <td>
+                  <p class="vocDesc">Bioassay, Animal Inoculation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14106-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0027)
+                  
+               </td>
+               <td>14106</td>
+               <td>0027</td>
+               <td>Cytotoxicity</td>
+               <td>
+                  <p class="vocDesc">Bioassay, Cytotoxicity</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14107-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0028)
+                  
+               </td>
+               <td>14107</td>
+               <td>0028</td>
+               <td>Embryo infective dose 50</td>
+               <td>
+                  <p class="vocDesc">Bioassay, Embryo Infective Dose 50</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14108-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0029)
+                  
+               </td>
+               <td>14108</td>
+               <td>0029</td>
+               <td>Embryo lethal dose 50</td>
+               <td>
+                  <p class="vocDesc">Bioassay, Embryo Lethal Dose 50</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14109-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0030)
+                  
+               </td>
+               <td>14109</td>
+               <td>0030</td>
+               <td>Mouse intercerebral inoculation</td>
+               <td>
+                  <p class="vocDesc">Bioassay, Mouse intercerebral inoculation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14110-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0031)
+                  
+               </td>
+               <td>14110</td>
+               <td>0031</td>
+               <td>Bioassay, qualitative</td>
+               <td>
+                  <p class="vocDesc">Bioassay, qualitative</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14111-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0032)
+                  
+               </td>
+               <td>14111</td>
+               <td>0032</td>
+               <td>Bioassay, quantitative</td>
+               <td>
+                  <p class="vocDesc">Bioassay, quantitative</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14112-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0033)
+                  
+               </td>
+               <td>14112</td>
+               <td>0033</td>
+               <td>Chemical method</td>
+               <td>
+                  <p class="vocDesc">Chemical</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14113-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0034)
+                  
+               </td>
+               <td>14113</td>
+               <td>0034</td>
+               <td>Differential light absorption chemical test</td>
+               <td>
+                  <p class="vocDesc">Chemical, Differential light absorption</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14114-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0035)
+                  
+               </td>
+               <td>14114</td>
+               <td>0035</td>
+               <td>Dipstick</td>
+               <td>
+                  <p class="vocDesc">Chemical, Dipstick</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14115-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0036)
+                  
+               </td>
+               <td>14115</td>
+               <td>0036</td>
+               <td>Dipstick colorimetric laboratory test</td>
+               <td>
+                  <p class="vocDesc">Chemical, Dipstick colorimetric laboratory test</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14116-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0037)
+                  
+               </td>
+               <td>14116</td>
+               <td>0037</td>
+               <td>Test strip</td>
+               <td>
+                  <p class="vocDesc">Chemical, Test strip</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14117-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0038)
+                  
+               </td>
+               <td>14117</td>
+               <td>0038</td>
+               <td>Chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14118-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0039)
+                  
+               </td>
+               <td>14118</td>
+               <td>0039</td>
+               <td>Affinity chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Affinity</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14119-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0040)
+                  
+               </td>
+               <td>14119</td>
+               <td>0040</td>
+               <td>Gas liquid chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Gas liquid</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14120-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0041)
+                  
+               </td>
+               <td>14120</td>
+               <td>0041</td>
+               <td>High performance liquid chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography, High performance liquid</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14121-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0042)
+                  
+               </td>
+               <td>14121</td>
+               <td>0042</td>
+               <td>Liquid Chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Liquid</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14122-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0043)
+                  
+               </td>
+               <td>14122</td>
+               <td>0043</td>
+               <td>Protein A affinity chromatography</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Protein A affinity</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14123-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0044)
+                  
+               </td>
+               <td>14123</td>
+               <td>0044</td>
+               <td>Coagulation</td>
+               <td>
+                  <p class="vocDesc">Coagulation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14124-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0045)
+                  
+               </td>
+               <td>14124</td>
+               <td>0045</td>
+               <td>Tilt tube coagulation time</td>
+               <td>
+                  <p class="vocDesc">Coagulation, Tilt tube</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14125-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0046)
+                  
+               </td>
+               <td>14125</td>
+               <td>0046</td>
+               <td>Tilt tube reptilase induced coagulation</td>
+               <td>
+                  <p class="vocDesc">Coagulation, Tilt tube reptilase induced</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14126-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0047)
+                  
+               </td>
+               <td>14126</td>
+               <td>0047</td>
+               <td>Automated count</td>
+               <td>
+                  <p class="vocDesc">Count, Automated</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14127-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0048)
+                  
+               </td>
+               <td>14127</td>
+               <td>0048</td>
+               <td>Manual cell count</td>
+               <td>
+                  <p class="vocDesc">Count, Manual</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14128-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0049)
+                  
+               </td>
+               <td>14128</td>
+               <td>0049</td>
+               <td>Platelet count, Rees-Ecker</td>
+               <td>
+                  <p class="vocDesc">Count, Platelet, Rees-Ecker</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14129-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0050)
+                  
+               </td>
+               <td>14129</td>
+               <td>0050</td>
+               <td>Aerobic Culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Aerobic</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14130-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0051)
+                  
+               </td>
+               <td>14130</td>
+               <td>0051</td>
+               <td>Anaerobic Culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Anaerobic</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14131-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0052)
+                  
+               </td>
+               <td>14131</td>
+               <td>0052</td>
+               <td>Chicken embryo culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Chicken Embryo</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14132-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0053)
+                  
+               </td>
+               <td>14132</td>
+               <td>0053</td>
+               <td>Delayed secondary enrichment</td>
+               <td>
+                  <p class="vocDesc">Culture, Delayed secondary enrichment</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14133-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0054)
+                  
+               </td>
+               <td>14133</td>
+               <td>0054</td>
+               <td>Microaerophilic Culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Microaerophilic</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14134-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0055)
+                  
+               </td>
+               <td>14134</td>
+               <td>0055</td>
+               <td>Quantitative microbial culture, cup</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, cup</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14135-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0056)
+                  
+               </td>
+               <td>14135</td>
+               <td>0056</td>
+               <td>Quantitative microbial culture, droplet</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, droplet</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14136-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0057)
+                  
+               </td>
+               <td>14136</td>
+               <td>0057</td>
+               <td>Quantitative microbial culture, filter paper</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, filter paper</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14137-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0058)
+                  
+               </td>
+               <td>14137</td>
+               <td>0058</td>
+               <td>Quantitative microbial culture, pad culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, pad</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14138-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0059)
+                  
+               </td>
+               <td>14138</td>
+               <td>0059</td>
+               <td>Quantitative microbial culture, pour plate</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, pour plate</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14139-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0060)
+                  
+               </td>
+               <td>14139</td>
+               <td>0060</td>
+               <td>Quantitative microbial culture, surface streak</td>
+               <td>
+                  <p class="vocDesc">Culture, Quantitative microbial, surface streak</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14140-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0061)
+                  
+               </td>
+               <td>14140</td>
+               <td>0061</td>
+               <td>Somatic Cell culture</td>
+               <td>
+                  <p class="vocDesc">Culture, Somatic Cell</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14141-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0062)
+                  
+               </td>
+               <td>14141</td>
+               <td>0062</td>
+               <td>Agar diffusion</td>
+               <td>
+                  <p class="vocDesc">Diffusion, Agar</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14142-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0063)
+                  
+               </td>
+               <td>14142</td>
+               <td>0063</td>
+               <td>Agar Gel Immunodiffusion</td>
+               <td>
+                  <p class="vocDesc">Diffusion, Agar Gel Immunodiffusion</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14143-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0064)
+                  
+               </td>
+               <td>14143</td>
+               <td>0064</td>
+               <td>Electrophoresis</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14144-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0065)
+                  
+               </td>
+               <td>14144</td>
+               <td>0065</td>
+               <td>Agaorse gel electrophoresis</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, Agaorse gel</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14145-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0066)
+                  
+               </td>
+               <td>14145</td>
+               <td>0066</td>
+               <td>Electrophoresis, citrate agar</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, citrate agar</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14146-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0067)
+                  
+               </td>
+               <td>14146</td>
+               <td>0067</td>
+               <td>Immunoelectrophoresis</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, Immuno</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14147-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0068)
+                  
+               </td>
+               <td>14147</td>
+               <td>0068</td>
+               <td>Polyacrylamide gel electrophoresis</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, Polyacrylamide gel</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14148-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0069)
+                  
+               </td>
+               <td>14148</td>
+               <td>0069</td>
+               <td>Starch gel electrophoresis</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, Starch gel</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14149-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0070)
+                  
+               </td>
+               <td>14149</td>
+               <td>0070</td>
+               <td>ELISA</td>
+               <td>
+                  <p class="vocDesc">ELISA</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14150-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0071)
+                  
+               </td>
+               <td>14150</td>
+               <td>0071</td>
+               <td>ELISA, antigen capture</td>
+               <td>
+                  <p class="vocDesc">ELISA, antigen capture</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14151-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0072)
+                  
+               </td>
+               <td>14151</td>
+               <td>0072</td>
+               <td>ELISA, avidin biotin peroxidase complex</td>
+               <td>
+                  <p class="vocDesc">ELISA, avidin biotin peroxidase complex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14152-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0073)
+                  
+               </td>
+               <td>14152</td>
+               <td>0073</td>
+               <td>Kinetic ELISA</td>
+               <td>
+                  <p class="vocDesc">ELISA, Kinetic</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14153-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0074)
+                  
+               </td>
+               <td>14153</td>
+               <td>0074</td>
+               <td>ELISA, peroxidase-antiperoxidase</td>
+               <td>
+                  <p class="vocDesc">ELISA, peroxidase-antiperoxidase</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14154-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0075)
+                  
+               </td>
+               <td>14154</td>
+               <td>0075</td>
+               <td>API 20 Strep</td>
+               <td>
+                  <p class="vocDesc">Identification, API 20 Strep</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14155-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0076)
+                  
+               </td>
+               <td>14155</td>
+               <td>0076</td>
+               <td>API 20A</td>
+               <td>
+                  <p class="vocDesc">Identification, API 20A</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14156-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0077)
+                  
+               </td>
+               <td>14156</td>
+               <td>0077</td>
+               <td>API 20C AUX</td>
+               <td>
+                  <p class="vocDesc">Identification, API 20C AUX</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14157-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0078)
+                  
+               </td>
+               <td>14157</td>
+               <td>0078</td>
+               <td>API 20E</td>
+               <td>
+                  <p class="vocDesc">Identification, API 20E</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14158-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0079)
+                  
+               </td>
+               <td>14158</td>
+               <td>0079</td>
+               <td>API 20NE</td>
+               <td>
+                  <p class="vocDesc">Identification, API 20NE</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14159-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0080)
+                  
+               </td>
+               <td>14159</td>
+               <td>0080</td>
+               <td>API 50 CH</td>
+               <td>
+                  <p class="vocDesc">Identification, API 50 CH</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14160-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0081)
+                  
+               </td>
+               <td>14160</td>
+               <td>0081</td>
+               <td>API An-IDENT</td>
+               <td>
+                  <p class="vocDesc">Identification, API An-IDENT</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14161-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0082)
+                  
+               </td>
+               <td>14161</td>
+               <td>0082</td>
+               <td>API Coryne</td>
+               <td>
+                  <p class="vocDesc">Identification, API Coryne</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14162-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0083)
+                  
+               </td>
+               <td>14162</td>
+               <td>0083</td>
+               <td>API Rapid 20E</td>
+               <td>
+                  <p class="vocDesc">Identification, API Rapid 20E</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14163-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0084)
+                  
+               </td>
+               <td>14163</td>
+               <td>0084</td>
+               <td>API Staph</td>
+               <td>
+                  <p class="vocDesc">Identification, API Staph</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14164-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0085)
+                  
+               </td>
+               <td>14164</td>
+               <td>0085</td>
+               <td>API ZYM</td>
+               <td>
+                  <p class="vocDesc">Identification, API ZYM</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14165-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0086)
+                  
+               </td>
+               <td>14165</td>
+               <td>0086</td>
+               <td>Bacterial identification</td>
+               <td>
+                  <p class="vocDesc">Identification, Bacterial</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14166-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0087)
+                  
+               </td>
+               <td>14166</td>
+               <td>0087</td>
+               <td>mini VIDAS</td>
+               <td>
+                  <p class="vocDesc">Identification, mini VIDAS</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14167-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0088)
+                  
+               </td>
+               <td>14167</td>
+               <td>0088</td>
+               <td>Phage susceptibility typing</td>
+               <td>
+                  <p class="vocDesc">Identification, Phage susceptibility typing</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14168-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0089)
+                  
+               </td>
+               <td>14168</td>
+               <td>0089</td>
+               <td>Quad-FERM+</td>
+               <td>
+                  <p class="vocDesc">Identification, Quad-FERM+</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14169-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0090)
+                  
+               </td>
+               <td>14169</td>
+               <td>0090</td>
+               <td>RAPIDEC Staph</td>
+               <td>
+                  <p class="vocDesc">Identification, RAPIDEC Staph</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14170-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0091)
+                  
+               </td>
+               <td>14170</td>
+               <td>0091</td>
+               <td>Staphaurex</td>
+               <td>
+                  <p class="vocDesc">Identification, Staphaurex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14171-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0092)
+                  
+               </td>
+               <td>14171</td>
+               <td>0092</td>
+               <td>VIDAS</td>
+               <td>
+                  <p class="vocDesc">Identification, VIDAS</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14172-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0093)
+                  
+               </td>
+               <td>14172</td>
+               <td>0093</td>
+               <td>Vitek</td>
+               <td>
+                  <p class="vocDesc">Identification, Vitek</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14173-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0094)
+                  
+               </td>
+               <td>14173</td>
+               <td>0094</td>
+               <td>VITEK 2</td>
+               <td>
+                  <p class="vocDesc">Identification, VITEK 2</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14174-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0095)
+                  
+               </td>
+               <td>14174</td>
+               <td>0095</td>
+               <td>Immune stain</td>
+               <td>
+                  <p class="vocDesc">Immune stain</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14175-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0096)
+                  
+               </td>
+               <td>14175</td>
+               <td>0096</td>
+               <td>Immunofluorescent antibody, direct</td>
+               <td>
+                  <p class="vocDesc">Immune stain, Immunofluorescent antibody, direct</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14176-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0097)
+                  
+               </td>
+               <td>14176</td>
+               <td>0097</td>
+               <td>Immunofluorescent antibody, indirect</td>
+               <td>
+                  <p class="vocDesc">Immune stain, Immunofluorescent antibody, indirect</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14177-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0098)
+                  
+               </td>
+               <td>14177</td>
+               <td>0098</td>
+               <td>Immunoperoxidase, Avidin-Biotin Complex</td>
+               <td>
+                  <p class="vocDesc">Immune stain, Immunoperoxidase, Avidin-Biotin Complex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14178-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0099)
+                  
+               </td>
+               <td>14178</td>
+               <td>0099</td>
+               <td>Immunoperoxidase, Peroxidase anti-peroxidase complex</td>
+               <td>
+                  <p class="vocDesc">Immune stain, Immunoperoxidase, Peroxidase anti-peroxidase complex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14179-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0100)
+                  
+               </td>
+               <td>14179</td>
+               <td>0100</td>
+               <td>Immunoperoxidase, Protein A-peroxidase complex</td>
+               <td>
+                  <p class="vocDesc">Immune stain, Immunoperoxidase, Protein A-peroxidase complex</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14180-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0101)
+                  
+               </td>
+               <td>14180</td>
+               <td>0101</td>
+               <td>Immunoassay</td>
+               <td>
+                  <p class="vocDesc">Immunoassay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14181-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0102)
+                  
+               </td>
+               <td>14181</td>
+               <td>0102</td>
+               <td>Immunoassay, qualitative, multiple step</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, qualitative, multiple step</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14182-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0103)
+                  
+               </td>
+               <td>14182</td>
+               <td>0103</td>
+               <td>Immunoassay, qualitative, single step</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, qualitative, single step</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14183-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0104)
+                  
+               </td>
+               <td>14183</td>
+               <td>0104</td>
+               <td>Radioimmunoassay</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, Radioimmunoassay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14184-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0105)
+                  
+               </td>
+               <td>14184</td>
+               <td>0105</td>
+               <td>Immunoassay, semi-quantitative, multiple step</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, semi-quantitative, multiple step</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14185-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0106)
+                  
+               </td>
+               <td>14185</td>
+               <td>0106</td>
+               <td>Immunoassay, semi-quantitative, single step</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, semi-quantitative, single step</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14186-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0107)
+                  
+               </td>
+               <td>14186</td>
+               <td>0107</td>
+               <td>Microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14187-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0108)
+                  
+               </td>
+               <td>14187</td>
+               <td>0108</td>
+               <td>Darkfield microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Darkfield</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14188-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0109)
+                  
+               </td>
+               <td>14188</td>
+               <td>0109</td>
+               <td>Electron microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Electron</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14189-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0110)
+                  
+               </td>
+               <td>14189</td>
+               <td>0110</td>
+               <td>Electron microscopy tomography</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Electron microscopy tomography</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14190-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0111)
+                  
+               </td>
+               <td>14190</td>
+               <td>0111</td>
+               <td>Electron microscopy, negative stain</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Electron, negative stain</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14191-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0112)
+                  
+               </td>
+               <td>14191</td>
+               <td>0112</td>
+               <td>Electron microscopy, thick section</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Electron, thick section transmission</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14192-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0113)
+                  
+               </td>
+               <td>14192</td>
+               <td>0113</td>
+               <td>Electron microscopy, thin section</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Electron, thin section transmission</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14193-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0114)
+                  
+               </td>
+               <td>14193</td>
+               <td>0114</td>
+               <td>Microscopy, Light</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Light</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14194-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0115)
+                  
+               </td>
+               <td>14194</td>
+               <td>0115</td>
+               <td>Polarizing light microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Polarized light</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14195-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0116)
+                  
+               </td>
+               <td>14195</td>
+               <td>0116</td>
+               <td>Scanning electron microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Scanning electron</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14196-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0117)
+                  
+               </td>
+               <td>14196</td>
+               <td>0117</td>
+               <td>Transmission electron microscopy</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Transmission electron</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14197-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0118)
+                  
+               </td>
+               <td>14197</td>
+               <td>0118</td>
+               <td>Transparent tape direct examination</td>
+               <td>
+                  <p class="vocDesc">Microscopy, Transparent tape direct examination</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14198-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0119)
+                  
+               </td>
+               <td>14198</td>
+               <td>0119</td>
+               <td>3 Self-Sustaining Sequence Replication</td>
+               <td>
+                  <p class="vocDesc">Molecular, 3 Self-Sustaining Sequence Replication</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14199-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0120)
+                  
+               </td>
+               <td>14199</td>
+               <td>0120</td>
+               <td>Branched Chain DNA</td>
+               <td>
+                  <p class="vocDesc">Molecular, Branched Chain DNA</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14200-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0121)
+                  
+               </td>
+               <td>14200</td>
+               <td>0121</td>
+               <td>Hybridization Protection Assay</td>
+               <td>
+                  <p class="vocDesc">Molecular, Hybridization Protection Assay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14201-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0122)
+                  
+               </td>
+               <td>14201</td>
+               <td>0122</td>
+               <td>Immune blot</td>
+               <td>
+                  <p class="vocDesc">Molecular, Immune blot</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14202-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0123)
+                  
+               </td>
+               <td>14202</td>
+               <td>0123</td>
+               <td>In-situ hybridization</td>
+               <td>
+                  <p class="vocDesc">Molecular, In-situ hybridization</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14203-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0124)
+                  
+               </td>
+               <td>14203</td>
+               <td>0124</td>
+               <td>Ligase Chain Reaction</td>
+               <td>
+                  <p class="vocDesc">Molecular, Ligase Chain Reaction</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14204-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0125)
+                  
+               </td>
+               <td>14204</td>
+               <td>0125</td>
+               <td>Ligation Activated Transcription</td>
+               <td>
+                  <p class="vocDesc">Molecular, Ligation Activated Transcription</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14205-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0126)
+                  
+               </td>
+               <td>14205</td>
+               <td>0126</td>
+               <td>Nucleic Acid Probe</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic Acid Probe</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14206-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0127)
+                  
+               </td>
+               <td>14206</td>
+               <td>0127</td>
+               <td>Nucleic acid probe</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic acid probe</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14207-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0128)
+                  
+               </td>
+               <td>14207</td>
+               <td>0128</td>
+               <td>Nucleic acid probe with amplification</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic acid probe with amplification</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14208-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0129)
+                  
+               </td>
+               <td>14208</td>
+               <td>0129</td>
+               <td>Nucleic acid probe with target amplification</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic acid probe with target amplification</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14209-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0130)
+                  
+               </td>
+               <td>14209</td>
+               <td>0130</td>
+               <td>Nucleic acid reverse transcription</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic acid reverse transcription</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14210-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0131)
+                  
+               </td>
+               <td>14210</td>
+               <td>0131</td>
+               <td>Nucleic Acid Sequence Based Analysis</td>
+               <td>
+                  <p class="vocDesc">Molecular, Nucleic Acid Sequence Based Analysis</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14211-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0132)
+                  
+               </td>
+               <td>14211</td>
+               <td>0132</td>
+               <td>Polymerase chain reaction</td>
+               <td>
+                  <p class="vocDesc">Molecular, Polymerase chain reaction</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14212-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0133)
+                  
+               </td>
+               <td>14212</td>
+               <td>0133</td>
+               <td>Q-Beta Replicase or probe amplification category method</td>
+               <td>
+                  <p class="vocDesc">Molecular, Q-Beta Replicase or probe amplification category method</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14213-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0134)
+                  
+               </td>
+               <td>14213</td>
+               <td>0134</td>
+               <td>Restriction Fragment Length Polymorphism</td>
+               <td>
+                  <p class="vocDesc">Molecular, Restriction Fragment Length Polymorphism</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14214-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0135)
+                  
+               </td>
+               <td>14214</td>
+               <td>0135</td>
+               <td>Southern Blot</td>
+               <td>
+                  <p class="vocDesc">Molecular, Southern Blot</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14215-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0136)
+                  
+               </td>
+               <td>14215</td>
+               <td>0136</td>
+               <td>Strand Displacement Amplification</td>
+               <td>
+                  <p class="vocDesc">Molecular, Strand Displacement Amplification</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14216-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0137)
+                  
+               </td>
+               <td>14216</td>
+               <td>0137</td>
+               <td>Transcription Mediated Amplification</td>
+               <td>
+                  <p class="vocDesc">Molecular, Transcription Mediated Amplification</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14217-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0138)
+                  
+               </td>
+               <td>14217</td>
+               <td>0138</td>
+               <td>Western Blot</td>
+               <td>
+                  <p class="vocDesc">Molecular, Western Blot</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14218-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0139)
+                  
+               </td>
+               <td>14218</td>
+               <td>0139</td>
+               <td>Flocculation</td>
+               <td>
+                  <p class="vocDesc">Precipitation, Flocculation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14219-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0140)
+                  
+               </td>
+               <td>14219</td>
+               <td>0140</td>
+               <td>Immune precipitation</td>
+               <td>
+                  <p class="vocDesc">Precipitation, Immune precipitation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14220-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0141)
+                  
+               </td>
+               <td>14220</td>
+               <td>0141</td>
+               <td>Milk ring test</td>
+               <td>
+                  <p class="vocDesc">Precipitation, Milk ring test</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14221-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0142)
+                  
+               </td>
+               <td>14221</td>
+               <td>0142</td>
+               <td>Precipitin</td>
+               <td>
+                  <p class="vocDesc">Precipitation, Precipitin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14222-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0143)
+                  
+               </td>
+               <td>14222</td>
+               <td>0143</td>
+               <td>Acid fast stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Acid fast</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14223-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0144)
+                  
+               </td>
+               <td>14223</td>
+               <td>0144</td>
+               <td>Acid fast stain, fluorochrome</td>
+               <td>
+                  <p class="vocDesc">Stain, Acid fast, fluorochrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14224-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0145)
+                  
+               </td>
+               <td>14224</td>
+               <td>0145</td>
+               <td>Acid fast stain, Kinyoun's cold carbolfuchsin</td>
+               <td>
+                  <p class="vocDesc">Stain, Acid fast, Kinyoun's cold carbolfuchsin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14225-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0146)
+                  
+               </td>
+               <td>14225</td>
+               <td>0146</td>
+               <td>Acid fast stain, Ziehl-Neelsen</td>
+               <td>
+                  <p class="vocDesc">Stain, Acid fast, Ziehl-Neelsen</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14226-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0147)
+                  
+               </td>
+               <td>14226</td>
+               <td>0147</td>
+               <td>Acid phosphatase stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Acid phosphatase</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14227-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0148)
+                  
+               </td>
+               <td>14227</td>
+               <td>0148</td>
+               <td>Acridine orange stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Acridine orange</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14228-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0149)
+                  
+               </td>
+               <td>14228</td>
+               <td>0149</td>
+               <td>Active brilliant orange KH stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Active brilliant orange KH</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14229-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0150)
+                  
+               </td>
+               <td>14229</td>
+               <td>0150</td>
+               <td>Alazarin red S stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Alazarin red S</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14230-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0151)
+                  
+               </td>
+               <td>14230</td>
+               <td>0151</td>
+               <td>Alcian blue stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Alcian blue</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14231-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0152)
+                  
+               </td>
+               <td>14231</td>
+               <td>0152</td>
+               <td>Alcian blue with Periodic acid Schiff stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Alcian blue with Periodic acid Schiff</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14232-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0153)
+                  
+               </td>
+               <td>14232</td>
+               <td>0153</td>
+               <td>Argentaffin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Argentaffin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14233-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0154)
+                  
+               </td>
+               <td>14233</td>
+               <td>0154</td>
+               <td>Argentaffin silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Argentaffin silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14234-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0155)
+                  
+               </td>
+               <td>14234</td>
+               <td>0155</td>
+               <td>Azure-eosin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Azure-eosin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14235-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0156)
+                  
+               </td>
+               <td>14235</td>
+               <td>0156</td>
+               <td>Basic Fuschin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Basic Fuschin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14236-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0157)
+                  
+               </td>
+               <td>14236</td>
+               <td>0157</td>
+               <td>Bennhold stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bennhold</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14237-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0158)
+                  
+               </td>
+               <td>14237</td>
+               <td>0158</td>
+               <td>Bennhold's Congo red stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bennhold's Congo red</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14238-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0159)
+                  
+               </td>
+               <td>14238</td>
+               <td>0159</td>
+               <td>Bielschowsky stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bielschowsky</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14239-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0160)
+                  
+               </td>
+               <td>14239</td>
+               <td>0160</td>
+               <td>Bielschowsky's silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bielschowsky's silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14240-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0161)
+                  
+               </td>
+               <td>14240</td>
+               <td>0161</td>
+               <td>Bleach stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bleach</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14241-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0162)
+                  
+               </td>
+               <td>14241</td>
+               <td>0162</td>
+               <td>Bodian stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Bodian</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14242-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0163)
+                  
+               </td>
+               <td>14242</td>
+               <td>0163</td>
+               <td>Brown-Brenn stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Brown-Brenn</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14243-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0164)
+                  
+               </td>
+               <td>14243</td>
+               <td>0164</td>
+               <td>Butyrate-esterase stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Butyrate-esterase</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14244-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0165)
+                  
+               </td>
+               <td>14244</td>
+               <td>0165</td>
+               <td>Calcofluor white fluorescent stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Calcofluor white fluorescent</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14245-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0166)
+                  
+               </td>
+               <td>14245</td>
+               <td>0166</td>
+               <td>Carbol-fuchsin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Carbol-fuchsin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14246-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0167)
+                  
+               </td>
+               <td>14246</td>
+               <td>0167</td>
+               <td>Carmine stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Carmine</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14247-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0168)
+                  
+               </td>
+               <td>14247</td>
+               <td>0168</td>
+               <td>Churukian-Schenk stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Churukian-Schenk</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14248-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0169)
+                  
+               </td>
+               <td>14248</td>
+               <td>0169</td>
+               <td>Congo red stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Congo red</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14249-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0170)
+                  
+               </td>
+               <td>14249</td>
+               <td>0170</td>
+               <td>Cresyl echt violet stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Cresyl echt violet</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14250-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0171)
+                  
+               </td>
+               <td>14250</td>
+               <td>0171</td>
+               <td>Crystal violet stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Crystal violet</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14251-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0172)
+                  
+               </td>
+               <td>14251</td>
+               <td>0172</td>
+               <td>De Galantha stain</td>
+               <td>
+                  <p class="vocDesc">Stain, De Galantha</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14252-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0173)
+                  
+               </td>
+               <td>14252</td>
+               <td>0173</td>
+               <td>Dieterle silver impregnation stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Dieterle silver impregnation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14253-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0174)
+                  
+               </td>
+               <td>14253</td>
+               <td>0174</td>
+               <td>Fite-Farco stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Fite-Farco</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14254-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0175)
+                  
+               </td>
+               <td>14254</td>
+               <td>0175</td>
+               <td>Fontana-Masson silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Fontana-Masson silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14255-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0176)
+                  
+               </td>
+               <td>14255</td>
+               <td>0176</td>
+               <td>Fouchet stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Fouchet</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14256-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0177)
+                  
+               </td>
+               <td>14256</td>
+               <td>0177</td>
+               <td>Gomori stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Gomori</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14257-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0178)
+                  
+               </td>
+               <td>14257</td>
+               <td>0178</td>
+               <td>Gomori methenamine silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Gomori methenamine silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14258-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0179)
+                  
+               </td>
+               <td>14258</td>
+               <td>0179</td>
+               <td>Gomori-Wheatly trichrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Gomori-Wheatly trichrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14259-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0180)
+                  
+               </td>
+               <td>14259</td>
+               <td>0180</td>
+               <td>Gridley stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Gridley</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14260-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0181)
+                  
+               </td>
+               <td>14260</td>
+               <td>0181</td>
+               <td>Grimelius silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Grimelius silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14261-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0182)
+                  
+               </td>
+               <td>14261</td>
+               <td>0182</td>
+               <td>Grocott stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Grocott</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14262-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0183)
+                  
+               </td>
+               <td>14262</td>
+               <td>0183</td>
+               <td>Grocott methenamine silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Grocott methenamine silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14263-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0184)
+                  
+               </td>
+               <td>14263</td>
+               <td>0184</td>
+               <td>Hale's colloidal ferric oxide stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Hale's colloidal ferric oxide</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14264-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0185)
+                  
+               </td>
+               <td>14264</td>
+               <td>0185</td>
+               <td>Hale's colloidal iron stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Hale's colloidal iron</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14265-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0186)
+                  
+               </td>
+               <td>14265</td>
+               <td>0186</td>
+               <td>Hansel stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Hansel</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14266-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0187)
+                  
+               </td>
+               <td>14266</td>
+               <td>0187</td>
+               <td>Harris regressive hematoxylin and eosin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Harris regressive hematoxylin and eosin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14267-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0188)
+                  
+               </td>
+               <td>14267</td>
+               <td>0188</td>
+               <td>Hematoxylin and eosin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Hematoxylin and eosin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14268-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0189)
+                  
+               </td>
+               <td>14268</td>
+               <td>0189</td>
+               <td>Highman stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Highman</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14269-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0190)
+                  
+               </td>
+               <td>14269</td>
+               <td>0190</td>
+               <td>Holzer stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Holzer</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14270-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0191)
+                  
+               </td>
+               <td>14270</td>
+               <td>0191</td>
+               <td>Iron hematoxylin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Iron hematoxylin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14271-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0192)
+                  
+               </td>
+               <td>14271</td>
+               <td>0192</td>
+               <td>Jones stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Jones</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14272-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0193)
+                  
+               </td>
+               <td>14272</td>
+               <td>0193</td>
+               <td>Jones methenamine silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Jones methenamine silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14273-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0194)
+                  
+               </td>
+               <td>14273</td>
+               <td>0194</td>
+               <td>Kossa stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Kossa</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14274-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0195)
+                  
+               </td>
+               <td>14274</td>
+               <td>0195</td>
+               <td>Lawson-Van Gieson stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Lawson-Van Gieson</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14275-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0196)
+                  
+               </td>
+               <td>14275</td>
+               <td>0196</td>
+               <td>Loeffler methylene blue stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Loeffler methylene blue</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14276-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0197)
+                  
+               </td>
+               <td>14276</td>
+               <td>0197</td>
+               <td>Luxol fast blue with cresyl violet stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Luxol fast blue with cresyl violet</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14277-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0198)
+                  
+               </td>
+               <td>14277</td>
+               <td>0198</td>
+               <td>Luxol fast blue with Periodic acid-Schiff stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Luxol fast blue with Periodic acid-Schiff</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14278-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0199)
+                  
+               </td>
+               <td>14278</td>
+               <td>0199</td>
+               <td>MacNeal's tetrachrome blood stain</td>
+               <td>
+                  <p class="vocDesc">Stain, MacNeal's tetrachrome blood</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14279-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0200)
+                  
+               </td>
+               <td>14279</td>
+               <td>0200</td>
+               <td>Mallory-Heidenhain stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Mallory-Heidenhain</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14280-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0201)
+                  
+               </td>
+               <td>14280</td>
+               <td>0201</td>
+               <td>Masson trichrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Masson trichrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14281-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0202)
+                  
+               </td>
+               <td>14281</td>
+               <td>0202</td>
+               <td>Mayer mucicarmine stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Mayer mucicarmine</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14282-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0203)
+                  
+               </td>
+               <td>14282</td>
+               <td>0203</td>
+               <td>Mayers progressive hematoxylin and eosin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Mayers progressive hematoxylin and eosin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14283-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0204)
+                  
+               </td>
+               <td>14283</td>
+               <td>0204</td>
+               <td>May-Grunwald Giemsa stain</td>
+               <td>
+                  <p class="vocDesc">Stain, May-Grunwald Giemsa</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14284-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0205)
+                  
+               </td>
+               <td>14284</td>
+               <td>0205</td>
+               <td>Methyl green stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Methyl green</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14285-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0206)
+                  
+               </td>
+               <td>14285</td>
+               <td>0206</td>
+               <td>Methyl green pyronin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Methyl green pyronin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14286-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0207)
+                  
+               </td>
+               <td>14286</td>
+               <td>0207</td>
+               <td>Modified Gomori-Wheatly trichrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Modified Gomori-Wheatly trichrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14287-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0208)
+                  
+               </td>
+               <td>14287</td>
+               <td>0208</td>
+               <td>Modified Masson trichrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Modified Masson trichrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14288-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0209)
+                  
+               </td>
+               <td>14288</td>
+               <td>0209</td>
+               <td>Modified trichrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Modified trichrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14289-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0210)
+                  
+               </td>
+               <td>14289</td>
+               <td>0210</td>
+               <td>Movat pentachrome stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Movat pentachrome</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14290-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0211)
+                  
+               </td>
+               <td>14290</td>
+               <td>0211</td>
+               <td>Mucicarmine stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Mucicarmine</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14291-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0212)
+                  
+               </td>
+               <td>14291</td>
+               <td>0212</td>
+               <td>Neutral red stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Neutral red</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14292-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0213)
+                  
+               </td>
+               <td>14292</td>
+               <td>0213</td>
+               <td>Night blue stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Night blue</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14293-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0214)
+                  
+               </td>
+               <td>14293</td>
+               <td>0214</td>
+               <td>Non-specific esterase stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Non-specific esterase</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14294-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0215)
+                  
+               </td>
+               <td>14294</td>
+               <td>0215</td>
+               <td>Oil red-O stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Oil red-O</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14295-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0216)
+                  
+               </td>
+               <td>14295</td>
+               <td>0216</td>
+               <td>Orcein stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Orcein</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14296-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0217)
+                  
+               </td>
+               <td>14296</td>
+               <td>0217</td>
+               <td>Perls' stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Perls'</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14297-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0218)
+                  
+               </td>
+               <td>14297</td>
+               <td>0218</td>
+               <td>Phosphotungstic acid-hematoxylin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Phosphotungstic acid-hematoxylin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14298-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0219)
+                  
+               </td>
+               <td>14298</td>
+               <td>0219</td>
+               <td>Potassium ferrocyanide stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Potassium ferrocyanide</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14299-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0220)
+                  
+               </td>
+               <td>14299</td>
+               <td>0220</td>
+               <td>Prussian blue stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Prussian blue</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14300-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0221)
+                  
+               </td>
+               <td>14300</td>
+               <td>0221</td>
+               <td>Putchler modified Bennhold stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Putchler modified Bennhold</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14301-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0222)
+                  
+               </td>
+               <td>14301</td>
+               <td>0222</td>
+               <td>Quinacrine fluorescent stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Quinacrine fluorescent</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14302-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0223)
+                  
+               </td>
+               <td>14302</td>
+               <td>0223</td>
+               <td>Reticulin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Reticulin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14303-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0224)
+                  
+               </td>
+               <td>14303</td>
+               <td>0224</td>
+               <td>Rhodamine stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Rhodamine</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14304-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0225)
+                  
+               </td>
+               <td>14304</td>
+               <td>0225</td>
+               <td>Safranin stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Safranin</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14305-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0226)
+                  
+               </td>
+               <td>14305</td>
+               <td>0226</td>
+               <td>Schmorl stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Schmorl</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14306-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0227)
+                  
+               </td>
+               <td>14306</td>
+               <td>0227</td>
+               <td>Seiver-Munger stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Seiver-Munger</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14307-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0228)
+                  
+               </td>
+               <td>14307</td>
+               <td>0228</td>
+               <td>Silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14308-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0229)
+                  
+               </td>
+               <td>14308</td>
+               <td>0229</td>
+               <td>Specific esterase stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Specific esterase</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14309-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0230)
+                  
+               </td>
+               <td>14309</td>
+               <td>0230</td>
+               <td>Steiner silver stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Steiner silver</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14310-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0231)
+                  
+               </td>
+               <td>14310</td>
+               <td>0231</td>
+               <td>Sudan III stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Sudan III</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14311-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0232)
+                  
+               </td>
+               <td>14311</td>
+               <td>0232</td>
+               <td>Sudan IVI stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Sudan IVI</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14312-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0233)
+                  
+               </td>
+               <td>14312</td>
+               <td>0233</td>
+               <td>Sulfated alcian blue stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Sulfated alcian blue</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14313-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0234)
+                  
+               </td>
+               <td>14313</td>
+               <td>0234</td>
+               <td>Supravital stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Supravital</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14314-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0235)
+                  
+               </td>
+               <td>14314</td>
+               <td>0235</td>
+               <td>Thioflavine-S stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Thioflavine-S</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14315-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0236)
+                  
+               </td>
+               <td>14315</td>
+               <td>0236</td>
+               <td>Three micron Giemsa stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Three micron Giemsa</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14316-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0237)
+                  
+               </td>
+               <td>14316</td>
+               <td>0237</td>
+               <td>Vassar-Culling stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Vassar-Culling</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14317-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0238)
+                  
+               </td>
+               <td>14317</td>
+               <td>0238</td>
+               <td>Vital Stain</td>
+               <td>
+                  <p class="vocDesc">Stain, Vital</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14318-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0239)
+                  
+               </td>
+               <td>14318</td>
+               <td>0239</td>
+               <td>von Kossa stain</td>
+               <td>
+                  <p class="vocDesc">Stain, von Kossa</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14319-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0240)
+                  
+               </td>
+               <td>14319</td>
+               <td>0240</td>
+               <td>Antibiotic sensitivity, disk</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Antibiotic sensitivity, disk</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14320-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0241)
+                  
+               </td>
+               <td>14320</td>
+               <td>0241</td>
+               <td>BACTEC susceptibility test</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, BACTEC susceptibility test</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14321-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0242)
+                  
+               </td>
+               <td>14321</td>
+               <td>0242</td>
+               <td>Disk dilution</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Disk dilution</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14322-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0243)
+                  
+               </td>
+               <td>14322</td>
+               <td>0243</td>
+               <td>Minimum bactericidal concentration test, macrodilution</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Minimum bactericidal concentration, macrodilution</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14323-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0244)
+                  
+               </td>
+               <td>14323</td>
+               <td>0244</td>
+               <td>Minimum bactericidal concentration test, microdilution</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Minimum bactericidal concentration, microdilution</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14324-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0245)
+                  
+               </td>
+               <td>14324</td>
+               <td>0245</td>
+               <td>Minimum Inhibitory Concentration, macrodilution</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Minimum Inhibitory concentration, macrodilution</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14325-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0246)
+                  
+               </td>
+               <td>14325</td>
+               <td>0246</td>
+               <td>Minimum Inhibitory Concentration, microdilution</td>
+               <td>
+                  <p class="vocDesc">Susceptibility, Minimum Inhibitory concentration, microdilution</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14326-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0247)
+                  
+               </td>
+               <td>14326</td>
+               <td>0247</td>
+               <td>Turbidometric</td>
+               <td>
+                  <p class="vocDesc">Turbidometric</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14327-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0248)
+                  
+               </td>
+               <td>14327</td>
+               <td>0248</td>
+               <td>Refractometric</td>
+               <td>
+                  <p class="vocDesc">Turbidometric, Refractometric</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14328-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0249)
+                  
+               </td>
+               <td>14328</td>
+               <td>0249</td>
+               <td>Thin layer chromatography (TLC)</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Thin Layer</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14329-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0250)
+                  
+               </td>
+               <td>14329</td>
+               <td>0250</td>
+               <td>EMIT</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, enzyme-multiplied technique (EMIT)</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14330-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0251)
+                  
+               </td>
+               <td>14330</td>
+               <td>0251</td>
+               <td>Flow cytometry (FC)</td>
+               <td>
+                  <p class="vocDesc">Flow Cytometry</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14331-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0252)
+                  
+               </td>
+               <td>14331</td>
+               <td>0252</td>
+               <td>Radial immunodiffusion (RID)</td>
+               <td>
+                  <p class="vocDesc">Radial Immunodiffusion</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14332-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0253)
+                  
+               </td>
+               <td>14332</td>
+               <td>0253</td>
+               <td>Fluorescence polarization immunoassay (FPIA)</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, Fluorescence Polarization</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14333-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0254)
+                  
+               </td>
+               <td>14333</td>
+               <td>0254</td>
+               <td>Immunofixation electrophoresis (IFE)</td>
+               <td>
+                  <p class="vocDesc">Electrophoresis, Immunofixation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14334-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0255)
+                  
+               </td>
+               <td>14334</td>
+               <td>0255</td>
+               <td>Equilibrium dialysis</td>
+               <td>
+                  <p class="vocDesc">Dialysis, Direct Equilibrium</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14335-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0256)
+                  
+               </td>
+               <td>14335</td>
+               <td>0256</td>
+               <td>Kleihauer-Betke acid elution</td>
+               <td>
+                  <p class="vocDesc">Acid Elution, Kleihauer-Betke Method</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14336-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0257)
+                  
+               </td>
+               <td>14336</td>
+               <td>0257</td>
+               <td>Anti-complement immunofluorescence (ACIF)</td>
+               <td>
+                  <p class="vocDesc">Immunofluorescence, Anti-Complement</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14337-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0258)
+                  
+               </td>
+               <td>14337</td>
+               <td>0258</td>
+               <td>GC/MS</td>
+               <td>
+                  <p class="vocDesc">Gas Chromatography/Mass Spectroscopy</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14338-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0259)
+                  
+               </td>
+               <td>14338</td>
+               <td>0259</td>
+               <td>Nephelometry</td>
+               <td>
+                  <p class="vocDesc">Light Scatter, Nephelometry</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14339-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0260)
+                  
+               </td>
+               <td>14339</td>
+               <td>0260</td>
+               <td>IgE immunoassay antibody</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, IgE Antibody Test</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14340-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0261)
+                  
+               </td>
+               <td>14340</td>
+               <td>0261</td>
+               <td>Lymphocyte Microcytotoxicity Assay</td>
+               <td>
+                  <p class="vocDesc">Lymphocyte Microcytotoxicity Assay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14341-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0262)
+                  
+               </td>
+               <td>14341</td>
+               <td>0262</td>
+               <td>Spectrophotometry</td>
+               <td>
+                  <p class="vocDesc">Spectrophotometry</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14342-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0263)
+                  
+               </td>
+               <td>14342</td>
+               <td>0263</td>
+               <td>Atomic absorption spectrophotometry (AAS)</td>
+               <td>
+                  <p class="vocDesc">Spectrophotometry, Atomic Absorption</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14343-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0264)
+                  
+               </td>
+               <td>14343</td>
+               <td>0264</td>
+               <td>Ion selective electrode (ISE)</td>
+               <td>
+                  <p class="vocDesc">Electrochemical, Ion Selective Electrode</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14344-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0265)
+                  
+               </td>
+               <td>14344</td>
+               <td>0265</td>
+               <td>Gas chromatography (GC)</td>
+               <td>
+                  <p class="vocDesc">Chromatography, Gas</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14345-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0266)
+                  
+               </td>
+               <td>14345</td>
+               <td>0266</td>
+               <td>Isoelectric focusing (IEF)</td>
+               <td>
+                  <p class="vocDesc">Isoelectric Focusing</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14346-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0267)
+                  
+               </td>
+               <td>14346</td>
+               <td>0267</td>
+               <td>Immunochemiluminescence</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, Chemiluminescent</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14347-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0268)
+                  
+               </td>
+               <td>14347</td>
+               <td>0268</td>
+               <td>Microparticle enzyme immunoassay (MEIA)</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, Microparticle Enzyme</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14348-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0269)
+                  
+               </td>
+               <td>14348</td>
+               <td>0269</td>
+               <td>ICP/MS</td>
+               <td>
+                  <p class="vocDesc">Inductively-Coupled Plasma/Mass Spectrometry</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14349-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0270)
+                  
+               </td>
+               <td>14349</td>
+               <td>0270</td>
+               <td>Immunoradiometric assay (IRMA)</td>
+               <td>
+                  <p class="vocDesc">Immunoassay, Immunoradiometric Assay</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-14350-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(0271)
+                  
+               </td>
+               <td>14350</td>
+               <td>0271</td>
+               <td>Photo optical clot detection</td>
+               <td>
+                  <p class="vocDesc">Coagulation, Photo Optical Clot Detection</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-19992-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(ALGM)
+                  
+               </td>
+               <td>19992</td>
+               <td>ALGM</td>
+               <td>algorithm</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the application of an algorithm designed to weigh the different factors involved.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-19993-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(BYCL)
+                  
+               </td>
+               <td>19993</td>
+               <td>BYCL</td>
+               <td>bayesian calculation</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision through the use of Bayesian statistical analysis.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14079-19991-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(GINT)
+                  
+               </td>
+               <td>19991</td>
+               <td>GINT</td>
+               <td>global introspection</td>
+               <td>
+                  <p class="vocDesc">Reaching a decision by consideration of the totality of factors involved in order to reach a judgement.</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>

@@ -1,0 +1,1390 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>ActClass</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D11527-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>ActClass&nbsp;&nbsp;&nbsp;&nbsp;<img src="../../support/graphics/NormativeStandard.gif" alt="NormativeStandard1"></strong></font><br><p class="vocDesc">A code specifying the major type of Act that this Act-instance represents.</p>
+                  <p class="vocDesc"><em>Constraints:</em> The classCode domain is a tightly controlled vocabulary, not an external or user-defined vocabulary. 
+                  </p>
+                  <p class="vocDesc">Every Act-instance must have a classCode. If the act class is not further specified, the most general Act.classCode (ACT)
+                     is used.
+                  </p>
+                  <p class="vocDesc">The Act.classCode must be a generalization of the specific Act concept (e.g., as expressed in Act.code), in other words, the
+                     Act concepts conveyed in an Act must be specializations of the Act.classCode. Especially, Act.code is not a "modifier" that
+                     can alter the meaning of a class code. (See Act.code for contrast.)
+                  </p>
+                  <p class="vocDesc">This table controls values for structural elements of the HL7 Reference Information Model.  Therefore, it is part of the Normative
+                     Ballot for the RIM.
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name="ActClassRoot"></a><a name="C-0-D11527-V13856-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>S: ActClassRoot</strong> (ACT)
+               </td>
+               <td>V13856</td>
+               <td>ACT</td>
+               <td>act</td>
+               <td>
+                  <p class="vocDesc">This concept represents a domain containing all possible values of the ActClass code. system</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassContract"></a><a name="C-0-D11527-V13856-V14002-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: ActClassContract</strong> (CNTRCT)
+               </td>
+               <td>V14002</td>
+               <td>CNTRCT</td>
+               <td>contract</td>
+               <td>
+                  <p class="vocDesc">An agreement of obligation between two or more parties that is subject to contractual law and enforcement.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassFinancialContract"></a><a name="C-0-D11527-V13856-V14002-V14003-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassFinancialContract</strong> (FCNTRCT)
+               </td>
+               <td>V14003</td>
+               <td>FCNTRCT</td>
+               <td>financial contract</td>
+               <td>
+                  <p class="vocDesc">A contract whose value is measured in monetary terms.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V14002-V14003-14004-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(COV)
+                  
+               </td>
+               <td>14004</td>
+               <td>COV</td>
+               <td>coverage</td>
+               <td>
+                  <p class="vocDesc">A health care insurance policy or plan that is contractually binding between two or more parties.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassControlAct"></a><a name="C-0-D11527-V13856-V11534-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: ActClassControlAct</strong> (CACT)
+               </td>
+               <td>V11534</td>
+               <td>CACT</td>
+               <td>control act</td>
+               <td>
+                  <p class="vocDesc">An act representing a system action such as the change of state of another act or the initiation of a query.  All control
+                     acts represent trigger events in the HL7 context.  ControlActs may occur in different moods.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11534-18952-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(ACTN)
+                  
+               </td>
+               <td>18952</td>
+               <td>ACTN</td>
+               <td>action</td>
+               <td>
+                  <p class="vocDesc">Sender asks addressee to do something depending on the focal Act of the payload.  An example is "fulfill this order".  Addressee
+                     has responsibilities to either reject the message or to act on it in an appropriate way (specified by the specific receiver
+                     responsibilities for the interaction).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11534-18953-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(INFO)
+                  
+               </td>
+               <td>18953</td>
+               <td>INFO</td>
+               <td>information</td>
+               <td>
+                  <p class="vocDesc">Sender sends payload to addressee as information.  Addressee does not have responsibilities beyond serving addressee's own
+                     interest (i.e., read and memorize if you see fit).  This is equivalent to an FYI on a memo.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11534-18954-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(STC)
+                  
+               </td>
+               <td>18954</td>
+               <td>STC</td>
+               <td>state transition control</td>
+               <td>
+                  <p class="vocDesc">Sender transmits a status change pertaining to the focal act of the payload.  This status of the focal act is the final state
+                     of the state transition.   This can be either a request or a command, according to the mood of the control act.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassObservation"></a><a name="C-0-D11527-V13856-V11529-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: ActClassObservation</strong> (OBS)
+               </td>
+               <td>V11529</td>
+               <td>OBS</td>
+               <td>observation</td>
+               <td>
+                  <p class="vocDesc">Observations are actions performed in order to determine an answer or result value. Observation result values (Observation.value)
+                     include specific information about the observed object. The type and constraints of result values depend on the kind of action
+                     performed.
+                  </p>
+                  <p class="vocDesc">Clinical documents commonly have 'Subjective' and 'Objective' findings, both of which are kinds of Observations. In addition,
+                     clinical documents commonly contain 'Assessments', which are also kinds of Observations. Thus, the establishment of a diagnosis
+                     is an Observation.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassCondition"></a><a name="C-0-D11527-V13856-V11529-V19580-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassCondition</strong> (COND)
+               </td>
+               <td>V19580</td>
+               <td>COND</td>
+               <td>Condition</td>
+               <td>
+                  <p class="vocDesc">An observable finding or state that persists over time and tends to require intervention or management, and, therefore, distinguished
+                     from an Observation made at a point in time; may exist before an Observation of the Condition is made or after interventions
+                     to manage the Condition are undertaken. Examples: equipment repair status, device recall status, a health risk, a financial
+                     risk, public health risk, pregnancy, health maintenance, chronic illness
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassPublicHealthCase"></a><a name="C-0-D11527-V13856-V11529-V19580-V11530-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font><strong>S: ActClassPublicHealthCase</strong> (CASE)
+               </td>
+               <td>V11530</td>
+               <td>CASE</td>
+               <td>public health case</td>
+               <td>
+                  <p class="vocDesc">A public health case is an Observation representing a condition or event that has a specific significance for public health.
+                     Typically it involves an instance or instances of a reportable infectious disease or other condition. The public health case
+                     can include a health-related event concerning a single individual or it may refer to multiple health-related events that are
+                     occurrences of the same disease or condition of interest to public health. An outbreak involving multiple individuals may
+                     be considered as a type of public health case. A public health case definition (Act.moodCode = "definition") includes the
+                     description of the clinical, laboratory, and epidemiologic indicators associated with a disease or condition of interest to
+                     public health. There are case definitions for conditions that are reportable, as well as for those that are not. There are
+                     also case definitions for outbreaks. A public health case definition is a construct used by public health for the purpose
+                     of counting cases, and should not be used as clinical indications for treatment. Examples include AIDS, toxic-shock syndrome,
+                     and salmonellosis and their associated indicators that are used to define a case.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-V19580-V11530-11531-cpt"></a>5
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; </font>L: &nbsp;(OUTB)
+                  
+               </td>
+               <td>11531</td>
+               <td>OUTB</td>
+               <td>outbreak</td>
+               <td>
+                  <p class="vocDesc">An outbreak represents a series of public health cases. The date on which an outbreak starts is the earliest date of onset
+                     among the cases assigned to the outbreak, and its ending date is the last date of onset among the cases assigned to the outbreak.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassObservationSeries"></a><a name="C-0-D11527-V13856-V11529-V18875-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassObservationSeries</strong> (OBSSER)
+               </td>
+               <td>V18875</td>
+               <td>OBSSER</td>
+               <td>observation series</td>
+               <td>
+                  <p class="vocDesc">Container for Correlated Observation Sequences sharing a common frame of reference.  All Observations of the same cd must
+                     be comparable and relative to the common frame of reference.  For example, a 3-channel ECG device records a 12-lead ECG in
+                     4 steps (3 leads at a time).  Each of the separate 3-channel recordings would be in their own "OBSCOR".  And, all 4 OBSCOR
+                     would be contained in one OBSSER because all the times are relative to the same origin (beginning of the recording) and all
+                     the ECG signals were from a fixed set of electrodes.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-V18875-18876-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(OBSCOR)
+                  
+               </td>
+               <td>18876</td>
+               <td>OBSCOR</td>
+               <td>correlated observation sequences</td>
+               <td>
+                  <p class="vocDesc">Container for Observation Sequences (Observations whose values are contained in LIST&lt;&gt;'s) having values correlated with each
+                     other.  Each contained Observation Sequence LIST&lt;&gt; must be the same length.  Values in the LIST&lt;&gt;'s are correlated based on
+                     index.  E.g. the values in position 2 in all the LIST&lt;&gt;'s are correlated.  This is analogous to a table where each column
+                     is an Observation Sequence with a LIST&lt;&gt; of values, and each row in the table is a correlation between the columns.  For example,
+                     a 12-lead ECG would contain 13 sequences: one sequence for time, and a sequence for each of the 12 leads.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassROI"></a><a name="C-0-D11527-V13856-V11529-V17893-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>A: ActClassROI</strong></td>
+               <td>V17893</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Regions of Interest (ROI) within a subject Act. Primarily used for making secondary observations on a subset of a subject
+                     observation. The relationship between a ROI and its referenced Act is specified through an ActRelationship of type "subject"
+                     (SUBJ), which must always be present.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-V17893-17895-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(ROIBND)
+                  
+               </td>
+               <td>17895</td>
+               <td>ROIBND</td>
+               <td>bounded ROI</td>
+               <td>
+                  <p class="vocDesc">A Region of Interest (ROI) specified for a multidimensional observation, such as an Observation Series (OBSSER). The ROI is
+                     specified using a set of observation criteria, each delineating the boundary of the region in one of the dimensions in the
+                     multidimensional observation. The relationship between a ROI and its referenced Act is specified through an ActRelationship
+                     of type subject (SUBJ), which must always be present. Each of the boundary criteria observations is connected with the ROI
+                     using ActRelationships of type "has component" (COMP). In each boundary criterion, the Act.code names the dimension and the
+                     Observation.value specifies the range of values inside the region. Typically the bounded dimension is continuous, and so the
+                     Observation.value will be an interval (IVL) data type. The Observation.value need not be specified if the respective dimension
+                     is only named but not constrained. For example, an ROI for the QT interval of a certain beat in ECG Lead II would contain
+                     2 boundary criteria, one naming the interval in time (constrained), and the other naming the interval in ECG Lead II (only
+                     named, but not constrained).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-V17893-16392-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(ROIOVL)
+                  
+               </td>
+               <td>16392</td>
+               <td>ROIOVL</td>
+               <td>overlay ROI</td>
+               <td>
+                  <p class="vocDesc">A Region of Interest (ROI) specified for an image using an overlay shape. Typically used to make reference to specific regions
+                     in images, e.g., to specify the location of a radiologic finding in an image or to specify the site of a physical finding
+                     by "circling" a region in a schematic picture of a human body. The units of the coordinate values are in pixels.  The origin
+                     is in the upper left hand corner, with positive X values going to the right and positive Y values going down. The relationship
+                     between a ROI and its referenced Act is specified through an ActRelationship of type "subject" (SUBJ), which must always be
+                     present.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-16123-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(ALRT)
+                  
+               </td>
+               <td>16123</td>
+               <td>ALRT</td>
+               <td>detected issue</td>
+               <td>
+                  <p class="vocDesc">An observation identifying a potential adverse outcome as a result of an Act or combination of Acts.</p>
+                  <p class="vocDesc"><em>Examples:</em> Detection of a drug-drug interaction; Identification of a late-submission for an invoice; Requesting discharge for a patient
+                     who does not meet hospital-defined discharge criteria.
+                  </p>
+                  <p class="vocDesc"><em>Discussion:</em> This class is commonly used for identifying 'business rule' or 'process' problems that may result in a refusal to carry out
+                     a particular request. In some circumstances it may be possible to 'bypass' a problem by modifying the request to acknowledge
+                     the issue and/or by providing some form of mitigation.
+                  </p>
+                  <p class="vocDesc"><em>Constraints:</em> the Act or Acts that may cause the the adverse outcome are the target of a subject ActRelationship. The subbtypes of this
+                     concept indicate the type of problem being detected (e.g. drug-drug interaction) while the Observation.value is used to repesent
+                     a specific problem code (e.g. specific drug-drug interaction id).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-18972-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CLNTRL)
+                  
+               </td>
+               <td>18972</td>
+               <td>CLNTRL</td>
+               <td>clinical trial</td>
+               <td>
+                  <p class="vocDesc">The set of actions that define an experiment to assess the effectiveness and/or safety of a biopharmaceutical product (food,
+                     drug, device, etc.).  In definition mood, this set of actions is often embodied in a clinical trial protocol; in event mood,
+                     this designates the aggregate act of applying the actions to one or more subjects.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-18863-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CNOD)
+                  
+               </td>
+               <td>18863</td>
+               <td>CNOD</td>
+               <td>Condition Node</td>
+               <td>
+                  <p class="vocDesc">An instance of Observation of a Condition at a point in time that includes any Observations or Procedures associated with
+                     that Condition as well as links to previous instances of Condition Node for the same Condition
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-13921-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(DGIMG)
+                  
+               </td>
+               <td>13921</td>
+               <td>DGIMG</td>
+               <td>diagnostic image</td>
+               <td>
+                  <p class="vocDesc">Class for holding attributes unique to diagnostic images.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-20873-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(INVSTG)
+                  
+               </td>
+               <td>20873</td>
+               <td>INVSTG</td>
+               <td>investigation</td>
+               <td>
+                  <p class="vocDesc">An official inquiry into the circumstances surrounding a particular unplanned event or potential event for the purposes of
+                     identifying possible causes and contributing factors for the event.  This investigation could be conducted at a local institutional
+                     level or at the level of a local or national government.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11529-13949-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(SPCOBS)
+                  
+               </td>
+               <td>13949</td>
+               <td>SPCOBS</td>
+               <td>specimen observation</td>
+               <td>
+                  <p class="vocDesc">An observation on a specimen in a laboratory environment that may affect processing, analysis or result interpretation</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassSupply"></a><a name="C-0-D11527-V13856-V11535-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>S: ActClassSupply</strong> (SPLY)
+               </td>
+               <td>V11535</td>
+               <td>SPLY</td>
+               <td>supply</td>
+               <td>
+                  <p class="vocDesc">Supply orders and deliveries are simple Acts that focus on the delivered product. The product is associated with the Supply
+                     Act via Participation.typeCode="product". With general Supply Acts, the precise identification of the Material (manufacturer,
+                     serial numbers, etc.) is important.  Most of the detailed information about the Supply should be represented using the Material
+                     class.  If delivery needs to be scheduled, tracked, and billed separately, one can associate a Transportation Act with the
+                     Supply Act.  Pharmacy dispense services are represented as Supply Acts, associated with a SubstanceAdministration  Act. The
+                     SubstanceAdministration class represents the administration of medication, while dispensing is supply.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V11535-16109-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(DIET)
+                  
+               </td>
+               <td>16109</td>
+               <td>DIET</td>
+               <td>diet</td>
+               <td>
+                  <p class="vocDesc">Diet services are supply services, with some aspects resembling Medication services: the detail of the diet is given as a
+                     description of the Material associated via Participation.typeCode="product". Medically relevant diet types may be communicated
+                     in the Diet.code attribute using domain ActDietCode, however, the detail of the food supplied and the various combinations
+                     of dishes should be communicated as Material instances.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActContainer"></a><a name="C-0-D11527-V13856-V19445-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>A: ActContainer</strong></td>
+               <td>V19445</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Used to group a set of acts sharing a common context. Container structures can nest within other context structures - such
+                     as where a document is contained within a folder, or a folder is contained within an EHR extract.
+                  </p>
+                  <p class="vocDesc"><strong>Open issue: </strong> There is a clear conflict between this act and the use of the more  general "component" ActRelationship.  The question that
+                     must be resolved is what should be the class code of the parent (or containing) Act.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassComposition"></a><a name="C-0-D11527-V13856-V19445-V19442-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassComposition</strong> (COMPOSITION)
+               </td>
+               <td>V19442</td>
+               <td>COMPOSITION</td>
+               <td>composition</td>
+               <td>
+                  <p class="vocDesc">A context representing a grouped commitment of information to the EHR. It is considered the unit of modification of the record,
+                     the unit of transmission in record extracts, and the unit of attestation by authorizing clinicians.
+                  </p>
+                  <p class="vocDesc">A composition represents part of a patient record originating from a single interaction between an authenticator and the record.</p>
+                  <p class="vocDesc">Unless otherwise stated all statements within a composition have the same authenticator, apply to the same patient and were
+                     recorded in a single session of use of a single application.
+                  </p>
+                  <p class="vocDesc">A composition contains organizers and entries.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassDocument"></a><a name="C-0-D11527-V13856-V19445-V19442-V18938-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font><strong>S: ActClassDocument</strong> (DOC)
+               </td>
+               <td>V18938</td>
+               <td>DOC</td>
+               <td>document</td>
+               <td>
+                  <p class="vocDesc">The notion of a document comes particularly from the paper world, where it corresponds to the contents recorded on discrete
+                     pieces of paper. In the electronic world, a document is a kind of composition that bears resemblance to their paper world
+                     counter-parts. Documents typically are meant to be human-readable.
+                  </p>
+                  <p class="vocDesc">HL7's notion of document differs from that described in the W3C XML Recommendation, in which a document refers specifically
+                     to the contents that fall between the root element's start-tag and end-tag. Not all XML documents are HL7 documents.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClinicalDocument"></a><a name="C-0-D11527-V13856-V19445-V19442-V18938-V13948-cpt"></a>5
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; </font><strong>S: ActClinicalDocument</strong> (DOCCLIN)
+               </td>
+               <td>V13948</td>
+               <td>DOCCLIN</td>
+               <td>clinical document</td>
+               <td>
+                  <p class="vocDesc">A clinical document is a documentation of clinical observations and services, with the following characteristics:</p>
+                  <ol>
+                     <li>
+                        <p class="vocDesc">Persistence - A clinical document continues to exist in an unaltered state, for a time period defined by local and regulatory
+                           requirements; 
+                        </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">Stewardship - A clinical document is maintained by a person or organization entrusted with its care; </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">Potential for authentication - A clinical document is an assemblage of information that is intended to be legally authenticated;
+                           
+                        </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">Wholeness - Authentication of a clinical document applies to the whole and does not apply to portions of the document without
+                           the full context of the document;
+                        </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">Human readability - A clinical document is human readable.</p>
+                     </li>
+                  </ol>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19442-V18938-V13948-14795-cpt"></a>6
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; </font>L: &nbsp;(CDALVLONE)
+                  
+               </td>
+               <td>14795</td>
+               <td>CDALVLONE</td>
+               <td>CDA Level One clinical document</td>
+               <td>
+                  <p class="vocDesc">A clinical document that conforms to Level One of the HL7 Clinical Document Architecture (CDA)</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassEntry"></a><a name="C-0-D11527-V13856-V19445-V19444-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassEntry</strong> (ENTRY)
+               </td>
+               <td>V19444</td>
+               <td>ENTRY</td>
+               <td>entry</td>
+               <td>
+                  <p class="vocDesc">This context represents the information acquired and recorded for an observation, a clinical statement such as a portion of
+                     the patient's history or an inference or assertion, or an action that might be intended or has actually been performed. This
+                     class may represent both the actual data describing the observation, inference, or action, and optionally the details supporting
+                     the clinical reasoning process such as a reference to an electronic guideline, decision support system, or other knowledge
+                     reference.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19444-20089-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(BATTERY)
+                  
+               </td>
+               <td>20089</td>
+               <td>BATTERY</td>
+               <td>battery</td>
+               <td>
+                  <p class="vocDesc">A battery specifies a set of observations. These observations typically have a logical or practical grouping for generally
+                     accepted clinical or functional purposes, such as observfations that are fun together because of automation. A battery can
+                     define required and optional components and, in some cases, will define complex rules that determine whether or not a particular
+                     observation is made. Examples include "Blood pressure", "Full blood count", "Chemistry panel".
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19444-20088-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(CLUSTER)
+                  
+               </td>
+               <td>20088</td>
+               <td>CLUSTER</td>
+               <td>Cluster</td>
+               <td>
+                  <p class="vocDesc">A group of entries within a composition, topic or category that have a logical association with one another. </p>
+                  <p class="vocDesc">The representation of a single observation or action might itself be multi-part. The data might need to be represented as
+                     a nested set of values, as a table, list, or as a time series. The Cluster class permits such aggregation within an entry
+                     for such compound data.
+                  </p>
+                  <p class="vocDesc">Examples include "Haematology investigations" which might include two or more distinct batteries.</p>
+                  <p class="vocDesc">A cluster may contain batteries and/or individual entries</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassExtract"></a><a name="C-0-D11527-V13856-V19445-V19441-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassExtract</strong> (EXTRACT)
+               </td>
+               <td>V19441</td>
+               <td>EXTRACT</td>
+               <td>extract</td>
+               <td>
+                  <p class="vocDesc">This context represents the part of a patient record conveyed in a single communication. It is drawn from a providing system
+                     for the purposes of communication to a requesting process (which might be another repository, a client application or a middleware
+                     service such as an electronic guideline engine), and supporting the faithful inclusion of the communicated data in the receiving
+                     system.
+                  </p>
+                  <p class="vocDesc">An extract may be the entirety of the patient record as held by the sender or it may be a part of that record (e.g. changes
+                     since a specified date).
+                  </p>
+                  <p class="vocDesc">An extract contains folders or compositions.</p>
+                  <p class="vocDesc">An extract cannot contain another extract.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19441-20081-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(EHR)
+                  
+               </td>
+               <td>20081</td>
+               <td>EHR</td>
+               <td>electronic health record</td>
+               <td>
+                  <p class="vocDesc">A context that comprises all compositions. The EHR is an extract that includes the entire chart.</p>
+                  <p class="vocDesc"><strong>NOTE:</strong> In an exchange scenario, an EHR is a specialization of an extract.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActClassOrganizer"></a><a name="C-0-D11527-V13856-V19445-V19443-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font><strong>S: ActClassOrganizer</strong> (ORGANIZER)
+               </td>
+               <td>V19443</td>
+               <td>ORGANIZER</td>
+               <td>organizer</td>
+               <td>
+                  <p class="vocDesc">Organizer of entries. Navigational. No semantic content. Knowledge of the section code is not required to interpret contained
+                     observations. Represents a heading in a heading structure, or "organizer tree".
+                  </p>
+                  <p class="vocDesc">The record entries relating to a single clinical session are usually grouped under headings that represent phases of the encounter,
+                     or assist with layout and navigation. Clinical headings usually reflect the clinical workflow during a care session, and might
+                     also reflect the main author's reasoning processes. Much research has demonstrated that headings are used differently by different
+                     professional groups and specialties, and that headings are not used consistently enough to support safe automatic processing
+                     of the E H R.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19443-20086-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(CATEGORY)
+                  
+               </td>
+               <td>20086</td>
+               <td>CATEGORY</td>
+               <td>category</td>
+               <td>
+                  <p class="vocDesc">A group of entries within a composition or topic that have a common characteristic - for example, Examination, Diagnosis,
+                     Management OR Subjective, Objective, Analysis, Plan.
+                  </p>
+                  <p class="vocDesc">The distinction from Topic relates to value sets. For Category there is a bounded list of things like "Examination", "Diagnosis"
+                     or SOAP categories. For Topic the list is wide open to any clinical condition or reason for a part of an encounter.
+                  </p>
+                  <p class="vocDesc">A CATEGORY MAY CONTAIN ENTRIES.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19443-13947-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(DOCBODY)
+                  
+               </td>
+               <td>13947</td>
+               <td>DOCBODY</td>
+               <td>document body</td>
+               <td>
+                  <p class="vocDesc">A context that distinguishes the body of a document from the document header. This is seen, for instance, in HTML documents,
+                     which have discrete qltqhead&gt; and qltqbody&gt; elements.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19443-13946-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(DOCSECT)
+                  
+               </td>
+               <td>13946</td>
+               <td>DOCSECT</td>
+               <td>document section</td>
+               <td>
+                  <p class="vocDesc">A context that subdivides the body of a document. Document sections are typically used for human navigation, to give a reader
+                     a clue as to the expected content. Document sections are used to organize and provide consistency to the contents of a document
+                     body. Document sections can contain document sections and can contain entries.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-V19443-20085-cpt"></a>4
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; &nbsp; </font>L: &nbsp;(TOPIC)
+                  
+               </td>
+               <td>20085</td>
+               <td>TOPIC</td>
+               <td>topic</td>
+               <td>
+                  <p class="vocDesc">A group of entries within a composition that are related to a common clinical theme - such as a specific disorder or problem,
+                     prevention, screening and provision of contraceptive services.
+                  </p>
+                  <p class="vocDesc">A topic may contain categories and entries. </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19445-20082-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(FOLDER)
+                  
+               </td>
+               <td>20082</td>
+               <td>FOLDER</td>
+               <td>folder</td>
+               <td>
+                  <p class="vocDesc">A context representing the high-level organization of an extract e.g. to group parts of the record by episode, care team,
+                     clinical specialty, clinical condition, or source application. Internationally, this kind of organizing structure is used
+                     variably: in some centers and systems the folder is treated as an informal compartmentalization of the overall health record;
+                     in others it might represent a significant legal portion of the EHR relating to the originating enterprise or team.
+                  </p>
+                  <p class="vocDesc">A folder contains compositions.</p>
+                  <p class="vocDesc">Folders may be nested within folders.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_ActClassDocumentEntryAct"></a><a name="C-0-D11527-V13856-V19604-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>A: x_ActClassDocumentEntryAct</strong></td>
+               <td>V19604</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name="ActClassRoot"></a><a name="C-0-D11527-V13856-V19604-V13856-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(ACT)
+                  
+               </td>
+               <td>V13856</td>
+               <td>ACT</td>
+               <td>act</td>
+               <td>
+                  <p class="vocDesc">This concept represents a domain containing all possible values of the ActClass code. system</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-16137-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(ACCM)
+                  
+               </td>
+               <td>16137</td>
+               <td>ACCM</td>
+               <td>accommodation</td>
+               <td>
+                  <p class="vocDesc">An accommodation is a service provided for a Person or other LivingSubject in which a place is provided for the subject to
+                     reside for a period of time.  Commonly used to track the provision of ward, private and semi-private accommodations for a
+                     patient.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-11537-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CONS)
+                  
+               </td>
+               <td>11537</td>
+               <td>CONS</td>
+               <td>consent</td>
+               <td>
+                  <p class="vocDesc">The Consent class represents informed consents and all similar medico-legal transactions between the patient (or his legal
+                     guardian) and the provider. Examples are informed consent for surgical procedures, informed consent for clinical trials, advanced
+                     beneficiary notice, against medical advice decline from service, release of information agreement, etc.
+                  </p>
+                  <p class="vocDesc">The details of consents vary. Often an institution has a number of different consent forms for various purposes, including
+                     reminding the physician about the topics to mention. Such forms also include patient education material. In electronic medical
+                     record communication, consents thus are information-generating acts on their own and need to be managed similar to medical
+                     activities. Thus, Consent is modeled as a special class of Act.
+                  </p>
+                  <p class="vocDesc">The "signatures" to the consent document are represented electronically through Participation instances to the consent object.
+                     Typically an informed consent has Participation.typeCode of "performer", the healthcare provider informing the patient, and
+                     "consenter", the patient or legal guardian. Some consent may associate a witness or a notary public (e.g., living wills, advanced
+                     directives). In consents where a healthcare provider is not required (e.g. living will), the performer may be the patient
+                     himself or a notary public.
+                  </p>
+                  <p class="vocDesc">Some consent has a minimum required delay between the consent and the service, so as to allow the patient to rethink his decisions.
+                     This minimum delay can be expressed in the act definition by the ActRelationship.pauseQuantity attribute that delays the service
+                     until the pause time has elapsed after the consent has been completed.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-18973-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CTTEVENT)
+                  
+               </td>
+               <td>18973</td>
+               <td>CTTEVENT</td>
+               <td>clinical trial timepoint event</td>
+               <td>
+                  <p class="vocDesc">An identified point during a clinical trial at which one or more actions are scheduled to be performed (definition mood),
+                     or are actually performed (event mood).  The actions may or may not involve an encounter between the subject and a healthcare
+                     professional.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-13989-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(INC)
+                  
+               </td>
+               <td>13989</td>
+               <td>INC</td>
+               <td>incident</td>
+               <td>
+                  <p class="vocDesc">An event that occurred outside of the control of one or more of the parties involved.  Includes the concept of an accident.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-18908-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(INFRM)
+                  
+               </td>
+               <td>18908</td>
+               <td>INFRM</td>
+               <td>inform</td>
+               <td>
+                  <p class="vocDesc">The act  of transmitting information and understanding about a topic to a subject.</p>
+                  <p class="vocDesc"><strong>Discussion:</strong> This act may be used to request that a patient or provider be informed about an Act, or to indicate that a person was informed
+                     about a particular act.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-18964-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(PCPR)
+                  
+               </td>
+               <td>18964</td>
+               <td>PCPR</td>
+               <td>care provision</td>
+               <td>
+                  <p class="vocDesc">A care provision is the taking on of the responsibility by a performer for care activities of a subject of care.</p>
+                  <p class="vocDesc"><strong>Discussion:</strong> The care event can exist without any care actions having taken place. The scope of the care is identified by Act.code.
+                  </p>
+                  <p class="vocDesc">Examples</p>
+                  <ol>
+                     <li>
+                        <p class="vocDesc">preferred primary care provision: the primary care physician being the primary performer participation, author being the patient</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">referral from general practitioner to specialist (a PCPR in request mood, where the author participant is the GP, and the
+                           primary performer participation is the specialist)
+                        </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">a case manager to a patient or group of patients</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a herd of animals</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a contaminated environmental site</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a device</p>
+                     </li>
+                  </ol>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-15932-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(REG)
+                  
+               </td>
+               <td>15932</td>
+               <td>REG</td>
+               <td>registration</td>
+               <td>
+                  <p class="vocDesc">Represents the act of maintaining information about the registration of its associated registered subject. The subject can
+                     be either an Act or a Role, and includes subjects such as lab exam definitions, drug protocol definitions, prescriptions,
+                     persons, patients, practitioners, and equipment.
+                  </p>
+                  <p class="vocDesc"><em>Usage notes: </em>The registration may have a unique identifier - separate from the unique identification of the subject - as well as a core
+                     set of related participations and act relationships that characterize the registration event and aid in the disposition of
+                     the subject information by a receiving system.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19604-14023-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(SPCTRT)
+                  
+               </td>
+               <td>14023</td>
+               <td>SPCTRT</td>
+               <td>specimen treatment</td>
+               <td>
+                  <p class="vocDesc">A procedure or treatment performed on a specimen to prepare it for analysis</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_ActClassDocumentEntryOrganizer"></a><a name="C-0-D11527-V13856-V19603-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font><strong>A: x_ActClassDocumentEntryOrganizer</strong></td>
+               <td>V19603</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19603-20089-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(BATTERY)
+                  
+               </td>
+               <td>20089</td>
+               <td>BATTERY</td>
+               <td>battery</td>
+               <td>
+                  <p class="vocDesc">A battery specifies a set of observations. These observations typically have a logical or practical grouping for generally
+                     accepted clinical or functional purposes, such as observfations that are fun together because of automation. A battery can
+                     define required and optional components and, in some cases, will define complex rules that determine whether or not a particular
+                     observation is made. Examples include "Blood pressure", "Full blood count", "Chemistry panel".
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-V19603-20088-cpt"></a>3
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; &nbsp; </font>L: &nbsp;(CLUSTER)
+                  
+               </td>
+               <td>20088</td>
+               <td>CLUSTER</td>
+               <td>Cluster</td>
+               <td>
+                  <p class="vocDesc">A group of entries within a composition, topic or category that have a logical association with one another. </p>
+                  <p class="vocDesc">The representation of a single observation or action might itself be multi-part. The data might need to be represented as
+                     a nested set of values, as a table, list, or as a time series. The Cluster class permits such aggregation within an entry
+                     for such compound data.
+                  </p>
+                  <p class="vocDesc">Examples include "Haematology investigations" which might include two or more distinct batteries.</p>
+                  <p class="vocDesc">A cluster may contain batteries and/or individual entries</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-16137-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ACCM)
+                  
+               </td>
+               <td>16137</td>
+               <td>ACCM</td>
+               <td>accommodation</td>
+               <td>
+                  <p class="vocDesc">An accommodation is a service provided for a Person or other LivingSubject in which a place is provided for the subject to
+                     reside for a period of time.  Commonly used to track the provision of ward, private and semi-private accommodations for a
+                     patient.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-13991-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ACCT)
+                  
+               </td>
+               <td>13991</td>
+               <td>ACCT</td>
+               <td>account</td>
+               <td>
+                  <p class="vocDesc">A financial account established to track the net result of financial acts.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-16740-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ACSN)
+                  
+               </td>
+               <td>16740</td>
+               <td>ACSN</td>
+               <td>accession</td>
+               <td>
+                  <p class="vocDesc">A unit of work, a grouper of work items as defined by the system performing that work. Typically some laboratory order fulfillers
+                     communicate references to accessions in their communications regarding laboratory orders. Often one or more specimens are
+                     related to an accession such that in some environments the accession number is taken as an identifier for a specimen (group).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-16747-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ADJUD)
+                  
+               </td>
+               <td>16747</td>
+               <td>ADJUD</td>
+               <td>financial adjudication</td>
+               <td>
+                  <p class="vocDesc">A transformation process where a requested invoice is transformed into an agreed invoice.  Represents the adjudication processing
+                     of an invoice (claim).  Adjudication results can be adjudicated as submitted, with adjustments or refused.
+                  </p>
+                  <p class="vocDesc">Adjudication results comprise 2 components: the adjudication processing results and a restated (or adjudicated) invoice or
+                     claim
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11537-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(CONS)
+                  
+               </td>
+               <td>11537</td>
+               <td>CONS</td>
+               <td>consent</td>
+               <td>
+                  <p class="vocDesc">The Consent class represents informed consents and all similar medico-legal transactions between the patient (or his legal
+                     guardian) and the provider. Examples are informed consent for surgical procedures, informed consent for clinical trials, advanced
+                     beneficiary notice, against medical advice decline from service, release of information agreement, etc.
+                  </p>
+                  <p class="vocDesc">The details of consents vary. Often an institution has a number of different consent forms for various purposes, including
+                     reminding the physician about the topics to mention. Such forms also include patient education material. In electronic medical
+                     record communication, consents thus are information-generating acts on their own and need to be managed similar to medical
+                     activities. Thus, Consent is modeled as a special class of Act.
+                  </p>
+                  <p class="vocDesc">The "signatures" to the consent document are represented electronically through Participation instances to the consent object.
+                     Typically an informed consent has Participation.typeCode of "performer", the healthcare provider informing the patient, and
+                     "consenter", the patient or legal guardian. Some consent may associate a witness or a notary public (e.g., living wills, advanced
+                     directives). In consents where a healthcare provider is not required (e.g. living will), the performer may be the patient
+                     himself or a notary public.
+                  </p>
+                  <p class="vocDesc">Some consent has a minimum required delay between the consent and the service, so as to allow the patient to rethink his decisions.
+                     This minimum delay can be expressed in the act definition by the ActRelationship.pauseQuantity attribute that delays the service
+                     until the pause time has elapsed after the consent has been completed.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-14005-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(CONTREG)
+                  
+               </td>
+               <td>14005</td>
+               <td>CONTREG</td>
+               <td>container registration</td>
+               <td>
+                  <p class="vocDesc">An Act where a container is registered either via an automated sensor, such as a barcode reader,  or by manual receipt</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-18973-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(CTTEVENT)
+                  
+               </td>
+               <td>18973</td>
+               <td>CTTEVENT</td>
+               <td>clinical trial timepoint event</td>
+               <td>
+                  <p class="vocDesc">An identified point during a clinical trial at which one or more actions are scheduled to be performed (definition mood),
+                     or are actually performed (event mood).  The actions may or may not involve an encounter between the subject and a healthcare
+                     professional.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-20893-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(DISPACT)
+                  
+               </td>
+               <td>20893</td>
+               <td>DISPACT</td>
+               <td>disciplinary action</td>
+               <td>
+                  <p class="vocDesc">An action taken with respect to a subject Entity by a regulatory or authoritative body with supervisory capacity over that
+                     entity.  The action is taken in response to behavior by the subject Entity that body finds to be undesirable.
+                  </p>
+                  <p class="vocDesc"><em>Examples:</em> Suspension, license restrictions, monetary fine, letter of reprimand, mandated training, mandated supervision, etc.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11542-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ENC)
+                  
+               </td>
+               <td>11542</td>
+               <td>ENC</td>
+               <td>encounter</td>
+               <td>
+                  <p class="vocDesc">An interaction between a patient and healthcare participant(s) for the purpose of providing patient service(s) or assessing
+                     the health status of a patient.  For example, outpatient visit to multiple departments, home health support (including physical
+                     therapy), inpatient hospital stay, emergency room visit, field visit (e.g., traffic accident), office visit, occupational
+                     therapy, telephone call.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-13989-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(INC)
+                  
+               </td>
+               <td>13989</td>
+               <td>INC</td>
+               <td>incident</td>
+               <td>
+                  <p class="vocDesc">An event that occurred outside of the control of one or more of the parties involved.  Includes the concept of an accident.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-18908-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(INFRM)
+                  
+               </td>
+               <td>18908</td>
+               <td>INFRM</td>
+               <td>inform</td>
+               <td>
+                  <p class="vocDesc">The act  of transmitting information and understanding about a topic to a subject.</p>
+                  <p class="vocDesc"><strong>Discussion:</strong> This act may be used to request that a patient or provider be informed about an Act, or to indicate that a person was informed
+                     about a particular act.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-13992-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(INVE)
+                  
+               </td>
+               <td>13992</td>
+               <td>INVE</td>
+               <td>invoice element</td>
+               <td>
+                  <p class="vocDesc">Represents concepts related to invoice processing in health care</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11541-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(LIST)
+                  
+               </td>
+               <td>11541</td>
+               <td>LIST</td>
+               <td>working list</td>
+               <td>
+                  <p class="vocDesc">Working list collects a dynamic list of individual instances of Act via ActRelationship which reflects the need of an individual
+                     worker, team of workers, or an organization to manage lists of acts for many different clinical and administrative reasons.
+                     Examples of working lists include problem lists, goal lists, allergy lists, and to-do lists.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-16230-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(MPROT)
+                  
+               </td>
+               <td>16230</td>
+               <td>MPROT</td>
+               <td>monitoring program</td>
+               <td>
+                  <p class="vocDesc">An officially or unofficially instituted program to track acts of a particular type or categorization.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-18964-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PCPR)
+                  
+               </td>
+               <td>18964</td>
+               <td>PCPR</td>
+               <td>care provision</td>
+               <td>
+                  <p class="vocDesc">A care provision is the taking on of the responsibility by a performer for care activities of a subject of care.</p>
+                  <p class="vocDesc"><strong>Discussion:</strong> The care event can exist without any care actions having taken place. The scope of the care is identified by Act.code.
+                  </p>
+                  <p class="vocDesc">Examples</p>
+                  <ol>
+                     <li>
+                        <p class="vocDesc">preferred primary care provision: the primary care physician being the primary performer participation, author being the patient</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">referral from general practitioner to specialist (a PCPR in request mood, where the author participant is the GP, and the
+                           primary performer participation is the specialist)
+                        </p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">a case manager to a patient or group of patients</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a herd of animals</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a contaminated environmental site</p>
+                     </li>
+                     <li>
+                        <p class="vocDesc">care of a device</p>
+                     </li>
+                  </ol>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11532-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PROC)
+                  
+               </td>
+               <td>11532</td>
+               <td>PROC</td>
+               <td>procedure</td>
+               <td>
+                  <p class="vocDesc">################</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-15932-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(REG)
+                  
+               </td>
+               <td>15932</td>
+               <td>REG</td>
+               <td>registration</td>
+               <td>
+                  <p class="vocDesc">Represents the act of maintaining information about the registration of its associated registered subject. The subject can
+                     be either an Act or a Role, and includes subjects such as lab exam definitions, drug protocol definitions, prescriptions,
+                     persons, patients, practitioners, and equipment.
+                  </p>
+                  <p class="vocDesc"><em>Usage notes: </em>The registration may have a unique identifier - separate from the unique identification of the subject - as well as a core
+                     set of related participations and act relationships that characterize the registration event and aid in the disposition of
+                     the subject information by a receiving system.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-20915-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(REV)
+                  
+               </td>
+               <td>20915</td>
+               <td>REV</td>
+               <td>review</td>
+               <td>
+                  <p class="vocDesc">The act of examining and evaluating the subject, usually another act.  For example, "This prescription needs to be reviewed
+                     in 2 months."
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11528-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(SBADM)
+                  
+               </td>
+               <td>11528</td>
+               <td>SBADM</td>
+               <td>substance administration</td>
+               <td>
+                  <p class="vocDesc">The act of introducing or otherwise applying a substance to the subject.</p>
+                  <p class="vocDesc"><em>Discussion:</em> The effect of the substance is typically established on a biochemical basis, however, that is not a requirement. For example,
+                     radiotherapy can largely be described in the same way, especially if it is a systemic therapy such as radio-iodine.  This
+                     class also includes the application of chemical treatments to an area.
+                  </p>
+                  <p class="vocDesc"><em>Examples:</em> Chemotherapy protocol; Drug prescription; Vaccination record
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-14023-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(SPCTRT)
+                  
+               </td>
+               <td>14023</td>
+               <td>SPCTRT</td>
+               <td>specimen treatment</td>
+               <td>
+                  <p class="vocDesc">A procedure or treatment performed on a specimen to prepare it for analysis</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-20094-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(SUBST)
+                  
+               </td>
+               <td>20094</td>
+               <td>SUBST</td>
+               <td>Substitution</td>
+               <td>
+                  <p class="vocDesc">Definition: Indicates that the subject Act has undergone or should undergo substitution of a type indicated by Act.code.</p>
+                  <p class="vocDesc">Rationale: Used to specify "allowed" substitution when creating orders, "actual" susbstitution when sending events, as well
+                     as the reason for the substitution and who was responsible for it.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11539-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(TRNS)
+                  
+               </td>
+               <td>11539</td>
+               <td>TRNS</td>
+               <td>transportation</td>
+               <td>
+                  <p class="vocDesc">Transportation is the moving of a payload (people or material) from a location of origin to a destination location.  Thus,
+                     any transport service has the three target instances of type payload, origin, and destination, besides the targets that are
+                     generally used for any service (i.e., performer, device, etc.)
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-20854-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(VERIF)
+                  
+               </td>
+               <td>20854</td>
+               <td>VERIF</td>
+               <td>Verification</td>
+               <td>
+                  <p class="vocDesc">An act which describes the process whereby a 'verifying party' validates either the existence of the Role attested to by some
+                     Credential or the actual Vetting act and its details.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D11527-V13856-11545-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(XACT)
+                  
+               </td>
+               <td>11545</td>
+               <td>XACT</td>
+               <td>financial transaction</td>
+               <td>
+                  <p class="vocDesc">A sub-class of Act representing any transaction between two accounts whose value is measured in monetary terms.</p>
+                  <p class="vocDesc">In the "intent" mood, communicates a request for a transaction to be initiated, or communicates a transfer of value between
+                     two accounts.
+                  </p>
+                  <p class="vocDesc">In the "event" mood, communicates the posting of a transaction to an account.</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>

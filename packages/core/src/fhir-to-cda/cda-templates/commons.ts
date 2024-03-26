@@ -1,0 +1,192 @@
+import {
+  Organization,
+  Address,
+  ContactPoint,
+  CodeableConcept,
+  Identifier,
+} from "@medplum/fhirtypes";
+import {
+  Entry,
+  EntryObject,
+  CDACodeCE,
+  CDACodeCV,
+  CDAInstanceIdentifier,
+  CDAAddress,
+  CDAOrganization,
+  CDATelecom,
+} from "./types";
+import {
+  rootAttribute,
+  extensionAttribute,
+  assigningAuthorityNameAttribute,
+  valueAttribute,
+  useAttribute,
+  nullFlavorAttribute,
+} from "./constants";
+
+export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
+  if (value === undefined) {
+    return {};
+  } else {
+    return { [key]: value };
+  }
+}
+
+export function withoutNullFlavorString(value: string | undefined): Entry {
+  if (value === undefined) {
+    return {};
+  } else {
+    return value;
+  }
+}
+
+export function withNullFlavor(value: string | undefined, key: string): Entry {
+  if (value === undefined) {
+    return { [nullFlavorAttribute]: "UNK" };
+  } else {
+    return { [key]: value };
+  }
+}
+
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
+export function buildCodeCE({
+  code,
+  codeSystem,
+  codeSystemName,
+  displayName,
+}: {
+  code?: string | undefined;
+  codeSystem?: string | undefined;
+  codeSystemName?: string | undefined;
+  displayName?: string | undefined;
+}): CDACodeCE {
+  const codeObject: CDACodeCE = {};
+  if (code) codeObject["@_code"] = code;
+  if (codeSystem) codeObject["@_codeSystem"] = codeSystem;
+  if (codeSystemName) codeObject["@_codeSystemName"] = codeSystemName;
+  if (displayName) codeObject["@_displayName"] = displayName;
+
+  return codeObject;
+}
+
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
+export function buildCodeCVFromCodeableConcept(
+  codeableConcept: CodeableConcept | undefined
+): CDACodeCV | Entry {
+  if (!codeableConcept) {
+    return withoutNullFlavorString(codeableConcept);
+  }
+
+  const primaryCoding = codeableConcept.coding?.[0];
+
+  const baseCE = primaryCoding
+    ? buildCodeCE({
+        code: primaryCoding.code,
+        codeSystem: primaryCoding.system,
+        codeSystemName: undefined,
+        displayName: primaryCoding.display,
+      })
+    : {};
+
+  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
+    buildCodeCE({
+      code: coding.code,
+      codeSystem: coding.system,
+      codeSystemName: undefined,
+      displayName: coding.display,
+    })
+  );
+
+  const codeCV: CDACodeCV = {
+    ...baseCE,
+    originalText: codeableConcept.text,
+    translation: translations?.length ? translations : undefined,
+  };
+
+  return codeCV;
+}
+
+export function buildInstanceIdentifier({
+  root,
+  extension,
+  assigningAuthorityName,
+}: {
+  root?: string | undefined;
+  extension?: string | undefined;
+  assigningAuthorityName?: string | undefined;
+}): CDAInstanceIdentifier {
+  const identifier: CDAInstanceIdentifier = {};
+  if (root) identifier[rootAttribute] = root;
+  if (extension) identifier[extensionAttribute] = extension;
+  if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
+
+  return identifier;
+}
+
+export function buildInstanceIdentifiersFromIdentifier(
+  identifiers?: Identifier | Identifier[] | undefined
+): CDAInstanceIdentifier[] | Entry {
+  if (!identifiers) {
+    return withNullFlavor(undefined, rootAttribute);
+  }
+
+  const identifiersArray = Array.isArray(identifiers)
+    ? identifiers
+    : identifiers
+    ? [identifiers]
+    : [];
+  return identifiersArray.map(identifier =>
+    buildInstanceIdentifier({
+      root: identifier.system,
+      extension: identifier.value,
+      assigningAuthorityName: identifier.assigner?.display,
+    })
+  );
+}
+
+export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[] {
+  if (!telecoms) {
+    return [];
+  }
+  return telecoms.map(telecom => ({
+    ...withoutNullFlavorObject(telecom.use, useAttribute),
+    ...withoutNullFlavorObject(telecom.value, valueAttribute),
+  }));
+}
+
+export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
+  return address?.map(addr => ({
+    ...withoutNullFlavorObject(addr.use, useAttribute),
+    streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
+    city: withoutNullFlavorString(addr.city),
+    state: withoutNullFlavorString(addr.state),
+    postalCode: withoutNullFlavorString(addr.postalCode),
+    country: withoutNullFlavorString(addr.country),
+    useablePeriod: {
+      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+    },
+  })); // Using only first address
+}
+
+export function buildRepresentedOrganization(
+  organization: Organization
+): CDAOrganization | undefined {
+  return {
+    id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
+    name: withoutNullFlavorString(organization.name),
+    telecom: buildTelecom(organization.telecom),
+    addr: buildAddress(organization.address),
+  };
+}
+
+export function formatDateToCDATimeStamp(dateString: string | undefined): string | undefined {
+  if (!dateString) {
+    return undefined;
+  }
+  const datePart = dateString.replace(/-/g, "");
+  const timePart = "000000";
+  const fractionalSeconds = "0000";
+  const cdaTimeStamp = `${datePart}${timePart}.${fractionalSeconds}`;
+  return cdaTimeStamp;
+}
