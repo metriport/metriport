@@ -81,5 +81,6 @@ export async function bulkInsertCQDirectoryEntries(
   await sequelize.query(query, {
     replacements: flattenedData,
     type: QueryTypes.INSERT,
+    logging: false,
   });
 }
