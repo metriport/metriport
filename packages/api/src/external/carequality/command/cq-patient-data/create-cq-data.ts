@@ -1,7 +1,8 @@
+import { executeOnDBTx } from "../../../../models/transaction-wrapper";
 import { CQLink, CQPatientData, CQPatientDataCreate } from "../../cq-patient-data";
 import { CQPatientDataModel } from "../../models/cq-patient-data";
 import { getCQPatientData } from "./get-cq-data";
-import { updateCQPatientData } from "./update-cq-data";
+import { updateCQPatientDataWithinDBTx } from "./update-cq-data";
 
 export async function createOrUpdateCQPatientData({
   id,
@@ -12,19 +13,23 @@ export async function createOrUpdateCQPatientData({
   cxId: string;
   cqLinks: CQLink[];
 }): Promise<CQPatientData | undefined> {
-  if (!cqLinks.length) return;
   const cqPatientData: CQPatientDataCreate = {
     id,
     cxId,
     data: { links: cqLinks },
   };
 
-  const existingCQPatientData = await getCQPatientData({ id, cxId });
-  if (existingCQPatientData) return updateCQPatientData(cqPatientData);
+  const updateResult = await executeOnDBTx(CQPatientDataModel.prototype, async transaction => {
+    const existingPatient = await getCQPatientData({
+      id,
+      cxId,
+      transaction,
+    });
+    if (!existingPatient) return undefined;
+    return updateCQPatientDataWithinDBTx(cqPatientData, existingPatient, transaction);
+  });
+  if (updateResult) return updateResult;
 
+  if (!cqLinks.length) return undefined;
   return await CQPatientDataModel.create(cqPatientData);
-}
-
-export async function createCQData(cqData: CQPatientDataCreate): Promise<CQPatientData> {
-  return await CQPatientDataModel.create(cqData);
 }

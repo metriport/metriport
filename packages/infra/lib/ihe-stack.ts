@@ -1,5 +1,5 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
-import * as apig from "aws-cdk-lib/aws-apigateway";
+import { Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput } from "aws-cdk-lib";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -12,6 +12,7 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {
@@ -35,11 +36,31 @@ export class IHEStack extends Stack {
     if (!props.config.iheGateway) {
       throw new Error("Must define IHE properties!");
     }
+    const iheApiUrl = `${props.config.iheGateway.subdomain}.${props.config.domain}`;
 
     // get the public zone
     const publicZone = r53.HostedZone.fromLookup(this, "Zone", {
       domainName: props.config.host,
     });
+
+    // get the certificate from ACM
+    const certificate = cert.Certificate.fromCertificateArn(
+      this,
+      "IHECertificate",
+      props.config.iheGateway.certArn
+    );
+
+    // get the ownership Certificate from ACM.
+    const ownershipCertificate = new cert.Certificate(this, "OwnershipVerificationCertificate", {
+      domainName: iheApiUrl,
+      validation: cert.CertificateValidation.fromDns(publicZone),
+    });
+
+    const trustStoreBucket = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
 
     // get the medical documents bucket
     const medicalDocumentsBucket = s3.Bucket.fromBucketName(
@@ -48,36 +69,41 @@ export class IHEStack extends Stack {
       props.config.medicalDocumentsBucketName
     );
 
-    // Create the API Gateway
-    const api = new apig.RestApi(this, "IHEAPIGateway", {
-      description: "Metriport IHE Gateway",
-      defaultCorsPreflightOptions: {
+    // Create the API Gateway.
+    const domainName = new apigwv2.DomainName(this, "IHEAPIDomainv2", {
+      domainName: iheApiUrl,
+      certificate: certificate,
+      mtls: {
+        bucket: trustStoreBucket,
+        key: props.config.iheGateway.trustStoreKey,
+      },
+      // this ownsership cert is the whole point of this entire migration.
+      ownershipCertificate: ownershipCertificate,
+      securityPolicy: apigwv2.SecurityPolicy.TLS_1_2,
+    });
+
+    const apigw2 = new apigwv2.HttpApi(this, "IHEAPIGatewayv2", {
+      defaultDomainMapping: {
+        domainName: domainName,
+      },
+      corsPreflight: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
       },
+      disableExecuteApiEndpoint: true,
     });
 
     // TODO 1377 Setup WAF
 
-    // get the certificate form ACM
-    const certificate = cert.Certificate.fromCertificateArn(
-      this,
-      "IHECertificate",
-      props.config.iheGateway.certArn
-    );
-
-    // add domain cert + record
-    const iheApiUrl = `${props.config.iheGateway.subdomain}.${props.config.domain}`;
-
-    api.addDomainName("IHEAPIDomain", {
-      domainName: iheApiUrl,
-      certificate: certificate,
-      securityPolicy: apig.SecurityPolicy.TLS_1_2,
-    });
-    new r53.ARecord(this, "IHEAPIDomainRecord", {
+    new r53.ARecord(this, "IHEAPIDomainRecordv2", {
       recordName: iheApiUrl,
       zone: publicZone,
-      target: r53.RecordTarget.fromAlias(new r53_targets.ApiGateway(api)),
+      target: r53.RecordTarget.fromAlias(
+        new r53_targets.ApiGatewayv2DomainProperties(
+          domainName.regionalDomainName,
+          domainName.regionalHostedZoneId
+        )
+      ),
     });
 
     const lambdaLayers = setupLambdasLayers(this, true);
@@ -108,7 +134,7 @@ export class IHEStack extends Stack {
       config: props.config,
       vpc,
       zoneName: props.config.host,
-      apiResource: api.root,
+      apiGateway: apigw2,
       documentQueryLambda,
       documentRetrievalLambda,
       patientDiscoveryLambda,
@@ -119,17 +145,13 @@ export class IHEStack extends Stack {
     //-------------------------------------------
     // Output
     //-------------------------------------------
-    new CfnOutput(this, "IHEAPIGatewayUrl", {
-      description: "IHE API Gateway URL",
-      value: api.url,
-    });
     new CfnOutput(this, "IHEAPIGatewayID", {
       description: "IHE API Gateway ID",
-      value: api.restApiId,
+      value: apigw2.apiId,
     });
     new CfnOutput(this, "IHEAPIGatewayRootResourceID", {
-      description: "IHE API Gateway Root Resource ID",
-      value: api.root.resourceId,
+      description: "IHE API Gateway HTTP API ID",
+      value: apigw2.httpApiId,
     });
   }
 
@@ -143,7 +165,7 @@ export class IHEStack extends Stack {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentQuery",
-      entry: "ihe-document-query",
+      entry: "ihe-inbound-document-query",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -168,7 +190,7 @@ export class IHEStack extends Stack {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentRetrieval",
-      entry: "ihe-document-retrieval",
+      entry: "ihe-inbound-document-retrieval",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
@@ -192,7 +214,7 @@ export class IHEStack extends Stack {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "IHEInboundPatientDiscovery",
-      entry: "ihe-patient-discovery",
+      entry: "ihe-inbound-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {

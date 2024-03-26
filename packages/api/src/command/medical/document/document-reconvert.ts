@@ -2,6 +2,7 @@ import { DocumentReference } from "@medplum/fhirtypes";
 import { resourceTypeForConsolidation } from "@metriport/api-sdk";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
+import { getMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { out } from "@metriport/core/util/log";
 import { isMimeTypeXML } from "@metriport/core/util/mime";
 import { capture } from "@metriport/core/util/notifications";
@@ -11,10 +12,9 @@ import { groupBy } from "lodash";
 import { DocRefMapping } from "../../../domain/medical/docref-mapping";
 import { Patient } from "@metriport/core/domain/patient";
 import { convertCDAToFHIR } from "../../../external/fhir-converter/converter";
-import { getDocuments as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
+import { getDocumentsFromFHIR as getDocumentsFromFHIRServer } from "../../../external/fhir/document/get-documents";
 import { countResources } from "../../../external/fhir/patient/count-resources";
 import { downloadedFromHIEs } from "@metriport/core/external/fhir/shared/index";
-import { getMetriportContent } from "../../../external/fhir/shared/extensions/metriport";
 import { Config } from "../../../shared/config";
 import { errorToString } from "../../../shared/log";
 import { formatNumber } from "@metriport/shared/common/numbers";
@@ -121,7 +121,7 @@ export const reConvertDocuments = async (params: ReConvertDocumentsCommand): Pro
   }
 };
 
-async function getDocuments({
+async function getDocumentsFromFHIR({
   cxId,
   documentIds,
   log,
@@ -168,7 +168,7 @@ async function reConvertByPatient({
       : setDisableDocumentRequestWHFlag({ patient: patientParam, isDisableWH });
 
   const getDocs = () =>
-    getDocuments({
+    getDocumentsFromFHIR({
       cxId: patientParam.cxId,
       documentIds,
       log,

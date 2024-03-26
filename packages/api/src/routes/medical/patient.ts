@@ -16,16 +16,14 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
-import cwCommands from "../../external/commonwell";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -48,6 +46,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { stringToBoolean } from "@metriport/shared";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -68,6 +67,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
 
     if (Config.isSandbox()) {
@@ -86,7 +87,7 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate);
+    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -110,6 +111,8 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
@@ -118,24 +121,19 @@ router.put(
     }
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
       ...getETag(req),
       id,
+      facilityId,
     };
 
-    const updatedPatient = await updatePatient(patientUpdate);
-
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(updatedPatient);
-    await upsertPatientToFHIRServer(updatedPatient.cxId, fhirPatient);
-
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient
-      .update(updatedPatient, facilityId)
-      .catch(processAsyncError(`cw.patient.update`));
+    const updatedPatient = await updatePatient(
+      patientUpdate,
+      true,
+      forceCommonwell,
+      forceCarequality
+    );
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })

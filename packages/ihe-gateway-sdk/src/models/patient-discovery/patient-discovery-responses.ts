@@ -1,65 +1,85 @@
 import * as z from "zod";
 import {
-  baseResponseSchema,
-  baseErrorResponseSchema,
-  externalGatewayPatientSchema,
   XCPDGatewaySchema,
+  baseErrorResponseSchema,
+  baseResponseSchema,
+  externalGatewayPatientSchema,
 } from "../shared";
+
+export const inboundPatientResourceSchema = z.object({
+  name: z
+    .array(
+      z.object({
+        family: z.string().optional(),
+        given: z.array(z.string()).optional(),
+      })
+    )
+    .optional(),
+  gender: z.enum(["male", "female", "unknown"]).optional(),
+  birthDate: z.string().optional(),
+  address: z.array(
+    z.object({
+      line: z.array(z.string()).optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      postalCode: z.string().optional(),
+      country: z.string().optional(),
+    })
+  ),
+});
+
+export type InboundPatientResource = z.infer<typeof inboundPatientResourceSchema>;
 
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
-  patientResource: z.object({}),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
 // TO EXTERNAL GATEWAY
-const patientDiscoveryRespToExternalGWSuccessfulSchema =
+const inboundPatientDiscoveryRespSuccessfulSchema =
   patientDiscoveryRespSuccessfulDefaultSchema.extend({
     patientMatchDegree: z.number().optional(),
+    patientResource: z.object({}),
     externalGatewayPatient: externalGatewayPatientSchema,
   });
 
-const patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema = baseResponseSchema.extend({
+const inboundPatientDiscoveryRespSuccessfulNoMatchSchema = baseResponseSchema.extend({
   patientMatch: z.literal(false),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
-const patientDiscoveryRespToExternalGWFaultSchema = baseErrorResponseSchema.extend({
+const inboundPatientDiscoveryRespFaultSchema = baseErrorResponseSchema.extend({
   patientMatch: z.literal(null),
-  xcpdHomeCommunityId: z.string(),
+  gatewayHomeCommunityId: z.string(),
 });
 
-export const patientDiscoveryRespToExternalGWSchema = z.union([
-  patientDiscoveryRespToExternalGWSuccessfulSchema,
-  patientDiscoveryRespToExternalGWSuccessfulNoMatchSchema,
-  patientDiscoveryRespToExternalGWFaultSchema,
+export const inboundPatientDiscoveryRespSchema = z.union([
+  inboundPatientDiscoveryRespSuccessfulSchema,
+  inboundPatientDiscoveryRespSuccessfulNoMatchSchema,
+  inboundPatientDiscoveryRespFaultSchema,
 ]);
 
-export type PatientDiscoveryRespToExternalGW = z.infer<
-  typeof patientDiscoveryRespToExternalGWSchema
->;
+export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscoveryRespSchema>;
 
 // FROM EXTERNAL GATEWAY
-const patientDiscoveryRespFromExternalGWDefaultSchema = baseResponseSchema.extend({
+const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   gateway: XCPDGatewaySchema,
-  patientResourceId: z.string(),
+  patientId: z.string(),
 });
 
-const patientDiscoveryRespFromExternalGWSuccessfulSchema =
-  patientDiscoveryRespFromExternalGWDefaultSchema.merge(
-    patientDiscoveryRespSuccessfulDefaultSchema
-  );
-
-const patientDiscoveryRespFromExternalGWFaultSchema =
-  patientDiscoveryRespFromExternalGWDefaultSchema.extend({
-    patientMatch: z.literal(false).or(z.literal(null)),
+const outboundPatientDiscoveryRespSuccessfulSchema = outboundPatientDiscoveryRespDefaultSchema
+  .merge(patientDiscoveryRespSuccessfulDefaultSchema)
+  .extend({
+    patientResource: inboundPatientResourceSchema.optional(),
   });
 
-export const patientDiscoveryRespFromExternalGWSchema = z.union([
-  patientDiscoveryRespFromExternalGWSuccessfulSchema,
-  patientDiscoveryRespFromExternalGWFaultSchema,
+const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
+  patientMatch: z.literal(false).or(z.literal(null)),
+});
+
+export const outboundPatientDiscoveryRespSchema = z.union([
+  outboundPatientDiscoveryRespSuccessfulSchema,
+  outboundPatientDiscoveryRespFaultSchema,
 ]);
 
-export type PatientDiscoveryRespFromExternalGW = z.infer<
-  typeof patientDiscoveryRespFromExternalGWSchema
->;
+export type OutboundPatientDiscoveryResp = z.infer<typeof outboundPatientDiscoveryRespSchema>;

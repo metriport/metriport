@@ -1,19 +1,26 @@
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { processAsyncError } from "../../../errors";
-import cwCommands from "../../../external/commonwell";
+import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
+import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
+import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { addCoordinatesToAddresses } from "./add-coordinates";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
-export const createPatient = async (patient: PatientCreateCmd): Promise<Patient> => {
+export const createPatient = async (
+  patient: PatientCreateCmd,
+  forceCommonwell?: boolean,
+  forceCarequality?: boolean
+): Promise<Patient> => {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -46,14 +53,25 @@ export const createPatient = async (patient: PatientCreateCmd): Promise<Patient>
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // TODO: #393 declarative, event-based integration
-  // Intentionally asynchronous - it takes too long to perform
-  cwCommands.patient.create(newPatient, facilityId).catch(processAsyncError(`cw.patient.create`));
+  // TODO move these to the respective "commands" files so this is fully async
+  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
 
-  // Intentionally asynchronous - it takes too long to perform
-  cqCommands.patient
-    .discover(newPatient, facility.data.npi)
-    .catch(processAsyncError(`cq.patient.discover`));
+  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    // Intentionally asynchronous
+    cwCommands.patient
+      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
+      .catch(processAsyncError(`cw.patient.create`));
+  }
+
+  if (carequalityEnabled || forceCarequality) {
+    // Intentionally asynchronous
+    cqCommands.patient
+      .discover(newPatient, facility.data.npi)
+      .catch(processAsyncError(`cq.patient.create`));
+  }
 
   return newPatient;
 };

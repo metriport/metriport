@@ -6,7 +6,7 @@
  - expects to receive a single requests to be transmitted to the XCPD ITI-55 Processor channel
 
 Last updated: Dec 20 2023</description>
-  <revision>19</revision>
+  <revision>123</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -45,7 +45,7 @@ Last updated: Dec 20 2023</description>
       </listenerConnectorProperties>
       <sourceConnectorProperties version="4.4.2">
         <responseVariable>None</responseVariable>
-        <respondAfterProcessing>true</respondAfterProcessing>
+        <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
         <processingThreads>10</processingThreads>
@@ -251,8 +251,8 @@ Last updated: Dec 20 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1703089636245</time>
-        <timezone>America/Vancouver</timezone>
+        <time>1709753563218</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -262,8 +262,12 @@ Last updated: Dec 20 2023</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>f6899f98-6671-44f9-a764-d5f7c1858f02</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

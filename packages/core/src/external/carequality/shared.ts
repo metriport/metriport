@@ -1,9 +1,7 @@
-import {
-  DocumentQueryReqFromExternalGW,
-  DocumentRetrievalReqFromExternalGW,
-} from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
+import { base64ToString, stringToBase64 } from "../../util/base64";
 
 /*
 CONFIDENTIALITY_CODE is always N, or normal, indicating its normal PHI
@@ -17,14 +15,17 @@ export const CONFIDENTIALITY_CODE_SYSTEM = "2.16.840.1.113883.5.25";
 export const LOINC_CODE = "2.16.840.1.113883.6.1";
 export const SNOMED_CODE = "2.16.840.1.113883.6.96";
 export const DEFAULT_FORMAT_CODE_SYSTEM = "1.3.6.1.4.1.19376.1.2.3";
-export const DEFAULT_FORMAT_CODE_NODE = "urn:ihe:iti:xds:2017:mimeTypeSufficient";
+export const DEFAULT_FORMAT_CODE_NODE = "urn:ihe:pcc:xphr:2007";
 export const DEFAULT_PRACTICE_SETTING_CODE_NODE = "394802001";
 export const DEFAULT_PRACTICE_SETTING_CODE_DISPLAY = "General Medicine";
 export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE = "394777002";
 export const DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_DISPLAY = "Health Encounter Site";
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
+export const METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX = "2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const CODE_SYSTEM_ERROR = "1.3.6.1.4.1.19376.1.2.27.1";
+
+export const ORGANIZATION_NAME_DEFAULT = "Metriport";
 
 export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.2": USState.AK, // Alaska Driver's License
@@ -80,23 +81,23 @@ export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.56": USState.WY, // Wyoming Driver's License
 };
 
-export function createPatientUniqueId(internalId: string, patientId: string): string {
-  return btoa(`${internalId}/${patientId}`);
+export function createPatientUniqueId(cxId: string, patientId: string): string {
+  return stringToBase64(`${cxId}/${patientId}`);
 }
 
 export function extractPatientUniqueId(patientId: string): string {
-  return atob(patientId);
+  return base64ToString(patientId);
 }
 
 export function createDocumentUniqueId(documentId: string): string {
-  return btoa(documentId);
+  return stringToBase64(documentId);
 }
 export function extractDocumentUniqueId(documentId: string): string {
-  return atob(documentId);
+  return base64ToString(documentId);
 }
 
 export function validateBasePayload(
-  payload: DocumentQueryReqFromExternalGW | DocumentRetrievalReqFromExternalGW
+  payload: InboundDocumentQueryReq | InboundDocumentRetrievalReq
 ): void {
   if (!payload.id) {
     throw new XDSRegistryError("Request id is not defined");

@@ -10,11 +10,13 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
+import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
@@ -43,6 +45,8 @@ export async function queryDocumentsAcrossHIEs({
   override,
   cxDocumentRequestMetadata,
   forceQuery = false,
+  forceCommonwell = false,
+  forceCarequality = false,
 }: {
   cxId: string;
   patientId: string;
@@ -50,6 +54,8 @@ export async function queryDocumentsAcrossHIEs({
   override?: boolean;
   cxDocumentRequestMetadata?: unknown;
   forceQuery?: boolean;
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
 }): Promise<DocumentQueryProgress> {
   const { log } = Util.out(`queryDocumentsAcrossHIEs - M patient ${patientId}`);
 
@@ -79,18 +85,24 @@ export async function queryDocumentsAcrossHIEs({
     cxDocumentRequestMetadata,
   });
 
-  getDocumentsFromCW({
-    patient,
-    facilityId,
-    forceDownload: override,
-    forceQuery,
-    requestId,
-  }).catch(emptyFunction);
+  const commonwellEnabled = await isCommonwellEnabled();
+  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    getDocumentsFromCW({
+      patient,
+      facilityId,
+      forceDownload: override,
+      forceQuery,
+      requestId,
+    }).catch(emptyFunction);
+  }
 
-  getDocumentsFromCQ({
-    patient,
-    requestId,
-  }).catch(emptyFunction);
+  const carequalityEnabled = await isCarequalityEnabled();
+  if (carequalityEnabled || forceCarequality) {
+    getDocumentsFromCQ({
+      patient,
+      requestId,
+    }).catch(emptyFunction);
+  }
 
   return createQueryResponse("processing", updatedPatient);
 }

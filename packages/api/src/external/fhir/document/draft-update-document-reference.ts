@@ -10,12 +10,12 @@ import { S3Utils } from "@metriport/core/external/aws/s3";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
 import BadRequestError from "@metriport/core/util/error/bad-request";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { cloneDeep } from "lodash";
 import { OrganizationModel } from "../../../models/medical/organization";
 import { Config } from "../../../shared/config";
 import { TEMPORARY } from "../../../shared/constants";
 import { appendIdentifierOID, toFHIR } from "../organization";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);

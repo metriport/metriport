@@ -52,7 +52,8 @@ export type EnvConfig = {
       CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {
-      CQ_ORG_DETAILS?: string;
+      CQ_ORG_URLS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {
@@ -115,6 +116,9 @@ export type EnvConfig = {
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
+    scheduleExpressions: string | string[];
+  };
+  cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
   };
 } & (

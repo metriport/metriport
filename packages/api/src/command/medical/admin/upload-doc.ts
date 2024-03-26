@@ -1,5 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
@@ -8,7 +9,6 @@ import dayjs from "dayjs";
 import { cloneDeep } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
-import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
 import { getPatientOrFail } from "../patient/get-patient";
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");

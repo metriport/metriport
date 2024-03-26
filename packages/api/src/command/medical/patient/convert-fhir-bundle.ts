@@ -7,15 +7,15 @@ import {
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { S3Utils, makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
-import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { convertDoc } from "../document/document-download";
+import { createSandboxMRSummaryFileName } from "./shared";
 
+const s3Utils = new S3Utils(Config.getAWSRegion());
 dayjs.extend(duration);
 
 /**
@@ -45,37 +45,21 @@ export async function handleBundleToMedicalRecord({
   dateTo?: string;
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
-  const isSandbox = Config.isSandbox();
-
-  if (isSandbox) {
+  const bucketName = Config.getSandboxSeedBucketName();
+  if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
-    const url = await processSandboxSeed({
-      firstName: patientMatch ? patient.data.firstName : "jane",
-      conversionType,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      bucketName: Config.getSandboxSeedBucketName()!,
+    const patientNameLowerCase = patientMatch ? patient.data.firstName.toLowerCase() : "jane";
+    const fileName = createSandboxMRSummaryFileName(patientNameLowerCase, conversionType);
+    const url = await s3Utils.getSignedUrl({
+      bucketName,
+      fileName,
+      durationSeconds: 60,
     });
-
     return buildBundle(patient, url, conversionType);
   }
 
-  const fhir = makeFhirApi(patient.cxId);
-
-  const fhirPatient = await fhir.readResource("Patient", patient.id);
-
-  const bundleWithPatient: Bundle<Resource> = {
-    ...bundle,
-    total: (bundle.total ?? 0) + 1,
-    entry: [
-      {
-        resource: fhirPatient,
-      },
-      ...(bundle.entry ?? []),
-    ],
-  };
-
-  const url = await convertFHIRBundleToMedicalRecord({
-    bundle: bundleWithPatient,
+  const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
+    bundle,
     patient,
     resources,
     dateFrom,
@@ -83,7 +67,13 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  return buildBundle(patient, url, conversionType);
+  const newBundle = buildBundle(patient, url, conversionType);
+  if (!hasContents) {
+    console.log(`No contents in the consolidated data for patient ${patient.id}`);
+    newBundle.entry = [];
+    newBundle.total = 0;
+  }
+  return newBundle;
 }
 
 function buildBundle(
@@ -130,7 +120,7 @@ async function convertFHIRBundleToMedicalRecord({
   dateFrom?: string;
   dateTo?: string;
   conversionType: ConsolidationConversionType;
-}): Promise<string> {
+}): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
@@ -174,23 +164,5 @@ async function convertFHIRBundleToMedicalRecord({
     })
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
-
-  const parsedResult = JSON.parse(resultPayload) as ConversionOutput;
-  return parsedResult.url;
-}
-
-async function processSandboxSeed({
-  firstName,
-  conversionType,
-  bucketName,
-}: {
-  firstName: string;
-  conversionType: ConsolidationConversionType;
-  bucketName: string;
-}): Promise<string> {
-  const lowerCaseName = firstName.toLowerCase();
-  const fileName = `${lowerCaseName}-consolidated.xml`;
-
-  const url = await convertDoc({ fileName, conversionType, bucketName });
-  return url;
+  return JSON.parse(resultPayload) as ConversionOutput;
 }

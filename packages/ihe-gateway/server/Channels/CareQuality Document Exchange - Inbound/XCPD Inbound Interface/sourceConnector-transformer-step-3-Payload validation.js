@@ -34,14 +34,16 @@ if (configurationMap.containsKey('HL7v3.XMLSchema')) try {
 			soapFault.soap::Header.wsa::Action = 'urn:hl7-org:v3:PRPA_IN201306UV02:CrossGatewayPatientDiscovery';
 			soapFault.soap::Header.wsa::RelatesTo = msg.*::Header.*::MessageID.toString();
 
-			responseMap.put('XCPD_RESPONSE', soapFault.toString());
+			responseMap.put('RESPONSE', soapFault.toString());
 		}
 		destinationSet.removeAll();
 		return;
 	}
 
+
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: XML Schema validation - ' + ex);
+	throw ex;
 }
 
 // Validate that the value of processingModeCode is set to "T"
@@ -52,11 +54,12 @@ if ('T' !== payload.*::processingModeCode.@code.toString()) try {
 		var soap = mcci.namespace('soap');
 		var wsa = mcci.namespace('wsa');
 		mcci.soap::Header.wsa::RelatesTo = msg.*::Header.*::MessageID.toString();
-		responseMap.put('XCPD_RESPONSE', mcci.toString());
+		responseMap.put('RESPONSE', mcci.toString());
 	}
 	destinationSet.removeAll();
 	return;
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: ProcessMode validation - ' + ex);
+	throw ex;
 }

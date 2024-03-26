@@ -5,14 +5,15 @@ set -e
 
 source ./scripts/load-env.sh
 
+if [[ -z "${ENV_TYPE}" ]]; then
+  echo "Warning: ENV_TYPE is missing, default to 'staging'"
+  set -o allexport
+  ENV_TYPE="staging"
+  set +o allexport
+fi
 if [ -z "${IHE_GW_CONFIG_BUCKET_NAME}" ]; then
   echo "Error: IHE_GW_CONFIG_BUCKET_NAME is not set, skipping downloading certs and custom extensions."
   exit 1
-fi
-
-if [[ -z "${ENV_TYPE}" ]]; then
-  echo "Warning: ENV_TYPE is missing, default to 'staging'"
-  ENV_TYPE="staging"
 fi
 
 BUCKET_NAME="$IHE_GW_CONFIG_BUCKET_NAME-$ENV_TYPE"

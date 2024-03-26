@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
   <id>5f11484b-3afc-442c-85bf-18b648c7194c</id>
   <name>Get MCCI Nack message</name>
-  <revision>2</revision>
+  <revision>68</revision>
   <lastModified>
-    <time>1708660220312</time>
+    <time>1708669055415</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
       <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

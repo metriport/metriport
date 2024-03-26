@@ -7,7 +7,7 @@ import {
   isoDateToFHIRDateQueryTo,
 } from "@metriport/core/external/fhir/shared/index";
 
-export async function getDocuments({
+export async function getDocumentsFromFHIR({
   cxId,
   patientId,
   from,

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><channelGroup version="4.4.2">
   <id>17a4bbcb-23fc-4a63-8069-fb1d38f8c255</id>
   <name>CareQuality Document Exchange - Inbound</name>
-  <revision>2</revision>
+  <revision>1</revision>
   <lastModified>
-    <time>1708660218391</time>
+    <time>1709505265693</time>
     <timezone>GMT</timezone>
   </lastModified>
   <description>Inbound CareQuality Query Based Document Exchange</description>
@@ -13,19 +13,11 @@
       <revision>0</revision>
     </channel>
     <channel version="4.4.2">
-      <id>830d9530-a006-4b9c-9b9b-302065bc2eea</id>
-      <revision>0</revision>
-    </channel>
-    <channel version="4.4.2">
-      <id>3d78b44c-d132-485a-8423-f5a6c681f249</id>
-      <revision>0</revision>
-    </channel>
-    <channel version="4.4.2">
-      <id>8af32eb7-1153-4c8f-be64-db8cb45ceb1b</id>
-      <revision>0</revision>
-    </channel>
-    <channel version="4.4.2">
       <id>279057c4-65eb-4cbd-ae23-6d9d66de14a0</id>
+      <revision>0</revision>
+    </channel>
+    <channel version="4.4.2">
+      <id>279057c4-65eb-4cbd-ae23-6d9d66de14a1</id>
       <revision>0</revision>
     </channel>
   </channels>

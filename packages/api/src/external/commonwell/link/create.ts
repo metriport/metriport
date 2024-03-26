@@ -1,8 +1,10 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { oid } from "@metriport/core/domain/oid";
+import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { oid } from "@metriport/core/domain/oid";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellId } from "../patient-external-data";
 import { getPatientData } from "../patient-shared";
@@ -10,12 +12,20 @@ import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
 const context = "cw.link.create";
 
-export const create = async (
+export async function create(
   personId: string,
   patientId: string,
   cxId: string,
-  facilityId: string
-): Promise<void> => {
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<void> {
+  const { log } = out(context);
+
+  if (!(await isCWEnabledForCx(cxId))) {
+    log(`CW is disabled for cxId: ${cxId}`);
+    return undefined;
+  }
+
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const { organization, facility } = await getPatientData(patient, facilityId);
 
@@ -65,14 +75,21 @@ export const create = async (
       throw new Error("Link has no href");
     }
 
-    await autoUpgradeNetworkLinks(commonWell, queryMeta, cwPatientId, personId, context);
+    await autoUpgradeNetworkLinks(
+      commonWell,
+      queryMeta,
+      cwPatientId,
+      personId,
+      context,
+      getOrgIdExcludeList
+    );
   } catch (error) {
     const msg = `Failed to create CW person link`;
-    console.log(`${msg}. Cause: ${error}`);
+    log(`${msg}. Cause: ${error}`);
     capture.message(msg, {
       extra: { cwPatientId, personId, cwReference: commonWell?.lastReferenceHeader, context },
       level: "error",
     });
     throw error;
   }
-};
+}

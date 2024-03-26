@@ -1,11 +1,13 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { isCarequalityExtension } from "@metriport/core/external/carequality/extension";
+import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
+import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { uniqBy } from "lodash";
+import { isDocStatusReady } from ".";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
-import { isCommonwellExtension } from "../../commonwell/extension";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
-import { isMetriportExtension } from "../shared/extensions/metriport";
-import { getDocuments } from "./get-documents";
+import { getDocumentsFromFHIR } from "./get-documents";
 
 export async function searchDocuments({
   cxId,
@@ -18,7 +20,7 @@ export async function searchDocuments({
   dateRange?: { from?: string; to?: string };
   contentFilter?: string;
 }): Promise<DocumentReference[]> {
-  const fhirDocs = await getDocuments({ cxId, patientId, from, to });
+  const fhirDocs = await getDocumentsFromFHIR({ cxId, patientId, from, to });
 
   const docs = await Promise.allSettled([
     searchOnCCDAFiles(fhirDocs, cxId, patientId, contentFilter),
@@ -33,7 +35,8 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  return unique;
+  const ready = unique.filter(isDocStatusReady);
+  return ready;
 }
 
 async function searchOnDocumentReferences(
@@ -52,9 +55,10 @@ function checkExtensions(doc: DocumentReference) {
   if (Config.isSandbox()) return true;
   const extensions = doc.extension;
   if (!extensions) return false;
-  const metriport = extensions.find(isMetriportExtension);
-  const cw = extensions.find(isCommonwellExtension);
-  if (!metriport && !cw) return false;
+  const hasMetriport = extensions.find(isMetriportExtension);
+  const hasCW = extensions.find(isCommonwellExtension);
+  const hasCQ = extensions.find(isCarequalityExtension);
+  if (!hasMetriport && !hasCW && !hasCQ) return false;
   return true;
 }
 

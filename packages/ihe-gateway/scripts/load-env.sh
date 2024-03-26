@@ -10,18 +10,19 @@ set -e
 #
 #################################################################################
 
-if ! [[ $FILE ]]; then
-    FILE=.env
+if ! [[ $DOT_ENV_FILE ]]; then
+    DOT_ENV_FILE=.env
 fi
+echo "Loading environment variables from $DOT_ENV_FILE"
 
-if [ -f $FILE ]; then
+if [ -f $DOT_ENV_FILE ]; then
     set -o allexport
-    source $FILE
+    source $DOT_ENV_FILE
     set +o allexport
 else
     if [ "$1" == "strict" ]; then
-        echo "Error: No .env file found"
+        echo "Error: No $DOT_ENV_FILE file found"
         exit 1
     fi
-    echo "Warning: No .env file found, expecting env vars to be set"
+    echo "Warning: No $DOT_ENV_FILE file found, expecting env vars to be set"
 fi

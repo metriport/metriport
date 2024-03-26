@@ -10,11 +10,12 @@ if ('Failure' == queryResponseCode.toString()) {
 		if (operationOutcome) {
 			channelMap.put('RESULT', operationOutcome.issue.length + ' issue(s)');
 			var _response = getXCA39ResponseTemplate(channelMap.get('REQUEST'), operationOutcome);
-			var result = router.routeMessageByChannelId(globalMap.get('XCAAPPINTERFACE'), JSON.stringify(_response));
+			var result = router.routeMessageByChannelId(globalMap.get('XCADRAPPINTERFACE'), JSON.stringify(_response));
 		}
 		
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response (Case2) - ' + ex);
+		throw ex;
 	}
 
 	// Stop further processing

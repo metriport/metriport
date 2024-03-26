@@ -1,4 +1,4 @@
-import { DocumentReference } from "@medplum/fhirtypes";
+import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
 import {
@@ -8,11 +8,7 @@ import {
 import { parseFilePath } from "../../../domain/filename";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
-import {
-  createPatientUniqueId,
-  METRIPORT_HOME_COMMUNITY_ID,
-  METRIPORT_REPOSITORY_UNIQUE_ID,
-} from "../../carequality/shared";
+import { createPatientUniqueId } from "../../carequality/shared";
 import { S3Utils } from "../s3";
 
 const api = axios.create();
@@ -80,6 +76,11 @@ export async function documentUploaderHandler(
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
     const hash = eTag ? eTag : "";
+    if (!contentType) {
+      const message = "Failed to get the mime type of the uploaded file";
+      console.log(`${message}: ${contentType}`);
+      throw new MetriportError(message, null, { sourceKey, destinationKey });
+    }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       console.log(`${message}: ${docRef}`);
@@ -94,6 +95,7 @@ export async function documentUploaderHandler(
         docRef,
         metadataFileName,
         destinationBucket,
+        mimeType: contentType,
       });
     }
     if (size && size > MAXIMUM_FILE_SIZE) {
@@ -128,11 +130,11 @@ async function createAndUploadMetadataFile({
   cxId,
   patientId,
   docId,
-  hash,
   size,
   docRef,
   metadataFileName,
   destinationBucket,
+  mimeType,
 }: {
   s3Utils: S3Utils;
   cxId: string;
@@ -143,6 +145,7 @@ async function createAndUploadMetadataFile({
   docRef: DocumentReference;
   metadataFileName: string;
   destinationBucket: string;
+  mimeType: string;
 }): Promise<void> {
   const createdTime = new Date().toISOString();
   const uniquePatientId = createPatientUniqueId(cxId, patientId);
@@ -150,19 +153,21 @@ async function createAndUploadMetadataFile({
   const classCode = docRef.type;
   const practiceSettingCode = docRef.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef.context?.facilityType;
+  const organization: Organization | undefined = docRef.contained?.find(
+    (resource): resource is Organization => resource.resourceType === "Organization"
+  );
   console.log(`Creating metadata file for docId: ${docId}`);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
-    hash,
-    repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-    homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
     size,
     patientId: uniquePatientId,
+    organization,
     classCode,
     practiceSettingCode,
     healthcareFacilityTypeCode,
     documentUniqueId: docId,
     title,
+    mimeType,
   });
 
   console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);

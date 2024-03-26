@@ -3,4 +3,6 @@
 
 globalMap.put('ITI38PROCESSOR', channelId);
 
+logger.info("Deploying " + channelName);
+
 return;

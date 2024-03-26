@@ -1,14 +1,13 @@
 import {
   Aspects,
-  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
+  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -17,10 +16,11 @@ import * as cognito from "aws-cdk-lib/aws-cognito";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
-import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -34,6 +34,7 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
@@ -44,9 +45,9 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
-import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
+import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { getSecrets, Secrets } from "./shared/secrets";
+import { Secrets, getSecrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -78,7 +79,7 @@ export class APIStack extends Stack {
     this.alarmAction = slackNotification?.alarmAction;
 
     //-------------------------------------------
-    // VPC + NAT Gateway
+    // VPC + NAT Gateway.
     //-------------------------------------------
     const vpcConstructId = "APIVpc";
     this.vpc = new ec2.Vpc(this, vpcConstructId, {
@@ -158,16 +159,30 @@ export class APIStack extends Stack {
       },
     });
     const dbCreds = rds.Credentials.fromSecret(dbCredsSecret);
-    // aurora serverlessv2 db
+    const dbEngine = rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.VER_14_7,
+    });
+    const parameterGroup = new rds.ParameterGroup(this, "APIDB_Params", {
+      engine: dbEngine,
+      parameters: {
+        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
+        log_min_duration_statement: "3000", // TODO move this and other parameters to env config
+      },
+    });
+
     const dbCluster = new rds.DatabaseCluster(this, "APIDB", {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_14_4,
-      }),
-      instanceProps: { vpc: this.vpc, instanceType: new InstanceType("serverless") },
+      engine: dbEngine,
+      instanceProps: {
+        vpc: this.vpc,
+        instanceType: new InstanceType("serverless"),
+        enablePerformanceInsights: true,
+        parameterGroup,
+      },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
+      parameterGroup,
     });
     const minDBCap = this.isProd(props) ? 2 : 0.5;
     const maxDBCap = this.isProd(props) ? 16 : 2;
@@ -332,13 +347,40 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const documentQueryResultsLambda = this.setupDocumentQueryResults({
+    const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
       dbCredsSecret,
       sentryDsn: props.config.lambdasSentryDSN,
       alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(10),
+    });
+
+    const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(15),
+    });
+
+    const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(15),
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
@@ -392,7 +434,9 @@ export class APIStack extends Stack {
       fhirConverterServiceUrl: fhirConverter ? `http://${fhirConverter.address}` : undefined,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
-      documentQueryResultsLambda,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       searchIngestionQueue: ccdaSearchQueue,
@@ -458,7 +502,17 @@ export class APIStack extends Stack {
       : undefined;
 
     // Add ENV after apiserivce is created
-    documentQueryResultsLambda.addEnvironment(
+    outboundPatientDiscoveryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
+    outboundDocumentQueryLambda.addEnvironment(
+      "API_URL",
+      `http://${apiService.loadBalancer.loadBalancerDnsName}`
+    );
+
+    outboundDocumentRetrievalLambda.addEnvironment(
       "API_URL",
       `http://${apiService.loadBalancer.loadBalancerDnsName}`
     );
@@ -471,6 +525,14 @@ export class APIStack extends Stack {
     fhirConverterLambda && medicalDocumentsBucket.grantRead(fhirConverterLambda);
 
     createDocQueryChecker({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    createCqDirectoryRebuilder({
       lambdaLayers,
       stack: this,
       vpc: this.vpc,
@@ -495,6 +557,23 @@ export class APIStack extends Stack {
     // API Gateway
     //-------------------------------------------
 
+    const accessLogDestination = new apig.LogGroupLogDestination(
+      new LogGroup(this, "APIAccessLogGroup", {
+        removalPolicy: RemovalPolicy.RETAIN,
+      })
+    );
+    const accessLogFormat = apig.AccessLogFormat.jsonWithStandardFields({
+      caller: true,
+      httpMethod: true,
+      ip: true,
+      protocol: true,
+      requestTime: true,
+      resourcePath: true,
+      responseLength: true,
+      status: true,
+      user: true,
+    });
+
     // Create the API Gateway
     // example from https://bobbyhadz.com/blog/aws-cdk-api-gateway-example
     const api = new apig.RestApi(this, "api", {
@@ -503,6 +582,10 @@ export class APIStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
+      },
+      deployOptions: {
+        accessLogDestination,
+        accessLogFormat,
       },
     });
 
@@ -1111,33 +1194,145 @@ export class APIStack extends Stack {
     return documentDownloaderLambda;
   }
 
-  private setupDocumentQueryResults(ownProps: {
+  private setupOutboundPatientDiscovery(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     envType: EnvType;
     dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
     sentryDsn: string | undefined;
     alarmAction: SnsAction | undefined;
   }): Lambda {
-    const { lambdaLayers, dbCredsSecret, vpc, sentryDsn, envType, alarmAction } = ownProps;
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
 
-    const documentQueryResultsLambda = createLambda({
+    const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
-      name: "DocumentQueryResults",
-      entry: "document-query-results",
+      name: "OutboundPatientDiscovery",
+      entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        DB_CREDS: ecs.Secret.fromSecretsManager(dbCredsSecret).toString(),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
       },
       layers: [lambdaLayers.shared],
       memory: 512,
-      timeout: Duration.minutes(5),
+      timeout: maxPollingDuration,
       vpc,
       alarmSnsAction: alarmAction,
     });
 
-    return documentQueryResultsLambda;
+    dbCluster.connections.allowDefaultPortFrom(outboundPatientDiscoveryLambda);
+    dbCredsSecret.grantRead(outboundPatientDiscoveryLambda);
+
+    return outboundPatientDiscoveryLambda;
+  }
+
+  private setupOutboundDocumentQuery(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundDocumentQueryLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentQuery",
+      entry: "ihe-outbound-document-query",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentQueryLambda);
+    dbCredsSecret.grantRead(outboundDocumentQueryLambda);
+
+    return outboundDocumentQueryLambda;
+  }
+
+  private setupOutboundDocumentRetrieval(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundDocumentRetrievalLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentRetrieval",
+      entry: "ihe-outbound-document-retrieval",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.seconds(15))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentRetrievalLambda);
+    dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
+
+    return outboundDocumentRetrievalLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {

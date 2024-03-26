@@ -3,22 +3,22 @@
   <name>Convert RegistryErrorList to OperationOutcome</name>
   <revision>1</revision>
   <lastModified>
-    <time>1702923211012</time>
+    <time>1708636664745</time>
     <timezone>GMT</timezone>
   </lastModified>
   <contextSet>
     <delegate>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
       <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
       <contextType>CHANNEL_POSTPROCESSOR</contextType>
       <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
-      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
       <contextType>CHANNEL_DEPLOY</contextType>
       <contextType>CHANNEL_UNDEPLOY</contextType>
-      <contextType>CHANNEL_PREPROCESSOR</contextType>
-      <contextType>CHANNEL_ATTACHMENT</contextType>
-      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
-      <contextType>DESTINATION_DISPATCHER</contextType>
-      <contextType>CHANNEL_BATCH</contextType>
     </delegate>
   </contextSet>
   <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">

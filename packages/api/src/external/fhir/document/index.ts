@@ -24,6 +24,8 @@ import {
   HumanName as CWHumanName,
 } from "@metriport/commonwell-sdk";
 import { Gender } from "@metriport/commonwell-sdk/src/models/demographics";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { cwExtension } from "@metriport/core/external/commonwell/extension";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import { sortBy, uniqBy } from "lodash";
@@ -32,8 +34,6 @@ import MetriportError from "../../../errors/metriport-error";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { CWDocumentWithMetriportData } from "../../commonwell/document/shared";
-import { cwExtension } from "../../commonwell/extension";
-import { metriportDataSourceExtension } from "../shared/extensions/metriport";
 import { toFHIRSubject } from "@metriport/core/external/fhir/patient/index";
 dayjs.extend(isToday);
 
@@ -58,9 +58,26 @@ const authorTypesMap: Record<AuthorTypes["resourceType"], AuthorTypes["resourceT
 };
 const authorTypes = Object.values(authorTypesMap);
 
+export function isDocStatusReady(doc: DocumentReference): boolean {
+  return !isDocStatusPreliminary(doc) && !isDocStatusEnteredInError(doc);
+}
+export function isDocStatusFinal(doc: DocumentReference): boolean {
+  return doc.docStatus === "final";
+}
+export function isDocStatusAmended(doc: DocumentReference): boolean {
+  return doc.docStatus === "amended";
+}
+export function isDocStatusPreliminary(doc: DocumentReference): boolean {
+  return doc.docStatus === "preliminary";
+}
+export function isDocStatusEnteredInError(doc: DocumentReference): boolean {
+  return doc.docStatus === "entered-in-error";
+}
+
 // HIEs probably don't have records before the year 1800 :)
 const earliestPossibleYear = 1800;
 
+// TODO move to external/commonwell/document
 export function getBestDateFromCWDocRef(content: DocumentContent): string {
   const date = dayjs(content.indexed);
   const period = content.context.period;
@@ -76,7 +93,8 @@ export function getBestDateFromCWDocRef(content: DocumentContent): string {
   return date.toISOString();
 }
 
-export const toFHIR = (
+// TODO: Move to external/commonwell
+export const cwToFHIR = (
   docId: string,
   doc: CWDocumentWithMetriportData,
   patient: Pick<Patient, "id">
@@ -210,9 +228,9 @@ export function createDocReferenceContent({
 }: {
   contentType?: string;
   size?: number;
-  fileName: string;
+  fileName?: string;
   location: string;
-  creation: string;
+  creation?: string;
   extension: Extension[];
   format?: string | string[];
 }): DocumentReferenceContent {

@@ -1,11 +1,11 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Patient } from "@metriport/core/domain/patient";
-import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import cwCommands from ".";
+import { getPatients } from "../../command/medical/patient/get-patient";
+import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { getPatients } from "../../command/medical/patient/get-patient";
 
 const maxNumberOfParallelRequestsToCW = 10;
 
@@ -13,9 +13,14 @@ const maxNumberOfParallelRequestsToCW = 10;
  * Implementation of the PatientUpdater that executes the logic on CommonWell.
  */
 export class PatientUpdaterCommonWell extends PatientUpdater {
+  constructor(private readonly orgIdExcludeList: () => Promise<string[]>) {
+    super();
+    this.orgIdExcludeList = orgIdExcludeList;
+  }
+
   public async updateAll(
     cxId: string,
-    patientIds: string[]
+    patientIds?: string[]
   ): Promise<{ failedUpdateCount: number }> {
     let failedUpdateCount = 0;
 
@@ -27,7 +32,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        await cwCommands.patient.update(patient, facilityId);
+        await cwCommands.patient.update(patient, facilityId, this.orgIdExcludeList);
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CW patient`;

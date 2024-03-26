@@ -13,7 +13,7 @@ export async function resetDocQueryProgress({
   patient,
   source,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
 }): Promise<void> {
   const patientFilter = {
@@ -67,4 +67,24 @@ export async function resetDocQueryProgress({
       transaction,
     });
   });
+}
+
+export function buildInterrupt({
+  patientId,
+  cxId,
+  source,
+  log,
+}: {
+  patientId: string;
+  cxId: string;
+  source: MedicalDataSource;
+  log: typeof console.log;
+}) {
+  return async (reason: string): Promise<void> => {
+    log(reason + ", skipping DQ");
+    await resetDocQueryProgress({
+      patient: { id: patientId, cxId },
+      source,
+    });
+  };
 }

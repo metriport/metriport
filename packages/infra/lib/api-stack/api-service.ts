@@ -42,7 +42,9 @@ export function createAPIService({
   fhirConverterServiceUrl,
   cdaToVisualizationLambda,
   documentDownloaderLambda,
-  documentQueryResultsLambda,
+  outboundPatientDiscoveryLambda,
+  outboundDocumentQueryLambda,
+  outboundDocumentRetrievalLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -66,7 +68,9 @@ export function createAPIService({
   fhirConverterServiceUrl: string | undefined;
   cdaToVisualizationLambda: ILambda;
   documentDownloaderLambda: ILambda;
-  documentQueryResultsLambda: ILambda;
+  outboundPatientDiscoveryLambda: ILambda;
+  outboundDocumentQueryLambda: ILambda;
+  outboundDocumentRetrievalLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -101,6 +105,8 @@ export function createAPIService({
       ? props.config.connectWidgetUrl
       : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
+  const iheGateway = props.config.iheGateway;
+
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
@@ -133,6 +139,7 @@ export function createAPIService({
             : {}),
           CONNECT_WIDGET_URL: connectWidgetUrlEnvVar,
           SYSTEM_ROOT_OID: props.config.systemRootOID,
+          SYSTEM_ROOT_ORG_NAME: props.config.systemRootOrgName,
           ...props.config.commonwell.envVars,
           ...(props.config.slack ? props.config.slack : undefined),
           ...(props.config.sentryDSN ? { SENTRY_DSN: props.config.sentryDSN } : undefined),
@@ -150,7 +157,17 @@ export function createAPIService({
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
           DOCUMENT_DOWNLOADER_LAMBDA_NAME: documentDownloaderLambda.functionName,
-          DOC_QUERY_RESULTS_LAMBDA_NAME: documentQueryResultsLambda.functionName,
+          ...(iheGateway
+            ? {
+                IHE_GW_URL: `http://${iheGateway.outboundSubdomain}.${props.config.domain}`,
+                IHE_GW_PORT_PD: iheGateway.outboundPorts.patientDiscovery.toString(),
+                IHE_GW_PORT_DQ: iheGateway.outboundPorts.documentQuery.toString(),
+                IHE_GW_PORT_DR: iheGateway.outboundPorts.documentRetrieval.toString(),
+              }
+            : undefined),
+          OUTBOUND_PATIENT_DISCOVERY_LAMBDA_NAME: outboundPatientDiscoveryLambda.functionName,
+          OUTBOUND_DOC_QUERY_LAMBDA_NAME: outboundDocumentQueryLambda.functionName,
+          OUTBOUND_DOC_RETRIEVAL_LAMBDA_NAME: outboundDocumentRetrievalLambda.functionName,
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
@@ -168,8 +185,11 @@ export function createAPIService({
           SEARCH_ENDPOINT: searchEndpoint,
           SEARCH_USERNAME: searchAuth.userName,
           SEARCH_INDEX: searchIndexName,
-          ...(props.config.carequality?.envVars?.CQ_ORG_DETAILS && {
-            CQ_ORG_DETAILS: props.config.carequality.envVars.CQ_ORG_DETAILS,
+          ...(props.config.carequality?.envVars?.CQ_ORG_URLS && {
+            CQ_ORG_URLS: props.config.carequality.envVars.CQ_ORG_URLS,
+          }),
+          ...(props.config.carequality?.envVars?.CQ_URLS_TO_EXCLUDE && {
+            CQ_URLS_TO_EXCLUDE: props.config.carequality.envVars.CQ_URLS_TO_EXCLUDE,
           }),
           ...(props.config.locationService && {
             PLACE_INDEX_NAME: props.config.locationService.placeIndexName,
@@ -207,7 +227,9 @@ export function createAPIService({
   dynamoDBTokenTable.grantReadWriteData(fargateService.taskDefinition.taskRole);
   cdaToVisualizationLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   documentDownloaderLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  documentQueryResultsLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
+  outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);
