@@ -38,6 +38,7 @@ export async function sandboxGetDocRefsAndUpsert({
   requestId: string;
 }): Promise<void> {
   const { log } = Util.out(`sandboxGetDocRefsAndUpsert - M patient ${patient.id}`);
+  const { id, cxId } = patient;
 
   // Mimic Prod by waiting for docs to download
   await Util.sleep(Math.random() * sandboxSleepTime);
@@ -45,7 +46,7 @@ export async function sandboxGetDocRefsAndUpsert({
   const patientData = getSandboxSeedData(patient.data.firstName);
   if (!patientData) {
     await appendDocQueryProgress({
-      patient: { id: patient.id, cxId: patient.cxId },
+      patient: { id: id, cxId: cxId },
       downloadProgress: {
         status: "completed",
       },
@@ -54,8 +55,8 @@ export async function sandboxGetDocRefsAndUpsert({
     });
 
     processPatientDocumentRequest(
-      patient.cxId,
-      patient.id,
+      cxId,
+      id,
       "medical.document-download",
       MAPIWebhookStatus.completed,
       requestId,
@@ -78,14 +79,14 @@ export async function sandboxGetDocRefsAndUpsert({
   const convertibleDocs = docsWithContent.filter(doc => isConvertible(doc.content?.mimeType));
   const convertibleDocCount = convertibleDocs.length;
   const existingFhirDocs = await getDocumentsFromFHIR({
-    cxId: patient.cxId,
-    patientId: patient.id,
+    cxId: cxId,
+    patientId: id,
   });
   const existingDocTitles = existingFhirDocs.flatMap(d => d.content?.[0]?.attachment?.title ?? []);
 
   // set initial download/convert totals
   await appendDocQueryProgress({
-    patient: { id: patient.id, cxId: patient.cxId },
+    patient: { id: id, cxId: cxId },
     downloadProgress: {
       total: entries.length,
       status: "processing",
@@ -128,17 +129,17 @@ export async function sandboxGetDocRefsAndUpsert({
         if (!containsPatient) {
           contained.push({
             resourceType: "Patient",
-            id: patient.id,
+            id: id,
           });
         }
         entry.docRef.subject = {
           type: "Patient",
-          reference: `Patient/${patient.id}`,
+          reference: `Patient/${id}`,
         };
 
         entry.docRef.contained = contained;
         entry.docRef = addSandboxFields(entry.docRef);
-        await upsertDocumentToFHIRServer(patient.cxId, entry.docRef);
+        await upsertDocumentToFHIRServer(cxId, entry.docRef);
       } catch (err) {
         log(`Error w/ file docId ${entry.docRef.id}, prevDocId ${prevDocId}: ${err}`);
       }
@@ -155,7 +156,7 @@ export async function sandboxGetDocRefsAndUpsert({
   // update download progress to completed, convert progress will be updated async
   // by the FHIR converter
   await appendDocQueryProgress({
-    patient: { id: patient.id, cxId: patient.cxId },
+    patient: { id: id, cxId: cxId },
     downloadProgress: {
       total: entries.length,
       status: "completed",
@@ -177,8 +178,8 @@ export async function sandboxGetDocRefsAndUpsert({
   const result = entries.map(d => d.docRef);
 
   processPatientDocumentRequest(
-    patient.cxId,
-    patient.id,
+    cxId,
+    id,
     "medical.document-download",
     MAPIWebhookStatus.completed,
     requestId,
