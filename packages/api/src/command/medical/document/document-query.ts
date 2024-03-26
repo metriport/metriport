@@ -12,6 +12,7 @@ import { calculateConversionProgress } from "../../../domain/medical/conversion-
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
+import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
@@ -21,7 +22,6 @@ import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -88,13 +88,15 @@ export async function queryDocumentsAcrossHIEs({
 
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    const orgIdExcludeList = await getAllCQOrgsIds();
+
     getDocumentsFromCW({
       patient,
       facilityId,
       forceDownload: override,
       forceQuery,
       requestId,
-      getAllCQOrgsIds,
+      orgIdExcludeList,
     }).catch(emptyFunction);
   }
 
