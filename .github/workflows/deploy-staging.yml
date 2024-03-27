@@ -153,18 +153,13 @@ jobs:
       IHE_GW_KEYSTORE_STOREPASS: ${{ secrets.IHE_GW_KEYSTORE_STOREPASS_STAGING }}
       IHE_GW_KEYSTORE_KEYPASS: ${{ secrets.IHE_GW_KEYSTORE_KEYPASS_STAGING }}
 
-  release:
-    uses: ./.github/workflows/_release.yml
+  e2e-tests:
+    uses: ./.github/workflows/_e2e-tests.yml
     needs: [api, infra-api-lambdas, infra-ihe-gw, ihe-gw-server]
     # run even if one of the dependencies didn't
     # can't use ${{ ! failure() && success() }} because `success()` "Returns true when none of the previous steps have failed or been canceled."
     # can't use ${{ ! failure() && contains(needs.*.result, 'success') }} because if anything that came before succeeded, even if not a direct dependency, it will run
     if: ${{ !failure() && (needs.api.result == 'success' || needs.infra-api-lambdas.result == 'success' || needs.infra-ihe-gw.result == 'success' || needs.ihe-gw-server.result == 'success') }}
-    secrets: inherit
-
-  e2e-tests:
-    uses: ./.github/workflows/_e2e-tests.yml
-    needs: release
     with:
       deploy_env: "staging"
       api_url: ${{ vars.API_URL_STAGING }}
