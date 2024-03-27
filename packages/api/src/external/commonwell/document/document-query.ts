@@ -127,9 +127,9 @@ export async function queryAndProcessDocuments({
 
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
-    const isLinking = patientCWData?.status === "processing";
+    const isProcessing = patientCWData?.status === "processing";
 
-    if (hasNoCWStatus || isLinking) {
+    if (hasNoCWStatus || isProcessing) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },

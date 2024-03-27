@@ -39,14 +39,13 @@ export async function getDocumentsFromCQ({
     const [organization, cqPatientData] = await Promise.all([
       getOrganizationOrFail({ cxId }),
       getCQPatientData({ id: patient.id, cxId }),
+      setDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "processing" },
+        requestId,
+        source: MedicalDataSource.CAREQUALITY,
+      }),
     ]);
-
-    await setDocQueryProgress({
-      patient: { id: patient.id, cxId: patient.cxId },
-      downloadProgress: { status: "processing" },
-      requestId,
-      source: MedicalDataSource.CAREQUALITY,
-    });
 
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
