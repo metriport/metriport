@@ -360,7 +360,7 @@ export async function linkPatientToCW(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>
-) {
+): Promise<void> {
   await update(patient, facilityId, getOrgIdExcludeList);
 }
 
