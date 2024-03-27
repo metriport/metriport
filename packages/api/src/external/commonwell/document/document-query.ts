@@ -101,7 +101,8 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  orgIdExcludeList?: Set<string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  orgIdExcludeList?: any;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
