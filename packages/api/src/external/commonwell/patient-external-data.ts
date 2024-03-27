@@ -99,7 +99,7 @@ export const setCommonwellId = async ({
   });
 };
 
-export async function updatePatientScheduledQueryRequestId({
+export async function resetPatientScheduledDocQueryRequestId({
   patient,
 }: {
   patient: Patient;
@@ -115,7 +115,7 @@ export async function updatePatientScheduledQueryRequestId({
 
   if (!scheduledDocQueryRequestId) return;
 
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
+  const updatedPatient = await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -145,9 +145,11 @@ export async function updatePatientScheduledQueryRequestId({
       transaction,
     });
 
-    queryAndProcessDocuments({
-      patient: updatedPatient,
-      requestId: scheduledDocQueryRequestId,
-    });
+    return updatedPatient;
+  });
+
+  queryAndProcessDocuments({
+    patient: updatedPatient,
+    requestId: scheduledDocQueryRequestId,
   });
 }

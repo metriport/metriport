@@ -22,7 +22,7 @@ import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import { setCommonwellId, updatePatientScheduledQueryRequestId } from "./patient-external-data";
+import { setCommonwellId, resetPatientScheduledDocQueryRequestId } from "./patient-external-data";
 import {
   CQLinkStatus,
   findOrCreatePerson,
@@ -293,9 +293,7 @@ export async function update(
       getOrgIdExcludeList
     );
 
-    // Update the scheduled query request ID if it exists
-    // and retrigger the scheduled query
-    await updatePatientScheduledQueryRequestId({ patient });
+    await resetPatientScheduledDocQueryRequestId({ patient });
   } catch (error) {
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
     capture.error(error, {
@@ -343,6 +341,14 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     });
     throw err;
   }
+}
+
+export async function linkPatientToCW(
+  patient: Patient,
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>
+) {
+  await update(patient, facilityId, getOrgIdExcludeList);
 }
 
 async function setupUpdate(

@@ -58,7 +58,7 @@ import { processFhirResponse } from "../../fhir/document/process-fhir-search-res
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
-import { update as updatePatient } from "../patient";
+import { linkPatientToCW } from "../patient";
 import { getCWData } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
@@ -101,7 +101,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
+  getOrgIdExcludeList?: () => Promise<string[]>;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -128,9 +128,6 @@ export async function queryAndProcessDocuments({
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
 
-    // If patient has no links in CW then we want to schedule a doc query
-    // and to prevent infinite loops we need to check if the patient has any CQ orgs
-    // as its only called the first time
     if (hasNoCWStatus && getOrgIdExcludeList) {
       await scheduleDocQuery({
         requestId,
@@ -138,7 +135,7 @@ export async function queryAndProcessDocuments({
         source: MedicalDataSource.COMMONWELL,
       });
 
-      await updatePatient(patientParam, facility.id, getOrgIdExcludeList);
+      await linkPatientToCW(patientParam, facility.id, getOrgIdExcludeList);
       return;
     }
 
