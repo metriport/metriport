@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -45,9 +45,9 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -356,7 +356,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(10),
+      maxPollingDuration: Duration.minutes(11),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -1224,7 +1224,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1271,7 +1271,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1318,7 +1318,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
