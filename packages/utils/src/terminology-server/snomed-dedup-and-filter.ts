@@ -1,11 +1,13 @@
 import fs from "fs";
 import path from "path";
-import { getCodeDetails, getCodeDetailsFull } from "./term-server-api";
+import { getCodeDisplay, getCodeDetailsFull } from "./term-server-api";
+import { populateHashTableFromCodeDetails, SnomedHierarchyTableEntry } from "./snomed-heirarchies";
 import {
-  populateHashTableFromCodeDetails,
-  HashTableEntry,
   prettyPrintHashTable,
-} from "./snomed-heirarchies";
+  RemovalStats,
+  createInitialRemovalStats,
+  prettyPrintRemovalStats,
+} from "./stats";
 
 async function processDirectoryOrFile(
   directoryOrFile: string,
@@ -30,7 +32,10 @@ async function processDirectoryOrFile(
   }
 }
 
-async function computeHashTable(filePath: string, hashTable: Record<string, HashTableEntry>) {
+async function computeHashTable(
+  filePath: string,
+  hashTable: Record<string, SnomedHierarchyTableEntry>
+) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
 
@@ -50,7 +55,13 @@ async function computeHashTable(filePath: string, hashTable: Record<string, Hash
   }
 }
 
-async function processFileEntries(filePath: string, hashTable: Record<string, HashTableEntry>) {
+async function processFileEntries(
+  filePath: string,
+  hashTable: Record<string, SnomedHierarchyTableEntry>,
+  removalStats: RemovalStats,
+  rxNormSet: Set<string>,
+  cptSet: Set<string>
+) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
 
@@ -65,21 +76,22 @@ async function processFileEntries(filePath: string, hashTable: Record<string, Ha
         if (coding.system === "http://snomed.info/sct") {
           hasSnomedCode = true;
           if (hashTable[coding.code] && hashTable[coding.code].inserted) {
-            console.log(`Removing duplicate code ${coding.code} from ${path.basename(filePath)}`);
+            removalStats.duplicateCodes.count += 1;
+            removalStats.duplicateCodes.codes.add(coding.code);
             entries.splice(i, 1);
             break;
           } else if (hashTable[coding.code] && !hashTable[coding.code].root) {
-            console.log(`Removing non-root code ${coding.code} from ${path.basename(filePath)}`);
+            removalStats.nonSnomedRootCodes.count += 1;
+            removalStats.nonSnomedRootCodes.codes.add(coding.code);
             entries.splice(i, 1);
             break;
           } else {
             hashTable[coding.code].inserted = true;
-            const codeDetails = await getCodeDetails(coding.code, "SNOMEDCT_US");
+            const codeDetails = await getCodeDisplay(coding.code, "SNOMEDCT_US");
             if (codeDetails) {
               if (codeDetails.category !== "disorder") {
-                console.log(
-                  `Removing non-disorder code ${coding.code} from ${path.basename(filePath)}`
-                );
+                removalStats.nonDisorderCodes.count += 1;
+                removalStats.nonDisorderCodes.codes.add(coding.code);
                 entries.splice(i, 1);
                 break;
               } else {
@@ -92,7 +104,7 @@ async function processFileEntries(filePath: string, hashTable: Record<string, Ha
         }
       }
       if (!hasSnomedCode) {
-        console.log(`Removing entry without SNOMED codes from ${path.basename(filePath)}`);
+        removalStats.entriesWithoutSnomedCodes.count += 1;
         entries.splice(i, 1);
       }
     } else if (resource && resource.resourceType === "Procedure") {
@@ -104,17 +116,39 @@ async function processFileEntries(filePath: string, hashTable: Record<string, Ha
           const cptCode = parseInt(coding.code, 10);
           if (cptCode >= 10004 && cptCode <= 69990) {
             hasValidCptCode = true;
+            if (cptSet.has(coding.code)) {
+              removalStats.duplicateCptCodes.count += 1;
+              removalStats.duplicateCptCodes.codes.add(coding.code);
+              entries.splice(i, 1);
+            } else {
+              cptSet.add(coding.code);
+            }
+            break;
+          } else {
+            removalStats.invalidCptCodes.count += 1;
+            removalStats.invalidCptCodes.codes.add(coding.code);
+            entries.splice(i, 1);
             break;
           }
         }
       }
       if (!hasValidCptCode) {
-        console.log(
-          `Removing procedure entry with invalid or missing CPT code from ${path.basename(
-            filePath
-          )}`
-        );
+        removalStats.entriesWithoutCptCodes.count += 1;
         entries.splice(i, 1);
+      }
+    } else if (resource && resource.resourceType === "Medication") {
+      const codings = resource.code?.coding || [];
+      for (const coding of codings) {
+        if (coding.system === "http://www.nlm.nih.gov/research/umls/rxnorm") {
+          if (rxNormSet.has(coding.code)) {
+            entries.splice(i, 1);
+            removalStats.rxnormDuplicates.count += 1;
+            removalStats.rxnormDuplicates.codes.add(coding.code);
+            break;
+          } else {
+            rxNormSet.add(coding.code);
+          }
+        }
       }
     }
   }
@@ -127,17 +161,22 @@ async function main() {
     console.error("Please provide a directory path as an argument.");
     process.exit(1);
   }
-  const hashTable: Record<string, HashTableEntry> = {};
+  const hashTable: Record<string, SnomedHierarchyTableEntry> = {};
 
   await processDirectoryOrFile(directoryPath, async filePath => {
     await computeHashTable(filePath, hashTable);
   });
 
   prettyPrintHashTable(hashTable);
+  const removalStats = createInitialRemovalStats();
 
+  const rxNormSet = new Set<string>();
+  const cptSet = new Set<string>();
   await processDirectoryOrFile(directoryPath, async filePath => {
-    await processFileEntries(filePath, hashTable);
+    await processFileEntries(filePath, hashTable, removalStats, rxNormSet, cptSet);
   });
+
+  prettyPrintRemovalStats(removalStats);
 }
 
 main();

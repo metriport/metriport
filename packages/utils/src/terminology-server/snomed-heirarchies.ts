@@ -1,4 +1,6 @@
-export type HashTableEntry = {
+import { CodeDetailsResponse } from "./term-server-api";
+
+export type SnomedHierarchyTableEntry = {
   found: boolean;
   children: Set<string>;
   parents: Set<string>;
@@ -6,24 +8,11 @@ export type HashTableEntry = {
   inserted: boolean;
 };
 
-export type CodeDetailsResponse = {
-  parameter: {
-    name: string;
-    part: [
-      {
-        name: string;
-        value?: string;
-        valueCode?: string;
-      }
-    ];
-  }[];
-};
-
 export async function populateHashTableFromCodeDetails(
-  hashTable: Record<string, HashTableEntry>,
+  hashTable: Record<string, SnomedHierarchyTableEntry>,
   codeDetails: CodeDetailsResponse,
   queriedCode: string
-): Promise<Record<string, HashTableEntry>> {
+): Promise<Record<string, SnomedHierarchyTableEntry>> {
   if (hashTable[queriedCode] && !hashTable[queriedCode].found) {
     // if we found a parent node, make it the root and its children non-root
     if (hashTable[queriedCode].parents.size == 0) {
@@ -94,32 +83,4 @@ export async function populateHashTableFromCodeDetails(
     });
   }
   return hashTable;
-}
-
-export function prettyPrintHashTable(hashTable: Record<string, HashTableEntry>): void {
-  const entries = Object.entries(hashTable);
-
-  const header = ["Code", "Found", "Root"];
-  const separator = header.map(() => "---");
-
-  const rows = entries.map(([code, entry]) => {
-    const { found, root } = entry;
-    const foundStr = found ? "✓" : "✗";
-    const rootStr = root ? "✓" : "✗";
-    return [code, foundStr, rootStr];
-  });
-
-  // Calculate the maximum width for each column
-  const columnWidths = header.map((_, colIndex) =>
-    Math.max(...rows.map(row => row[colIndex].length), header[colIndex].length)
-  );
-
-  // Print the table
-  const printRow = (row: string[]) =>
-    console.log(
-      "| " + row.map((cell, colIndex) => cell.padEnd(columnWidths[colIndex])).join(" | ") + " |"
-    );
-  printRow(header);
-  printRow(separator);
-  rows.forEach(row => printRow(row));
 }

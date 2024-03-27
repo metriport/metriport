@@ -1,5 +1,4 @@
 import axios from "axios";
-import { CodeDetailsResponse } from "./snomed-heirarchies";
 
 interface ParameterPart {
   name: string;
@@ -49,6 +48,19 @@ export const codeSystemUrls: Record<string, CodeSystemUrl> = {
   },
 };
 
+export type CodeDetailsResponse = {
+  parameter: {
+    name: string;
+    part: [
+      {
+        name: string;
+        value?: string;
+        valueCode?: string;
+      }
+    ];
+  }[];
+};
+
 export async function getCodeDetailsFull(
   code: string,
   codeSystemType: string
@@ -74,7 +86,7 @@ export async function getCodeDetailsFull(
   }
 }
 
-export async function getCodeDetails(
+export async function getCodeDisplay(
   code: string,
   codeSystemType: string
 ): Promise<{ display: string; category: string } | undefined> {
@@ -115,17 +127,3 @@ export async function getCodeDetails(
     }
   }
 }
-
-// async function main() {
-//   const code = "94222008";
-//   const codeSystemType = "SNOMEDCT_US";
-//   const codeDetails = await getCodeDetails(code, codeSystemType);
-
-//   if (codeDetails) {
-//     console.log(`Code Details: Display - ${codeDetails.display}, Category - ${codeDetails.category}`);
-//   } else {
-//     console.log("Failed to retrieve code details.");
-//   }
-// }
-
-// main().catch(console.error);
