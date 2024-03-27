@@ -7,10 +7,10 @@ import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -53,18 +53,21 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  const orgIdExcludeList = await getAllCQOrgsIds();
+  // TODO move these to the respective "commands" files so this is fully async
+  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
 
-  const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    // Intentionally asynchronous
     cwCommands.patient
-      .create(newPatient, facilityId, orgIdExcludeList)
+      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
       .catch(processAsyncError(`cw.patient.create`));
   }
 
-  // Intentionally asynchronous
-  const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
+    // Intentionally asynchronous
     cqCommands.patient
       .discover(newPatient, facility.data.npi)
       .catch(processAsyncError(`cq.patient.create`));

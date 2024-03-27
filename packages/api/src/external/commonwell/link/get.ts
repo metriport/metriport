@@ -12,11 +12,13 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
+import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { Patient } from "@metriport/core/domain/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { capture } from "../../../shared/notifications";
+import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { setCommonwellId } from "../patient-external-data";
@@ -27,7 +29,6 @@ import {
   searchPersons,
 } from "../patient-shared";
 import { commonwellPersonLinks } from "./shared";
-import { isCWEnabledForCx } from "../../aws/appConfig";
 
 type NetworkLinks = {
   lola1: PatientNetworkLink[];
@@ -40,13 +41,15 @@ type CWPersonLinks = {
   networkLinks: NetworkLinks | undefined;
 };
 
-export const get = async (
+export async function get(
   patientId: string,
   cxId: string,
   facilityId: string
-): Promise<CWPersonLinks> => {
+): Promise<CWPersonLinks> {
+  const { log } = out("cw.link.get");
+
   if (!(await isCWEnabledForCx(cxId))) {
-    console.log(`CW is disabled for cxId: ${cxId}`);
+    log(`CW is disabled for cxId: ${cxId}`);
     return {
       currentLinks: [],
       potentialLinks: [],
@@ -77,7 +80,7 @@ export const get = async (
     networkLinks,
   };
   return links;
-};
+}
 
 export const findCurrentLink = async (
   patient: Pick<Patient, "id" | "cxId">,
@@ -85,14 +88,15 @@ export const findCurrentLink = async (
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
 ): Promise<Person | undefined> => {
+  const { log } = out("cw.findCurrentLink");
   if (!patientCWData) {
-    console.log(`No CW data for patient`, patient.id);
+    log(`No CW data for patient`, patient.id);
     return undefined;
   }
 
   const personId = patientCWData.personId;
   if (!personId) {
-    console.log(`No CW person ID patient`, patient.id);
+    log(`No CW person ID patient`, patient.id);
     return undefined;
   }
 
@@ -113,7 +117,7 @@ export const findCurrentLink = async (
       if (err.response?.status !== 404) throw err;
       const msg =
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
-      console.log(msg);
+      log(msg);
       capture.message(msg, { extra: captureExtra });
       await setCommonwellId({
         patientId: patient.id,
@@ -126,7 +130,7 @@ export const findCurrentLink = async (
     }
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
-      console.log(`No patient linked to person`, patientLinkToPerson);
+      log(`No patient linked to person`, patientLinkToPerson);
 
       await setCommonwellId({
         patientId: patient.id,
@@ -142,7 +146,7 @@ export const findCurrentLink = async (
     const correctLink = patientLinkToPerson._embedded.patientLink[0];
 
     if (!correctLink?.assuranceLevel) {
-      console.log(`Link has no assurance level`, patientCWId);
+      log(`Link has no assurance level`, patientCWId);
       return;
     }
 
@@ -152,7 +156,7 @@ export const findCurrentLink = async (
       const cwPerson = await commonWell.getPersonById(queryMeta, personId);
 
       if (!cwPerson) {
-        console.log(`No person id for cw person`);
+        log(`No person id for cw person`);
         return;
       }
 
@@ -160,9 +164,8 @@ export const findCurrentLink = async (
     }
   } catch (error) {
     const msg = `Failure retrieving link`;
-    console.log(`${msg} - for person id:`, personId);
-    console.log(msg, error);
-    capture.message(msg, { extra: captureExtra, level: "error" });
+    log(`${msg} - for person id:`, personId);
+    capture.error(msg, { extra: { ...captureExtra, error } });
     throw new Error(msg, { cause: error });
   }
 };
@@ -188,6 +191,7 @@ const findAllPersons = async (
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
+  const { log } = out("cw.findAllPersons");
   try {
     if (!patient.data.externalData?.COMMONWELL) {
       return [];
@@ -210,8 +214,7 @@ const findAllPersons = async (
     return [];
   } catch (error) {
     const msg = `Failure retrieving persons`;
-    console.log(`${msg} - patient id:`, patient.id);
-    console.log(msg, error);
+    log(`${msg} - patient id:`, patient.id);
     throw new Error(msg, { cause: error });
   }
 };
@@ -221,6 +224,7 @@ const findAllPersonsStrongId = async (
   commonWell: CommonWellAPI,
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
+  const { log } = out("cw.findAllPersonsStrongId");
   const strongIds = getPersonalIdentifiersFromPatient(patient);
   if (!strongIds.length) {
     return [];
@@ -240,8 +244,7 @@ const findAllPersonsStrongId = async (
     return [];
   } catch (error) {
     const msg = `Failure retrieving persons`;
-    console.log(`${msg} - patient:`, patient.id);
-    console.log(msg, error);
+    log(`${msg} - patient:`, patient.id);
     throw new Error(msg, { cause: error });
   }
 };
@@ -252,6 +255,7 @@ async function findNetworkLinks(
   queryMeta: RequestMetadata
 ): Promise<NetworkLinks | undefined> {
   if (!patientCWData) return undefined;
+  const { log } = out("cw.findNetworkLinks");
 
   const respLinks = await commonWell.getNetworkLinks(queryMeta, patientCWData.patientId);
   const allLinks = respLinks._embedded.networkLink
@@ -263,7 +267,7 @@ async function findNetworkLinks(
   const lola1 = allLinks.filter(isLOLA1).map(toPatient).flatMap(filterTruthy);
   const lola2 = allLinks.filter(isLOLA2).map(toPatient).flatMap(filterTruthy);
   const lola3 = allLinks.filter(isLOLA3).map(toPatient).flatMap(filterTruthy);
-  console.log(
+  log(
     `Found ${allLinks.length} network links, ${lola1.length} are LOLA 1` +
       `, ${lola2.length} are LOLA 2, ${lola3.length} are LOLA 3`
   );

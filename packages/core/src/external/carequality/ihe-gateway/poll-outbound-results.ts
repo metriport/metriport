@@ -10,7 +10,7 @@ import { MetriportError } from "../../../util/error/metriport-error";
 import { errorToString } from "../../../util/error/shared";
 import { capture } from "../../../util/notifications";
 import { checkIfRaceIsComplete, controlDuration, RaceControl } from "../../../util/race-control";
-import { initSequelizeForLambda } from "../../../util/sequelize";
+import { initDBPool } from "../../../util/sequelize";
 import {
   OutboundDocumentQueryRespTableEntry,
   OutboundDocumentRetrievalRespTableEntry,
@@ -85,7 +85,7 @@ async function pollResults({
   resultsTable: string;
   context: string;
 }): Promise<object[]> {
-  const sequelize = initSequelizeForLambda(dbCreds);
+  const sequelize = initDBPool(dbCreds);
   const raceControl: RaceControl = { isRaceInProgress: true };
   const maxTimeout = maxPollingDuration ?? CONTROL_TIMEOUT.asMilliseconds();
 
@@ -113,7 +113,7 @@ async function pollResults({
       console.log(`${raceResult}. ${details}`);
       raceControl.isRaceInProgress = false;
     } else if (!allGWsCompleted) {
-      const msg = `IHE GW results are incomplete for ${context}}`;
+      const msg = `IHE GW results are incomplete for ${context}`;
       console.log(`${msg}. ${details}`);
       capture.message(msg, {
         extra: {
