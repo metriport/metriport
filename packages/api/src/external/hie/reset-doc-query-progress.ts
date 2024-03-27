@@ -32,35 +32,32 @@ export async function resetDocQueryProgress({
 
     const resetExternalData = { ...externalData };
 
-    if (source === MedicalDataSource.COMMONWELL) {
-      resetExternalData.COMMONWELL = {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      };
-    } else if (source === MedicalDataSource.CAREQUALITY) {
-      resetExternalData.CAREQUALITY = {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      };
-    } else {
-      resetExternalData.COMMONWELL = {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      };
-      resetExternalData.CAREQUALITY = {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      };
-    }
-
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: resetExternalData,
-        documentQueryProgress: {},
       },
     };
+
+    if (source === MedicalDataSource.ALL) {
+      resetExternalData.COMMONWELL = {
+        ...externalData.COMMONWELL,
+        documentQueryProgress: {},
+      };
+
+      resetExternalData.CAREQUALITY = {
+        ...externalData.CAREQUALITY,
+        documentQueryProgress: {},
+      };
+
+      updatedPatient.data.documentQueryProgress = {};
+    } else {
+      resetExternalData[source] = {
+        ...externalData[source],
+        documentQueryProgress: {},
+      };
+    }
 
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
