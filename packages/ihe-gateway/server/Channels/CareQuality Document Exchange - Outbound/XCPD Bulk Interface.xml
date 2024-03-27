@@ -7,7 +7,7 @@
  - takes individual requests and sends to the XCPD Interface channel
 
 Last updated: Dec 08 2023</description>
-  <revision>128</revision>
+  <revision>129</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -206,7 +206,7 @@ Last updated: Dec 08 2023</description>
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -252,7 +252,7 @@ Last updated: Dec 08 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709753514839</time>
+        <time>1711481933051</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
