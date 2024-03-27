@@ -24,7 +24,7 @@ const ConnectProviders = () => {
         const { data } = await getApi().get("/connect/user/providers");
         setConnectedProviders(data);
       } catch (err) {
-        console.log("Error while fetching connected providers", JSON.stringify(err));
+        // do nothing
       }
     }
     getConnectedProviders();

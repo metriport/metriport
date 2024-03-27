@@ -12,7 +12,7 @@ export function redirectToMain(navigate: NavigateFunction, searchParams: URLSear
     const envParam = isSandbox(searchParams) ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}` : "";
     navigate(`/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`);
   } catch (err) {
-    console.log("Error redirecting to main page: ", JSON.stringify(err));
+    // do nothing
   }
 }
 
@@ -21,7 +21,7 @@ export function redirectToCustomUrl(url: string) {
   try {
     window.location.href = url;
   } catch (err) {
-    console.log("Error redirecting to custom url: ", JSON.stringify(err));
+    // do nothing
   }
 }
 
