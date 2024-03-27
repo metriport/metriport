@@ -497,11 +497,6 @@ export class Fitbit extends Provider implements OAuth2 {
       );
     }
     if (rejected.length > 0) {
-      console.log(
-        `Failed to revoke the token or delete WH subscriptions of a Fitbit user. User: ${
-          currentUser.id
-        }, Error: ${JSON.stringify(rejected)}`
-      );
       if (throwOnError) {
         throw new FitbitPostAuthError(
           "Failed to revoke the token or delete WH subscriptions of a Fitbit user.",
@@ -531,7 +526,6 @@ export class Fitbit extends Provider implements OAuth2 {
               Authorization: `Bearer ${token.accessToken}`,
             },
           });
-          console.log("Fitbit WH subscription deleted successfully at url:", deleteUrl);
         } catch (err) {
           rejected.push({ collectionType: subscription.collectionType, err });
           throw err;
@@ -575,10 +569,6 @@ export class Fitbit extends Provider implements OAuth2 {
         })
       );
     await executeWithoutConnectedUser(getActiveSubs);
-
-    if (rejected.length > 0) {
-      console.log(`Failed to get active Fitbit WH subscriptions.`, rejected);
-    }
     const activeSubs = activeSubscriptions.flat();
     return activeSubs;
   }
@@ -610,7 +600,6 @@ export class Fitbit extends Provider implements OAuth2 {
     );
 
     if (rejected.length > 0) {
-      console.log(`Failed to create Fitbit WH subscriptions. Error: ${JSON.stringify(rejected)}`);
       if (throwOnError) {
         throw new FitbitPostAuthError("Failed to create Fitbit WH subscriptions.", rejected);
       }
@@ -641,14 +630,7 @@ export class Fitbit extends Provider implements OAuth2 {
           "Content-Length": 0,
         },
       });
-    const resp = await executeWithoutConnectedUser(createSub);
-
-    console.log(
-      "Fitbit WH subscription created successfully with status:",
-      resp.status,
-      "at url: ",
-      subscriptionUrl
-    );
+    await executeWithoutConnectedUser(createSub);
   }
 }
 
