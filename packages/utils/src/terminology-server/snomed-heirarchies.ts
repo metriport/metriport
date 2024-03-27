@@ -3,6 +3,7 @@ export type HashTableEntry = {
   children: Set<string>;
   parents: Set<string>;
   root: boolean;
+  inserted: boolean;
 };
 
 export type CodeDetailsResponse = {
@@ -44,7 +45,13 @@ export async function populateHashTableFromCodeDetails(
       hashTable[queriedCode] = { ...hashTable[queriedCode], found: true, root: false };
     }
   } else {
-    hashTable[queriedCode] = { found: true, parents: new Set(), children: new Set(), root: true };
+    hashTable[queriedCode] = {
+      found: true,
+      parents: new Set(),
+      children: new Set(),
+      root: true,
+      inserted: false,
+    };
     codeDetails.parameter.forEach(param => {
       if (param.name === "property") {
         const valuePart = param.part.find(part => part.name === "value");
@@ -61,6 +68,7 @@ export async function populateHashTableFromCodeDetails(
               parents: new Set(),
               children: new Set(),
               root: false,
+              inserted: false,
             };
             hashTable[queriedCode].parents.add(value);
             // having children indicates your a parent node
@@ -75,6 +83,7 @@ export async function populateHashTableFromCodeDetails(
               parents: new Set(),
               children: new Set(),
               root: false,
+              inserted: false,
             };
             hashTable[queriedCode].children.add(value);
             // having parents indicates your a chilld node
