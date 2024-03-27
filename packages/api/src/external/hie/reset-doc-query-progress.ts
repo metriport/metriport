@@ -3,6 +3,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -57,6 +58,13 @@ export async function resetDocQueryProgress({
         ...externalData[source],
         documentQueryProgress: {},
       };
+
+      const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
+        existingPatient,
+        resetExternalData
+      );
+
+      updatedPatient.data.documentQueryProgress = aggregatedDocProgresses;
     }
 
     await PatientModel.update(updatedPatient, {
