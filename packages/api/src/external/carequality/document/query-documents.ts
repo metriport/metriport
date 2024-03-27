@@ -41,6 +41,13 @@ export async function getDocumentsFromCQ({
       getCQPatientData({ id: patient.id, cxId }),
     ]);
 
+    await setDocQueryProgress({
+      patient: { id: patient.id, cxId: patient.cxId },
+      downloadProgress: { status: "processing" },
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
       await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });

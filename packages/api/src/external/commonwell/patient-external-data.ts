@@ -10,7 +10,6 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
 import { getCWData, getLinkStatusCQ } from "./patient";
 import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
-import { queryAndProcessDocuments } from "./document/document-query";
 
 dayjs.extend(duration);
 
@@ -103,19 +102,13 @@ export async function resetPatientScheduledDocQueryRequestId({
   patient,
 }: {
   patient: Patient;
-}): Promise<void> {
+}): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
 
-  const scheduledDocQueryRequestId = getCWData(
-    patient.data.externalData
-  )?.scheduledDocQueryRequestId;
-
-  if (!scheduledDocQueryRequestId) return;
-
-  const updatedPatient = await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -146,10 +139,5 @@ export async function resetPatientScheduledDocQueryRequestId({
     });
 
     return updatedPatient;
-  });
-
-  queryAndProcessDocuments({
-    patient: updatedPatient,
-    requestId: scheduledDocQueryRequestId,
   });
 }

@@ -101,7 +101,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  getOrgIdExcludeList?: () => Promise<string[]>;
+  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -127,15 +127,19 @@ export async function queryAndProcessDocuments({
 
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
+    const isLinking = patientCWData?.status === "processing";
 
-    if (hasNoCWStatus && getOrgIdExcludeList) {
+    if (hasNoCWStatus || isLinking) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
       });
 
-      await linkPatientToCW(patientParam, facility.id, getOrgIdExcludeList);
+      if (hasNoCWStatus) {
+        await linkPatientToCW(patientParam, facility.id, getOrgIdExcludeList);
+      }
+
       return;
     }
 
