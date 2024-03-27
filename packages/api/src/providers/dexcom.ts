@@ -11,11 +11,10 @@ import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_DEXCOM } from "../shared/constants";
 import { ISO_DATE } from "../shared/date";
-import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
-import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { getHttpClient } from "./shared/http";
+import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
 const api = getHttpClient();
 
@@ -103,12 +102,6 @@ export class Dexcom extends Provider implements OAuth2 {
 
         return response.data;
       } catch (error) {
-        console.log("Error refreshing access token: ", error);
-        capture.error(error, {
-          extra: {
-            context: `dexcom.refreshToken`,
-          },
-        });
         throw new Error("Error refreshing access token", { cause: error });
       }
     }

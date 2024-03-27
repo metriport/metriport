@@ -1,9 +1,8 @@
+import { AtLeastOne } from "@metriport/shared";
 import { Op } from "sequelize";
 import NotFoundError from "../../errors/not-found";
 import { ConnectedUser } from "../../models/connected-user";
 import { ProviderOptions } from "../../shared/constants";
-import { AtLeastOne } from "@metriport/shared";
-import { capture } from "../../shared/notifications";
 
 export const getConnectedUser = async ({
   id,
@@ -84,11 +83,6 @@ export const getConnectedUserByTokenOrFail = async (
 
   if (!connectedUser.length)
     throw new NotFoundError(`Could not find connected user with str matching token`);
-
-  if (connectedUser.length > 1)
-    capture.message(`Found multiple connected users with str matching token`, {
-      extra: { context: `getConnectedUserByTokenOrFail`, connectedUser },
-    });
 
   return connectedUser[0];
 };

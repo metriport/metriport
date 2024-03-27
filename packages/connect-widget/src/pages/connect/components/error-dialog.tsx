@@ -9,8 +9,6 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useEffect, useRef, useState } from "react";
-import { DemoTokenError, InvalidTokenError, NoTokenError } from "../../../shared/token-errors";
-import { capture } from "../../../shared/notifications";
 
 export const DEFAULT_ERROR_MESSAGE = `Something went wrong, you can try again.`;
 
@@ -31,22 +29,6 @@ const ErrorDialog = ({ show, title, message, link, onClose: closed }: ErrorDialo
     actualMsg: message,
     actualLink: link,
   });
-
-  useEffect(() => {
-    if (isOpen) {
-      const defaultTitles = [
-        NoTokenError.DEFAULT_TITLE,
-        DemoTokenError.DEFAULT_TITLE,
-        InvalidTokenError.DEFAULT_TITLE,
-      ];
-      let errorTitle = "Error dialog displayed";
-      if (title && defaultTitles.includes(title)) {
-        errorTitle = title;
-      }
-
-      capture.message(errorTitle, { extra: { show, title, message, link } });
-    }
-  }, [isOpen]);
 
   useEffect(() => {
     setActual({

@@ -15,22 +15,21 @@ import { mapToActivity } from "../mappings/withings/activity";
 import { mapToBiometrics } from "../mappings/withings/biometrics";
 import { mapToBody } from "../mappings/withings/body";
 import {
-  withingsActivityLogResp,
   WithingsActivityLogs,
+  withingsActivityLogResp,
 } from "../mappings/withings/models/activity";
 import { WithingsHeartRate, withingsHeartRateResp } from "../mappings/withings/models/heart-rate";
 import {
-  withingsMeasurementResp,
   WithingsMeasurements,
+  withingsMeasurementResp,
 } from "../mappings/withings/models/measurements";
 import { withingsSleepResp } from "../mappings/withings/models/sleep";
-import { userDevicesSchema, WithingsUserDevices } from "../mappings/withings/models/user";
+import { WithingsUserDevices, userDevicesSchema } from "../mappings/withings/models/user";
 import { WithingsWorkoutLogs, withingsWorkoutLogsResp } from "../mappings/withings/models/workouts";
 import { mapToSleep } from "../mappings/withings/sleep";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_WITHINGS } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType } from "./provider";
 import { getHttpClient } from "./shared/http";
@@ -113,17 +112,12 @@ export class Withings extends Provider implements OAuth2 {
     for (const category of webhookCategories) {
       const subscriptionBody = `action=subscribe&callbackurl=${callbackUrl}&appli=${category}`;
       try {
-        const resp = await api.post(subscriptionUrl, subscriptionBody, {
+        await api.post(subscriptionUrl, subscriptionBody, {
           headers: {
             Authorization: `Bearer ${access_token}`,
           },
         });
-        console.log(resp.data);
       } catch (error) {
-        capture.error(error, {
-          extra: { context: `withings.postAuth`, subscriptionUrl, subscriptionBody },
-        });
-
         throw new Error(`WH subscription failed Withings`, { cause: error });
       }
     }
@@ -154,7 +148,6 @@ export class Withings extends Provider implements OAuth2 {
         );
 
         if (response.data?.status !== Withings.STATUS_OK) {
-          console.log(response.data);
           throw new Error(response.data.error);
         }
 
@@ -178,7 +171,6 @@ export class Withings extends Provider implements OAuth2 {
 
         return response.data.body;
       } catch (error) {
-        console.log("Error refreshing access token: ", error);
         throw new Error("Error refreshing access token", { cause: error });
       }
     }
@@ -307,15 +299,6 @@ export class Withings extends Provider implements OAuth2 {
 
     if (response.data?.status !== Withings.STATUS_OK) {
       const msg = `Error fetching measure data from Withings`;
-      console.log(`${msg} - response: ${JSON.stringify(response.data)}`);
-      capture.error(msg, {
-        extra: {
-          context: `withings.fetch.measurements`,
-          status: response.status,
-          statusText: response.statusText,
-          response: response.data,
-        },
-      });
       throw new MetriportError(msg, undefined, {
         status: response.status,
         statusText: response.statusText,
