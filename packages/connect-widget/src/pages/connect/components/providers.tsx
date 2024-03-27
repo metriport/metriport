@@ -1,13 +1,12 @@
 import { Dispatch, SetStateAction, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import Analytics from "../../../shared/analytics";
 import { getApi } from "../../../shared/api";
-import { capture } from "../../../shared/notifications";
+import Constants from "../../../shared/constants";
 import { sleep } from "../../../shared/util";
 import { DefaultProvider } from "./connect-providers";
 import ErrorDialog, { DEFAULT_ERROR_MESSAGE } from "./error-dialog";
 import Provider from "./provider";
-import Analytics from "../../../shared/analytics";
-import Constants from "../../../shared/constants";
 
 type ProvidersProps = {
   providers: DefaultProvider[];
@@ -90,7 +89,6 @@ const Providers = ({
       } else {
         setErrorMessage(DEFAULT_ERROR_MESSAGE);
       }
-      capture.error(err, { extra: { context: `redirect.to.${provider}` } });
     }
     sleep(2_000).then(() => {
       setIsLoading({
