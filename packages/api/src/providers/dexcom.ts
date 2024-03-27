@@ -102,7 +102,6 @@ export class Dexcom extends Provider implements OAuth2 {
 
         return response.data;
       } catch (error) {
-        console.log("Error refreshing access token: ", error);
         throw new Error("Error refreshing access token", { cause: error });
       }
     }

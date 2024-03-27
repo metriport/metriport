@@ -112,12 +112,11 @@ export class Withings extends Provider implements OAuth2 {
     for (const category of webhookCategories) {
       const subscriptionBody = `action=subscribe&callbackurl=${callbackUrl}&appli=${category}`;
       try {
-        const resp = await api.post(subscriptionUrl, subscriptionBody, {
+        await api.post(subscriptionUrl, subscriptionBody, {
           headers: {
             Authorization: `Bearer ${access_token}`,
           },
         });
-        console.log(resp.data);
       } catch (error) {
         throw new Error(`WH subscription failed Withings`, { cause: error });
       }
@@ -149,7 +148,6 @@ export class Withings extends Provider implements OAuth2 {
         );
 
         if (response.data?.status !== Withings.STATUS_OK) {
-          console.log(response.data);
           throw new Error(response.data.error);
         }
 
@@ -173,7 +171,6 @@ export class Withings extends Provider implements OAuth2 {
 
         return response.data.body;
       } catch (error) {
-        console.log("Error refreshing access token: ", error);
         throw new Error("Error refreshing access token", { cause: error });
       }
     }
@@ -302,7 +299,6 @@ export class Withings extends Provider implements OAuth2 {
 
     if (response.data?.status !== Withings.STATUS_OK) {
       const msg = `Error fetching measure data from Withings`;
-      console.log(`${msg} - response: ${JSON.stringify(response.data)}`);
       throw new MetriportError(msg, undefined, {
         status: response.status,
         statusText: response.statusText,
