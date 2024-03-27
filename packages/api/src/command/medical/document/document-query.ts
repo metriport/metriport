@@ -21,6 +21,7 @@ import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -93,6 +94,7 @@ export async function queryDocumentsAcrossHIEs({
       forceDownload: override,
       forceQuery,
       requestId,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
     }).catch(emptyFunction);
   }
 
