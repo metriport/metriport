@@ -3,6 +3,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { aggregateAndSetHIEProgresses } from "./set-doc-query-progress";
 
 /**
  * Resets the doc query progress for the given HIE
@@ -32,35 +33,39 @@ export async function resetDocQueryProgress({
 
     const resetExternalData = { ...externalData };
 
-    if (source === MedicalDataSource.COMMONWELL) {
-      resetExternalData.COMMONWELL = {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      };
-    } else if (source === MedicalDataSource.CAREQUALITY) {
-      resetExternalData.CAREQUALITY = {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      };
-    } else {
-      resetExternalData.COMMONWELL = {
-        ...externalData.COMMONWELL,
-        documentQueryProgress: {},
-      };
-      resetExternalData.CAREQUALITY = {
-        ...externalData.CAREQUALITY,
-        documentQueryProgress: {},
-      };
-    }
-
     const updatedPatient = {
       ...existingPatient,
       data: {
         ...existingPatient.data,
         externalData: resetExternalData,
-        documentQueryProgress: {},
       },
     };
+
+    if (source === MedicalDataSource.ALL) {
+      resetExternalData.COMMONWELL = {
+        ...externalData.COMMONWELL,
+        documentQueryProgress: {},
+      };
+
+      resetExternalData.CAREQUALITY = {
+        ...externalData.CAREQUALITY,
+        documentQueryProgress: {},
+      };
+
+      updatedPatient.data.documentQueryProgress = {};
+    } else {
+      resetExternalData[source] = {
+        ...externalData[source],
+        documentQueryProgress: {},
+      };
+
+      const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
+        existingPatient,
+        resetExternalData
+      );
+
+      updatedPatient.data.documentQueryProgress = aggregatedDocProgresses;
+    }
 
     await PatientModel.update(updatedPatient, {
       where: patientFilter,
