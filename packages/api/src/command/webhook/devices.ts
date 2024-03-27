@@ -91,7 +91,7 @@ export const sendProviderDisconnected = async (
   connectedUser: ConnectedUser,
   disconnectedProviders: string[]
 ): Promise<void> => {
-  let webhookRequestData;
+  let webhookRequestData: WebhookRequestData | undefined;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];

@@ -32,8 +32,6 @@ import { buildWebhookRequestData } from "./webhook-request";
  * @param data Tenovi Measurement webhook
  */
 export const processMeasurementData = async (data: TenoviMeasurement): Promise<void> => {
-  console.log(`Starting to process a Tenovi webhook: ${JSON.stringify(data)}`);
-
   try {
     const connectedUsers = await getConnectedUsersByDeviceId(
       ProviderSource.tenovi,

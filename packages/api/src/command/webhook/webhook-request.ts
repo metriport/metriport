@@ -31,6 +31,7 @@ export type WebhookRequestData = {
   createdAt: Date;
 };
 
+// TODO: 1411 - remove when DAPI is fully discontinued
 export function buildWebhookRequestData(create: CreateWebhookRequestCommand): WebhookRequestData {
   return {
     ...create,

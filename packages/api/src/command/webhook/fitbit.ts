@@ -38,8 +38,6 @@ const log = Util.log(`Fitbit Webhook`);
  * @param data Fitbit webhook notification
  */
 export const processData = async (data: FitbitWebhook): Promise<void> => {
-  console.log(`Starting to process a Fitbit webhook: ${JSON.stringify(data)}`);
-
   const groupedNotifications = groupByUser(data);
   const dataMappedByConnectedUser = await mapDataByConnectedUser(groupedNotifications);
   const dataByCustomer = groupBy(dataMappedByConnectedUser, v => v.cxId);

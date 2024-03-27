@@ -134,50 +134,54 @@ export const processRequest = async (
 
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(`Failed to process WH request: ${errorToString(error)}`);
-    const status = "failure";
-    try {
-      // mark this individual WH request as failed
-      await updateWebhookRequestStatus({
-        id: webhookRequest.id,
-        status,
-      });
-    } catch (err2) {
-      console.log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
-      capture.error(err2, {
-        extra: {
-          webhookRequestId: webhookRequest.id,
-          webhookUrl,
-          context: `webhook.processRequest.updateStatus.failed`,
-          error: err2,
-        },
-      });
-    }
-    sendAnalytics(status);
-    let webhookStatusDetail;
-    if (error instanceof WebhookError) {
-      webhookStatusDetail = errorToWhStatusDetails(error);
-    } else {
-      log(`Unexpected error testing webhook`, error);
-      webhookStatusDetail = `Internal error: ${error.message}`;
-    }
-    try {
-      // update the status of the webhook endpoint on the cx's settings table
-      await updateWebhookStatus({
-        cxId: settings.id,
-        webhookEnabled: false,
-        webhookStatusDetail,
-      });
-    } catch (err2) {
-      log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
-      capture.error(err2, {
-        extra: {
-          webhookRequestId: webhookRequest.id,
-          webhookUrl,
-          context: `webhook.processRequest.updateStatus.details`,
-          error: err2,
-        },
-      });
+    // TODO: 1411 - remove when DAPI is fully discontinued
+    if (productType === Product.medical) {
+      log(`Failed to process WH request: ${errorToString(error)}`);
+      const status = "failure";
+      try {
+        // mark this individual WH request as failed
+        await updateWebhookRequestStatus({
+          id: webhookRequest.id,
+          status,
+        });
+      } catch (err2) {
+        log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
+        capture.error(err2, {
+          extra: {
+            webhookRequestId: webhookRequest.id,
+            webhookUrl,
+            context: `webhook.processRequest.updateStatus.failed`,
+            error: err2,
+          },
+        });
+      }
+      sendAnalytics(status);
+
+      let webhookStatusDetail;
+      if (error instanceof WebhookError) {
+        webhookStatusDetail = errorToWhStatusDetails(error);
+      } else {
+        log(`Unexpected error testing webhook`, error);
+        webhookStatusDetail = `Internal error: ${error.message}`;
+      }
+      try {
+        // update the status of the webhook endpoint on the cx's settings table
+        await updateWebhookStatus({
+          cxId: settings.id,
+          webhookEnabled: false,
+          webhookStatusDetail,
+        });
+      } catch (err2) {
+        log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
+        capture.error(err2, {
+          extra: {
+            webhookRequestId: webhookRequest.id,
+            webhookUrl,
+            context: `webhook.processRequest.updateStatus.details`,
+            error: err2,
+          },
+        });
+      }
     }
   }
   return false;
