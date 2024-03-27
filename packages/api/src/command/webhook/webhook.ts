@@ -16,7 +16,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
 import { isDAPIWebhookRequest } from "./devices-util";
-import { updateWebhookRequestStatus } from "./webhook-request";
+import { updateWebhookRequestStatus, WebhookRequestData } from "./webhook-request";
 
 const DEFAULT_TIMEOUT_SEND_PAYLOAD_MS = 5_000;
 const DEFAULT_TIMEOUT_SEND_TEST_MS = 2_000;
@@ -43,7 +43,7 @@ export type WebhookMetadataPayload = {
 };
 
 async function missingWHSettings(
-  webhookRequest: WebhookRequest,
+  webhookRequest: WebhookRequest | WebhookRequestData,
   webhookUrl: string | null,
   webhookKey: string | null
 ): Promise<boolean> {
@@ -59,16 +59,18 @@ async function missingWHSettings(
   return false;
 }
 
-function getProductFromWebhookRequest(webhookRequest: WebhookRequest): Product {
+function getProductFromWebhookRequest(
+  webhookRequest: WebhookRequest | WebhookRequestData
+): Product {
   if (isDAPIWebhookRequest(webhookRequest)) {
-    return Product.devices;
+    return Product.devices; // TODO: 1411 - remove when DAPI is fully discontinued
   } else {
     return Product.medical;
   }
 }
 
 export const processRequest = async (
-  webhookRequest: WebhookRequest,
+  webhookRequest: WebhookRequest | WebhookRequestData,
   settings: Settings,
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
@@ -77,6 +79,7 @@ export const processRequest = async (
   if (!webhookUrl || !webhookKey) {
     return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
   }
+  const productType = getProductFromWebhookRequest(webhookRequest);
   const sendAnalytics = (status: string) => {
     analytics({
       distinctId: webhookRequest.cxId,
@@ -86,7 +89,7 @@ export const processRequest = async (
         whStatus: status,
         ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
       },
-      apiType: getProductFromWebhookRequest(webhookRequest),
+      apiType: productType,
     });
   };
 
@@ -107,70 +110,78 @@ export const processRequest = async (
       webhookUrl,
       webhookKey
     );
-    // mark this request as successful on the DB
-    const status = "success";
-    await updateWebhookRequestStatus({
-      id: webhookRequest.id,
-      status,
-    });
 
-    // if the webhook was not working before, update the status to successful since we were able to send the payload
-    if (!webhookEnabled) {
-      await updateWebhookStatus({
-        cxId: settings.id,
-        webhookEnabled: true,
-        webhookStatusDetail: WEBHOOK_STATUS_OK,
-      });
-    }
-    sendAnalytics(status);
-    return true;
-
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.log(`Failed to process WH request: ${errorToString(error)}`);
-    const status = "failure";
-    try {
-      // mark this individual WH request as failed
+    // TODO: 1411 - remove when DAPI is fully discontinued
+    if (productType === Product.medical) {
+      // mark this request as successful on the DB
+      const status = "success";
       await updateWebhookRequestStatus({
         id: webhookRequest.id,
         status,
       });
-    } catch (err2) {
-      console.log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
-      capture.error(err2, {
-        extra: {
-          webhookRequestId: webhookRequest.id,
-          webhookUrl,
-          context: `webhook.processRequest.updateStatus.failed`,
-          error: err2,
-        },
-      });
+
+      // if the webhook was not working before, update the status to successful since we were able to send the payload
+      if (!webhookEnabled) {
+        await updateWebhookStatus({
+          cxId: settings.id,
+          webhookEnabled: true,
+          webhookStatusDetail: WEBHOOK_STATUS_OK,
+        });
+      }
+      sendAnalytics(status);
     }
-    sendAnalytics(status);
-    let webhookStatusDetail;
-    if (error instanceof WebhookError) {
-      webhookStatusDetail = errorToWhStatusDetails(error);
-    } else {
-      log(`Unexpected error testing webhook`, error);
-      webhookStatusDetail = `Internal error: ${error.message}`;
-    }
-    try {
-      // update the status of the webhook endpoint on the cx's settings table
-      await updateWebhookStatus({
-        cxId: settings.id,
-        webhookEnabled: false,
-        webhookStatusDetail,
-      });
-    } catch (err2) {
-      log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
-      capture.error(err2, {
-        extra: {
-          webhookRequestId: webhookRequest.id,
-          webhookUrl,
-          context: `webhook.processRequest.updateStatus.details`,
-          error: err2,
-        },
-      });
+    return true;
+
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    // TODO: 1411 - remove when DAPI is fully discontinued
+    if (productType === Product.medical) {
+      log(`Failed to process WH request: ${errorToString(error)}`);
+      const status = "failure";
+      try {
+        // mark this individual WH request as failed
+        await updateWebhookRequestStatus({
+          id: webhookRequest.id,
+          status,
+        });
+      } catch (err2) {
+        log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
+        capture.error(err2, {
+          extra: {
+            webhookRequestId: webhookRequest.id,
+            webhookUrl,
+            context: `webhook.processRequest.updateStatus.failed`,
+            error: err2,
+          },
+        });
+      }
+      sendAnalytics(status);
+
+      let webhookStatusDetail;
+      if (error instanceof WebhookError) {
+        webhookStatusDetail = errorToWhStatusDetails(error);
+      } else {
+        log(`Unexpected error testing webhook`, error);
+        webhookStatusDetail = `Internal error: ${error.message}`;
+      }
+      try {
+        // update the status of the webhook endpoint on the cx's settings table
+        await updateWebhookStatus({
+          cxId: settings.id,
+          webhookEnabled: false,
+          webhookStatusDetail,
+        });
+      } catch (err2) {
+        log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
+        capture.error(err2, {
+          extra: {
+            webhookRequestId: webhookRequest.id,
+            webhookUrl,
+            context: `webhook.processRequest.updateStatus.details`,
+            error: err2,
+          },
+        });
+      }
     }
   }
   return false;

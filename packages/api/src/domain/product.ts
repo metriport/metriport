@@ -1,4 +1,4 @@
 export enum Product {
-  devices = "devices",
+  devices = "devices", // TODO: 1411 - remove when DAPI is fully discontinued
   medical = "medical",
 }

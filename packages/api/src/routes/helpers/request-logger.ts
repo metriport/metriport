@@ -4,11 +4,18 @@ import { getLocalStorage } from "@metriport/core/util/local-storage";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
+
+// TODO: 1411 - remove the DAPI-related routes when DAPI is fully discontinued
 const blackListedRoutes = [
   "/internal/carequality/document-query/response",
   "/internal/carequality/document-retrieval/response",
   "/internal/carequality/patient-discovery/response",
   "/internal/mpi/patient",
+  "/webhook/tenovi",
+  "/webhook/fitbit",
+  "/webhook/withings",
+  "/webhook/garmin",
+  "/webhook/apple",
 ];
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {

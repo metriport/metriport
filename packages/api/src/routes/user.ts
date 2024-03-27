@@ -18,13 +18,12 @@ import { Tenovi } from "../providers/tenovi";
 import { Config } from "../shared/config";
 import {
   Constants,
+  PROVIDER_TENOVI,
   providerNoAuthSchema,
   providerOAuth1OptionsSchema,
   providerOAuth2OptionsSchema,
-  PROVIDER_TENOVI,
 } from "../shared/constants";
-import { capture } from "../shared/notifications";
-import { getRawParams, RawParams } from "../shared/raw-params";
+import { RawParams, getRawParams } from "../shared/raw-params";
 import { getProviderDataForType } from "./helpers/provider-route-helper";
 import { getUserIdFrom } from "./schemas/user-id";
 import { asyncHandler, getCxIdOrFail, getFrom } from "./util";
@@ -262,9 +261,6 @@ router.delete(
       );
       if (rejected.length > 0) {
         console.log(`Failed to revoke access to providers`, userId, rejected);
-        capture.message(`Failed to revoke access to providers`, {
-          extra: { rejected, userId },
-        });
       }
     }
 

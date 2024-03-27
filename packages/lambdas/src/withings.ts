@@ -1,12 +1,7 @@
-import * as Sentry from "@sentry/serverless";
 import { APIGatewayProxyEvent } from "aws-lambda";
 import axios from "axios";
 import { exec } from "child_process";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 
@@ -22,7 +17,7 @@ const defaultResponse = () => buildResponse(200);
 
 type EventWithBody = APIGatewayProxyEvent & { body: string };
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyEvent) => {
+export const handler = async (req: APIGatewayProxyEvent) => {
   console.log("withings request", req);
 
   const body = req.body;
@@ -46,7 +41,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: APIGatewayProxyE
   }
   console.log("Request does not include a valid Withings IP address");
   return defaultResponse();
-});
+};
 
 const lookup = async (address: string): Promise<string[]> => {
   return new Promise((resolve, reject) => {

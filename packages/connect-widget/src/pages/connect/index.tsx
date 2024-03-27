@@ -7,7 +7,6 @@ import Constants from "../../shared/constants";
 import { acceptAgreement, setAgreementState } from "../../shared/localStorage/agreement";
 import { storeColorMode } from "../../shared/localStorage/color-mode";
 import { storeFailRedirectUrl, storeRedirectUrl } from "../../shared/localStorage/redirect-url";
-import { capture } from "../../shared/notifications";
 import { DemoTokenError } from "../../shared/token-errors";
 import Agreement from "./components/agreement";
 import AgreementFooter from "./components/agreement-footer";
@@ -42,7 +41,6 @@ const ConnectPage = () => {
       } catch (err: any) {
         if (err.message !== DemoTokenError.DEFAULT_MSG) {
           setError(err);
-          capture.error(err, { extra: { context: `connect.setup` } });
         }
       }
       setIsLoading(false);

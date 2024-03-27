@@ -1,26 +1,23 @@
 import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { Dictionary, groupBy, union } from "lodash";
-import { Product } from "../../domain/product";
 import { FitbitWebhook } from "../../mappings/fitbit";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { analytics, EventTypes } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
 import {
   DataType,
-  reportDevicesUsage,
   WebhookDataPayloadWithoutMessageId,
   WebhookUserDataPayload,
+  reportDevicesUsage,
 } from "./devices";
 import { processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData } from "./webhook-request";
 
 interface Entry {
   cxId: string;
@@ -41,8 +38,6 @@ const log = Util.log(`Fitbit Webhook`);
  * @param data Fitbit webhook notification
  */
 export const processData = async (data: FitbitWebhook): Promise<void> => {
-  console.log(`Starting to process a Fitbit webhook: ${JSON.stringify(data)}`);
-
   const groupedNotifications = groupByUser(data);
   const dataMappedByConnectedUser = await mapDataByConnectedUser(groupedNotifications);
   const dataByCustomer = groupBy(dataMappedByConnectedUser, v => v.cxId);
@@ -108,10 +103,6 @@ async function mapDataByConnectedUser(groupedNotifications: UserNotifications): 
       if (failed.length > 0) {
         const msg = `Failed to map data on Fitbit Webhook`;
         log(msg, failed);
-        capture.message(msg, {
-          extra: { context: `webhook.fitbit.mapDataByConnectedUser`, failed, fitbitUserId },
-          level: "error",
-        });
       }
 
       connectedUsersAndData.push({
@@ -159,16 +150,6 @@ export const mapData = async (
     payload.sleep = [sleep];
   } else if (collectionType === "userRevokedAccess") {
     // do nothing until issue #652 is resolved
-  } else {
-    capture.message(`Unrecognized Fitbit collection type.`, {
-      extra: {
-        context: "webhook.fitbit.mapData",
-        collectionType,
-        startdate,
-        userId: connectedUser.id,
-      },
-      level: "error",
-    });
   }
 
   return payload;
@@ -194,23 +175,13 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
 
         const payload: WebhookDataPayloadWithoutMessageId = { users: transformedData };
         const settings = await getSettingsOrFail({ id: cxId });
-
-        analytics({
-          distinctId: cxId,
-          event: EventTypes.query,
-          properties: {
-            method: "POST",
-            url: "/webhook/fitbit",
-          },
-          apiType: Product.devices,
-        });
-        const webhookRequest = await createWebhookRequest({
+        const webhookRequestData = buildWebhookRequestData({
           cxId,
           type: "devices.health-data",
           payload,
         });
         // send it to the customer and update the request status
-        await processRequest(webhookRequest, settings);
+        await processRequest(webhookRequestData, settings);
 
         reportDevicesUsage(
           cxId,
@@ -218,9 +189,6 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
         );
       } catch (error) {
         log(`Failed to create and send customer payloads: ${errorToString(error)}`);
-        capture.error(error, {
-          extra: { context: `webhook.fitbit.createAndSendCustomerPayloads`, error, cxId },
-        });
       }
     })
   );

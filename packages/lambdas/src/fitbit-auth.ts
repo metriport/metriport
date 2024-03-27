@@ -1,14 +1,9 @@
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import * as Sentry from "@sentry/serverless";
 import { APIGatewayEvent } from "aws-lambda";
 import axios from "axios";
 import { createHmac } from "crypto";
 import status from "http-status";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const fitbitClientSecretName = getEnvOrFail("FITBIT_CLIENT_SECRET");
@@ -25,7 +20,7 @@ const buildResponse = (status: number, body?: unknown) => ({
 
 const defaultResponse = () => buildResponse(status.NO_CONTENT);
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEvent) => {
+export const handler = async (event: APIGatewayEvent) => {
   if (!event.body) {
     console.log("Event has no body - will not be forwarded to the API");
     return defaultResponse();
@@ -42,11 +37,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: APIGatewayEven
     return forwardCallToServer(event);
   }
 
-  capture.message("Fitbit webhooks authentication fail", {
-    extra: { context: "webhook.fitbit.fitbitAuthLambda" },
-  });
   return buildResponse(status.NOT_FOUND);
-});
+};
 
 async function forwardCallToServer(event: APIGatewayEvent) {
   console.log(`Verified! Calling server...`);

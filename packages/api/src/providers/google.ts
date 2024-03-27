@@ -1,4 +1,4 @@
-import { Activity, Biometrics, Body, Nutrition, ProviderSource, Sleep } from "@metriport/api-sdk";
+import { Activity, Biometrics, Body, Nutrition, Sleep } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import timezone from "dayjs/plugin/timezone";
 import { mapToActivity } from "../mappings/google/activity";
@@ -15,9 +15,8 @@ import { mapToSleep } from "../mappings/google/sleep";
 import { ConnectedUser } from "../models/connected-user";
 import { Config } from "../shared/config";
 import { PROVIDER_GOOGLE } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { executeAndReportAnalytics } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";
 import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
@@ -150,24 +149,11 @@ export class Google extends Provider implements OAuth2 {
         this.fetchActivitySessions(connectedUser, date, extraParams),
         this.fetchActivityData(connectedUser, date, extraParams),
       ]);
-    const [resSessions, resData] = await execute(getData, connectedUser, {
-      action: "getActivityData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const [resSessions, resData] = await execute(getData);
 
     const sessions = resSessions.status === "fulfilled" ? resSessions.value : undefined;
-    if (resSessions.status === "rejected") {
-      capture.error("Google activity sessions promise was rejected", {
-        extra: { context: `google.fetch.sessions`, reason: resSessions.reason },
-      });
-    }
+
     const data = resData.status === "fulfilled" ? resData.value : undefined;
-    if (resData.status === "rejected") {
-      capture.error("Google activity data promise was rejected", {
-        extra: { context: `google.fetch.data`, reason: resData.reason },
-      });
-    }
 
     if (!sessions && !data) {
       throw new Error("All Requests failed");
@@ -242,11 +228,7 @@ export class Google extends Provider implements OAuth2 {
           },
         ],
       });
-    const biometrics = await execute(getData, connectedUser, {
-      action: "getBiometricsData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const biometrics = await execute(getData);
 
     return mapToBiometrics(googleBiometricsResp.parse(biometrics), date);
   }
@@ -270,11 +252,7 @@ export class Google extends Provider implements OAuth2 {
           },
         ],
       });
-    const body = await execute(getData, connectedUser, {
-      action: "getBodyData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const body = await execute(getData);
 
     return mapToBody(googleBodyResp.parse(body), date);
   }
@@ -295,11 +273,7 @@ export class Google extends Provider implements OAuth2 {
           },
         ],
       });
-    const nutrition = await execute(getData, connectedUser, {
-      action: "getNutritionData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const nutrition = await execute(getData);
 
     return mapToNutrition(googleNutritionResp.parse(nutrition), date);
   }
@@ -311,11 +285,7 @@ export class Google extends Provider implements OAuth2 {
   ): Promise<Sleep> {
     const getData = () =>
       this.fetchGoogleSessions(connectedUser, date, extraParams, sessionSleepType);
-    const sleepSessions = await execute(getData, connectedUser, {
-      action: "getSleepData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const sleepSessions = await execute(getData);
 
     return mapToSleep(sessionResp.parse(sleepSessions), date);
   }
@@ -329,15 +299,6 @@ export class Google extends Provider implements OAuth2 {
  * @param additionalAnalyticsData additional information to send to the analytics service
  * @returns Google's response
  */
-export async function execute<R>(
-  fnToExecute: () => Promise<R>,
-  connectedUser: ConnectedUser,
-  additionalAnalyticsData: ExtraType
-): Promise<R> {
-  return executeAndReportAnalytics(
-    fnToExecute,
-    connectedUser,
-    ProviderSource.google,
-    additionalAnalyticsData
-  );
+export async function execute<R>(fnToExecute: () => Promise<R>): Promise<R> {
+  return executeAndReportAnalytics(fnToExecute);
 }

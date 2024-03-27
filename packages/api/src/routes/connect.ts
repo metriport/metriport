@@ -16,7 +16,6 @@ import {
   providerOAuth2OptionsSchema,
   rpmDeviceProviderSchema,
 } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { saveRpmDevice } from "./middlewares/connect-device";
 import { processOAuth1 } from "./middlewares/oauth1";
 import { processOAuth2 } from "./middlewares/oauth2";
@@ -137,7 +136,6 @@ router.get(
       }
     } catch (err) {
       console.log(`Error on /connect/${req.params.provider}`, err);
-      capture.error(err, { extra: { context: `connect.${req.params.provider}` } });
       return res.redirect(buildRedirectURL(false, connectToken));
     }
   })

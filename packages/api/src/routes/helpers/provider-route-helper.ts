@@ -1,10 +1,8 @@
 import { Metadata } from "@metriport/api-sdk/devices/models/common/metadata";
 import { Request } from "express";
-
 import { getConnectedUserOrFail } from "../../command/connected-user/get-connected-user";
 import { ConsumerHealthDataType, DAPIParams } from "../../providers/provider";
 import { Constants, ProviderOptions } from "../../shared/constants";
-import { capture } from "../../shared/notifications";
 import { getRawParams } from "../../shared/raw-params";
 import { getTimezoneIdFrom } from "../schemas/timezone-id";
 import { getUserIdFrom } from "../schemas/user-id";
@@ -45,15 +43,6 @@ export async function getProviderDataForType<T>(
           ) as Promise<T>
         ).catch(error => {
           console.error(String(error));
-          capture.error(error, {
-            extra: {
-              context: `getProviderDataForType`,
-              additional: `${providerName}.${type}`,
-              connectedUser,
-              date,
-              error,
-            },
-          });
           data.push({
             metadata: {
               date: date,

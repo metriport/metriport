@@ -12,7 +12,6 @@ import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_TENOVI } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { RawParams } from "../shared/raw-params";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { NoAuth } from "./shared/noauth";
@@ -93,13 +92,6 @@ export class Tenovi extends Provider implements NoAuth {
         });
       } catch (err) {
         console.log("Failed to remove Tenovi from ProviderMap", stringify(err));
-        capture.error(err, {
-          extra: {
-            context: "tenovi.revokeProviderAccess",
-            err,
-            user: connectedUser.dataValues,
-          },
-        });
         throw err;
       }
     }
@@ -155,28 +147,9 @@ export class Tenovi extends Provider implements NoAuth {
         }
       } catch (err) {
         console.log("Failed to disconnect devices from Tenovi Gateway", stringify(err));
-        capture.error(err, {
-          extra: {
-            context: "tenovi.revokeProviderAccess",
-            err,
-            deviceId,
-            user: connectedUser.dataValues,
-            cxName: xTenoviClientName,
-          },
-        });
         throw err;
       }
     } else {
-      capture.message(`Device ID not found for this user.`, {
-        extra: {
-          context: "tenovi.disconnectDevice",
-          deviceId,
-          connectedDevices,
-          user: connectedUser.dataValues,
-          level: "info",
-          cxName: xTenoviClientName,
-        },
-      });
       throw new NotFoundError("Device not found for this user.", undefined, { deviceId });
     }
   }

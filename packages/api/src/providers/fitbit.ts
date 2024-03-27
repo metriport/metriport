@@ -8,14 +8,12 @@ import {
   User,
 } from "@metriport/api-sdk";
 import status from "http-status";
-import stringify from "json-stringify-safe";
 import {
   getConnectedUserOrFail,
   getConnectedUsersByTokenOrFail,
   getProviderTokenFromConnectedUserOrFail,
 } from "../command/connected-user/get-connected-user";
 import { sendProviderDisconnected } from "../command/webhook/devices";
-import { Product } from "../domain/product";
 import MetriportError from "../errors/metriport-error";
 import { FitbitWebhookSubscriptions, fitbitWebhookSubscriptionsSchema } from "../mappings/fitbit";
 import { mapToActivity } from "../mappings/fitbit/activity";
@@ -48,13 +46,11 @@ import { mapToNutrition } from "../mappings/fitbit/nutrition";
 import { mapToSleep } from "../mappings/fitbit/sleep";
 import { mapToUser } from "../mappings/fitbit/user";
 import { ConnectedUser } from "../models/connected-user";
-import { analytics, EventTypes } from "../shared/analytics";
 import { Config } from "../shared/config";
 import { PROVIDER_FITBIT } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { Util } from "../shared/util";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
-import { executeAndReportAnalytics, ExtraType } from "./shared/analytics";
+import { executeAndReportAnalytics } from "./shared/analytics";
 import { getHttpClient } from "./shared/http";
 import { OAuth2, OAuth2DefaultImpl } from "./shared/oauth2";
 
@@ -177,12 +173,7 @@ export class Fitbit extends Provider implements OAuth2 {
         },
         params
       );
-    return execute(getData, connectedUser, {
-      action: "getActivityData",
-      date,
-      timezone: extraParams?.timezoneId,
-      params: stringify(params),
-    });
+    return execute(getData);
   }
 
   async fetchBreathingData(accessToken: string, date: string): Promise<FitbitBreathingRate> {
@@ -275,7 +266,7 @@ export class Fitbit extends Provider implements OAuth2 {
         this.fetchTempCoreData(accessToken, date),
         this.fetchTempSkinData(accessToken, date),
       ]);
-    const results = await execute(fetchData, connectedUser, { action: "getBiometricsData", date });
+    const results = await execute(fetchData);
     const [resBreathing, resCardio, resHr, resHrv, resSpo, resTempCore, resTempSkin] = results;
 
     const breathing = resBreathing.status === "fulfilled" ? resBreathing.value : undefined;
@@ -348,11 +339,7 @@ export class Fitbit extends Provider implements OAuth2 {
         ...(containsProfile ? [this.fetchUserProfile(accessToken, extraHeaders)] : []),
       ]);
 
-    const [resWeight, resUser] = await execute(fetchData, connectedUser, {
-      action: "getBodyData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const [resWeight, resUser] = await execute(fetchData);
 
     const weight = resWeight.status === "fulfilled" ? resWeight.value : undefined;
     const user = resUser?.status === "fulfilled" ? resUser.value : undefined;
@@ -398,11 +385,7 @@ export class Fitbit extends Provider implements OAuth2 {
         this.fetchFoodData(accessToken, date),
         this.fetchWaterData(accessToken, date),
       ]);
-    const [resFood, resWater] = await execute(fetchData, connectedUser, {
-      action: "getNutritionData",
-      date,
-      timezone: extraParams.timezoneId,
-    });
+    const [resFood, resWater] = await execute(fetchData);
 
     const food = resFood.status === "fulfilled" ? resFood.value : undefined;
     const water = resWater.status === "fulfilled" ? resWater.value : undefined;
@@ -430,11 +413,7 @@ export class Fitbit extends Provider implements OAuth2 {
           return mapToSleep(fitbitSleepResp.parse(resp.data), date);
         }
       );
-    return execute(getData, connectedUser, {
-      action: "getSleepData",
-      date,
-      timezone: extraParams?.timezoneId,
-    });
+    return execute(getData);
   }
 
   override async getUserData(connectedUser: ConnectedUser, date: string): Promise<User> {
@@ -449,7 +428,7 @@ export class Fitbit extends Provider implements OAuth2 {
           return mapToUser(fitbitUserResp.parse(resp.data), date);
         }
       );
-    return execute(getData, connectedUser, { action: "getUserData", date });
+    return execute(getData);
   }
 
   /**
@@ -523,9 +502,6 @@ export class Fitbit extends Provider implements OAuth2 {
           currentUser.id
         }, Error: ${JSON.stringify(rejected)}`
       );
-      capture.message(`Failed to revoke the token or delete WH subscriptions of a Fitbit user.`, {
-        extra: { rejected, fitbitUserId, currentUser },
-      });
       if (throwOnError) {
         throw new FitbitPostAuthError(
           "Failed to revoke the token or delete WH subscriptions of a Fitbit user.",
@@ -598,15 +574,10 @@ export class Fitbit extends Provider implements OAuth2 {
           }
         })
       );
-    await executeWithoutConnectedUser(getActiveSubs, token.userId, {
-      action: "getActiveSubscriptions",
-    });
+    await executeWithoutConnectedUser(getActiveSubs);
 
     if (rejected.length > 0) {
       console.log(`Failed to get active Fitbit WH subscriptions.`, rejected);
-      capture.message(`Failed to get active Fitbit WH subscriptions.`, {
-        extra: { context: `fitbit.getActiveSubscriptions`, rejected },
-      });
     }
     const activeSubs = activeSubscriptions.flat();
     return activeSubs;
@@ -640,7 +611,6 @@ export class Fitbit extends Provider implements OAuth2 {
 
     if (rejected.length > 0) {
       console.log(`Failed to create Fitbit WH subscriptions. Error: ${JSON.stringify(rejected)}`);
-      capture.message(`Failed to create Fitbit WH subscriptions.`, { extra: { rejected } });
       if (throwOnError) {
         throw new FitbitPostAuthError("Failed to create Fitbit WH subscriptions.", rejected);
       }
@@ -671,9 +641,7 @@ export class Fitbit extends Provider implements OAuth2 {
           "Content-Length": 0,
         },
       });
-    const resp = await executeWithoutConnectedUser(createSub, userId, {
-      action: "createSubscription",
-    });
+    const resp = await executeWithoutConnectedUser(createSub);
 
     console.log(
       "Fitbit WH subscription created successfully with status:",
@@ -713,38 +681,11 @@ export function parseFitbitToken(token: string): FitbitToken {
  * @param additionalAnalyticsData additional information to send to the analytics service
  * @returns Fitbit's response
  */
-export async function execute<R>(
-  fnToExecute: () => Promise<R>,
-  connectedUser: ConnectedUser,
-  additionalAnalyticsData: ExtraType
-): Promise<R> {
-  return executeAndReportAnalytics(
-    fnToExecute,
-    connectedUser,
-    ProviderSource.fitbit,
-    additionalAnalyticsData
-  );
+export async function execute<R>(fnToExecute: () => Promise<R>): Promise<R> {
+  return executeAndReportAnalytics(fnToExecute);
 }
 
-export async function executeWithoutConnectedUser<R>(
-  fnToExecute: () => Promise<R>,
-  distinctId: string,
-  additionalAnalyticsData?: Record<string, string | undefined>
-): Promise<R> {
-  const timeBefore = Date.now();
-
+export async function executeWithoutConnectedUser<R>(fnToExecute: () => Promise<R>): Promise<R> {
   const resp = await fnToExecute();
-
-  const durationInMs = Date.now() - timeBefore;
-  analytics({
-    distinctId,
-    event: EventTypes.query,
-    properties: {
-      provider: ProviderSource.fitbit,
-      duration: durationInMs,
-      ...additionalAnalyticsData,
-    },
-    apiType: Product.devices,
-  });
   return resp;
 }

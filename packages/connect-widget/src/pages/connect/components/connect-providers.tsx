@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getApi, isDemo } from "../../../shared/api";
-import { getProviders } from "../../../shared/localStorage/providers";
 import { getIsApple } from "../../../shared/localStorage/apple";
-import { capture } from "../../../shared/notifications";
+import { getProviders } from "../../../shared/localStorage/providers";
 import Providers from "./providers";
 
 export type DefaultProvider = {
@@ -25,7 +24,7 @@ const ConnectProviders = () => {
         const { data } = await getApi().get("/connect/user/providers");
         setConnectedProviders(data);
       } catch (err) {
-        capture.error(err, { extra: { context: `provider.list.get` } });
+        console.log("Error while fetching connected providers", JSON.stringify(err));
       }
     }
     getConnectedProviders();

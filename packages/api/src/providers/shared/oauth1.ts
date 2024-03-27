@@ -206,9 +206,6 @@ export class OAuth1DefaultImpl implements OAuth1 {
           }
         } catch (error) {
           console.log(`OAuth1 deregister failed. Cause: ${error}`);
-          capture.error(error, {
-            extra: { context: `oauth1.deregister`, error, userToken },
-          });
         }
       }
     }
