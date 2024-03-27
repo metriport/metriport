@@ -10,7 +10,7 @@
 TODO: Update SAML Attributes
 
 Last updated: Dec 07 2023</description>
-  <revision>126</revision>
+  <revision>127</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -351,7 +351,7 @@ Last updated: Dec 07 2023</description>
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -412,12 +412,12 @@ Last updated: Dec 07 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709754298109</time>
+        <time>1711481972826</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>7</pruneMetaDataDays>
-        <pruneContentDays>7</pruneContentDays>
+        <pruneMetaDataDays>5</pruneMetaDataDays>
+        <pruneContentDays>5</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>
