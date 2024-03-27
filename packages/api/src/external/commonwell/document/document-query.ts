@@ -92,7 +92,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
-  orgIdExcludeList,
+  getAllCQOrgsIds,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -101,7 +101,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
-  orgIdExcludeList?: Set<string>;
+  getAllCQOrgsIds?: () => Promise<Set<string>>;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -131,12 +131,14 @@ export async function queryAndProcessDocuments({
     // If patient has no links in CW then we want to schedule a doc query
     // and to prevent infinite loops we need to check if the patient has any CQ orgs
     // as its only called the first time
-    if (hasNoCWStatus && orgIdExcludeList) {
+    if (hasNoCWStatus && getAllCQOrgsIds) {
       await scheduleDocQuery({
         requestId,
         patient: { id: patientId, cxId },
         source: MedicalDataSource.COMMONWELL,
       });
+
+      const orgIdExcludeList = await getAllCQOrgsIds();
 
       await updatePatient(patientParam, facility.id, orgIdExcludeList);
       return;
