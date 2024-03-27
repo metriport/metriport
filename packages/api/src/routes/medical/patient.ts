@@ -1,6 +1,7 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -11,15 +12,18 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import {
+  getMedicalRecordSummary,
+  getMedicalRecordSummaryStatus,
+} from "../../command/medical/patient/create-medical-record";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { processAsyncError } from "../../errors";
 import BadRequestError from "../../errors/bad-request";
-import cwCommands from "../../external/commonwell";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import NotFoundError from "../../errors/not-found";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -42,6 +46,7 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { stringToBoolean } from "@metriport/shared";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -62,12 +67,15 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
 
     if (Config.isSandbox()) {
       // limit the amount of patients that can be created in sandbox mode
       const numPatients = await Patient.count({ where: { cxId } });
-      if (numPatients >= Config.SANDBOX_PATIENT_LIMIT) {
+      const patientLimit = await getSandboxPatientLimitForCx(cxId);
+      if (numPatients >= patientLimit) {
         return res.status(status.BAD_REQUEST).json({
           message: `Cannot create more than ${Config.SANDBOX_PATIENT_LIMIT} patients in Sandbox mode!`,
         });
@@ -79,7 +87,7 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate);
+    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -103,6 +111,8 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
+    const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
@@ -111,24 +121,19 @@ router.put(
     }
 
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
-
     const patientUpdate: PatientUpdateCmd = {
       ...schemaUpdateToPatient(payload, cxId),
       ...getETag(req),
       id,
+      facilityId,
     };
 
-    const updatedPatient = await updatePatient(patientUpdate);
-
-    // temp solution until we migrate to FHIR
-    const fhirPatient = toFHIR(updatedPatient);
-    await upsertPatientToFHIRServer(updatedPatient.cxId, fhirPatient);
-
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous - it takes too long to perform
-    cwCommands.patient
-      .update(updatedPatient, facilityId)
-      .catch(processAsyncError(`cw.patient.update`));
+    const updatedPatient = await updatePatient(
+      patientUpdate,
+      true,
+      forceCommonwell,
+      forceCarequality
+    );
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })
@@ -307,6 +312,50 @@ router.post(
       status: queryResponse.status ?? null,
     };
     return res.json(respPayload);
+  })
+);
+
+/**
+ * GET /patient/:id/medical-record
+ *
+ * Returns the url to download a patient's medical record summary, if it exists.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @param req.query.conversionType Indicates how the medical record summary should be rendered. Accepts "pdf" or "html".
+ * @return JSON containing the url to download the patient's medical record summary.
+ * @throws NotFoundError if the medical record summary does not exist.
+ */
+router.get(
+  "/:id/medical-record",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const type = getFrom("query").orFail("conversionType", req);
+    const conversionType = consolidationConversionTypeSchema.parse(type);
+
+    const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
+    if (!url) throw new NotFoundError("Medical record summary not found");
+    return res.json({ url });
+  })
+);
+
+/**
+ * GET /patient/:id/medical-record-status
+ *
+ * Checks if a patient's medical record summary exists in either PDF or HTML format and the date it was created.
+ *
+ * @param req.cxId The customer ID.
+ * @param req.param.id The ID of the patient whose data is to be returned.
+ * @return JSON containing the status of the patient's medical record summary.
+ */
+router.get(
+  "/:id/medical-record-status",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const patientId = getFrom("params").orFail("id", req);
+    const status = await getMedicalRecordSummaryStatus({ patientId, cxId });
+    return res.json(status);
   })
 );
 

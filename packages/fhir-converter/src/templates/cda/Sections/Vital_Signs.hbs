@@ -1,11 +1,27 @@
-{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.4.1')}}
-    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.4.1')}}
-        {{#each (toArray 2_16_840_1_113883_10_20_22_2_4_1.entry)}}
+{{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.4')}}
+    {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.4.1' '2.16.840.1.113883.10.20.22.2.4')}}
+        {{#each (multipleToArray 2_16_840_1_113883_10_20_22_2_4_1.entry 2_16_840_1_113883_10_20_22_2_4.entry)}}
             {{#each (toArray this.organizer.component) as |obsEntry|}}
                 {{>Resources/Observation.hbs observationCategory="vital-signs" observationEntry=obsEntry.observation ID=(generateUUID (toJsonString obsEntry.observation))}},
                 {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                     {{>References/Observation/subject.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Patient/' patientId.Id)}},
                 {{/with}}
+                {{#if (toArray obsEntry.observation.author)}}
+                    {{#each (toArray obsEntry.observation.author) as |author|}}
+                        {{#if author.assignedAuthor}}
+                            {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=author.assignedAuthor) as |practitionerId|}}
+                                {{>Resources/Practitioner.hbs practitioner=author.assignedAuthor ID=practitionerId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                            {{/with}}
+                        {{/if}}
+                        {{#if author.assignedAuthor.representedOrganization}}
+                            {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=author.assignedAuthor.representedOrganization) as |orgId|}}
+                                {{>Resources/Organization.hbs org=author.assignedAuthor.representedOrganization ID=orgId.Id}},
+                                {{>References/Observation/performer.hbs ID=(generateUUID (toJsonString obsEntry.observation)) REF=(concat 'Organization/' orgId.Id)}},
+                            {{/with}}
+                        {{/if}}
+                    {{/each}}
+                {{/if}}
             {{/each}}
         {{/each}}
     {{/with}}

@@ -58,7 +58,7 @@ class Address(pydantic.BaseModel):
     state: str = pydantic.Field(min_length=1)
     zip: str = pydantic.Field(min_length=5, max_length=5)
 
-    @pydantic.validator("zip", always=True)
+    @pydantic.field_validator("zip")
     def check_zip_alphanumeric(cls, v):  # pylint: disable=no-self-argument
         int(v)
         return v
@@ -87,7 +87,7 @@ async def upload_new_patient(
     result = await client.post(
         "/medical/v1/patient",
         params={"facilityId": metriport_facility_id},
-        content=patient.json(exclude_none=True),
+        content=patient.model_dump_json(exclude_none=True),
         headers={"Content-Type": "application/json"},
     )
     return result

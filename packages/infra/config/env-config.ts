@@ -1,4 +1,5 @@
 import { EnvType } from "../lib/env-type";
+import { IHEGatewayProps } from "./ihe-gateway-config";
 
 export type ConnectWidgetConfig = {
   stackName: string;
@@ -30,6 +31,7 @@ export type EnvConfig = {
   fhirServerUrl: string;
   fhirServerQueueUrl?: string;
   systemRootOID: string;
+  systemRootOrgName: string;
   generalBucketName: string;
   medicalDocumentsBucketName: string;
   medicalDocumentsUploadBucketName: string;
@@ -37,17 +39,21 @@ export type EnvConfig = {
   analyticsSecretNames?: {
     POST_HOG_API_KEY: string;
   };
-  locationService: {
+  locationService?: {
     stackName: string;
     placeIndexName: string;
     placeIndexRegion: string;
   };
   carequality?: {
     secretNames?: {
-      CQ_API_KEY?: string;
+      CQ_MANAGEMENT_API_KEY: string;
+      CQ_ORG_PRIVATE_KEY: string;
+      CQ_ORG_CERTIFICATE: string;
+      CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {
-      CQ_ORG_DETAILS?: string;
+      CQ_ORG_URLS?: string;
+      CQ_URLS_TO_EXCLUDE?: string;
     };
   };
   commonwell: {
@@ -95,12 +101,7 @@ export type EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: string;
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: string;
   };
-  iheGateway?: {
-    vpcId: string;
-    certArn: string;
-    subdomain: string; // Subdomain for IHE integrations
-    snsTopicArn?: string;
-  };
+  iheGateway?: IHEGatewayProps;
   sentryDSN?: string; // API's Sentry DSN
   lambdasSentryDSN?: string;
   slack?: {
@@ -109,22 +110,15 @@ export type EnvConfig = {
     workspaceId: string;
     alertsChannelId: string;
   };
-  sidechainFHIRConverter?: {
-    bucketName: string;
-    url: string;
-    urlBlacklist: string; // comma-separated list of URLs to be replaced, case sensitive
-    wordsToRemove: string; // comma-separated list of words to be removed, case insensitive
-    secretNames?: {
-      SIDECHAIN_FHIR_CONVERTER_KEYS: string;
-    };
-  };
-  fhirToCDAUrl: string;
   docQueryChecker?: {
     /**
      * UTC-based: "Minutes Hours Day-of-month Month Day-of-week Year"
      * @see: https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-cron-expressions.html
      * @see: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html
      */
+    scheduleExpressions: string | string[];
+  };
+  cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
   };
 } & (

@@ -1,0 +1,8 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Maven
+target/
+.env
+generated/

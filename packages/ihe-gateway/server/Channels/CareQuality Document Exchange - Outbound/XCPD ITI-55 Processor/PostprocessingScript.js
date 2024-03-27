@@ -22,6 +22,7 @@ if (dest && 'ERROR' == dest.getStatus()) try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Postprocessor - ' + ex);
+	throw ex;
 }
 
 return;

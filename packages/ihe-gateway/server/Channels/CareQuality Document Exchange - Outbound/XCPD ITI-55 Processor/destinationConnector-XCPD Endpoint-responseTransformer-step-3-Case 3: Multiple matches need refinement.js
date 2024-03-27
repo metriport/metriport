@@ -15,8 +15,10 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 	// NHIN: If a responding gateway determines that additional attributes may help to achieve a match, it may respond with a specialized set of error codes.
 
 	// Stop further processing
+	responseStatus = ERROR;
 	return;
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response (Case3) - ' + ex);
-	channelMap.put('RESPONSE_ERROR', ex.toString());	
+	channelMap.put('RESPONSE_ERROR', ex.toString());
+	throw ex;	
 }

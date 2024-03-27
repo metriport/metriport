@@ -15,10 +15,6 @@ on:
         description: "the url for the fhir server"
         required: true
         type: string
-      widget_url:
-        description: "the url for the connect widget"
-        required: true
-        type: string
       test_patient_id:
         description: "the ID of a test patient for e2e tests"
         required: false
@@ -76,10 +72,6 @@ jobs:
         run: npm run install-deps
         working-directory: "./"
 
-      - name: Install playwright
-        run: npx playwright install && npx playwright install-deps
-        working-directory: "packages/connect-widget"
-
       - name: Build/compile
         # build from root because of dependencies
         run: npm run build:cloud
@@ -105,14 +97,5 @@ jobs:
           CW_MEMBER_OID: ${{ secrets.CW_MEMBER_OID }}
           CW_MEMBER_NAME: ${{ secrets.CW_MEMBER_NAME }}
           API_URL: ${{ inputs.api_url }}
-          WIDGET_URL: ${{ inputs.widget_url }}
           FHIR_SERVER_URL: ${{ inputs.fhir_url }}
           ENV_TYPE: ${{ inputs.deploy_env }}
-
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v3
-        if: ${{ hashFiles('packages/connect-widget/playwright-report/index.html') != '' }}
-        with:
-          name: playwright-report
-          path: "packages/connect-widget/playwright-report/"
-          retention-days: 30

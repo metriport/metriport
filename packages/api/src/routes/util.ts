@@ -4,29 +4,32 @@ import { Config } from "../shared/config";
 import { errorToString } from "../shared/log";
 import { capture } from "../shared/notifications";
 import { stringToBoolean } from "@metriport/shared";
+import { out } from "@metriport/core/util/log";
 
-export const asyncHandler =
-  (
-    f: (
-      req: Request,
-      res: Response,
-      next: NextFunction
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) => Promise<Response<any, Record<string, any>> | void>
-  ) =>
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+const { log } = out("asyncHandler");
+
+export function asyncHandler(
+  f: (
+    req: Request,
+    res: Response,
+    next: NextFunction
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) => Promise<Response<any, Record<string, any>> | void>
+) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await f(req, res, next);
     } catch (err) {
-      if (Config.isCloudEnv()) console.error(errorToString(err));
-      else console.error(err);
+      if (Config.isCloudEnv()) log(errorToString(err));
+      else log("", err);
       next(err);
     }
   };
+}
 
 // https://www.rfc-editor.org/rfc/rfc7807 w/ Metriport extension, { name?: string }
 export type HttpResponseBody = { status: number; title: string; detail?: string; name?: string };
-export const httpResponseBody = ({
+export function httpResponseBody({
   status,
   title,
   detail,
@@ -36,14 +39,14 @@ export const httpResponseBody = ({
   title: string;
   detail?: string;
   name?: string;
-}): HttpResponseBody => {
+}): HttpResponseBody {
   return {
     status,
     title,
     detail,
     name,
   };
-};
+}
 
 export const getFromQuery = (prop: string, req: Request): string | undefined => {
   const value = req.query[prop];

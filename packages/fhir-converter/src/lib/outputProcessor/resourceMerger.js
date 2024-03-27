@@ -53,6 +53,49 @@ const concatAndDedup = (target, source) => {
   return destination;
 };
 
+function hasEmptyResourceFilterText(item) {
+  const resource = item.resource;
+  if (!resource) return false;
+
+  const fieldsToCheck = ["vaccineCode", "code", "reasonCode", "dosage", "note", "reaction.substance"];
+  const noPhrases = [
+    "no known", "no observation", "no data", "no information", 
+    "no results", "no medical", "no smoking status", "no social history", 
+    "no chronic problems"
+  ];
+
+  for (let field of fieldsToCheck) {
+    let fieldValue = getNestedFieldValue(resource, field);
+    if (Array.isArray(fieldValue)) {
+      for (let value of fieldValue) {
+        if (value && value.text) {
+          const textLower = value.text.toLowerCase();
+          if (noPhrases.some(phrase => textLower.includes(phrase))) {
+            return true;
+          }
+        }
+      }
+    } else if (fieldValue && fieldValue.text) {
+      const textLower = fieldValue.text.toLowerCase();
+      if (noPhrases.some(phrase => textLower.includes(phrase))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function getNestedFieldValue(obj, path) {
+  return path.split('.').reduce((o, key) => {
+    if (o === undefined) return undefined;
+    if (Array.isArray(o)) {
+      return o.map(item => item[key]).filter(item => item !== undefined);
+    }
+    return o[key];
+  }, obj);
+}
+
+
 function getKey(res) {
   if (
     Object.prototype.hasOwnProperty.call(res, "resource") &&

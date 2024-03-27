@@ -10,7 +10,7 @@
 TODO: Update SAML Attributes
 
 Last updated: Dec 07 2023</description>
-  <revision>56</revision>
+  <revision>126</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -300,6 +300,12 @@ Last updated: Dec 07 2023</description>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-2-CASE 2: Failure.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>catch-all</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-3-catch-all.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
         <outboundTemplate encoding="base64"/>
@@ -406,8 +412,8 @@ Last updated: Dec 07 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1704995124302</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1709754298109</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>7</pruneMetaDataDays>
@@ -417,8 +423,12 @@ Last updated: Dec 07 2023</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>ce8aa1cf-5df6-4825-82c9-b51d5b2dfcfa</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>c1b69481-12ef-4e81-9a4d-e7b362cf6c5d</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

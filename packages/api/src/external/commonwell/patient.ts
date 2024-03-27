@@ -9,14 +9,15 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { Facility } from "../../domain/medical/facility";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { errorToString } from "@metriport/shared/common/error";
+import { Facility } from "../../domain/medical/facility";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
+import { isEnhancedCoverageEnabledForCx, isCWEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
@@ -95,14 +96,20 @@ function getStoreIdsFn(
 export async function create(
   patient: Patient,
   facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>,
   patientData?: {
     organization: Organization;
     facility: Facility;
   }
-): Promise<{ commonwellPatientId: string; personId: string }> {
+): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+
+    if (!(await isCWEnabledForCx(patient.cxId))) {
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
+      return undefined;
+    }
 
     const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
     const orgName = organization.data.name;
@@ -135,6 +142,7 @@ export async function create(
       commonwellPatientId,
       patientRefLink,
       storeIds,
+      getOrgIdExcludeList,
     });
 
     return { commonwellPatientId, personId };
@@ -155,17 +163,26 @@ export async function create(
   }
 }
 
-export async function update(patient: Patient, facilityId: string): Promise<void> {
+export async function update(
+  patient: Patient,
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
+
+    if (!(await isCWEnabledForCx(patient.cxId))) {
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
+      return undefined;
+    }
 
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      await create(patient, facilityId);
+      await create(patient, facilityId, getOrgIdExcludeList);
       return;
     }
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
@@ -188,6 +205,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
         commonwellPatientId,
         patientRefLink,
         storeIds: getStoreIdsFn(patient.id, patient.cxId),
+        getOrgIdExcludeList,
       });
       return;
     }
@@ -223,6 +241,7 @@ export async function update(patient: Patient, facilityId: string): Promise<void
           commonwellPatientId,
           patientRefLink,
           storeIds: getStoreIdsFn(patient.id, patient.cxId),
+          getOrgIdExcludeList,
         });
         return;
       }
@@ -270,19 +289,21 @@ export async function update(patient: Patient, facilityId: string): Promise<void
       queryMeta,
       commonwellPatientId,
       personId,
-      createContext
+      createContext,
+      getOrgIdExcludeList
     );
-  } catch (err) {
-    console.error(`Failed to update patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
+  } catch (error) {
+    console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
+    capture.error(error, {
       extra: {
         facilityId,
         patientId: patient.id,
         cwReference: commonWell?.lastReferenceHeader,
         context: updateContext,
+        error,
       },
     });
-    throw err;
+    throw error;
   }
 }
 
@@ -290,6 +311,11 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
+
+    if (!(await isCWEnabledForCx(patient.cxId))) {
+      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
+      return undefined;
+    }
 
     const data = await setupUpdate(patient, facilityId);
     if (!data) {
@@ -354,6 +380,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId,
   patientRefLink,
   storeIds,
+  getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
@@ -361,6 +388,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatientId: string;
   patientRefLink: string;
   storeIds: StoreIdsFunction;
+  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<string> {
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
@@ -405,7 +433,8 @@ async function findOrCreatePersonAndLink({
     queryMeta,
     commonwellPatientId,
     personId,
-    createContext
+    createContext,
+    getOrgIdExcludeList
   );
 
   return personId;

@@ -1,9 +1,9 @@
+{{!-- remove this comment --}}
 {
     "resourceType": "Bundle",
     "type": "batch",
     "entry": [
-      {{!-- {{#with msg as | msg |}} --}}
-      {{>Header.hbs}}
+      {{>Header.hbs}},
         
       {{>Sections/Advance_Directives.hbs}},
 
@@ -69,10 +69,10 @@
 
       {{>Sections/Vital_Signs.hbs}},
 
-    
+      {{>Sections/Advance_Directives.hbs}},
+
+      {{>Sections/Assessments.hbs}}
         {{! Document Resource Creation }}
-        
-        {{!-- {{>Resources/DocumentReference.hbs docref=msg ID=(generateUUID (toJsonString msg))}}, --}}
-        {{!-- {{/with}} --}}
+        {{!-- Document Reference commented out --}}
       ]
 }

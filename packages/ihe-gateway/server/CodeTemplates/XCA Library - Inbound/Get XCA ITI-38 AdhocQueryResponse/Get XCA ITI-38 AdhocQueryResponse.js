@@ -16,7 +16,7 @@ function getXCAITI38QueryResponse(request, operationOutcome) {
 		
 		var docList = [];
 
-		request.metadata.forEach(function(entry) {
+		request.extrinsicObjectXmls.forEach(function(entry) {
 			try {
 				var extrinsicObject = new XML(String(entry).replace(/\\/g,''));
 				docList.push(extrinsicObject.@id.toString());
@@ -28,7 +28,7 @@ function getXCAITI38QueryResponse(request, operationOutcome) {
 
 		// Process ObjectRef if requested
 		if (channelMap.containsKey('OBJECTREF')) {
-			var home = configurationMap.get('SAML.HomeCommunityId');
+			var home = Config.getHomeCommunityId();
 			home = String(home).startsWith('urn:oid:') ? String(home) : 'urn:oid:' + home;
 			docList.forEach(id => {
 				var docId = String(id).startsWith('urn:uuid') ? String(id) : 'urn:uuid:' + id;

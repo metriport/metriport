@@ -6,8 +6,8 @@
 	@return {Object} return PRPA_IN201306UV02 response in XML format
 */
 function getXCPDQueryResponse(lambda, payload) {
-
-	var uuid = UUIDGenerator.getUUID();
+	const senderOID = Config.getHomeCommunityId();
+	const uuid = UUIDGenerator.getUUID();
 
 	// May be valued by the initiating application to identify the query
 	var queryExt = null, queryRoot = null;
@@ -20,7 +20,7 @@ function getXCPDQueryResponse(lambda, payload) {
 	}
 
 	var xml = <PRPA_IN201306UV02 ITSVersion="XML_1.0">
-			  <id root={configurationMap.get('HL7v3.Sender.OID')} extension={uuid.toString()}/>
+			  <id root={senderOID} extension={uuid.toString()}/>
 			  <creationTime value={DateUtil.getCurrentDate('yyyyMMddhhmmss')}/>
 			  <interactionId root="2.16.840.1.113883.1.6" extension="PRPA_IN201306UV02"/>
 			  <processingCode code="P"/>
@@ -28,7 +28,7 @@ function getXCPDQueryResponse(lambda, payload) {
 			  <acceptAckCode code="NE"/>
 			  <sender typeCode="SND">
 			    <device classCode="DEV" determinerCode="INSTANCE">
-			      <id root={configurationMap.get('HL7v3.Sender.OID')}/>
+			      <id root={senderOID}/>
 			    </device>
 			  </sender>
 			  <acknowledgement>

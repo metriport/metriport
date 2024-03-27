@@ -1,69 +1,76 @@
 {{#if code}}
-    {{#if (startsWith code '2.16.840.1.113883.3.247')}}
-        "http://terminology.hl7.org/CodeSystem-IMO.html"
-    {{else if (eq code '2.16.840.1.113883.6.1')}}
-        "http://loinc.org"
-    {{else if (eq code '2.16.840.1.113883.6.96')}}
-        "http://snomed.info/sct"
-    {{else if (eq code '2.16.840.1.113883.6.88')}}
-        "http://www.nlm.nih.gov/research/umls/rxnorm"
-    {{else if (eq code '2.16.840.1.113883.6.69')}}
-        "http://hl7.org/fhir/sid/ndc"
-    {{else if (eq code '2.16.840.1.113883.3.88.12.3221.8.9')}}
-        "http://snomed.info/sct"
-    {{else if (eq code '2.16.840.1.113883.5.83')}}
-        "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation"
-    {{else if (eq code '2.16.840.1.113883.4.1')}}
-        "http://hl7.org/fhir/sid/us-ssn"
-    {{else if (eq code '2.16.840.1.113883.4.6')}}
-        "http://hl7.org/fhir/sid/us-npi"
-    {{else if (eq code '2.16.840.1.113883.4.572')}}
-        "http://hl7.org/fhir/sid/us-medicare"  
-    {{else if (eq code '2.16.840.1.113883.4.927')}}
-        "http://hl7.org/fhir/sid/us-mbi"  
-    {{else if (eq code '2.16.840.1.113883.12.292')}}
-        "http://hl7.org/fhir/sid/cvx"
-    {{else if (eq code '2.16.840.1.113883.6.59')}}
-        "http://hl7.org/fhir/sid/cvx"
-    {{else if (eq code '2.16.840.1.113883.6.59')}}
-        "http://terminology.hl7.org/2.1.0/CodeSystem-CVX"
-    {{else if (eq code '2.16.840.1.113883.6.101')}}
-        "http://nucc.org/provider-taxonomy"
-    {{else if (eq code '2.16.840.1.113883.2.20.5.1')}}
-        "http://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD"
-    {{else if (eq code '2.16.840.1.113883.6.8')}}
-        "http://unitsofmeasure.org"
-    {{else if (eq code '2.16.840.1.113883.6.12')}}
-        "http://www.ama-assn.org/go/cpt"
-    {{else if (eq code '2.16.840.1.113883.6.345')}}
-        "http://va.gov/terminology/medrt"
-    {{else if (eq code '2.16.840.1.113883.6.209')}}
-        "http://hl7.org/fhir/ndfrt"
-    {{else if (eq code '2.16.840.1.113883.4.9')}}
-        "http://fdasis.nlm.nih.gov"
-    {{else if (eq code '2.16.840.1.113883.6.24')}}
-        "urn:iso:std:iso:11073:10101"
-    {{else if (eq code '2.16.840.1.113883.6.103')}}
-        "http://terminology.hl7.org/CodeSystem/ICD-9CM-diagnosiscodes"
-    {{else if (eq code '2.16.840.1.113883.6.104')}}
-        "http://terminology.hl7.org/CodeSystem/ICD-9CM-procedurecodes"
-    {{else if (eq code '2.16.840.1.113883.6.90')}}
-        "http://hl7.org/fhir/sid/icd-10-cm"
-    {{else if (eq code '2.16.840.1.113883.6.4')}}
-        "http://www.cms.gov/Medicare/Coding/ICD10"
-    {{else if (eq code '2.16.840.1.113883.6.238')}}
-        "http://terminology.hl7.org/CodeSystem-CDCREC.html"
-    {{else if (eq code '2.16.840.1.113883.6.208')}}
-        "http://terminology.hl7.org/CodeSystem/nddf"
-    {{else if (eq code '2.16.840.1.113883.5.4')}}
-        "http://terminology.hl7.org/CodeSystem/v3-ActCode"
-    {{else if (eq code '2.16.840.1.113883.3.26.1.1')}}
-        "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
-    {{else if (eq code '2.16.840.1.113883.5.1')}}
-        "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
-    {{else if (eq (length (match code '[0123456789.]+')) 1)}}
-        "urn:oid:{{code}}"
-    {{else}}
-        "http://terminology.hl7.org/CodeSystem/{{replace code ' ' ''}}"
-    {{/if}}
+    {
+        "oid":
+            {{#if (startsWith code '2.16.840.1.113883.3.247')}}
+                "http://terminology.hl7.org/CodeSystem-IMO.html"
+            {{else if (eq code '2.16.840.1.113883.6.1')}}
+                "http://loinc.org"
+            {{else if (eq code '2.16.840.1.113883.6.96')}}
+                "http://snomed.info/sct"
+            {{else if (eq code '2.16.840.1.113883.6.88')}}
+                "http://www.nlm.nih.gov/research/umls/rxnorm"
+            {{else if (eq code '2.16.840.1.113883.6.69')}}
+                "http://hl7.org/fhir/sid/ndc"
+            {{else if (eq code '2.16.840.1.113883.3.88.12.3221.8.9')}}
+                "http://snomed.info/sct"
+            {{else if (eq code '2.16.840.1.113883.5.83')}}
+                "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation"
+            {{else if (eq code '2.16.840.1.113883.4.1')}}
+                "http://hl7.org/fhir/sid/us-ssn"
+            {{else if (eq code '2.16.840.1.113883.4.6')}}
+                "http://hl7.org/fhir/sid/us-npi"
+            {{else if (eq code '2.16.840.1.113883.4.572')}}
+                "http://hl7.org/fhir/sid/us-medicare"  
+            {{else if (eq code '2.16.840.1.113883.4.927')}}
+                "http://hl7.org/fhir/sid/us-mbi"  
+            {{else if (eq code '2.16.840.1.113883.12.292')}}
+                "http://hl7.org/fhir/sid/cvx"
+            {{else if (eq code '2.16.840.1.113883.6.59')}}
+                "http://hl7.org/fhir/sid/cvx"
+            {{else if (eq code '2.16.840.1.113883.6.59')}}
+                "http://terminology.hl7.org/2.1.0/CodeSystem-CVX"
+            {{else if (eq code '2.16.840.1.113883.6.101')}}
+                "http://nucc.org/provider-taxonomy"
+            {{else if (eq code '2.16.840.1.113883.2.20.5.1')}}
+                "http://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD"
+            {{else if (eq code '2.16.840.1.113883.6.8')}}
+                "http://unitsofmeasure.org"
+            {{else if (eq code '2.16.840.1.113883.6.12')}}
+                "http://www.ama-assn.org/go/cpt"
+            {{else if (eq code '2.16.840.1.113883.6.345')}}
+                "http://va.gov/terminology/medrt"
+            {{else if (eq code '2.16.840.1.113883.6.209')}}
+                "http://hl7.org/fhir/ndfrt"
+            {{else if (eq code '2.16.840.1.113883.4.9')}}
+                "http://fdasis.nlm.nih.gov"
+            {{else if (eq code '2.16.840.1.113883.6.24')}}
+                "urn:iso:std:iso:11073:10101"
+            {{else if (eq code '2.16.840.1.113883.6.103')}}
+                "http://terminology.hl7.org/CodeSystem/ICD-9CM-diagnosiscodes"
+            {{else if (eq code '2.16.840.1.113883.6.104')}}
+                "http://terminology.hl7.org/CodeSystem/ICD-9CM-procedurecodes"
+            {{else if (eq code '2.16.840.1.113883.6.90')}}
+                "http://hl7.org/fhir/sid/icd-10-cm"
+            {{else if (eq code '2.16.840.1.113883.6.4')}}
+                "http://www.cms.gov/Medicare/Coding/ICD10"
+            {{else if (eq code '2.16.840.1.113883.6.238')}}
+                "http://terminology.hl7.org/CodeSystem-CDCREC.html"
+            {{else if (eq code '2.16.840.1.113883.6.208')}}
+                "http://terminology.hl7.org/CodeSystem/nddf"
+            {{else if (eq code '2.16.840.1.113883.5.4')}}
+                "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+            {{else if (eq code '2.16.840.1.113883.3.26.1.1')}}
+                "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
+            {{else if (eq code '2.16.840.1.113883.5.1')}}
+                "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender"
+            {{else if (eq code '2.16.840.1.113883.1.11.19563')}}
+                "http://terminology.hl7.org/ValueSet/v3-PersonalRelationshipRoleType"
+            {{else if (eq code '2.16.840.1.113883.5.111')}}
+                "http://terminology.hl7.org/CodeSystem/v3-RoleCode"Lets 
+            {{else if (eq (length (match code '[0123456789.]+')) 1)}}
+                "urn:oid:{{code}}"
+            {{else}}
+                "http://terminology.hl7.org/CodeSystem/{{replace code ' ' ''}}"
+            {{/if}}
+    },
 {{/if}}

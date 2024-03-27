@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Dec 20 2023</description>
-  <revision>111</revision>
+  <revision>483</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -16,10 +16,10 @@ Last updated: Dec 20 2023</description>
       <pluginProperties/>
       <sourceConnectorProperties version="4.4.2">
         <responseVariable>Auto-generate (Before processing)</responseVariable>
-        <respondAfterProcessing>true</respondAfterProcessing>
+        <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
-        <processingThreads>20</processingThreads>
+        <processingThreads>300</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
             <string>Default Resource</string>
@@ -306,7 +306,7 @@ Last updated: Dec 20 2023</description>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
             <name>Case 3: Multiple matches need refinement</name>
             <sequenceNumber>3</sequenceNumber>
-            <enabled>true</enabled>
+            <enabled>false</enabled>
             <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-3-Case 3: Multiple matches need refinement.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
           <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
@@ -320,6 +320,12 @@ Last updated: Dec 20 2023</description>
             <sequenceNumber>5</sequenceNumber>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-5-Case 5: Application Error.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>catch-all</name>
+            <sequenceNumber>6</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCPD Endpoint-responseTransformer-step-6-catch-all.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
@@ -432,8 +438,8 @@ Last updated: Dec 20 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1704995347958</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1711067310708</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -443,8 +449,12 @@ Last updated: Dec 20 2023</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>c240418b-26ef-4836-a857-01c74fb07963</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>6cdb6776-3488-47c6-8c90-2015ea051f93</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

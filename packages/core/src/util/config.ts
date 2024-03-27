@@ -50,7 +50,6 @@ export class Config {
   static getSearchIndexName(): string {
     return getEnvVarOrFail("SEARCH_INDEX");
   }
-
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
@@ -58,6 +57,7 @@ export class Config {
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");
   }
+
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }

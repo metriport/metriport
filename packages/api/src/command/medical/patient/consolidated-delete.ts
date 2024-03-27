@@ -1,6 +1,6 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
+import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { FhirClient } from "@metriport/core/external/fhir/api/api";
 import { logDuration } from "@metriport/shared/common/duration";
 import dayjs from "dayjs";
@@ -64,7 +64,7 @@ async function getResourcesToDelete(
     const resource = r.resource;
     if (!resource) return false;
     // TODO make this dynamic, get a list of resources to exclude
-    return resource.resourceType !== "DocumentReference";
+    return resource.resourceType !== "DocumentReference" && resource.resourceType !== "Patient";
   });
   return resourcesToDelete;
 }

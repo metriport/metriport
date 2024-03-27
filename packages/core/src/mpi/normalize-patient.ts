@@ -104,3 +104,14 @@ export function splitName(name: string): string[] {
   // splits by comma delimiter and filters out empty strings
   return name.split(/[\s,]+/).filter(str => str);
 }
+
+export function normalizeGender(gender: string | undefined): "M" | "F" | undefined {
+  if (!gender) return;
+  const lowerGender = gender.toLowerCase().trim();
+  if (lowerGender === "male" || lowerGender === "m") {
+    return "M";
+  } else if (lowerGender === "female" || lowerGender === "f") {
+    return "F";
+  }
+  return;
+}

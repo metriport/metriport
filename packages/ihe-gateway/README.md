@@ -9,12 +9,16 @@ It's based on Mirth Connect: https://github.com/nextgenhealthcare/connect
 
 ### Requirements
 
-Initialize the `.env` file accordingly, can use the `.env.example` as reference, or the one on the password
-manager for quick setup:
+Initialize the `.env` file accordingly, can use the `.env.example` as reference, or the one on the
+password manager for quick setup if avaliable:
 
 ```shell
 $ touch .env
 ```
+
+Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
+backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
+information (e.g., SSL Manager certs/Java keystore private key).
 
 ### Initialization
 
@@ -24,11 +28,17 @@ Initialize the repository with the command below; it will download required file
 $ ./scripts/init.sh
 ```
 
+To initialize to a specific environment, set the environment variable `ENV_TYPE`:
+
+```shell
+$ ENV_TYPE=production ./scripts/init.sh
+```
+
 To build the server container for the first time, run the command below, which will spin up the
 IHE GW as well as a Postgres instance:
 
 ```shell
-$ docker-compose -f docker-compose.yml up --build
+$ ./scripts/run-docker.sh --build
 ```
 
 ### Custom Extensions
@@ -48,19 +58,26 @@ $ echo "LICENSE_KEY=<YOUR-LICENSE-KEY>" >> .env
 
 ### Launch
 
-In subsequent runs, you can use docker-compose start - or just run it from Docker Desktop:
+In subsequent runs, you can use the script below - or just run it from Docker Desktop:
 
 ```shell
-$ docker-compose start
+$ ./scripts/run-docker.sh
+```
+
+### Administrator
+
+To open Administrator windows connected to each task on the cloud, run one of the commands below,
+depending to which type of instance you want to connect to:
+
+```shell
+$ npm run admin -- outbound
+$ npm run admin -- inbound
+$ npm run admin -- all
 ```
 
 ### Development
 
 Make sure to have the `.env` file initialized. See `.env.example` for more details.
-
-Note: `IHE_GW_FULL_BACKUP_LOCATION` should point to the folder where you want to store the full
-backup of the IHE Gateway. It's advised to store it on a different place as it contains sensitive
-information (SSL/Java keystore certificates).
 
 :warning: The commands below will overwrite the destination (either local config files or server
 configs).
@@ -76,3 +93,45 @@ To push configs and backup to the server (after you pulled from Git remote, for 
 ```shell
 $ ./scripts/push-to-server.sh
 ```
+
+Configs are stored in the Docker image.
+
+#### Build-time
+
+When we're building the container image, we need the env vars and scripts below.
+
+Notable env vars:
+
+- IHE_GW_KEYSTORE_STOREPASS
+- IHE_GW_KEYSTORE_KEYPASS
+- IHE_GW_FULL_BACKUP_LOCATION
+
+Scripts:
+
+- init.sh
+- load-env.sh (needed local, runs on all envs)
+- build-docker-dependencies.sh
+- deploy-ihe-gw.sh
+- run-docker.sh
+
+#### Runtime
+
+When we're running the container, we need the env vars and scripts below.
+
+This happens local when we call `run-docker.sh` or in the cloud when ECS spins up a new
+service task.
+
+Notable env vars:
+
+- ADMIN_USER
+- ADMIN_PASSWORD
+- IHE_GW_URL (only for push-to-server and pull-from-server)
+- IHE_GW_FULL_BACKUP_LOCATION (only for pull-from-server)
+
+Scripts:
+
+- entrypoint.sh
+- load-env.sh
+- push-to-server.sh
+- pull-from-server.sh (local only)
+- run-docker.sh (local only)

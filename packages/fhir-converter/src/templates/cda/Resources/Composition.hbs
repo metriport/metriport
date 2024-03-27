@@ -45,7 +45,7 @@
         ],
 		"section": 
         [               
-            {{#each composition.component.structuredBody.component}}
+            {{#each (toArray composition.component.structuredBody.component)}}
                	{
                     {{#if this.section.title._}}
                 	    "title":"{{this.section.title._}}",

@@ -5,17 +5,23 @@ import { EnvConfig } from "../../config/env-config";
 
 export type Secrets = { [key: string]: secret.ISecret };
 
-export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
+export function buildSecrets(scope: Construct, secretNames: Record<string, string>): Secrets {
   const secrets: Secrets = {};
-  const buildSecrets = (secretNames: Record<string, string>) => {
-    for (const [envVarName, secretName] of Object.entries(secretNames)) {
-      secrets[envVarName] = secret.Secret.fromSecretNameV2(scope, secretName, secretName);
-    }
+  for (const [envVarName, secretName] of Object.entries(secretNames)) {
+    secrets[envVarName] = secret.Secret.fromSecretNameV2(scope, secretName, secretName);
+  }
+  return secrets;
+}
+
+export function getSecrets(scope: Construct, config: EnvConfig): Secrets {
+  const secrets: Secrets = {
+    ...buildSecrets(scope, config.providerSecretNames),
+    ...buildSecrets(scope, config.cwSecretNames),
+    ...(config.carequality?.secretNames
+      ? buildSecrets(scope, config.carequality.secretNames)
+      : undefined),
+    ...(config.analyticsSecretNames ? buildSecrets(scope, config.analyticsSecretNames) : undefined),
   };
-  buildSecrets(config.providerSecretNames);
-  buildSecrets(config.cwSecretNames);
-  if (config.carequality?.secretNames) buildSecrets(config.carequality.secretNames);
-  if (config.analyticsSecretNames) buildSecrets(config.analyticsSecretNames);
   return secrets;
 }
 

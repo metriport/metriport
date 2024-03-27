@@ -24,7 +24,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 44,
+            "y": 130,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -45,7 +45,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 2,
+            "y": 20,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -82,24 +82,28 @@
         {
             "height": 9,
             "width": 12,
-            "y": 90,
+            "y": 149,
             "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/Lambda", "Invocations", "FunctionName", "APIInfrastructureStack-APITokenAuthLambda2F3DC998-8UqgKO1hLbtG", { "region": "us-west-1" } ],
-                    [ "...", "APIInfrastructureStack-GarminLambdaE59D4606-MiXMSUbnTYD0", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceGenerateKey027-72wibfRkEAM5", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServicePostConfirmati-XyBrFGVbmoZY", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceRevokeKey01E87-wvDLydkcQ1o7", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceStripeLambdaA5-H3GLBntxQ3oT", { "region": "us-west-1" } ],
-                    [ "...", "us-east-1.edge-lambda-stack-c838c75-WebsiteCloudfrontRedirec-CiksWdG1H4B6", { "region": "us-west-1" } ],
-                    [ "...", "FHIRConverter_Retry_Lambda", { "region": "us-west-1" } ],
-                    [ "...", "FHIRConverterLambda", { "region": "us-west-1", "color": "#17becf" } ],
-                    [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
-                    [ "...", "SqsToHttpLambda", { "region": "us-west-1" } ],
-                    [ "...", "StagingAPIInfrastructureSta-WithingsLambda05A37121-Q6Zwi3XUFilj", { "region": "us-west-1", "label": "WithingsLambda" } ],
-                    [ "...", "FHIRServer_Retry_Lambda", { "region": "us-west-1" } ]
+                    [ "AWS/Lambda", "Invocations", "FunctionName", "APIServiceGenerateKeyLambda" ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda" ],
+                    [ "...", "APIServiceRevokeKeyLambda" ],
+                    [ "...", "APIServiceStripeLambdaLambda" ],
+                    [ "...", "CCDAOpenSearchLambda" ],
+                    [ "...", "CdaToVisualizationLambda" ],
+                    [ "...", "CommonWellDocContributionLambda" ],
+                    [ "...", "CWEnhancedCoverageTriggerLambda" ],
+                    [ "...", "DocumentDownloaderLambda" ],
+                    [ "...", "DocumentUploaderLambda" ],
+                    [ "...", "FHIRConverterLambda" ],
+                    [ "...", "FHIRServerLambda" ],
+                    [ "...", "FhirToMedicalRecordLambda" ],
+                    [ "...", "ScheduledAPIQuotaCheckerLambda" ],
+                    [ "...", "ScheduledDBMaintenanceLambda" ],
+                    [ "...", "ScheduledDocumentQueryCheckerLambda" ],
+                    [ "...", "TokenAuthLambda" ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -112,18 +116,28 @@
         {
             "height": 9,
             "width": 12,
-            "y": 99,
+            "y": 158,
             "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/Lambda", "Errors", "FunctionName", "APIInfrastructureStack-APITokenAuthLambda2F3DC998-8UqgKO1hLbtG", { "region": "us-west-1" } ],
-                    [ "...", "APIInfrastructureStack-GarminLambdaE59D4606-MiXMSUbnTYD0", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceGenerateKey027-72wibfRkEAM5", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServicePostConfirmati-XyBrFGVbmoZY", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceRevokeKey01E87-wvDLydkcQ1o7", { "region": "us-west-1" } ],
-                    [ "...", "APIServiceInfrastructureS-APIServiceStripeLambdaA5-H3GLBntxQ3oT", { "region": "us-west-1" } ],
-                    [ "...", "us-east-1.edge-lambda-stack-c838c75-WebsiteCloudfrontRedirec-CiksWdG1H4B6", { "region": "us-west-1" } ]
+                    [ "AWS/Lambda", "Errors", "FunctionName", "APIServiceGenerateKeyLambda" ],
+                    [ "...", "APIServicePostConfirmationLambdaLambda" ],
+                    [ "...", "APIServiceRevokeKeyLambda" ],
+                    [ "...", "APIServiceStripeLambdaLambda" ],
+                    [ "...", "CCDAOpenSearchLambda" ],
+                    [ "...", "CdaToVisualizationLambda" ],
+                    [ "...", "CommonWellDocContributionLambda" ],
+                    [ "...", "CWEnhancedCoverageTriggerLambda" ],
+                    [ "...", "DocumentDownloaderLambda" ],
+                    [ "...", "DocumentUploaderLambda" ],
+                    [ "...", "FHIRConverterLambda" ],
+                    [ "...", "FHIRServerLambda" ],
+                    [ "...", "FhirToMedicalRecordLambda" ],
+                    [ "...", "ScheduledAPIQuotaCheckerLambda" ],
+                    [ "...", "ScheduledDBMaintenanceLambda" ],
+                    [ "...", "ScheduledDocumentQueryCheckerLambda" ],
+                    [ "...", "TokenAuthLambda" ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -136,28 +150,27 @@
         {
             "height": 9,
             "width": 12,
-            "y": 117,
+            "y": 167,
             "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
                     [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
-                    [ ".", "4XXError", ".", ".", { "region": "us-west-1" } ],
-                    [ ".", "Latency", ".", ".", { "yAxis": "right", "stat": "p99", "region": "us-west-1" } ],
-                    [ ".", "5XXError", ".", ".", { "region": "us-west-1" } ]
+                    [ ".", "4XXError", ".", ".", { "region": "us-west-1", "yAxis": "right" } ],
+                    [ ".", "5XXError", ".", ".", { "region": "us-west-1", "yAxis": "right", "color": "#d62728" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "stat": "Sum",
-                "period": 60,
-                "title": "ApiGateway"
+                "period": 300,
+                "title": "API Gateway - Requests vs. Responses"
             }
         },
         {
             "height": 8,
             "width": 10,
-            "y": 54,
+            "y": 76,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -176,30 +189,9 @@
             }
         },
         {
-            "height": 9,
-            "width": 12,
-            "y": 116,
-            "x": 12,
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "WebAppServer-WebAppServerFargateServiceEBC36E8A-5wO4VxJYWsBx", "ClusterName", "WebAppServer-WebAppServerCluster9547155F-hAhF0guofID5", { "color": "#1f77b4", "region": "us-west-1" } ],
-                    [ "...", { "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
-                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "yAxis": "right", "color": "#2ca02c", "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Average", "region": "us-west-1", "color": "#98df8a" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-west-1",
-                "title": "WebAppServer",
-                "period": 300,
-                "stat": "Maximum"
-            }
-        },
-        {
             "height": 8,
             "width": 10,
-            "y": 44,
+            "y": 130,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -224,25 +216,25 @@
             "x": 0,
             "type": "text",
             "properties": {
-                "markdown": "# OSS\n",
+                "markdown": "# OSS API\n",
                 "background": "solid"
             }
         },
         {
             "height": 2,
             "width": 24,
-            "y": 42,
+            "y": 110,
             "x": 0,
             "type": "text",
             "properties": {
-                "markdown": "# Internal/Admin\n",
+                "markdown": "# OpenSearch\n",
                 "background": "solid"
             }
         },
         {
             "height": 2,
             "width": 24,
-            "y": 52,
+            "y": 74,
             "x": 0,
             "type": "text",
             "properties": {
@@ -253,7 +245,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 54,
+            "y": 84,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -274,7 +266,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 88,
+            "y": 138,
             "x": 0,
             "type": "text",
             "properties": {
@@ -285,7 +277,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 10,
+            "y": 28,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -306,7 +298,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 10,
+            "y": 20,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -347,7 +339,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 78,
+            "y": 100,
             "x": 0,
             "type": "text",
             "properties": {
@@ -358,7 +350,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 80,
+            "y": 102,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -379,7 +371,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 62,
+            "y": 84,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -397,9 +389,13 @@
                 "annotations": {
                     "horizontal": [
                         {
-                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5 minutes",
-                            "value": 300000,
+                            "label": "VolumeWriteIOPs >= 300_000 for 1 datapoints within 5min",
+                            "value": 800000,
                             "yAxis": "right"
+                        },
+                        {
+                            "label": "VolumeReadIOPs >= 1_000_000 for 1 datapoints within 5min",
+                            "value": 1000000
                         }
                     ]
                 }
@@ -408,7 +404,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 70,
+            "y": 92,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -429,7 +425,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 80,
+            "y": 92,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -447,7 +443,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 54,
+            "y": 76,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -465,7 +461,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 44,
+            "y": 130,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -501,31 +497,12 @@
         {
             "height": 8,
             "width": 4,
-            "y": 62,
+            "y": 84,
             "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
                     [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "fhir-server", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
-                ],
-                "view": "timeSeries",
-                "stacked": false,
-                "region": "us-west-1",
-                "stat": "Average",
-                "period": 300,
-                "title": "DB - ACU Utilization",
-                "liveData": false
-            }
-        },
-        {
-            "height": 8,
-            "width": 4,
-            "y": 10,
-            "x": 0,
-            "type": "metric",
-            "properties": {
-                "metrics": [
-                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -546,8 +523,35 @@
         },
         {
             "height": 8,
+            "width": 4,
+            "y": 20,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "api-cluster", { "yAxis": "left", "region": "us-west-1", "color": "#d62728" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "API DB - ACU Utilization",
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACU Utilization >= 80%",
+                            "value": 80
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 8,
             "width": 10,
-            "y": 80,
+            "y": 102,
             "x": 14,
             "type": "log",
             "properties": {
@@ -561,7 +565,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 62,
+            "y": 76,
             "x": 14,
             "type": "log",
             "properties": {
@@ -575,7 +579,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 98,
+            "y": 140,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -583,9 +587,7 @@
                     [ "AWS/SQS", "NumberOfMessagesReceived", "QueueName", "FHIRConverterQueue", { "region": "us-west-1" } ],
                     [ "...", "FHIRServerDLQ", { "yAxis": "right", "region": "us-west-1" } ],
                     [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
-                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ],
-                    [ "...", "SidechainFHIRConverterQueue" ],
-                    [ "...", "SidechainFHIRConverterDLQ", { "yAxis": "right" } ]
+                    [ "...", "FHIRConverterDLQ", { "yAxis": "right", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -598,7 +600,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 107,
+            "y": 158,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -623,37 +625,27 @@
         {
             "height": 9,
             "width": 12,
-            "y": 108,
-            "x": 0,
+            "y": 149,
+            "x": 12,
             "type": "metric",
             "properties": {
                 "metrics": [
                     [ "AWS/Lambda", "Duration", "FunctionName", "APIServiceGenerateKeyLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "APIServicePostConfirmationLambdaLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "APIServiceRevokeKeyLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "APIServiceStripeLambdaLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "CdaToVisualizationLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "FHIRConverterLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "FHIRServerLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                    [ "...", "FitbitAuthLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                    [ "...", "GarminLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                    [ "...", "ScheduledDocumentQueryCheckerLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                    [ "...", "SidechainFHIRConverterLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ],
                     [ "...", "TokenAuthLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ],
-                    [ "...", "WithingsLambda", { "region": "us-west-1" } ],
-                    [ "...", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1" } ]
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "stat": "Maximum" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -676,7 +668,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 70,
+            "y": 92,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -693,29 +685,29 @@
             }
         },
         {
-            "height": 9,
-            "width": 12,
-            "y": 125,
-            "x": 12,
+            "height": 8,
+            "width": 10,
+            "y": 10,
+            "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "Metriport", "API Success", { "label": "2xx" } ],
-                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx" } ]
+                    [ "Metriport", "API Success", { "label": "2xx", "region": "us-west-1" } ],
+                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "stat": "Sum",
                 "period": 300,
-                "title": "API Responses"
+                "title": "API Responses (API GW at the bottom)"
             }
         },
         {
             "height": 8,
             "width": 10,
-            "y": 18,
-            "x": 5,
+            "y": 28,
+            "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -731,10 +723,10 @@
             }
         },
         {
-            "height": 8,
+            "height": 9,
             "width": 12,
-            "y": 90,
-            "x": 12,
+            "y": 140,
+            "x": 0,
             "type": "metric",
             "properties": {
                 "metrics": [
@@ -743,9 +735,7 @@
                     [ "...", "FHIRConverterDLQ", { "region": "us-west-1" } ],
                     [ "...", "FHIRConverterQueue", { "region": "us-west-1" } ],
                     [ "...", "FHIRServerDLQ", { "region": "us-west-1" } ],
-                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ],
-                    [ "...", "SidechainFHIRConverterDLQ", { "region": "us-west-1" } ],
-                    [ "...", "SidechainFHIRConverterQueue", { "region": "us-west-1" } ]
+                    [ "...", "FHIRServerQueue", { "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -758,7 +748,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 34,
+            "y": 120,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -779,7 +769,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 26,
+            "y": 112,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -799,7 +789,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 26,
+            "y": 112,
             "x": 7,
             "type": "metric",
             "properties": {
@@ -819,7 +809,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 34,
+            "y": 120,
             "x": 7,
             "type": "metric",
             "properties": {
@@ -841,7 +831,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 26,
+            "y": 112,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -858,6 +848,297 @@
                 "period": 60,
                 "title": "OpenSearch - Searches",
                 "liveData": false
+            }
+        },
+        {
+            "height": 8,
+            "width": 10,
+            "y": 2,
+            "x": 14,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/APIInfrastructureStack-APICluster381F6E68-v0y03IsPXhdE/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
+                "region": "us-west-1",
+                "title": "API Server - Memory by TaskId",
+                "view": "table"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 167,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ApiGateway", "Count", "ApiName", "api", { "stat": "SampleCount", "region": "us-west-1" } ],
+                    [ ".", "Latency", ".", ".", { "yAxis": "right", "region": "us-west-1", "label": "Latency - Avg", "stat": "Average" } ],
+                    [ "...", { "yAxis": "right", "region": "us-west-1", "color": "#2ca02c", "label": "Latency - P99" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "p99",
+                "period": 300,
+                "title": "API Gateway Requests vs. Latency"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 128,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# Internal/Admin\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 18,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# OSS DB\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 52,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW Outbound"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 54,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
+                    [ "...", { "label": "CPUUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "yAxis": "right", "region": "us-west-1" } ],
+                    [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "yAxis": "right", "region": "us-west-1", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "CPUUtilization, MemoryUtilization"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 54,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayOutboundFargateService64CBCB18-OCyZXHesF0c8", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task Count" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "period": 60,
+                "stat": "SampleCount",
+                "title": "Task Count"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 63,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW Inbound"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 65,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "label": "CPUUtilization Maximum", "region": "us-west-1" } ],
+                    [ "...", { "stat": "Average", "label": "CPUUtilization Avg", "region": "us-west-1", "color": "#aec7e8" } ],
+                    [ ".", "MemoryUtilization", ".", ".", ".", ".", { "label": "MemoryUtilization Maximum", "region": "us-west-1", "yAxis": "right" } ],
+                    [ "...", { "label": "MemoryUtilization Avg", "stat": "Average", "region": "us-west-1", "color": "#98df8a", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Maximum",
+                "period": 300,
+                "title": "CPUUtilization, MemoryUtilization"
+            }
+        },
+        {
+            "height": 9,
+            "width": 12,
+            "y": 65,
+            "x": 12,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/ECS", "CPUUtilization", "ServiceName", "IHEStack-IHEGatewayInboundFargateService4393BE41-f5Zwiiul8LIo", "ClusterName", "IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ", { "region": "us-west-1", "label": "Task count" } ]
+                ],
+                "sparkline": true,
+                "view": "timeSeries",
+                "region": "us-west-1",
+                "period": 60,
+                "stat": "SampleCount",
+                "stacked": false,
+                "title": "Task Count"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 0,
+            "type": "log",
+            "properties": {
+                "query": "SOURCE '/aws/ecs/containerinsights/IHEStack-IHEGatewayClusterA7D9B464-kDzPwrYyASiJ/performance' | stats avg(MemoryUtilized) by bin (1m) as period, TaskId\n| filter Type = \"Task\" | sort period desc, TaskId |  limit 10",
+                "region": "us-west-1",
+                "stacked": false,
+                "title": "IHE GW Cluster - Memory by TaskId",
+                "view": "table"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 36,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# IHE GW"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 8,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ACUUtilization", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1", "color": "#d62728" } ]
+                ],
+                "title": "IHE GW DB - ACU Utilization",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "ACUUtilization >= 80 for 1 datapoints within 5 minutes",
+                            "value": 80
+                        }
+                    ]
+                },
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "region": "us-west-1"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 16,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "VolumeReadIOPs", "DBClusterIdentifier", "ihe-db", { "stat": "Average", "region": "us-west-1" } ],
+                    [ ".", "VolumeWriteIOPs", ".", ".", { "stat": "Average", "region": "us-west-1", "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "period": 300,
+                "region": "us-west-1",
+                "title": "IHE GW DB - IOPS",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "label": "VolumeReadIOPs >= 1,800,000 for 1 dpts / 5 minutes",
+                            "value": 1800000
+                        },
+                        {
+                            "label": "VolumeWriteIOPs >= 1,800,000 for 1 dpts / 5 minutes",
+                            "value": 1800000,
+                            "yAxis": "right"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 38,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "CPUUtilization", "DBClusterIdentifier", "ihe-db", { "region": "us-west-1", "label": "CPUUtilization Maximum", "stat": "Maximum" } ],
+                    [ "...", { "region": "us-west-1", "label": "CPUUtilization Avg", "color": "#aec7e8" } ],
+                    [ ".", "FreeableMemory", ".", ".", { "region": "us-west-1", "label": "FreeableMemory Maximum", "stat": "Maximum", "yAxis": "right" } ],
+                    [ "...", { "region": "us-west-1", "label": "FreeableMemory Avg", "yAxis": "right", "color": "#98df8a" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "period": 300,
+                "stat": "Average",
+                "title": "IHE GW DB - CPU/Mem"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 8,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "ihe-db", { "yAxis": "left" } ],
+                    [ ".", "CommitLatency", ".", ".", { "yAxis": "right" } ],
+                    [ ".", "WriteLatency", ".", ".", { "yAxis": "right" } ]
+                ],
+                "view": "timeSeries",
+                "stacked": false,
+                "region": "us-west-1",
+                "stat": "Average",
+                "period": 300,
+                "title": "IHE GW DB - Latency"
+            }
+        },
+        {
+            "height": 7,
+            "width": 8,
+            "y": 45,
+            "x": 16,
+            "type": "metric",
+            "properties": {
+                "view": "timeSeries",
+                "stacked": false,
+                "metrics": [
+                    [ "AWS/RDS", "DatabaseConnections", "DBClusterIdentifier", "ihe-db", { "period": 60 } ]
+                ],
+                "region": "us-west-1",
+                "title": "IHE GW DB -Connections"
             }
         }
     ]

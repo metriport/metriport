@@ -1,0 +1,23 @@
+{
+  "total": 194971,
+  "resources": {
+    "AllergyIntolerance": 736,
+    "Communication": 789,
+    "Composition": 9404,
+    "Condition": 13410,
+    "Consent": 44,
+    "Coverage": 558,
+    "Device": 3830,
+    "DiagnosticReport": 25020,
+    "Encounter": 19159,
+    "FamilyMemberHistory": 725,
+    "Goal": 45,
+    "Immunization": 2123,
+    "MedicationAdministration": 2687,
+    "MedicationRequest": 5628,
+    "MedicationStatement": 7095,
+    "Observation": 94614,
+    "Procedure": 8915,
+    "RelatedPerson": 271
+  }
+}

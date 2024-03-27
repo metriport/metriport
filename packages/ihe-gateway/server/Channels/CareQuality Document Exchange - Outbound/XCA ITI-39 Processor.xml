@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Jan 12 2024</description>
-  <revision>58</revision>
+  <revision>527</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -19,7 +19,7 @@ Last updated: Jan 12 2024</description>
         <respondAfterProcessing>false</respondAfterProcessing>
         <processBatch>false</processBatch>
         <firstResponse>false</firstResponse>
-        <processingThreads>10</processingThreads>
+        <processingThreads>300</processingThreads>
         <resourceIds class="linked-hash-map">
           <entry>
             <string>Default Resource</string>
@@ -130,7 +130,7 @@ Last updated: Jan 12 2024</description>
         <port>{urn:ihe:iti:xds-b:2007}RespondingGateway_Retrieve_Port_Soap</port>
         <operation>RespondingGateway_CrossGatewayRetrieve</operation>
         <locationURI>${URL}</locationURI>
-        <socketTimeout>30000</socketTimeout>
+        <socketTimeout>60000</socketTimeout>
         <useAuthentication>false</useAuthentication>
         <username/>
         <password/>
@@ -298,6 +298,12 @@ Last updated: Jan 12 2024</description>
             <enabled>true</enabled>
             <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-2-Case 2 - Failure.js"/>
           </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
+          <com.mirth.connect.plugins.javascriptstep.JavaScriptStep version="4.4.2">
+            <name>catch-all</name>
+            <sequenceNumber>3</sequenceNumber>
+            <enabled>true</enabled>
+            <script msync-fileref="destinationConnector-XCA Endpoint-responseTransformer-step-3-catch-all.js"/>
+          </com.mirth.connect.plugins.javascriptstep.JavaScriptStep>
         </elements>
         <inboundTemplate encoding="base64"/>
         <outboundTemplate encoding="base64"/>
@@ -409,8 +415,8 @@ Last updated: Jan 12 2024</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1705084343958</time>
-        <timezone>America/Los_Angeles</timezone>
+        <time>1711067296801</time>
+        <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
         <pruneMetaDataDays>5</pruneMetaDataDays>
@@ -420,8 +426,12 @@ Last updated: Jan 12 2024</description>
       </pruningSettings>
       <userId>1</userId>
     </metadata>
-    <dependentIds/>
-    <dependencyIds/>
+    <dependentIds>
+      <string>cbd49d4a-24fa-40b6-aa12-d59d64168dd1</string>
+    </dependentIds>
+    <dependencyIds>
+      <string>8240f77a-19d4-4225-90fc-ed1c232286c3</string>
+    </dependencyIds>
     <channelTags/>
   </exportData>
 </channel>

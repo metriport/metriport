@@ -1,7 +1,13 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { capitalize, groupBy } from "lodash";
+import { Extras } from "@sentry/types";
+import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 
 const timeoutCodes = ["UND_ERR_CONNECT_TIMEOUT", "UND_ERR_HEADERS_TIMEOUT"];
+
+// HAPI specific regex
+const conversionRegex = /(element=[\\"]+(\w+)[\\"].+)?Unknown (\w+) code '(\w+)'/;
 
 export type FhirErrorMapping = {
   resourceType: string;
@@ -29,12 +35,12 @@ export function tryDetermineFhirError(error: unknown): FhirError {
         .flatMap(e => (e.type === `mapping` && e.errors ? e.errors : [])),
     };
   }
+  const unknown = { type: "unknown" } as const;
   const errorString = String(error);
-  // HAPI specific regex
-  const conversionRegex = /(element=[\\"]+(\w+)[\\"].+)?Unknown (\w+) code '(\w+)'/;
   const matchedConversionErrors = errorString.match(conversionRegex);
   if (matchedConversionErrors) {
     const [, , element, resourceType, code] = matchedConversionErrors;
+    if (!resourceType || !code) return unknown;
     const resourceTypeParsed = element
       ? resourceType.replace(capitalize(element), "")
       : resourceType;
@@ -53,11 +59,52 @@ export function tryDetermineFhirError(error: unknown): FhirError {
   if (timeoutCodes.some(c => errorString.includes(c))) {
     return { type: "timeout" };
   }
-  return { type: "unknown" };
+  return unknown;
 }
 
 export function groupFHIRErrors(errors: FhirErrorMapping[]): FhirErrorGroup {
   const getKey = (mapping: FhirErrorMapping): string =>
     mapping.resourceType + (mapping.element ? `.${mapping.element}` : ``);
   return groupBy(errors, getKey);
+}
+
+export function reportFHIRError({
+  docId,
+  error,
+  context,
+  log,
+  extra,
+}: {
+  docId: string;
+  error: unknown;
+  context: string;
+  log: ReturnType<typeof out>["log"];
+  extra: Extras;
+}) {
+  const errorTitle = `FHIR ${context}`;
+
+  const mappingError = tryDetermineFhirError(error);
+  if (mappingError.type === "mapping") {
+    const mappedErrors = mappingError.errors;
+    const groupedErrors = groupFHIRErrors(mappedErrors);
+    for (const [group, errors] of Object.entries(groupedErrors)) {
+      const msg = `${errorTitle} - ${group}`;
+      log(`${msg} (docId ${docId}): ${msg}, errors: `, errors);
+      capture.error(msg, {
+        extra: {
+          ...extra,
+          errors,
+        },
+      });
+    }
+  } else {
+    const msg = `FHIR error`;
+    log(`${errorTitle} (docId ${docId}): ${error}`);
+    capture.error(msg, {
+      extra: {
+        ...extra,
+        error,
+      },
+    });
+  }
 }

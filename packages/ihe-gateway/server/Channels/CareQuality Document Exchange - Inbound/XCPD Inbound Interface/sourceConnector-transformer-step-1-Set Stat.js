@@ -9,4 +9,5 @@ try {
 
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD Inbound Interface: SAML Processing - ' + ex);
+	throw ex;
 }

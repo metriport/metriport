@@ -1,18 +1,25 @@
 #!/bin/bash
 set -e
 
+echo "Starting the entrypoint.sh script..."
+
 custom_extension_count=`ls -1 /opt/connect/custom-extensions/*.zip 2>/dev/null | wc -l`
 if [ $custom_extension_count != 0 ]; then
 	echo "Found ${custom_extension_count} custom extensions."
 	for extension in $(ls -1 /opt/connect/custom-extensions/*.zip); do
 		unzip -o -q $extension -d /opt/connect/extensions
 	done
+else
+	echo "WARNING: No custom extensions found."
 fi
 
 # set storepass and keypass to 'changeme' so they aren't overwritten later
 KEYSTORE_PASS=changeme
 sed -i "s/^keystore\.storepass\s*=\s*.*\$/keystore.storepass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
 sed -i "s/^keystore\.keypass\s*=\s*.*\$/keystore.keypass = ${KEYSTORE_PASS//\//\\/}/" /opt/connect/conf/mirth.properties
+
+# https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_1/page/connect/connect/topics/c_The_mirth_properties_File_connect_ug.html#:~:text=server.api.allowhttp
+echo -e "\nserver.api.allowhttp = true" >> /opt/connect/conf/mirth.properties
 
 # merge the environment variables into /opt/connect/conf/mirth.properties
 # db type
@@ -72,6 +79,8 @@ if ! [ -z "${LICENSE_KEY+x}" ]; then
 	else
 		sed -i "s/^license\.key\s*=\s*.*\$/license.key = ${LICENSE_KEY//\//\\/}/" /opt/connect/conf/mirth.properties
 	fi
+else
+	echo "WARNING: No license key found."
 fi
 
 # session store
@@ -123,12 +132,12 @@ while read -r keyvalue; do
 			# if key does not exist in mirth.properties append it at bottom
 			LINE_COUNT=`grep "^${ACTUAL_KEY}" /opt/connect/conf/mirth.properties | wc -l`
 			if [ $LINE_COUNT -lt 1 ]; then
-				# echo "key ${ACTUAL_KEY} not found in mirth.properties, appending. Value = ${VALUE}"
-				echo -e "\n${ACTUAL_KEY} = ${VALUE//\//\\/}" >> /opt/connect/conf/mirth.properties
+				# echo "... key ${ACTUAL_KEY} not found in mirth.properties, appending. Value = ${VALUE}"
+				echo -e "\n${ACTUAL_KEY} = ${VALUE}" >> /opt/connect/conf/mirth.properties
 			else # otherwise key exists, overwrite it
-				# echo "key ${ACTUAL_KEY} exists, overwriting. Value = ${VALUE}"
+				# echo "... key ${ACTUAL_KEY} exists, overwriting. Value = ${VALUE}"
 				ESCAPED_KEY="${ACTUAL_KEY//./\\.}"
-				sed -i "s/^${ESCAPED_KEY}\s*=\s*.*\$/${ACTUAL_KEY} = ${VALUE//\//\\/}/" /opt/connect/conf/mirth.properties
+				sed -i "s|^${ESCAPED_KEY}\s*=\s*.*\$|${ACTUAL_KEY} = ${VALUE}|" /opt/connect/conf/mirth.properties
 			fi
 		fi
 	fi
@@ -155,6 +164,7 @@ fi
 # merge the user's secret mirth.properties
 # takes a whole mirth.properties file and merges line by line with /opt/connect/conf/mirth.properties
 if [ -f /run/secrets/mirth_properties ]; then
+		echo "Found mirth.properties secret, merging."
 
     # add new line in case /opt/connect/conf/mirth.properties doesn't end with one
     echo "" >> /opt/connect/conf/mirth.properties
@@ -248,5 +258,11 @@ fi
 if ! [ -z "${DELAY+x}" ]; then
 	sleep $DELAY
 fi
+
+# Send configs to server when it is available
+# 1. With 'strict' mode, if it fails to send configs it will kill all Java processes
+IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh include-full-backup strict &
+# 2. Without 'strict' mode, if it fails to send configs it will just leave the script and leave Mirth running
+# IHE_GW_URL=http://127.0.0.1:8080/api ./scripts/push-to-server.sh include-full-backup &
 
 exec "$@"

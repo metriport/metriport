@@ -1,0 +1,72 @@
+name: Reusable Restart API
+
+on:
+  workflow_call:
+    inputs:
+      script_name:
+        description: "the name of the script under the scripts/ folder to run"
+        required: false
+        type: string
+        default: "restart-ecs.sh"
+      ECR_REPO_URI:
+        description: "The URI of the ECR repository to push the Docker image to"
+        required: true
+        type: string
+      ECS_CLUSTER:
+        description: "The ARN of the ECS cluster containing the service to be restarted upon deployment"
+        required: true
+        type: string
+      ECS_SERVICE:
+        description: "The ARN of the ECS service to be restarted upon deployment"
+        required: true
+        type: string
+      AWS_REGION:
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  restart:
+    # prevents 2+ devs/workflows trying to deploy to AWS at the same time
+    # https://serverlessfirst.com/emails/how-to-prevent-concurrent-deployments-of-serverless-stacks-in-github-actions/
+    # TODO Consider the solution here: https://github.com/tj-actions/aws-cdk/blob/main/action.yml
+    concurrency:
+      group: ${{ format('{0}-{1}-{2}', github.job, inputs.script_name, inputs.deploy_env) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log Environment
+        run: |
+          env
+          echo "ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}"
+          echo "ECS_SERVICE: ${{ inputs.ECS_SERVICE }}"
+          echo "AWS_REGION: ${{ inputs.AWS_REGION }}"
+        shell: bash
+
+      - name: Setup AWS CLI
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.AWS_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+        working-directory: "./"
+
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            packages/scripts/${{ inputs.script_name }}
+        
+      - name: Restart
+        run: |
+          ./packages/scripts/${{ inputs.script_name }}
+        env:
+          ECR_REPO_URI: ${{ inputs.ECR_REPO_URI }}
+          ECS_CLUSTER: ${{ inputs.ECS_CLUSTER }}
+          ECS_SERVICE: ${{ inputs.ECS_SERVICE }}
+          AWS_REGION: ${{ inputs.AWS_REGION }}

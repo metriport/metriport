@@ -654,17 +654,6 @@ function buildEncounterSections(
           };
         }
 
-        if (diagnosticReportsType === "documentation") {
-          const documentationDecodedNote = report.presentedForm?.[0]?.data ?? "";
-          const decodeNote = Buffer.from(documentationDecodedNote, "base64").toString("binary");
-          const blackListNote = "Not on file";
-          const noteIsBlacklisted = decodeNote.toLowerCase().includes(blackListNote.toLowerCase());
-
-          if (noteIsBlacklisted) {
-            continue;
-          }
-        }
-
         if (!isReportDuplicate) {
           encounterSections[formattedDate]?.[diagnosticReportsType]?.push(report);
         }
@@ -687,13 +676,6 @@ function buildReports(
       // SORT BY ENCOUNTER DATE DESCENDING
       .sort(([keyA], [keyB]) => {
         return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
-      })
-      .filter(([key]) => {
-        // FILTER FOR ENCOUNTERS IN THE PAST 2 YEARS
-        const encounterDateFormatted = dayjs(key).format(ISO_DATE);
-        const twoYearsAgo = dayjs().subtract(2, "year").format(ISO_DATE);
-
-        return encounterDateFormatted > twoYearsAgo;
       })
       .filter(([key]) => {
         // FILTER FOR ENCOUNTERS WITH AWE DIAGNOSTIC REPORTS
@@ -771,7 +753,7 @@ function createWhatWasDocumentedFromDiagnosticReports(
   const documentations = documentation
     .map(documentation => {
       const note = documentation.presentedForm?.[0]?.data ?? "";
-      const decodeNote = Buffer.from(note, "base64").toString("binary");
+      const decodeNote = Buffer.from(note, "base64").toString("utf-8");
       const cleanNote = decodeNote.replace(new RegExp(REMOVE_FROM_NOTE.join("|"), "g"), "");
 
       const practitionerField = createPractionerField(documentation, mappedPractitioners);
@@ -1009,8 +991,8 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
       const newCondition: RenderCondition = {
         code: codeName,
         name,
-        firstSeen: onsetStartTime ?? onsetDateTime,
-        lastSeen: onsetEndTime ?? onsetDateTime,
+        firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
+        lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
         clinicalStatus,
       };
 
@@ -1154,8 +1136,8 @@ function createAllergySection(allergies: AllergyIntolerance[]) {
         code,
         name,
         manifestation,
-        firstSeen: onsetStartTime ?? onsetDateTime,
-        lastSeen: onsetEndTime ?? onsetDateTime,
+        firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
+        lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
         clinicalStatus,
       };
 
@@ -1466,22 +1448,7 @@ function createObservationVitalsSection(observations: Observation[]) {
 }
 
 function createVitalsByDate(observations: Observation[]): string {
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    acc.push({
-      date: observationDate,
-      observations: [observation],
-    });
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1567,22 +1534,7 @@ function createObservationLaboratorySection(observations: Observation[]) {
 function createObservationsByDate(observations: Observation[]): string {
   const blacklistReferenceRangeText = ["unknown", "not detected"];
 
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    acc.push({
-      date: observationDate,
-      observations: [observation],
-    });
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1670,10 +1622,8 @@ function createOtherObservationsSection(observations: Observation[]) {
     return aDate === bDate && a.code?.text === b.code?.text;
   }).filter(observation => {
     const value = observation.valueQuantity?.value ?? observation.valueString;
-    const notOnFile = "not on file";
-    const valueHasNotOnFile = observation.valueString?.toLowerCase().includes(notOnFile);
 
-    return !!value && !valueHasNotOnFile;
+    return !!value;
   });
 
   const observationTableContents =
@@ -1686,22 +1636,7 @@ function createOtherObservationsSection(observations: Observation[]) {
 }
 
 function createOtherObservationsByDate(observations: Observation[]): string {
-  const filteredObservations = observations.reduce((acc, observation) => {
-    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
-    const existingObservation = acc.find(observation => observation.date === observationDate);
-
-    if (existingObservation) {
-      existingObservation.observations.push(observation);
-      return acc;
-    }
-
-    acc.push({
-      date: observationDate,
-      observations: [observation],
-    });
-
-    return acc;
-  }, [] as { date: string; observations: Observation[] }[]);
+  const filteredObservations = filterObservationsByDate(observations);
 
   return filteredObservations
     .map(tables => {
@@ -1744,6 +1679,37 @@ function createOtherObservationsByDate(observations: Observation[]): string {
       `;
     })
     .join("");
+}
+
+type FilteredObservations = { date: string; observations: Observation[] };
+
+function filterObservationsByDate(observations: Observation[]): FilteredObservations[] {
+  const filteredObservations = observations.reduce((acc, observation) => {
+    const observationDate = formatDateForDisplay(observation.effectiveDateTime);
+    const existingObservation = acc.find(observation => observation.date === observationDate);
+
+    if (!observationDate.length) return acc;
+
+    if (existingObservation) {
+      existingObservation.observations.push(observation);
+      return acc;
+    }
+
+    const observationDisplay = observation.code?.coding?.find(coding => {
+      return coding.display;
+    });
+
+    if (observationDisplay || observation.code?.text) {
+      acc.push({
+        date: observationDate,
+        observations: [observation],
+      });
+    }
+
+    return acc;
+  }, [] as FilteredObservations[]);
+
+  return filteredObservations;
 }
 
 function renderClassDisplay(encounter: Encounter) {
@@ -2107,9 +2073,13 @@ function createCoverageSection(coverages: Coverage[], organizations: Organizatio
   });
 
   const removeDuplicate = uniqWith(coveragesSortedByDate, (a, b) => {
-    const aDate = dayjs(a.period?.start).format(ISO_DATE);
-    const bDate = dayjs(b.period?.start).format(ISO_DATE);
-    return aDate === bDate && a.type?.text === b.type?.text;
+    if (a.period?.start && b.period?.start) {
+      const aDate = dayjs(a.period?.start).format(ISO_DATE);
+      const bDate = dayjs(b.period?.start).format(ISO_DATE);
+      return aDate === bDate && a.type?.text === b.type?.text;
+    } else {
+      return a.relationship?.text === b.relationship?.text;
+    }
   });
 
   const coverageTableContents =

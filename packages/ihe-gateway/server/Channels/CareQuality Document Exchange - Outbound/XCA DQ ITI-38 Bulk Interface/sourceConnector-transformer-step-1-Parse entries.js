@@ -12,7 +12,7 @@ if (json) {
 			
 			if (!entry.hasOwnProperty('gateway')) {
 				errorCount++;
-			} else if (!entry.hasOwnProperty('gatewayPatientId')) {
+			} else if (!entry.hasOwnProperty('externalGatewayPatient')) {
 				errorCount++;
 			} else if (!entry.gateway.hasOwnProperty('homeCommunityId') || 0 == entry.gateway.homeCommunityId.toString().length ||
 					!entry.gateway.hasOwnProperty('url') || 0 == entry.gateway.url.toString().length) {

@@ -3,6 +3,7 @@ import { consolidationConversionType } from "@metriport/core/domain/conversion/f
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { sleep, stringToBoolean } from "@metriport/shared";
+import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Request, Response } from "express";
@@ -12,29 +13,36 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientIds,
   getPatientOrFail,
-  getPatientStates,
   getPatients,
+  getPatientStates,
 } from "../../command/medical/patient/get-patient";
-import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import {
+  PatientUpdateCmd,
+  updatePatientWithoutHIEs,
+} from "../../command/medical/patient/update-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
+import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
 import { recreatePatientsAtCW } from "../../external/commonwell/admin/recreate-patients-at-hies";
 import { checkStaleEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-check-stale";
 import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/coverage-enhancement-init";
+import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
+import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
@@ -51,7 +59,7 @@ import {
   getFromQueryAsArray,
   getFromQueryAsArrayOrFail,
 } from "../util";
-import { PatientLinksDTO, dtoFromCW } from "./dtos/linkDTO";
+import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
@@ -106,24 +114,48 @@ const updateAllSchema = z.object({
 });
 
 /** ---------------------------------------------------------------------------
- * POST /internal/patient/update-all
+ * POST /internal/patient/update-all/commonwell
  *
  * Triggers an update for all of a cx's patients without changing any
  * demographics. The point of this is to trigger an outbound XCPD from
  * CommonWell to Carequality so new patient links are formed.
- *
  *
  * @param req.query.cxId The customer ID.
  * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
  * @return count of update failues, 0 if all successful
  */
 router.post(
-  "/update-all",
+  "/update-all/commonwell",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const { patientIds = [] } = updateAllSchema.parse(req.body);
+    const { patientIds } = updateAllSchema.parse(req.body);
 
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell(
+      getCqOrgIdsToDenyOnCw
+    ).updateAll(cxId, patientIds);
+
+    return res.status(status.OK).json({ failedUpdateCount });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /internal/patient/update-all/carequality
+ *
+ * Triggers an update for all of a cx's patients without changing any
+ * demographics. The point of this is to trigger an outbound XCPD for
+ * Carequality so new patient links are formed.
+ *
+ * @param req.query.cxId The customer ID.
+ * @param req.body.patientIds The patient IDs to update (optional, defaults to all patients).
+ * @return count of update failues, 0 if all successful
+ */
+router.post(
+  "/update-all/carequality",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const { patientIds } = updateAllSchema.parse(req.body);
+
+    const { failedUpdateCount } = await new PatientUpdaterCarequality().updateAll(cxId, patientIds);
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
@@ -151,7 +183,7 @@ router.delete(
       cxId,
       facilityId,
     };
-    await deletePatient(patientDeleteCmd, { allEnvs: true });
+    await deletePatient(patientDeleteCmd);
 
     return res.sendStatus(status.NO_CONTENT);
   })
@@ -181,7 +213,13 @@ router.post(
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
+      await cwCommands.link.create(
+        linkCreate.entityId,
+        patientId,
+        cxId,
+        facilityId,
+        getCqOrgIdsToDenyOnCw
+      );
       return res.sendStatus(status.CREATED);
     }
     throw new BadRequestError(`Unsupported link source: ${linkSource}`);
@@ -321,7 +359,8 @@ router.patch(
             cxId,
             patientId,
             personId,
-            unenrollByDemographics
+            unenrollByDemographics,
+            getCqOrgIdsToDenyOnCw
           ).catch(e => {
             console.log(`Error: ${e}, ${String(e)}`);
             throw `Failed to patch patient ${patientId} - ${String(e)}`;
@@ -402,10 +441,10 @@ router.post(
       const filteredCxIds = cxIds.filter(cxId => !cqDirectCxIds.includes(cxId));
 
       if (filteredCxIds.length < 1 && cxIds.length == 1) {
-        console.log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
+        log(`Customer ${cxIds[0]} has CQ Direct enabled, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       } else if (filteredCxIds.length < 1) {
-        console.log(`No customers to Enhanced Coverage, skipping...`);
+        log(`No customers to Enhanced Coverage, skipping...`);
         return res.status(status.OK).json({ patientIds: [] });
       }
       log(`Using these cxIds: ${cxIds.join(", ")}`);
@@ -421,6 +460,29 @@ router.post(
       const durationMin = dayjs.duration(duration).asMinutes();
       log(`Done, duration: ${duration} ms / ${durationMin} min`);
     }
+  })
+);
+
+const cqLinkStatusSchema = z.enum(cqLinkStatus);
+
+/**
+ * POST /internal/patient/enhance-coverage/set-cq-link-statuses
+ *
+ * Sets the CQ link statuses to complete the enhanced coverage flow for a list of patients.
+ * @param req.query.cxId The customer ID.
+ * @param req.query.patientIds The IDs of the patients to complete the process for.
+ * @param req.query.cqLinkStatus The status to set the CQ link to.
+ */
+router.post(
+  "/enhance-coverage/set-cq-link-statuses",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
+    const cqLinkStatusParam = getFrom("query").orFail("cqLinkStatus", req);
+    const cqLinkStatus = cqLinkStatusSchema.parse(cqLinkStatusParam);
+
+    await setCQLinkStatuses({ cxId, patientIds, cqLinkStatus });
+    return res.sendStatus(status.OK);
   })
 );
 
@@ -553,25 +615,34 @@ router.post(
     log(`Will update ${patients.length} patients in ${chunks.length} chunks`);
 
     let totalUpdated = 0;
+    let totalFailed = 0;
     for (const chunk of chunks) {
       const results = await Promise.allSettled(
         chunk.map(async patient => {
-          const updateInfo: PatientUpdateCmd = {
-            id: patient.id,
-            cxId: patient.cxId,
-            ...patient.data,
-          };
-          await updatePatient(updateInfo, false);
+          try {
+            const updateInfo: PatientUpdateCmd = {
+              id: patient.id,
+              cxId: patient.cxId,
+              facilityId: getFacilityIdOrFail(patient),
+              ...patient.data,
+            };
+            await updatePatientWithoutHIEs(updateInfo, false);
+          } catch (error) {
+            console.log(`Error updating patient ${patient.id}: ${errorToString(error)}`);
+            throw error;
+          }
         })
       );
       const successful = results.filter(r => r.status === "fulfilled").length;
       totalUpdated += successful;
+      const failed = results.filter(r => r.status === "rejected").length;
+      totalFailed += failed;
 
-      log(`Updated ${successful} patients in this chunk`);
+      log(`Updated ${successful} patients in this chunk (${failed} failed)`);
       await sleep(SLEEP_TIME.asMilliseconds());
     }
 
-    log(`Finished updating ${totalUpdated} patients`);
+    log(`Finished updating patients, ${totalUpdated} succeeded, ${totalFailed} failed`);
     return res.sendStatus(status.OK);
   })
 );

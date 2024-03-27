@@ -1,17 +1,15 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import { FileData } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { IETF_URI } from "@metriport/core/external/fhir/shared/namespaces";
+import { errorToString } from "@metriport/core/util/error/shared";
+import { capture } from "@metriport/core/util/notifications";
+import { randomInt } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
+import { cloneDeep } from "lodash";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import { createDocReferenceContent, getFHIRDocRef } from "../../../external/fhir/document";
-import { metriportDataSourceExtension } from "../../../external/fhir/shared/extensions/metriport";
-import { Config } from "../../../shared/config";
-import { capture } from "../../../shared/notifications";
-import { randomInt } from "@metriport/shared/common/numbers";
 import { getPatientOrFail } from "../patient/get-patient";
-import { cloneDeep } from "lodash";
-
-const apiUrl = Config.getApiUrl();
-const docContributionUrl = `${apiUrl}/doc-contribution/commonwell/`;
 
 const smallId = () => String(randomInt(3)).padStart(3, "0");
 
@@ -26,12 +24,14 @@ export async function createAndUploadDocReference({
   patientId,
   docId,
   file,
+  location,
   metadata = {},
 }: {
   cxId: string;
   patientId: string;
   docId: string;
   file: Express.Multer.File;
+  location: string;
   metadata?: {
     description?: string;
     orgName?: string;
@@ -52,7 +52,7 @@ export async function createAndUploadDocReference({
     size: file.size,
     creation: refDate.toISOString(),
     fileName: file.originalname,
-    location: `${docContributionUrl}?fileName=${file.originalname}`,
+    location,
     extension: [metriportDataSourceExtension],
     format: "urn:ihe:pcc:xphr:2007",
   });
@@ -79,13 +79,13 @@ export async function createAndUploadDocReference({
       },
     ],
     masterIdentifier: {
-      system: "urn:ietf:rfc:3986",
+      system: IETF_URI,
       value: docId,
     },
     identifier: [
       {
         use: "official",
-        system: "urn:ietf:rfc:3986",
+        system: IETF_URI,
         value: docId,
       },
     ],
@@ -141,34 +141,28 @@ export async function updateDocumentReference({
   const fhirApi = makeFhirApi(cxId);
   try {
     const docRefDraft = await fhirApi.readResource("DocumentReference", fileData.docId);
-    const updatedDocumentReference = amendDocumentReference(docRefDraft, fileData);
+    const refDate = dayjs();
+    const updatedDocumentReference = cloneDeep(docRefDraft);
+    const metriportContent = createDocReferenceContent({
+      contentType: fileData.mimeType,
+      size: fileData.size,
+      creation: refDate.toISOString(),
+      fileName: fileData.originalName,
+      location: fileData.locationUrl,
+      extension: [metriportDataSourceExtension],
+    });
+
+    updatedDocumentReference.extension = [metriportDataSourceExtension];
+    updatedDocumentReference.content = [metriportContent];
+    updatedDocumentReference.docStatus = "final";
     console.log("Updated the DocRef:", JSON.stringify(updatedDocumentReference));
 
     const docRefFinal = await fhirApi.updateResource(updatedDocumentReference);
     return docRefFinal;
   } catch (error) {
-    const message = "Failed to update the document reference for a CX-uploaded file";
-    console.log(message);
-    capture.error(error, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
+    const msg = "Failed to update the document reference for a CX-uploaded file";
+    console.log(`${msg} - error ${errorToString(error)}`);
+    capture.error(msg, { extra: { context: `updateAndUploadDocumentReference`, cxId, error } });
     return undefined;
   }
-}
-
-function amendDocumentReference(doc: DocumentReference, fileData: FileData) {
-  const refDate = dayjs();
-  const amendedDocRef = cloneDeep(doc);
-  const metriportContent = createDocReferenceContent({
-    contentType: fileData.mimeType,
-    size: fileData.size,
-    creation: refDate.toISOString(),
-    fileName: fileData.originalName,
-    location: fileData.locationUrl,
-    extension: [metriportDataSourceExtension],
-  });
-
-  amendedDocRef.extension = [metriportDataSourceExtension];
-  amendedDocRef.content = [metriportContent];
-  amendedDocRef.docStatus = "amended";
-
-  return amendedDocRef;
 }

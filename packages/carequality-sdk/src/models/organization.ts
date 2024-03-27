@@ -11,6 +11,17 @@ export const organizationIdentifierSchema = z.object({
   value: objectValue,
 });
 
+export const managingOrganizationSchema = z.object({
+  reference: z.object({ value: z.string().nullish() }).nullish(),
+});
+export type ManagingOrganization = z.infer<typeof managingOrganizationSchema>;
+
+export const partOfSchema = z.object({
+  identifier: organizationIdentifierSchema,
+});
+
+export type PartOf = z.infer<typeof partOfSchema>;
+
 export const organizationSchema = z
   .object({
     identifier: organizationIdentifierSchema,
@@ -24,6 +35,8 @@ export const organizationSchema = z
         return Array.isArray(input) ? input : [input];
       }, z.array(addressSchema))
       .optional(),
+    managingOrg: managingOrganizationSchema.nullish(),
+    partOf: z.object({ identifier: organizationIdentifierSchema }).nullish(),
     contained: containedSchema,
   })
   .optional();

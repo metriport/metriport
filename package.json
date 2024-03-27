@@ -30,7 +30,9 @@
     "publish:alpha:ignore": "npm run build && npx lerna publish --dist-tag next --ignore-changes '**'",
     "publish:prod": "npm run build && npx lerna publish",
     "publish:prod:ignore": "npm run build && npx lerna publish --ignore-changes '**'",
-    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin"
+    "ddb-admin": "DYNAMO_ENDPOINT=http://localhost:8000 dynamodb-admin",
+    "test-fern-local": "bash fern/run_tests.sh",
+    "full-hbs-lint": "cd packages/fhir-converter && ./full-hbs-lint.sh"
   },
   "workspaces": [
     "packages/shared",
@@ -44,7 +46,6 @@
     "packages/carequality-cert-runner",
     "packages/react-native-sdk",
     "packages/api",
-    "packages/connect-widget",
     "packages/infra",
     "packages/utils",
     "packages/tester-node"

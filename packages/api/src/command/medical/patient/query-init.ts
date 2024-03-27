@@ -33,7 +33,7 @@ export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
 
     const update = cmd.documentQueryProgress
       ? {
-          documentQueryProgress: cmd.documentQueryProgress,
+          documentQueryProgress: { ...cmd.documentQueryProgress, requestId: cmd.requestId },
           requestId: cmd.requestId,
           cxDocumentRequestMetadata: cmd.cxDocumentRequestMetadata,
         }

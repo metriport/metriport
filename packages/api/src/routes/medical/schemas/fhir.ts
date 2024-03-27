@@ -1,6 +1,9 @@
-import { ResourceTypeForConsolidation, resourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Request } from "express";
 import { z } from "zod";
+import {
+  ResourceTypeForConsolidation,
+  resourceSchema,
+} from "../../../domain/medical/consolidation-resources";
 import BadRequestError from "../../../errors/bad-request";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { getFrom } from "../../util";
@@ -9,7 +12,7 @@ const typeSchema = z.enum(["collection"]);
 
 const bundleEntrySchema = z.array(
   z.object({
-    resource: z.any(),
+    resource: z.any().refine(value => value !== undefined, { message: "Resource is required" }),
   })
 );
 
@@ -21,8 +24,6 @@ export const bundleSchema = z.object({
 
 export type BundleEntry = z.infer<typeof bundleEntrySchema>;
 export type Bundle = z.infer<typeof bundleSchema>;
-
-export const resourceSchema = z.enum(resourceTypeForConsolidation).array();
 
 export function getResourcesQueryParam(req: Request): ResourceTypeForConsolidation[] {
   const resourcesRaw = getFrom("query").optional("resources", req);

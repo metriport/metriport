@@ -1,9 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
-import { DocumentReference, DocumentReferenceContent, Extension } from "@medplum/fhirtypes";
+import { DocumentReference, DocumentReferenceContent } from "@medplum/fhirtypes";
 import { makeFhirAdminApi, makeFhirApi } from "@metriport/core/external/fhir/api/api-factory";
 import { OpenSearchFileIngestorDirect } from "@metriport/core/external/opensearch/file-ingestor-direct";
+import { isMetriportContent } from "@metriport/core/external/fhir/shared/extensions/metriport";
+import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
@@ -36,8 +38,6 @@ const openSearchPassword = getEnvVarOrFail("SEARCH_PASSWORD");
 const openSearchHost = getEnvVarOrFail("SEARCH_ENDPOINT");
 const openSearchIndexName = getEnvVarOrFail("SEARCH_INDEX");
 
-const METRIPORT = "METRIPORT";
-const COMMONWELL = "COMMONWELL";
 const NO_PATIENT_ID = "na";
 
 const filtersToApply = new URLSearchParams();
@@ -120,31 +120,8 @@ function isFromCommonWell(doc: DocumentReference) {
   if (!cw) return false;
   return true;
 }
-function isMetriportExtension(e: Extension): boolean {
-  return e.valueCoding?.code === METRIPORT;
-}
-function isCommonwellExtension(e: Extension): boolean {
-  return (
-    e.valueReference?.reference === COMMONWELL || // Legacy FHIR resources have this
-    e.valueCoding?.code === COMMONWELL
-  );
-}
 function hasMetriportAttachment(doc: DocumentReference) {
   return doc.content?.some(isMetriportContent) === true;
-}
-function isMetriportContent(content: DocumentReferenceContent): boolean {
-  // Metriport is the fallback/default.
-  // All doc refs created before this extension was added will have only one content element,
-  // stored on S3 (Metriport) and w/o the extension.
-  // So, return true if it's explicitly Metriport or is not explicitly CommonWell.
-  return content.extension?.some(isMetriportExtension) === true || !isCommonwellContent(content);
-}
-function isCommonwellContent(content: DocumentReferenceContent): boolean {
-  return (
-    content.extension?.some(isCommonwellExtension) === true ||
-    content.attachment?.url?.includes("commonwellalliance.org") || // Legacy FHIR resources only have this
-    false
-  );
 }
 
 type DocToProcess = { cxId: string; patientId: string; docId: string; s3FileName: string };

@@ -1,0 +1,728 @@
+{{#with (personalRelationshipRoleTypeCodeSystem) as |codeSystem|}}
+    "code":
+    {{#if (eq ../text "family member")}}
+        {
+            "code": "FAMMEMB",
+            "displayName": "family member",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "child")}}
+        {
+            "code": "CHILD",
+            "displayName": "child",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "adopted child")}}
+        {
+            "code": "CHLDADOPT",
+            "displayName": "adopted child",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "adopted daughter")}}
+        {
+            "code": "DAUADOPT",
+            "displayName": "adopted daughter",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "adopted son")}}
+        {
+            "code": "SONADOPT",
+            "displayName": "adopted son",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "foster child")}}
+        {
+            "code": "CHLDFOST",
+            "displayName": "foster child",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "foster daughter")}}
+        {
+            "code": "DAUFOST",
+            "displayName": "foster daughter",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "foster son")}}
+        {
+            "code": "SONFOST",
+            "displayName": "foster son",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "daughter")}}
+        {
+            "code": "DAUC",
+            "displayName": "daughter",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural daughter")}}
+        {
+            "code": "DAU",
+            "displayName": "natural daughter",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "stepdaughter")}}
+        {
+            "code": "STPDAU",
+            "displayName": "stepdaughter",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural child")}}
+        {
+            "code": "NCHILD",
+            "displayName": "natural child",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "natural son")}}
+        {
+            "code": "SON",
+            "displayName": "natural son",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "son")}}
+        {
+            "code": "SONC",
+            "displayName": "son",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "stepson")}}
+        {
+            "code": "STPSON",
+            "displayName": "stepson",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "step child")}}
+        {
+            "code": "STPCHLD",
+            "displayName": "step child",
+            "codeSystem": "{{codeSystem}}"
+        }
+
+    {{else if (eq ../text "extended family member")}}
+        {
+            "code": "EXT",
+            "displayName": "extended family member",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "aunt")}}
+        {
+            "code": "AUNT",
+            "displayName": "aunt",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "maternal aunt")}}
+        {
+            "code": "MAUNT",
+            "displayName": "maternal aunt",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "paternal aunt")}}
+        {
+            "code": "PAUNT",
+            "displayName": "paternal aunt",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "cousin")}}
+        {
+            "code": "COUSN",
+            "displayName": "cousin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "maternal cousin")}}
+        {
+            "code": "MCOUSN",
+            "displayName": "maternal cousin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "paternal cousin")}}
+        {
+            "code": "PCOUSN",
+            "displayName": "paternal cousin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "great grandparent")}}
+        {
+            "code": "GGRPRN",
+            "displayName": "great grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "great grandfather")}}
+        {
+            "code": "GGRFTH",
+            "displayName": "great grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "maternal great-grandfather")}}
+        {
+            "code": "MGGRFTH",
+            "displayName": "maternal great-grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "paternal great-grandfather")}}
+        {
+            "code": "PGGRFTH",
+            "displayName": "paternal great-grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "great grandmother")}}
+        {
+            "code": "GGRMTH",
+            "displayName": "great grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "maternal great-grandmother")}}
+        {
+            "code": "MGGRMTH",
+            "displayName": "maternal great-grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "paternal great-grandmother")}}
+        {
+            "code": "PGGRMTH",
+            "displayName": "paternal great-grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "maternal great-grandparent")}}
+        {
+            "code": "MGGRPRN",
+            "displayName": "maternal great-grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "paternal great-grandparent")}}
+        {
+            "code": "PGGRPRN",
+            "displayName": "paternal great-grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "grandchild")}}
+        {
+            "code": "GRNDCHILD",
+            "displayName": "grandchild",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "granddaughter")}}
+        {
+            "code": "GRNDDAU",
+            "displayName": "granddaughter",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "grandson")}}
+        {
+            "code": "GRNDSON",
+            "displayName": "grandson",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "grandparent")}}
+        {
+            "code": "GRPRN",
+            "displayName": "grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "grandfather")}}
+        {
+            "code": "GRFTH",
+            "displayName": "grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "maternal grandfather")}}
+        {
+            "code": "MGRFTH",
+            "displayName": "maternal grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "paternal grandfather")}}
+        {
+            "code": "PGRFTH",
+            "displayName": "paternal grandfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "grandmother")}}
+        {
+            "code": "GRMTH",
+            "displayName": "grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "maternal grandmother")}}
+        {
+            "code": "MGRMTH",
+            "displayName": "maternal grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "paternal grandmother")}}
+        {
+            "code": "PGRMTH",
+            "displayName": "paternal grandmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "maternal grandparent")}}
+        {
+            "code": "MGRPRN",
+            "displayName": "maternal grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "paternal grandparent")}}
+        {
+            "code": "PGRPRN",
+            "displayName": "paternal grandparent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "inlaw")}}
+        {
+            "code": "INLAW",
+            "displayName": "inlaw",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "child-in-law")}}
+        {
+            "code": "CHLDINLAW",
+            "displayName": "child-in-law",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "daughter in-law")}}
+        {
+            "code": "DAUINLAW",
+            "displayName": "daughter in-law",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "son in-law")}}
+        {
+            "code": "SONINLAW",
+            "displayName": "son in-law",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "parent in-law")}}
+        {
+            "code": "PRNINLAW",
+            "displayName": "parent in-law",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "father-in-law")}}
+        {
+            "code": "FTHINLAW",
+            "displayName": "father-in-law",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "mother-in-law")}}
+        {
+            "code": "MTHINLAW",
+            "displayName": "mother-in-law",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "sibling in-law")}}
+        {
+            "code": "SIBINLAW",
+            "displayName": "sibling in-law",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "brother-in-law")}}
+        {
+            "code": "BROINLAW",
+            "displayName": "brother-in-law",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "sister-in-law")}}
+        {
+            "code": "SISINLAW",
+            "displayName": "sister-in-law",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "niece/nephew")}}
+        {
+            "code": "NIENEPH",
+            "displayName": "niece/nephew",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "nephew")}}
+        {
+            "code": "NEPHEW",
+            "displayName": "nephew",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "niece")}}
+        {
+            "code": "NIECE",
+            "displayName": "niece",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "uncle")}}
+        {
+            "code": "UNCLE",
+            "displayName": "uncle",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "maternal uncle")}}
+        {
+            "code": "MUNCLE",
+            "displayName": "maternal uncle",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "paternal uncle")}}
+        {
+            "code": "PUNCLE",
+            "displayName": "paternal uncle",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "parent")}}
+        {
+            "code": "PRN",
+            "displayName": "parent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "adoptive parent")}}
+        {
+            "code": "ADOPTP",
+            "displayName": "adoptive parent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "adoptive father")}}
+        {
+            "code": "ADOPTF",
+            "displayName": "adoptive father",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "adoptive mother")}}
+        {
+            "code": "ADOPTM",
+            "displayName": "adoptive mother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "father")}}
+        {
+            "code": "FTH",
+            "displayName": "father",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "foster father")}}
+        {
+            "code": "FTHFOST",
+            "displayName": "foster father",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "natural father")}}
+        {
+            "code": "NFTH",
+            "displayName": "natural father",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "natural father of fetus")}}
+        {
+            "code": "NFTHF",
+            "displayName": "natural father of fetus",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "stepfather")}}
+        {
+            "code": "STPFTH",
+            "displayName": "stepfather",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "mother")}}
+        {
+            "code": "MTH",
+            "displayName": "mother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "gestational mother")}}
+        {
+            "code": "GESTM",
+            "displayName": "gestational mother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "foster mother")}}
+        {
+            "code": "MTHFOST",
+            "displayName": "foster mother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural mother")}}
+        {
+            "code": "NMTH",
+            "displayName": "natural mother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural mother of fetus")}}
+        {
+            "code": "NMTHF",
+            "displayName": "natural mother of fetus",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "stepmother")}}
+        {
+            "code": "STPMTH",
+            "displayName": "stepmother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural parent")}}
+        {
+            "code": "NPRN",
+            "displayName": "natural parent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "foster parent")}}
+        {
+            "code": "PRNFOST",
+            "displayName": "foster parent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "step parent")}}
+        {
+            "code": "STPPRN",
+            "displayName": "step parent",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "sibling")}}
+        {
+            "code": "SIB",
+            "displayName": "sibling",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "brother")}}
+        {
+            "code": "BRO",
+            "displayName": "brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "half-brother")}}
+        {
+            "code": "HBRO",
+            "displayName": "half-brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "natural brother")}}
+        {
+            "code": "NBRO",
+            "displayName": "natural brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "twin brother")}}
+        {
+            "code": "TWINBRO",
+            "displayName": "twin brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "fraternal twin brother")}}
+        {
+            "code": "FTWINBRO",
+            "displayName": "fraternal twin brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "identical twin brother")}}
+        {
+            "code": "ITWINBRO",
+            "displayName": "identical twin brother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "stepbrother")}}
+        {
+            "code": "STPBRO",
+            "displayName": "stepbrother",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "half-sibling")}}
+        {
+            "code": "HSIB",
+            "displayName": "half-sibling",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "half-sister")}}
+        {
+            "code": "HSIS",
+            "displayName": "half-sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "natural sibling")}}
+        {
+            "code": "NSIB",
+            "displayName": "natural sibling",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "natural sister")}}
+        {
+            "code": "NSIS",
+            "displayName": "natural sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "twin sister")}}
+        {
+            "code": "TWINSIS",
+            "displayName": "twin sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "fraternal twin sister")}}
+        {
+            "code": "FTWINSIS",
+            "displayName": "fraternal twin sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "identical twin sister")}}
+        {
+            "code": "ITWINSIS",
+            "displayName": "identical twin sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "twin")}}
+        {
+            "code": "TWIN",
+            "displayName": "twin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "fraternal twin")}}
+        {
+            "code": "FTWIN",
+            "displayName": "fraternal twin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "identical twin")}}
+        {
+            "code": "ITWIN",
+            "displayName": "identical twin",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "sister")}}
+        {
+            "code": "SIS",
+            "displayName": "sister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "stepsister")}}
+        {
+            "code": "STPSIS",
+            "displayName": "stepsister",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "step sibling")}}
+        {
+            "code": "STPSIB",
+            "displayName": "step sibling",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "significant other")}}
+        {
+            "code": "SIGOTHR",
+            "displayName": "significant other",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "domestic partner")}}
+        {
+            "code": "DOMPART",
+            "displayName": "domestic partner",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "former spouse")}}
+        {
+            "code": "FMRSPS",
+            "displayName": "former spouse",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "spouse")}}
+        {
+            "code": "SPS",
+            "displayName": "spouse",
+            "codeSystem": "{{codeSystem}}",
+        }
+    {{else if (eq ../text "husband")}}
+        {
+            "code": "HUSB",
+            "displayName": "husband",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "male"
+        }
+    {{else if (eq ../text "wife")}}
+        {
+            "code": "WIFE",
+            "displayName": "wife",
+            "codeSystem": "{{codeSystem}}",
+            "gender": "female"
+        }
+    {{else if (eq ../text "unrelated friend")}}
+        {
+            "code": "FRND",
+            "displayName": "unrelated friend",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "neighbor")}}
+        {
+            "code": "NBOR",
+            "displayName": "neighbor",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "self")}}
+        {
+            "code": "ONESELF",
+            "displayName": "self",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else if (eq ../text "Roommate")}}
+        {
+            "code": "ROOM",
+            "displayName": "Roommate",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{else}}
+        {
+            "code": "O",
+            "displayName": "Other",
+            "codeSystem": "{{codeSystem}}"
+        }
+    {{/if}}
+{{/with}}
