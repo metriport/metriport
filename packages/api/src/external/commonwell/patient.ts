@@ -23,7 +23,8 @@ import { makeCommonWellAPI } from "./api";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import { queryAndProcessDocuments } from "./document/document-query";
-import { setCommonwellId, resetPatientScheduledDocQueryRequestId } from "./patient-external-data";
+import { setCommonwellId } from "./patient-external-data";
+import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import {
   CQLinkStatus,
   findOrCreatePerson,
@@ -299,7 +300,10 @@ export async function update(
     )?.scheduledDocQueryRequestId;
 
     if (scheduledDocQueryRequestId) {
-      const resetPatient = await resetPatientScheduledDocQueryRequestId({ patient });
+      const resetPatient = await resetPatientScheduledDocQueryRequestId({
+        patient,
+        source: MedicalDataSource.COMMONWELL,
+      });
 
       await queryAndProcessDocuments({
         patient: resetPatient,
