@@ -1,5 +1,6 @@
 import { DOMParser } from "xmldom";
-
+import { readFileSync, writeFileSync } from "fs";
+import * as path from "path";
 // This is temporary function that will eventually be introduced
 // as another way to render patient data. (Will need refactoring)
 export function convertHtmlTablesToCsv(html: string) {
@@ -109,4 +110,36 @@ export function convertHtmlTablesToCsv(html: string) {
   const convertedCsv = `Patient Name: ${patientName}\nPatient ID: ${patientId}\n\n` + joinedCsvData;
 
   return convertedCsv;
+}
+
+function main() {
+  const filePath = process.argv[2]; // Get the file path from command line arguments
+
+  if (!filePath) {
+    console.error("Please provide an HTML file path.");
+    process.exit(1);
+  }
+
+  try {
+    const htmlContent = readFileSync(filePath, "utf8"); // Read the HTML file content
+    const csvContent = convertHtmlTablesToCsv(htmlContent); // Convert HTML to CSV
+
+    // Construct the CSV file path by changing the extension
+    const csvFilePath = path.join(
+      path.dirname(filePath),
+      path.basename(filePath, path.extname(filePath)) + ".csv"
+    );
+
+    // Write the CSV content to the new file
+    writeFileSync(csvFilePath, csvContent);
+    console.log(`CSV file has been created at: ${csvFilePath}`);
+    // eslint-disable-next-line
+  } catch (error: any) {
+    console.error("Error processing the HTML file:", error.message);
+  }
+}
+
+// Call main if this script is run directly
+if (require.main === module) {
+  main();
 }

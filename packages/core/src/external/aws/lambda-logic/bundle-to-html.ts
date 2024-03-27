@@ -36,32 +36,17 @@ const CPT_CODE = "cpt";
 export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
     patient,
-    practitioners,
-    diagnosticReports,
     medications,
     medicationStatements,
     conditions,
     allergies,
-    locations,
     procedures,
-    observationOther,
-    observationSocialHistory,
-    observationVitals,
-    observationLaboratory,
     encounters,
-    immunizations,
-    familyMemberHistories,
-    relatedPersons,
-    tasks,
-    coverages,
-    organizations,
   } = extractFhirTypesFromBundle(fhirBundle);
 
   if (!patient) {
     throw new Error("No patient found in bundle");
   }
-
-  const aweVisits = getAnnualWellnessVisits(conditions);
 
   const htmlPage = `
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -233,27 +218,11 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createAWESection(diagnosticReports, practitioners, aweVisits, organizations)}
           ${createMedicationSection(medications, medicationStatements)}
-          ${createDiagnosticReportsSection(
-            diagnosticReports,
-            practitioners,
-            aweVisits,
-            organizations
-          )}
+          
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
-          ${createObservationSocialHistorySection(observationSocialHistory)}
-          ${createObservationVitalsSection(observationVitals)}
-          ${createObservationLaboratorySection(observationLaboratory)}
-          ${createOtherObservationsSection(observationOther)}
-          ${createImmunizationSection(immunizations)}
-          ${createFamilyHistorySection(familyMemberHistories)}
-          ${createRelatedPersonSection(relatedPersons)}
-          ${createTaskSection(tasks)}
-          ${createCoverageSection(coverages, organizations)}
-          ${createEncountersSection(encounters, locations)}
         </div>
       </body>
     </html>
@@ -436,12 +405,6 @@ function createMRHeader(patient: Patient) {
           <ul id="nav">
             <div class='half'>
               <li>
-                <a href="#awe">Annual Wellness Exams</a>
-              </li>
-              <li>
-                <a href="#reports">Reports</a>
-              </li>
-              <li>
                 <a href="#medications">Medications</a>
               </li>
               <li>
@@ -455,39 +418,7 @@ function createMRHeader(patient: Patient) {
                   >Procedures</a
                 >
               </li>
-              <li>
-                <a href="#social-history">Social History</a>
-              </li>
-              <li>
-                <a href="#vitals">Vitals</a>
-              </li>
-            </div>
-            <div class='half'>
-              <li>
-                <a href="#laboratory">Laboratory</a>
-              </li>
-              <li>
-                <a href="#other-observations">Other Observations</a>
-              </li>
-              <li>
-                <a href="#immunizations">Immunizations</a>
-              </li>
-              <li>
-                <a href="#family-member-history">Family Member History</a>
-              </li>
-              <li>
-                <a href="#related-persons">Related Persons</a>
-              </li>
-              <li>
-                <a href="#tasks">Tasks</a>
-              </li>
-              <li>
-                <a href="#coverage">Coverage</a>
-              </li>
-              <li>
-                <a href="#encounters">Encounters</a>
-              </li>
-            </div>
+              
             </ul>
         </div>
       </div>
@@ -521,7 +452,7 @@ type EncounterSection = {
   };
 };
 
-function createAWESection(
+export function createAWESection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[],
@@ -563,7 +494,7 @@ function createAWESection(
   `;
 }
 
-function createDiagnosticReportsSection(
+export function createDiagnosticReportsSection(
   diagnosticReports: DiagnosticReport[],
   practitioners: Practitioner[],
   aweVisits: Condition[],
@@ -969,9 +900,9 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
     return aDate === bDate && aText === bText;
   })
     .reduce((acc, condition) => {
-      const codeName = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE, SNOMED_CODE]);
+      const codeName = getSpecificCode(condition.code?.coding ?? [], [SNOMED_CODE, ICD_10_CODE]);
       const idc10Code = condition.code?.coding?.find(code =>
-        code.system?.toLowerCase().includes(ICD_10_CODE)
+        code.system?.toLowerCase().includes(SNOMED_CODE)
       );
 
       const name =
@@ -1286,7 +1217,7 @@ type RenderObservation = {
   lastDate: string;
 };
 
-function createObservationSocialHistorySection(observations: Observation[]) {
+export function createObservationSocialHistorySection(observations: Observation[]) {
   if (!observations) {
     return "";
   }
@@ -1417,7 +1348,7 @@ function renderSocialHistoryValue(observation: Observation) {
   }
 }
 
-function createObservationVitalsSection(observations: Observation[]) {
+export function createObservationVitalsSection(observations: Observation[]) {
   if (!observations) {
     return "";
   }
@@ -1501,7 +1432,7 @@ function renderVitalsValue(observation: Observation) {
   }
 }
 
-function createObservationLaboratorySection(observations: Observation[]) {
+export function createObservationLaboratorySection(observations: Observation[]) {
   if (!observations) {
     return "";
   }
@@ -1607,7 +1538,7 @@ function createObservationsByDate(observations: Observation[]): string {
     .join("");
 }
 
-function createOtherObservationsSection(observations: Observation[]) {
+export function createOtherObservationsSection(observations: Observation[]) {
   if (!observations) {
     return "";
   }
@@ -1728,7 +1659,7 @@ function renderClassDisplay(encounter: Encounter) {
   }
 }
 
-function createImmunizationSection(immunizations: Immunization[]) {
+export function createImmunizationSection(immunizations: Immunization[]) {
   if (!immunizations) {
     return "";
   }
@@ -1787,7 +1718,7 @@ function createImmunizationSection(immunizations: Immunization[]) {
   return createSection("Immunizations", immunizationTableContents);
 }
 
-function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]) {
+export function createFamilyHistorySection(familyMemberHistories: FamilyMemberHistory[]) {
   if (!familyMemberHistories) {
     return "";
   }
@@ -1867,7 +1798,7 @@ function renderAdministrativeGender(familyMemberHistory: FamilyMemberHistory): s
   return null;
 }
 
-function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
+export function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
   if (!relatedPersons) {
     return "";
   }
@@ -1937,7 +1868,7 @@ function renderRelatedPersonAddresses(relatedPerson: RelatedPerson) {
   });
 }
 
-function createTaskSection(tasks: Task[]) {
+export function createTaskSection(tasks: Task[]) {
   if (!tasks) {
     return "";
   }
@@ -1999,7 +1930,7 @@ function createTaskSection(tasks: Task[]) {
   return createSection("Tasks", taskTableContents);
 }
 
-function createEncountersSection(encounters: Encounter[], locations: Location[]) {
+export function createEncountersSection(encounters: Encounter[], locations: Location[]) {
   const mappedLocations = mapResourceToId<Location>(locations);
 
   if (!encounters) {
@@ -2061,7 +1992,7 @@ function createEncountersSection(encounters: Encounter[], locations: Location[])
   return createSection("Encounters", encounterTableContents);
 }
 
-function createCoverageSection(coverages: Coverage[], organizations: Organization[]) {
+export function createCoverageSection(coverages: Coverage[], organizations: Organization[]) {
   if (!coverages) {
     return "";
   }
@@ -2195,7 +2126,7 @@ function mapResourceToId<ResourceType>(resources: Resource[]): Record<string, Re
 }
 
 // find condition with code Z00 in the past year
-function getAnnualWellnessVisits(conditions: Condition[]) {
+export function getAnnualWellnessVisits(conditions: Condition[]) {
   const annualWellnessVisit = conditions.filter(condition => {
     const code = getSpecificCode(condition.code?.coding ?? [], [ICD_10_CODE]);
 
