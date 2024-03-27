@@ -1,11 +1,9 @@
 import { ProviderSource } from "@metriport/api-sdk";
 import dayjs from "dayjs";
 import { Dictionary, groupBy, union } from "lodash";
-import { Product } from "../../domain/product";
 import { FitbitWebhook } from "../../mappings/fitbit";
 import { FitbitCollectionTypes } from "../../mappings/fitbit/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { EventTypes, analytics } from "../../shared/analytics";
 import { Constants } from "../../shared/constants";
 import { ISO_DATE } from "../../shared/date";
 import { errorToString } from "../../shared/log";
@@ -19,7 +17,7 @@ import {
   reportDevicesUsage,
 } from "./devices";
 import { processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData } from "./webhook-request";
 
 interface Entry {
   cxId: string;
@@ -179,23 +177,13 @@ async function createAndSendCustomerPayloads(dataByCustomer: Dictionary<Entry[]>
 
         const payload: WebhookDataPayloadWithoutMessageId = { users: transformedData };
         const settings = await getSettingsOrFail({ id: cxId });
-
-        analytics({
-          distinctId: cxId,
-          event: EventTypes.query,
-          properties: {
-            method: "POST",
-            url: "/webhook/fitbit",
-          },
-          apiType: Product.devices,
-        });
-        const webhookRequest = await createWebhookRequest({
+        const webhookRequestData = buildWebhookRequestData({
           cxId,
           type: "devices.health-data",
           payload,
         });
         // send it to the customer and update the request status
-        await processRequest(webhookRequest, settings);
+        await processRequest(webhookRequestData, settings);
 
         reportDevicesUsage(
           cxId,

@@ -7,7 +7,7 @@ import { errorToString } from "../../shared/log";
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportUsage as reportUsageCmd } from "../usage/report-usage";
 import { processRequest, WebhookMetadataPayload } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData, WebhookRequestData } from "./webhook-request";
 
 export type DataType = "activity" | "sleep" | "body" | "biometrics" | "nutrition";
 
@@ -46,7 +46,7 @@ export const sendProviderConnected = async (
   provider: ProviderOptions,
   deviceIds?: string[]
 ): Promise<void> => {
-  let webhookRequest;
+  let webhookRequestData: WebhookRequestData | undefined;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
@@ -65,17 +65,16 @@ export const sendProviderConnected = async (
       ],
     };
     const settings = await getSettingsOrFail({ id: cxId });
-
-    webhookRequest = await createWebhookRequest({
+    webhookRequestData = buildWebhookRequestData({
       cxId,
       type: "devices.provider-connected",
       payload,
     });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequestData, settings);
   } catch (error) {
     console.log(
       `Failed to send provider connected WH - provider: ${provider}, ` +
-        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
+        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequestData)}` +
         `error: ${errorToString(error)}`
     );
   }
@@ -92,7 +91,7 @@ export const sendProviderDisconnected = async (
   connectedUser: ConnectedUser,
   disconnectedProviders: string[]
 ): Promise<void> => {
-  let webhookRequest;
+  let webhookRequestData;
   try {
     const { id: userId, cxId } = connectedUser;
     const providers = connectedUser?.providerMap ? Object.keys(connectedUser.providerMap) : [];
@@ -101,16 +100,16 @@ export const sendProviderDisconnected = async (
     };
     const settings = await getSettingsOrFail({ id: cxId });
 
-    webhookRequest = await createWebhookRequest({
+    webhookRequestData = buildWebhookRequestData({
       cxId,
       type: "devices.provider-disconnected",
       payload,
     });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequestData, settings);
   } catch (error) {
     console.log(
       `Failed to send provider disconnected WH - providers: ${disconnectedProviders}, ` +
-        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequest)}` +
+        `user: ${connectedUser.id}, webhookRequest: ${stringify(webhookRequestData)}` +
         `error: ${error}`
     );
   }

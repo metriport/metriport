@@ -21,6 +21,26 @@ export const createWebhookRequest = async (
   });
 };
 
+export type WebhookRequestData = {
+  id: string;
+  cxId: string;
+  type: WebhookType;
+  payload: object;
+  requestId?: string;
+  status: WebhookRequestStatus;
+  createdAt: Date;
+};
+
+export function buildWebhookRequestData(create: CreateWebhookRequestCommand): WebhookRequestData {
+  return {
+    ...create,
+    id: uuidv4(),
+    type: create.type,
+    createdAt: new Date(),
+    status: create.status ? create.status : "processing",
+  };
+}
+
 export type UpdateWebhookLogStatusCommand = {
   id: string;
   status: WebhookRequestStatus;

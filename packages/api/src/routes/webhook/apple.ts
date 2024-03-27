@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import { processAppleData } from "../../command/webhook/apple";
-import { Product } from "../../domain/product";
 import { appleSchema, mapData } from "../../mappings/apple";
-import { EventTypes, analytics } from "../../shared/analytics";
 import { asyncHandler, getCxIdOrFail } from "../util";
 
 const routes = Router();
@@ -23,19 +21,6 @@ routes.post(
 
     // TEMP LOGS FOR DEBUGGING
     console.log(metriportUserId, JSON.stringify(payload));
-
-    const key = Object.keys(payload)[0];
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.webhook,
-      properties: {
-        metriportUserId,
-        type: key,
-        payload,
-      },
-      apiType: Product.devices,
-    });
 
     if (!payload.error) {
       const mappedData = mapData(appleSchema.parse(payload), hourly);

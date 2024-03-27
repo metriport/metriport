@@ -1,7 +1,6 @@
 import { Biometrics, Body, ProviderSource, SourceType } from "@metriport/api-sdk";
 import { formatNumber, getFloatValue } from "@metriport/shared/common/numbers";
 import convert from "convert-units";
-import { Product } from "../../domain/product";
 import { TenoviMeasurement } from "../../mappings/tenovi";
 import {
   updateBiometricsWithBP,
@@ -15,7 +14,6 @@ import {
 } from "../../mappings/tenovi/biometrics";
 import { TenoviMetricTypes, tenoviMetricTypes } from "../../mappings/tenovi/constants";
 import { ConnectedUser } from "../../models/connected-user";
-import { EventTypes, analytics } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
 import { getConnectedUsersByDeviceId } from "../connected-user/get-connected-user";
 import { getSettingsOrFail } from "../settings/getSettings";
@@ -26,7 +24,7 @@ import {
   reportDevicesUsage,
 } from "./devices";
 import { processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData } from "./webhook-request";
 
 /**
  * Processes a Tenovi Measurement webhook, maps the data, and sends it to the CX
@@ -114,24 +112,14 @@ async function createAndSendPayload(
       const payload: WebhookDataPayloadWithoutMessageId = { users: [userData] };
 
       try {
-        const webhookRequest = await createWebhookRequest({
+        const webhookRequestData = buildWebhookRequestData({
           cxId,
           type: "devices.health-data",
           payload,
         });
 
         const settings = await getSettingsOrFail({ id: cxId });
-        await processRequest(webhookRequest, settings);
-
-        analytics({
-          distinctId: cxId,
-          event: EventTypes.query,
-          properties: {
-            method: "POST",
-            url: "/webhook/tenovi",
-          },
-          apiType: Product.devices,
-        });
+        await processRequest(webhookRequestData, settings);
         reportDevicesUsage(cxId, [userId]);
       } catch (error) {
         console.log(`Failed to send Tenovi WH - user: ${userId}, error: ${errorToString(error)}`);

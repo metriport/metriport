@@ -1,10 +1,8 @@
 import { MetriportData } from "@metriport/api-sdk/devices/models/metriport-data";
 import { chunk, groupBy } from "lodash";
-import { Product } from "../../domain/product";
 import { getErrorMessage } from "../../errors";
 import { UserData } from "../../mappings/garmin";
 import { Settings } from "../../models/settings";
-import { EventTypes, analytics } from "../../shared/analytics";
 import { errorToString } from "../../shared/log";
 import { Util } from "../../shared/util";
 import { getConnectedUsers } from "../connected-user/get-connected-user";
@@ -17,7 +15,7 @@ import {
   reportDevicesUsage,
 } from "./devices";
 import { processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData } from "./webhook-request";
 
 const log = Util.log(`Garmin Webhook`);
 
@@ -105,16 +103,6 @@ export const processData = async <T extends MetriportData>(data: UserData<T>[]):
           });
           // now that we have a all the chunks for one customer, process them
           const settings = await getSettingsOrFail({ id: cxId });
-
-          analytics({
-            distinctId: cxId,
-            event: EventTypes.query,
-            properties: {
-              method: "POST",
-              url: "/webhook/garmin",
-            },
-            apiType: Product.devices,
-          });
           await processOneCustomer(cxId, settings, payloads);
           reportDevicesUsage(
             cxId,
@@ -138,13 +126,13 @@ const processOneCustomer = async (
 ): Promise<boolean> => {
   for (const payload of payloads) {
     // create a representation of this request and store on the DB
-    const webhookRequest = await createWebhookRequest({
+    const webhookRequestData = buildWebhookRequestData({
       cxId,
       type: "devices.health-data",
       payload,
     });
     // send it to the customer and update the request status
-    const success = await processRequest(webhookRequest, settings);
+    const success = await processRequest(webhookRequestData, settings);
     // give it some time to prevent flooding the customer
     if (success) await Util.sleep(Math.random() * 200);
   }

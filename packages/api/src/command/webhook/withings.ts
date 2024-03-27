@@ -6,7 +6,7 @@ import { getConnectedUserByTokenOrFail } from "../connected-user/get-connected-u
 import { getSettingsOrFail } from "../settings/getSettings";
 import { reportDevicesUsage, WebhookUserDataPayload } from "./devices";
 import { processRequest } from "./webhook";
-import { createWebhookRequest } from "./webhook-request";
+import { buildWebhookRequestData } from "./webhook-request";
 
 export type WithingsWebhook = {
   userid: string;
@@ -39,16 +39,15 @@ export const processData = async (data: WithingsWebhook) => {
     );
 
     const cxId = connectedUser.cxId;
-
     const settings = await getSettingsOrFail({ id: cxId });
     const withingsData = await mapData(categoryNum, connectedUser, startdate);
     const payload = { users: [{ userId: connectedUser.id, ...withingsData }] };
-    const webhookRequest = await createWebhookRequest({
+    const webhookRequestData = buildWebhookRequestData({
       cxId,
       type: "devices.health-data",
       payload,
     });
-    await processRequest(webhookRequest, settings);
+    await processRequest(webhookRequestData, settings);
     reportDevicesUsage(connectedUser.cxId, [connectedUser.cxUserId]);
   } catch (error) {
     console.log(`Error on processWithingsData: ${error}`);
