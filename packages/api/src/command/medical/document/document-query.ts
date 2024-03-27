@@ -21,7 +21,7 @@ import { Util } from "../../../shared/util";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { getAllCQOrgsIds } from "../../../external/carequality/command/cq-directory/get-organizations-for-xcpd";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -94,7 +94,7 @@ export async function queryDocumentsAcrossHIEs({
       forceDownload: override,
       forceQuery,
       requestId,
-      getAllCQOrgsIds,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
     }).catch(emptyFunction);
   }
 
