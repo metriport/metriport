@@ -80,7 +80,12 @@ export async function processOutboundDocumentQueryResps({
               total: convertibleDocCount,
             },
           }
-        : {}),
+        : {
+            convertProgress: {
+              status: "completed",
+              total: 0,
+            },
+          }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
