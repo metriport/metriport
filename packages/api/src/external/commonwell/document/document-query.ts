@@ -125,6 +125,13 @@ export async function queryAndProcessDocuments({
       facilityId
     );
 
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
     const patientCWData = getCWData(patientParam.data.externalData);
     const hasNoCWStatus = !patientCWData || !patientCWData.status;
     const isProcessing = patientCWData?.status === "processing";
