@@ -1,4 +1,5 @@
 import axios from "axios";
+import { CodeDetailsResponse } from "./snomed-heirarchies";
 
 interface ParameterPart {
   name: string;
@@ -48,6 +49,31 @@ export const codeSystemUrls: Record<string, CodeSystemUrl> = {
   },
 };
 
+export async function getCodeDetailsFull(
+  code: string,
+  codeSystemType: string
+): Promise<CodeDetailsResponse | undefined> {
+  try {
+    const codeSystem = codeSystemUrls[codeSystemType];
+    if (!codeSystem) {
+      console.error("Unsupported code system type:", codeSystemType);
+      return undefined;
+    }
+
+    const url = `http://localhost:29927/R4/CodeSystem/$lookup?system=${codeSystem.url}&code=${code}`;
+    const response = await axios.get(url);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.code === "ECONNREFUSED") {
+      console.error("Connection refused. The server is not reachable at the moment.");
+      return undefined;
+    } else {
+      console.error(`Error fetching code details. Code Not Found ${code}`);
+      return undefined;
+    }
+  }
+}
+
 export async function getCodeDetails(
   code: string,
   codeSystemType: string
@@ -89,3 +115,17 @@ export async function getCodeDetails(
     }
   }
 }
+
+// async function main() {
+//   const code = "94222008";
+//   const codeSystemType = "SNOMEDCT_US";
+//   const codeDetails = await getCodeDetails(code, codeSystemType);
+
+//   if (codeDetails) {
+//     console.log(`Code Details: Display - ${codeDetails.display}, Category - ${codeDetails.category}`);
+//   } else {
+//     console.log("Failed to retrieve code details.");
+//   }
+// }
+
+// main().catch(console.error);
