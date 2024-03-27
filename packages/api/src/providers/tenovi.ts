@@ -2,7 +2,6 @@
 import { Biometrics, Body } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
-import stringify from "json-stringify-safe";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import BadRequestError from "../errors/bad-request";
 import MetriportError from "../errors/metriport-error";
