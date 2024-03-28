@@ -11,6 +11,7 @@ import {
   Location,
   Medication,
   MedicationStatement,
+  MedicationAdministration,
   Observation,
   Organization,
   Patient,
@@ -38,6 +39,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     patient,
     medications,
     medicationStatements,
+
     conditions,
     allergies,
     procedures,
@@ -219,7 +221,6 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         <div class="divider"></div>
         <div id="mr-sections">
           ${createMedicationSection(medications, medicationStatements)}
-          
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -241,6 +242,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   practitioners: Practitioner[];
   medications: Medication[];
   medicationStatements: MedicationStatement[];
+  medicationAdministrations: MedicationAdministration[];
   conditions: Condition[];
   allergies: AllergyIntolerance[];
   locations: Location[];
@@ -277,6 +279,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
   const tasks: Task[] = [];
   const coverages: Coverage[] = [];
   const organizations: Organization[] = [];
+  const medicationAdministrations: MedicationAdministration[] = [];
 
   if (bundle.entry) {
     for (const entry of bundle.entry) {
@@ -285,6 +288,8 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
         patient = resource as Patient;
       } else if (resource?.resourceType === "MedicationStatement") {
         medicationStatements.push(resource as MedicationStatement);
+      } else if (resource?.resourceType === "MedicationAdministration") {
+        medicationAdministrations.push(resource as MedicationAdministration);
       } else if (resource?.resourceType === "Medication") {
         medications.push(resource as Medication);
       } else if (resource?.resourceType === "Condition") {
@@ -345,6 +350,7 @@ function extractFhirTypesFromBundle(bundle: Bundle): {
     diagnosticReports,
     medications,
     medicationStatements,
+    medicationAdministrations,
     conditions,
     allergies,
     locations,

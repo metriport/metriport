@@ -2,12 +2,7 @@ import fs from "fs";
 import path from "path";
 import { getCodeDisplay, getCodeDetailsFull } from "./term-server-api";
 import { populateHashTableFromCodeDetails, SnomedHierarchyTableEntry } from "./snomed-heirarchies";
-import {
-  prettyPrintHashTable,
-  RemovalStats,
-  createInitialRemovalStats,
-  prettyPrintRemovalStats,
-} from "./stats";
+import { RemovalStats, createInitialRemovalStats, prettyPrintRemovalStats } from "./stats";
 
 async function processDirectoryOrFile(
   directoryOrFile: string,
@@ -34,8 +29,7 @@ async function processDirectoryOrFile(
 
 async function computeHashTable(
   filePath: string,
-  hashTable: Record<string, SnomedHierarchyTableEntry>,
-  conditionIdsDictionary: Record<string, Set<string>>
+  hashTable: Record<string, SnomedHierarchyTableEntry>
 ) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
@@ -50,7 +44,6 @@ async function computeHashTable(
           if (codeDetails) {
             await populateHashTableFromCodeDetails(
               hashTable,
-              conditionIdsDictionary,
               codeDetails,
               coding.code,
               resource.id
@@ -62,9 +55,46 @@ async function computeHashTable(
   }
 }
 
-async function processFileEntries(
+async function removeNonRootSnomedCodes(
   filePath: string,
   hashTable: Record<string, SnomedHierarchyTableEntry>,
+  conditionIdsDictionary: Set<string>,
+  allRemainingEnries: Set<string>,
+  removalStats: RemovalStats
+) {
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const entries = data.bundle ? data.bundle.entry : data.entry;
+
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const entry = entries[i];
+    const resource = entry.resource;
+    if (resource && resource.resourceType === "Condition") {
+      conditionIdsDictionary.add(resource.id);
+      const codings = resource.code?.coding || [];
+      for (const coding of codings) {
+        if (coding.system === "http://snomed.info/sct") {
+          if (hashTable[coding.code] && !hashTable[coding.code].root) {
+            removalStats.nonSnomedRootCodes.count += 1;
+            removalStats.nonSnomedRootCodes.codes.add(coding.code);
+            console.log("Removing non-root SNOMED code:", coding.code, "Resource.id:", resource.id);
+            entries.splice(i, 1);
+            break;
+          } else {
+            console.log("Keeping SNOMED code:", coding.code, "Resource.id:", resource.id);
+            hashTable[coding.code].inserted = true;
+            allRemainingEnries.add(resource.id);
+            break;
+          }
+        }
+      }
+    }
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
+async function removeConditionsProceduresMedAdmins(
+  filePath: string,
+  conditionSet: Set<string>,
   cptSet: Set<string>,
   medicationConditionDict: Record<string, string>,
   allRemainingEnries: Set<string>,
@@ -82,29 +112,22 @@ async function processFileEntries(
 
       for (const coding of codings) {
         if (coding.system === "http://snomed.info/sct") {
-          hasSnomedCode = true;
-          if (hashTable[coding.code] && hashTable[coding.code].inserted) {
+          if (conditionSet.has(coding.code)) {
             removalStats.duplicateCodes.count += 1;
             removalStats.duplicateCodes.codes.add(coding.code);
-            entries.splice(i, 1);
-            break;
-          } else if (hashTable[coding.code] && !hashTable[coding.code].root) {
-            removalStats.nonSnomedRootCodes.count += 1;
-            removalStats.nonSnomedRootCodes.codes.add(coding.code);
-            entries.splice(i, 1);
             break;
           } else {
+            conditionSet.add(coding.code);
             const codeDetails = await getCodeDisplay(coding.code, "SNOMEDCT_US");
             if (codeDetails && codeDetails.category === "disorder") {
-              hashTable[coding.code].inserted = true;
+              hasSnomedCode = true;
               const updatedText = `${codeDetails.display} (${codeDetails.category})`;
               resource.code.text = updatedText;
               coding.text = updatedText;
-              allRemainingEnries.add(resource.id);
+              break;
             } else {
               removalStats.nonDisorderCodes.count += 1;
               removalStats.nonDisorderCodes.codes.add(coding.code);
-              entries.splice(i, 1);
               break;
             }
           }
@@ -122,20 +145,27 @@ async function processFileEntries(
         if (coding.system === "http://www.ama-assn.org/go/cpt") {
           const cptCode = parseInt(coding.code, 10);
           if (cptCode >= 10004 && cptCode <= 69990) {
-            hasValidCptCode = true;
             if (cptSet.has(coding.code)) {
               removalStats.duplicateCptCodes.count += 1;
               removalStats.duplicateCptCodes.codes.add(coding.code);
-              entries.splice(i, 1);
+              break;
             } else {
+              hasValidCptCode = true;
+              console.log(
+                "Keeping CPT code:",
+                coding.code,
+                "Resource.id:",
+                resource.id,
+                "hasValidCptCode:",
+                hasValidCptCode
+              );
               cptSet.add(coding.code);
               allRemainingEnries.add(resource.id);
+              break;
             }
-            break;
           } else {
             removalStats.invalidCptCodes.count += 1;
             removalStats.invalidCptCodes.codes.add(coding.code);
-            entries.splice(i, 1);
             break;
           }
         }
@@ -144,17 +174,15 @@ async function processFileEntries(
         removalStats.entriesWithoutCptCodes.count += 1;
         entries.splice(i, 1);
       }
-    } else if (
-      resource &&
-      resource.resourceType === "MedicationAdministration" &&
-      resource.reasonReference
-    ) {
-      const medicationRef = resource.medicationReference?.reference.split("/")[1];
-      const conditionRef = resource.reasonReference[0]?.reference.split("/")[1];
+    } else if (resource && resource.resourceType === "MedicationAdministration") {
+      if (resource.reasonReference) {
+        const medicationRef = resource.medicationReference?.reference.split("/")[1];
+        const conditionRef = resource.reasonReference[0]?.reference.split("/")[1];
 
-      if (medicationRef && conditionRef) {
-        medicationConditionDict[medicationRef] = conditionRef;
-        allRemainingEnries.add(resource.id);
+        if (medicationRef && conditionRef) {
+          medicationConditionDict[medicationRef] = conditionRef;
+          allRemainingEnries.add(resource.id);
+        }
       } else {
         console.log("Removing MedicationAdministration entry without condition reference");
         entries.splice(i, 1);
@@ -166,7 +194,7 @@ async function processFileEntries(
 
 async function filterMedicationsEntries(
   filePath: string,
-  allRemainingEnries: Set<string>,
+  conditionIdsDictionary: Set<string>,
   medicationConditionDict: Record<string, string>,
   rxNormSet: Set<string>,
   removalStats: RemovalStats
@@ -179,7 +207,9 @@ async function filterMedicationsEntries(
     const resource = entry.resource;
     if (resource && resource.resourceType === "Medication") {
       const conditionRef = medicationConditionDict[resource.id];
-      if (allRemainingEnries.has(conditionRef)) {
+
+      // if the medication is linked to a conditon that is a non-duplicate disorder
+      if (conditionIdsDictionary.has(conditionRef)) {
         const codings = resource.code?.coding || [];
         for (const coding of codings) {
           if (coding.system === "http://www.nlm.nih.gov/research/umls/rxnorm") {
@@ -189,7 +219,14 @@ async function filterMedicationsEntries(
               entries.splice(i, 1);
             } else {
               rxNormSet.add(coding.code);
-              allRemainingEnries.add(resource.id);
+              console.log(
+                "Keeping Medication. RXNORM code:",
+                coding.code,
+                "linked to condition:",
+                conditionRef,
+                "Resource.id:",
+                resource.id
+              );
             }
           }
         }
@@ -208,29 +245,18 @@ async function main() {
     console.error("Please provide a directory path as an argument.");
     process.exit(1);
   }
-  const hashTable: Record<string, SnomedHierarchyTableEntry> = {};
-  const conditionIdsDictionary: Record<string, Set<string>> = {};
 
-  await processDirectoryOrFile(directoryPath, async filePath => {
-    await computeHashTable(filePath, hashTable, conditionIdsDictionary);
-  });
-
-  const filteredConditionIdsDictionary = Object.fromEntries(
-    Object.entries(conditionIdsDictionary).filter(([, value]) => value.size > 0)
-  );
-  console.log("conditionIdsDictionary", filteredConditionIdsDictionary);
-
-  prettyPrintHashTable(hashTable);
   const removalStats = createInitialRemovalStats();
 
+  // Removal of non-disorder SNOMED codes, invalid CPT codes, and duplicate CPT codes
   const cptSet = new Set<string>();
-  const medicationConditionDict: Record<string, string> = {};
-
+  const conditionsSet = new Set<string>();
   const allRemainingEnries = new Set<string>();
+  const medicationConditionDict: Record<string, string> = {}; // a mapping of all medications to conditions
   await processDirectoryOrFile(directoryPath, async filePath => {
-    await processFileEntries(
+    await removeConditionsProceduresMedAdmins(
       filePath,
-      hashTable,
+      conditionsSet,
       cptSet,
       medicationConditionDict,
       allRemainingEnries,
@@ -238,12 +264,35 @@ async function main() {
     );
   });
 
-  const rxNormSet = new Set<string>();
+  prettyPrintRemovalStats(removalStats);
 
+  // Create hierarchy of SNOMED codes
+  const hashTable: Record<string, SnomedHierarchyTableEntry> = {};
+  await processDirectoryOrFile(directoryPath, async filePath => {
+    await computeHashTable(filePath, hashTable);
+  });
+
+  // Remove non-root SNOMED codes
+  const conditionIdsDictionary = new Set<string>();
+  await processDirectoryOrFile(directoryPath, async filePath => {
+    await removeNonRootSnomedCodes(
+      filePath,
+      hashTable,
+      allRemainingEnries,
+      conditionIdsDictionary,
+      removalStats
+    );
+  });
+
+  console.log("conditionIdsDictionary", conditionIdsDictionary);
+  console.log("medicationConditionDict", medicationConditionDict);
+
+  // Removal of duplicate RXNORM codes and medications without condition reference
+  const rxNormSet = new Set<string>();
   await processDirectoryOrFile(directoryPath, async filePath => {
     await filterMedicationsEntries(
       filePath,
-      allRemainingEnries,
+      conditionIdsDictionary,
       medicationConditionDict,
       rxNormSet,
       removalStats

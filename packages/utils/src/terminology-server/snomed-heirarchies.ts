@@ -2,6 +2,7 @@ import { CodeDetailsResponse } from "./term-server-api";
 
 export type SnomedHierarchyTableEntry = {
   found: boolean;
+  children: Set<string>;
   parents: Set<string>;
   root: boolean;
   inserted: boolean;
@@ -10,7 +11,6 @@ export type SnomedHierarchyTableEntry = {
 
 export async function populateHashTableFromCodeDetails(
   hashTable: Record<string, SnomedHierarchyTableEntry>,
-  conditionIdsDictionary: Record<string, Set<string>>,
   codeDetails: CodeDetailsResponse,
   queriedCode: string,
   resourceId: string
@@ -18,6 +18,7 @@ export async function populateHashTableFromCodeDetails(
   if (!hashTable[queriedCode]) {
     hashTable[queriedCode] = {
       found: true,
+      children: new Set(),
       parents: new Set(),
       root: true,
       inserted: false,
@@ -27,12 +28,6 @@ export async function populateHashTableFromCodeDetails(
   } else {
     console.log(`Downgrading ${queriedCode} to non-root (current)`);
     hashTable[queriedCode] = { ...hashTable[queriedCode], found: true, resourceId: resourceId };
-    // children Ids point to parent
-    conditionIdsDictionary[resourceId] = new Set(
-      Array.from(hashTable[queriedCode].parents)
-        .map(parentCode => hashTable[parentCode]?.resourceId)
-        .filter((id): id is string => id !== undefined)
-    );
   }
   codeDetails.parameter.forEach(param => {
     if (param.name === "property") {
@@ -47,31 +42,20 @@ export async function populateHashTableFromCodeDetails(
         if (!hashTable[value]) {
           hashTable[value] = {
             found: false,
+            children: new Set(),
             parents: new Set(),
             root: false,
             inserted: false,
           };
         } else {
-          hashTable[value] = { ...hashTable[value], root: false };
-          const resourceId = hashTable[value].resourceId;
-          if (resourceId) {
-            console.log(`Downgrading ${value} to non-root (existing)`);
-            if (!conditionIdsDictionary[resourceId]) {
-              const queriedResourceId = hashTable[queriedCode].resourceId;
-              if (queriedResourceId) {
-                conditionIdsDictionary[resourceId] = new Set([queriedResourceId]);
-              } else {
-                conditionIdsDictionary[resourceId] = new Set();
-              }
-            } else {
-              const queriedResourceId = hashTable[queriedCode].resourceId;
-              if (queriedResourceId) {
-                conditionIdsDictionary[resourceId].add(queriedResourceId);
-              }
-            }
+          // this is either a code
+          if (hashTable[value].found) {
+            console.log(`Downgrading ${value} to non-root (child)`);
+            hashTable[value] = { ...hashTable[value], root: false };
           }
         }
         hashTable[value].parents.add(queriedCode);
+        hashTable[queriedCode].children.add(value);
       }
     }
   });
