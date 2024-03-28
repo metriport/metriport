@@ -42,6 +42,7 @@ export async function getDocumentsFromCQ({
       setDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
         downloadProgress: { status: "processing" },
+        convertProgress: { status: "processing" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
       }),

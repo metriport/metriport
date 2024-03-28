@@ -128,6 +128,7 @@ export async function queryAndProcessDocuments({
     await setDocQueryProgress({
       patient: { id: patientId, cxId },
       downloadProgress: { status: "processing" },
+      convertProgress: { status: "processing" },
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
