@@ -80,7 +80,7 @@ export async function getCodeDetailsFull(
       console.error("Connection refused. The server is not reachable at the moment.");
       return undefined;
     } else {
-      console.error(`Error fetching code details. Code Not Found ${code}`);
+      // console.error(`Error fetching code details. Code Not Found ${code}`);
       return undefined;
     }
   }

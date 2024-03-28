@@ -5,7 +5,7 @@
                     {{>Resources/Medication.hbs medication=medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial ID=(generateUUID (toJsonString medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial))}},
                     {{>References/MedicationAdministration/medicationReference.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Medication/' (generateUUID (toJsonString medAdm.substanceAdministration.consumable.manufacturedProduct.manufacturedMaterial)))}},
 
-                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=edAdm.substanceAdministration.performer.assignedEntity.representedOrganization) as |orgId|}}
+                    {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=medAdm.substanceAdministration.performer.assignedEntity.representedOrganization) as |orgId|}}
                         {{>Resources/Organization.hbs org=medAdm.substanceAdministration.performer.assignedEntity.representedOrganization ID=orgId.Id}},
                         {{>References/MedicationAdministration/performer.actor.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Organization/' orgId.Id)}},
                     {{/with}}
