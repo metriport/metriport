@@ -8,7 +8,7 @@ export async function allowMapiAccess(cxId: string): Promise<"new" | "existing">
   return "new";
 }
 
-export async function getMapiAccess(cxId: string): Promise<boolean> {
+export async function hasMapiAccess(cxId: string): Promise<boolean> {
   const existing = await MAPIAccess.findByPk(cxId);
   if (!existing) false;
   return true;

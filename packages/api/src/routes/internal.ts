@@ -10,7 +10,7 @@ import {
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
-import { allowMapiAccess, getMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/appConfig";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
@@ -64,8 +64,8 @@ router.get(
   "/mapi-access",
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const hasMapiAccess = await getMapiAccess(cxId);
-    return res.status(httpStatus.OK).json({ hasMapiAccess });
+    const hasMapi = await hasMapiAccess(cxId);
+    return res.status(httpStatus.OK).json({ hasMapiAccess: hasMapi });
   })
 );
 
