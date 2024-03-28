@@ -8,6 +8,12 @@ export async function allowMapiAccess(cxId: string): Promise<"new" | "existing">
   return "new";
 }
 
+export async function getMapiAccess(cxId: string): Promise<boolean> {
+  const existing = await MAPIAccess.findByPk(cxId);
+  if (!existing) false;
+  return true;
+}
+
 export async function revokeMapiAccess(cxId: string): Promise<void> {
   const existing = await MAPIAccess.findByPk(cxId);
   if (!existing) throw new NotFoundError("Customer not found", undefined, { cxId });

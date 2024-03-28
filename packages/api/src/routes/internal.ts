@@ -10,7 +10,7 @@ import {
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
-import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { allowMapiAccess, getMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
 import { isEnhancedCoverageEnabledForCx } from "../external/aws/appConfig";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
@@ -49,6 +49,23 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
     return res.sendStatus(outcome === "new" ? httpStatus.CREATED : httpStatus.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/mapi-access
+ *
+ * Returns a boolean indicating whether MAPI access has been provided for a customer.
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @return payload Indicating access has been given (prop hasMapiAccess).
+ */
+router.get(
+  "/mapi-access",
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const hasMapiAccess = await getMapiAccess(cxId);
+    return res.status(httpStatus.OK).json({ hasMapiAccess });
   })
 );
 
