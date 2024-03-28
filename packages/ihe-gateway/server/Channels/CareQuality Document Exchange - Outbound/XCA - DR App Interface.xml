@@ -4,7 +4,7 @@
   <name>XCA - DR App Interface</name>
   <description>XCA App Interface channel
     - forwards a single request back to the calling app or DB</description>
-  <revision>124</revision>
+  <revision>281</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -179,7 +179,7 @@
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -225,7 +225,7 @@
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709753616727</time>
+        <time>1711482183335</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
