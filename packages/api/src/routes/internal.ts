@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { checkApiQuota } from "../command/medical/admin/api";
@@ -11,7 +12,7 @@ import {
 import { getFacilities } from "../command/medical/facility/get-facility";
 import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import BadRequestError from "../errors/bad-request";
+import { isEnhancedCoverageEnabledForCx } from "../external/aws/appConfig";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
@@ -142,14 +143,11 @@ router.get(
 router.post(
   "/cq-include-list/reset",
   asyncHandler(async (req: Request, res: Response) => {
-    const getOID = async (): Promise<string> => {
-      const cxId = getUUIDFrom("query", req, "cxId").optional();
-      if (cxId) return (await getOrganizationOrFail({ cxId })).oid;
-      const orgOID = getFrom("query").optional("orgOID", req);
-      if (orgOID) return orgOID;
-      throw new BadRequestError(`Either cxId or orgOID must be provided`);
-    };
-    const orgOID = await getOID();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    if (!(await isEnhancedCoverageEnabledForCx(cxId))) {
+      throw new BadRequestError("Enhanced Coverage is not enabled for this customer");
+    }
+    const orgOID = (await getOrganizationOrFail({ cxId })).oid;
     await initCQOrgIncludeList(orgOID);
     return res.sendStatus(httpStatus.OK);
   })
