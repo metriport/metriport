@@ -208,7 +208,7 @@ async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
       "cxsWithADHDMRFeatureFlag"
     );
 
-    if (featureFlag?.enabled && featureFlag?.cxIds) return featureFlag.cxIds;
+    if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
