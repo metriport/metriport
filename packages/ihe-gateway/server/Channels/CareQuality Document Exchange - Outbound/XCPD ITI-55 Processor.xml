@@ -8,7 +8,7 @@
  - Processes responses
 
 Last updated: Dec 20 2023</description>
-  <revision>483</revision>
+  <revision>484</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -372,7 +372,7 @@ Last updated: Dec 20 2023</description>
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -438,7 +438,7 @@ Last updated: Dec 20 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1711067310708</time>
+        <time>1711477012609</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>

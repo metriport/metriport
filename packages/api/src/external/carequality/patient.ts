@@ -19,7 +19,7 @@ import {
   toBasicOrgAttributes,
 } from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
@@ -47,7 +47,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
 
     log(`Kicking off patient discovery`);
-    await updatePatientDiscoveryStatus({ patient, status: "processing" });
+    await processPatientDiscoveryProgress({ patient, status: "processing" });
     await iheGateway.startPatientDiscovery(pdRequest);
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -58,7 +58,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
-    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await processPatientDiscoveryProgress({ patient, status: "failed" });
     outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
