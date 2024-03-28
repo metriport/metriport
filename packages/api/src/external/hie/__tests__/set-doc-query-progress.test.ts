@@ -1,44 +1,53 @@
-import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import {
+  DocumentQueryProgress,
+  Progress,
+  DocumentQueryStatus,
+} from "@metriport/core/domain/document-query";
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import { aggregateAndSetHIEProgresses } from "../set-doc-query-progress";
 
 const requestId = "abc123";
+
+const emptySourceProgress = { documentQueryProgress: {} };
+const processingSourceProgress: Progress = {
+  total: 10,
+  errors: 4,
+  status: "processing",
+  successful: 2,
+};
+const completedSourceProgress: Progress = {
+  total: 20,
+  errors: 2,
+  status: "completed",
+  successful: 18,
+};
 const docQueryProgress: DocumentQueryProgress = {
-  convert: {
-    total: 0,
-    errors: 0,
-    status: "processing",
-    successful: 0,
-  },
-  download: {
-    total: 0,
-    errors: 0,
-    status: "processing",
-    successful: 0,
-  },
+  convert: processingSourceProgress,
+  download: processingSourceProgress,
   requestId,
+};
+
+const addProgresses = (
+  progress1: Progress,
+  progress2: Progress,
+  status: DocumentQueryStatus
+): Progress => {
+  return {
+    total: (progress1.total ?? 0) + (progress2.total ?? 0),
+    errors: (progress1.errors ?? 0) + (progress2.errors ?? 0),
+    status: status,
+    successful: (progress1.successful ?? 0) + (progress2.successful ?? 0),
+  };
 };
 
 describe("aggregateAndSetHIEProgresses", () => {
   it("CQ has progress but CW does not", async () => {
     const externalData: PatientExternalData = {
-      COMMONWELL: {
-        documentQueryProgress: {},
-      },
+      COMMONWELL: emptySourceProgress,
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "processing",
-            successful: 4,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
     };
@@ -49,8 +58,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 10, errors: 4, status: "processing", successful: 2 },
-      download: { total: 20, errors: 2, status: "processing", successful: 4 },
+      convert: processingSourceProgress,
+      download: processingSourceProgress,
       requestId,
     });
   });
@@ -59,23 +68,11 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "processing",
-            successful: 4,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
-      CAREQUALITY: {
-        documentQueryProgress: {},
-      },
+      CAREQUALITY: emptySourceProgress,
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
@@ -84,8 +81,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 10, errors: 4, status: "processing", successful: 2 },
-      download: { total: 20, errors: 2, status: "processing", successful: 4 },
+      convert: processingSourceProgress,
+      download: processingSourceProgress,
       requestId,
     });
   });
@@ -94,34 +91,14 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "processing",
-            successful: 4,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 5,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 10,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
     };
@@ -132,8 +109,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 15, errors: 5, status: "processing", successful: 4 },
-      download: { total: 30, errors: 3, status: "processing", successful: 6 },
+      convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
+      download: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
       requestId,
     });
   });
@@ -142,34 +119,14 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "processing",
-            successful: 6,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "completed",
-            successful: 4,
-          },
+          convert: processingSourceProgress,
+          download: completedSourceProgress,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 5,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 10,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
     };
@@ -180,8 +137,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 15, errors: 5, status: "processing", successful: 8 },
-      download: { total: 30, errors: 3, status: "processing", successful: 6 },
+      convert: addProgresses(processingSourceProgress, processingSourceProgress, "processing"),
+      download: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
       requestId,
     });
   });
@@ -190,34 +147,14 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "completed",
-            successful: 6,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "completed",
-            successful: 18,
-          },
+          convert: completedSourceProgress,
+          download: completedSourceProgress,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 5,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 10,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
+          convert: processingSourceProgress,
+          download: processingSourceProgress,
         },
       },
     };
@@ -228,8 +165,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 15, errors: 5, status: "processing", successful: 8 },
-      download: { total: 30, errors: 3, status: "processing", successful: 20 },
+      convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
+      download: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
       requestId,
     });
   });
@@ -238,34 +175,14 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "completed",
-            successful: 6,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "completed",
-            successful: 18,
-          },
+          convert: completedSourceProgress,
+          download: completedSourceProgress,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 5,
-            errors: 1,
-            status: "processing",
-            successful: 2,
-          },
-          download: {
-            total: 10,
-            errors: 1,
-            status: "completed",
-            successful: 9,
-          },
+          convert: processingSourceProgress,
+          download: completedSourceProgress,
         },
       },
     };
@@ -276,8 +193,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 15, errors: 5, status: "processing", successful: 8 },
-      download: { total: 30, errors: 3, status: "completed", successful: 27 },
+      convert: addProgresses(completedSourceProgress, processingSourceProgress, "processing"),
+      download: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
       requestId,
     });
   });
@@ -286,34 +203,14 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
-          convert: {
-            total: 10,
-            errors: 4,
-            status: "completed",
-            successful: 6,
-          },
-          download: {
-            total: 20,
-            errors: 2,
-            status: "completed",
-            successful: 18,
-          },
+          convert: completedSourceProgress,
+          download: completedSourceProgress,
         },
       },
       CAREQUALITY: {
         documentQueryProgress: {
-          convert: {
-            total: 5,
-            errors: 1,
-            status: "completed",
-            successful: 4,
-          },
-          download: {
-            total: 10,
-            errors: 1,
-            status: "completed",
-            successful: 9,
-          },
+          convert: completedSourceProgress,
+          download: completedSourceProgress,
         },
       },
     };
@@ -324,20 +221,16 @@ describe("aggregateAndSetHIEProgresses", () => {
     );
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
-      convert: { total: 15, errors: 5, status: "completed", successful: 10 },
-      download: { total: 30, errors: 3, status: "completed", successful: 27 },
+      convert: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
+      download: addProgresses(completedSourceProgress, completedSourceProgress, "completed"),
       requestId,
     });
   });
 
   it("has no external data progress", async () => {
     const externalData: PatientExternalData = {
-      COMMONWELL: {
-        documentQueryProgress: {},
-      },
-      CAREQUALITY: {
-        documentQueryProgress: {},
-      },
+      COMMONWELL: emptySourceProgress,
+      CAREQUALITY: emptySourceProgress,
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
@@ -347,6 +240,29 @@ describe("aggregateAndSetHIEProgresses", () => {
 
     expect(aggregateAndSetHIEProgressesResult).toEqual({
       convert: { total: 0, errors: 0, status: "completed", successful: 0 },
+      download: { total: 0, errors: 0, status: "completed", successful: 0 },
+      requestId,
+    });
+  });
+
+  it("has no external data progress - overall only download", async () => {
+    const externalData: PatientExternalData = {
+      COMMONWELL: emptySourceProgress,
+      CAREQUALITY: emptySourceProgress,
+    };
+
+    const overallDocQueryProgress: DocumentQueryProgress = {
+      convert: undefined,
+      download: processingSourceProgress,
+      requestId,
+    };
+
+    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
+      overallDocQueryProgress,
+      externalData
+    );
+
+    expect(aggregateAndSetHIEProgressesResult).toEqual({
       download: { total: 0, errors: 0, status: "completed", successful: 0 },
       requestId,
     });

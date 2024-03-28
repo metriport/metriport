@@ -102,7 +102,10 @@ export function aggregateAndSetHIEProgresses(
   // Set the aggregated doc query progress for the patient
   const externalQueryProgresses = flattenDocQueryProgressWithExternal(updatedExternalData);
 
-  const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+  const aggregatedDocProgress = aggregateDocProgress(
+    externalQueryProgresses,
+    existingPatientDocProgress
+  );
 
   const updatedDocumentQueryProgress: DocumentQueryProgress = {
     ...existingPatientDocProgress,
@@ -155,7 +158,10 @@ export function setHIEDocProgress(
   return externalData;
 }
 
-export function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
+export function aggregateDocProgress(
+  hieDocProgresses: DocumentQueryProgress[],
+  existingPatientDocProgress: DocumentQueryProgress
+): {
   download?: RequiredProgress;
   convert?: RequiredProgress;
 } {
@@ -205,8 +211,17 @@ export function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]):
     successful: 0,
   };
 
-  const download: RequiredProgress = tallyResults.download ?? defaultCompleteProgress;
-  const convert: RequiredProgress = tallyResults.convert ?? defaultCompleteProgress;
+  const download: RequiredProgress | undefined = tallyResults.download
+    ? tallyResults.download
+    : existingPatientDocProgress.download
+    ? defaultCompleteProgress
+    : undefined;
+
+  const convert: RequiredProgress | undefined = tallyResults.convert
+    ? tallyResults.convert
+    : existingPatientDocProgress.convert
+    ? defaultCompleteProgress
+    : undefined;
 
   return {
     download,
