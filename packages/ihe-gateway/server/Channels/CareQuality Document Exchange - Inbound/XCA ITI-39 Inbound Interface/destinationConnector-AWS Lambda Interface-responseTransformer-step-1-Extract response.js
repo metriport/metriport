@@ -11,45 +11,39 @@ if (channelMap.containsKey('MTOM')) {
 	multipart.addBodyHeader('Content-ID', '<doc0@metriport.com>');
 	multipart.setBoundary('--MIMEBoundary' + uuid);
 
-
-	var soapTemplate = getSOAPTemplate();
-	var soap = soapTemplate.namespace('soap');
-	var wsa = soapTemplate.namespace('wsa');
-	soapTemplate.soap::Header.wsa::Action = 'urn:ihe:iti:2007:CrossGatewayRetrieveResponse';
-	soapTemplate.soap::Header.wsa::RelatesTo = 'urn:uuid:' + channelMap.get('MSG_ID');
 	var _response = getXCAITI39QueryResponse(msg, operationOutcome, channelMap.containsKey('MTOM'))
 
 	soapTemplate.*::Body.appendChild(_response);
-	logger.info("_response" + _response)
+	logger.info("soapTemplate.*::Body" + soapTemplate.*::Body)
+	logger.info("soapTemplate.*::Body.*::RetrieveDocumentSetResponse" + soapTemplate.*::Body.*::RetrieveDocumentSetResponse)
 
 	
 	try {
-		for each (var doc in soapTemplate.*::Body.*::RetrieveDocumentSetResponse.*::RegistryResponse.*::DocumentResponse) {
+		for each (var doc in soapTemplate.*::Body.*::RetrieveDocumentSetResponse.*::DocumentResponse) {
 
 			var ihe = doc.namespace('ihe');
 			
 			logger.info("doc" + doc)
-			var attachment = doc.ihe::Document.toString().split(':');
+			var attachment = doc.*::Document.toString();
+			var attachmentContentType = doc.*::mimeType.toString();
 
 			logger.info("attachment" + attachment)
-			var attachmentId = String(attachment[3]).slice(0, -1);
+			var attachmentId = addAttachment(attachment, attachmentContentType, true).getId();
 
-			logger.info("attachment" + attachment)
 			logger.info("attachmentId" + attachmentId)
 	
 			var mtomAttachment = new ResponseMultipartAttachment(attachmentId);
-			mtomAttachment.setChannelId(attachment[1]);
-			mtomAttachment.setMessageId(parseInt(attachment[2]));
-			mtomAttachment.setAttachmentId(attachmentId);
-			mtomAttachment.setHeader('Content-Type', doc.ihe::mimeType.toString());
+			mtomAttachment.setHeader('Content-Type', doc.*::mimeType.toString());
 			mtomAttachment.setHeader('Content-Transfer-Encoding', 'binary');
-			mtomAttachment.setHeader('Content-ID', '<' + doc.ihe::DocumentUniqueId + '>');
+			mtomAttachment.setHeader('Content-ID', '<' + doc.*::DocumentUniqueId + '>');
+
+			logger.info("mtomAttachment" + mtomAttachment)
 			multipart.getAttachments().add(mtomAttachment);
 
 			
-			doc.ihe::Document = '';
+			doc.*::Document = '';
 			var xop = <xop:Include xmlns:xop="http://www.w3.org/2004/08/xop/include" href={'cid:' + doc.*::DocumentUniqueId}/>;
-			doc.ihe::Document.appendChild(xop);
+			doc.*::Document.appendChild(xop);
 		}
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA Inbound Interface: ITI-39 response processing - ' + ex);
@@ -58,7 +52,7 @@ if (channelMap.containsKey('MTOM')) {
 
 	// SN: Undocumented Mirth XCA Interop feature
 	channelMap.put('responseMultipartSettings', multipart);
-	responseMap.put('RESPONSE', msg.toString());
+	responseMap.put('RESPONSE', soapTemplate.toString());
 
 } else {
 	// Simple SOAP response with Base64 encoded documents inline
