@@ -1,10 +1,11 @@
 // Process simple SOAP or MTOM responses
 if (channelMap.containsKey('MTOM')) {
+	logger.info('XCA Inbound Interface: ITI-39 response processing - MTOM response');
 
 	// MTOM response with Base64 encoded document contents as separate attachments
 	var uuid = String(UUIDGenerator.getUUID()).replace(/-/g, '');
 	
-	var multipart = ResponseMultipartSettings();
+	var multipart = new ResponseMultipartSettings();
 	multipart.addBodyHeader('Content-Type', 'application/xop+xml; charset=UTF-8; type="application/soap+xml"');
 	multipart.addBodyHeader('Content-Transfer-Encoding', 'binary');
 	multipart.addBodyHeader('Content-ID', '<doc0@metriport.com>');
@@ -21,7 +22,8 @@ if (channelMap.containsKey('MTOM')) {
 			var attachment = doc.ihe::Document.toString().split(':');
 			var attachmentId = String(attachment[3]).slice(0, -1);
 	
-			var mtomAttachment = ResponseMultipartAttachment();
+			// new before multipartAttachment???
+			var mtomAttachment = new ResponseMultipartAttachment(attachmentId);
 			mtomAttachment.setChannelId(attachment[1]);
 			mtomAttachment.setMessageId(parseInt(attachment[2]));
 			mtomAttachment.setAttachmentId(attachmentId);
@@ -44,7 +46,7 @@ if (channelMap.containsKey('MTOM')) {
 	// SN: Undocumented Mirth XCA Interop feature
 	channelMap.put('responseMultipartSettings', multipart);
 	responseMap.put('RESPONSE', msg.toString());
-
+	
 } else {
 	// Simple SOAP response with Base64 encoded documents inline
 	var result = AttachmentUtil.reAttachMessage(msg.toString(), connectorMessage);
