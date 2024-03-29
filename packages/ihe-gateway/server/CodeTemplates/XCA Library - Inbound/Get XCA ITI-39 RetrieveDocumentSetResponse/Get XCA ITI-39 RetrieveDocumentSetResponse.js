@@ -19,7 +19,7 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
                 
                 var doc64 = xcaReadFromFileB64(entry.urn.toString());
                 
-				var docResponse = <DocumentResponse>
+				var docResponse = <DocumentResponse xmlns="urn:ihe:iti:xds-b:2007">
                                     <HomeCommunityId>{'urn:oid:' + entry.homeCommunityId.toString()}</HomeCommunityId>
                                     <RepositoryUniqueId>{entry.repositoryUniqueId.toString()}</RepositoryUniqueId>
                                     <DocumentUniqueId>{entry.docUniqueId.toString()}</DocumentUniqueId>
