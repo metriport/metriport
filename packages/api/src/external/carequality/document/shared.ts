@@ -74,7 +74,7 @@ export const cqToFHIR = (
     content: generateCQFHIRContent(baseAttachment, contentExtension, docRef.url),
     extension: [cqExtension],
     contained: dedupeContainedResources(contained),
-    date: docRef.date ? formatDate(docRef.date) : undefined,
+    ...(docRef.creation ? { date: formatDate(docRef.creation) } : {}),
     // TODO: #1612 (internal) Add author reference
   };
   if (docRef.title) updatedDocRef.description = docRef.title;
