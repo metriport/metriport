@@ -1,43 +1,16 @@
-import {
-  DocumentQueryProgress,
-  Progress,
-  DocumentQueryStatus,
-} from "@metriport/core/domain/document-query";
+import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
 import { PatientExternalData } from "@metriport/core/domain//patient";
 import { aggregateAndSetHIEProgresses } from "../set-doc-query-progress";
+import { createProgress, addProgresses } from "./doc-progress-tests";
 
 const requestId = "abc123";
-
 const emptySourceProgress = { documentQueryProgress: {} };
-const processingSourceProgress: Progress = {
-  total: 10,
-  errors: 4,
-  status: "processing",
-  successful: 2,
-};
-const completedSourceProgress: Progress = {
-  total: 20,
-  errors: 2,
-  status: "completed",
-  successful: 18,
-};
+const processingSourceProgress: Progress = createProgress({ status: "processing" });
+const completedSourceProgress: Progress = createProgress({ status: "completed" });
 const docQueryProgress: DocumentQueryProgress = {
   convert: processingSourceProgress,
   download: processingSourceProgress,
   requestId,
-};
-
-const addProgresses = (
-  progress1: Progress,
-  progress2: Progress,
-  status: DocumentQueryStatus
-): Progress => {
-  return {
-    total: (progress1.total ?? 0) + (progress2.total ?? 0),
-    errors: (progress1.errors ?? 0) + (progress2.errors ?? 0),
-    status: status,
-    successful: (progress1.successful ?? 0) + (progress2.successful ?? 0),
-  };
 };
 
 describe("aggregateAndSetHIEProgresses", () => {
@@ -227,6 +200,69 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
+  it("has CW with total less than success and errors", async () => {
+    const progress = createProgress({
+      manuelProg: { total: 2, successful: 10, errors: 4, status: "processing" },
+    });
+
+    const externalData: PatientExternalData = {
+      COMMONWELL: {
+        documentQueryProgress: {
+          download: progress,
+        },
+      },
+    };
+
+    const overallDocQueryProgress: DocumentQueryProgress = {
+      ...docQueryProgress,
+      convert: undefined,
+    };
+
+    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
+      overallDocQueryProgress,
+      externalData
+    );
+
+    expect(aggregateAndSetHIEProgressesResult).toEqual({
+      download: progress,
+      requestId,
+    });
+  });
+
+  it("has CW with total less than success and errors - CQ is correct", async () => {
+    const progress = createProgress({
+      manuelProg: { total: 2, successful: 10, errors: 4, status: "processing" },
+    });
+
+    const externalData: PatientExternalData = {
+      COMMONWELL: {
+        documentQueryProgress: {
+          download: progress,
+        },
+      },
+      CAREQUALITY: {
+        documentQueryProgress: {
+          download: processingSourceProgress,
+        },
+      },
+    };
+
+    const overallDocQueryProgress: DocumentQueryProgress = {
+      ...docQueryProgress,
+      convert: undefined,
+    };
+
+    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
+      overallDocQueryProgress,
+      externalData
+    );
+
+    expect(aggregateAndSetHIEProgressesResult).toEqual({
+      download: addProgresses(progress, processingSourceProgress, "processing"),
+      requestId,
+    });
+  });
+
   it("has no external data progress", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
@@ -252,9 +288,8 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
+      ...docQueryProgress,
       convert: undefined,
-      download: processingSourceProgress,
-      requestId,
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(

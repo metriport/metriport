@@ -174,15 +174,16 @@ export function aggregateDocProgress(
     (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
       for (const type of progressTypes) {
         const progressType = progress[type];
+        const existingProgressType = existingPatientDocProgress[type];
 
-        if (!progressType) continue;
+        if (!existingProgressType) continue;
 
-        const currTotal = progressType.total ?? 0;
-        const currErrors = progressType.errors ?? 0;
-        const currSuccessful = progressType.successful ?? 0;
+        const currTotal = progressType?.total ?? 0;
+        const currErrors = progressType?.errors ?? 0;
+        const currSuccessful = progressType?.successful ?? 0;
         const accType = acc[type];
 
-        statuses[type].push(progressType.status);
+        statuses[type].push(progressType?.status ?? "completed");
 
         if (accType) {
           accType.total += currTotal;
@@ -194,7 +195,7 @@ export function aggregateDocProgress(
             total: currTotal,
             errors: currErrors,
             successful: currSuccessful,
-            status: progressType.status,
+            status: progressType?.status ?? "completed",
           };
         }
       }
@@ -204,29 +205,7 @@ export function aggregateDocProgress(
     {}
   );
 
-  const defaultCompleteProgress: RequiredProgress = {
-    status: "completed",
-    total: 0,
-    errors: 0,
-    successful: 0,
-  };
-
-  const download: RequiredProgress | undefined = tallyResults.download
-    ? tallyResults.download
-    : existingPatientDocProgress.download
-    ? defaultCompleteProgress
-    : undefined;
-
-  const convert: RequiredProgress | undefined = tallyResults.convert
-    ? tallyResults.convert
-    : existingPatientDocProgress.convert
-    ? defaultCompleteProgress
-    : undefined;
-
-  return {
-    download,
-    convert,
-  };
+  return tallyResults;
 }
 
 function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
