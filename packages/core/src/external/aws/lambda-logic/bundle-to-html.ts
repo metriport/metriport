@@ -38,8 +38,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
     patient,
     medications,
-    medicationStatements,
-
+    medicationAdministrations,
     conditions,
     allergies,
     procedures,
@@ -220,7 +219,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
         ${createMRHeader(patient)}
         <div class="divider"></div>
         <div id="mr-sections">
-          ${createMedicationSection(medications, medicationStatements)}
+          ${createConditionLinkedMedicationSection(medications, medicationAdministrations)}
           ${createConditionSection(conditions, encounters)}
           ${createAllergySection(allergies)}
           ${createProcedureSection(procedures)}
@@ -745,7 +744,55 @@ function createOrganiztionField(
   return organization?.name ? `<p>Facility: ${organization.name}</p>` : "";
 }
 
-function createMedicationSection(
+function createConditionLinkedMedicationSection(
+  medications: Medication[],
+  medicationAdministrations: MedicationAdministration[]
+) {
+  if (!medicationAdministrations) {
+    return "";
+  }
+
+  const mappedMedications = mapResourceToId<Medication>(medications);
+
+  const medicationAdministrationsWithMedication = medicationAdministrations.filter(
+    medicationAdministration => {
+      const medicationId = medicationAdministration.medicationReference?.reference?.split("/")[1];
+      return medicationId && mappedMedications[medicationId];
+    }
+  );
+
+  const medicationAdministrationsSortedByDate = medicationAdministrationsWithMedication.sort(
+    (a, b) => {
+      return dayjs(a.effectivePeriod?.start).isBefore(dayjs(b.effectivePeriod?.start)) ? 1 : -1;
+    }
+  );
+
+  const removeDuplicate = uniqWith(medicationAdministrationsSortedByDate, (a, b) => {
+    const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
+    const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
+
+    return (
+      aDate === bDate &&
+      a.dosage?.text !== undefined &&
+      b.dosage?.text !== undefined &&
+      a.dosage.text === b.dosage.text
+    );
+  });
+
+  const medicationSection = createMedLinkedConditionSectionInMedications(
+    mappedMedications,
+    removeDuplicate,
+    "Condition Linked Medications"
+  );
+
+  const medicalTableContents = `
+  ${medicationSection}
+  `;
+
+  return createSection("Medications", medicalTableContents);
+}
+
+export function createMedicationSection(
   medications: Medication[],
   medicationStatements: MedicationStatement[]
 ) {
@@ -805,7 +852,11 @@ function createMedicationSection(
   return createSection("Medications", medicalTableContents);
 }
 
-function getDateFormMedicationStatement(v: MedicationStatement): string | undefined {
+function getDateFromMedicationStatement(v: MedicationStatement): string | undefined {
+  return v.effectivePeriod?.start;
+}
+
+function getDateFromMedicationAdministration(v: MedicationAdministration): string | undefined {
   return v.effectivePeriod?.start;
 }
 
@@ -819,8 +870,8 @@ function createSectionInMedications(
     return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
   }
   const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
-    const aDate = getDateFormMedicationStatement(a);
-    const bDate = getDateFormMedicationStatement(b);
+    const aDate = getDateFromMedicationStatement(a);
+    const bDate = getDateFromMedicationStatement(b);
     if (!aDate && !bDate) return 0;
     if (aDate && !bDate) return -1;
     if (!aDate && bDate) return 1;
@@ -866,7 +917,73 @@ function createSectionInMedications(
           }</td>
               <td>${medicationStatement.status ?? ""}</td>
               <td>${code ?? ""}</td>
-              <td>${formatDateForDisplay(getDateFormMedicationStatement(medicationStatement))}</td>
+              <td>${formatDateForDisplay(getDateFromMedicationStatement(medicationStatement))}</td>
+            </tr>
+          `;
+        })
+        .join("")}
+    </tbody>
+  </table>
+  `;
+  return medicalTableContents;
+}
+
+function createMedLinkedConditionSectionInMedications(
+  mappedMedications: Record<string, Medication>,
+  medicationAdministrations: MedicationAdministration[],
+  title: string
+) {
+  if (medicationAdministrations.length <= 0) {
+    const noMedFound = "No medication info found";
+    return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
+  }
+  const medicationStatementsSortedByDate = medicationAdministrations.sort((a, b) => {
+    const aDate = getDateFromMedicationAdministration(a);
+    const bDate = getDateFromMedicationAdministration(b);
+    if (!aDate && !bDate) return 0;
+    if (aDate && !bDate) return -1;
+    if (!aDate && bDate) return 1;
+    return dayjs(aDate).isBefore(dayjs(bDate)) ? 1 : -1;
+  });
+  const medicalTableContents = `
+      <h4>${title}</h4>
+      <table>
+    <thead>
+      <tr>
+        <th style="width: 25%">Medication</th>
+        <th style="width: 25%">Instructions</th>
+        <div style="width: 50%">
+          <th>Dosage</th>
+          <th>Status</th>
+          <th>Code</th>
+          <th>Date</th>
+        </div>
+      </tr>
+    </thead>
+    <tbody>
+      ${medicationStatementsSortedByDate
+        .map(medicationAdministration => {
+          const medicationRefId =
+            medicationAdministration.medicationReference?.reference?.split("/")[1];
+          const medication = mappedMedications[medicationRefId ?? ""];
+
+          const code = getSpecificCode(medication?.code?.coding ?? [], [RX_NORM_CODE, NDC_CODE]);
+          const blacklistInstructions = ["not defined"];
+
+          const blacklistedInstruction = blacklistInstructions.find(instruction => {
+            return medicationAdministration.dosage?.text?.toLowerCase().includes(instruction);
+          });
+
+          return `
+            <tr>
+              <td>${medication?.code?.text ?? ""}</td>
+              <td>${blacklistedInstruction ? "" : medicationAdministration.dosage?.text ?? ""}</td>
+              <td>${medicationAdministration.dosage?.dose?.value ?? ""} ${
+            medicationAdministration.dosage?.dose?.unit?.replace(/[{()}]/g, "") ?? ""
+          }</td>
+              <td>${medicationAdministration.status ?? ""}</td>
+              <td>${code ?? ""}</td>
+              <td>${formatDateForDisplay(medicationAdministration.effectivePeriod?.start)}</td>
             </tr>
           `;
         })

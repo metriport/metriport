@@ -42,12 +42,7 @@ async function computeHashTable(
         if (coding.system === "http://snomed.info/sct") {
           const codeDetails = await getCodeDetailsFull(coding.code, "SNOMEDCT_US");
           if (codeDetails) {
-            await populateHashTableFromCodeDetails(
-              hashTable,
-              codeDetails,
-              coding.code,
-              resource.id
-            );
+            await populateHashTableFromCodeDetails(hashTable, coding.code, resource.id);
           }
         }
       }
