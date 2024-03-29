@@ -59,8 +59,10 @@ export async function resetDocQueryProgress({
         documentQueryProgress: {},
       };
 
+      const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+
       const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
-        existingPatient,
+        existingPatientDocProgress,
         resetExternalData
       );
 
