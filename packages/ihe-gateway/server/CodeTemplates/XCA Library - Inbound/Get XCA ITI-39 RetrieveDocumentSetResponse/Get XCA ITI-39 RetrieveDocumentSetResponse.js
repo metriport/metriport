@@ -11,23 +11,6 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
                 <RegistryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success"/>
             </ihe:RetrieveDocumentSetResponse>;
 
-    if (mtom) {
-        // If MTOM is true, return a registry error saying MTOM not supported right now
-        var outcome = {
-            "resourceType": "OperationOutcome",
-            "issue": [{
-                "severity": "error",
-                "code": "MTOMNotSupported",
-                "details": {
-                    "text": "MTOM is not supported at this time."
-                }
-            }]
-        };
-        var registryErrorList = getXCARegistryErrorList(outcome, _response);
-        if (registryErrorList) _response.appendChild(registryErrorList);
-        return _response;
-    }
-
     // Process response entries from 'request'
     if (request && request.hasOwnProperty('documentReference')) {
         request.documentReference.forEach(function(entry) {

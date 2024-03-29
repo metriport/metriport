@@ -60,6 +60,7 @@ export async function processOutboundDocumentQueryResps({
       await setDocQueryProgress({
         patient: { id: patientId, cxId: cxId },
         downloadProgress: { status: "completed" },
+        convertProgress: { status: "completed" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
       });
@@ -200,6 +201,7 @@ function buildInterrupt({
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
