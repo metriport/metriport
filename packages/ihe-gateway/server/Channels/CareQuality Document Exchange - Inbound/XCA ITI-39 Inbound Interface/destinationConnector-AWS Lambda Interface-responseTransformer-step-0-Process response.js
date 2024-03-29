@@ -16,6 +16,7 @@ if (msg.hasOwnProperty('operationOutcome')) {
 }
 if (!channelMap.containsKey('MTOM')) {
 	logger.info('XCA ITI-39 Inbound Interface: ITI-39 response processing - simple SOAP response');
+
 	// Generate RetrieveDocumentSetResponse	
 	try {	
 		var _reponse = (failure) ? getXCAITI39QueryResponse(null, operationOutcome) : getXCAITI39QueryResponse(msg, operationOutcome, channelMap.containsKey('MTOM'));
@@ -60,5 +61,4 @@ if (!channelMap.containsKey('MTOM')) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Inbound Interface: step-0 - ' + ex);
 		throw ex;
 	}
-	return
 }

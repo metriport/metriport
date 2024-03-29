@@ -11,18 +11,32 @@ if (channelMap.containsKey('MTOM')) {
 	multipart.addBodyHeader('Content-ID', '<doc0@metriport.com>');
 	multipart.setBoundary('--MIMEBoundary' + uuid);
 
-	var multipartAttachmentList = [];
 
+	var soapTemplate = getSOAPTemplate();
+	var soap = soapTemplate.namespace('soap');
+	var wsa = soapTemplate.namespace('wsa');
+	soapTemplate.soap::Header.wsa::Action = 'urn:ihe:iti:2007:CrossGatewayRetrieveResponse';
+	soapTemplate.soap::Header.wsa::RelatesTo = 'urn:uuid:' + channelMap.get('MSG_ID');
+	var _response = getXCAITI39QueryResponse(msg, operationOutcome, channelMap.containsKey('MTOM'))
 
+	soapTemplate.*::Body.appendChild(_response);
+	logger.info("_response" + _response)
+
+	
 	try {
-		for each (var doc in msg.*::Body.*::RetrieveDocumentSetResponse.*::RegistryResponse.*::DocumentResponse) {
+		for each (var doc in soapTemplate.*::Body.*::RetrieveDocumentSetResponse.*::RegistryResponse.*::DocumentResponse) {
 
 			var ihe = doc.namespace('ihe');
 			
+			logger.info("doc" + doc)
 			var attachment = doc.ihe::Document.toString().split(':');
+
+			logger.info("attachment" + attachment)
 			var attachmentId = String(attachment[3]).slice(0, -1);
+
+			logger.info("attachment" + attachment)
+			logger.info("attachmentId" + attachmentId)
 	
-			// new before multipartAttachment???
 			var mtomAttachment = new ResponseMultipartAttachment(attachmentId);
 			mtomAttachment.setChannelId(attachment[1]);
 			mtomAttachment.setMessageId(parseInt(attachment[2]));
@@ -30,7 +44,8 @@ if (channelMap.containsKey('MTOM')) {
 			mtomAttachment.setHeader('Content-Type', doc.ihe::mimeType.toString());
 			mtomAttachment.setHeader('Content-Transfer-Encoding', 'binary');
 			mtomAttachment.setHeader('Content-ID', '<' + doc.ihe::DocumentUniqueId + '>');
-			multipartAttachmentList.push(mtomAttachment);
+			multipart.getAttachments().add(mtomAttachment);
+
 			
 			doc.ihe::Document = '';
 			var xop = <xop:Include xmlns:xop="http://www.w3.org/2004/08/xop/include" href={'cid:' + doc.*::DocumentUniqueId}/>;
@@ -41,12 +56,10 @@ if (channelMap.containsKey('MTOM')) {
 		throw ex;
 	}
 
-	multipart.setAttachments(multipartAttachmentList);
-
 	// SN: Undocumented Mirth XCA Interop feature
 	channelMap.put('responseMultipartSettings', multipart);
 	responseMap.put('RESPONSE', msg.toString());
-	
+
 } else {
 	// Simple SOAP response with Base64 encoded documents inline
 	var result = AttachmentUtil.reAttachMessage(msg.toString(), connectorMessage);
