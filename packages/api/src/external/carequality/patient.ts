@@ -7,13 +7,10 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
-import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { isCarequalityEnabled } from "../aws/appConfig";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { isCQDirectEnabledForCx } from "../aws/appConfig";
-import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
+
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -26,6 +23,7 @@ import { processPatientDiscoveryProgress } from "./process-patient-discovery-pro
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
+import { validateCQEnabledAndInitGW } from "./shared";
 
 dayjs.extend(duration);
 
@@ -41,7 +39,7 @@ export async function discover(
   const { log: outerLog } = out(baseLogMessage);
   const { cxId } = patient;
 
-  const enabledIHEGW = await validatePDEnabledAndInitGW(cxId, forceEnabled, outerLog);
+  const enabledIHEGW = await validateCQEnabledAndInitGW(cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
     await processPatientDiscoveryProgress({ patient, status: "processing" });
@@ -50,46 +48,6 @@ export async function discover(
     prepareAndTriggerPD(patient, facilityNPI, enabledIHEGW, baseLogMessage).catch(
       processAsyncError(context)
     );
-  }
-}
-
-async function validatePDEnabledAndInitGW(
-  cxId: string,
-  forceEnabled: boolean,
-  outerLog: typeof console.log
-): Promise<IHEGateway | undefined> {
-  try {
-    const iheGateway = makeIheGatewayAPIForPatientDiscovery();
-    const isCQEnabled = await isCarequalityEnabled();
-    const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
-
-    const iheGWNotPresent = !iheGateway;
-    const cqIsDisabled = !isCQEnabled && !forceEnabled;
-    const cqDirectIsDisabledForCx = !isCQDirectEnabled;
-
-    if (iheGWNotPresent) {
-      outerLog(`IHE GW not available, skipping PD`);
-      return undefined;
-    } else if (cqIsDisabled) {
-      outerLog(`CQ not enabled, skipping PD`);
-      return undefined;
-    } else if (cqDirectIsDisabledForCx) {
-      outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
-      return undefined;
-    }
-
-    return iheGateway;
-  } catch (error) {
-    const msg = `Error validating PD enabled`;
-    outerLog(`${msg} - ${errorToString(error)}`);
-    capture.error(msg, {
-      extra: {
-        cxId,
-        forceEnabled,
-        context,
-        error,
-      },
-    });
   }
 }
 
