@@ -1,5 +1,11 @@
 import { PurposeOfUse } from "@metriport/shared";
 import z from "zod";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { isCQDirectEnabledForCx } from "../aws/appConfig";
+import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
+import { isCarequalityEnabled } from "../aws/appConfig";
+import { errorToString } from "@metriport/shared/common/error";
+import { capture } from "@metriport/core/util/notifications";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -8,6 +14,45 @@ export function createPurposeOfUse() {
 
 export function isGWValid(gateway: { homeCommunityId: string; url: string }): boolean {
   return !!gateway.homeCommunityId && !!gateway.url;
+}
+
+export async function validateCQEnabledAndInitGW(
+  cxId: string,
+  forceEnabled: boolean,
+  outerLog: typeof console.log
+): Promise<IHEGateway | undefined> {
+  try {
+    const iheGateway = makeIheGatewayAPIForPatientDiscovery();
+    const isCQEnabled = await isCarequalityEnabled();
+    const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
+
+    const iheGWNotPresent = !iheGateway;
+    const cqIsDisabled = !isCQEnabled && !forceEnabled;
+    const cqDirectIsDisabledForCx = !isCQDirectEnabled;
+
+    if (iheGWNotPresent) {
+      outerLog(`IHE GW not available, skipping PD`);
+      return undefined;
+    } else if (cqIsDisabled) {
+      outerLog(`CQ not enabled, skipping PD`);
+      return undefined;
+    } else if (cqDirectIsDisabledForCx) {
+      outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+      return undefined;
+    }
+
+    return iheGateway;
+  } catch (error) {
+    const msg = `Error validating PD enabled`;
+    outerLog(`${msg} - ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        forceEnabled,
+        error,
+      },
+    });
+  }
 }
 
 export const cqOrgUrlsSchema = z.object({
