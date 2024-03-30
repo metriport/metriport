@@ -1,6 +1,8 @@
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { out } from "@metriport/core/util/log";
 import { processAsyncError } from "../../../errors";
+import { makeIheGatewayAPIForPatientDiscovery } from "../../../external/ihe-gateway/api";
 import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
@@ -11,10 +13,14 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { processPatientDiscoveryProgress } from "../../../external/carequality/process-patient-discovery-progress";
+import { shouldRunDiscovery } from "../../../external/carequality/patient";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
+
+const iheGateway = makeIheGatewayAPIForPatientDiscovery();
 
 export const createPatient = async (
   patient: PatientCreateCmd,
@@ -60,10 +66,19 @@ export const createPatient = async (
   ]);
 
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // Intentionally asynchronous
-    cwCommands.patient
-      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
-      .catch(processAsyncError(`cw.patient.create`));
+    // TODO: AWAIT HIE LOGIC AND MAKE INNER LOGIC ASYNC
+    const baseLogMessage = `CQ PD - patientId ${newPatient.id}`;
+    const { log: outerLog } = out(baseLogMessage);
+    const shouldRun = await shouldRunDiscovery(cxId, iheGateway, outerLog);
+
+    if (shouldRun) {
+      await processPatientDiscoveryProgress({ patient: newPatient, status: "processing" });
+
+      // Intentionally asynchronous
+      cwCommands.patient
+        .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
+        .catch(processAsyncError(`cw.patient.create`));
+    }
   }
 
   if (carequalityEnabled || forceCarequality) {
