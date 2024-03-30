@@ -1,9 +1,7 @@
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { out } from "@metriport/core/util/log";
-import { processAsyncError } from "../../../errors";
-import { makeIheGatewayAPIForPatientDiscovery } from "../../../external/ihe-gateway/api";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
@@ -13,14 +11,10 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { processPatientDiscoveryProgress } from "../../../external/carequality/process-patient-discovery-progress";
-import { shouldRunDiscovery } from "../../../external/carequality/patient";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
-
-const iheGateway = makeIheGatewayAPIForPatientDiscovery();
 
 export const createPatient = async (
   patient: PatientCreateCmd,
@@ -60,33 +54,16 @@ export const createPatient = async (
   const newPatient = await PatientModel.create(patientCreate);
 
   // TODO #1661: move these to the respective "commands" files so this is fully async
-  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
-    isCommonwellEnabled(),
-    isCarequalityEnabled(),
-  ]);
+  const [commonwellEnabled] = await Promise.all([isCommonwellEnabled()]);
 
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // TODO #1661: AWAIT HIE LOGIC AND MAKE INNER LOGIC ASYNC
-    const baseLogMessage = `CQ PD - patientId ${newPatient.id}`;
-    const { log: outerLog } = out(baseLogMessage);
-    const shouldRun = await shouldRunDiscovery(cxId, iheGateway, outerLog);
-
-    if (shouldRun) {
-      await processPatientDiscoveryProgress({ patient: newPatient, status: "processing" });
-
-      // Intentionally asynchronous
-      cwCommands.patient
-        .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
-        .catch(processAsyncError(`cw.patient.create`));
-    }
-  }
-
-  if (carequalityEnabled || forceCarequality) {
     // Intentionally asynchronous
-    cqCommands.patient
-      .discover(newPatient, facility.data.npi)
-      .catch(processAsyncError(`cq.patient.create`));
+    cwCommands.patient
+      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
+      .catch(processAsyncError(`cw.patient.create`));
   }
+
+  await cqCommands.patient.discover(newPatient, facility.data.npi, forceCarequality);
 
   return newPatient;
 };
