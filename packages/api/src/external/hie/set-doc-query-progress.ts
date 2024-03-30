@@ -176,7 +176,7 @@ export function aggregateDocProgress(
         const progressType = progress[type];
         const existingProgressType = existingPatientDocProgress[type];
 
-        if (!existingProgressType) continue;
+        if (!progressType && !existingProgressType) continue;
 
         const currTotal = progressType?.total ?? 0;
         const currErrors = progressType?.errors ?? 0;
