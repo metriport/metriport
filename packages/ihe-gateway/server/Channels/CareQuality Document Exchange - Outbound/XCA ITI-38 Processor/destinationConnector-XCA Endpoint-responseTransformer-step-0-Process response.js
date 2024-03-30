@@ -8,13 +8,7 @@ var 	queryResponseCode = '',
 
 try {
 
-	//var soap = String(getBase64Body(msg));
 	var soap = msg.toString();
-
-	// Store for testing
-	channelMap.put('RESPONSE', soap.toString());
-
-	xml = new XML(soap.toString());
 
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
@@ -25,6 +19,7 @@ try {
 		
 	} else {
 
+		xml = new XML(soap);
 		xml = xml.*::Body.*::AdhocQueryResponse;
 
 		// The status attribute reflects the status of the operation and shall be one of the following values:
