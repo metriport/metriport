@@ -48,7 +48,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
 
     log(`Kicking off patient discovery`);
-    // TODO: ADD THIS BACK IN WHEN CODE IS SYNCHRONOUS
+    // TODO #1661: ADD THIS BACK IN WHEN CODE IS SYNCHRONOUS
     // await processPatientDiscoveryProgress({ patient, status: "processing" });
     await iheGateway.startPatientDiscovery(pdRequest);
 
@@ -73,7 +73,7 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
   }
 }
 
-// TODO: REMOVE THIS WHEN CODE IS SYNCHRONOUS
+// TODO #1661: REMOVE THIS WHEN CODE IS SYNCHRONOUS
 export async function shouldRunDiscovery(
   cxId: string,
   iheGateway: IHEGateway | undefined,

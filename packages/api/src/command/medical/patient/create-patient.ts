@@ -59,14 +59,14 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // TODO move these to the respective "commands" files so this is fully async
+  // TODO #1661: move these to the respective "commands" files so this is fully async
   const [commonwellEnabled, carequalityEnabled] = await Promise.all([
     isCommonwellEnabled(),
     isCarequalityEnabled(),
   ]);
 
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // TODO: AWAIT HIE LOGIC AND MAKE INNER LOGIC ASYNC
+    // TODO #1661: AWAIT HIE LOGIC AND MAKE INNER LOGIC ASYNC
     const baseLogMessage = `CQ PD - patientId ${newPatient.id}`;
     const { log: outerLog } = out(baseLogMessage);
     const shouldRun = await shouldRunDiscovery(cxId, iheGateway, outerLog);
