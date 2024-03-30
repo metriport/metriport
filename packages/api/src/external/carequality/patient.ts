@@ -30,7 +30,6 @@ import { PatientDataCarequality } from "./patient-shared";
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
-const iheGateway = makeIheGatewayAPIForPatientDiscovery();
 const resultPoller = makeOutboundResultPoller();
 
 export async function discover(
@@ -60,6 +59,7 @@ async function validatePDEnabledAndInitGW(
   outerLog: typeof console.log
 ): Promise<IHEGateway | undefined> {
   try {
+    const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
 
