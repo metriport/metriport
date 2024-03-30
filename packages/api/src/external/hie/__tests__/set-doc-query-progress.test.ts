@@ -263,6 +263,38 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
+  it("has CW download and convert but no CQ", async () => {
+    const progress = createProgress({
+      manuelProg: { total: 2, successful: 10, errors: 4, status: "processing" },
+    });
+
+    const externalData: PatientExternalData = {
+      COMMONWELL: {
+        documentQueryProgress: {
+          download: progress,
+          convert: progress,
+        },
+      },
+      CAREQUALITY: emptySourceProgress,
+    };
+
+    const overallDocQueryProgress: DocumentQueryProgress = {
+      ...docQueryProgress,
+      convert: undefined,
+    };
+
+    const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
+      overallDocQueryProgress,
+      externalData
+    );
+
+    expect(aggregateAndSetHIEProgressesResult).toEqual({
+      download: progress,
+      convert: progress,
+      requestId,
+    });
+  });
+
   it("has no external data progress", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
