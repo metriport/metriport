@@ -1,4 +1,5 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { Organization } from "@metriport/core/domain/organization";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -47,7 +48,8 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
     const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
 
     log(`Kicking off patient discovery`);
-    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    // TODO #1661: ADD THIS BACK IN WHEN CODE IS SYNCHRONOUS
+    // await processPatientDiscoveryProgress({ patient, status: "processing" });
     await iheGateway.startPatientDiscovery(pdRequest);
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -69,6 +71,24 @@ export async function discover(patient: Patient, facilityNPI: string): Promise<v
       },
     });
   }
+}
+
+// TODO #1661: REMOVE THIS WHEN CODE IS SYNCHRONOUS
+export async function shouldRunDiscovery(
+  cxId: string,
+  iheGateway: IHEGateway | undefined,
+  outerLog: typeof console.log
+): Promise<boolean> {
+  if (!iheGateway) {
+    outerLog(`IHE GW not available, skipping PD`);
+    return false;
+  }
+  if (!(await isCQDirectEnabledForCx(cxId))) {
+    outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+    return false;
+  }
+
+  return true;
 }
 
 export function getCQData(

@@ -388,6 +388,8 @@ async function setupUpdate(
   const commonwellPatientId = commonwellData.patientId;
   const personId = commonwellData.personId;
 
+  if (!commonwellPatientId || !personId) return undefined;
+
   const { organization, facility } = await getPatientData(patient, facilityId);
   const orgName = organization.data.name;
   const orgOID = organization.oid;
