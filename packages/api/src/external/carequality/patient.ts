@@ -42,7 +42,7 @@ export async function discover(
   const { log: outerLog } = out(baseLogMessage);
   const { cxId } = patient;
 
-  const enabledIHEGW = await validatePDEnabled(cxId, forceEnabled, outerLog);
+  const enabledIHEGW = await validatePDEnabledAndInitGW(cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
     await processPatientDiscoveryProgress({ patient, status: "processing" });
@@ -54,7 +54,7 @@ export async function discover(
   }
 }
 
-async function validatePDEnabled(
+async function validatePDEnabledAndInitGW(
   cxId: string,
   forceEnabled: boolean,
   outerLog: typeof console.log
