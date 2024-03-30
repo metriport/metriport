@@ -66,6 +66,13 @@ export const createPatient = async (
   ]);
 
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
+    // Intentionally asynchronous
+    cwCommands.patient
+      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
+      .catch(processAsyncError(`cw.patient.create`));
+  }
+
+  if (carequalityEnabled || forceCarequality) {
     // TODO #1661: AWAIT HIE LOGIC AND MAKE INNER LOGIC ASYNC
     const baseLogMessage = `CQ PD - patientId ${newPatient.id}`;
     const { log: outerLog } = out(baseLogMessage);
@@ -75,17 +82,10 @@ export const createPatient = async (
       await processPatientDiscoveryProgress({ patient: newPatient, status: "processing" });
 
       // Intentionally asynchronous
-      cwCommands.patient
-        .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
-        .catch(processAsyncError(`cw.patient.create`));
+      cqCommands.patient
+        .discover(newPatient, facility.data.npi)
+        .catch(processAsyncError(`cq.patient.create`));
     }
-  }
-
-  if (carequalityEnabled || forceCarequality) {
-    // Intentionally asynchronous
-    cqCommands.patient
-      .discover(newPatient, facility.data.npi)
-      .catch(processAsyncError(`cq.patient.create`));
   }
 
   return newPatient;
