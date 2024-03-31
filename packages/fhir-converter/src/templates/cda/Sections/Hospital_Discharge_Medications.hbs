@@ -71,7 +71,14 @@
                             {{/with}}
                         {{/if}}
                     {{/each}}
-                    
+                    {{#if medAdm.substanceAdministration.precondition}}
+                        {{#each (toArray medAdm.substanceAdministration.precondition) as |precondition|}}
+                            {{#if precondition.criterion.value.code}}
+                                {{>Resources/Condition.hbs conditionEntry=precondition.criterion ProvisionalStatus="true" ID=(generateUUID (toJsonString precondition.criterion))}},
+                                {{>References/MedicationAdministration/reasonReference.hbs ID=(generateUUID (toJsonString medAdm.substanceAdministration)) REF=(concat 'Condition/' (generateUUID (toJsonString precondition.criterion)))}},
+                            {{/if}}
+                        {{/each}}
+                    {{/if}}
                 {{/each}}  
             {{/each}}
         {{/with}}

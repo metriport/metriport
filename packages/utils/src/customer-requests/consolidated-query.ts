@@ -5,7 +5,7 @@ import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 const apiKey = getEnvVarOrFail("API_KEY");
 const metriportApi: MetriportMedicalApi = new MetriportMedicalApi(apiKey);
 
-const patientIds: string[] = ["patient1", "patient2", "patient3"];
+const patientIds: string[] = [""];
 const resultsDirectory = "./consolidatedPatients";
 
 const ensureDirectory = async (): Promise<void> => {

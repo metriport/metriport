@@ -122,7 +122,6 @@ export async function getCodeDisplay(
       console.error("Connection refused. The server is not reachable at the moment.");
       return undefined;
     } else {
-      console.error("Error fetching code details. Code Not Found");
       return undefined;
     }
   }

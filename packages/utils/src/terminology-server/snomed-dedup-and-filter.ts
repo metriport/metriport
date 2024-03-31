@@ -75,7 +75,6 @@ async function removeNonRootSnomedCodes(
             entries.splice(i, 1);
             break;
           } else {
-            console.log("Keeping SNOMED code:", coding.code, "Resource.id:", resource.id);
             hashTable[coding.code].inserted = true;
             allRemainingEnries.add(resource.id);
             break;
@@ -234,13 +233,7 @@ async function filterMedicationsEntries(
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
-async function main() {
-  const [directoryPath] = process.argv.slice(2);
-  if (!directoryPath) {
-    console.error("Please provide a directory path as an argument.");
-    process.exit(1);
-  }
-
+export async function fullProcessing(directoryPath: string) {
   const removalStats = createInitialRemovalStats();
 
   // Removal of non-disorder SNOMED codes, invalid CPT codes, and duplicate CPT codes
@@ -295,6 +288,15 @@ async function main() {
   });
 
   prettyPrintRemovalStats(removalStats);
+}
+
+async function main() {
+  const [directoryPath] = process.argv.slice(2);
+  if (!directoryPath) {
+    console.error("Please provide a directory path as an argument.");
+    process.exit(1);
+  }
+  await fullProcessing(directoryPath);
 }
 
 main();

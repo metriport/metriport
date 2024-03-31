@@ -2,9 +2,12 @@ import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-t
 import fs from "fs";
 import { convertHtmlTablesToCsv } from "./convert-html-to-csv";
 import * as path from "path";
+import { fullProcessing } from "../terminology-server/snomed-dedup-and-filter";
 
 // Function to process each JSON file
-function processFile(filePath: string) {
+async function processFile(filePath: string) {
+  await fullProcessing(filePath);
+
   const bundle = fs.readFileSync(filePath, "utf8");
   const bundleParsed = JSON.parse(bundle);
 
@@ -22,7 +25,7 @@ function processFile(filePath: string) {
 }
 
 // Main function to iterate through the directory
-function main() {
+async function main() {
   const targetPath = process.argv[2];
 
   if (!targetPath) {
@@ -31,12 +34,12 @@ function main() {
   }
 
   const files = fs.readdirSync(targetPath);
-  files.forEach(file => {
+  for (const file of files) {
     const fullPath = path.join(targetPath, file);
     if (path.extname(fullPath) === ".json") {
-      processFile(fullPath);
+      await processFile(fullPath);
     }
-  });
+  }
 }
 
 main();
