@@ -120,7 +120,7 @@ export async function create(
     });
 
     // intentionally async
-    registerAndLinkPatientToCW(patient, facilityId, getOrgIdExcludeList, debug, patientData).catch(
+    registerAndLinkPatientInCW(patient, facilityId, getOrgIdExcludeList, debug, patientData).catch(
       processAsyncError(createContext)
     );
   }
@@ -163,7 +163,7 @@ async function validateCWCreateEnabled({
   }
 }
 
-async function registerAndLinkPatientToCW(
+async function registerAndLinkPatientInCW(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
