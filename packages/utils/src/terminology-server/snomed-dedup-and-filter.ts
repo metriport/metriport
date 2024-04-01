@@ -299,4 +299,6 @@ async function main() {
   await fullProcessing(directoryPath);
 }
 
-main();
+if (require.main === module) {
+  main();
+}
