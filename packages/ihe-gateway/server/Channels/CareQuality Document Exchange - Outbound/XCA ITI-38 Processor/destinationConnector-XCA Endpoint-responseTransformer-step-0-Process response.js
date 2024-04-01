@@ -18,7 +18,6 @@ try {
 
 	// SOAP level error
 
-	xml = new XML(soap);
 	xml = xml.*::Body.*::AdhocQueryResponse;
 
 	// The status attribute reflects the status of the operation and shall be one of the following values:
