@@ -15,7 +15,7 @@ const docQueryProgress: DocumentQueryProgress = {
 };
 
 describe("aggregateAndSetHIEProgresses", () => {
-  it("CQ has progress but CW does not", async () => {
+  it("has download and convert processing when docQueryProgress is processing, CW is empty & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
       CAREQUALITY: {
@@ -38,7 +38,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("CW has progress but CQ does not", async () => {
+  it("has download and convert processing when docQueryProgress is processing, CW has download and convert processing & CQ is empty", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -61,7 +61,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with download/convert processing and CQ with download/convert processing", async () => {
+  it("has download and convert processing when docQueryProgress is processing, CW has download processing & convert complete & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -89,7 +89,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with download complete & convert processing and CQ with download/convert processing", async () => {
+  it("has download and convert processing when docQueryProgress is processing, CW has download processing & convert complete & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -117,7 +117,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with download/convert complete and CQ with download/convert processing", async () => {
+  it("has download and convert processing when docQueryProgress is processing, CW has download processing & convert complete & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -145,7 +145,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with download/convert complete and CQ with download complete and convert processing", async () => {
+  it("has download complete and convert processing when docQueryProgress is processing, CW has download processing & convert complete & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -173,7 +173,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with download/convert complete and CQ with download/convert complete", async () => {
+  it("has download complete and convert complete when docQueryProgress is processing, CW has download processing & convert complete & CQ has download and convert processing", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: {
         documentQueryProgress: {
@@ -201,7 +201,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with total less than success and errors", async () => {
+  it("has download processing when overallDocQueryProgress has download processing and CW has download processing", async () => {
     const progress = createProgress({
       total: 2,
       successful: 10,
@@ -233,7 +233,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW with total less than success and errors - CQ is correct", async () => {
+  it("has download processing when overallDocQueryProgress has download processing, CW has download processing & CQ has download processing", async () => {
     const progress = createProgress({
       total: 2,
       successful: 10,
@@ -270,7 +270,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has CW download and convert but no CQ", async () => {
+  it("has download & convert processing when overallDocQueryProgress has download processing, CW has download & convert processing & CQ has empty source", async () => {
     const progress = createProgress({
       total: 2,
       successful: 10,
@@ -305,7 +305,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has no external data progress", async () => {
+  it("has download & convert completed when docQueryProgress has download processing, CW & CQ are empty", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
       CAREQUALITY: emptySourceProgress,
@@ -323,7 +323,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has no external doc progress - overall only download", async () => {
+  it("has download completed when overallDocQueryProgress has download processing, CW & CQ are empty", async () => {
     const externalData: PatientExternalData = {
       COMMONWELL: emptySourceProgress,
       CAREQUALITY: emptySourceProgress,
@@ -345,7 +345,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     });
   });
 
-  it("has no external data progress - overall only download", async () => {
+  it("has download completed when overallDocQueryProgress has download processing, externalData is empty", async () => {
     const externalData: PatientExternalData = {};
 
     const overallDocQueryProgress: DocumentQueryProgress = {
