@@ -67,7 +67,6 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
-    const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
 
@@ -87,7 +86,7 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
+    const patient = await createPatient(patientCreate, forceCarequality);
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
