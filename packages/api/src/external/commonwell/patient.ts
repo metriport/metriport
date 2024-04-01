@@ -35,7 +35,7 @@ import {
   getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
-import { setPatientDiscoveryStatus } from "./patient-external-data";
+import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -54,7 +54,7 @@ export function getCWData(
 export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStatus {
   const defaultStatus: LinkStatus = "processing";
   if (!data) return defaultStatus;
-  return getCWData(data)?.status ?? defaultStatus;
+  return getCWData(data)?.discoverStatus ?? defaultStatus;
 }
 
 /**
@@ -110,13 +110,17 @@ export async function create(
 ): Promise<void> {
   const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
-  const cwCreateEnabled = await validateCWCreateEnabled({ cxId: patient.cxId, debug });
+  const cwCreateEnabled = await validateCWCreateEnabled({
+    cxId: patient.cxId,
+    forceCWCreate,
+    debug,
+  });
 
-  if (cwCreateEnabled || forceCWCreate) {
-    await setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+  if (cwCreateEnabled) {
+    await updatePatientDiscoveryStatus({
+      patient,
       status: "processing",
+      source: MedicalDataSource.COMMONWELL,
     });
 
     // intentionally async
@@ -128,11 +132,18 @@ export async function create(
 
 async function validateCWCreateEnabled({
   cxId,
+  forceCWCreate,
   debug,
 }: {
   cxId: string;
+  forceCWCreate: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
+  if (forceCWCreate) {
+    debug(`CW create forced, proceeding...`);
+    return true;
+  }
+
   try {
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
@@ -212,10 +223,10 @@ export async function registerAndLinkPatientInCW(
 
     return { commonwellPatientId, personId };
   } catch (error) {
-    setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    updatePatientDiscoveryStatus({
+      patient,
       status: "failed",
+      source: MedicalDataSource.COMMONWELL,
     });
 
     const msg = `Failure while creating patient @ CW`;
