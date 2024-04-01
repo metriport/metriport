@@ -52,9 +52,10 @@ export async function setDocQueryProgress({
       transaction,
     });
 
-    // Set the doc query progress for the given hie
+    const existingExternalData = existingPatient.data.externalData ?? {};
+
     const externalData = setHIEDocProgress(
-      existingPatient,
+      existingExternalData,
       downloadProgress,
       convertProgress,
       source,
@@ -131,15 +132,13 @@ export function aggregateAndSetHIEProgresses(
 }
 
 export function setHIEDocProgress(
-  patient: PatientModel,
+  externalData: PatientExternalData,
   downloadProgress: Progress | undefined,
   convertProgress: Progress | undefined,
   source: MedicalDataSource,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): PatientExternalData {
-  const externalData = patient.data.externalData ?? {};
-
   const sourceData = externalData[source];
 
   const docQueryProgress = aggregateDocQueryProgress(
