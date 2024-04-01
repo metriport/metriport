@@ -1,3 +1,8 @@
+// This script is used to process all of a customers patients through a snomed filtering pipeline, and
+// then generate MR summaries and CSV files from the resulting bundles
+// The script makes consolidated queries, inserts a patient FHIR resource, and then calls the filtering
+// and MR generation logic.
+
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import fs from "fs/promises";
 import { convertHtmlTablesToCsv } from "./convert-html-to-csv";
@@ -14,7 +19,6 @@ const apiLoadBalancerURL = getEnvVarOrFail("API_URL");
 const fhirUrl = getEnvVarOrFail("FHIR_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const metriportApi: MetriportMedicalApi = new MetriportMedicalApi(apiKey);
-
 const resultsDirectory = "./runs/consolidatedPatients";
 
 async function fetchPatientIds(cxId: string): Promise<string[]> {
