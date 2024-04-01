@@ -15,23 +15,6 @@ try {
 
 	var soap = msg.toString();
 	
-<<<<<<< Updated upstream
-	// Store for testing
-	channelMap.put('RESPONSE', soap.toString());
-
-	xml = new XML(soap.toString());
-
-	// SOAP level error
-	if (soap.indexOf('Fault') > 0) {
-		
-		channelMap.put('QACK', 'SOAP_FAULT');
-		// Stop further processing
-		return;
-		
-	} else {
-
-		xml = xml.*::Body.*::RetrieveDocumentSetResponse;
-=======
 	xml = new XML(soap);
 	xml = xml.*::Body.*::RetrieveDocumentSetResponse;
 
@@ -41,7 +24,6 @@ try {
 	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure
 	queryResponseCode = xml.*::RegistryResponse.@status.toString().split(':').pop();		
 	channelMap.put('QACK', queryResponseCode.toString());
->>>>>>> Stashed changes
 
 	
 } catch(ex) {

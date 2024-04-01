@@ -18,12 +18,8 @@ try {
 
 	// SOAP level error
 
-<<<<<<< Updated upstream
-		xml = xml.*::Body.*::AdhocQueryResponse;
-=======
 	xml = new XML(soap);
 	xml = xml.*::Body.*::AdhocQueryResponse;
->>>>>>> Stashed changes
 
 	// The status attribute reflects the status of the operation and shall be one of the following values:
 	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
