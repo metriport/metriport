@@ -15,6 +15,7 @@ try {
 
 	var soap = msg.toString();
 	
+<<<<<<< Updated upstream
 	// Store for testing
 	channelMap.put('RESPONSE', soap.toString());
 
@@ -30,14 +31,18 @@ try {
 	} else {
 
 		xml = xml.*::Body.*::RetrieveDocumentSetResponse;
+=======
+	xml = new XML(soap);
+	xml = xml.*::Body.*::RetrieveDocumentSetResponse;
 
-		// The status attribute reflects the status of the operation and shall be one of the following values:
-		// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
-		// urn:ihe:iti:2007:ResponseStatusType:PartialSuccess
-		// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure
-		queryResponseCode = xml.*::RegistryResponse.@status.toString().split(':').pop();		
-		channelMap.put('QACK', queryResponseCode.toString());
-	}
+	// The status attribute reflects the status of the operation and shall be one of the following values:
+	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
+	// urn:ihe:iti:2007:ResponseStatusType:PartialSuccess
+	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure
+	queryResponseCode = xml.*::RegistryResponse.@status.toString().split(':').pop();		
+	channelMap.put('QACK', queryResponseCode.toString());
+>>>>>>> Stashed changes
+
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response - ' + ex);

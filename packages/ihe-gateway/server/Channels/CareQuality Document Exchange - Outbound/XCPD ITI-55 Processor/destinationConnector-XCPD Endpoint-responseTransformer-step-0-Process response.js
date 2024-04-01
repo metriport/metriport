@@ -22,6 +22,7 @@ try {
 
 	var soap = msg.toString();
 
+<<<<<<< Updated upstream
 	// Store for testing
 	channelMap.put('RESPONSE', soap.toString());
 
@@ -29,12 +30,19 @@ try {
 
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
+=======
+	xml = new XML(soap);
+	xml = xml.*::Body.*::PRPA_IN201306UV02;
+>>>>>>> Stashed changes
 
-		channelMap.put('ACK', 'SOAP_FAULT');
-		return;
-		
-	} else {
+	// Acknowledgement code as described in HL7 message processing rules
+	// AA - Receiving application successfully processed message
+	// AE - Receiving application found error in processing message. Sending error response with additional error detail information
+	// AR - Receiving application failed to process message for reason unrelated to content or format
+	ack = xml.*::acknowledgement.*::typeCode.@code.toString();
+	channelMap.put('ACK', ack.toString());
 
+<<<<<<< Updated upstream
 		xml = xml.*::Body.*::PRPA_IN201306UV02;
 
 		// Acknowledgement code as described in HL7 message processing rules
@@ -52,6 +60,16 @@ try {
 		queryResponseCode = xml.*::controlActProcess.*::queryAck.*::queryResponseCode.@code.toString();
 		channelMap.put('QACK', queryResponseCode.toString());
 	}
+=======
+	// The result status of the query
+	// OK - Query reponse data found for 1 or more result sets matching the query request specification
+	// NF - No errors, but no data was found matching the query request specification
+	// AE - Query or application error
+	// QE - Problem with input Parmeters error
+	queryResponseCode = xml.*::controlActProcess.*::queryAck.*::queryResponseCode.@code.toString();
+	channelMap.put('QACK', queryResponseCode.toString());
+	
+>>>>>>> Stashed changes
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCPD ITI-55 Processor: Response - ' + ex);
