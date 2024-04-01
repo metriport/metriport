@@ -99,6 +99,7 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				contentList.push(attachment);
 				// free memory asap
 				decodedBytes = null;
+				decodedAsString = null;
 				parsedFile = null;
 
 				// TODO 1350 remove this log
