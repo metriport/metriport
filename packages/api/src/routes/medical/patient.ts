@@ -422,15 +422,17 @@ async function putConsolidated(req: Request, res: Response) {
     patientId: patient.id,
     fhirBundle: validatedBundle,
   });
-  const cdaBundles = convertFhirBundleToCda(validatedBundle);
-  for (const cdaBundle of cdaBundles) {
-    await cdaDocumentUploaderHandler(
-      cxId,
-      patientId,
-      cdaBundle,
-      Config.getMedicalDocumentsBucketName(),
-      Config.getAWSRegion()
-    );
+  if (!Config.isProdEnv()) {
+    const cdaBundles = convertFhirBundleToCda(validatedBundle);
+    for (const cdaBundle of cdaBundles) {
+      await cdaDocumentUploaderHandler(
+        cxId,
+        patientId,
+        cdaBundle,
+        Config.getMedicalDocumentsBucketName(),
+        Config.getAWSRegion()
+      );
+    }
   }
   return res.json(data);
 }
