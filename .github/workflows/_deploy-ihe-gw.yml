@@ -87,11 +87,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18.14"
-
       - name: Checkout
         uses: actions/checkout@v3
         with:
@@ -151,19 +146,6 @@ jobs:
       - name: Setup Docker
         run: docker buildx create --use
         working-directory: "./"
-
-      - name: Install dependencies
-        run: npm run install-deps
-        working-directory: "metriport/packages/ihe-gateway"
-
-      - name: Build/compile
-        # build from root because of dependencies
-        run: npm run build:cloud
-        working-directory: "metriport/packages/ihe-gateway"
-
-      - name: Run Tests
-        run: npm run test
-        working-directory: "metriport/packages/ihe-gateway"
 
       - name: Deploy
         run: |

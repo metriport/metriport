@@ -1,7 +1,7 @@
 import { Progress, DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { PatientExternalData } from "@metriport/core/domain//patient";
-import { progressTypes } from "@metriport/core/domain/document-query";
+import { progressTypes, ProgressType } from "@metriport/core/domain/document-query";
 import { DocumentQueryStatus } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
@@ -62,7 +62,12 @@ export async function setDocQueryProgress({
       increaseCountConvertible
     );
 
-    const aggregatedDocProgresses = aggregateAndSetHIEProgresses(existingPatient, externalData);
+    const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
+
+    const aggregatedDocProgresses = aggregateAndSetHIEProgresses(
+      existingPatientDocProgress,
+      externalData
+    );
 
     const updatedPatient = {
       ...existingPatient,
@@ -91,24 +96,23 @@ export async function setDocQueryProgress({
 }
 
 export function aggregateAndSetHIEProgresses(
-  existingPatient: PatientModel,
+  existingPatientDocProgress: DocumentQueryProgress,
   updatedExternalData: PatientExternalData
 ): DocumentQueryProgress {
-  const documentQueryProgress = !existingPatient.data.documentQueryProgress
-    ? {}
-    : existingPatient.data.documentQueryProgress;
-
   // Set the aggregated doc query progress for the patient
   const externalQueryProgresses = flattenDocQueryProgressWithExternal(updatedExternalData);
 
-  const aggregatedDocProgress = aggregateDocProgress(externalQueryProgresses);
+  const aggregatedDocProgress = aggregateDocProgress(
+    externalQueryProgresses,
+    existingPatientDocProgress
+  );
 
   const updatedDocumentQueryProgress: DocumentQueryProgress = {
-    ...documentQueryProgress,
+    ...existingPatientDocProgress,
     ...(aggregatedDocProgress.convert
       ? {
           convert: {
-            ...documentQueryProgress.convert,
+            ...existingPatientDocProgress.convert,
             ...aggregatedDocProgress.convert,
           },
         }
@@ -116,7 +120,7 @@ export function aggregateAndSetHIEProgresses(
     ...(aggregatedDocProgress.download
       ? {
           download: {
-            ...documentQueryProgress.download,
+            ...existingPatientDocProgress.download,
             ...aggregatedDocProgress.download,
           },
         }
@@ -154,36 +158,44 @@ export function setHIEDocProgress(
   return externalData;
 }
 
-export function aggregateDocProgress(hieDocProgresses: DocumentQueryProgress[]): {
+export function aggregateDocProgress(
+  hieDocProgresses: DocumentQueryProgress[],
+  existingPatientDocProgress: DocumentQueryProgress
+): {
   download?: RequiredProgress;
   convert?: RequiredProgress;
 } {
-  const statuses: DocumentQueryStatus[] = [];
+  const statuses: { [key in ProgressType]: DocumentQueryStatus[] } = {
+    download: [],
+    convert: [],
+  };
 
   const tallyResults = hieDocProgresses.reduce(
     (acc: { download?: RequiredProgress; convert?: RequiredProgress }, progress) => {
       for (const type of progressTypes) {
         const progressType = progress[type];
+        const existingProgressType = existingPatientDocProgress[type];
 
-        if (!progressType) continue;
+        if (!progressType && !existingProgressType) continue;
 
-        const currTotal = progressType.total ?? 0;
-        const currErrors = progressType.errors ?? 0;
-        const currSuccessful = progressType.successful ?? 0;
+        const currTotal = progressType?.total ?? 0;
+        const currErrors = progressType?.errors ?? 0;
+        const currSuccessful = progressType?.successful ?? 0;
         const accType = acc[type];
-        statuses.push(progressType.status);
+
+        statuses[type].push(progressType?.status ?? "completed");
 
         if (accType) {
           accType.total += currTotal;
           accType.errors += currErrors;
           accType.successful += currSuccessful;
-          accType.status = aggregateStatus(statuses);
+          accType.status = aggregateStatus(statuses[type]);
         } else {
           acc[type] = {
             total: currTotal,
             errors: currErrors,
             successful: currSuccessful,
-            status: progressType.status,
+            status: progressType?.status ?? "completed",
           };
         }
       }

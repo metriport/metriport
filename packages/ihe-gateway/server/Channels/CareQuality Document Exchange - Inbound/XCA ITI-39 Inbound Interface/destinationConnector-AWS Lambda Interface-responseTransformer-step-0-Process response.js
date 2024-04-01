@@ -1,5 +1,5 @@
 // Generate SOAP Envelope
-var soapTemplate = getSOAPTemplate();
+var soapTemplate = getITI39SOAPTemplate();
 var soap = soapTemplate.namespace('soap');
 var wsa = soapTemplate.namespace('wsa');
 soapTemplate.soap::Header.wsa::Action = 'urn:ihe:iti:2007:CrossGatewayRetrieveResponse';

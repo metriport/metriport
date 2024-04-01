@@ -6,7 +6,7 @@ import { QueryTypes } from "sequelize";
 import z from "zod";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../../util/concurrency";
-import { initSequelizeForLambda } from "../../../util/sequelize";
+import { initDBPool } from "../../../util/sequelize";
 import { mapPatientResourceToPatientData } from "./process-inbound-pd";
 
 const MAX_NUMBER_OF_PARALLEL_XCPD_PROCESSING_REQUESTS = 20;
@@ -49,7 +49,7 @@ export async function getXcpdStatisticsForPatient(
 ): Promise<string> {
   console.log("Starting XCPD statistics calculation...");
   const mpi = new MPIMetriportAPI(apiUrl);
-  const sequelize = initSequelizeForLambda(sqlDBCreds, false);
+  const sequelize = initDBPool(sqlDBCreds);
 
   let query = `
   SELECT * FROM patient_discovery_result

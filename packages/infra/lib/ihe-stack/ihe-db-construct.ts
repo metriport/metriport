@@ -61,6 +61,7 @@ export default class IHEDBConstruct extends Construct {
         vpc,
         instanceType: new ec2.InstanceType("serverless"),
         enablePerformanceInsights: true,
+        parameterGroup,
       },
       credentials: dbCreds,
       defaultDatabaseName: dbName,

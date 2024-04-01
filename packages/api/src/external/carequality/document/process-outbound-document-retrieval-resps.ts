@@ -82,7 +82,9 @@ export async function processOutboundDocumentRetrievalResps({
               status: "processing",
             },
           }
-        : {}),
+        : {
+            convertProgress: { total: 0, status: "completed" },
+          }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -145,7 +147,7 @@ export async function processOutboundDocumentRetrievalResps({
 
     capture.message(msg, {
       extra: {
-        context: `cq.processingDocuments`,
+        context: `cq.processOutboundDocumentRetrievalResps`,
         error,
         patientId: patientId,
         requestId,

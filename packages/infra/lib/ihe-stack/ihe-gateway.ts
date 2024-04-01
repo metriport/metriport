@@ -111,7 +111,7 @@ export function createIHEGateway(stack: Construct, props: IHEGatewayProps): void
     }),
   });
   apiGateway.addRoutes({
-    path: "/v1/document-retrieval",
+    path: "/v1/document-retrieve",
     integration: new HttpAlbIntegration(`IHEGWDRIntegration`, drListener, {
       vpcLink,
       parameterMapping: new apigwv2.ParameterMapping().overwritePath(

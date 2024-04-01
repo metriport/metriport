@@ -1,10 +1,11 @@
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
-import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Organization } from "@metriport/core/domain/organization";
+import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
+import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import {
   getCertificate,
   makeCommonWellAPI,
@@ -71,6 +72,12 @@ export async function organizationToCommonwell(
 
 export const create = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
+
+  if (!(await isCWEnabledForCx(org.cxId))) {
+    console.log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
+    return undefined;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
@@ -83,8 +90,10 @@ export const create = async (org: Organization): Promise<void> => {
     );
     debug(`resp respAddCert: `, JSON.stringify(respAddCert));
 
-    // update the CQ bridge include list
-    await initCQOrgIncludeList(org.oid);
+    if (await isEnhancedCoverageEnabledForCx(org.cxId)) {
+      // update the CQ bridge include list
+      await initCQOrgIncludeList(org.oid);
+    }
   } catch (error) {
     const msg = `Failure creating Org @ CW`;
     log(msg, error);
@@ -104,6 +113,12 @@ export const create = async (org: Organization): Promise<void> => {
 
 export const update = async (org: Organization): Promise<void> => {
   const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
+
+  if (!(await isCWEnabledForCx(org.cxId))) {
+    debug(`CW disabled for cx ${org.cxId}, skipping...`);
+    return undefined;
+  }
+
   const cwOrg = await organizationToCommonwell(org);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {

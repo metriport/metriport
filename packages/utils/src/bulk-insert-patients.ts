@@ -7,20 +7,26 @@ import { sleep } from "@metriport/core/util/sleep";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
 import { getCxData } from "./shared/get-cx-data";
 
+dayjs.extend(duration);
 /**
  * This script will read patients from a .csv file and insert them into the Metriport API.
  *
  * Format of the .csv file:
  * - first line contains column names
  * - columns can be in any order
- * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email
+ * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email,externalId
  * - it may contain more columns, only those above will be used
  *
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
+ *
+ * Execute this with:
+ * $ npm run bulk-insert -- --dryrun
+ * $ npm run bulk-insert
  */
 
 /**
@@ -35,7 +41,9 @@ const cxId = getEnvVarOrFail("CX_ID");
 const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
 const inputFileName = "bulk-insert-patients.csv";
 const outputFileName = "./runs/bulk-insert-patient-ids.txt";
+const filePath = path.join(__dirname, outputFileName);
 const ISO_DATE = "YYYY-MM-DD";
+const confirmationTime = dayjs.duration(10, "seconds");
 
 type Params = {
   dryrun?: boolean;
@@ -53,11 +61,12 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 
 async function main() {
   program.parse();
-  const { dryrun: dryRun } = program.opts<Params>();
+  const { dryrun: dryRunParam } = program.opts<Params>();
+  const dryRun = dryRunParam ?? false;
 
   if (!dryRun) initPatientIdRepository();
 
-  const { facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
+  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
 
   const results: PatientCreate[] = [];
@@ -85,6 +94,7 @@ async function main() {
         console.log("Done.");
         return;
       }
+      await displayWarningAndConfirmation(results, orgName, dryRun);
       let successfulCount = 0;
       for (const [i, patient] of results.entries()) {
         try {
@@ -108,11 +118,23 @@ async function main() {
     });
 }
 
+async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
+  if (!dryRun) {
+    console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+  }
+  console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
+  await sleep(confirmationTime.asMilliseconds());
+}
+
 function initPatientIdRepository() {
-  fs.writeFileSync(path.join(__dirname, outputFileName), "");
+  const dirname = path.dirname(filePath);
+  if (!fs.existsSync(dirname)) {
+    fs.mkdirSync(dirname, { recursive: true });
+  }
+  fs.writeFileSync(filePath, "");
 }
 function storePatientId(patientId: string) {
-  fs.appendFileSync(path.join(__dirname, outputFileName), patientId + "\n");
+  fs.appendFileSync(filePath, patientId + "\n");
 }
 
 function toTitleCase(str: string): string {

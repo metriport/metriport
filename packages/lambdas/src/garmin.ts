@@ -1,11 +1,6 @@
-import * as Sentry from "@sentry/serverless";
 import { DynamoDB } from "aws-sdk";
 import axios from "axios";
-import { capture } from "./shared/capture";
 import { getEnvOrFail } from "./shared/env";
-
-// Keep this as early on the file as possible
-capture.init();
 
 const apiServerURL = getEnvOrFail("API_URL");
 const tableName = getEnvOrFail("TOKEN_TABLE_NAME");
@@ -39,7 +34,7 @@ const defaultResponse = () => buildResponse(200);
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Request = { body?: any; headers: Record<string, string> };
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
+export const handler = async (req: Request) => {
   console.log(`Verifying at least one UserAuthToken on body...`);
 
   if (!req.body) {
@@ -98,7 +93,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (req: Request) => {
 
   console.log("Request has no UAT - will not be forwarded to the API");
   return defaultResponse();
-});
+};
 
 async function forwardCallToServer(req: Request) {
   console.log(`Verified! Calling server...`);

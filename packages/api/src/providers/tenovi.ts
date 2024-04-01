@@ -2,7 +2,6 @@
 import { Biometrics, Body } from "@metriport/api-sdk";
 import axios from "axios";
 import dayjs from "dayjs";
-import stringify from "json-stringify-safe";
 import { updateProviderData } from "../command/connected-user/save-connected-user";
 import BadRequestError from "../errors/bad-request";
 import MetriportError from "../errors/metriport-error";
@@ -12,7 +11,6 @@ import { mapToBiometrics } from "../mappings/tenovi/biometrics";
 import { mapToBody } from "../mappings/tenovi/body";
 import { ConnectedUser } from "../models/connected-user";
 import { PROVIDER_TENOVI } from "../shared/constants";
-import { capture } from "../shared/notifications";
 import { RawParams } from "../shared/raw-params";
 import Provider, { ConsumerHealthDataType, DAPIParams } from "./provider";
 import { NoAuth } from "./shared/noauth";
@@ -84,24 +82,12 @@ export class Tenovi extends Provider implements NoAuth {
           user: connectedUser.dataValues.id,
         });
       }
-      try {
-        await updateProviderData({
-          id: connectedUser.id,
-          cxId: connectedUser.cxId,
-          provider: PROVIDER_TENOVI,
-          providerItem: undefined,
-        });
-      } catch (err) {
-        console.log("Failed to remove Tenovi from ProviderMap", stringify(err));
-        capture.error(err, {
-          extra: {
-            context: "tenovi.revokeProviderAccess",
-            err,
-            user: connectedUser.dataValues,
-          },
-        });
-        throw err;
-      }
+      await updateProviderData({
+        id: connectedUser.id,
+        cxId: connectedUser.cxId,
+        provider: PROVIDER_TENOVI,
+        providerItem: undefined,
+      });
     }
   }
 
@@ -127,56 +113,32 @@ export class Tenovi extends Provider implements NoAuth {
     if (connectedDevices && connectedDevices.includes(deviceId)) {
       const url = `${Tenovi.URL}/${Tenovi.API_PATH}/${xTenoviClientName}/hwi/unlink-gateway/${deviceId}/`;
 
-      try {
-        if (deviceId !== TENOVI_TEST_DEVICE_ID) {
-          await axios.get(url, {
-            headers: {
-              Authorization: `Api-Key ${xTenoviApiKey}`,
-            },
-          });
-        }
-
-        if (updateUser) {
-          const index = connectedDevices.indexOf(deviceId);
-          if (index !== -1) {
-            connectedDevices.splice(index, 1);
-          }
-
-          await updateProviderData({
-            id: connectedUser.id,
-            cxId: connectedUser.cxId,
-            provider: PROVIDER_TENOVI,
-            providerItem: {
-              token: TENOVI_DEFAULT_TOKEN_VALUE,
-              connectedDeviceIds: connectedDevices,
-              deviceUserId: connectedUser.providerMap?.tenovi?.deviceUserId,
-            },
-          });
-        }
-      } catch (err) {
-        console.log("Failed to disconnect devices from Tenovi Gateway", stringify(err));
-        capture.error(err, {
-          extra: {
-            context: "tenovi.revokeProviderAccess",
-            err,
-            deviceId,
-            user: connectedUser.dataValues,
-            cxName: xTenoviClientName,
+      if (deviceId !== TENOVI_TEST_DEVICE_ID) {
+        await axios.get(url, {
+          headers: {
+            Authorization: `Api-Key ${xTenoviApiKey}`,
           },
         });
-        throw err;
+      }
+
+      if (updateUser) {
+        const index = connectedDevices.indexOf(deviceId);
+        if (index !== -1) {
+          connectedDevices.splice(index, 1);
+        }
+
+        await updateProviderData({
+          id: connectedUser.id,
+          cxId: connectedUser.cxId,
+          provider: PROVIDER_TENOVI,
+          providerItem: {
+            token: TENOVI_DEFAULT_TOKEN_VALUE,
+            connectedDeviceIds: connectedDevices,
+            deviceUserId: connectedUser.providerMap?.tenovi?.deviceUserId,
+          },
+        });
       }
     } else {
-      capture.message(`Device ID not found for this user.`, {
-        extra: {
-          context: "tenovi.disconnectDevice",
-          deviceId,
-          connectedDevices,
-          user: connectedUser.dataValues,
-          level: "info",
-          cxName: xTenoviClientName,
-        },
-      });
       throw new NotFoundError("Device not found for this user.", undefined, { deviceId });
     }
   }

@@ -20,9 +20,6 @@ _[Release PRs:]_
 
 _[Regular PRs:]_
 
-- [ ] E2E test updated
-- [ ] No need to update E2E tests
-
 - Local
   - [x] _[Indicate how you tested this, on local or staging]_
   - [x] ...

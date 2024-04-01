@@ -29,7 +29,11 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
-import { isEnhancedCoverageEnabledForCx, isCQDirectEnabledForCx } from "../../aws/appConfig";
+import {
+  isEnhancedCoverageEnabledForCx,
+  isCQDirectEnabledForCx,
+  isCWEnabledForCx,
+} from "../../aws/appConfig";
 import { reportMetric } from "../../aws/cloudwatch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { makeFhirApi } from "../../fhir/api/api-factory";
@@ -42,6 +46,7 @@ import { getPatientWithCWData, PatientWithCWData } from "../patient-external-dat
 import { getPatientDataWithSingleFacility } from "../patient-shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
+import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import {
   CWDocumentWithMetriportData,
   DocumentWithLocation,
@@ -52,6 +57,9 @@ import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { processFhirResponse } from "../../fhir/document/process-fhir-search-response";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
+import { linkPatientToCW } from "../patient";
+import { getCWData } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -84,6 +92,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
+  getOrgIdExcludeList,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -92,33 +101,68 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
+  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<void> {
-  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientParam.id}`);
+  const { id: patientId, cxId } = patientParam;
+  const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
+
+  if (Config.isSandbox()) {
+    await sandboxGetDocRefsAndUpsert({
+      patient: patientParam,
+      requestId,
+    });
+    return;
+  }
+
+  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  if (!(await isCWEnabledForCx(cxId))) {
+    return interrupt(`CW disabled for cx ${cxId}`);
+  }
 
   try {
+    const { organization, facility } = await getPatientDataWithSingleFacility(
+      patientParam,
+      facilityId
+    );
+
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      convertProgress: { status: "processing" },
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    const patientCWData = getCWData(patientParam.data.externalData);
+    const hasNoCWStatus = !patientCWData || !patientCWData.status;
+    const isProcessing = patientCWData?.status === "processing";
+
+    if (hasNoCWStatus || isProcessing) {
+      await scheduleDocQuery({
+        requestId,
+        patient: { id: patientId, cxId },
+        source: MedicalDataSource.COMMONWELL,
+      });
+
+      if (hasNoCWStatus) {
+        await linkPatientToCW(patientParam, facility.id, getOrgIdExcludeList);
+      }
+
+      return;
+    }
+
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
-      isEnhancedCoverageEnabledForCx(patientParam.cxId),
-      isCQDirectEnabledForCx(patientParam.cxId),
+      isEnhancedCoverageEnabledForCx(cxId),
+      isCQDirectEnabledForCx(cxId),
     ]);
 
     if (!patient) {
       const msg = `Couldn't get CW Data for Patient`;
       throw new MetriportError(msg, undefined, {
-        cxId: patientParam.cxId,
-        patientId: patientParam.id,
+        cxId,
+        patientId,
       });
-    }
-
-    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
-
-    if (Config.isSandbox()) {
-      await sandboxGetDocRefsAndUpsert({
-        organization,
-        patient,
-        requestId,
-      });
-      return;
     }
 
     const cwData = patient.data.externalData.COMMONWELL;

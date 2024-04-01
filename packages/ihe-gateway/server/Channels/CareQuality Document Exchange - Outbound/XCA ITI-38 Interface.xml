@@ -6,7 +6,7 @@
  - expects to receive a single requests to be transmitted to the XCA ITI-38 [Cross Gateway Query] Processor channel
 
 Last updated: Nov 29 2023</description>
-  <revision>124</revision>
+  <revision>125</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -199,7 +199,7 @@ Last updated: Nov 29 2023</description>
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -245,12 +245,12 @@ Last updated: Nov 29 2023</description>
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709753540015</time>
+        <time>1711481949209</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
+        <pruneMetaDataDays>2</pruneMetaDataDays>
+        <pruneContentDays>2</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>

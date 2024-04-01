@@ -19,13 +19,7 @@ var 	ack = '',
 	soapReason = null;
 
 try {
-
 	var soap = msg.toString();
-
-	// Store for testing
-	channelMap.put('RESPONSE', soap.toString());
-
-	xml = new XML(soap.toString());
 
 	// SOAP level error
 	if (soap.indexOf('Fault') > 0) {
@@ -35,6 +29,7 @@ try {
 		
 	} else {
 
+		xml = new XML(soap);
 		xml = xml.*::Body.*::PRPA_IN201306UV02;
 
 		// Acknowledgement code as described in HL7 message processing rules
