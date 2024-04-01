@@ -15,6 +15,7 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export const createPatient = async (
   patient: PatientCreateCmd,
+  forceCommonwell?: boolean,
   forceCarequality?: boolean
 ): Promise<Patient> => {
   const { cxId, facilityId, externalId } = patient;
@@ -49,7 +50,7 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  await cwCommands.patient.create(newPatient, facilityId, getCqOrgIdsToDenyOnCw);
+  await cwCommands.patient.create(newPatient, facilityId, getCqOrgIdsToDenyOnCw, forceCommonwell);
 
   await cqCommands.patient.discover(newPatient, facility.data.npi, forceCarequality);
 

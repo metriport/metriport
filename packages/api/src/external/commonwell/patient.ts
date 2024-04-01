@@ -102,6 +102,7 @@ export async function create(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
+  forceCWCreate = false,
   patientData?: {
     organization: Organization;
     facility: Facility;
@@ -111,7 +112,7 @@ export async function create(
 
   const cwCreateEnabled = await validateCWCreateEnabled({ cxId: patient.cxId, debug });
 
-  if (cwCreateEnabled) {
+  if (cwCreateEnabled || forceCWCreate) {
     await setPatientDiscoveryStatus({
       patientId: patient.id,
       cxId: patient.cxId,
