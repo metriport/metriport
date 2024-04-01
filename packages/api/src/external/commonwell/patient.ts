@@ -163,7 +163,7 @@ async function validateCWCreateEnabled({
   }
 }
 
-async function registerAndLinkPatientInCW(
+export async function registerAndLinkPatientInCW(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
@@ -172,7 +172,7 @@ async function registerAndLinkPatientInCW(
     organization: Organization;
     facility: Facility;
   }
-): Promise<void> {
+): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
 
   try {
@@ -200,7 +200,7 @@ async function registerAndLinkPatientInCW(
       storeIds,
     });
 
-    await findOrCreatePersonAndLink({
+    const personId = await findOrCreatePersonAndLink({
       commonWell,
       queryMeta,
       commonwellPatient,
@@ -209,6 +209,8 @@ async function registerAndLinkPatientInCW(
       storeIds,
       getOrgIdExcludeList,
     });
+
+    return { commonwellPatientId, personId };
   } catch (error) {
     setPatientDiscoveryStatus({
       patientId: patient.id,
