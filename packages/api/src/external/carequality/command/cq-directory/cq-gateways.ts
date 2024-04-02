@@ -1,45 +1,30 @@
-import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import { Op, Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
-export async function updateCQGateways(gatewayOids: string[]): Promise<void> {
-  console.log(`Found ${gatewayOids.length} gateways in the CQ directory. Updating...`);
-  await Promise.allSettled(
-    gatewayOids.map(gatewayOid =>
-      updateCQGateway(gatewayOid).catch(error => {
-        const msg = `Failed to update gateway ${gatewayOid} in the CQ directory. Skipping...`;
-        console.log(`${msg}. Cause: ${error}`);
-        capture.error(msg, { extra: { context: `cq.directory.updateCQGateways`, error } });
-        throw error;
-      })
-    )
-  );
-}
-
-export async function updateCQGateway(gatewayOid: string): Promise<void> {
+export async function setEntriesAsGateway(oids: string[]): Promise<void> {
+  out(`setEntriesAsGateway`).log(`Found ${oids.length} gateways in the CQ directory. Updating...`);
   await CQDirectoryEntryModel.update(
     {
       gateway: true,
     },
     {
-      where: {
-        id: gatewayOid,
-        urlXCPD: {
-          [Op.ne]: "",
-        },
-      },
+      where: { id: { [Op.in]: oids } },
     }
   );
 }
 
-export async function getOrganizationsWithXCPD(): Promise<CQDirectoryEntryModel[]> {
-  return CQDirectoryEntryModel.findAll({
+export async function getOrganizationIds(excludeManagingOrgs: string[]): Promise<string[]> {
+  const entries = await CQDirectoryEntryModel.findAll({
+    attributes: ["id"],
     where: {
-      urlXCPD: {
-        [Op.ne]: "",
+      managingOrganization: {
+        [Op.notIn]: excludeManagingOrgs,
       },
     },
   });
+  const ids = entries.map(entry => entry.id);
+  return ids;
 }
 
 export async function getRecordLocatorServiceOrganizations(): Promise<CQDirectoryEntryModel[]> {

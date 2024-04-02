@@ -12,6 +12,7 @@ import { validateVersionForUpdate } from "../../../models/_default";
 import { Config } from "../../../shared/config";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -41,15 +42,21 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  // Intentionally asynchronous
-  const commonwellEnabled = await isCommonwellEnabled();
+  // TODO move these to the respective "commands" files so this is fully async
+  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
+    isCommonwellEnabled(),
+    isCarequalityEnabled(),
+  ]);
+
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    cwCommands.patient.update(result, facilityId).catch(processAsyncError(`cw.patient.update`));
+    // Intentionally asynchronous
+    cwCommands.patient
+      .update(result, facilityId, getCqOrgIdsToDenyOnCw)
+      .catch(processAsyncError(`cw.patient.update`));
   }
 
-  // Intentionally asynchronous
-  const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
+    // Intentionally asynchronous
     cqCommands.patient
       .discover(result, facility.data.npi)
       .catch(processAsyncError(`cq.patient.update`));

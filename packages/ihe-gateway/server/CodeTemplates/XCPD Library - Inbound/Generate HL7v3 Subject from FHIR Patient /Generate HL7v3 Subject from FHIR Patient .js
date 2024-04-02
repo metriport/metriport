@@ -84,7 +84,7 @@ function getXCPDResponseSubject(lambda) {
 
 	// The date and time this person was born 
 	if (patientResource.hasOwnProperty('birthDate')) try {
-		patient.appendChild(new XML('<birthTime value="' + DateUtil.convertDate('yyyy-MM-dd', 'yyyyMMdd', patientResource.birthDate.toString().substring(0, 9)) +  '"/>'))
+		patient.appendChild(new XML('<birthTime value="' + DateUtil.convertDate('yyyy-MM-dd', 'yyyyMMdd', patientResource.birthDate.toString().substring(0, 10)) +  '"/>'))
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('Code Template: XCPD Inbound - getXCPDResponseSubject() - birthDate: ' + ex);
 	}

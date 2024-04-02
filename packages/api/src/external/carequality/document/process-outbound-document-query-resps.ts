@@ -60,6 +60,7 @@ export async function processOutboundDocumentQueryResps({
       await setDocQueryProgress({
         patient: { id: patientId, cxId: cxId },
         downloadProgress: { status: "completed" },
+        convertProgress: { status: "completed" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
       });
@@ -80,7 +81,12 @@ export async function processOutboundDocumentQueryResps({
               total: convertibleDocCount,
             },
           }
-        : {}),
+        : {
+            convertProgress: {
+              status: "completed",
+              total: 0,
+            },
+          }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -162,7 +168,7 @@ export async function processOutboundDocumentQueryResps({
 
     capture.message(msg, {
       extra: {
-        context: `cq.processingDocuments`,
+        context: `cq.processOutboundDocumentQueryResps`,
         error,
         patientId: patientId,
         requestId,
@@ -195,6 +201,7 @@ function buildInterrupt({
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });

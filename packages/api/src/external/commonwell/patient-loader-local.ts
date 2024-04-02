@@ -1,6 +1,6 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
-import { Op, WhereOptions } from "sequelize";
+import { Op, WhereOptions, json } from "sequelize";
 import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 
@@ -40,7 +40,12 @@ export class PatientLoaderLocal implements PatientLoader {
       ...(patient.data.lastNameInitial
         ? { lastName: { [Op.like]: `${patient.data.lastNameInitial}%` } }
         : undefined),
-      ...(patient.data.dob ? { dob: patient.data.dob } : undefined),
+      // Confirmed this is needed: https://github.com/sequelize/sequelize/issues/5155#issuecomment-417242643
+      ...(patient.data.dob
+        ? {
+            [Op.and]: [json("data->>'dob'", patient.data.dob)],
+          }
+        : undefined),
       ...(patient.data.genderAtBirth ? { genderAtBirth: patient.data.genderAtBirth } : undefined),
     };
     const whereClause: WhereOptions<PatientModel> = {

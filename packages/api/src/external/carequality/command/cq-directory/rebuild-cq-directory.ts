@@ -1,13 +1,16 @@
+import { out } from "@metriport/core/util/log";
+import { initDBPool } from "@metriport/core/util/sequelize";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { QueryTypes, Sequelize } from "sequelize";
+import { QueryTypes } from "sequelize";
 import { executeOnDBTx } from "../../../../models/transaction-wrapper";
+import { addUpdatedAtTrigger } from "../../../../sequelize/migrations-shared";
 import { Config } from "../../../../shared/config";
 import { capture } from "../../../../shared/notifications";
 import { makeCarequalityManagementAPI } from "../../api";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
-import { updateCQGateways } from "./cq-gateways";
+import { setEntriesAsGateway } from "./cq-gateways";
 import { bulkInsertCQDirectoryEntries } from "./create-cq-directory-entry";
 import { parseCQDirectoryEntries } from "./parse-cq-directory-entry";
 import { cqDirectoryEntry, cqDirectoryEntryBackup, cqDirectoryEntryTemp } from "./shared";
@@ -16,16 +19,16 @@ dayjs.extend(duration);
 const BATCH_SIZE = 1000;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 
-const sqlDBCreds = Config.getDBCreds();
-const dbCreds = JSON.parse(sqlDBCreds);
-
-const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
-  host: dbCreds.host,
-  port: dbCreds.port,
-  dialect: dbCreds.engine,
+const dbCreds = Config.getDBCreds();
+const sequelize = initDBPool(dbCreds, {
+  max: 10,
+  min: 1,
+  acquire: 30000,
+  idle: 10000,
 });
 
 export async function rebuildCQDirectory(failGracefully = false): Promise<void> {
+  const { log } = out("rebuildCQDirectory");
   let currentPosition = 0;
   let isDone = false;
   const cq = makeCarequalityManagementAPI();
@@ -45,10 +48,10 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
             gatewaysSet.add(org.managingOrganizationId);
           }
         }
-        console.log(
+        log(
           `Adding ${parsedOrgs.length} CQ directory entries... Total fetched: ${currentPosition}`
         );
-        await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs);
+        await bulkInsertCQDirectoryEntries(sequelize, parsedOrgs, cqDirectoryEntryTemp);
         await sleep(SLEEP_TIME.asMilliseconds());
       } catch (error) {
         isDone = true;
@@ -60,7 +63,7 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   } catch (error) {
     await deleteTempCQDirectoryTable();
     const msg = `Failed to rebuild the directory`;
-    console.log(`${msg}, error: ${error}`);
+    log(`${msg}, error: ${error}`);
     capture.message(msg, {
       extra: { context: `rebuildCQDirectory`, error },
       level: "error",
@@ -69,12 +72,12 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
   }
   try {
     await renameCQDirectoryTablesAndUpdateIndexes();
-    await updateCQGateways(Array.from(gatewaysSet));
-    console.log("CQ directory successfully rebuilt! :)");
+    await setEntriesAsGateway(Array.from(gatewaysSet));
+    log("CQ directory successfully rebuilt! :)");
   } catch (error) {
     const msg = `Failed the last step of CQ directory rebuild`;
     await deleteTempCQDirectoryTable();
-    console.log(`${msg}. Cause: ${error}`);
+    log(`${msg}. Cause: ${error}`);
     capture.message(msg, {
       extra: { context: `renameCQDirectoryTablesAndUpdateIndexes`, error },
       level: "error",
@@ -84,7 +87,8 @@ export async function rebuildCQDirectory(failGracefully = false): Promise<void> 
 }
 
 async function createTempCQDirectoryTable(): Promise<void> {
-  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} AS SELECT * FROM ${cqDirectoryEntry} WHERE 1=0;`;
+  await deleteTempCQDirectoryTable();
+  const query = `CREATE TABLE IF NOT EXISTS ${cqDirectoryEntryTemp} (LIKE ${cqDirectoryEntry} INCLUDING ALL)`;
   await sequelize.query(query, {
     type: QueryTypes.INSERT,
   });
@@ -102,32 +106,24 @@ async function renameCQDirectoryTablesAndUpdateIndexes(): Promise<void> {
     const dropBackupQuery = `DROP TABLE IF EXISTS ${cqDirectoryEntryBackup};`;
     await sequelize.query(dropBackupQuery, {
       type: QueryTypes.DELETE,
-      logging: false,
       transaction,
     });
 
     const lockTablesQuery = `LOCK TABLE ${cqDirectoryEntry} IN ACCESS EXCLUSIVE MODE;`;
     await sequelize.query(lockTablesQuery, {
       type: QueryTypes.RAW,
-      logging: false,
       transaction,
     });
 
     const renameTablesQuery = `
-    ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup};
-    ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};
-    ALTER INDEX IF EXISTS cq_directory_entry_pkey RENAME TO cq_directory_entry_backup_pkey;`;
+      ALTER TABLE ${cqDirectoryEntry} RENAME TO ${cqDirectoryEntryBackup};
+      ALTER TABLE ${cqDirectoryEntryTemp} RENAME TO ${cqDirectoryEntry};
+    `;
     await sequelize.query(renameTablesQuery, {
       type: QueryTypes.UPDATE,
-      logging: false,
       transaction,
     });
 
-    const createIndexQuery = `CREATE INDEX IF NOT EXISTS cq_directory_entry_pkey ON ${cqDirectoryEntry} (id);`;
-    await sequelize.query(createIndexQuery, {
-      type: QueryTypes.INSERT,
-      logging: false,
-      transaction,
-    });
+    await addUpdatedAtTrigger(sequelize.getQueryInterface(), transaction, cqDirectoryEntry);
   });
 }

@@ -1,4 +1,4 @@
-import { Sequelize } from "sequelize";
+import { PoolOptions, Sequelize } from "sequelize";
 import { z } from "zod";
 
 export const dbCredsSchema = z.object({
@@ -11,9 +11,18 @@ export const dbCredsSchema = z.object({
 });
 
 /**
- * This function is used to initialize sequelize for lambda functions.
+ * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
-export function initSequelizeForLambda(dbCreds: string, logging = true) {
+export function initDBPool(
+  dbCreds: string,
+  poolOptions: PoolOptions = {
+    max: 5,
+    min: 1,
+    acquire: 30000,
+    idle: 10000,
+  },
+  logging = false
+) {
   const sqlDBCreds = JSON.parse(dbCreds);
   const parsedDbCreds = dbCredsSchema.parse(sqlDBCreds);
 
@@ -25,12 +34,7 @@ export function initSequelizeForLambda(dbCreds: string, logging = true) {
       host: parsedDbCreds.host,
       port: parsedDbCreds.port,
       dialect: parsedDbCreds.engine,
-      pool: {
-        max: 5,
-        min: 1,
-        acquire: 30000,
-        idle: 10000,
-      },
+      pool: poolOptions,
       logging,
     }
   );

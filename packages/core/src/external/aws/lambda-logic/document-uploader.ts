@@ -1,4 +1,4 @@
-import { DocumentReference } from "@medplum/fhirtypes";
+import { DocumentReference, Organization } from "@medplum/fhirtypes";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
 import {
@@ -8,11 +8,7 @@ import {
 import { parseFilePath } from "../../../domain/filename";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { createExtrinsicObjectXml } from "../../carequality/dq/create-metadata-xml";
-import {
-  createPatientUniqueId,
-  METRIPORT_HOME_COMMUNITY_ID,
-  METRIPORT_REPOSITORY_UNIQUE_ID,
-} from "../../carequality/shared";
+import { createPatientUniqueId } from "../../carequality/shared";
 import { S3Utils } from "../s3";
 
 const api = axios.create();
@@ -134,7 +130,6 @@ async function createAndUploadMetadataFile({
   cxId,
   patientId,
   docId,
-  hash,
   size,
   docRef,
   metadataFileName,
@@ -158,14 +153,15 @@ async function createAndUploadMetadataFile({
   const classCode = docRef.type;
   const practiceSettingCode = docRef.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef.context?.facilityType;
+  const organization: Organization | undefined = docRef.contained?.find(
+    (resource): resource is Organization => resource.resourceType === "Organization"
+  );
   console.log(`Creating metadata file for docId: ${docId}`);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
-    hash,
-    repositoryUniqueId: METRIPORT_REPOSITORY_UNIQUE_ID,
-    homeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
     size,
     patientId: uniquePatientId,
+    organization,
     classCode,
     practiceSettingCode,
     healthcareFacilityTypeCode,

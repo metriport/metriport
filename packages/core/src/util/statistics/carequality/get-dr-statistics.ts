@@ -3,7 +3,7 @@ dotenv.config();
 // keep that ^ on top
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
-import { initSequelizeForLambda } from "../../sequelize";
+import { initDBPool } from "../../sequelize";
 import {
   StatisticsProps,
   calculateMapStats,
@@ -46,7 +46,7 @@ export async function getDrStatistics({
   dateString,
 }: StatisticsProps): Promise<DrStatisticsOutput> {
   out("Starting DR statistics calculation...");
-  const sequelize = initSequelizeForLambda(sqlDBCreds, false);
+  const sequelize = initDBPool(sqlDBCreds);
 
   try {
     const baseQuery = `

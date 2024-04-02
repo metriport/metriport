@@ -1,7 +1,6 @@
 import { NavigateFunction } from "react-router-dom";
 import { getApiToken } from "./api";
 import Constants from "./constants";
-import { capture } from "./notifications";
 
 function buildEnvParam(envParam: string) {
   return `${envParam}=true`;
@@ -13,7 +12,7 @@ export function redirectToMain(navigate: NavigateFunction, searchParams: URLSear
     const envParam = isSandbox(searchParams) ? `&${buildEnvParam(Constants.SANDBOX_PARAM)}` : "";
     navigate(`/?${Constants.TOKEN_PARAM}=${getApiToken(searchParams)}${envParam}`);
   } catch (err) {
-    capture.error(err, { extra: { context: `redirectToMain` } });
+    // do nothing
   }
 }
 
@@ -22,7 +21,7 @@ export function redirectToCustomUrl(url: string) {
   try {
     window.location.href = url;
   } catch (err) {
-    capture.error(err, { extra: { context: `redirectToCustomUrl`, url } });
+    // do nothing
   }
 }
 

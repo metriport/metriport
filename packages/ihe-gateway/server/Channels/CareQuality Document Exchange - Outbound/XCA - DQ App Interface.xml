@@ -6,7 +6,7 @@
     - forwards a single request back to the calling app or DB
     
   </description>
-  <revision>124</revision>
+  <revision>281</revision>
   <sourceConnector version="4.4.2">
     <metaDataId>0</metaDataId>
     <name>sourceConnector</name>
@@ -181,7 +181,7 @@
   <undeployScript msync-fileref="UndeployScript.js"/>
   <properties version="4.4.2">
     <clearGlobalChannelMap>true</clearGlobalChannelMap>
-    <messageStorageMode>DEVELOPMENT</messageStorageMode>
+    <messageStorageMode>PRODUCTION</messageStorageMode>
     <encryptData>false</encryptData>
     <encryptAttachments>false</encryptAttachments>
     <encryptCustomMetaData>false</encryptCustomMetaData>
@@ -227,12 +227,12 @@
     <metadata>
       <enabled>true</enabled>
       <lastModified>
-        <time>1709753610426</time>
+        <time>1711482177138</time>
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
+        <pruneMetaDataDays>2</pruneMetaDataDays>
+        <pruneContentDays>2</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>

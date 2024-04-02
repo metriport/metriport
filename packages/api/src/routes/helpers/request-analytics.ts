@@ -38,18 +38,16 @@ export const analyzeRoute = ({
   const isDevices = devicesRoutes.some(route => url.includes(route));
 
   const distinctId = cxId ?? "not-available";
-  analytics({
-    event: EventTypes.query,
-    distinctId,
-    properties: {
-      method,
-      url,
-      duration,
-    },
-    ...(isMedical
-      ? { apiType: Product.medical }
-      : isDevices
-      ? { apiType: Product.devices }
-      : { apiType: "internal" }),
-  });
+  if (!isDevices) {
+    analytics({
+      event: EventTypes.query,
+      distinctId,
+      properties: {
+        method,
+        url,
+        duration,
+      },
+      apiType: isMedical ? Product.medical : "internal",
+    });
+  }
 };

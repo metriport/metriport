@@ -8,30 +8,23 @@ function makeAppConfigClient(region: string): AWS.AppConfig {
   return new AppConfig({ region });
 }
 
-export type CustomerIdsFF = {
+export type StringValuesFF = {
   enabled: boolean;
-  cxIds: string[];
-  cxIdsAndLimits: never;
-};
-
-export type SandboxLimitFF = {
-  enabled: boolean;
-  cxIdsAndLimits: string[];
-  cxIds: never;
+  values: string[];
 };
 
 export type BooleanFF = {
   enabled: boolean;
-  cxIds: never;
-  cxIdsAndLimits: never;
+  values: never;
 };
 
 export type FeatureFlagDatastore = {
-  cxsWithEnhancedCoverageFeatureFlag: CustomerIdsFF;
-  cxsWithCQDirectFeatureFlag: CustomerIdsFF;
-  cxsWithADHDMRFeatureFlag: CustomerIdsFF;
-  cxsWithNoWebhookPongFeatureFlag: CustomerIdsFF;
-  cxsWithIncreasedSandboxLimitFeatureFlag: SandboxLimitFF;
+  cxsWithEnhancedCoverageFeatureFlag: StringValuesFF;
+  cxsWithCQDirectFeatureFlag: StringValuesFF;
+  cxsWithCWFeatureFlag: StringValuesFF;
+  cxsWithADHDMRFeatureFlag: StringValuesFF;
+  cxsWithNoWebhookPongFeatureFlag: StringValuesFF;
+  cxsWithIncreasedSandboxLimitFeatureFlag: StringValuesFF;
   commonwellFeatureFlag: BooleanFF;
   carequalityFeatureFlag: BooleanFF;
 };
@@ -59,8 +52,8 @@ export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
   );
   if (configContent && config.ContentType && config.ContentType === "application/json") {
     const configContentValue = JSON.parse(configContent.toString());
-    if (configContentValue.values && configContentValue.values[featureFlagName]) {
-      return configContentValue.values[featureFlagName];
+    if (configContentValue && configContentValue[featureFlagName]) {
+      return configContentValue[featureFlagName];
     } else {
       throw new MetriportError(`Feature Flag not found in config`, undefined, { featureFlagName });
     }

@@ -7,14 +7,15 @@ import {
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { getLambdaResultPayload, makeLambdaClient } from "@metriport/core/external/aws/lambda";
-import { makeS3Client } from "@metriport/core/external/aws/s3";
+import { S3Utils, makeS3Client } from "@metriport/core/external/aws/s3";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { Config } from "../../../shared/config";
 import { getSandboxSeedData } from "../../../shared/sandbox/sandbox-seed-data";
-import { convertDoc } from "../document/document-download";
+import { createSandboxMRSummaryFileName } from "./shared";
 
+const s3Utils = new S3Utils(Config.getAWSRegion());
 dayjs.extend(duration);
 
 /**
@@ -44,18 +45,16 @@ export async function handleBundleToMedicalRecord({
   dateTo?: string;
   conversionType: ConsolidationConversionType;
 }): Promise<Bundle<Resource>> {
-  // TODO: RIG THE API HERE TO RETURN THE SANDBOX SEED DATA
-  const isSandbox = Config.isSandbox();
-
-  if (isSandbox) {
+  const bucketName = Config.getSandboxSeedBucketName();
+  if (Config.isSandbox() && bucketName) {
     const patientMatch = getSandboxSeedData(patient.data.firstName);
-    const url = await processSandboxSeed({
-      firstName: patientMatch ? patient.data.firstName : "jane",
-      conversionType,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      bucketName: Config.getSandboxSeedBucketName()!,
+    const patientNameLowerCase = patientMatch ? patient.data.firstName.toLowerCase() : "jane";
+    const fileName = createSandboxMRSummaryFileName(patientNameLowerCase, conversionType);
+    const url = await s3Utils.getSignedUrl({
+      bucketName,
+      fileName,
+      durationSeconds: 60,
     });
-
     return buildBundle(patient, url, conversionType);
   }
 
@@ -166,20 +165,4 @@ async function convertFHIRBundleToMedicalRecord({
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
-}
-
-async function processSandboxSeed({
-  firstName,
-  conversionType,
-  bucketName,
-}: {
-  firstName: string;
-  conversionType: ConsolidationConversionType;
-  bucketName: string;
-}): Promise<string> {
-  const lowerCaseName = firstName.toLowerCase();
-  const fileName = `${lowerCaseName}-consolidated.xml`;
-
-  const url = await convertDoc({ fileName, conversionType, bucketName });
-  return url;
 }

@@ -13,6 +13,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
+import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -31,6 +32,7 @@ import {
   getCxsWithCQDirectFeatureFlagValue,
   getCxsWithEnhancedCoverageFeatureFlagValue,
 } from "../../external/aws/appConfig";
+import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import cwCommands from "../../external/commonwell";
 import { findDuplicatedPersons } from "../../external/commonwell/admin/find-patient-duplicates";
 import { patchDuplicatedPersonsForPatient } from "../../external/commonwell/admin/patch-patient-duplicates";
@@ -42,7 +44,6 @@ import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-l
 import { PatientLoaderLocal } from "../../external/commonwell/patient-loader-local";
 import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
-import { PatientUpdaterCarequality } from "../../external/carequality/patient-updater-carequality";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
 import {
@@ -129,7 +130,9 @@ router.post(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
 
-    const { failedUpdateCount } = await new PatientUpdaterCommonWell().updateAll(cxId, patientIds);
+    const { failedUpdateCount } = await new PatientUpdaterCommonWell(
+      getCqOrgIdsToDenyOnCw
+    ).updateAll(cxId, patientIds);
 
     return res.status(status.OK).json({ failedUpdateCount });
   })
@@ -180,7 +183,7 @@ router.delete(
       cxId,
       facilityId,
     };
-    await deletePatient(patientDeleteCmd, { allEnvs: true });
+    await deletePatient(patientDeleteCmd);
 
     return res.sendStatus(status.NO_CONTENT);
   })
@@ -210,7 +213,13 @@ router.post(
     const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
 
     if (linkSource === MedicalDataSource.COMMONWELL) {
-      await cwCommands.link.create(linkCreate.entityId, patientId, cxId, facilityId);
+      await cwCommands.link.create(
+        linkCreate.entityId,
+        patientId,
+        cxId,
+        facilityId,
+        getCqOrgIdsToDenyOnCw
+      );
       return res.sendStatus(status.CREATED);
     }
     throw new BadRequestError(`Unsupported link source: ${linkSource}`);
@@ -350,7 +359,8 @@ router.patch(
             cxId,
             patientId,
             personId,
-            unenrollByDemographics
+            unenrollByDemographics,
+            getCqOrgIdsToDenyOnCw
           ).catch(e => {
             console.log(`Error: ${e}, ${String(e)}`);
             throw `Failed to patch patient ${patientId} - ${String(e)}`;

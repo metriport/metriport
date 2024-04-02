@@ -49,3 +49,18 @@ function getSOAPTemplate() {
 	return soap;
 }
 
+
+function getITI39SOAPTemplate() {
+
+	var soap = <soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://www.w3.org/2005/08/addressing">
+				  <soap:Header>
+				    <wsa:To soap:mustUnderstand="true">http://www.w3.org/2005/08/addressing/anonymous</wsa:To>
+				    <wsa:Action soap:mustUnderstand="true"></wsa:Action>
+				    <wsa:MessageID soap:mustUnderstand="true">{'urn:uuid:' + UUIDGenerator.getUUID()}</wsa:MessageID>
+				    <wsa:RelatesTo soap:mustUnderstand="true"></wsa:RelatesTo>
+				  </soap:Header>
+				  <soap:Body xmlns="urn:ihe:iti:xds-b:2007" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+				</soap:Envelope>;
+
+	return soap;
+}

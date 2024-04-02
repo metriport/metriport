@@ -8,7 +8,6 @@ import {
   StackProps,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
@@ -18,8 +17,10 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { InstanceType, Port } from "aws-cdk-lib/aws-ec2";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
+import * as iam from "aws-cdk-lib/aws-iam";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
+import { LogGroup } from "aws-cdk-lib/aws-logs";
 import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
@@ -33,6 +34,7 @@ import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
+import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
 import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
@@ -174,6 +176,7 @@ export class APIStack extends Stack {
         vpc: this.vpc,
         instanceType: new InstanceType("serverless"),
         enablePerformanceInsights: true,
+        parameterGroup,
       },
       credentials: dbCreds,
       defaultDatabaseName: dbName,
@@ -353,7 +356,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(5),
+      maxPollingDuration: Duration.minutes(11),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -529,6 +532,14 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    createCqDirectoryRebuilder({
+      lambdaLayers,
+      stack: this,
+      vpc: this.vpc,
+      apiAddress: apiLoadBalancerAddress,
+      alarmSnsAction: slackNotification?.alarmAction,
+    });
+
     cookieStore &&
       cwEnhancedCoverageConnector.setupLambdas({
         stack: this,
@@ -546,6 +557,23 @@ export class APIStack extends Stack {
     // API Gateway
     //-------------------------------------------
 
+    const accessLogDestination = new apig.LogGroupLogDestination(
+      new LogGroup(this, "APIAccessLogGroup", {
+        removalPolicy: RemovalPolicy.RETAIN,
+      })
+    );
+    const accessLogFormat = apig.AccessLogFormat.jsonWithStandardFields({
+      caller: true,
+      httpMethod: true,
+      ip: true,
+      protocol: true,
+      requestTime: true,
+      resourcePath: true,
+      responseLength: true,
+      status: true,
+      user: true,
+    });
+
     // Create the API Gateway
     // example from https://bobbyhadz.com/blog/aws-cdk-api-gateway-example
     const api = new apig.RestApi(this, "api", {
@@ -554,6 +582,10 @@ export class APIStack extends Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: ["*"],
         allowHeaders: ["*"],
+      },
+      deployOptions: {
+        accessLogDestination,
+        accessLogFormat,
       },
     });
 
@@ -1192,7 +1224,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1239,7 +1271,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1286,7 +1318,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
