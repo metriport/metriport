@@ -97,6 +97,10 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				var resultFromS3 = xcaWriteToFile(filePathString, decodedBytes, attachment);
 				contentList.push(attachment);
+				// free memory asap
+				decodedBytes = null;
+				decodedAsString = null;
+				parsedFile = null;
 
 				// TODO 1350 remove this log
 				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePathString + "): " + resultFromS3.toString());

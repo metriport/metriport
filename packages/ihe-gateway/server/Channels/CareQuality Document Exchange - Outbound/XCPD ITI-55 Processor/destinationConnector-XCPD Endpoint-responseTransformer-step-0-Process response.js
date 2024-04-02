@@ -19,11 +19,7 @@ var 	ack = '',
 	soapReason = null;
 
 try {
-
-	var soap = msg.toString();
-
-	xml = new XML(soap);
-	xml = xml.*::Body.*::PRPA_IN201306UV02;
+	xml = msg.*::Body.*::PRPA_IN201306UV02;
 
 	// Acknowledgement code as described in HL7 message processing rules
 	// AA - Receiving application successfully processed message

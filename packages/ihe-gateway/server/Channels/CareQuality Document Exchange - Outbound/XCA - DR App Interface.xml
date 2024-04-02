@@ -229,8 +229,8 @@
         <timezone>America/Winnipeg</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
+        <pruneMetaDataDays>2</pruneMetaDataDays>
+        <pruneContentDays>2</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>

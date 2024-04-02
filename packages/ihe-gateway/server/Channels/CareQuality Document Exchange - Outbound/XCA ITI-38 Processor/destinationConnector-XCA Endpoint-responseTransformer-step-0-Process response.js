@@ -7,18 +7,7 @@ var 	queryResponseCode = '',
 	soapReason = null;
 
 try {
-
-	//var soap = String(getBase64Body(msg));
-	var soap = msg.toString();
-
-	// Store for testing
-	channelMap.put('RESPONSE', soap.toString());
-
-	xml = new XML(soap.toString());
-
-	// SOAP level error
-
-	xml = xml.*::Body.*::AdhocQueryResponse;
+  xml = msg.*::Body.*::AdhocQueryResponse;
 
 	// The status attribute reflects the status of the operation and shall be one of the following values:
 	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success

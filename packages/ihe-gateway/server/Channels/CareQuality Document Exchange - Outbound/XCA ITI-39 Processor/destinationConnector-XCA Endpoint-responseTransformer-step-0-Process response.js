@@ -12,11 +12,7 @@ var 	queryResponseCode = '',
 	soapReason = null;
 
 try {
-
-	var soap = msg.toString();
-	
-	xml = new XML(soap);
-	xml = xml.*::Body.*::RetrieveDocumentSetResponse;
+	xml = msg.*::Body.*::RetrieveDocumentSetResponse;
 
 	// The status attribute reflects the status of the operation and shall be one of the following values:
 	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
