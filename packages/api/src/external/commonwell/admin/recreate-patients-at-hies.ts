@@ -7,7 +7,7 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
-import { create, getCWData } from "../patient";
+import { registerAndLinkPatientInCW, getCWData } from "../patient";
 import { getPatientData } from "../patient-shared";
 import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie";
 
@@ -106,7 +106,7 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await create(patient, facilityId, getOrgIdExcludeList, {
+    const cwIds = await registerAndLinkPatientInCW(patient, facilityId, getOrgIdExcludeList, log, {
       organization,
       facility,
     });
