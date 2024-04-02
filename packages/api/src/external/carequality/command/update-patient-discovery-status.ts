@@ -1,17 +1,14 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { PatientModel } from "../../models/medical/patient";
-import { executeOnDBTx } from "../../models/transaction-wrapper";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { PatientModel } from "../../../models/medical/patient";
+import { executeOnDBTx } from "../../../models/transaction-wrapper";
 
 export async function updatePatientDiscoveryStatus({
   patient,
   status,
-  source,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: "processing" | "completed" | "failed";
-  source: MedicalDataSource;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -29,8 +26,8 @@ export async function updatePatientDiscoveryStatus({
 
     const updatePatientDiscoveryStatus = {
       ...externalData,
-      [source]: {
-        ...externalData[source],
+      CAREQUALITY: {
+        ...externalData.CAREQUALITY,
         discoveryStatus: status,
       },
     };

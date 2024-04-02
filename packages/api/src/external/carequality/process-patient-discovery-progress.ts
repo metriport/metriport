@@ -7,7 +7,7 @@ import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { getCQData } from "./patient";
-import { updatePatientDiscoveryStatus } from "../hie/update-patient-discovery-status";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 
 /**
  * Updates the patient discovery status for patient.
@@ -23,11 +23,7 @@ export async function processPatientDiscoveryProgress({
   const { log } = out(`CQ Process PD Status - patient ${patient.id}`);
 
   try {
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status,
-      source: MedicalDataSource.CAREQUALITY,
-    });
+    const updatedPatient = await updatePatientDiscoveryStatus({ patient, status });
 
     const scheduledDocQueryRequestId = getCQData(
       updatedPatient.data.externalData
