@@ -14,6 +14,7 @@ export function signTimestamp(xml: string, privateKey: crypto.KeyLike): SignedXm
   sig.canonicalizationAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#";
   sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
   sig.computeSignature(xml, {
+    prefix: "ds",
     location: { reference: "//*[local-name(.)='Timestamp']", action: "after" },
   });
   return sig;
