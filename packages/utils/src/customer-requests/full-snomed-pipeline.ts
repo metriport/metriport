@@ -12,14 +12,19 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as dotenv from "dotenv";
 import axios from "axios";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 dotenv.config();
+dayjs.extend(duration);
 
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiLoadBalancerURL = getEnvVarOrFail("API_URL");
 const fhirUrl = getEnvVarOrFail("FHIR_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const metriportApi: MetriportMedicalApi = new MetriportMedicalApi(apiKey);
-const resultsDirectory = "./runs/consolidatedPatients";
+
+const timestamp = dayjs().toISOString();
+const resultsDirectory = `./runs/consolidatedPatients/${timestamp}`;
 
 async function fetchPatientIds(cxId: string): Promise<string[]> {
   const url = `${apiLoadBalancerURL}/internal/patient/ids?cxId=${cxId}`;
@@ -49,7 +54,8 @@ export async function ensureDirectory(): Promise<void> {
 
 async function fetchAndSavePatientData(patientId: string): Promise<void> {
   try {
-    const data = await metriportApi.getPatientConsolidated(patientId);
+    const resources = ["Conditions, Procedures, MedicationAdministration"];
+    const data = await metriportApi.getPatientConsolidated(patientId, resources);
     const fhirPatient = await getFhirPatientData(patientId);
     const resourceWrappedFhirPatient = { resource: fhirPatient };
     if (!data.entry) {
