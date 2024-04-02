@@ -92,10 +92,10 @@ export const setCommonwellId = async ({
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        patientId: commonwellPatientId,
-        personId: commonwellPersonId,
-        status: commonwellStatus,
-        cqLinkStatus: updatedCQLinkStatus,
+        ...(commonwellPatientId && { patientId: commonwellPatientId }),
+        ...(commonwellPersonId && { personId: commonwellPersonId }),
+        ...(commonwellStatus && { status: commonwellStatus }),
+        ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
       },
     };
 
