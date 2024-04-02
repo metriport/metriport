@@ -110,9 +110,13 @@ export async function create(
 ): Promise<void> {
   const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
-  const cwCreateEnabled = await validateCWCreateEnabled({ cxId: patient.cxId, debug });
+  const cwCreateEnabled = await validateCWCreateEnabled({
+    cxId: patient.cxId,
+    forceCWCreate,
+    debug,
+  });
 
-  if (cwCreateEnabled || forceCWCreate) {
+  if (cwCreateEnabled) {
     await setPatientDiscoveryStatus({
       patientId: patient.id,
       cxId: patient.cxId,
@@ -128,11 +132,18 @@ export async function create(
 
 async function validateCWCreateEnabled({
   cxId,
+  forceCWCreate,
   debug,
 }: {
   cxId: string;
+  forceCWCreate: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
+  if (forceCWCreate) {
+    debug(`CW create forced, proceeding...`);
+    return true;
+  }
+
   try {
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
