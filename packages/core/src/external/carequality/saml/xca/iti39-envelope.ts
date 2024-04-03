@@ -1,19 +1,14 @@
+import * as uuid from "uuid";
+
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
 import { signTimestamp, signEnvelope } from "../security/sign";
 import { insertKeyInfo } from "../security/insert-key-info";
-import { verifyXmlSignatures } from "../security/verify";
-import * as uuid from "uuid";
+import { verifySaml } from "../security/verify";
+import { namespaces } from "../namespaces";
+import { ORGANIZATION_NAME_DEFAULT as metriport_organization, reply_to } from "../../shared";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
-const reply_to = "http://www.w3.org/2005/08/addressing/anonymous";
-const metriport_organization = "Metriport";
-
-export const namespaces = {
-  soap: "http://www.w3.org/2003/05/soap-envelope",
-  wsa: "http://www.w3.org/2005/08/addressing",
-  urn: "urn:ihe:iti:xds-b:2007",
-};
 
 type DRBodyData = {
   id: string;
@@ -88,7 +83,7 @@ export function createSoapEnvelope(bodyData: DRBodyData, x509CertPem: string): s
     "soap:Envelope": {
       "@_xmlns:soap": namespaces.soap,
       "@_xmlns:wsa": namespaces.wsa,
-      "@_xmlns:urn": namespaces.urn,
+      "@_xmlns:urn": namespaces.urnihe,
       "soap:Header": {
         "wsa:To": {
           "@_mustUnderstand": "1",
@@ -120,7 +115,7 @@ export async function createAndSignDRRequest(
   const signedTimestamp = await signTimestamp(soapEnvelope, privateKey);
   const signedEnvelope = await signEnvelope(signedTimestamp.getSignedXml(), privateKey);
   const fullEnvelope = insertKeyInfo(signedEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifyXmlSignatures(fullEnvelope, x509CertPem);
+  const verified = await verifySaml(fullEnvelope, x509CertPem);
   if (!verified) {
     throw new Error("Failed to verify signed envelope");
   }

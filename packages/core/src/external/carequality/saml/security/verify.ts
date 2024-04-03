@@ -4,7 +4,7 @@ import * as isDomNode from "@xmldom/is-dom-node";
 import * as crypto from "crypto";
 import { DOMParser } from "xmldom";
 
-export function verifyXmlSignatures(xmlString: string, publicCert: crypto.KeyLike): boolean {
+export function verifySaml(xmlString: string, publicCert: crypto.KeyLike): boolean {
   const doc = new DOMParser().parseFromString(xmlString, "application/xml");
   const signatures = xpath.select("//*[local-name(.)='Signature']", doc);
   if (!Array.isArray(signatures)) return false;

@@ -1,22 +1,14 @@
+import * as uuid from "uuid";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
 import { signTimestamp, signEnvelope } from "../security/sign";
 import { insertKeyInfo } from "../security/insert-key-info";
-import { verifyXmlSignatures } from "../security/verify";
-import * as uuid from "uuid";
+import { verifySaml } from "../security/verify";
+import { namespaces } from "../namespaces";
+import { ORGANIZATION_NAME_DEFAULT as metriport_organization, reply_to } from "../../shared";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
-const reply_to = "http://www.w3.org/2005/08/addressing/anonymous";
 const find_document_id = "14d4debf-8f97-4251-9a74-a90016b0af0d";
-
-const metriport_organization = "Metriport";
-
-export const namespaces = {
-  soap: "http://www.w3.org/2003/05/soap-envelope",
-  wsa: "http://www.w3.org/2005/08/addressing",
-  urn: "urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0",
-  urn2: "urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0",
-};
 
 type DQBodyData = {
   id: string;
@@ -238,7 +230,7 @@ export async function createAndSignDQRequest(
   const signedTimestamp = signTimestamp(correctedXmlString, privateKey);
   const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
   const fullEnvelope = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifyXmlSignatures(fullEnvelope, x509CertPem);
+  const verified = await verifySaml(fullEnvelope, x509CertPem);
   if (!verified) {
     throw new Error("Signature verification failed.");
   }

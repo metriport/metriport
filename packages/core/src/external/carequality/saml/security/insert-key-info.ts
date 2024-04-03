@@ -5,6 +5,11 @@ import {
   extractPublicKeyInfo,
 } from "./security-header";
 
+const reference_id = "90d3e138-63a6-47f9-884e-881dd10110ca";
+const namespaces = {
+  ds: "http://www.w3.org/2000/09/xmldsig#",
+};
+
 export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -24,7 +29,7 @@ export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
 
   if (security && security["saml2:Assertion"]["ds:Signature"]) {
     const keyInfoStructure = {
-      "@_xmlns:ds": "http://www.w3.org/2000/09/xmldsig#",
+      "@_xmlns:ds": namespaces.ds,
       "ds:KeyInfo": {
         "ds:KeyValue": {
           "ds:RSAKeyValue": {
@@ -56,7 +61,7 @@ export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
           "@_xmlns:ns0": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
           "@_ns0:TokenType":
             "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0",
-          "@_wsu:Id": "90d3e138-63a6-47f9-884e-881dd10110ca",
+          "@_wsu:Id": reference_id,
           "wsse:KeyIdentifier": {
             "@_ValueType": "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLID",
             "#text": security_header_enveloped_id,

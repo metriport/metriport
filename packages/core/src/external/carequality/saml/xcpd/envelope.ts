@@ -1,19 +1,17 @@
 import { XMLBuilder } from "fast-xml-parser";
+
 import { createSecurityHeader } from "../security/security-header";
 import { signTimestamp, signEnvelope } from "../security/sign";
 import { insertKeyInfo } from "../security/insert-key-info";
-import { verifyXmlSignatures } from "../security/verify";
+import { verifySaml } from "../security/verify";
+import { namespaces } from "../namespaces";
+import {
+  ORGANIZATION_NAME_DEFAULT as metriport_organization,
+  METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+  reply_to,
+} from "../../shared";
 
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
-const metriport_organization = "Metriport";
-const metriport_home_community_id = "2.16.840.1.113883.3.9621";
-const reply_to = "http://www.w3.org/2005/08/addressing/anonymous";
-
-export const namespaces = {
-  soap: "http://www.w3.org/2003/05/soap-envelope",
-  wsa: "http://www.w3.org/2005/08/addressing",
-  urn: "urn:hl7-org:v3",
-};
 
 type XCPDBodyData = {
   id: string;
@@ -140,7 +138,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
             "@_classCode": "DEV",
             "@_determinerCode": "INSTANCE",
             "urn:id": {
-              "@_root": metriport_home_community_id,
+              "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
             },
             "urn:asAgent": {
               "@_classCode": "AGNT",
@@ -148,7 +146,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
                 "@_classCode": "ORG",
                 "@_determinerCode": "INSTANCE",
                 "urn:id": {
-                  "@_root": metriport_home_community_id,
+                  "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
                 },
                 "urn:name": metriport_organization,
               },
@@ -230,7 +228,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
 
   const soapEnvelope = {
     "soap:Envelope": {
-      "@_xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
+      "@_xmlns:soap": namespaces.soap,
       "soap:Header": {
         "@_xmlns:wsa": namespaces.wsa,
         "wsa:To": {
@@ -276,7 +274,7 @@ export async function createAndSignXCPDRequest(
   const signedTimestamp = signTimestamp(xmlString, privateKey);
   const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
   const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifyXmlSignatures(insertedKeyInfo, x509CertPem);
+  const verified = await verifySaml(insertedKeyInfo, x509CertPem);
   if (!verified) {
     throw new Error("Signature verification failed.");
   }

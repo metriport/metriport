@@ -1,10 +1,17 @@
 import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
+import { EnvType, getEnvType } from "../../../../util/env-var";
+import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../shared";
+import { namespaces } from "../namespaces";
 
 export const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
-export const security_header_enveloped_id = "_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
-const saml2_NameID = "CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US";
+export const security_header_enveloped_id = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
+
+const saml2_NameID =
+  getEnvType() === EnvType.production
+    ? "CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US"
+    : "CN=ihe.staging.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US";
 
 export function createSecurityHeader(
   x509CertPem: string,
@@ -20,15 +27,13 @@ export function createSecurityHeader(
   const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
   const securityHeader = {
     "wsse:Security": {
-      "@_xmlns:wsse":
-        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd",
-      "@_xmlns:saml2": "urn:oasis:names:tc:SAML:2.0:assertion",
-      "@_xmlns:ds": "http://www.w3.org/2000/09/xmldsig#",
-      "@_xmlns:wsu":
-        "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
-      "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-      "@_xmlns:hl7": "urn:hl7-org:v3",
-      "@_xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+      "@_xmlns:wsse": namespaces.wsse,
+      "@_xmlns:saml2": namespaces.saml2,
+      "@_xmlns:ds": namespaces.ds,
+      "@_xmlns:wsu": namespaces.wsu,
+      "@_xmlns:xsi": namespaces.xsi,
+      "@_xmlns:hl7": namespaces.hl7,
+      "@_xmlns:xs": namespaces.xs,
       "saml2:Assertion": {
         "@_ID": security_header_enveloped_id,
         "@_IssueInstant": created_timestamp,
@@ -108,11 +113,11 @@ export function createSecurityHeader(
               "@_Name": "urn:oasis:names:tc:xacml:2.0:subject:role",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
-                "@_xsi:type": "hl7:CE",
+                "@_xsi:type": namespaces.ce,
                 "hl7:Role": {
-                  "@_xsi:type": "hl7:CE",
+                  "@_xsi:type": namespaces.ce,
                   "@_code": "106331006",
-                  "@_codeSystem": "2.16.840.1.113883.6.96",
+                  "@_codeSystem": SNOMED_CODE,
                   "@_codeSystemName": "SNOMED_CT",
                   "@_displayName": "Administrative AND/OR managerial worker",
                 },
@@ -122,11 +127,11 @@ export function createSecurityHeader(
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
-                "@_xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-                "@_xsi:type": "hl7:CE",
+                "@_xmlns:xsi": namespaces.xsi,
+                "@_xsi:type": namespaces.ce,
                 "hl7:PurposeOfUse": {
                   "@_code": purpose_of_use,
-                  "@_codeSystem": "2.16.840.1.113883.3.18.7.1",
+                  "@_codeSystem": NHIN_PURPOSE_CODE_SYSTEM,
                   "@_codeSystemName": "nhin-purpose",
                   "@_displayName": "Treatment",
                 },
