@@ -45,7 +45,6 @@ async function populateChildrenRecursively(
       await Promise.all(childPromises);
     }
   } else {
-    // this is either a code
     if (hashTable[childCode].found) {
       console.log(`Downgrading ${childCode} to non-root (child)`);
       hashTable[childCode] = { ...hashTable[childCode], root: false };

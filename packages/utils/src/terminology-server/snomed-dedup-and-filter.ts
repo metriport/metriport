@@ -240,7 +240,7 @@ export async function fullProcessing(directoryPath: string) {
   const cptSet = new Set<string>();
   const conditionsSet = new Set<string>();
   const allRemainingEnries = new Set<string>();
-  const medicationConditionDict: Record<string, string> = {}; // a mapping of all medications to conditions
+  const medicationConditionDict: Record<string, string> = {};
   await processDirectoryOrFile(directoryPath, async filePath => {
     await removeConditionsProceduresMedAdmins(
       filePath,

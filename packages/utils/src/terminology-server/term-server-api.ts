@@ -1,21 +1,34 @@
 import axios from "axios";
 
-interface ParameterPart {
+type ParameterPart = {
   name: string;
   valueCode?: string;
   valueString?: string;
-}
+};
 
-interface Parameter {
+type Parameter = {
   name: string;
   valueString?: string;
   part?: ParameterPart[];
-}
+};
 
-interface CodeSystemUrl {
+type CodeSystemUrl = {
   name: string;
   url: string;
-}
+};
+
+export type CodeDetailsResponse = {
+  parameter: {
+    name: string;
+    part: [
+      {
+        name: string;
+        value?: string;
+        valueCode?: string;
+      }
+    ];
+  }[];
+};
 
 export const codeSystemUrls: Record<string, CodeSystemUrl> = {
   SNOMEDCT_US: {
@@ -48,19 +61,6 @@ export const codeSystemUrls: Record<string, CodeSystemUrl> = {
   },
 };
 
-export type CodeDetailsResponse = {
-  parameter: {
-    name: string;
-    part: [
-      {
-        name: string;
-        value?: string;
-        valueCode?: string;
-      }
-    ];
-  }[];
-};
-
 export async function getCodeDetailsFull(
   code: string,
   codeSystemType: string
@@ -80,7 +80,6 @@ export async function getCodeDetailsFull(
       console.error("Connection refused. The server is not reachable at the moment.");
       return undefined;
     } else {
-      // console.error(`Error fetching code details. Code Not Found ${code}`);
       return undefined;
     }
   }
@@ -102,12 +101,11 @@ export async function getCodeDisplay(
 
     const displayParameter = response.data.parameter.find((p: Parameter) => p.name === "display");
     if (displayParameter && displayParameter.valueString) {
-      // Extract the display text and category using a regular expression
       const match = displayParameter.valueString.match(/^(.+?)\s*\(([^)]+)\)$/);
       if (match) {
         return {
-          display: match[1].trim(), // "Domestic abuse of adult"
-          category: match[2].trim(), // "event"
+          display: match[1].trim(),
+          category: match[2].trim(),
         };
       } else {
         console.log("Display field format not recognized.");

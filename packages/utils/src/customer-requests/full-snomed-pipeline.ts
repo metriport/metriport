@@ -3,7 +3,7 @@
 // The script makes consolidated queries, inserts a patient FHIR resource, and then calls the filtering
 // and MR generation logic.
 
-import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
+import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-snomed";
 import fs from "fs/promises";
 import { convertHtmlTablesToCsv } from "./convert-html-to-csv";
 import * as path from "path";

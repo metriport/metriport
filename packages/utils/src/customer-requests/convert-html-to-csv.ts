@@ -113,7 +113,7 @@ export function convertHtmlTablesToCsv(html: string) {
 }
 
 function main() {
-  const filePath = process.argv[2]; // Get the file path from command line arguments
+  const filePath = process.argv[2];
 
   if (!filePath) {
     console.error("Please provide an HTML file path.");
@@ -121,16 +121,14 @@ function main() {
   }
 
   try {
-    const htmlContent = readFileSync(filePath, "utf8"); // Read the HTML file content
-    const csvContent = convertHtmlTablesToCsv(htmlContent); // Convert HTML to CSV
+    const htmlContent = readFileSync(filePath, "utf8");
+    const csvContent = convertHtmlTablesToCsv(htmlContent);
 
-    // Construct the CSV file path by changing the extension
     const csvFilePath = path.join(
       path.dirname(filePath),
       path.basename(filePath, path.extname(filePath)) + ".csv"
     );
 
-    // Write the CSV content to the new file
     writeFileSync(csvFilePath, csvContent);
     console.log(`CSV file has been created at: ${csvFilePath}`);
     // eslint-disable-next-line
@@ -139,7 +137,6 @@ function main() {
   }
 }
 
-// Call main if this script is run directly
 if (require.main === module) {
   main();
 }
