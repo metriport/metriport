@@ -26,7 +26,8 @@
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
-    "uuidv7": "ts-node src/make-uuidv7"
+    "uuidv7": "ts-node src/make-uuidv7",
+    "saml-server": "ts-node src/saml/saml-server"
   },
   "keywords": [],
   "author": "",

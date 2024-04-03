@@ -1,3 +1,6 @@
+// This is a shlper scipt that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to to the gateway specified in the request body.
+// npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
+
 import express from "express";
 import { json, Request, Response } from "express";
 import axios from "axios";
@@ -26,7 +29,6 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 
   try {
     const xmlString = await createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
-    fs.writeFileSync("./temp.xml", xmlString);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
@@ -42,7 +44,6 @@ app.post("/xcadq", async (req: Request, res: Response) => {
 
   try {
     const xmlString = await createAndSignDQRequest(req.body, x509CertPem, privateKey);
-    fs.writeFileSync("./temp.xml", xmlString);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
@@ -62,7 +63,6 @@ app.post("/xcadr", async (req: Request, res: Response) => {
 
   try {
     const xmlString = await createAndSignDRRequest(req.body, x509CertPem, privateKey);
-    fs.writeFileSync("./temp.xml", xmlString);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
