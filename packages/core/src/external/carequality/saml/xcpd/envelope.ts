@@ -68,7 +68,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
   const patient_family_name = bodyData.patientResource.name?.[0]?.family;
   const patient_given_name = bodyData.patientResource.name?.[0]?.given?.[0];
   const patient_address = bodyData.patientResource.address?.[0];
-  // const patient_telecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
+  const patient_telecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
 
   const created_timestamp = new Date().toISOString();
   const expires_timestamp = new Date(
@@ -207,6 +207,12 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
                       "urn:country": patient_address.country,
                     },
                     "urn:semanticsText": "Patient.addr",
+                  }
+                : {},
+              "urn:patientTelecom": patient_telecom
+                ? {
+                    "urn:value": patient_telecom,
+                    "urn:semanticsText": "Patient.telecom",
                   }
                 : {},
               "urn:principalCareProviderId": {
