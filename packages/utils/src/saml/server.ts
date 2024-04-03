@@ -10,6 +10,7 @@ import {
   signTimestamp,
   signEnvelope,
 } from "@metriport/core/external/carequality/saml/security/sign";
+import { insertKeyInfo } from "@metriport/core/external/carequality/saml/security/insert-key-info";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import * as dotenv from "dotenv";
@@ -31,20 +32,14 @@ app.post("/xcpd", async (req: Request, res: Response) => {
     const xmlString = createSoapEnvelope(req.body, x509CertPem);
     const signedTimestamp = signTimestamp(xmlString, privateKey);
     const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
-    const verified = await verifyXmlSignatures(
-      signedTimestampAndEnvelope.getSignedXml(),
-      x509CertPem
-    );
+    const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
+    const verified = await verifyXmlSignatures(insertedKeyInfo, x509CertPem);
     console.log("Signatures verified: ", verified);
-    fs.writeFileSync("./temp.xml", signedTimestampAndEnvelope.getSignedXml());
-    const response = await sendSignedXml(
-      signedTimestampAndEnvelope.getSignedXml(),
-      req.body.gateway.url
-    );
+    fs.writeFileSync("./temp.xml", insertedKeyInfo);
+    const response = await sendSignedXml(insertedKeyInfo, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
-    console.error(error);
     res.status(500).send({ detail: "Internal Server Error" });
   }
 });
@@ -75,11 +70,7 @@ async function sendSignedXml(signedXml: string, url: string): Promise<string> {
     });
 
     return response.data;
-  } catch (error) {
-    console.error("Failed to send signed XML:", error);
-    throw error;
   } finally {
-    // Clean up the temporary files
     fs.unlinkSync(certFilePath);
     fs.unlinkSync(keyFilePath);
   }

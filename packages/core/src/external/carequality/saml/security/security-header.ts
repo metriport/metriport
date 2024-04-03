@@ -2,8 +2,8 @@ import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
 
-const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
-const security_header_enveloped_id = "_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
+export const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
+export const security_header_enveloped_id = "_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
 const saml2_NameID = "CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US";
 
 export function createSecurityHeader(
@@ -30,7 +30,7 @@ export function createSecurityHeader(
       "@_xmlns:hl7": "urn:hl7-org:v3",
       "@_xmlns:xs": "http://www.w3.org/2001/XMLSchema",
       "saml2:Assertion": {
-        "@_Id": security_header_enveloped_id,
+        "@_ID": security_header_enveloped_id,
         "@_IssueInstant": created_timestamp,
         "@_Version": "2.0",
         "saml2:Issuer": {
@@ -136,7 +136,7 @@ export function createSecurityHeader(
         },
       },
       "wsu:Timestamp": {
-        "@_Id": security_header_timestamp_id,
+        "@_wsu:Id": security_header_timestamp_id,
         "wsu:Created": created_timestamp,
         "wsu:Expires": expires_timestamp,
       },
@@ -145,7 +145,7 @@ export function createSecurityHeader(
   return securityHeader;
 }
 
-function extractPublicKeyInfo(certificatePem: string) {
+export function extractPublicKeyInfo(certificatePem: string) {
   const derBuffer = Buffer.from(certificatePem, "base64");
   const asn1 = asn1js.fromBER(
     derBuffer.buffer.slice(derBuffer.byteOffset, derBuffer.byteOffset + derBuffer.byteLength)
@@ -165,7 +165,7 @@ function extractPublicKeyInfo(certificatePem: string) {
   return [modulus, exponent];
 }
 
-function stripPemCertificate(x509CertPem: string): string {
+export function stripPemCertificate(x509CertPem: string): string {
   let certPemStripped = x509CertPem
     .replace(/-----BEGIN CERTIFICATE-----\r?\n/, "")
     .replace(/-----END CERTIFICATE-----\r?\n?$/, "");
