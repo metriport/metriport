@@ -2,7 +2,6 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { executeWithRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { cloneDeep } from "lodash";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
@@ -73,27 +72,102 @@ export const setCommonwellId = async ({
   commonwellStatus?: LinkStatus | undefined;
   cqLinkStatus?: CQLinkStatus | undefined;
 }): Promise<Patient> => {
+  const patientFilter = {
+    id: patientId,
+    cxId,
+  };
+
   return executeOnDBTx(PatientModel.prototype, async transaction => {
-    const updatedPatient = await getPatientOrFail({
-      id: patientId,
-      cxId,
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
       lock: true,
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(updatedPatient.data.externalData);
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
 
-    const updatedData = cloneDeep(updatedPatient.data);
-    updatedData.externalData = {
-      ...updatedData.externalData,
-      COMMONWELL: new PatientDataCommonwell(
-        commonwellPatientId,
-        commonwellPersonId,
-        commonwellStatus,
-        updatedCQLinkStatus
-      ),
+    const externalData = existingPatient.data.externalData ?? {};
+
+    const updateCWExternalData = {
+      ...externalData,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        ...(commonwellPatientId && { patientId: commonwellPatientId }),
+        ...(commonwellPersonId && { personId: commonwellPersonId }),
+        ...(commonwellStatus && { status: commonwellStatus }),
+        ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
+      },
     };
 
-    return updatedPatient.update({ data: updatedData }, { transaction });
+    const updatedPatient = {
+      ...existingPatient.dataValues,
+      data: {
+        ...existingPatient.data,
+        externalData: updateCWExternalData,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
+
+    return updatedPatient;
+  });
+};
+
+/**
+ * Sets the CommonWell (CW) integration status on the patient.
+ *
+ * @param patientId The patient ID @ Metriport.
+ * @param cxId The customer ID @ Metriport.
+ * @param status The status of integrating/synchronizing the patient @ CommonWell.
+ * @returns
+ */
+export const setPatientDiscoveryStatus = async ({
+  patientId,
+  cxId,
+  status,
+}: {
+  patientId: string;
+  cxId: string;
+  status: LinkStatus;
+}): Promise<Patient> => {
+  const patientFilter = {
+    id: patientId,
+    cxId,
+  };
+
+  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
+
+    const externalData = existingPatient.data.externalData ?? {};
+
+    const updatePatientDiscoveryStatus = {
+      ...externalData,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        status,
+      },
+    };
+
+    const updatedPatient = {
+      ...existingPatient.dataValues,
+      data: {
+        ...existingPatient.data,
+        externalData: updatePatientDiscoveryStatus,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
+
+    return updatedPatient;
   });
 };
