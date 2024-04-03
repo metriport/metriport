@@ -24,6 +24,7 @@ export const makePatientData = (data: Partial<PatientData> = {}): PatientData =>
     documentQueryProgress: data.documentQueryProgress,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
+    externalData: data.externalData,
   };
 };
 export const makePatient = (params: Partial<Patient> = {}): Patient => {

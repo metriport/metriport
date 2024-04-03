@@ -45,6 +45,18 @@ export async function getPatientWithCWData(
   );
 }
 
+export type CWParams = {
+  commonwellPatientId: string;
+  commonwellPersonId: string | undefined;
+  commonwellStatus: LinkStatus | undefined;
+  cqLinkStatus: CQLinkStatus | undefined;
+};
+
+export type SetCommonwellIdParams = CWParams & {
+  patientId: string;
+  cxId: string;
+};
+
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
  *
@@ -64,14 +76,7 @@ export const setCommonwellId = async ({
   commonwellPersonId,
   commonwellStatus,
   cqLinkStatus,
-}: {
-  patientId: string;
-  cxId: string;
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-  commonwellStatus?: LinkStatus | undefined;
-  cqLinkStatus?: CQLinkStatus | undefined;
-}): Promise<Patient> => {
+}: SetCommonwellIdParams): Promise<Patient> => {
   const patientFilter = {
     id: patientId,
     cxId,
