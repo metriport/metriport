@@ -1,29 +1,38 @@
 import {
-  Organization,
   Address,
-  ContactPoint,
   CodeableConcept,
+  ContactPoint,
   Identifier,
+  Organization,
 } from "@medplum/fhirtypes";
+import { normalizeOid } from "@metriport/shared";
 import {
-  Entry,
-  EntryObject,
+  assigningAuthorityNameAttribute,
+  extensionAttribute,
+  nullFlavorAttribute,
+  rootAttribute,
+  useAttribute,
+  valueAttribute,
+} from "./constants";
+import {
+  CDAAddress,
   CDACodeCE,
   CDACodeCV,
   CDAInstanceIdentifier,
-  CDAAddress,
   CDAOrganization,
   CDATelecom,
+  Entry,
+  EntryObject,
 } from "./types";
-import {
-  rootAttribute,
-  extensionAttribute,
-  assigningAuthorityNameAttribute,
-  valueAttribute,
-  useAttribute,
-  nullFlavorAttribute,
-} from "./constants";
 
+const CODING_MAP = new Map<string, string>();
+CODING_MAP.set("http://loinc.org", "2.16.840.1.113883.6.1");
+CODING_MAP.set("http://snomed.info/sct", "2.16.840.1.113883.6.96");
+CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", "2.16.840.1.113883.6.88");
+CODING_MAP.set("http://www.ama-assn.org/go/cpt", "2.16.840.1.113883.6.12");
+CODING_MAP.set("http://fdasis.nlm.nih.gov", "2.16.840.1.113883.4.9");
+
+export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
   if (value === undefined) {
     return {};
@@ -77,8 +86,8 @@ export function buildCodeCVFromCodeableConcept(
     return withoutNullFlavorString(codeableConcept);
   }
 
-  const primaryCoding = codeableConcept.coding?.[0];
-
+  const primaryCodingRaw = codeableConcept.coding?.[0];
+  const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
     ? buildCodeCE({
         code: primaryCoding.code,
@@ -91,7 +100,7 @@ export function buildCodeCVFromCodeableConcept(
   const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCE({
       code: coding.code,
-      codeSystem: coding.system,
+      codeSystem: mapCodingSystem(coding.system),
       codeSystemName: undefined,
       displayName: coding.display,
     })
@@ -137,7 +146,7 @@ export function buildInstanceIdentifiersFromIdentifier(
     : [];
   return identifiersArray.map(identifier =>
     buildInstanceIdentifier({
-      root: identifier.system,
+      root: identifier.system ? normalizeOid(identifier.system) : undefined,
       extension: identifier.value,
       assigningAuthorityName: identifier.assigner?.display,
     })
@@ -148,25 +157,31 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
   if (!telecoms) {
     return [];
   }
-  return telecoms.map(telecom => ({
-    ...withoutNullFlavorObject(telecom.use, useAttribute),
-    ...withoutNullFlavorObject(telecom.value, valueAttribute),
-  }));
+  return telecoms.map(telecom => {
+    const telecomUse = mapTelecomUse(telecom.use);
+    return {
+      ...withoutNullFlavorObject(telecomUse, useAttribute),
+      ...withoutNullFlavorObject(telecom.value, valueAttribute),
+    };
+  });
 }
 
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
-  return address?.map(addr => ({
-    ...withoutNullFlavorObject(addr.use, useAttribute),
-    streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
-    city: withoutNullFlavorString(addr.city),
-    state: withoutNullFlavorString(addr.state),
-    postalCode: withoutNullFlavorString(addr.postalCode),
-    country: withoutNullFlavorString(addr.country),
-    useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
-    },
-  })); // Using only first address
+  return address?.map(addr => {
+    const addrUse = mapAddressUse(addr.use);
+    return {
+      ...withoutNullFlavorObject(addrUse, useAttribute),
+      streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
+      city: withoutNullFlavorString(addr.city),
+      state: withoutNullFlavorString(addr.state),
+      postalCode: withoutNullFlavorString(addr.postalCode),
+      country: withoutNullFlavorString(addr.country),
+      useablePeriod: {
+        low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
+        high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+      },
+    };
+  }); // Using only first address
 }
 
 export function buildRepresentedOrganization(
@@ -189,4 +204,95 @@ export function formatDateToCDATimeStamp(dateString: string | undefined): string
   const fractionalSeconds = "0000";
   const cdaTimeStamp = `${datePart}${timePart}.${fractionalSeconds}`;
   return cdaTimeStamp;
+}
+
+function mapAddressUse(use: string | undefined) {
+  if (!use) return undefined;
+  // From PostalAddressUse of the CDA R2 IG
+  switch (use.toLowerCase()) {
+    case "bad address":
+      return "BAD";
+    case "confidential":
+      return "CONF";
+    case "direct":
+      return "DIR";
+    case "home" || "home address":
+      return "H";
+    case "primary home":
+      return "HP";
+    case "vacation home":
+      return "HV";
+    case "physical visit address":
+      return "PHYS";
+    case "postal address":
+      return "PST";
+    case "public":
+      return "PUB";
+    case "temporary":
+      return "TMP";
+    // from example CDAs
+    case "work":
+      return "WP";
+  }
+  return use;
+}
+
+function mapTelecomUse(use: string | undefined) {
+  if (!use) return undefined;
+  // From Telecom Use of the CDA R2 IG
+  switch (use.toLowerCase()) {
+    case "answering service":
+      return "AS";
+    case "emergency contact":
+      return "EC";
+    case "home" || "primary home":
+      return "HP";
+    case "vacation home":
+      return "HV";
+    case "mobile contact":
+      return "MC";
+    case "pager":
+      return "PG";
+    case "work" || "work place":
+      return "WP";
+  }
+  return use;
+}
+function cleanUpCoding(primaryCodingRaw: import("@medplum/fhirtypes").Coding | undefined) {
+  if (!primaryCodingRaw) return undefined;
+  const system = primaryCodingRaw.system;
+  switch (system) {
+    case "http://loinc.org":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "LOINC",
+        display: primaryCodingRaw.display,
+      };
+    case "http://snomed.info/sct":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "SNOMED-CT",
+        display: primaryCodingRaw.display,
+      };
+    case "http://www.nlm.nih.gov/research/umls/rxnorm":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "RXNORM",
+        display: primaryCodingRaw.display,
+      };
+    default:
+      return {
+        system: system ? CODING_MAP.get(system) : primaryCodingRaw.system,
+        code: primaryCodingRaw.code,
+        display: primaryCodingRaw.display,
+      };
+  }
+}
+
+function mapCodingSystem(system: string | undefined): string | undefined {
+  if (!system) return undefined;
+  const mappedCodingSystem = CODING_MAP.get(system);
+  if (mappedCodingSystem) return mappedCodingSystem;
+  if (system.includes("urn")) return normalizeOid(system);
+  return system;
 }

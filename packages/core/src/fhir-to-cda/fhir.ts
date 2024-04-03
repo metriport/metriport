@@ -1,11 +1,11 @@
 import {
   Bundle,
+  Composition,
+  DiagnosticReport,
+  Observation,
+  Organization,
   Patient,
   Resource,
-  Organization,
-  Composition,
-  Observation,
-  DiagnosticReport,
 } from "@medplum/fhirtypes";
 
 function isPatient(resource: Resource | undefined): resource is Patient {

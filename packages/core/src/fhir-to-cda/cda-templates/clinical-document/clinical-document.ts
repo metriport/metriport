@@ -111,13 +111,17 @@ export function buildClinicalDocumentXML(
       component: structuredBody,
     },
   };
-
   const cleanedJsonObj = removeEmptyFields(jsonObj);
-
   const builder = new XMLBuilder({
     format: false,
     ignoreAttributes: false,
   });
 
-  return builder.build(cleanedJsonObj);
+  const generatedXml = builder.build(cleanedJsonObj);
+  return postProcessXml(generatedXml);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function postProcessXml(xml: any): string {
+  return xml.replaceAll("<br>", "").replaceAll("</br>", "<br />");
 }

@@ -1,12 +1,13 @@
 import { Observation } from "@medplum/fhirtypes";
-import { CDAInstanceIdentifier, CDACodeCV, Entry } from "../types";
 import {
-  buildInstanceIdentifiersFromIdentifier,
+  TIMESTAMP_CLEANUP_REGEX,
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
-  withoutNullFlavorString,
+  buildInstanceIdentifiersFromIdentifier,
+  withoutNullFlavorObject,
 } from "../commons";
-import { classCodeAttribute, moodCodeAttribute } from "../constants";
+import { classCodeAttribute, codeAttribute, moodCodeAttribute, valueAttribute } from "../constants";
+import { CDACodeCV, CDAInstanceIdentifier, Entry, EntryObject } from "../types";
 
 export interface CDAObservation {
   component: {
@@ -16,11 +17,10 @@ export interface CDAObservation {
       id?: CDAInstanceIdentifier[] | Entry;
       code: CDACodeCV | Entry;
       text?: Entry;
-      statusCode?: {
-        code: Entry;
-      };
+      statusCode?: EntryObject;
       effectiveTime?: {
-        value: Entry;
+        low?: EntryObject;
+        high?: EntryObject;
       };
       priorityCode?: Entry;
       // TODO support other types of values like CodeableConcept, Quantity, etc.
@@ -31,7 +31,7 @@ export interface CDAObservation {
 
 export function buildObservations(observations: Observation[]): CDAObservation[] {
   return observations.map(observation => {
-    const effectiveTime = observation.effectiveDateTime?.replace(/-|:|\.\d+Z$/g, "");
+    const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     return {
       component: {
         observation: {
@@ -43,11 +43,10 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
           }),
           id: buildInstanceIdentifiersFromIdentifier(observation.identifier),
           code: buildCodeCVFromCodeableConcept(observation.code),
-          statusCode: {
-            code: withoutNullFlavorString(observation.status),
-          },
+          statusCode: withoutNullFlavorObject(observation.status, codeAttribute),
           effectiveTime: {
-            value: withoutNullFlavorString(effectiveTime),
+            low: withoutNullFlavorObject(effectiveTime, valueAttribute),
+            high: withoutNullFlavorObject(effectiveTime, valueAttribute),
           },
           value: observation.valueString,
         },

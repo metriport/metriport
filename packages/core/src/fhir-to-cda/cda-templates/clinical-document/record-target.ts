@@ -13,15 +13,18 @@ import { useAttribute, valueAttribute } from "../constants";
 
 function buildPatient(patient: Patient): CDAPatientRole {
   return {
-    name: patient.name?.map(name => ({
-      ...withoutNullFlavorObject(name.use, useAttribute),
-      given: withoutNullFlavorString(name.given?.join(" ")),
-      family: withoutNullFlavorString(name.family),
-      validTime: {
-        low: withoutNullFlavorObject(undefined, valueAttribute),
-        high: withoutNullFlavorObject(undefined, valueAttribute),
-      },
-    })),
+    name: patient.name?.map(name => {
+      const nameUse = mapNameUse(name.use);
+      return {
+        ...withoutNullFlavorObject(nameUse, useAttribute),
+        given: withoutNullFlavorString(name.given?.join(" ")),
+        family: withoutNullFlavorString(name.family),
+        validTime: {
+          low: withoutNullFlavorObject(undefined, valueAttribute),
+          high: withoutNullFlavorObject(undefined, valueAttribute),
+        },
+      };
+    }),
     administrativeGenderCode: buildCodeCE({
       code: patient.gender,
       codeSystem: "2.16.840.1.113883.5.1",
@@ -53,4 +56,32 @@ export function buildRecordTargetFromFhirPatient(patient: Patient): CDARecordTar
     },
   };
   return recordTarget;
+}
+
+function mapNameUse(use: string | undefined) {
+  if (!use) return undefined;
+  // From EntityNameUse of the CDA R2 IG
+  switch (use.toLowerCase()) {
+    case "artist" || "stage":
+      return "A";
+    case "alphabetic":
+      return "ABC";
+    case "assigned":
+      return "ASGN";
+    case "license":
+      return "C";
+    case "indigenous" || "tribal":
+      return "I";
+    case "ideographic":
+      return "IDE";
+    case "usual" || "legal":
+      return "L";
+    case "pseudonim":
+      return "P";
+    case "phonetic":
+      return "PHON";
+    case "religious":
+      return "R";
+  }
+  return use;
 }

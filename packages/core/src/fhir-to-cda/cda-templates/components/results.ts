@@ -1,22 +1,22 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
-import {
-  withoutNullFlavorObject,
-  withNullFlavor,
-  buildCodeCVFromCodeableConcept,
-  buildCodeCE,
-  buildInstanceIdentifier,
-} from "../commons";
 import { base64ToString } from "../../../util/base64";
+import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
-  valueAttribute,
-  styleCodeAttribute,
+  TIMESTAMP_CLEANUP_REGEX,
+  buildCodeCE,
+  buildCodeCVFromCodeableConcept,
+  buildInstanceIdentifier,
+  withoutNullFlavorObject,
+} from "../commons";
+import {
   classCodeAttribute,
-  moodCodeAttribute,
-  typeCodeAttribute,
   idAttribute,
+  moodCodeAttribute,
+  styleCodeAttribute,
+  typeCodeAttribute,
+  valueAttribute,
 } from "../constants";
 import { buildObservations } from "./observations";
-import { findResourceInBundle, isObservation, isDiagnosticReport } from "../../fhir";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],
@@ -35,32 +35,31 @@ function buildEntriesFromDiagnosticReports(
       }
     });
 
+    const organizer = {
+      [classCodeAttribute]: "BATTERY",
+      [moodCodeAttribute]: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: "2.16.840.1.113883.10.20.22.4.1",
+        extension: "2015-08-01",
+      }),
+      id: buildInstanceIdentifier({
+        root: report.id,
+      }),
+      code: codeElement,
+      statusCode: buildCodeCE({
+        code: report.status,
+      }),
+      effectiveTime: withoutNullFlavorObject(
+        report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
+        valueAttribute
+      ),
+      component: buildObservations(observations).map(o => o.component),
+    };
+
     return {
       entry: {
         [typeCodeAttribute]: "DRIV",
-        organizer: {
-          [classCodeAttribute]: "BATTERY",
-          [moodCodeAttribute]: "EVN",
-          templateId: buildInstanceIdentifier({
-            root: "2.16.840.1.113883.10.20.22.4.1",
-            extension: "2015-08-01",
-          }),
-          id: buildInstanceIdentifier({
-            root: report.id,
-          }),
-          code: codeElement,
-          statusCode: buildCodeCE({
-            code: report.status,
-          }),
-          effectiveTime: withoutNullFlavorObject(
-            report.effectiveDateTime?.replace(/-|:|\.\d+Z$/g, ""),
-            valueAttribute
-          ),
-          text: {
-            reference: withNullFlavor(report.id, valueAttribute),
-          },
-          component: buildObservations(observations).map(o => o.component),
-        },
+        organizer,
       },
     };
   });
@@ -86,7 +85,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
         return {
           item: {
             content: {
-              [idAttribute]: report.id,
+              [idAttribute]: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },

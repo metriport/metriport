@@ -1,11 +1,11 @@
-import { Bundle, Patient, Organization } from "@medplum/fhirtypes";
-import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
-import { buildAuthor } from "./cda-templates/clinical-document/author";
-import { buildCustodian } from "./cda-templates/clinical-document/custodian";
-import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
-import { buildClinicalDocumentXML } from "./cda-templates/clinical-document/clinical-document";
-import { findPatientResource, findOrganizationResource } from "./fhir";
+import { Bundle, Organization, Patient } from "@medplum/fhirtypes";
 import { MetriportError } from "../util/error/metriport-error";
+import { buildAuthor } from "./cda-templates/clinical-document/author";
+import { buildClinicalDocumentXML } from "./cda-templates/clinical-document/clinical-document";
+import { buildCustodian } from "./cda-templates/clinical-document/custodian";
+import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
+import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
+import { findOrganizationResource, findPatientResource } from "./fhir";
 
 export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
   const patientResource: Patient | undefined = findPatientResource(fhirBundle);
