@@ -5,6 +5,7 @@ import fs from "fs";
 import https from "https";
 
 import { createAndSignXCPDRequest } from "@metriport/core/external/carequality/saml/xcpd/envelope";
+import { createAndSignDQRequest } from "@metriport/core/external/carequality/saml/xca/iti38-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import * as dotenv from "dotenv";
@@ -24,6 +25,22 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 
   try {
     const xmlString = await createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
+    fs.writeFileSync("./temp.xml", xmlString);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
+
+    res.type("application/xml").send(response);
+  } catch (error) {
+    res.status(500).send({ detail: "Internal Server Error" });
+  }
+});
+
+app.post("/xcadq", async (req: Request, res: Response) => {
+  if (!req.is("application/json")) {
+    return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
+  }
+
+  try {
+    const xmlString = await createAndSignDQRequest(req.body, x509CertPem, privateKey);
     fs.writeFileSync("./temp.xml", xmlString);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 

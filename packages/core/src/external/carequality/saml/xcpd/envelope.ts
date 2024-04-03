@@ -15,7 +15,7 @@ export const namespaces = {
   urn: "urn:hl7-org:v3",
 };
 
-interface XCPDBodyData {
+type XCPDBodyData = {
   id: string;
   gateway: {
     oid: string;
@@ -49,7 +49,7 @@ interface XCPDBodyData {
       value: string;
     }>;
   };
-}
+};
 
 export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string): string {
   const message_id = `urn:uuid:${bodyData.id}`;
