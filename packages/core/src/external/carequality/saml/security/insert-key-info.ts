@@ -23,7 +23,6 @@ export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
   const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
 
   if (security && security["saml2:Assertion"]["ds:Signature"]) {
-    console.log("fixing first signature");
     const keyInfoStructure = {
       "@_xmlns:ds": "http://www.w3.org/2000/09/xmldsig#",
       "ds:KeyInfo": {

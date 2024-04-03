@@ -1,5 +1,8 @@
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
+import { signTimestamp, signEnvelope } from "../security/sign";
+import { insertKeyInfo } from "../security/insert-key-info";
+import { verifyXmlSignatures } from "../security/verify";
 
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 const metriport_organization = "Metriport";
@@ -256,4 +259,20 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
   const builder = new XMLBuilder(options);
   const xmlContent = builder.build(soapEnvelope);
   return xmlContent;
+}
+
+export async function createAndSignXCPDRequest(
+  bodyData: XCPDBodyData,
+  x509CertPem: string,
+  privateKey: string
+): Promise<string> {
+  const xmlString = createSoapEnvelope(bodyData, x509CertPem);
+  const signedTimestamp = signTimestamp(xmlString, privateKey);
+  const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
+  const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
+  const verified = await verifyXmlSignatures(insertedKeyInfo, x509CertPem);
+  if (!verified) {
+    throw new Error("Signature verification failed.");
+  }
+  return insertedKeyInfo;
 }

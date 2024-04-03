@@ -4,13 +4,7 @@ import axios from "axios";
 import fs from "fs";
 import https from "https";
 
-import { createSoapEnvelope } from "@metriport/core/external/carequality/saml/xcpd/envelope";
-import { verifyXmlSignatures } from "@metriport/core/external/carequality/saml/security/verify";
-import {
-  signTimestamp,
-  signEnvelope,
-} from "@metriport/core/external/carequality/saml/security/sign";
-import { insertKeyInfo } from "@metriport/core/external/carequality/saml/security/insert-key-info";
+import { createAndSignXCPDRequest } from "@metriport/core/external/carequality/saml/xcpd/envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import * as dotenv from "dotenv";
@@ -29,14 +23,9 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = createSoapEnvelope(req.body, x509CertPem);
-    const signedTimestamp = signTimestamp(xmlString, privateKey);
-    const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
-    const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-    const verified = await verifyXmlSignatures(insertedKeyInfo, x509CertPem);
-    console.log("Signatures verified: ", verified);
-    fs.writeFileSync("./temp.xml", insertedKeyInfo);
-    const response = await sendSignedXml(insertedKeyInfo, req.body.gateway.url);
+    const xmlString = await createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
+    fs.writeFileSync("./temp.xml", xmlString);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
