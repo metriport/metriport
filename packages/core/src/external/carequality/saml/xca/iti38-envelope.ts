@@ -10,7 +10,6 @@ const reply_to = "http://www.w3.org/2005/08/addressing/anonymous";
 const find_document_id = "14d4debf-8f97-4251-9a74-a90016b0af0d";
 
 const metriport_organization = "Metriport";
-// const metriport_home_community_id = "2.16.840.1.113883.3.9621";
 
 export const namespaces = {
   soap: "http://www.w3.org/2003/05/soap-envelope",
@@ -191,10 +190,10 @@ export function createSoapEnvelope(bodyData: DQBodyData, x509CertPem: string): s
   const soapEnvelope = {
     "soap:Envelope": {
       "@_xmlns:soap": namespaces.soap,
+      "@_xmlns:wsa": namespaces.wsa,
       "@_xmlns:urn": namespaces.urn,
       "@_xmlns:urn2": namespaces.urn2,
       "soap:Header": {
-        "@_xmlns:wsa": namespaces.wsa,
         "wsa:To": {
           "#text": to_url,
           "@_mustUnderstand": "1",
@@ -235,12 +234,13 @@ export async function createAndSignDQRequest(
   privateKey: string
 ): Promise<string> {
   const xmlString = createSoapEnvelope(bodyData, x509CertPem);
-  const signedTimestamp = signTimestamp(xmlString, privateKey);
+  const correctedXmlString = xmlString.replace(/&apos;/g, "'");
+  const signedTimestamp = signTimestamp(correctedXmlString, privateKey);
   const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
-  const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifyXmlSignatures(insertedKeyInfo, x509CertPem);
+  const fullEnvelope = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
+  const verified = await verifyXmlSignatures(fullEnvelope, x509CertPem);
   if (!verified) {
     throw new Error("Signature verification failed.");
   }
-  return insertedKeyInfo;
+  return fullEnvelope;
 }

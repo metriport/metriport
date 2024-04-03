@@ -6,6 +6,7 @@ import https from "https";
 
 import { createAndSignXCPDRequest } from "@metriport/core/external/carequality/saml/xcpd/envelope";
 import { createAndSignDQRequest } from "@metriport/core/external/carequality/saml/xca/iti38-envelope";
+import { createAndSignDRRequest } from "@metriport/core/external/carequality/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import * as dotenv from "dotenv";
@@ -52,6 +53,22 @@ app.post("/xcadq", async (req: Request, res: Response) => {
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+});
+
+app.post("/xcadr", async (req: Request, res: Response) => {
+  if (!req.is("application/json")) {
+    return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
+  }
+
+  try {
+    const xmlString = await createAndSignDRRequest(req.body, x509CertPem, privateKey);
+    fs.writeFileSync("./temp.xml", xmlString);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
+
+    res.type("application/xml").send(response);
+  } catch (error) {
+    res.status(500).send({ detail: "Internal Server Error" });
+  }
 });
 
 async function sendSignedXml(signedXml: string, url: string): Promise<string> {

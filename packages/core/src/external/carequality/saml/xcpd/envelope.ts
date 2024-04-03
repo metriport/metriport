@@ -88,7 +88,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
 
   const soapBody = {
     "soap:Body": {
-      "@_xmlns:urn": "urn:hl7-org:v3",
+      "@_xmlns:urn": namespaces.urn,
       "urn:PRPA_IN201305UV02": {
         "@_ITSVersion": "XML_1.0",
         "urn:id": {
@@ -226,7 +226,7 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
     "soap:Envelope": {
       "@_xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/",
       "soap:Header": {
-        "@_xmlns:wsa": "http://www.w3.org/2005/08/addressing",
+        "@_xmlns:wsa": namespaces.wsa,
         "wsa:To": {
           "#text": to_url,
           "@_mustUnderstand": "1",
