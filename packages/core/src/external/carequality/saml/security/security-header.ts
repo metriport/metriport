@@ -1,17 +1,12 @@
 import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
-import { EnvType, getEnvType } from "../../../../util/env-var";
+import { EnvType } from "../../../../util/env-var";
 import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../shared";
 import { namespaces } from "../namespaces";
 
 export const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
 export const security_header_enveloped_id = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
-
-const saml2_NameID =
-  getEnvType() === EnvType.production
-    ? "CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US"
-    : "CN=ihe.staging.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US";
 
 export function createSecurityHeader(
   x509CertPem: string,
@@ -21,10 +16,15 @@ export function createSecurityHeader(
   subject_role: string,
   metriport_organization: string,
   home_community_id: string,
-  purpose_of_use: string
+  purpose_of_use: string,
+  envType?: EnvType
 ): object {
   const cert_pem_stripped = stripPemCertificate(x509CertPem);
   const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
+  const saml2_NameID = `CN=ihe.${
+    envType === EnvType.production ? "metriport.com" : "staging.metriport.com"
+  },OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+
   const securityHeader = {
     "wsse:Security": {
       "@_xmlns:wsse": namespaces.wsse,
