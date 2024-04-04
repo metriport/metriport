@@ -19,6 +19,7 @@ import { isCommonwellEnabled } from "../aws/appConfig";
 import MetriportError from "../../errors/metriport-error";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { isEnhancedCoverageEnabledForCx, isCWEnabledForCx } from "../aws/appConfig";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -221,6 +222,8 @@ export async function registerAndLinkPatientInCW(
       getOrgIdExcludeList,
     });
 
+    await queryDocsAgainIfScheduled(patient, getOrgIdExcludeList);
+
     return { commonwellPatientId, personId };
   } catch (error) {
     setPatientDiscoveryStatus({
@@ -375,22 +378,7 @@ export async function update(
       getOrgIdExcludeList
     );
 
-    const scheduledDocQueryRequestId = getCWData(
-      patient.data.externalData
-    )?.scheduledDocQueryRequestId;
-
-    if (scheduledDocQueryRequestId) {
-      const resetPatient = await resetPatientScheduledDocQueryRequestId({
-        patient,
-        source: MedicalDataSource.COMMONWELL,
-      });
-
-      await queryAndProcessDocuments({
-        patient: resetPatient,
-        requestId: scheduledDocQueryRequestId,
-        getOrgIdExcludeList,
-      });
-    }
+    await queryDocsAgainIfScheduled(patient, getOrgIdExcludeList);
   } catch (error) {
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
     capture.error(error, {
@@ -403,6 +391,30 @@ export async function update(
       },
     });
     throw error;
+  }
+}
+
+async function queryDocsAgainIfScheduled(
+  patient: Patient,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<void> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledDocQueryRequestId = getCWData(
+    updatedPatient.data.externalData
+  )?.scheduledDocQueryRequestId;
+
+  if (scheduledDocQueryRequestId) {
+    const resetPatient = await resetPatientScheduledDocQueryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    await queryAndProcessDocuments({
+      patient: resetPatient,
+      requestId: scheduledDocQueryRequestId,
+      getOrgIdExcludeList,
+    });
   }
 }
 
