@@ -1,0 +1,173 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>HL7UpdateMode</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D10018-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>HL7UpdateMode&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></font><br><p class="vocDesc">The possible modes of updating that occur when an attribute is received by a system that already contains values for that
+                     attribute.
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name="SetUpdateMode"></a><a name="C-0-D10018-V10024-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: SetUpdateMode</strong></td>
+               <td>V10024</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">These concepts apply when the element and/or message is updating a set of items.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-V10024-10025-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ESA)
+                  
+               </td>
+               <td>10025</td>
+               <td>ESA</td>
+               <td>Set Add</td>
+               <td>
+                  <p class="vocDesc">Add the message element to the collection of items on the receiving system that correspond to the message element.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-V10024-10028-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ESAC)
+                  
+               </td>
+               <td>10028</td>
+               <td>ESAC</td>
+               <td>Set Add or Change</td>
+               <td>
+                  <p class="vocDesc">Change the item on the receiving system that corresponds to this message element; if a matching element does not exist, add
+                     a new one created with the values in the message.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-V10024-10027-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ESC)
+                  
+               </td>
+               <td>10027</td>
+               <td>ESC</td>
+               <td>Set Change</td>
+               <td>
+                  <p class="vocDesc">Change the item on the receiving system that corresponds to this message element; do not process if a matching element does
+                     not exist.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-V10024-10026-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ESD)
+                  
+               </td>
+               <td>10026</td>
+               <td>ESD</td>
+               <td>Set Delete</td>
+               <td>
+                  <p class="vocDesc">Delete the item on the receiving system that corresponds to this message element.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-10020-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(D)
+                  
+               </td>
+               <td>10020</td>
+               <td>D</td>
+               <td>Delete</td>
+               <td>
+                  <p class="vocDesc">Delete the previously received value.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-10021-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(I)
+                  
+               </td>
+               <td>10021</td>
+               <td>I</td>
+               <td>Ignore</td>
+               <td>
+                  <p class="vocDesc">Ignore this role, it is not relevant to the update.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-10022-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(K)
+                  
+               </td>
+               <td>10022</td>
+               <td>K</td>
+               <td>Key</td>
+               <td>
+                  <p class="vocDesc">Key - this message element is used as a key to set or collection of message elements</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-10019-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(R)
+                  
+               </td>
+               <td>10019</td>
+               <td>R</td>
+               <td>Replace</td>
+               <td>
+                  <p class="vocDesc">Replace the value previously received.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10018-10023-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(V)
+                  
+               </td>
+               <td>10023</td>
+               <td>V</td>
+               <td>Verify</td>
+               <td>
+                  <p class="vocDesc">Verify - this message element must match a value already in the receiving systems database in order to process the message.</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>

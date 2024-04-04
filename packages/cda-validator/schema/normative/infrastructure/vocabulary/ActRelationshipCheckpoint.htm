@@ -1,0 +1,114 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>ActRelationshipCheckpoint</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D10349-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>ActRelationshipCheckpoint&nbsp;&nbsp;&nbsp;&nbsp;<img src="../../support/graphics/NormativeStandard.gif" alt="NormativeStandard1"></strong></font><br><p class="vocDesc">A code specifying when in the course of an Act a precondition for the Act is evaluated (e.g., before the Act starts for the
+                     first time, before every repetition, after each repetition but not before the first, or throughout the entire time of the
+                     Act.)
+                  </p>
+                  <p class="vocDesc">This table controls values for structural elements of the HL7 Reference Information Model.  Therefore, it is part of the Normative
+                     Ballot for the RIM.
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10349-10351-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(B)
+                  
+               </td>
+               <td>10351</td>
+               <td>B</td>
+               <td>beginning</td>
+               <td>
+                  <p class="vocDesc">Condition is tested every time before execution of the service (WHILE condition DO service).</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10349-10352-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(E)
+                  
+               </td>
+               <td>10352</td>
+               <td>E</td>
+               <td>end</td>
+               <td>
+                  <p class="vocDesc">Condition is tested at the end of a repeated service execution.  The service is repeated only if the condition is true (DO
+                     service WHILE condition).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10349-10350-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(S)
+                  
+               </td>
+               <td>10350</td>
+               <td>S</td>
+               <td>entry</td>
+               <td>
+                  <p class="vocDesc">Condition is tested once before the service is executed (IF condition THEN service).</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10349-10353-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(T)
+                  
+               </td>
+               <td>10353</td>
+               <td>T</td>
+               <td>through</td>
+               <td>
+                  <p class="vocDesc">Condition must be true throughout the execution and the service is interrupted (asynchronously) as soon as the condition turns
+                     false (asynchronous WHILE loop).  The service must be interruptible.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D10349-10354-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(X)
+                  
+               </td>
+               <td>10354</td>
+               <td>X</td>
+               <td>exit</td>
+               <td>
+                  <p class="vocDesc">Condition is a loop checkpoint, i.e. it is a step of an activity plan and, if negative causes the containing loop to exit.</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>

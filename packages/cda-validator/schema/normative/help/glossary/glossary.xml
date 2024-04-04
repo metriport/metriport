@@ -1,0 +1,4877 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<spec specDTDversionNum="1" xmlns:xlink="http://www.w3.org/TR/WD-xlink">
+	
+   <header>
+		
+      <title>Glossary</title>
+		
+      <version>2.5</version>
+		
+      <date>August 16, 2004</date>
+		
+      <authlist>
+			
+         <author>
+				
+            <role>Editor</role>
+				
+            <name>Various Contributors</name>
+				
+            <affiliation>HL7 Publishing Technical Committee</affiliation>
+			
+         </author>
+		
+      </authlist>
+	
+   </header>
+	
+   <body>
+		
+      <div1 id="glossary">
+         <head>Alphabetic Index</head>
+         <div2 id="glossary-a">
+				
+            <head>A</head>
+				
+            <glist>
+               <gitem id="account">
+
+                  <label>Account</label>
+
+
+                  <def domainid="FIAB_DO000000" sortkey="01" preferreddef="true" fullDomainName="Account and Billing" domainLink="../../domains/ab/amfiab.htm">
+
+                     <p>A Billing Account is an accumulator of financial and administrative information for the main purpose of supporting claims and reimbursement.  Secondarily, the billing account may contribute significant information to cost accounting and financial decision support systems.  A billing account is simply that entity that captures the elements reflecting the cost and price of services provided and supplies consumed for a healthcare activity.  The focus for which an account accumulates information will vary.  (For example: In a realm where billing is based on periodically collecting financial transactions for a patient, the accumulator might be the patient.)  A billing account might also include links to insurance and benefit information, and relevant responsible parties.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="adjudication">
+
+                  <label>Adjudication</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A process by which an adjudicator identifies edit errors and/or determines payment intent based on insurance policy rules for submitted invoices.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="adjudication_response">
+
+                  <label>Adjudication Response</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="adjudication_results">Adjudication Results</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="adjudication_response_time">
+
+                  <label>Adjudication Response Time</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The elapsed time between the electronic submission of the claim for adjudication and the receipt of the adjudication results.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="adjudication_results">
+
+                  <label>Adjudication Results</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A response by the Adjudicator to the Provider identifying edit errors and/or adjudication results for invoices (by Product Service Line Item) that have been paid in full, partially paid (adjusted) or not paid and reasons for adjustment and non-payment.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="adjudicator">
+
+                  <label>Adjudicator</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The organization that interprets insurance policy rules through an adjudication process and makes a determination on how much money should be paid for a particular invoice .An Adjudicator typically acts on behalf of an Insurance Carrier.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="ahrq">
+
+                  <label>AHRQ</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="01" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>Agency for Healthcare Research and Quality</p>
+
+                  </def>
+               </gitem>
+               <gitem id="alert_no_text">
+
+                  <label>Alert No Text</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information that describes the details about potential problems or warnings associated with an Act.  This is used for drug utilization review findings such as drug interactions. This may include among other things - alert code, type of alert, severity and reason alert was issued( including drug and supply information). No text representation is provided.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="allowed_benefit">
+
+                  <label>Allowed Benefit</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A good or service that is a benefit under the patient's instance of insurance.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="analysis_region">
+
+                  <label>Analysis Region</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>The analysis region defines an area in time upon which algorithms performed some analysis.  The analysis may be for the derivation of a median beat, and/or interpretation statements, global measurements, etc.  If the rhythm waveforms are long enough to require (local) analysis in multiple places, a region will define each.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="annotation">
+						
+                  <label> annotation</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A note following a <termref ref="domain_message_information_model">
+								Domain Message Information Model</termref> (D-MIM) diagram that 
+								explains the D-MIM or the modeling behind the D-MIM.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="ansi">
+						
+                  <label>ANSI</label>
+						
+					
+                  <def>
+							
+                     <p>American National Standards Institute</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="application">
+						
+                  <label> application</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A software program or set of related programs that provide 
+								some useful healthcare capability or functionality.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="application_role">
+						
+                  <label>application role</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An abstraction that expresses a portion of the messaging behaviour of an 
+								information system.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="artifact">
+						
+                  <label> artifact</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Any deliverable resulting from the discovery, analysis, and design activities         
+								leading to the creation of <termref ref="message">message</termref> specifications.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="assignment_of_benefits">
+
+                  <label>Assignment of Benefits</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The formal transfer of the right to certain benefit payments by a plan member to a third-party.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="association">
+						
+                  <label> association</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A reference from one <termref ref="class">class</termref> to 
+								another class or to itself,  or a connection between two 
+								<termref ref="object">objects</termref> (instances of classes).
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlstructrelations">
+								 Relationships section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="association_composition">
+						
+                  <label>association composition</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="composite_aggregation">composite 
+								aggregation</termref>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="association_role_name">
+						
+                  <label>association role name</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A name for each end of an <termref ref="association">association</termref>. 
+								The name is a short verb phrase depicting the <termref ref="role">
+								role</termref> of the <termref ref="class">class</termref> at 
+								the opposite end of the association from the perspective of 
+								the class adjacent to the role.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="attachment_healthcare_invoice">
+
+                  <label>Attachment Healthcare Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Additional supporting material attached to a NeCST message such as a form, report or image.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="attachment_reference_identifier">
+
+                  <label>Attachment Reference Identifier</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A unique number (made up of form number and Network Application ID) that uniquely identifies the Health Document that is attached to the Healthcare Invoice.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="attribute">
+						
+                  <label>attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An abstraction of a particular aspect of a <termref ref="class">
+								class</termref>. Attributes become the 
+								data values that are passed in HL7 <termref ref="message">messages</termref>.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlattrib">
+								 Attributes section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="attribute_type">
+						
+                  <label>attribute type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A classifier for the meaning of an <termref ref="attribute">
+								attribute</termref>. In HL7 V3, attribute type is 
+								indicated by a suffix added to the attribute name.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="authorization">
+
+                  <label>Authorization</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A communication process betweenthe  Provider and Adjudicator regarding (pre)-approval for payment of a service.  Authorization is an Adjudicator's commitment to pay for a service even though an Adjudicator may or may not reserve monies for the pre-approved amount.  Typically, Authorizations are processed automatically by the Payor's adjudication engine.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-b">
+				
+            <head>B</head>
+				
+            <glist>
+               <gitem id="bag">
+						
+                  <label>bag</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A form of <termref ref="collection">collection</termref> whose 
+								members are unordered, and need not be unique. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="benefit_coverage">
+
+                  <label>Benefit Coverage</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A description of the benefits provided by an individual's benefit plan.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="benefit_group">
+
+                  <label>Benefit Group</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A collection of related healthcare providers and/or organizations and/or type of service, usually based on provider specialty, that negotiate fee schedules/payment contracts with Insurance Carriers, e.g. Pharmacy, Preferred Accommodation, Chiropractors.  Benefit Groups are used in Financial Management, Claims and Reimbursement (FICR) to classify Messages, Application Roles and Interactions that are allowed for that group.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="billable_act">
+
+                  <label>Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An invoice attachment that provides additional details on the claim.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="billable_invoice_items">
+
+                  <label>Billable Invoice Items</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>One or more billable services performed or products supplied by a Provider.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="billable_line_item">
+
+                  <label>Billable Line Item</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A single billable unit for a product, e.g. product cost, tax, etc. or service, e.g. office visit.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="blank">
+						
+                  <label> blank</label>
+						
+					
+                  <def>
+							
+                     <p>
+								One of the allowed values for 
+								<termref ref="conformance_requirement">conformance 
+								requirements</termref>. Blank means that conformance for this 
+								element is to be negotiated on a site-specific basis. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="business_arrangement_identifier">
+
+                  <label>Business Arrangement Identifier (BAI)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Identifier assigned to represent the business arrangement (or contract) between a Payee and Provider.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-c">
+				
+            <head>C</head>
+				
+            <glist>
+               <gitem id="cardinality">
+						
+                  <label> cardinality</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Property of a data element (the number of times a data element 
+								may repeat within an individual occurrence of an object view) 
+								or column in the <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref> (the minimum and 
+								maximum number of occurrences of the 
+								<termref ref="message_element">message element</termref>). 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="carrier">
+
+                  <label>Carrier</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An organization that etablishes insurance policies, determines eligibility and benefits under those insurance policies, and underwrites payments for products and/or services provided to a beneficiary (person or organization).</p>
+
+                     <p>A Carrier may retain a TPA (Third Party Administrator) insurance carrier to perform some or all invoice validation, adjudication and payment.</p>
+
+                     <p>This may also be known as the insurance company or public insurance carrier.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="character_data">
+						
+                  <label>Character Data</label>
+						
+					
+                  <def>
+							
+                     <p>Text in a particular coding (e.g., ASCII), as distinguished from binary data.</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="choice">
+						
+                  <label> choice</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message">message</termref> construct that includes 
+								alternative portions of the message. For a choice due to 
+								specialization, the sender picks one of the alternatives and 
+								sends it along with a flag. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="choice_due_to_specialization">
+						
+                  <label> choice due to specialization</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A choice that arises when a 
+								<termref ref="hierarchical_message_description">Hierarchical Message
+								Description</termref> includes (a) an object view which is associated         
+								with a <termref ref="class">class</termref> that is a 
+								<termref ref="superclass">superclass</termref> of two or more object 
+								views, or (b) an object view which is a superclass of one or more object
+								views and may itself be instantiated. Under this circumstance different
+								<termref ref="message_instance">message instances</termref> may contain 
+								different object views. The choice structure is used to 
+								accommodate the alternatives.          
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="class">
+						
+                  <label> class</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An abstraction of a thing or concept in a particular 
+								application <termref ref="domain">domain</termref>. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlstructclasses">Classes
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="classifier_attribute">
+						
+                  <label> classifier attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="attribute">attribute</termref> used in 
+								<termref ref="generalization_hierarchy">generalization 
+								hierarchies</termref> to indicate which of the 
+								<termref ref="specialization">specializations
+								</termref> is the focus of the <termref ref="class">class
+								</termref>. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlattrib">
+								 Attributes section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="clinical_product_billable_act">
+
+                  <label>Clinical Product Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information to describe the provision of healthcare goods/products for a patient's care that is billed in an invoice. This may include among other things - date of service, goods/product specification (including UPC code, serial number, manufacturer, packaging, warranty) provider, location from and delivery to location.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="clinical_service_billable_act">
+
+                  <label>Clinical Service Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information to describe the patient care or other activity performed by a provider that is billed in an invoice. This may include among other things - date of service, healthcare provider, location and diagnosis. It may also include information about the maintenance of a healthcare product (wheelchair).</p>
+
+                  </def>
+               </gitem>
+               <gitem id="clone">
+						
+                  <label> clone</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="class">class</termref> from the 
+								<termref ref="reference_information_model">Reference 
+								Information Model</termref> 
+								(RIM) that has been used in a specialized context and whose 
+								name differs from the RIM class from which it was replicated. 
+								This makes it possible to represent specialized uses of more 
+								general classes to support the needs of messaging. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="cmet">
+						
+                  <label> CMET</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="common_message_element_type">Common Message Element Type</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="cmet_message_information_model">
+						
+                  <label> CMET Message Information Model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A form of <termref ref="refined_message_information_model">
+								Refined Message Information Model</termref> (R-MIM) constructed 
+								to represent the totality of concepts embodied in the individual R-MIMs 
+								needed to support the definition of HL7's 
+								<termref ref="common_message_element_type">
+								Common Message Element Types</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="c-mim">
+						
+                  <label>C-MIM</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="cmet_message_information_model">CMET Message 
+								Information Model</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="coded_attribute">
+						
+                  <label>coded attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="attribute">attribute</termref> in the 
+								<termref ref="reference_information_model">Reference 
+								Information Model</termref> 
+								(RIM) with a base <termref ref="data_type">data type</termref> of 
+								CD, CE, CS, or CV. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="coding_strength">
+						
+                  <label>coding strength</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="extensibility_qualifier">extensibility qualifier</termref> 
+								that specifies whether or not a code set can be expanded to meet 
+								local implementation needs.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="coding_system">
+						
+                  <label>coding system</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A scheme for representing concepts using (usually) short 
+								<termref ref="concept_identifier">concept identifiers</termref> to denote 
+								the concepts that are members of the system; defines a set of 
+								unique concept codes. Examples of coding systems are ICD-9, 
+								LOINC and SNOMED. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="co-insurance">
+
+                  <label>Co-insurance</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A set percentage of any  claim cost payable by plan members after any deductible has been paid</p>
+
+                  </def>
+               </gitem>
+               <gitem id="collection">
+						
+                  <label>collection</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An aggregation of similar <termref ref="object">objects</termref>. 
+								The forms of collection used by HL7 are <termref ref="set">set
+								</termref>, <termref ref="bag">bag</termref>, and 
+								<termref ref="list">list</termref>. Objects which may be 
+								found in collections include <termref ref="data_type">data types
+								</termref>and <termref ref="message_element_type">message element 
+								types</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="common_message_element_type">
+						
+                  <label>common message element type (CMET)</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_type">message type</termref> in a 
+								<termref ref="hierarchical_message_description">Hierarchical 
+								Message Description</termref> (HMD) that may be included 
+								by reference in other HMD's. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gcmet">
+								 Common Message Element Types section</ilxspecref> 
+								 of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="composite_aggregation">
+						
+                  <label>composite aggregation</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A type of <termref ref="association">association</termref> between 
+								<termref ref="object">objects</termref>, indicating a 
+								whole-part relationship. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="composite_data_type">
+						
+                  <label>composite data type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="data_type">data type</termref> assigned to a 
+								<termref ref="message_element_type">message element type</termref> that 
+								contains one or more components, each of which is represented 
+								by an assigned data type. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="composite_message_element_type">
+						
+                  <label>composite message element type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_element_type">message element type
+								</termref> that contains subordinate heterogeneous 
+								<termref ref="message_type">message 
+								types</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="compound">
+
+                  <label>Compound</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Generally an extemporaneous mixture that has been prepared by the pharmacist based on a prescription from a prescriber.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="concept_identifier">
+						
+                  <label>concept identifier</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A unique identification assigned to a concept by the 
+								HL7 organization. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="conformance_claim">
+						
+                  <label>conformance claim</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="specification">specification</termref> written by HL7 
+								to precisely define the behavior of an application with respect 
+								to its HL7 interfaces, and which may be designated functional 
+								or technical. A functional conformance claim is simply a 
+								statement that an application conforms to a particular 
+								<termref ref="application_role">application role</termref>. A technical         
+								conformance claim (also referred to as a Technical Statements of Performance
+								Criteria) defines the behavior of an application in some
+								other sense than the <termref ref="message">messages</termref> it 
+								sends or receives. This may include the 
+								<termref ref="implementation_technology_specification">
+								Implementation Technology 
+								Specifications</termref> that it supports, the use of specific 
+								optional protocols or character sets, or many other
+								behaviors. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="conformance_claim_set">
+						
+                  <label>conformance claim set</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A list of the identifiers of specific HL7 <termref ref="conformance_claim">
+								conformance claims</termref>, used by a <termref ref="sponsor">
+								sponsor</termref> to describe the conformance of its application. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="conformance_requirement">
+						
+                  <label>conformance requirement</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A column in the <termref ref="hierarchical_message_description">
+								Hierarchical Message
+								Description</termref> (HMD) that designates whether the 
+								system must communicate an <termref ref="attribute">attribute's
+								</termref>value if a value is available. Allowed values are 
+								<termref ref="required">required</termref> (must be included), 
+								not required (may be left out) or <termref ref="not_permitted">not 
+								permitted</termref> (may never be included.)  Items listed as 
+								not required in the HL7 specification must be declared by a 
+								vendor as either required or not permitted when a 
+								<termref ref="conformance_claim">conformance claim</termref> is asserted 
+								for that <termref ref="message_type">message type</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="connection">
+						
+                  <label>connection</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In an <termref ref="information_model">information model</termref>, a 
+								specified relationship between two <termref ref="class">classes
+								</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="constraint">
+						
+                  <label>constraint</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Narrowing down of the possible values for an 
+								<termref ref="attribute">attribute</termref>; a suggestion of 
+								legal values for an attribute (by indicating the 
+								<termref ref="data_type">data type</termref> that applies, by 
+								restriction of the data type, or by definition 
+								of the <termref ref="domain">domain</termref> of an attribute as 
+								a subset of the domain of its data type). May also include 
+								providing restrictions on data types. A constraint imposed on 
+								an <termref ref="association">association</termref> may limit the 
+								<termref ref="cardinality">cardinality</termref> of the association 
+								or alter the navigability of the association (direction in which 
+								the association can be navigated). A 
+								<termref ref="refined_message_information_model">
+								Refined Message Information Model</termref> (R-MIM) 
+								<termref ref="class">class</termref> may be constrained by 
+								choosing a subset of its 
+								<termref ref="reference_information_model">Reference
+								Information Model</termref> (RIM) properties (i.e., classes 
+								and attributes) or by cloning, in which the class’ name is 
+								changed. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlconstr">
+								 Constraints section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="contact_cmet">
+
+                  <label>contact CMET</label>
+
+
+                  <def domainid="COCT_DO000000" sortkey="01" preferreddef="true" fullDomainName="Common Message Element Types" domainLink="../../domains/ct/imcoct.htm">
+
+                     <p>A CMET variant that provides sufficient information to allow the object identified to be contacted.  This is likely to have the content of identified and confirmable plus telephone number.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="control_event_wrapper">
+						
+                  <label>control event wrapper</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="wrapper">wrapper</termref> that contains 
+								<termref ref="domain">domain</termref> specific administrative 
+								information related to the "controlled event" which is being 
+								communicated as a messaging interaction. The control event 
+								wrapper is used only in <termref ref="message">messages</termref> 
+								that convey status, or in commands for logical operations being 
+								coordinated between applications (e.g., the coordination of 
+								query specification/query response interactions).
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="co-ordination_of_benefits">
+
+                  <label>Co-ordination of Benefits</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Refers to the co-ordination of payment of an invoice or invoice line item that may be payable by more than oneAdjudictor.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="co-pay">
+
+                  <label>Co-pay</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The portion of a claim that is apportioned to the patient, often as a percentage of the total value of the claim.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="coupling">
+						
+                  <label>coupling</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1.  An interaction between systems or between properties of a system.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  With regard to <termref ref="application_role">application roles
+								</termref>, refers to whether or not additional information 
+								about the <termref ref="subject_class">subject classes</termref> 
+								participating in a <termref ref="message">message</termref> may be 
+								commonly available to system components outside of the specific message.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="coverage_extension">
+
+                  <label>Coverage Extension</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A form of Authorization where the Provider requests payment approval for extension of a Person's benefit coverage.  Typically, Coverage Extensions require manual or human intervention and decision by the Adjudicator. Synonymous with Prior Approval.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-d">
+				
+            <head>D</head>
+				
+            <glist>
+               <gitem id="data_type">
+						
+                  <label>data type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The structural format of the data carried in an 
+								<termref ref="attribute">attribute</termref>. 
+								It may <termref ref="constraint">constrain</termref> the set of 
+								values an attribute may assume.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gdt">
+								 Data Types section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="deductible">
+
+                  <label>Deductible</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The dollar amount for which the plan beneficiary must pay before any remaining eligible expenses are reimbursed under the plan. This is usually calculated on an annual basis.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="default_value">
+						
+                  <label>default value</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In HL7 <termref ref="message">messages</termref>, the value for an 
+								<termref ref="attribute">attribute</termref> that is to be used by 
+								message receivers if no value is given.          
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="deferred_adjudication">
+
+                  <label>Deferred Adjudication</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Adjudication of a claim that does not occur in real time i.e. the request for payment is responded to with a simple "acknowledgment of receipt" message. The final adjudication and transmission of adjudication results will occur at a later time as determined by the adjudicator's system.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="demographic_information">
+
+                  <label>Demographic Information</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Relates to the patient's name, address, date of birth, etc.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="diagnosis">
+
+                  <label>Diagnosis</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Identification of disease or condition by a practitioner by means of a Persons symptoms, diagnostic tests, etc.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="diagnosis_code">
+
+                  <label>Diagnosis Code</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A coding scheme (e.g., ICD-10CA/CCI) used to indicate diagnosis.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="din">
+
+                  <label>DIN</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The Drug Identification Number assigned to a specific medication by Health Canada.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="distal_class">
+						
+                  <label>distal class</label>
+						
+					
+                  <def>
+							
+                     <p>
+								From the perspective of a <termref ref="class">class</termref> 
+								in an <termref ref="information_model">information model</termref>, it is 
+								the class at the opposite end of an <termref ref="association">
+								association</termref> between the two.  
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="d-mim">
+						
+                  <label>D-MIM</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="domain_message_information_model">
+								Domain Message Information Model</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="domain">
+						
+                  <label>domain</label>
+						
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. A particular area of interest. For example, the domain for HL7 is 
+								healthcare.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  The set of possible values of a <termref ref="data_type">data type
+								</termref>, <termref ref="attribute">attribute</termref>, or data 
+								type component. See also <termref ref="vocabulary_domain">vocabulary domain
+								</termref>.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								3.  A special interest group within HL7,
+								such as Pharmacy, Laboratory, or Patient Administration.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="domain_expert">
+						
+                  <label>domain expert</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An individual who is knowledgeable about the concepts in a 
+								particular problem area within the healthcare arena and/or is 
+								experienced with using or providing the functionality of that area. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="domain_message_information_model">
+						
+                  <label>Domain Message Information Model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A form of <termref ref="refined_message_information_model">Refined Message 
+								Information Model</termref> (R-MIM) constructed to represent 
+								the totality of concepts embodied in the individual R-MIMs 
+								needed to support the communication requirements of a particular 
+								HL7 domain.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdltypes">Information Model
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="domain_name">
+						
+                  <label>domain name</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The name assigned to a <termref ref="vocabulary_domain"> 
+								vocabulary domain</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="domain_specification">
+						
+                  <label>domain specification</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The specification of a <termref ref="vocabulary_domain"> 
+								vocabulary domain</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="drug_interactions">
+
+                  <label>Drug Interactions</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An interaction, usually adverse, between two or more medications being taken by the individual.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="drug_utilization_review">
+
+                  <label>Drug Utilization Review</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A review of the medication regimen of an individual, either prospective (concurrent) or retrospective (past).</p>
+
+                  </def>
+               </gitem>
+               <gitem id="duplicate_therapy">
+
+                  <label>Duplicate Therapy</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The provision of the same or a similar medication for an individual for the same purpose.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-e">
+				
+            <head>E</head>
+				
+            <glist>
+               <gitem id="e-claim">
+
+                  <label>e-Claim</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An invoice for health related good(s) and/or service(s) transmitted for payment in an electronic format.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="electronic_health_record">
+
+                  <label>Electronic Health Record (EHR)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An electronic representation of an individual's health record, either in a single data repository or in separate linked repositories.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="eligibility">
+
+                  <label>Eligibility (for benefits coverage)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A Person meets the criteria for benefits coverage. Benefits coverage is determined by the Insurance Carrier and may be delegated to an Adjudicator.</p>
+
+                     <p>Eligibility for benefits does not necessarily imply a specific service or good will be covered for payment. Eligibility with one insurance carrier does not imply eligibility with another insurance carrier.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="enrolment">
+
+                  <label>Enrolment</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The process of registering with an insurer to obtain benefits coverage.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="entry_point">
+						
+                  <label>entry point</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The point at which a <termref ref="common_message_element_type">
+								Common Message Element Type</termref> (CMET) is inserted into a 
+								<termref ref="refined_message_information_model">Refined Message Information Model
+								</termref> (R-MIM). 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="event">
+						
+                  <label>event</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. A stimulus that causes a noteworthy change in the 
+								<termref ref="state">state</termref> of an <termref ref="object">
+								object</termref>, or a signal that invokes the behavior of an 
+								object. See also <termref ref="trigger_event">trigger event</termref>.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  A <termref ref="vocabulary_domain">vocabulary domain 
+								</termref> value for Mood.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="explanation_of_benefits">
+
+                  <label>Explanation of Benefits (EOB)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Identifies paid amount, adjudication results and informational items for n Invoice Grouping. The Provider may forward EOB details from a Primary Payor unaltered toa  Secondary Adjudicator for co-ordination of benefits.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="extensibility_qualifier">
+						
+                  <label>extensibility qualifier</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="vocabulary_domain_qualifier">vocabulary domain qualifier</termref> 
+								used in a <termref ref="domain_specification">domain specification</termref>, 
+								which indicates whether or not the existing 
+								<termref ref="vocabulary_domain">vocabulary domain</termref> can be 
+								extended with additional values. There are two possible 
+								values: CNE (coded, no extension) and CWE (coded with extension). 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gvocabqualify">
+								 Vocabulary Domain Qualifiers section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="extensible_markup_language">
+						
+                  <label>Extensible Markup Language</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A meta-language that defines a
+								syntax used to define other <termref ref="domain">domain</termref>
+								-specific, semantic, structured markup languages. Based on 
+								SGML (Standard Generalized Markup Language), it 
+								consists of a set of rules for defining semantic tags used to 
+								mark up the content of documents. Abbreviated as XML.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-f">
+				
+            <head>F</head>
+				
+            <glist>
+               <gitem id="fda">
+
+                  <label>FDA</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="01" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>Food and Drug Administration</p>
+
+                  </def>
+               </gitem>
+               <gitem id="form">
+
+                  <label>Form</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Structured document with content, transmission, display and storage requirements identified in a standard.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="formulary">
+
+                  <label>Formulary</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The list of medications that are a benefit for an individual or a defined group.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="function_point">
+						
+                  <label>function point</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Any function, <termref ref="user">user</termref> transaction, 
+								or other <termref ref="interaction">interaction</termref> or 
+								<termref ref="event">event</termref> in the <termref ref="sponsor">
+								sponsor’s</termref> application which, when it occurs, does 
+								or may correspond to an HL7 <termref ref="trigger_event">trigger 
+								event</termref>. Used to describe the conformance of an 
+								information system with the HL7 standard. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-g">
+				
+            <head>G</head>
+				
+            <glist>
+               <gitem id="generalization">
+						
+                  <label>generalization</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="association">association</termref> between two 
+								<termref ref="class">classes</termref>, referred to as 
+								<termref ref="superclass">superclass</termref> and 
+								<termref ref="subclass">subclass</termref>, in which the subclass 
+								is derived from the superclass. The subclass inherits all
+								properties from the superclass, including <termref ref="attribute">
+								attributes</termref>, relationships, and <termref ref="state">
+								states</termref>, but also adds new ones to extend the 
+								capabilities of the parent class. Essentially, a 
+								<termref ref="specialization">specialization</termref> from the 
+								point-of-view of the subclass. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlstructrelations">
+								 Relationships section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="generalization_hierarchy">
+						
+                  <label>generalization hierarchy</label>
+						
+					
+                  <def>
+							
+                     <p>
+								All <termref ref="superclass">superclasses</termref> and 
+								<termref ref="subclass">subclasses</termref> with a common 
+								root superclass. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="global_product_identification_number">
+
+                  <label>Global Product Identification Number (EAN, UCC, GPIN)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A globally unique identifier assigned to a product</p>
+
+                  </def>
+               </gitem>
+               <gitem id="goods">
+
+                  <label>Goods</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A durable or consumable product provided to a Person including equipment, food and furniture. Splint, wheelchair, prosthetic and custom table are examples of goods.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="goods_service">
+
+                  <label>Goods Service</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A service provided to a Good (for a Person) such as wheelchair repair, hearing aid repair or prosthesis repair.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="graphical_expression">
+						
+                  <label>graphical expression</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A visual representation of a <termref ref="model">model</termref> 
+								that uses graphic symbols to represent
+								the components of the model and the relationships that exist
+								between those components. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="grid_view">
+						
+                  <label>grid view</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A complete view of the <termref ref="message_type">message type
+								</termref> definition, which, due to its size, is presented in 
+								a scrollable format.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="group_service">
+
+                  <label>Group Service</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Provision of a service(s) to a group of individuals.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-h">
+				
+            <head>H</head>
+				
+            <glist>
+               <gitem id="health_document">
+
+                  <label>Health Document</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A form, report or image that substantiates the authorization, adjudication and subsequent payment of a Healthcare Invoice. A Health Document can be submitted manually or electronically. When submitted electronically, it can be submitted with a Healthcare Invoice or separately from the Healthcare Invoice.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="health_goods_provider">
+
+                  <label>Health Goods Provider</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A party that provides medical and support goods to a Person.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="health_service">
+
+                  <label>Health Service</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A health care service such as diagnosis, treatment or intervention performed for a person.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="health_service_provider">
+
+                  <label>Health Service Provider</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="provider">Provider</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="healthcare_claim">
+
+                  <label>Healthcare Claim</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An invoice for health related good(s) and/or service(s) transmitted for payment. See also invoice.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="healthcare_good">
+
+                  <label>Healthcare Good</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A product that is supplied from a healthcare provider and that is/ may be a benefit of an individual's benefit plan e.g. wheelchair, syringes.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="healthcare_invoice">
+
+                  <label>Healthcare Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="invoice">Invoice</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="healthcare_provider">
+
+                  <label>Healthcare Provider</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="provider">Provider</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="hierarchical_message_description">
+						
+                  <label>Hierarchical Message Description</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="specification">specification</termref> of the exact 
+								fields of a <termref ref="message">message</termref> and their
+								grouping, sequence, optionality, and <termref ref="cardinality">
+								cardinality</termref>. This specification contains         
+								<termref ref="message_type">message types</termref> for one or more 
+								<termref ref="interaction">interactions</termref>, or that represent one or
+								more <termref ref="common_message_element_type">common message 
+								element types</termref>. This is the primary normative 
+								structure for HL7 messages. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="hmd">
+						
+                  <label>HMD</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="html">
+						
+                  <label>HTML</label>
+						
+					
+                  <def>
+							
+                     <p>Hypertext Markup Language, a specification of the W3C that provides markup of documents for display in a web browser</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-i">
+				
+            <head>I</head>
+				
+            <glist>
+               <gitem id="identified_cmet">
+
+                  <label>identified CMET</label>
+
+
+                  <def domainid="COCT_DO000000" sortkey="01" preferreddef="true" fullDomainName="Common Message Element Types" domainLink="../../domains/ct/imcoct.htm">
+
+                     <p>A CMET variant that is a proper subset of universal and is intended to provide sufficient information to identify the object(s) modeled by the CMET.  This variant is only suitable for use within TIGHTLY COUPLED SYSTEMS ONLY. This variant provides ONLY the ID (and code where applicable) and Name.   Other variants may not be substituted at runtime.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="identified-confirmable_cmet">
+
+                  <label>identified-confirmable CMET</label>
+
+
+                  <def domainid="COCT_DO000000" sortkey="01" preferreddef="true" fullDomainName="Common Message Element Types" domainLink="../../domains/ct/imcoct.htm">
+
+                     <p>A CMET variant that extends the identified variant by adding just sufficient additional information to allow the identity of object modeled to be confirmed by a number of corroborating items of data;  for instance a patient's date of birth and current address.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="identifier_attribute">
+						
+                  <label>identifier attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="attribute">attribute</termref> used to identify an 
+								<termref ref="instance">instance</termref> of a 
+								<termref ref="class">class</termref>. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlattrib">
+								 Attributes section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="implementation_technology">
+						
+                  <label>implementation technology</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A technology selected for use in encoding and sending HL7 
+								<termref ref="message">messages</termref>. For example, XML is being 
+								used as an implementation technology for Version 3. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="implementation_technology_specification">
+						
+                  <label>Implementation Technology Specification</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="specification">specification</termref> that describes 
+								how HL7 <termref ref="message">messages</termref> are sent using a
+								specific <termref ref="implementation_technology">implementation technology
+								</termref>. It includes, but is not
+								limited to, specifications of the method of encoding the messages,
+								rules for the establishment of <termref ref="connection">connections
+								</termref>and transmission timing and procedures for dealing 
+								with errors. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gits">
+								 Implementation Technology Specifications section</ilxspecref> 
+								 of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="implied_consent">
+
+                  <label>Implied Consent</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Consent for an activity that is inferred by a prior activity and not a result of a discussion i.e. supplying a healthcare provider with a benefit card implied the provider should transmit claims for payment where possible.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="inclusion">
+						
+                  <label>inclusion</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The <termref ref="specification">specification</termref> in the 
+								<termref ref="hierarchical_message_description">Hierarchical 
+								Message Description</termref> indicating whether an element of a 
+								<termref ref="message_type">message type</termref> may be null in some         
+								<termref ref="message_instance">message instances</termref>. Contrast 
+								this with conformance. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="information_invoice">
+
+                  <label>Information Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An invoice that is for information purposes only. Used in situations where a non fee for service funding method is used but details on the products/services provided is still required.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="information_model">
+						
+                  <label>information model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A structured <termref ref="specification">specification</termref>, 
+								expressed graphically and/or narratively, of the information 
+								requirements of a <termref ref="domain">domain</termref>. An 
+								information model describes the <termref ref="class">classes
+								</termref> of information required and the properties of those 
+								classes, including <termref ref="attribute">attributes</termref>, 
+								relationships, and <termref ref="state">states</termref>. 
+								Examples in HL7 are the Domain Reference Information Model, 
+								<termref ref="reference_information_model">Reference Information Model</termref>, 
+								and <termref ref="refined_message_information_model">Refined Message Information 
+								Model</termref>.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdl">Information Model
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="inheritance">
+						
+                  <label>inheritance</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In a <termref ref="generalization">generalization</termref> relationship, 
+								the <termref ref="subclass">subclass</termref> inherits all 
+								properties from the <termref ref="superclass">superclass</termref>, 
+								including <termref ref="attribute">attributes</termref>, 
+								relationships, and <termref ref="state">states</termref>, 
+								unless otherwise specified. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="instance">
+						
+                  <label>instance</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A case or an occurrence. For example, an instance of a 
+								<termref ref="class">class</termref> is an 
+								<termref ref="object">object</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="insurance_carrier">
+
+                  <label>Insurance Carrier</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="carrier">Carrier</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="interaction">
+						
+                  <label>interaction</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A single, one-way information flow that supports a communication
+								requirement expressed in a <termref ref="scenario">scenario</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="interaction_diagram">
+						
+                  <label>interaction diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A graphical representation of communications between 
+								<termref ref="application_role">application roles</termref>. An 
+								interaction diagram may also be referred to as a ladder diagram, 
+								sequence diagram, or storyboard diagram.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="interaction_list">
+						
+                  <label> interaction list</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A list of the <termref ref="interaction">interactions</termref> that 
+								appear in an <termref ref="interaction_diagram">interaction diagram</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="interaction_model">
+						
+                  <label>interaction model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="specification">specification</termref> of the 
+								responsibilities of <termref ref="message">message</termref> senders 
+								and receivers. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="interaction_narrative">
+						
+                  <label> interaction narrative</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A narrative description of each <termref ref="interaction">interaction
+								</termref>contained in an <termref ref="interaction_list">interaction list
+								</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="internal_data_type">
+						
+                  <label>internal data type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An HL7 <termref ref="data_type">data type</termref> defined to 
+								support the definition of other data
+								types, but which may not be assigned as the type for a data
+								field itself.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="invoice">
+
+                  <label>Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A request initiated by a Provider, on behalf of a plan member (insured), for payment for services rendered and/or goods provided. Stated another way, an Invoice is a request by a plan member to a plan administrator (Adjudicator) for payment of a benefit covered by the benefit plan.</p>
+
+                     <p>Can be synonymous with Fee for Service Claim, Claim, and Bill.</p>
+
+                     <p>An invoice can be submitted for any payment modalities (e.g., fee for service, sessional, group, contract and/or block services).</p>
+
+                  </def>
+               </gitem>
+               <gitem id="invoice_element">
+
+                  <label>Invoice Element</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A single billable item, made up of an identifiable code (e.g. office visit, wheel chair) and pricing for that billable item.  For example, it can be used to specify 4 wheel chairs @ $250 per wheel chair.  Invoice Elements may be specified in a hierarchy to fully specify the item being invoiced.  That is, it includes a grouping variant as well as a detail variant (the detail variant contains the detailed pricing information).  For example, a group Invoice Element may contain 2 detail Invoice Elements, one for the good and one for the associated taxes.  Therefore, the group Invoice Element would represent the amount for the good and taxes.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="invoice_element_detail">
+
+                  <label>Invoice Element Detail</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The information contained in a Healthcare Invoice such as quantity, unit and cost, authorization, service location and comment information. Synonymous with fee-item.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="invoice_element_group">
+
+                  <label>Invoice Element Group</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A grouping of Invoice Element Details.  For example, a group represents all of the costing elements that make up a drug cost (e.g. drug cost + markup).</p>
+
+                  </def>
+               </gitem>
+               <gitem id="invoice_element_grouping">
+
+                  <label>Invoice Element Grouping</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A collection of Invoice Elements that make up a package of items that need to be adjudicated together.  For example, a drug dispense, with Invoice Elements (costing elements) for the drug cost, markup and professional fees.  An Invoice Grouping has a root Invoice Element Group, with multiple Invoice Element Details and Invoice Element Groups.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="its">
+						
+                  <label>ITS</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="implementation_technology_specification">
+								Implementation Technology Specification</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-j">
+				
+            <head>J</head>
+				
+            <glist>
+               <gitem id="joint_state">
+						
+                  <label>joint state</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A summarization of multiple partial <termref ref="state">states
+								</termref>in a <termref ref="state_machine">state machine</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-k">
+				
+            <head>K</head>
+			
+         </div2>
+         <div2 id="glossary-l">
+				
+            <head>L</head>
+				
+            <glist>
+               <gitem id="ladder_diagram">
+						
+                  <label>ladder diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="interaction_diagram">interaction 
+								diagram</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="life_cycle">
+						
+                  <label>life cycle</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="state_machine">state machine</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="lifo">
+						
+                  <label>LIFO</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Last in-first out.  See <termref ref="push-down_stack">
+								push-down stack</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="list">
+						
+                  <label>list</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A form of <termref ref="collection">collection</termref> whose 
+								members are ordered, and need not be unique. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="literary_expression">
+						
+                  <label>literary expression</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A representation of a <termref ref="model">model</termref> in 
+								text. The literary expression seeks to 
+								balance the need for a rigorous, unambiguous description 
+								of the model with the need for a rendition that can be easily read and
+								interpreted by individuals who understand the general concepts         
+								underlying object-oriented models, but who may not be schooled in
+								formal model definition languages. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="loinc">
+						
+                  <label>LOINC</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.regenstrief.org/loinc" target="_blank" xlink-form="simple" show="embed" actuate="auto">Logical Observations, Identifiers, Names, and Codes</loc>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="loosely_coupled">
+						
+                  <label>loosely coupled</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Loosely coupled <termref ref="application_role">application roles</termref> 
+								do not assume that common information about the subject 
+								<termref ref="class">classes</termref> participating in a 
+								<termref ref="message">message</termref> is available to system 
+								components outside of the specific message.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-m">
+				
+            <head>M</head>
+				
+            <glist>
+               <gitem id="mandatory">
+						
+                  <label>mandatory</label>
+						
+					
+                  <def>
+							
+                     <p>
+								If an <termref ref="attribute">attribute</termref> is
+								designated as mandatory, all <termref ref="message_element">message 
+								elements</termref> which make use of this         
+								attribute must contain a non-null value or they must have a default
+								that is not null. This requirement is indicated in the "mandatory" column in 
+								the <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="mandatory_association">
+						
+                  <label>mandatory association</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="association">association</termref> with a 
+								<termref ref="multiplicity">multiplicity</termref> minimum greater 
+								than zero on one end.  A fully mandatory association is one with 
+								a multiplicity minimum greater than zero on both ends. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="markup">
+						
+                  <label>markup</label>
+						
+					
+                  <def>
+							
+                     <p>Computer-processible annotations within a document. Markup encodes a description of a document’s storage layout and logical structure. In the context of HL7 V3, markup syntax is according to the XML Recommendation.</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="master_files">
+						
+                  <label>Master Files</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Common lookup tables used by one or more application systems. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="mdf">
+						
+                  <label>MDF</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="message_development_framework">Message 
+								Development Framework</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="median_beat_annotations">
+
+                  <label>Median Beat Annotations</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>Just like annotations on the rhythm data, annotations can be made on the median beat.  Fudicial markings related to the measurements specified by the trial protocol can be made globally (on all leads) or locally (on some leads).  Episode annotations (such as arrhythmias, ST elevation episodes, etc.) would not be made on the median beat (for obvious reasons). Refer to examples from rhythm waveforms annotations.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="median_beat_waveforms">
+
+                  <label>Median Beat Waveforms</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>Computer algorithms can derive a representative beat from a series of beats having the same morphology (same focus, etc.).  Sometimes a trial protocol will specify the usage of a "median beat" for taking measurements. If a median beat is used, and the rhythm data from which it is derived is wanted by the FDA, the median beat is related to the rhythm waveforms via an analysis region.  The median is typically composed of as many leads as the rhythm waveforms from which it was derived.  The relative time represents time within the representative cycle, not time relative to the beginning of the rhythm waveforms.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="message">
+						
+                  <label>message</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A package of information communicated from one application to another. See 
+								also <termref ref="message_type">message type</termref> and 
+								<termref ref="message_instance">message instance</termref>.  
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_development_framework">
+						
+                  <label>Message Development Framework</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The collection of <termref ref="model">models</termref>, 
+								methods, and tools that comprise the
+								<termref ref="methodology">methodology</termref> for specifying 
+								HL7 Version 3 messages. This         
+								framework is used by the developers of the HL7 standards. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_element">
+						
+                  <label>message element</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A unit of structure within a <termref ref="message_type">
+								message type</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_element_type">
+						
+                  <label>message element type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A portion of a <termref ref="message_type">message type</termref> 
+								that describes one of the elements of the
+								<termref ref="message">message</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_instance">
+						
+                  <label>message instance</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message">message</termref>, populated with data 
+								values, and formatted for a specific 
+								transmission based on a particular <termref ref="message_type"> 
+								message type</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_payload">
+						
+                  <label>message payload</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Data carried in a <termref ref="message">message</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="message_type">
+						
+                  <label>message type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A set of rules for constructing a <termref ref="message">message
+								</termref> given a specific set of instance data. As such, it 
+								also serves as a guide for parsing 
+								a message to recover the instance data.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="meta-model">
+						
+                  <label>meta-model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="model">model</termref> used to specify other models. For         
+								example, the meta-model for a relational database system might specify
+								elements of type ‘Table’, ‘Record’, and 
+								‘Field.’. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="methodology">
+						
+                  <label>methodology</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Methods or rules followed in a particular discipline.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="mime">
+						
+                  <label>MIME</label>
+						
+					
+                  <def>
+							
+                     <p>Multipurpose Internet Mail Extensions (MIME, RFC 2046)</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="minimal_cmet&#xA;minimal_cmet">
+
+                  <label>minimal CMET
+minimal CMET</label>
+
+
+                  <def domainid="COCT_DO000000" sortkey="01" preferreddef="true" fullDomainName="Common Message Element Types" domainLink="../../domains/ct/imcoct.htm">
+
+                     <p>A CMET variant that provides more than identified, but not as much as universal.  There are not expected to be many of these.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="model">
+						
+                  <label>model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A representation of a <termref ref="domain">domain</termref> that 
+								uses abstraction to express the relevant concepts. In HL7, the 
+								model consists of a collection of <termref ref="schema">schema
+								</termref>and other documentation. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="multiplicity">
+						
+                  <label>multiplicity</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1.  In the <termref ref="information_model">information model</termref>, 
+								multiplicity is a <termref ref="specification">specification</termref> 
+								of the minimum and maximum number of <termref ref="object">objects
+								</termref>from each <termref ref="class">class</termref> that 
+								can participate in an <termref ref="association">association</termref>.  
+								Multiplicity is specified for each end of the association.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  In the <termref ref="hierarchical_message_description"> 
+								Hierarchical Message Description</termref> (HMD), multiplicity  
+								depicts the minimum and maximum number of occurrences of a 
+								<termref ref="message_element">message element</termref>  
+								expression in a <termref ref="collection">collection</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-n">
+				
+            <head>N</head>
+				
+            <glist>
+               <gitem id="navigability">
+						
+                  <label>navigability</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Direction in which an <termref ref="association">association 
+								</termref>can be navigated (either one way or both ways). 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="not_permitted">
+						
+                  <label>not permitted</label>
+						
+					
+                  <def>
+							
+                     <p>
+								One of the allowed values in <termref ref="conformance_requirement"> 
+								conformance requirements</termref>. Abbreviated as NP, it
+								means that the <termref ref="message_element">message element</termref> 
+								is never sent for that <termref ref="message_type">message type</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="npsa">
+
+                  <label>NPSA</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="01" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>National Patient Safety Agency (UK)</p>
+
+                  </def>
+               </gitem>
+               <gitem id="null">
+						
+                  <label>null</label>
+						
+					
+                  <def>
+							
+                     <p>
+
+								A value for a data element which indicates the absence of data. A number
+								of “flavors” of null are possible and are enumerated in the
+								<termref ref="domain">domain</termref> NullFlavor. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-o">
+				
+            <head>O</head>
+				
+            <glist>
+               <gitem id="object">
+						
+                  <label>object</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="instance">instance</termref> of a 
+								<termref ref="class">class</termref>. A part of an information 
+								system containing a collection of related data (in the form of 
+								<termref ref="attribute">attributes</termref>) and
+								procedures (methods) for operating on that data.  
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlstructclasses">Classes
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="object_identifier">
+						
+                  <label>object identifier</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A scheme to provide globally unique identifiers. This object 
+								identifier (OID) scheme is an ISO
+								standard (ISO 8824:1990), and has been adopted as a CSA standard         
+								(Z243.110).
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="object_identity">
+						
+                  <label>object identity</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The feature that the existence of an <termref ref="object">object
+								</termref> is independent of any values associated with the object. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="object-based">
+						
+                  <label>object-based</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Any method, language, or system that supports 
+								<termref ref="object_identity">object identity</termref>, 
+								classification, and encapsulation. An object-based system does 
+								not support <termref ref="specialization">specialization
+								</termref>. Ada is an example of an object-based 
+								implementation language. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="obsolescent_message_type">
+						
+                  <label>obsolescent message type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_type">message type</termref> that has been 
+								marked for deletion in a future version of HL7. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="obsolete_message_type">
+						
+                  <label>obsolete message type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_type">message type</termref>, previously 
+								declared obsolescent, that has been removed or replaced in a 
+								particular version of HL7. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="oid">
+						
+                  <label>OID</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="object_identifier">object identifier</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="optional">
+						
+                  <label>optional</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="inclusion">inclusion</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-p">
+				
+            <head>P</head>
+				
+            <glist>
+               <gitem id="partial_state">
+						
+                  <label>partial state</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Part of a <termref ref="state_machine">state machine</termref>. A 
+								state machine may have multiple partial <termref ref="state">
+								states</termref> effective at the same time; the multiple 
+								partial states can be summarized to one <termref ref="joint_state">
+								joint state</termref> of the state machine. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="patient">
+
+                  <label>Patient</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Person, in the role of patient for a particular situation. For example, this person is a patient at the hospital, but this person is not a patient at this time. See also Person.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="patient_pays_portion">
+
+                  <label>Patient Pays Portion</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The amount of a claim that is the responsibility of the patient.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="patient_safety">
+
+                  <label>Patient Safety</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="00" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>See term <termref ref="patient_safety_incident">Patient Safety Incident</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="patient_safety_incident">
+
+                  <label>Patient Safety Incident</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="00" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>See term <termref ref="patient_safety">Patient Safety</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payee">
+
+                  <label>Payee</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A Person or organization that receives payment for Goods provided and/or Services rendered or receives payment on behalf of one or more Providers. As well, a Payee may be a Person who has directly paid the Provider for the Goods provided and/or Services rendered and is being reimbursed by the Adjudicator. In some cases, a Payee may be the same as the Provider.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payment">
+
+                  <label>Payment</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A cheque or Electronic Funds Transfer (EFT) issued to a Payee.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payment_advice">
+
+                  <label>Payment Advice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The payment details for adjudicated Invoices and non-Invoice adjustments which correspond to an actual payment either by cheque or electronic funds transfer.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payment_intent">
+
+                  <label>Payment Intent</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Based on the adjudicated results of an invoice, Payment Intent is the details of the items and amounts the Adjudicator intends to pay. This is not a record of payment but rather an intention to pay which may be more or less than what was requested in the invoice.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payment_reconciliation">
+
+                  <label>Payment Reconciliation</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The process of comparing what has been paid versus what was expected to be paid.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payment_request">
+
+                  <label>Payment Request</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="invoice">Invoice</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payor">
+
+                  <label>Payor</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A Payor is the organization who is responisble for the payment. This is typically the name on the cheque.</p>
+
+                     <p>Also known as the Plan Sponsor.</p>
+
+                     <p>Note that this may be a different organization than the Carrier (insurance carrier) and Adjudicator.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="payor_adjustments">
+
+                  <label>Payor Adjustments</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Adjustments made by the Payor to the billed amount as a result of items such as deductibles or professional dues. Can also be referred to as adjustments to Payee.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="person">
+
+                  <label>Person</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Individual person, who can assume multiple roles over time. For example, a person may be a patient for a period of time at a hospital or a provider on a different occasion.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="pharmacy_dispense_billable_act">
+
+                  <label>Pharmacy Dispense Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information to describe the dispensing of a drug to a patient that is billed in an invoice. This may include among other things - date of service, drug supplied (specification, quantity, days supply), prescription and prescriber, number of refills, alerts and pharmacy.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="pre-determination">
+
+                  <label>Pre-Determination</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The submission of a 'mock' Healthcare Invoice to a Payor to determine the extent to which an Adjudicator will reimburse for the goods or services.   A Provider may use this to compare alternate treatments to determine least cost alternative for the patient.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="predicate_reference">
+						
+                  <label>predicate reference</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In the <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref>, 
+								a <termref ref="message_element">message element</termref> 
+								that is referred to in the predicate defining the conditional 
+								presence of another message element. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="preferred_accommodation_benefits">
+
+                  <label>Preferred Accommodation Benefits</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Benefits covering special healthcare lodging requirements. This includes private or semi-private hospital accommodation.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="preferred_accommodation_billable_act">
+
+                  <label>Preferred Accommodation Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information to describe the patient's premium hospital accommodation that is billed in an invoice. This may include among other things - date range of occupation, location, accommodation requested and available, reason for accommodation and requestor.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="prescription">
+
+                  <label>Prescription</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An order from a recognized prescriber for a health care good or service.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="primary_payor">
+
+                  <label>Primary Payor</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The Payor that is responsible for payment of a Healthcare Invoice.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="primitive_data_type">
+						
+                  <label>primitive data type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="data_type">data type</termref> that is defined as a 
+								single entity, and whose full semantic is contained in its definition. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="primitive_message_element_type">
+						
+                  <label>primitive message element type</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_element_type">message element type
+								</termref> that contains a single datum, with no subordinate 
+								components. Examples include String and Number. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="prior_approval">
+
+                  <label>Prior Approval</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="coverage_extension">Coverage Extension</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="procedure">
+
+                  <label>Procedure</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>In the context of a Health Care procedure this is the details identifying the service or procedure that was actually provided to a Person such as the procedure code, duration of procedure, time procedure took place and Provider who performed the procedure.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="product/service_code">
+
+                  <label>Product/Service Code</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The code used to identify what service is being billed. Synonymous with fee-code.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="professional_fee">
+
+                  <label>Professional Fee</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>In health care, the fee charged by the health care provider for the provision of a service. In pharmacy, this often refers to the fee charged for the dispensing of a medication.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="property">
+						
+                  <label>property</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. Any <termref ref="attribute">attribute</termref>, 
+								<termref ref="association">association</termref>, method, or 
+								<termref ref="state">state</termref> model defined for a
+								<termref ref="class">class</termref> or <termref ref="object">
+								object</termref>.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2. In a <termref ref="hierarchical_message_description"> 
+								Hierarchical Message Description</termref> (HMD), the column 
+								that states the name of the class, attribute or 
+								<termref ref="association_role_name">association 
+								role name</termref> as it appears in the 
+								<termref ref="reference_information_model">Reference 
+								Information Model</termref> (RIM).
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="provider">
+
+                  <label>Provider</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An individual who delivers a health service to a person or animal e.g., doctor, nurse, pharmacist, technician, etc.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="provider_adjustments">
+
+                  <label>Provider Adjustments</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Changes to the billable amount as a result of items such as taxes, mark-ups, surcharges or discounts.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="ps:gin">
+
+                  <label>PS:GIN</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="00" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>See term <termref ref="ps:rum">PS:RUM</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="ps:rum">
+
+                  <label>PS:RUM</label>
+
+
+                  <def domainid="PORR_DO00001" sortkey="00" preferreddef="true" fullDomainName="Public Health Reporting" domainLink="../../domains/rr/hmporr.htm">
+
+                     <p>See term <termref ref="ps:gin">PS:GIN</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="push-down_stack">
+						
+                  <label>push-down stack</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Also known as a “last in-first out” (LIFO) 
+								<termref ref="list">list</termref>, a list 
+								maintained by a Technical Committee as it analyses the 
+								<termref ref="refined_message_information_model">
+								Refined Message Information Model
+								</termref> (R-MIM) and builds a 
+								<termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref>, in which the last 
+								<termref ref="class">class</termref> added 
+								is always the first class removed. (A metaphoric reference to the spring-loaded 
+								plate carriers used in institutional dining halls, where the new
+								plates added to the top of the stack push down the earlier plates, so
+								the newest plate is taken off the stack first). 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-q">
+				
+            <head>Q</head>
+				
+            <glist/>
+			
+         </div2>
+         <div2 id="glossary-r">
+				
+            <head>R</head>
+				
+            <glist>
+               <gitem id="re-adjudication">
+
+                  <label>Re-Adjudication (of an invoice)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Process whereby a Provider can request a re-adjudication of an invoice that has been partially paid by a Payor. A TE660101  message can be used to perform this function or alternatively, the original invoice can be cancelled and a new invoice submitted to the same Payor.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="realm">
+						
+                  <label>realm</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="vocabulary_domain_qualifier">vocabulary 
+								domain qualifier</termref> used in a 
+								<termref ref="domain_specification">domain specification</termref>, 
+								which allows the <termref ref="vocabulary_domain">vocabulary 
+								domain</termref> of a <termref ref="coded_attribute">
+								coded attribute</termref> to be 
+								specialized according to the geographical, organizational, or 
+								political environment where the HL7 standard is being used. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gvocabqualify">
+								 Vocabulary Domain Qualifiers section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="receiver">
+
+                  <label>Receiver</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The application fulfilling the Receiving Application role in an interaction</p>
+
+                  </def>
+               </gitem>
+               <gitem id="receiver_responsibility">
+						
+                  <label>receiver responsibility</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An obligation on an <termref ref="application_role">application 
+								role</termref> that receives an <termref ref="interaction">
+								interaction</termref>as defined in the 
+								<termref ref="interaction_model">interaction model</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="reciprocal_healthcare_invoice">
+
+                  <label>Reciprocal Healthcare Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A request for payment of Service rendered and/or Goods provided by a Provider in one province to a Person who is insured by a different province. Reciprocal invoices are based on agreements between the provinces, except Quebec and only apply to Physician related claims.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="recursion">
+						
+                  <label>recursion</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="association">association</termref> that leads 
+								from a <termref ref="class">class</termref> directly or indirectly 
+								back to that class. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="reference_information_model">
+						
+                  <label>Reference Information Model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The HL7 <termref ref="information_model">information model
+								</termref> from which all other information models 
+								(e.g., R-MIMs) and <termref ref="message">messages</termref> 
+								are derived.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdltypes">Information Model
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="refined_message_information_model">
+						
+                  <label>Refined Message Information Model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An information structure that represents the requirements for a 
+								set of <termref ref="message">messages</termref>.  A 
+								<termref ref="constraint">constrained</termref> 
+								subset of the <termref ref="reference_information_model">
+								Reference Information Model</termref> (RIM) which may contain additional 
+								<termref ref="class">classes</termref> that are cloned from 
+								RIM classes. Contains those classes, <termref ref="attribute">
+								attributes</termref>, <termref ref="association">associations</termref>, 
+								and <termref ref="data_type">data types</termref> that are needed to 
+								support one or more <termref ref="hierarchical_message_description">
+								Hierarchical Message Descriptions</termref> (HMD). A single 
+								message can be shown as a particular pathway through the 
+								classes within an R-MIM. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdltypes">Information Model
+								 section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="region_specification">
+
+                  <label>Region Specification</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>There are 2 basic types of regions: a fully specified region and a partially specified one.  The fully specified region is one where each dimension within the Observation Series to be included in the region has a boundary defined.  For example, if an episode of ST elevation is observed in leads V4 and V5, a fully specified region would contain 3 boundaries: one for time, one for V4, and one for V5.  The boundary in time would be specified with an interval in time (IVL&lt;PQ&gt;).  The boundaries on V4 and V5 would be infinite intervals (the entire range of voltages for both leads are to be included in the region for ST elevation). A partially specified region assumes all dimensions in the Observation Series are included in the region except for the boundaries specified.  For example, if a global QRS onset is observed, only a boundary for time is required.  All the other dimensions (leads) would be included in the partially specified region.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="request_for_payment">
+
+                  <label>Request for Payment</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="00" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>See term <termref ref="invoice">Invoice</termref> instead.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="requester">
+
+                  <label>Requester</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An organization or person on whose behalf a request message for authorization, information, etc. is submitted.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="required">
+						
+                  <label>required</label>
+						
+					
+                  <def>
+							
+                     <p>
+								One of the allowed values in 
+								<termref ref="conformance_requirement">conformance 
+								requirements</termref>. Abbreviated as 
+								R, it means that the <termref ref="message_element">message elements
+								</termref> must appear every time that particular 
+								<termref ref="message_type">message type</termref> is used for an 
+								<termref ref="interaction">interaction</termref>. If the data is
+								available, the element must carry the data, otherwise a 
+								<termref ref="blank">blank</termref> may be sent. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="responsibility">
+						
+                  <label>responsibility</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An action required of the receiver of a <termref ref="message">
+								message</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="rhythm_waveform_annotations">
+
+                  <label>Rhythm Waveform Annotations</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>Some annotations will be specific to areas in time but will apply to all the leads.  For example, the presence of an arrhythmia, or a period of time where the patient was performing some activity that affects the ECG.  Pacer spikes and perhaps beat locations are also indicated as points or areas in time.  Fudicial markings made by superimposing all the leads would also fall into this category. *	Rhythm annotation example *	Patient activity example *	Pacer spikes example *	Beat location example *	Beat classification example *	Global fudicial markings example Other annotations will be specific to areas in time AND one or more leads.  Annotations falling into this category include fudicial markings for beat measurements made on particular leads, lead-specific episodes such as ST elevation, etc. *	Fudicial markings example *	Isoelectric example *	ST elevation example</p>
+
+                  </def>
+               </gitem>
+               <gitem id="rhythm_waveforms">
+
+                  <label>Rhythm Waveforms</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>These are the waveforms directly collected from the subject and used for clinical trial research.  If measurements were taken from these, annotations should show the fudicial markings for those measurements.  The specific set of fudicial markings is specified by the trial protocol. If the waveforms have been enhanced to facilitate the measurement process, control variables should indicate what enhancements were made.  For example, filtering, etc.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="rim">
+						
+                  <label>RIM</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="reference_information_model">Reference 
+								Information Model</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="r-mim">
+						
+                  <label>R-MIM</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="refined_message_information_model">
+								Refined Message Information Model</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="r-mim_diagram">
+						
+                  <label>R-MIM diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A diagrammatic representation of a 
+								<termref ref="refined_message_information_model">
+								Refined Message Information Model</termref> (R-MIM). Possible 
+								formats include UML and the HL7 R-MIM graphic format. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="role">
+						
+                  <label>role</label>
+						
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. A function or position. 
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  A <termref ref="reference_information_model">
+								Reference Information Model</termref>
+								
+                        <termref ref="class">class</termref> that defines the 
+								competency of an Entity class. 
+								Each <termref ref="role">role</termref> is played by one 
+								Entity (the Entity that is in the 
+								role) and is usually scoped by another.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								3. In UML, each end of an <termref ref="association">association
+								</termref> is designated as a role to 
+								reflect the function that class plays in the association.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="role_name">
+						
+                  <label>role name</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="association_role_name">association role 
+								name</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="root_class">
+						
+                  <label>root class</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The <termref ref="class">class</termref> on which a 
+								<termref ref="message">message</termref> is based. Usually the 
+								root class for a family of messages is either the 
+								<termref ref="subject_class">subject class</termref> or the 
+								class that will be first represented in the set of messages 
+								to be built. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="rootinvoiceelement">
+
+                  <label>RootInvoiceElement</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An Invoice Element at the top level (root) of the hierarchy of billable items that form part of an Invoice. Relationships for insurance, service target (e.g. patient), incident, EOBs (explanation of benefits) submitted for downstream payors (to support Coordination of Benefits) and attachments are made to the RootInvoiceElement. The information thus supplied applies to each individual Invoice Element (billable item) associated to the RootInvoiceElement.</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-s">
+				
+            <head>S</head>
+				
+            <glist>
+               <gitem id="scenario">
+						
+                  <label>scenario</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A statement of relevant <termref ref="event">events</termref> 
+								from the problem <termref ref="domain">domain</termref>, defined 
+								as a sequence of <termref ref="interaction">interactions</termref>. 
+								The scenario provides one set of interactions that the
+								modeling committee expects will typically occur in the domain.
+								Usually, a <termref ref="sequence_diagram">sequence diagram</termref> is 
+								constructed to show a group of
+								interactions for a single <termref ref="scenario">scenario</termref>. 
+								Each scenario is displayed
+								as a subset of the <termref ref="interaction_model">interaction model</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="schema">
+						
+                  <label>schema</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. A diagrammatic presentation, a structured framework, or a plan.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  A set of requirements that need to be met in order for a
+								document or set of data to be a valid expression within the
+								context of a particular grammar. For example, XML Schema is a 
+								<termref ref="specification">specification</termref> in SGML 
+								of the structure of a document or set of data.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="schema_view">
+						
+                  <label>schema view</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A link to the <termref ref="schema">schema</termref> used to 
+								validate XML messages that conform to a particular 
+								<termref ref="message_type">message type</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="scope">
+						
+                  <label>scope</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1.  A definition of the range or extent of a project undertaken 
+								by a Technical Committee.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2.  A means of <termref ref="constraint">constraining</termref> a 
+								<termref ref="role">role</termref> 
+								(ie. a role is “scoped by” an entity).
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="secondary_payor">
+
+                  <label>Secondary Payor</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The Payor that is responsible for payment of a Healthcare Invoice if the Primary Payor does not pay.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="section">
+						
+                  <label>section</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In the HL7 V3 Guide, a method of grouping related information 
+								into <termref ref="domain">domains</termref>. 
+								These domains include Infrastructure Management,
+								Administrative Management, and Health &amp; Clinical Management.       
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="semantic">
+						
+                  <label>Semantic</label>
+						
+					
+                  <def>
+							
+                     <p>In the context of a technical specification, semantic refers to the meaning of something as distinct from its exchange representation. Syntax can change without affecting semantics.</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sender">
+
+                  <label>Sender</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The application fulfilling the Sending Application role in an interaction</p>
+
+                  </def>
+               </gitem>
+               <gitem id="sequence_diagram">
+						
+                  <label>sequence diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="interaction_diagram">interaction diagram
+								</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="service">
+
+                  <label>Service</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A consultation, diagnosis, treatment or intervention performed for a Person and/or other activity performed for a Person. Includes health, goods and support services.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="service_bureau">
+
+                  <label>Service Bureau</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An agent retained by a Provider to assemble and submit Healthcare Invoices and receive validation and adjudication results.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="service_relationship">
+
+                  <label>Service Relationship</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A defined relationship or association between a Provider and Payee or Person and Payee that defines the financial and/or contract terms and conditions.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="sessional_invoice">
+
+                  <label>Sessional Invoice</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An invoice for services provided on a sessional basis, e.g., 4 hours in an operating theatre.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="set">
+						
+                  <label>set</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A form of <termref ref="collection">collection</termref> which 
+								contains an unordered <termref ref="list">list</termref> of 
+								unique elements of a single type.   
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sgml">
+						
+                  <label>SGML</label>
+						
+					
+                  <def>
+							
+                     <p>Standard Generalized Markup Language, ISO 8879:1986(E) as amended and corrected</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="snomed">
+						
+                  <label>SNOMED</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.snomed.org/" target="_blank" xlink-form="simple" show="embed" actuate="auto">Systematized Nomenclature of Medicine</loc>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sofa">
+
+                  <label>SOFA</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>This acronym is for Statement Of Financial Activity. This is a category of interactions that facilitate the exchange of detailed and summarized financial information between an Invoice Requestor and Adjudication Manager.  It includes Payment Advices, summarized counts and amounts for processed invoices as well as details of individual counts and amounts over a specified period of time</p>
+
+                  </def>
+               </gitem>
+               <gitem id="specialization">
+						
+                  <label>specialization</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="association">association</termref> between two 
+								<termref ref="class">classes</termref> (designated 
+								<termref ref="superclass">superclass</termref> and 
+								<termref ref="subclass">subclass</termref>),
+								in which the subclass is derived from the superclass. The 
+								subclass inherits all properties from the superclass, 
+								including <termref ref="attribute">attributes</termref>, 
+								relationships, and <termref ref="state">states</termref>, but 
+								also adds new ones to extend the capabilities of the superclass. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="specification">
+						
+                  <label>specification</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A detailed description of the required characteristics of a product. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sponsor">
+						
+                  <label>sponsor (of an application)</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In the context of <termref ref="conformance_claim">conformance claims
+								</termref>, the vendor, in-house developer, or provider of 
+								public domain software for a healthcare information system. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state">
+						
+                  <label>state</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A named condition of a <termref ref="class">class</termref>
+								
+                        <termref ref="instance">instance</termref> (<termref ref="object">
+								object</termref>) that can be tested by
+								examination of the instance's <termref ref="attribute">attributes
+								</termref>and <termref ref="association">associations</termref>.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlbehave">
+								 Dynamic Behavior section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_attribute">
+						
+                  <label>state attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="attribute">attribute</termref> describing the 
+								current <termref ref="state">state</termref> of an 
+								<termref ref="object">object</termref>. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlattrib">
+								 Attributes section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_diagram">
+						
+                  <label>state diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A graphical representation of a <termref ref="state_transition_model"> 
+								state transition model</termref> showing <termref ref="state">states
+								</termref>as vertices (nodes) and <termref ref="state_transition">
+								state transitions</termref> as directed arcs (arrows) between the nodes. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_flag">
+						
+                  <label>state flag</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A discrete value of a single enumerated <termref ref="domain">domain
+								</termref>of partial <termref ref="state">states</termref>. State 
+								flags are included in a state <termref ref="attribute">attribute
+								</termref> in a <termref ref="message_instance">message instance</termref> 
+								that indicates the <termref ref="joint_state">joint state</termref> 
+								of an object. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_machine">
+						
+                  <label>state machine</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A description of the life cycle for <termref ref="instance">instances
+								</termref>of a <termref ref="class">class</termref>, defined by a 
+								<termref ref="state_transition_model">state transition model</termref>.  
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_transition">
+						
+                  <label>state transition</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A change in the <termref ref="state">state</termref> of an 
+								<termref ref="object">object</termref>, as a result of a change 
+								in its <termref ref="attribute">attributes</termref> 
+								or <termref ref="association">associations</termref>.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3ginfomdlbehave">
+								 Dynamic Behavior section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="state_transition_model">
+						
+                  <label>state transition model</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A graphical representation of the life cycle of a 
+								<termref ref="class">class</termref>. The <termref ref="model">
+								model</termref> depicts all of the relevant <termref ref="state">
+								states</termref> of a class, and the valid transitions 
+								from state to state. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="steward_committee">
+						
+                  <label>steward committee</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The Technical Committee within HL7 which has primary responsibility
+								for specifying properties for a <termref ref="class">class
+								</termref> in the <termref ref="reference_information_model">
+								Reference Information Model</termref> (RIM). The steward 
+								committee must be consulted on any proposed changes to the 
+								properties of classes under its stewardship.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="stewardship_representative">
+						
+                  <label>stewardship representative</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An individual member of the <termref ref="steward_committee">
+								steward committee</termref>, authorized by the
+								committee to speak on behalf of the committee, and to represent the
+								interests of the steward committee. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="storyboard">
+						
+                  <label>storyboard</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A narrative of relevant <termref ref="event">events</termref> 
+								defined using <termref ref="interaction_diagram">interaction  
+								diagrams</termref>or use cases.  The storyboard provides one set
+								of <termref ref="interaction">interactions</termref> that the 
+								modeling committee expects will typically
+								occur in the <termref ref="domain">domain</termref>.  
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="storyboard_diagram">
+						
+                  <label>storyboard diagram</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="interaction_diagram">interaction diagram</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="structural_attribute">
+						
+                  <label>structural attribute</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="attribute">attribute</termref> whose coded 
+								values are needed to fully interpret the 
+								<termref ref="class">class</termref> with which it is 
+								associated.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="stylesheet">
+						
+                  <label>stylesheet</label>
+						
+					
+                  <def>
+							
+                     <p>A file that describes how to display an XML document of a given type</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="subclass">
+						
+                  <label>subclass</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="class">class</termref> that is the 
+								<termref ref="specialization">specialization</termref> of 
+								another class (<termref ref="superclass">superclass</termref>). 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="subject_area">
+						
+                  <label>subject area</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A convenient aggregation of <termref ref="model">model</termref>
+								
+                        <termref ref="class">classes</termref> used to partition large 
+								models into manageable subsets. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="subject_class">
+						
+                  <label>subject class</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="class">class</termref> that a Technical 
+								Committee designates as the central focus of a 
+								<termref ref="collection">collection</termref> of 
+								<termref ref="message">messages</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sub-section">
+						
+                  <label>sub-section</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In the HL7 V3 Guide, a <termref ref="section">section</termref> 
+								within a major section.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="sub-state">
+						
+                  <label>sub-state</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An identifiable <termref ref="state">state</termref> of a 
+								<termref ref="class">class</termref> that has a more specific
+								definition than, and is entirely encompassed within the scope         
+								of, its <termref ref="super-state">super-state</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="superclass">
+						
+                  <label>superclass</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="class">class</termref> that is the 
+								<termref ref="generalization">generalization</termref> of one or more 
+								other classes (<termref ref="subclass">subclasses</termref>). 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="super-state">
+						
+                  <label>super-state</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="state">state</termref> of a <termref ref="class">
+								class</termref> that encompasses two or more independent 
+								<termref ref="sub-state">sub-states</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="supporting_documentation">
+
+                  <label>Supporting Documentation</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>Forms, Reports, Attachments submitted by Third Parties (e.g., Employer) to a Payor that may be applicable to a Healthcare Invoice. Submission not included in scope of NeCST.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="surface_form">
+						
+                  <label>surface form (of a concept)</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A code value or textual description that represents a concept
+								identified by an HL7 <termref ref="concept_identifier">
+								concept identifier</termref>. There may be many different         
+								surface forms associated with a single concept identifier. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="system">
+						
+                  <label>system</label>
+						
+						
+					
+                  <def>
+							
+                     <p>
+								1. An end user application.
+							</p>
+						
+                  </def>
+                  <def>
+							
+                     <p>
+								2. In HL7, a group of <termref ref="message">messages</termref> 
+								that work together. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-t">
+				
+            <head>T</head>
+				
+            <glist>
+               <gitem id="table_view">
+						
+                  <label>table view</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An expression of the <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref> (HMD) common and 
+								<termref ref="message_type">message type</termref> definition 
+								condensed in size to fit on a printed page.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="third_party_administrator">
+
+                  <label>Third Party Administrator (TPA)</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A TPA is an organization retained by a Payor to receive and apply Payor rules, validate Healthcare Invoices and issue payments on behalf of the Payor.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="tightly_coupled">
+						
+                  <label>tightly coupled</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Tightly coupled <termref ref="application_role">
+								application roles</termref> assume that 
+								common information about the <termref ref="subject_class">
+								subject classes</termref> participating in a 
+								<termref ref="message">message</termref> is available to 
+								system components outside of the specific message. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="time_charge">
+
+                  <label>Time Charge</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>An extra time charge in addition to the professional fee that may be charged by a pharmacist when preparing a compound.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="tpa/payor">
+
+                  <label>TPA/Payor</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A label used to refer to processes that may be performed by either a TPA or Payor. For example, in some circumstances a Payor may both administer a Healthcare Invoice and authorize benefits, while in other circumstances a Payor may act as a TPA for another Payor.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="transaction">
+						
+                  <label>transaction</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A complete set of <termref ref="message">messages</termref> for a 
+								particular <termref ref="trigger_event">trigger event</termref>, 
+								e.g., a message and a response. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="transport_wrapper">
+						
+                  <label>transport wrapper</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="wrapper">wrapper</termref> that contains 
+								information needed by a sending application or 
+								<termref ref="message">message</termref> handling service to route 
+								the <termref ref="message_payload">message payload</termref> to the
+								designated receiver. All HL7 V3 messages must have an 
+								appropriately configured transport wrapper.  
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="trigger_event">
+						
+                  <label>trigger event</label>
+						
+					
+                  <def>
+							
+                     <p>
+								An <termref ref="event">event</termref> which, when recorded
+								or recognized by an <termref ref="application">application</termref>, 
+								indicates the need for an information flow to one or more other 
+								applications, resulting in one or more <termref ref="interaction">
+								interactions</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="types_of_annotation_to_region_relationships">
+
+                  <label>Types of Annotation to Region Relationships</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>There are some annotation codes that can mean slightly different things depending on the context.  For example, the annotation "Atrial Fibrillation (AFib)" could mean two different things when related to a region: "The subject was in AFib here.", or "The subject experienced an episode of AFib from here to there." There are 2 act relationships in HL7 to distinguish between these two types of annotations.  The "has support" relationship is the more general one to be used for "there is AFib here" types of annotations.  The "has bounded support" relationship can be used to declare the boundaries of the annotation, "there is a (bounded) episode of AFib here."</p>
+
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-u">
+				
+            <head>U</head>
+				
+            <glist>
+               <gitem id="uml">
+						
+                  <label>UML</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="unified_modeling_language">
+								Unified Modeling Language</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="unified_modeling_language">
+						
+                  <label>Unified Modeling Language</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A language for the creation of <termref ref="domain">domain</termref>
+								
+                        <termref ref="model">models</termref>. UML was created in order to 
+								unify several well-known object-oriented modeling 
+								<termref ref="methodology">methodologies</termref>, 
+								including those of Booch, Rumbaugh, Jacobson, and others. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="union_message">
+						
+                  <label>union message</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="message_type">message type</termref> that contains 
+								the elements of several <termref ref="message">message</termref> 
+								structures drawn from the same 
+								<termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref>.  A union message 
+								includes all the <termref ref="message_element">message elements 
+								</termref>that must be sent from one <termref ref="application_role">
+								application role</termref> to all other application roles in 
+								response to a <termref ref="trigger_event">trigger event</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="universal_cmet">
+
+                  <label>universal CMET</label>
+
+
+                  <def domainid="COCT_DO000000" sortkey="01" preferreddef="true" fullDomainName="Common Message Element Types" domainLink="../../domains/ct/imcoct.htm">
+
+                     <p>A CMET variant that includes all attributes and associations present in the R-MIM. Any of non-mandatory and non-required attributes and/or associations may be present or absent, as permitted in the cardinality constraints.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="up-charge">
+
+                  <label>Up-charge</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>A percentage that may be added to the cost of a product when calculating the cost of a claim.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="user">
+						
+                  <label>user</label>
+						
+					
+                  <def>
+							
+                     <p>
+								In the context of <termref ref="conformance_claim">conformance 
+								claims</termref>, the organization that uses an
+								<termref ref="application">application</termref>. This is  
+								frequently the buyer but in some cases the user and 
+								<termref ref="sponsor">sponsor</termref> organizations may be 
+								parts of the same organization, or otherwise have a business 
+								relationship other then vendor-buyer. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-v">
+				
+            <head>V</head>
+				
+            <glist>
+               <gitem id="v3_guide">
+						
+                  <label>V3 Guide</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A companion to the V3 Standard which contains the 
+								<termref ref="methodology">methodological</termref> information
+								an HL7 member needs to understand the V3 standard.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="valid_document">
+						
+                  <label>Valid Document</label>
+						
+					
+                  <def>
+							
+                     <p>A document which meets all of the validity constraints in the XML Specification</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="value_set">
+						
+                  <label>value set</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A <termref ref="vocabulary_domain">vocabulary domain</termref> 
+								that has been <termref ref="constraint">constrained</termref> 
+								to a particular <termref ref="realm">realm</termref> and 
+								<termref ref="coding_system">coding system</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="vision_product_billable_act">
+
+                  <label>Vision Product Billable Act</label>
+
+
+                  <def domainid="FICR_DO000000" sortkey="01" preferreddef="true" fullDomainName="Claims &amp; Reimbursement" domainLink="../../domains/cr/amficr.htm">
+
+                     <p>The set of information to describe the dispensing of a vision care product to a patient that is billed in an invoice. This may include among other things - date of service, vision care product specification, prescription and prescriber, performer, location and diagnosis.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="vocabulary">
+						
+                  <label>vocabulary</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The set of valid values for a <termref ref="coded_attribute">
+								coded attribute</termref> or field.
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gvocab">
+								 Vocabulary section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="vocabulary_domain">
+						
+                  <label>vocabulary domain</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The set of all concepts that can be taken as valid values in an 
+								<termref ref="instance">instance</termref> of a 
+								<termref ref="coded_attribute">coded attribute</termref> or field; a 
+								<termref ref="constraint">constraint</termref> applicable to code 
+								values. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="mbf4vocabudomrim">
+								 Vocabulary Domains section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="vocabulary_domain_qualifier">
+						
+                  <label>vocabulary domain qualifier</label>
+						
+					
+                  <def>
+							
+                     <p>
+								Part of a <termref ref="vocabulary_domain_specification">
+								vocabulary domain specification</termref>. The two existing 
+								qualifiers are <termref ref="extensibility_qualifier">
+								extensibility</termref> and <termref ref="realm">realm</termref>. 
+							</p>
+							
+                     <p>
+							   For more information refer to the 
+								<ilxspecref spec="../../help/v3guide/v3guide" ref="v3gvocabqualify">
+								 Vocabulary Domain Qualifiers section</ilxspecref> of the V3 Guide.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="vocabulary_domain_specification">
+						
+                  <label>vocabulary domain specification</label>
+						
+					
+                  <def>
+							
+                     <p>
+								A column in the <termref ref="hierarchical_message_description">
+								Hierarchical Message Description</termref> that specifies the 
+								<termref ref="vocabulary_domain">vocabulary domain</termref> 
+								associated with a <termref ref="coded_attribute">
+								coded attribute</termref>. 
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-w">
+				
+            <head>W</head>
+				
+            <glist>
+               <gitem id="w3c">
+						
+                  <label>W3C</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.w3c.org/" target="_blank" xlink-form="simple" show="embed" actuate="auto">The World Wide Web Consortium, an international industry consortium </loc>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="w3c_schema">
+						
+                  <label>W3C Schema</label>
+						
+					
+                  <def>
+							
+                     <p>The three-part schema specification issued by the W3C<br/>
+								
+                        <list role="unordered">
+									
+                           <item>
+										
+                              <loc href="http://www.w3.org/TR/xmlschema-0/" target="_blank" xlink-form="simple" show="embed" actuate="auto">XML Schema Part 0: Primer , W3C Recommendation, 2-May-2001</loc>
+									
+                           </item>
+									
+                           <item>
+										
+                              <loc href="http://www.w3.org/TR/xmlschema-1/" target="_blank" xlink-form="simple" show="embed" actuate="auto">XML Schema Part 1: Structures, W3C Recommendation, 2-May-2001</loc>
+									
+                           </item>
+									
+                           <item>
+										
+                              <loc href="http://www.w3.org/TR/xmlschema-2/" target="_blank" xlink-form="simple" show="embed" actuate="auto">XML Schema Part 2: Datatypes, W3C Recommendation, 2-May-2001</loc>
+									
+                           </item>
+								
+                        </list>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="waveform_encoding">
+
+                  <label>Waveform Encoding</label>
+
+
+                  <def domainid="PORT_DO000001" sortkey="01" preferreddef="true" fullDomainName="Regulated Studies" domainLink="../../domains/rt/hmport.htm">
+
+                     <p>The rhythm waveforms are encoded as an Observation Series in HL7.  The series contains one or more Correlated Observation Sequences ("correlation" for short).  Each correlation encodes the leads that were sampled together and correlated with the same relative time points. If all 12 leads were sampled together (assuming a 12-lead ECG), only one correlation is required.  This correlation would contain a sequence for relative time and 12 sequences for the 12 different leads.  If time was evenly sampled (as it usually is), a GLIST&lt;&gt; is used for generating the sequence of time points from a few parameters.  The lead sequences would use the SLIST&lt;&gt; for encoding the voltages.  The SLIST&lt;&gt; can factor out a common offset and scale factor (if the raw integer A/D values encoded).  The offset and scale factor can be used for converting the stored values to real physical quantities. If a 12-lead ECG is recorded on a device that only samples 3 leads at a time, for example, the Observation Series would contain 4 correlations.  Each correlation would encode the leads that were sampled together.  Each correlation would contain one sequence for time relative to the beginning of the recording, and 3 sequences for the 3 leads sampled.  If the device has a few more channels and records one or more rhythm leads during the whole recording, the rhythm leads would appear in each correlation as well.</p>
+
+                  </def>
+               </gitem>
+               <gitem id="well_formed_document">
+						
+                  <label>Well-formed document</label>
+						
+					
+                  <def>
+							
+                     <p>A document which meets all of the well-formedness constraints in the XML Specification</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="wrapper">
+						
+                  <label>wrapper</label>
+						
+					
+                  <def>
+							
+                     <p>
+								The control or envelope information in which the 
+								<termref ref="message_payload">message payload</termref> 
+								resides. See <termref ref="transport_wrapper">
+								transport wrapper</termref> and 
+								<termref ref="control_event_wrapper">control event wrapper
+								</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-x">
+				
+            <head>X</head>
+				
+            <glist>
+               <gitem id="xhtml">
+						
+                  <label>XHTML</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.w3.org/TR/xhtml1/" target="_blank" xlink-form="simple" show="embed" actuate="auto">XHTML 1.0. A Reformulation of HTML 4 in XML 1.0. W3C Recommendation 26-January-2000, revised 1 August 2002</loc>
+							
+                     </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="xml">
+						
+                  <label>XML</label>
+						
+					
+                  <def>
+							
+                     <p>
+								See <termref ref="extensible_markup_language">Extensible 
+								Markup Language</termref>.
+							</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="xml_declaration">
+						
+                  <label>XML Declaration</label>
+						
+					
+                  <def>
+							
+                     <p>An XML document consists of a prolog, root document element, and other objects.  A data object is an XML document if it is well-formed, as defined in the XML specification. </p>
+						
+                  </def>
+               </gitem>
+               <gitem id="xsl">
+						
+                  <label>XSL</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.w3.org/Style/XSL/)" target="_blank" xlink-form="simple" show="embed" actuate="auto">Extensible Style Language, a specification of the W3C</loc> An XSL stylesheet specifies the presentation of a class of XML documents by describing how an instance of the class is transformed into an XML document that uses the formatting vocabulary.</p>
+						
+                  </def>
+               </gitem>
+               <gitem id="xslt">
+						
+                  <label>XSLT</label>
+						
+					
+                  <def>
+							
+                     <p>
+								
+                        <loc href="http://www.w3.org/TR/xslt/" target="_blank" xlink-form="simple" show="embed" actuate="auto">XSL transformation language, a specification of the W3C</loc> 
+A language for transforming XML documents into other XML documents.
+
+					</p>
+						
+                  </def>
+               </gitem>
+            </glist>
+			
+         </div2>
+         <div2 id="glossary-y">
+				
+            <head>Y</head>
+			
+         </div2>
+         <div2 id="glossary-z">
+				
+            <head>Z</head>
+			
+         </div2>
+      </div1>
+	
+   </body>
+</spec>

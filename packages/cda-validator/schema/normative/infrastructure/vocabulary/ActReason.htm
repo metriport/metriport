@@ -1,0 +1,479 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+   
+      <title>ActReason</title>
+      <link rel="stylesheet" type="text/css" href="../../support/css/V3m.css"><style type="text/css">
+					td {font-family: Verdana,Arial; text-align: left; vertical-align: top; font-size: 11}
+					th {font-family: Verdana,Arial; FONT-WEIGHT: bold; text-align: left; font-size: 11}
+					
+					
+					</style></head>
+   <body>
+      <p></p><br><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><a name="C-0-D14878-cpt"></a><table rules="cols" border="1px" cellpadding="2" cellspacing="0" bordercolor="lightgrey" class="homepage">
+         <tbody>
+            <tr>
+               <td colspan="6"><font face="Arial" size="3"><strong>ActReason&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</strong></font><br><p class="vocDesc">A set of codes specifying the motivation, cause, or rationale of an Act, when such rationale is not reasonably represented
+                     as an ActRelationship of type "has reason" linking to another Act.
+                  </p>
+                  <p class="vocDesc"><em>Examples:</em> Example reasons that might qualify for being coded in this field might be: "routine requirement", "infectious disease reporting
+                     requirement", "on patient request", "required by law".
+                  </p>
+               </td>
+            </tr>
+            <tr bgcolor="cornflowerblue">
+               <th>Lvl</th>
+               <th>Type, Domain name and/or Mnemonic code</th>
+               <th>Concept ID</th>
+               <th>Mnemonic</th>
+               <th>Print Name</th>
+               <th>Definition/Description</th>
+            </tr>
+            <tr>
+               <td><a name="ActAccommodationReason"></a><a name="C-0-D14878-V17425-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: ActAccommodationReason</strong></td>
+               <td>V17425</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Identifies the reason the patient is assigned to this accommodation type</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V17425-17429-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ACCREQNA)
+                  
+               </td>
+               <td>17429</td>
+               <td>ACCREQNA</td>
+               <td>Accommodation Requested Not Available</td>
+               <td>
+                  <p class="vocDesc">Accommodation requested is not available.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V17425-17430-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(FLRCNV)
+                  
+               </td>
+               <td>17430</td>
+               <td>FLRCNV</td>
+               <td>Floor Convenience</td>
+               <td>
+                  <p class="vocDesc">Accommodation is assigned for floor convenience.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V17425-17428-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(MEDNEC)
+                  
+               </td>
+               <td>17428</td>
+               <td>MEDNEC</td>
+               <td>Medical Necessity</td>
+               <td>
+                  <p class="vocDesc">Required for medical reasons(s).</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V17425-14880-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PAT)
+                  
+               </td>
+               <td>14880</td>
+               <td>PAT</td>
+               <td>Patient request</td>
+               <td>
+                  <p class="vocDesc">The Patient requested the action</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActAdjudicationReason"></a><a name="C-0-D14878-V19385-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: ActAdjudicationReason</strong></td>
+               <td>V19385</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Explanatory codes that describe reasons why an Adjudicator has financially adjusted an invoice (claim).</p>
+                  <p class="vocDesc">A companion domain (ActAdjudicationInformationCode) includes information reasons which do not have a financial impact on an
+                     invoice (claim).
+                  </p>
+                  <p class="vocDesc">Example adjudication reason code is  AA-CLAIM-0011 - Only Basic Procedure/Test Eligible.</p>
+                  <p class="vocDesc">Codes from this domain further rationalizes ActAdjudicationCodes (e.g. AA - Adjudicated with Adjustment), which are used to
+                     describe the process of adjudicating an invoice.  For AS - Adjudicated as Submitted, there should be no specification of ActAdjudicationReason
+                     codes, as there are no financial adjustments against the invoice.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActBillableClinicalServiceReason"></a><a name="C-0-D14878-V19388-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: ActBillableClinicalServiceReason</strong></td>
+               <td>V19388</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Reason for Clinical Service being performed.</p>
+                  <p class="vocDesc">This domain excludes reasons specified by diagnosed conditions.</p>
+                  <p class="vocDesc">Examples of values from this domain include duplicate therapy and fraudulent prescription.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ActIneligibilityReason"></a><a name="C-0-D14878-V19355-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: ActIneligibilityReason</strong></td>
+               <td>V19355</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Identifies the reason or rational for why a person is not eligibile for benefits under an insurance policy.</p>
+                  <p class="vocDesc">Examples are client deceased &amp; adopted client has been given a new policy identifier.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19355-19731-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(COVSUS)
+                  
+               </td>
+               <td>19731</td>
+               <td>COVSUS</td>
+               <td>coverage suspended</td>
+               <td>
+                  <p class="vocDesc">When a client has no contact with the health system for an extended period, coverage is suspended.  Client will be reinstated
+                     to original start date upon proof of identification, residency etc.
+                  </p>
+                  <p class="vocDesc">Example: Coverage may be suspended during a strike situation, when employer benefits for employees are not covered (i.e. not
+                     in effect).
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19355-19729-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(DECSD)
+                  
+               </td>
+               <td>19729</td>
+               <td>DECSD</td>
+               <td>deceased</td>
+               <td>
+                  <p class="vocDesc">Client deceased.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19355-19730-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(REGERR)
+                  
+               </td>
+               <td>19730</td>
+               <td>REGERR</td>
+               <td>registered in error</td>
+               <td>
+                  <p class="vocDesc">Client was registered in error.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="ReasonForNotEvaluatingDevice"></a><a name="C-0-D14878-V19644-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: ReasonForNotEvaluatingDevice</strong></td>
+               <td>V19644</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Code assigned to indicate the rationale for not performing an evaluation investigation on a device for which a defect has
+                     been reported.
+                  </p>
+                  <p class="vocDesc">Examples include: device received in a condition that made analysis impossible, device evaluation anticipated but not yet
+                     begun, device not made by company.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="SchedulingActReason"></a><a name="C-0-D14878-V14879-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: SchedulingActReason</strong></td>
+               <td>V14879</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">Reasons for cancelling or rescheduling an Appointment</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14885-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(BLK)
+                  
+               </td>
+               <td>14885</td>
+               <td>BLK</td>
+               <td>Unexpected Block (of Schedule)</td>
+               <td>
+                  <p class="vocDesc">The time slots previously allocated are now blocked and no longer available for booking Appointments</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14884-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(DEC)
+                  
+               </td>
+               <td>14884</td>
+               <td>DEC</td>
+               <td>Patient Deceased</td>
+               <td>
+                  <p class="vocDesc">The Patient is deceased</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14882-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(FIN)
+                  
+               </td>
+               <td>14882</td>
+               <td>FIN</td>
+               <td>No Financial Backing</td>
+               <td>
+                  <p class="vocDesc">Patient unable to pay and not covered by insurance</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14883-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(MED)
+                  
+               </td>
+               <td>14883</td>
+               <td>MED</td>
+               <td>Medical Status Altered</td>
+               <td>
+                  <p class="vocDesc">The medical condition of the Patient has changed</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14886-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(MTG)
+                  
+               </td>
+               <td>14886</td>
+               <td>MTG</td>
+               <td>In an outside meeting</td>
+               <td>
+                  <p class="vocDesc">The Physician is in a meeting.  For example, he/she may request administrative time to talk to family after appointment</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14880-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PAT)
+                  
+               </td>
+               <td>14880</td>
+               <td>PAT</td>
+               <td>Patient request</td>
+               <td>
+                  <p class="vocDesc">The Patient requested the action</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V14879-14881-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PHY)
+                  
+               </td>
+               <td>14881</td>
+               <td>PHY</td>
+               <td>Physician request</td>
+               <td>
+                  <p class="vocDesc">The Physician requested the action</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="SubstanceAdminSubstitutionReason"></a><a name="C-0-D14878-V19377-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: SubstanceAdminSubstitutionReason</strong></td>
+               <td>V19377</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19377-19989-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(CT)
+                  
+               </td>
+               <td>19989</td>
+               <td>CT</td>
+               <td>continuing therapy</td>
+               <td>
+                  <p class="vocDesc">Indicates that the decision to substitute or to not substitute was driven by a desire to maintain consistency with a pre-existing
+                     therapy.  I.e. The performer provided the same item/service as had been previously provided rather than providing exactly
+                     what was ordered, or rather than substituting with a lower-cost equivalent.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19377-19990-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(FP)
+                  
+               </td>
+               <td>19990</td>
+               <td>FP</td>
+               <td>formulary policy</td>
+               <td>
+                  <p class="vocDesc">Indicates that the decision to substitute or to not substitute was driven by a policy expressed within the formulary.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19377-19987-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(OS)
+                  
+               </td>
+               <td>19987</td>
+               <td>OS</td>
+               <td>out of stock</td>
+               <td>
+                  <p class="vocDesc">In the case of 'substitution', indicates that the substitution occurred because the ordered item was not in stock.  In the
+                     case of 'no substitution', indicates that a cheaper equivalent was not substituted because it was not in stock.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19377-19988-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(RR)
+                  
+               </td>
+               <td>19988</td>
+               <td>RR</td>
+               <td>regulatory requirement</td>
+               <td>
+                  <p class="vocDesc">Indicates that the decision to substitute or to not substitute was driven by a jurisdictional regulatory requirement mandating
+                     or prohibiting substitution.
+                  </p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="TransferActReason"></a><a name="C-0-D14878-V15983-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: TransferActReason</strong></td>
+               <td>V15983</td>
+               <td></td>
+               <td></td>
+               <td>
+                  <p class="vocDesc">The explanation for why a patient is moved from one location to another within the organization</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V15983-15984-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(ER)
+                  
+               </td>
+               <td>15984</td>
+               <td>ER</td>
+               <td>Error</td>
+               <td>
+                  <p class="vocDesc">Moved to an error in placing the patient in the original location.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V15983-15985-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(RQ)
+                  
+               </td>
+               <td>15985</td>
+               <td>RQ</td>
+               <td>Request</td>
+               <td>
+                  <p class="vocDesc">Moved at the request of the patient.</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name="x_ActEncounterReason"></a><a name="C-0-D14878-V19456-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font><strong>A: x_ActEncounterReason</strong></td>
+               <td>V19456</td>
+               <td></td>
+               <td></td>
+               <td></td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19456-17428-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(MEDNEC)
+                  
+               </td>
+               <td>17428</td>
+               <td>MEDNEC</td>
+               <td>Medical Necessity</td>
+               <td>
+                  <p class="vocDesc">Required for medical reasons(s).</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-V19456-14880-cpt"></a>2
+               </td>
+               <td nowrap="yes"><font color="white">&nbsp; </font>L: &nbsp;(PAT)
+                  
+               </td>
+               <td>14880</td>
+               <td>PAT</td>
+               <td>Patient request</td>
+               <td>
+                  <p class="vocDesc">The Patient requested the action</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-17428-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(MEDNEC)
+                  
+               </td>
+               <td>17428</td>
+               <td>MEDNEC</td>
+               <td>Medical Necessity</td>
+               <td>
+                  <p class="vocDesc">Required for medical reasons(s).</p>
+               </td>
+            </tr>
+            <tr>
+               <td><a name=""></a><a name="C-0-D14878-14880-cpt"></a>1
+               </td>
+               <td nowrap="yes"><font color="white"></font>L: &nbsp;(PAT)
+                  
+               </td>
+               <td>14880</td>
+               <td>PAT</td>
+               <td>Patient request</td>
+               <td>
+                  <p class="vocDesc">The Patient requested the action</p>
+               </td>
+            </tr>
+         </tbody>
+      </table><br><a href="vocabulary.htm#voc-contents">Return to contents</a><br><br><p class="copyright">Last Published:&nbsp;09/01/2005&nbsp;8:33&nbsp;AM</p>
+      <p class="copyright">HL7&reg; Version 3 Standard, &copy; 2005 Health 
+         Level Seven&reg;, Inc.  All Rights Reserved.
+      </p>
+      <p class="copyright">HL7 and Health Level Seven are registered 
+         trademarks of Health Level Seven, Inc.  Reg. U.S. Pat &amp; TM Off
+      </p>
+   </body>
+</html>
