@@ -73,7 +73,7 @@ export async function appendDocQueryProgress({
     updatedDocumentQueryProgress.requestId = requestId;
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         documentQueryProgress: updatedDocumentQueryProgress,
@@ -106,7 +106,7 @@ export async function updateProgressWebhookSent(
     });
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         documentQueryProgress: {
