@@ -12,7 +12,6 @@ import {
   classCodeAttribute,
   idAttribute,
   moodCodeAttribute,
-  styleCodeAttribute,
   typeCodeAttribute,
   valueAttribute,
 } from "../constants";
@@ -95,6 +94,8 @@ export function buildResult(fhirBundle: Bundle): unknown {
     })
     .filter(item => item !== undefined);
 
+  const text = items.length > 0 ? { text: items.map(item => item?.item) } : undefined;
+
   const resultsSection = {
     component: {
       section: {
@@ -108,12 +109,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
           displayName: "Diagnostic Results",
         }),
         title: "Diagnostic Results",
-        text: {
-          list: {
-            [styleCodeAttribute]: "xTOC",
-            item: items.map(item => item?.item),
-          },
-        },
+        text,
         entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
       },
     },
