@@ -2,9 +2,10 @@ import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+import { out } from "@metriport/core/util/log";
+import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import {
   getCertificate,
@@ -71,10 +72,10 @@ export async function organizationToCommonwell(
 }
 
 export const create = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
+  const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
-    console.log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
+    log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
     return undefined;
   }
 
@@ -112,7 +113,7 @@ export const create = async (org: Organization): Promise<void> => {
 };
 
 export const update = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
+  const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
     debug(`CW disabled for cx ${org.cxId}, skipping...`);
@@ -148,26 +149,25 @@ export const update = async (org: Organization): Promise<void> => {
 };
 
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
+  const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
-      console.log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
+      log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
       return;
     }
     const highPrioOrgs = getOrgsByPrio().high;
     const cqOrgIds = highPrioOrgs.map(o => o.id);
     const cqOrgIdsLimited =
       cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
-    console.log(
-      `Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`
-    );
+    log(`Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`);
     await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
   } catch (error) {
-    const additional = { orgOID, error, context: `initCQOrgIncludeList` };
+    const extra = { orgOID, context: `initCQOrgIncludeList` };
     const msg = `Error while updating CQ include list`;
-    console.log(`${msg}. Cause: ${additional}`);
+    log(`${msg}. Cause: ${errorToString(error)}`, extra);
     capture.message(msg, {
-      extra: additional,
+      extra: { ...extra, error },
       level: "error",
     });
   }
