@@ -31,10 +31,10 @@ app.post("/validate", async (req: Request, res: Response) => {
 
     fs.unlinkSync(tempXmlPath);
 
-    if (stderr) {
-      res.status(400).send({ valid: false, errors: stderr });
-    } else {
+    if (stderr.includes("validates")) {
       res.send({ valid: true });
+    } else {
+      res.status(400).send({ valid: false, errors: stderr });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
