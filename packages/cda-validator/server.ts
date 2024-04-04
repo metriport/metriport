@@ -60,6 +60,7 @@ function parseXmllintErrors(errorString: string) {
     /(.+):(\d+): element (.+): Schemas validity error : Element '(\{[^}]+\})(.+)': (.+)/;
   const unexpectedElementErrorRegex =
     /(.+):(\d+): element (.+): Schemas validity error : Element '(\{[^}]+\})(.+)': This element is not expected. (.+)/;
+  const commandFailedErrorRegex = /parser error :/;
 
   errorLines.forEach(line => {
     let match = line.match(errorRegex);
@@ -76,6 +77,12 @@ function parseXmllintErrors(errorString: string) {
         errors.push({
           element: match[3].trim(),
           error: match[6].trim(),
+        });
+      }
+      match = line.match(commandFailedErrorRegex);
+      if (match) {
+        errors.push({
+          error: match.input,
         });
       }
     }
