@@ -222,7 +222,7 @@ export async function registerAndLinkPatientInCW(
       getOrgIdExcludeList,
     });
 
-    await queryDocsAgainIfScheduled(patient, getOrgIdExcludeList);
+    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
 
     return { commonwellPatientId, personId };
   } catch (error) {
@@ -378,7 +378,7 @@ export async function update(
       getOrgIdExcludeList
     );
 
-    await queryDocsAgainIfScheduled(patient, getOrgIdExcludeList);
+    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
   } catch (error) {
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
     capture.error(error, {
@@ -394,7 +394,7 @@ export async function update(
   }
 }
 
-async function queryDocsAgainIfScheduled(
+async function queryDocsIfScheduled(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
