@@ -1,6 +1,7 @@
 import {
   Address,
   CodeableConcept,
+  Coding,
   ContactPoint,
   Identifier,
   Organization,
@@ -9,10 +10,13 @@ import { normalizeOid } from "@metriport/shared";
 import {
   assigningAuthorityNameAttribute,
   extensionAttribute,
+  inlineTextAttribute,
   nullFlavorAttribute,
   rootAttribute,
   useAttribute,
   valueAttribute,
+  xmlnsXsiAttribute,
+  xsiTypeAttribute,
 } from "./constants";
 import {
   CDAAddress,
@@ -21,6 +25,7 @@ import {
   CDAInstanceIdentifier,
   CDAOrganization,
   CDATelecom,
+  CDAValueST,
   Entry,
   EntryObject,
 } from "./types";
@@ -206,6 +211,17 @@ export function formatDateToCDATimeStamp(dateString: string | undefined): string
   return cdaTimeStamp;
 }
 
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
+export function buildValueST(value: string | undefined): CDAValueST | undefined {
+  if (!value) return undefined;
+
+  const valueObject: CDAValueST = {};
+  valueObject[xsiTypeAttribute] = "ST";
+  valueObject[xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject[inlineTextAttribute] = value;
+  return valueObject;
+}
+
 function mapAddressUse(use: string | undefined) {
   if (!use) return undefined;
   // From PostalAddressUse of the CDA R2 IG
@@ -258,7 +274,8 @@ function mapTelecomUse(use: string | undefined) {
   }
   return use;
 }
-function cleanUpCoding(primaryCodingRaw: import("@medplum/fhirtypes").Coding | undefined) {
+
+function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
   if (!primaryCodingRaw) return undefined;
   const system = primaryCodingRaw.system;
   switch (system) {

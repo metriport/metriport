@@ -47,3 +47,6 @@ export const codeSystemAttribute = "@_codeSystem";
 export const codeSystemNameAttribute = "@_codeSystemName";
 export const displayNameAttribute = "@_displayName";
 export const namespaceAttribute = "@_xmlns";
+export const xsiTypeAttribute = "@_xsi:type";
+export const xmlnsXsiAttribute = "@_xmlns:xsi";
+export const inlineTextAttribute = "#text";

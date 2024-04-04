@@ -1,11 +1,14 @@
 import {
-  rootAttribute,
-  extensionAttribute,
   assigningAuthorityNameAttribute,
   codeAttribute,
   codeSystemAttribute,
   codeSystemNameAttribute,
   displayNameAttribute,
+  extensionAttribute,
+  inlineTextAttribute,
+  rootAttribute,
+  xmlnsXsiAttribute,
+  xsiTypeAttribute,
 } from "./constants";
 
 export type Entry = { [key: string]: string } | string;
@@ -69,6 +72,11 @@ export type CDACodeCE = {
   [displayNameAttribute]?: string;
 };
 
+export type CDAValueST = {
+  [xsiTypeAttribute]?: string;
+  [xmlnsXsiAttribute]?: string;
+  [inlineTextAttribute]?: string;
+};
 export interface CDACodeCV extends CDACodeCE {
   originalText?: string | undefined;
   translation?: CDACodeCE[] | undefined;

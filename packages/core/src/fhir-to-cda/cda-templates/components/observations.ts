@@ -4,10 +4,11 @@ import {
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
   buildInstanceIdentifiersFromIdentifier,
+  buildValueST,
   withoutNullFlavorObject,
 } from "../commons";
 import { classCodeAttribute, codeAttribute, moodCodeAttribute, valueAttribute } from "../constants";
-import { CDACodeCV, CDAInstanceIdentifier, Entry, EntryObject } from "../types";
+import { CDACodeCV, CDAInstanceIdentifier, CDAValueST, Entry, EntryObject } from "../types";
 
 export interface CDAObservation {
   component: {
@@ -24,7 +25,7 @@ export interface CDAObservation {
       };
       priorityCode?: Entry;
       // TODO support other types of values like CodeableConcept, Quantity, etc.
-      value?: string | undefined;
+      value?: CDAValueST | undefined;
     };
   };
 }
@@ -48,7 +49,7 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
             low: withoutNullFlavorObject(effectiveTime, valueAttribute),
             high: withoutNullFlavorObject(effectiveTime, valueAttribute),
           },
-          value: observation.valueString,
+          value: buildValueST(observation.valueString),
         },
       },
     };
