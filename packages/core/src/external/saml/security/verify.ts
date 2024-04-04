@@ -4,7 +4,13 @@ import * as isDomNode from "@xmldom/is-dom-node";
 import * as crypto from "crypto";
 import { DOMParser } from "xmldom";
 
-export function verifySaml(xmlString: string, publicCert: crypto.KeyLike): boolean {
+export function verifySaml({
+  xmlString,
+  publicCert,
+}: {
+  xmlString: string;
+  publicCert: crypto.KeyLike;
+}): boolean {
   const doc = new DOMParser().parseFromString(xmlString, "application/xml");
   const signatures = xpath.select("//*[local-name(.)='Signature']", doc);
   if (!Array.isArray(signatures)) return false;
@@ -12,11 +18,10 @@ export function verifySaml(xmlString: string, publicCert: crypto.KeyLike): boole
   return signatures.every(signature => {
     if (isDomNode.isNodeLike(signature)) {
       try {
-        const sig = new SignedXml({ publicCert });
+        const sig = new SignedXml({ publicCert: publicCert });
         sig.loadSignature(signature);
         return sig.checkSignature(xmlString);
       } catch (ex) {
-        console.error(ex);
         return false;
       }
     }

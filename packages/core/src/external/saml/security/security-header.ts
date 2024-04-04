@@ -1,15 +1,29 @@
 import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
-import { EnvType } from "../../../../util/env-var";
-import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../shared";
+import { EnvType } from "../../../util/env-var";
+import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../carequality/shared";
 import { namespaces } from "../namespaces";
+
+const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
+const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;
+const NEWLINE_REGEX = /\r?\n/g;
 
 export const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
 export const security_header_enveloped_id = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
 
-export function createSecurityHeader(
-  x509CertPem: string,
+export function createSecurityHeader({
+  publicCert,
+  created_timestamp,
+  expires_timestamp,
+  to_url,
+  subject_role,
+  metriport_organization,
+  home_community_id,
+  purpose_of_use,
+  envType
+}: {
+  publicCert: string,
   created_timestamp: string,
   expires_timestamp: string,
   to_url: string,
@@ -18,8 +32,8 @@ export function createSecurityHeader(
   home_community_id: string,
   purpose_of_use: string,
   envType?: EnvType
-): object {
-  const cert_pem_stripped = stripPemCertificate(x509CertPem);
+}): object {
+  const cert_pem_stripped = stripPemCertificate(publicCert);
   const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
   const saml2_NameID = `CN=ihe.${
     envType === EnvType.production ? "metriport.com" : "staging.metriport.com"
@@ -172,8 +186,8 @@ export function extractPublicKeyInfo(certificatePem: string) {
 
 export function stripPemCertificate(x509CertPem: string): string {
   let certPemStripped = x509CertPem
-    .replace(/-----BEGIN CERTIFICATE-----\r?\n/, "")
-    .replace(/-----END CERTIFICATE-----\r?\n?$/, "");
-  certPemStripped = certPemStripped.replace(/\r?\n/g, "");
+    .replace(BEGIN_CERTIFICATE_REGEX, "")
+    .replace(END_CERTIFICATE_REGEX, "");  
+  certPemStripped = certPemStripped.replace(NEWLINE_REGEX, "");
   return certPemStripped;
 }

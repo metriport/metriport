@@ -1,4 +1,4 @@
-// This is a shlper scipt that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to to the gateway specified in the request body.
+// This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to to the gateway specified in the request body.
 // npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 
 import express from "express";
@@ -7,9 +7,9 @@ import axios from "axios";
 import fs from "fs";
 import https from "https";
 
-import { createAndSignXCPDRequest } from "@metriport/core/external/carequality/saml/xcpd/envelope";
-import { createAndSignDQRequest } from "@metriport/core/external/carequality/saml/xca/iti38-envelope";
-import { createAndSignDRRequest } from "@metriport/core/external/carequality/saml/xca/iti39-envelope";
+import { createAndSignXCPDRequest } from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
+import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
 import * as dotenv from "dotenv";
@@ -28,11 +28,12 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = await createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
+    const xmlString = createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
+    console.log(error);
     res.status(500).send({ detail: "Internal Server Error" });
   }
 });
@@ -43,7 +44,7 @@ app.post("/xcadq", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = await createAndSignDQRequest(req.body, x509CertPem, privateKey);
+    const xmlString = createAndSignDQRequest(req.body, x509CertPem, privateKey);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
@@ -62,7 +63,7 @@ app.post("/xcadr", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = await createAndSignDRRequest(req.body, x509CertPem, privateKey);
+    const xmlString = createAndSignDRRequest(req.body, x509CertPem, privateKey);
     const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);

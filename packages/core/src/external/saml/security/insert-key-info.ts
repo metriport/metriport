@@ -10,7 +10,13 @@ const namespaces = {
   ds: "http://www.w3.org/2000/09/xmldsig#",
 };
 
-export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
+export function insertKeyInfo({
+  xmlContent,
+  publicCert,
+}: {
+  xmlContent: string;
+  publicCert: string;
+}): string {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_",
@@ -24,7 +30,7 @@ export function insertKeyInfo(xmlContent: string, x509CertPem: string): string {
   const obj = parser.parse(xmlContent);
   const security = obj["soap:Envelope"]["soap:Header"]["wsse:Security"];
 
-  const cert_pem_stripped = stripPemCertificate(x509CertPem);
+  const cert_pem_stripped = stripPemCertificate(publicCert);
   const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
 
   if (security && security["saml2:Assertion"]["ds:Signature"]) {

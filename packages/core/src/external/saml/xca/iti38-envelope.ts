@@ -1,11 +1,13 @@
 import * as uuid from "uuid";
+import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
-import { signTimestamp, signEnvelope } from "../security/sign";
-import { insertKeyInfo } from "../security/insert-key-info";
-import { verifySaml } from "../security/verify";
+import { signFullSaml } from "../security/sign";
 import { namespaces } from "../namespaces";
-import { ORGANIZATION_NAME_DEFAULT as metriport_organization, reply_to } from "../../shared";
+import {
+  ORGANIZATION_NAME_DEFAULT as metriport_organization,
+  reply_to,
+} from "../../carequality/shared";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const find_document_id = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -51,48 +53,22 @@ type DQBodyData = {
   };
 };
 
-export function createSoapEnvelope(bodyData: DQBodyData, x509CertPem: string): string {
+function createSoapBody(bodyData: DQBodyData): object {
   const message_id = `urn:uuid:${bodyData.id}`;
+  const class_code = bodyData.classCode?.[0];
+  const practice_setting_code = bodyData.practiceSettingCode?.[0];
+  const facility_type_code = bodyData.facilityTypeCode?.[0];
+  const service_date_from = dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss");
+  const service_date_to = dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss");
+  const document_creation_date_from = dayjs(bodyData.documentCreationDate.dateFrom).format(
+    "YYYYMMDDHHmmss"
+  );
+  const document_creation_date_to = dayjs(bodyData.documentCreationDate.dateTo).format(
+    "YYYYMMDDHHmmss"
+  );
   const gateway_home_community_id = bodyData.gateway.homeCommunityId;
-  const to_url = bodyData.gateway.url;
   const external_gateway_patient_id = bodyData.externalGatewayPatient.id;
   const external_gateway_patient_system = bodyData.externalGatewayPatient.system;
-  const class_code = bodyData.classCode[0];
-  const practice_setting_code = bodyData.practiceSettingCode[0];
-  const facility_type_code = bodyData.facilityTypeCode[0];
-  const service_date = bodyData.serviceDate;
-  const document_creation_date = bodyData.documentCreationDate;
-
-  const subject_role = bodyData.samlAttributes.subjectRole.display;
-  //   const organization = bodyData.samlAttributes.organization;
-  //   const organization_id = bodyData.samlAttributes.organizationId;
-  const home_community_id = bodyData.samlAttributes.homeCommunityId;
-  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
-
-  const service_date_from = service_date.dateFrom.replace(/[-:T]/g, "").split(".")[0];
-  const service_date_to = service_date.dateTo.replace(/[-:T]/g, "").split(".")[0];
-  const document_creation_date_from = document_creation_date.dateFrom
-    .replace(/[-:T]/g, "")
-    .split(".")[0];
-  const document_creation_date_to = document_creation_date.dateTo
-    .replace(/[-:T]/g, "")
-    .split(".")[0];
-
-  const created_timestamp = new Date().toISOString();
-  const expires_timestamp = new Date(
-    new Date(created_timestamp).getTime() + 60 * 60 * 1000
-  ).toISOString();
-
-  const securityHeader = createSecurityHeader(
-    x509CertPem,
-    created_timestamp,
-    expires_timestamp,
-    to_url,
-    subject_role,
-    metriport_organization,
-    home_community_id,
-    purpose_of_use
-  );
 
   const soapBody = {
     "soap:Body": {
@@ -102,7 +78,7 @@ export function createSoapEnvelope(bodyData: DQBodyData, x509CertPem: string): s
         "@_maxResults": "-1",
         "@_startIndex": "0",
         "urn:ResponseOption": {
-          // "@_returnComposedObjects": "true",
+          //TODO figure out why we cant insert boolean strings without xml getting messed uo i.e. "@_returnComposedObjects": "true",
           "@_returnType": "LeafClass",
         },
         "urn2:AdhocQuery": {
@@ -178,6 +154,38 @@ export function createSoapEnvelope(bodyData: DQBodyData, x509CertPem: string): s
       },
     },
   };
+  return soapBody;
+}
+
+export function createSoapEnvelope({
+  bodyData,
+  publicCert,
+}: {
+  bodyData: DQBodyData;
+  publicCert: string;
+}): string {
+  const message_id = `urn:uuid:${bodyData.id}`;
+  const to_url = bodyData.gateway.url;
+
+  const subject_role = bodyData.samlAttributes.subjectRole.display;
+  const home_community_id = bodyData.samlAttributes.homeCommunityId;
+  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
+
+  const created_timestamp = dayjs().toISOString();
+  const expires_timestamp = dayjs(created_timestamp).add(1, "hour").toISOString();
+
+  const securityHeader = createSecurityHeader({
+    publicCert,
+    created_timestamp,
+    expires_timestamp,
+    to_url,
+    subject_role,
+    metriport_organization,
+    home_community_id,
+    purpose_of_use,
+  });
+
+  const soapBody = createSoapBody(bodyData);
 
   const soapEnvelope = {
     "soap:Envelope": {
@@ -220,19 +228,12 @@ export function createSoapEnvelope(bodyData: DQBodyData, x509CertPem: string): s
   return xmlContent;
 }
 
-export async function createAndSignDQRequest(
+export function createAndSignDQRequest(
   bodyData: DQBodyData,
-  x509CertPem: string,
+  publicCert: string,
   privateKey: string
-): Promise<string> {
-  const xmlString = createSoapEnvelope(bodyData, x509CertPem);
-  const correctedXmlString = xmlString.replace(/&apos;/g, "'");
-  const signedTimestamp = signTimestamp(correctedXmlString, privateKey);
-  const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
-  const fullEnvelope = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifySaml(fullEnvelope, x509CertPem);
-  if (!verified) {
-    throw new Error("Signature verification failed.");
-  }
-  return fullEnvelope;
+): string {
+  const xmlString = createSoapEnvelope({ bodyData, publicCert });
+  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
+  return fullySignedSaml;
 }

@@ -1,15 +1,15 @@
 import { XMLBuilder } from "fast-xml-parser";
-
+import dayjs from "dayjs";
 import { createSecurityHeader } from "../security/security-header";
-import { signTimestamp, signEnvelope } from "../security/sign";
-import { insertKeyInfo } from "../security/insert-key-info";
-import { verifySaml } from "../security/verify";
+import { signFullSaml } from "../security/sign";
 import { namespaces } from "../namespaces";
 import {
   ORGANIZATION_NAME_DEFAULT as metriport_organization,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   reply_to,
-} from "../../shared";
+} from "../../carequality/shared";
+
+const DATE_DASHES_REGEX = /-/g;
 
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
@@ -49,40 +49,24 @@ type XCPDBodyData = {
   };
 };
 
-export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string): string {
+function createSoapBody({
+  bodyData,
+  created_timestamp,
+}: {
+  bodyData: XCPDBodyData;
+  created_timestamp: string;
+}): object {
   const message_id = `urn:uuid:${bodyData.id}`;
   const receiver_device_id = bodyData.gateway.oid;
   const to_url = bodyData.gateway.url;
   const provider_id = bodyData.principalCareProviderIds[0];
-
-  const subject_role = bodyData.samlAttributes.subjectRole.display;
-  // const organization = bodyData.samlAttributes.organization;
-  // const organization_id = bodyData.samlAttributes.organizationId;
   const home_community_id = bodyData.samlAttributes.homeCommunityId;
-  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
-
   const patient_gender = bodyData.patientResource.gender === "female" ? "F" : "M";
-  const patient_birthtime = bodyData.patientResource.birthDate.replace(/-/g, "");
+  const patient_birthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
   const patient_family_name = bodyData.patientResource.name?.[0]?.family;
   const patient_given_name = bodyData.patientResource.name?.[0]?.given?.[0];
   const patient_address = bodyData.patientResource.address?.[0];
   const patient_telecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
-
-  const created_timestamp = new Date().toISOString();
-  const expires_timestamp = new Date(
-    new Date(created_timestamp).getTime() + 60 * 60 * 1000
-  ).toISOString();
-
-  const securityHeader = createSecurityHeader(
-    x509CertPem,
-    created_timestamp,
-    expires_timestamp,
-    to_url,
-    subject_role,
-    metriport_organization,
-    home_community_id,
-    purpose_of_use
-  );
 
   const soapBody = {
     "soap:Body": {
@@ -225,6 +209,37 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
       },
     },
   };
+  return soapBody;
+}
+
+export function createSoapEnvelope({
+  bodyData,
+  publicCert,
+}: {
+  bodyData: XCPDBodyData;
+  publicCert: string;
+}): string {
+  const message_id = `urn:uuid:${bodyData.id}`;
+  const to_url = bodyData.gateway.url;
+  const subject_role = bodyData.samlAttributes.subjectRole.display;
+  const home_community_id = bodyData.samlAttributes.homeCommunityId;
+  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
+
+  const created_timestamp = dayjs().toISOString();
+  const expires_timestamp = dayjs(created_timestamp).add(1, "hour").toISOString();
+
+  const securityHeader = createSecurityHeader({
+    publicCert,
+    created_timestamp,
+    expires_timestamp,
+    to_url,
+    subject_role,
+    metriport_organization,
+    home_community_id,
+    purpose_of_use,
+  });
+
+  const soapBody = createSoapBody({ bodyData, created_timestamp });
 
   const soapEnvelope = {
     "soap:Envelope": {
@@ -265,18 +280,12 @@ export function createSoapEnvelope(bodyData: XCPDBodyData, x509CertPem: string):
   return xmlContent;
 }
 
-export async function createAndSignXCPDRequest(
+export function createAndSignXCPDRequest(
   bodyData: XCPDBodyData,
-  x509CertPem: string,
+  publicCert: string,
   privateKey: string
-): Promise<string> {
-  const xmlString = createSoapEnvelope(bodyData, x509CertPem);
-  const signedTimestamp = signTimestamp(xmlString, privateKey);
-  const signedTimestampAndEnvelope = signEnvelope(signedTimestamp.getSignedXml(), privateKey);
-  const insertedKeyInfo = insertKeyInfo(signedTimestampAndEnvelope.getSignedXml(), x509CertPem);
-  const verified = await verifySaml(insertedKeyInfo, x509CertPem);
-  if (!verified) {
-    throw new Error("Signature verification failed.");
-  }
-  return insertedKeyInfo;
+): string {
+  const xmlString = createSoapEnvelope({ bodyData, publicCert });
+  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
+  return fullySignedSaml;
 }
