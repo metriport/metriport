@@ -106,7 +106,7 @@ export class CommonWellManagementAPIImpl implements CommonWellManagementAPI {
         statusText: resp.statusText,
         data: safeStringify(resp.data),
       };
-      log(msg, additionalData);
+      log(msg + " - " + JSON.stringify(additionalData));
       throw new MetriportError(msg, undefined, additionalData);
     }
     log("Response", result.join(", "));
@@ -163,7 +163,7 @@ export class CommonWellManagementAPIImpl implements CommonWellManagementAPI {
         statusText: resp.statusText,
         data: safeStringify(resp.data),
       };
-      log(msg, additionalData);
+      log(msg + " - " + JSON.stringify(additionalData));
       throw new MetriportError(msg, undefined, additionalData);
     }
     debug(

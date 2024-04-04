@@ -17,7 +17,7 @@ export async function scheduleDocQuery({
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
-}) {
+}): Promise<void> {
   const { log } = out(`${source} DQ - requestId ${requestId}, patient ${patient.id}`);
 
   log(`Scheduling document query to be executed`);
@@ -45,7 +45,7 @@ export async function scheduleDocQuery({
     };
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData: updatedExternalData,
