@@ -34,7 +34,7 @@ type DRBodyData = {
   };
 };
 
-export function createSoapEnvelope({
+export function createITI39SoapEnvelope({
   bodyData,
   publicCert,
 }: {
@@ -114,7 +114,7 @@ export function createAndSignDRRequest(
   publicCert: string,
   privateKey: string
 ): string {
-  const xmlString = createSoapEnvelope({ bodyData, publicCert });
+  const xmlString = createITI39SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
   return fullySignedSaml;
 }

@@ -212,7 +212,7 @@ function createSoapBody({
   return soapBody;
 }
 
-export function createSoapEnvelope({
+export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
 }: {
@@ -285,7 +285,7 @@ export function createAndSignXCPDRequest(
   publicCert: string,
   privateKey: string
 ): string {
-  const xmlString = createSoapEnvelope({ bodyData, publicCert });
+  const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
   return fullySignedSaml;
 }

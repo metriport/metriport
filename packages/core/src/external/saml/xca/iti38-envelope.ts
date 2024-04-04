@@ -156,7 +156,7 @@ function createSoapBody(bodyData: DQBodyData): object {
   return soapBody;
 }
 
-export function createSoapEnvelope({
+export function createITI38SoapEnvelope({
   bodyData,
   publicCert,
 }: {
@@ -232,7 +232,7 @@ export function createAndSignDQRequest(
   publicCert: string,
   privateKey: string
 ): string {
-  const xmlString = createSoapEnvelope({ bodyData, publicCert });
+  const xmlString = createITI38SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
   return fullySignedSaml;
 }
