@@ -5,12 +5,12 @@ import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
 import { namespaces } from "../namespaces";
 import {
-  ORGANIZATION_NAME_DEFAULT as metriport_organization,
-  reply_to,
+  ORGANIZATION_NAME_DEFAULT as metriportOrganization,
+  replyTo,
 } from "../../carequality/shared";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
-const find_document_id = "14d4debf-8f97-4251-9a74-a90016b0af0d";
+const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
 
 type DQBodyData = {
   id: string;
@@ -54,36 +54,35 @@ type DQBodyData = {
 };
 
 function createSoapBody(bodyData: DQBodyData): object {
-  const message_id = `urn:uuid:${bodyData.id}`;
-  const class_code = bodyData.classCode?.[0];
-  const practice_setting_code = bodyData.practiceSettingCode?.[0];
-  const facility_type_code = bodyData.facilityTypeCode?.[0];
-  const service_date_from = dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss");
-  const service_date_to = dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss");
-  const document_creation_date_from = dayjs(bodyData.documentCreationDate.dateFrom).format(
+  const messageId = `urn:uuid:${bodyData.id}`;
+  const classCode = bodyData.classCode?.[0];
+  const practiceSettingCode = bodyData.practiceSettingCode?.[0];
+  const facilityTypeCode = bodyData.facilityTypeCode?.[0];
+  const serviceDateFrom = dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss");
+  const serviceDateTo = dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss");
+  const documentCreationDateFrom = dayjs(bodyData.documentCreationDate.dateFrom).format(
     "YYYYMMDDHHmmss"
   );
-  const document_creation_date_to = dayjs(bodyData.documentCreationDate.dateTo).format(
+  const documentCreationDateTo = dayjs(bodyData.documentCreationDate.dateTo).format(
     "YYYYMMDDHHmmss"
   );
-  const gateway_home_community_id = bodyData.gateway.homeCommunityId;
-  const external_gateway_patient_id = bodyData.externalGatewayPatient.id;
-  const external_gateway_patient_system = bodyData.externalGatewayPatient.system;
+  const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
+  const externalGatewayPatientId = bodyData.externalGatewayPatient.id;
+  const externalGatewayPatientSystem = bodyData.externalGatewayPatient.system;
 
   const soapBody = {
     "soap:Body": {
       "urn:AdhocQueryRequest": {
         "@_federated": "false",
-        "@_id": message_id,
+        "@_id": messageId,
         "@_maxResults": "-1",
         "@_startIndex": "0",
         "urn:ResponseOption": {
-          //TODO figure out why we cant insert boolean strings without xml getting messed uo i.e. "@_returnComposedObjects": "true",
           "@_returnType": "LeafClass",
         },
         "urn2:AdhocQuery": {
-          "@_home": gateway_home_community_id,
-          "@_id": `urn:uuid:${find_document_id}`,
+          "@_home": gatewayHomeCommunityId,
+          "@_id": `urn:uuid:${findDocumentId}`,
           "@_lid": "urn:oasis:names:tc:ebxml-regrep:query:AdhocQueryRequest",
           "@_objectType": namespaces.urn2,
           "@_status": namespaces.urn2,
@@ -92,7 +91,7 @@ function createSoapBody(bodyData: DQBodyData): object {
               "@_name": "$XDSDocumentEntryPatientId",
               "@_slotType": "rim:StringValueType",
               "urn2:ValueList": {
-                "urn2:Value": `'${external_gateway_patient_id}^^^&${external_gateway_patient_system}&ISO'`,
+                "urn2:Value": `'${externalGatewayPatientId}^^^&${externalGatewayPatientSystem}&ISO'`,
               },
             },
             {
@@ -104,43 +103,43 @@ function createSoapBody(bodyData: DQBodyData): object {
             {
               "@_name": "$XDSDocumentEntryClassCode",
               "urn2:ValueList": {
-                "urn2:Value": `('${class_code?.code}^^${class_code?.system}')`,
+                "urn2:Value": `('${classCode?.code}^^${classCode?.system}')`,
               },
             },
             {
               "@_name": "$XDSDocumentEntryPracticeSettingCode",
               "urn2:ValueList": {
-                "urn2:Value": `('${practice_setting_code?.code}^^${practice_setting_code?.system}')`,
+                "urn2:Value": `('${practiceSettingCode?.code}^^${practiceSettingCode?.system}')`,
               },
             },
             {
               "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
               "urn2:ValueList": {
-                "urn2:Value": `('${facility_type_code?.code}^^${facility_type_code?.system}')`,
+                "urn2:Value": `('${facilityTypeCode?.code}^^${facilityTypeCode?.system}')`,
               },
             },
             {
               "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
               "urn2:ValueList": {
-                "urn2:Value": service_date_from,
+                "urn2:Value": serviceDateFrom,
               },
             },
             {
               "@_name": "$XDSDocumentEntryServiceStartTimeTo",
               "urn2:ValueList": {
-                "urn2:Value": service_date_to,
+                "urn2:Value": serviceDateTo,
               },
             },
             {
               "@_name": "$XDSDocumentEntryCreationTimeFrom",
               "urn2:ValueList": {
-                "urn2:Value": document_creation_date_from,
+                "urn2:Value": documentCreationDateFrom,
               },
             },
             {
               "@_name": "$XDSDocumentEntryCreationTimeTo",
               "urn2:ValueList": {
-                "urn2:Value": document_creation_date_to,
+                "urn2:Value": documentCreationDateTo,
               },
             },
             {
@@ -164,25 +163,25 @@ export function createSoapEnvelope({
   bodyData: DQBodyData;
   publicCert: string;
 }): string {
-  const message_id = `urn:uuid:${bodyData.id}`;
-  const to_url = bodyData.gateway.url;
+  const messageId = `urn:uuid:${bodyData.id}`;
+  const toUrl = bodyData.gateway.url;
 
-  const subject_role = bodyData.samlAttributes.subjectRole.display;
-  const home_community_id = bodyData.samlAttributes.homeCommunityId;
-  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
+  const subjectRole = bodyData.samlAttributes.subjectRole.display;
+  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
-  const created_timestamp = dayjs().toISOString();
-  const expires_timestamp = dayjs(created_timestamp).add(1, "hour").toISOString();
+  const createdTimestamp = dayjs().toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
 
   const securityHeader = createSecurityHeader({
     publicCert,
-    created_timestamp,
-    expires_timestamp,
-    to_url,
-    subject_role,
-    metriport_organization,
-    home_community_id,
-    purpose_of_use,
+    createdTimestamp,
+    expiresTimestamp,
+    toUrl,
+    subjectRole,
+    metriportOrganization,
+    homeCommunityId,
+    purposeOfUse,
   });
 
   const soapBody = createSoapBody(bodyData);
@@ -195,16 +194,16 @@ export function createSoapEnvelope({
       "@_xmlns:urn2": namespaces.urn2,
       "soap:Header": {
         "wsa:To": {
-          "#text": to_url,
+          "#text": toUrl,
           "@_mustUnderstand": "1",
         },
         "wsa:Action": {
           "#text": action,
           "@_mustUnderstand": "1",
         },
-        "wsa:MessageID": message_id,
+        "wsa:MessageID": messageId,
         "wsa:ReplyTo": {
-          "wsa:Address": reply_to,
+          "wsa:Address": replyTo,
         },
         ...securityHeader,
       },

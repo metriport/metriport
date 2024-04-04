@@ -9,33 +9,33 @@ const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
 const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;
 const NEWLINE_REGEX = /\r?\n/g;
 
-export const security_header_timestamp_id = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
-export const security_header_enveloped_id = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
+export const securityHeaderTimestampId = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
+export const securityHeaderEnvelopedId = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
 
 export function createSecurityHeader({
   publicCert,
-  created_timestamp,
-  expires_timestamp,
-  to_url,
-  subject_role,
-  metriport_organization,
-  home_community_id,
-  purpose_of_use,
-  envType
+  createdTimestamp,
+  expiresTimestamp,
+  toUrl,
+  subjectRole,
+  metriportOrganization,
+  homeCommunityId,
+  purposeOfUse,
+  envType,
 }: {
-  publicCert: string,
-  created_timestamp: string,
-  expires_timestamp: string,
-  to_url: string,
-  subject_role: string,
-  metriport_organization: string,
-  home_community_id: string,
-  purpose_of_use: string,
-  envType?: EnvType
+  publicCert: string;
+  createdTimestamp: string;
+  expiresTimestamp: string;
+  toUrl: string;
+  subjectRole: string;
+  metriportOrganization: string;
+  homeCommunityId: string;
+  purposeOfUse: string;
+  envType?: EnvType;
 }): object {
-  const cert_pem_stripped = stripPemCertificate(publicCert);
-  const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
-  const saml2_NameID = `CN=ihe.${
+  const certPemStripped = stripPemCertificate(publicCert);
+  const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
+  const saml2NameID = `CN=ihe.${
     envType === EnvType.production ? "metriport.com" : "staging.metriport.com"
   },OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
 
@@ -49,8 +49,8 @@ export function createSecurityHeader({
       "@_xmlns:hl7": namespaces.hl7,
       "@_xmlns:xs": namespaces.xs,
       "saml2:Assertion": {
-        "@_ID": security_header_enveloped_id,
-        "@_IssueInstant": created_timestamp,
+        "@_ID": securityHeaderEnvelopedId,
+        "@_IssueInstant": createdTimestamp,
         "@_Version": "2.0",
         "saml2:Issuer": {
           "@_Format": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
@@ -59,7 +59,7 @@ export function createSecurityHeader({
         "saml2:Subject": {
           "saml2:NameID": {
             "@_Format": "urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName",
-            "#text": saml2_NameID,
+            "#text": saml2NameID,
           },
           "saml2:SubjectConfirmation": {
             "@_Method": "urn:oasis:names:tc:SAML:2.0:cm:holder-of-key",
@@ -68,16 +68,16 @@ export function createSecurityHeader({
                 "ds:KeyValue": {
                   "ds:RSAKeyValue": {
                     "ds:Modulus": {
-                      "#text": modulus_b64,
+                      "#text": modulusB64,
                     },
                     "ds:Exponent": {
-                      "#text": exponent_b64,
+                      "#text": exponentB64,
                     },
                   },
                 },
                 "ds:X509Data": {
                   "ds:X509Certificate": {
-                    "#text": cert_pem_stripped,
+                    "#text": certPemStripped,
                   },
                 },
               },
@@ -85,14 +85,14 @@ export function createSecurityHeader({
           },
         },
         "saml2:Conditions": {
-          "@_NotBefore": created_timestamp,
-          "@_NotOnOrAfter": expires_timestamp,
+          "@_NotBefore": createdTimestamp,
+          "@_NotOnOrAfter": expiresTimestamp,
           "saml2:AudienceRestriction": {
-            "saml2:Audience": to_url,
+            "saml2:Audience": toUrl,
           },
         },
         "saml2:AuthnStatement": {
-          "@_AuthnInstant": created_timestamp,
+          "@_AuthnInstant": createdTimestamp,
           "saml2:SubjectLocality": {
             "@_Address": "127.0.0.1",
             "@_DNSName": "localhost",
@@ -106,22 +106,22 @@ export function createSecurityHeader({
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:subject-id",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": subject_role,
+              "saml2:AttributeValue": subjectRole,
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:organization",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": metriport_organization,
+              "saml2:AttributeValue": metriportOrganization,
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:organization-id",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": home_community_id,
+              "saml2:AttributeValue": homeCommunityId,
             },
             {
               "@_Name": "urn:nhin:names:saml:homeCommunityId",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": home_community_id,
+              "saml2:AttributeValue": homeCommunityId,
             },
             {
               "@_Name": "urn:oasis:names:tc:xacml:2.0:subject:role",
@@ -144,7 +144,7 @@ export function createSecurityHeader({
                 "@_xmlns:xsi": namespaces.xsi,
                 "@_xsi:type": namespaces.ce,
                 "hl7:PurposeOfUse": {
-                  "@_code": purpose_of_use,
+                  "@_code": purposeOfUse,
                   "@_codeSystem": NHIN_PURPOSE_CODE_SYSTEM,
                   "@_codeSystemName": "nhin-purpose",
                   "@_displayName": "Treatment",
@@ -155,9 +155,9 @@ export function createSecurityHeader({
         },
       },
       "wsu:Timestamp": {
-        "@_wsu:Id": security_header_timestamp_id,
-        "wsu:Created": created_timestamp,
-        "wsu:Expires": expires_timestamp,
+        "@_wsu:Id": securityHeaderTimestampId,
+        "wsu:Created": createdTimestamp,
+        "wsu:Expires": expiresTimestamp,
       },
     },
   };
@@ -187,7 +187,7 @@ export function extractPublicKeyInfo(certificatePem: string) {
 export function stripPemCertificate(x509CertPem: string): string {
   let certPemStripped = x509CertPem
     .replace(BEGIN_CERTIFICATE_REGEX, "")
-    .replace(END_CERTIFICATE_REGEX, "");  
+    .replace(END_CERTIFICATE_REGEX, "");
   certPemStripped = certPemStripped.replace(NEWLINE_REGEX, "");
   return certPemStripped;
 }

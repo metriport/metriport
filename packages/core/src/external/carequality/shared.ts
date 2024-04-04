@@ -28,7 +28,7 @@ export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX = "2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
 
-export const reply_to = "http://www.w3.org/2005/08/addressing/anonymous";
+export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
 
 export const STATE_MAPPINGS: { [key: string]: USState } = {
   "urn:oid:2.16.840.1.113883.4.3.2": USState.AK, // Alaska Driver's License

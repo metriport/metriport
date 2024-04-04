@@ -4,9 +4,9 @@ import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
 import { namespaces } from "../namespaces";
 import {
-  ORGANIZATION_NAME_DEFAULT as metriport_organization,
+  ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-  reply_to,
+  replyTo,
 } from "../../carequality/shared";
 
 const DATE_DASHES_REGEX = /-/g;
@@ -51,22 +51,22 @@ type XCPDBodyData = {
 
 function createSoapBody({
   bodyData,
-  created_timestamp,
+  createdTimestamp,
 }: {
   bodyData: XCPDBodyData;
-  created_timestamp: string;
+  createdTimestamp: string;
 }): object {
-  const message_id = `urn:uuid:${bodyData.id}`;
-  const receiver_device_id = bodyData.gateway.oid;
-  const to_url = bodyData.gateway.url;
-  const provider_id = bodyData.principalCareProviderIds[0];
-  const home_community_id = bodyData.samlAttributes.homeCommunityId;
-  const patient_gender = bodyData.patientResource.gender === "female" ? "F" : "M";
-  const patient_birthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
-  const patient_family_name = bodyData.patientResource.name?.[0]?.family;
-  const patient_given_name = bodyData.patientResource.name?.[0]?.given?.[0];
-  const patient_address = bodyData.patientResource.address?.[0];
-  const patient_telecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
+  const messageId = `urn:uuid:${bodyData.id}`;
+  const receiverDeviceId = bodyData.gateway.oid;
+  const toUrl = bodyData.gateway.url;
+  const providerId = bodyData.principalCareProviderIds[0];
+  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
+  const patientBirthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
+  const patientFamilyName = bodyData.patientResource.name?.[0]?.family;
+  const patientGivenName = bodyData.patientResource.name?.[0]?.given?.[0];
+  const patientAddress = bodyData.patientResource.address?.[0];
+  const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
 
   const soapBody = {
     "soap:Body": {
@@ -74,11 +74,11 @@ function createSoapBody({
       "urn:PRPA_IN201305UV02": {
         "@_ITSVersion": "XML_1.0",
         "urn:id": {
-          "@_extension": message_id,
-          "@_root": home_community_id,
+          "@_extension": messageId,
+          "@_root": homeCommunityId,
         },
         "urn:creationTime": {
-          "@_value": created_timestamp,
+          "@_value": createdTimestamp,
         },
         "urn:interactionId": {
           "@_extension": "PRPA_IN201305UV02",
@@ -99,10 +99,10 @@ function createSoapBody({
             "@_classCode": "DEV",
             "@_determinerCode": "INSTANCE",
             "urn:id": {
-              "@_root": receiver_device_id,
+              "@_root": receiverDeviceId,
             },
             "urn:telecom": {
-              "@_value": to_url,
+              "@_value": toUrl,
             },
             "urn:asAgent": {
               "@_classCode": "AGNT",
@@ -110,7 +110,7 @@ function createSoapBody({
                 "@_classCode": "ORG",
                 "@_determinerCode": "INSTANCE",
                 "urn:id": {
-                  "@_root": receiver_device_id,
+                  "@_root": receiverDeviceId,
                 },
               },
             },
@@ -132,7 +132,7 @@ function createSoapBody({
                 "urn:id": {
                   "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
                 },
-                "urn:name": metriport_organization,
+                "urn:name": metriportOrganization,
               },
             },
           },
@@ -146,8 +146,8 @@ function createSoapBody({
           },
           "urn:queryByParameter": {
             "urn:queryId": {
-              "@_extension": message_id,
-              "@_root": home_community_id,
+              "@_extension": messageId,
+              "@_root": homeCommunityId,
             },
             "urn:statusCode": {
               "@_code": "new",
@@ -161,45 +161,45 @@ function createSoapBody({
             "urn:parameterList": {
               "urn:livingSubjectAdministrativeGender": {
                 "urn:value": {
-                  "@_code": patient_gender,
+                  "@_code": patientGender,
                   "@_codeSystem": "2.16.840.1.113883.5.1",
                 },
                 "urn:semanticsText": "LivingSubject.administrativeGender",
               },
               "urn:livingSubjectBirthTime": {
                 "urn:value": {
-                  "@_value": patient_birthtime,
+                  "@_value": patientBirthtime,
                 },
                 "urn:semanticsText": "LivingSubject.birthTime",
               },
               "urn:livingSubjectName": {
                 "urn:value": {
-                  "urn:family": patient_family_name,
-                  "urn:given": patient_given_name,
+                  "urn:family": patientFamilyName,
+                  "urn:given": patientGivenName,
                 },
                 "urn:semanticsText": "LivingSubject.name",
               },
-              "urn:patientAddress": patient_address
+              "urn:patientAddress": patientAddress
                 ? {
                     "urn:value": {
-                      "urn:streetAddressLine": patient_address.line.join(", "),
-                      "urn:city": patient_address.city,
-                      "urn:state": patient_address.state,
-                      "urn:postalCode": patient_address.postalCode,
-                      "urn:country": patient_address.country,
+                      "urn:streetAddressLine": patientAddress.line.join(", "),
+                      "urn:city": patientAddress.city,
+                      "urn:state": patientAddress.state,
+                      "urn:postalCode": patientAddress.postalCode,
+                      "urn:country": patientAddress.country,
                     },
                     "urn:semanticsText": "Patient.addr",
                   }
                 : {},
-              "urn:patientTelecom": patient_telecom
+              "urn:patientTelecom": patientTelecom
                 ? {
-                    "urn:value": patient_telecom,
+                    "urn:value": patientTelecom,
                     "urn:semanticsText": "Patient.telecom",
                   }
                 : {},
               "urn:principalCareProviderId": {
                 "urn:value": {
-                  "@_extension": provider_id,
+                  "@_extension": providerId,
                   "@_root": "2.16.840.1.113883.4.6",
                 },
               },
@@ -219,27 +219,27 @@ export function createSoapEnvelope({
   bodyData: XCPDBodyData;
   publicCert: string;
 }): string {
-  const message_id = `urn:uuid:${bodyData.id}`;
-  const to_url = bodyData.gateway.url;
-  const subject_role = bodyData.samlAttributes.subjectRole.display;
-  const home_community_id = bodyData.samlAttributes.homeCommunityId;
-  const purpose_of_use = bodyData.samlAttributes.purposeOfUse;
+  const messageId = `urn:uuid:${bodyData.id}`;
+  const toUrl = bodyData.gateway.url;
+  const subjectRole = bodyData.samlAttributes.subjectRole.display;
+  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
-  const created_timestamp = dayjs().toISOString();
-  const expires_timestamp = dayjs(created_timestamp).add(1, "hour").toISOString();
+  const createdTimestamp = dayjs().toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
 
   const securityHeader = createSecurityHeader({
     publicCert,
-    created_timestamp,
-    expires_timestamp,
-    to_url,
-    subject_role,
-    metriport_organization,
-    home_community_id,
-    purpose_of_use,
+    createdTimestamp,
+    expiresTimestamp,
+    toUrl,
+    subjectRole,
+    metriportOrganization,
+    homeCommunityId,
+    purposeOfUse,
   });
 
-  const soapBody = createSoapBody({ bodyData, created_timestamp });
+  const soapBody = createSoapBody({ bodyData, createdTimestamp });
 
   const soapEnvelope = {
     "soap:Envelope": {
@@ -247,16 +247,16 @@ export function createSoapEnvelope({
       "soap:Header": {
         "@_xmlns:wsa": namespaces.wsa,
         "wsa:To": {
-          "#text": to_url,
+          "#text": toUrl,
           "@_mustUnderstand": "1",
         },
         "wsa:Action": {
           "#text": action,
           "@_mustUnderstand": "1",
         },
-        "wsa:MessageID": message_id,
+        "wsa:MessageID": messageId,
         "wsa:ReplyTo": {
-          "wsa:Address": reply_to,
+          "wsa:Address": replyTo,
         },
         ...securityHeader,
       },

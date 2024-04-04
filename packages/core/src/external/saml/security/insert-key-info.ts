@@ -1,11 +1,11 @@
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import {
-  security_header_enveloped_id,
+  securityHeaderEnvelopedId,
   stripPemCertificate,
   extractPublicKeyInfo,
 } from "./security-header";
 
-const reference_id = "90d3e138-63a6-47f9-884e-881dd10110ca";
+const referenceId = "90d3e138-63a6-47f9-884e-881dd10110ca";
 const namespaces = {
   ds: "http://www.w3.org/2000/09/xmldsig#",
 };
@@ -30,8 +30,8 @@ export function insertKeyInfo({
   const obj = parser.parse(xmlContent);
   const security = obj["soap:Envelope"]["soap:Header"]["wsse:Security"];
 
-  const cert_pem_stripped = stripPemCertificate(publicCert);
-  const [modulus_b64, exponent_b64] = extractPublicKeyInfo(cert_pem_stripped);
+  const certPemStripped = stripPemCertificate(publicCert);
+  const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
 
   if (security && security["saml2:Assertion"]["ds:Signature"]) {
     const keyInfoStructure = {
@@ -40,16 +40,16 @@ export function insertKeyInfo({
         "ds:KeyValue": {
           "ds:RSAKeyValue": {
             "ds:Modulus": {
-              "#text": modulus_b64,
+              "#text": modulusB64,
             },
             "ds:Exponent": {
-              "#text": exponent_b64,
+              "#text": exponentB64,
             },
           },
         },
         "ds:X509Data": {
           "ds:X509Certificate": {
-            "#text": cert_pem_stripped,
+            "#text": certPemStripped,
           },
         },
       },
@@ -67,10 +67,10 @@ export function insertKeyInfo({
           "@_xmlns:ns0": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
           "@_ns0:TokenType":
             "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0",
-          "@_wsu:Id": reference_id,
+          "@_wsu:Id": referenceId,
           "wsse:KeyIdentifier": {
             "@_ValueType": "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLID",
-            "#text": security_header_enveloped_id,
+            "#text": securityHeaderEnvelopedId,
           },
         },
       },
