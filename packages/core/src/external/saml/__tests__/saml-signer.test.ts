@@ -156,7 +156,7 @@ const iti39BodyData = {
 const privateKey = getEnvVarOrFail("IHE_STAGING_KEY");
 const publicCert = getEnvVarOrFail("IHE_STAGING_CERT");
 
-describe("SAML Signature Verification", () => {
+describe("Basic SAML Signature Verification", () => {
   it("should sign and verify the XCPD SOAP envelope successfully", () => {
     const soapEnvelope = createITI5SoapEnvelope({
       bodyData: iti55BodyData,
@@ -186,6 +186,21 @@ describe("SAML Signature Verification", () => {
   it("should sign and verify the ITI39 envelope successfully", () => {
     const soapEnvelope = createITI39SoapEnvelope({
       bodyData: iti39BodyData,
+      publicCert: publicCert,
+    });
+
+    const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey });
+    expect(verifySaml({ xmlString: signedWithTimestamp, publicCert: publicCert })).toBeTruthy();
+
+    const signedEnvelope = signEnvelope({ xml: signedWithTimestamp, privateKey });
+    expect(verifySaml({ xmlString: signedEnvelope, publicCert: publicCert })).toBeTruthy();
+  });
+});
+
+describe("Intermediate Certs SAML Signature Verification", () => {
+  it("should sign and verify the XCPD SOAP envelope successfully", () => {
+    const soapEnvelope = createITI5SoapEnvelope({
+      bodyData: iti55BodyData,
       publicCert: publicCert,
     });
 

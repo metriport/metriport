@@ -16,6 +16,7 @@ const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 type XCPDBodyData = {
   id: string;
   gateway: {
+    id: string;
     oid: string;
     url: string;
   };
@@ -49,6 +50,23 @@ type XCPDBodyData = {
   };
 };
 
+type BulkXCPDBodyData = XCPDBodyData & {
+  gateways: Array<{
+    id: string;
+    oid: string;
+    url: string;
+  }>;
+};
+
+export type BulkXCPDResponse = {
+  gateway: {
+    id: string;
+    oid: string;
+    url: string;
+  };
+  signedRequest: string;
+};
+
 function createSoapBody({
   bodyData,
   createdTimestamp,
@@ -70,7 +88,7 @@ function createSoapBody({
 
   const soapBody = {
     "soap:Body": {
-      "@_xmlns:urn": namespaces.urn,
+      "@_xmlns:urn": namespaces.hl7,
       "urn:PRPA_IN201305UV02": {
         "@_ITSVersion": "XML_1.0",
         "urn:id": {
@@ -78,7 +96,7 @@ function createSoapBody({
           "@_root": homeCommunityId,
         },
         "urn:creationTime": {
-          "@_value": createdTimestamp,
+          "@_value": dayjs(createdTimestamp).format("YYYYMMDDHHmmss"),
         },
         "urn:interactionId": {
           "@_extension": "PRPA_IN201305UV02",
@@ -288,4 +306,28 @@ export function createAndSignXCPDRequest(
   const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
   return fullySignedSaml;
+}
+
+export async function createAndSignBulkXCPDRequests(
+  bulkBodyData: BulkXCPDBodyData,
+  publicCert: string,
+  privateKey: string
+): Promise<BulkXCPDResponse[]> {
+  const signingPromises = bulkBodyData.gateways.map(async gateway => {
+    const bodyData: XCPDBodyData = {
+      ...bulkBodyData,
+      gateway: {
+        id: gateway.id,
+        oid: gateway.oid,
+        url: gateway.url,
+      },
+    };
+
+    const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
+    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey });
+    return { gateway, signedRequest };
+  });
+
+  const signedRequests = await Promise.all(signingPromises);
+  return signedRequests;
 }

@@ -1,6 +1,5 @@
 import { SignedXml } from "xml-crypto";
 import * as crypto from "crypto";
-import { verifySaml } from "./verify";
 import { insertKeyInfo } from "./insert-key-info";
 
 function createSignature({
@@ -74,9 +73,5 @@ export function signFullSaml({
   const signedTimestamp = signTimestamp({ xml: xmlString, privateKey });
   const signedTimestampAndEnvelope = signEnvelope({ xml: signedTimestamp, privateKey });
   const insertedKeyInfo = insertKeyInfo({ xmlContent: signedTimestampAndEnvelope, publicCert });
-  const verified = verifySaml({ xmlString: insertedKeyInfo, publicCert });
-  if (!verified) {
-    throw new Error("Signature verification failed.");
-  }
   return insertedKeyInfo;
 }

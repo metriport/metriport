@@ -3,14 +3,12 @@
 
 import express from "express";
 import { json, Request, Response } from "express";
-import axios from "axios";
 import fs from "fs";
-import https from "https";
-
 import { createAndSignXCPDRequest } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
 import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { sendSignedXml } from "./saml-client";
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -19,8 +17,9 @@ const app = express();
 const port = 8043;
 app.use(json());
 
-const privateKey = getEnvVarOrFail("IHE_STAGING_KEY");
-const x509CertPem = getEnvVarOrFail("IHE_STAGING_CERT");
+const privateKey = getEnvVarOrFail("IHE_PRODUCTION_KEY");
+const x509CertPem = getEnvVarOrFail("IHE_PRODUCTION_CERT");
+const certChain = getEnvVarOrFail("IHE_PRODUCTION_CERT_CHAIN");
 
 app.post("/xcpd", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
@@ -29,7 +28,8 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 
   try {
     const xmlString = createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
-    const response = await sendSignedXml(xmlString, req.body.gateway.url);
+    fs.writeFileSync("../../scratch/outbound_xcpd.xml", xmlString);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url, certChain, privateKey);
 
     res.type("application/xml").send(response);
   } catch (error) {
@@ -45,7 +45,7 @@ app.post("/xcadq", async (req: Request, res: Response) => {
 
   try {
     const xmlString = createAndSignDQRequest(req.body, x509CertPem, privateKey);
-    const response = await sendSignedXml(xmlString, req.body.gateway.url);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url, certChain, privateKey);
 
     res.type("application/xml").send(response);
   } catch (error) {
@@ -64,38 +64,10 @@ app.post("/xcadr", async (req: Request, res: Response) => {
 
   try {
     const xmlString = createAndSignDRRequest(req.body, x509CertPem, privateKey);
-    const response = await sendSignedXml(xmlString, req.body.gateway.url);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url, certChain, privateKey);
 
     res.type("application/xml").send(response);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
   }
 });
-
-async function sendSignedXml(signedXml: string, url: string): Promise<string> {
-  const certFilePath = "./tempCert.pem";
-  const keyFilePath = "./tempKey.pem";
-  fs.writeFileSync(certFilePath, x509CertPem);
-  fs.writeFileSync(keyFilePath, privateKey);
-
-  try {
-    const agent = new https.Agent({
-      rejectUnauthorized: false,
-      cert: fs.readFileSync(certFilePath),
-      key: fs.readFileSync(keyFilePath),
-    });
-
-    const response = await axios.post(url, signedXml, {
-      headers: {
-        "Content-Type": "application/soap+xml;charset=UTF-8",
-        "Cache-Control": "no-cache",
-      },
-      httpsAgent: agent,
-    });
-
-    return response.data;
-  } finally {
-    fs.unlinkSync(certFilePath);
-    fs.unlinkSync(keyFilePath);
-  }
-}
