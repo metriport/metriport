@@ -55,9 +55,13 @@ export function createExtrinsicObjectXml({
 
   const organizationName = organization?.name || ORGANIZATION_NAME_DEFAULT;
   const organizationId =
-    organization?.identifier?.[0]?.value || METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
+    organization?.identifier?.find(identifier =>
+      identifier.value?.startsWith(METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX)
+    )?.value || METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
 
-  const metadataXml = `<ExtrinsicObject xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="${mimeType}" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+  const stableDocumentId = "urn:uuid:7edca82f-054d-47f2-a032-9b2a5b5186c1";
+
+  const metadataXml = `<ExtrinsicObject xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="${mimeType}" objectType="${stableDocumentId}" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
     <Slot name="creationTime">
       <ValueList>
