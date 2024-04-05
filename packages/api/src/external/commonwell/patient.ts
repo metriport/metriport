@@ -211,7 +211,7 @@ export async function update(
   getOrgIdExcludeList: () => Promise<string[]>,
   forceCWUpdate = false
 ): Promise<void> {
-  const { debug } = Util.out(`CW update - M patientId ${patient.id}`);
+  const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
   const cwUpdateEnabled = await validateCWEnabled({
     cxId: patient.cxId,
@@ -227,7 +227,7 @@ export async function update(
     });
 
     // intentionally async
-    updatePatientAndLinksInCw(patient, facilityId, getOrgIdExcludeList, debug).catch(
+    updatePatientAndLinksInCw(patient, facilityId, getOrgIdExcludeList, log, debug).catch(
       processAsyncError(updateContext)
     );
   }
@@ -237,6 +237,7 @@ async function updatePatientAndLinksInCw(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
+  log: typeof console.log,
   debug: typeof console.log
 ) {
   let commonWell: CommonWellAPI | undefined;
@@ -289,7 +290,7 @@ async function updatePatientAndLinksInCw(
       } catch (err: any) {
         if (err.response?.status !== 404) throw err;
         const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
-        debug(`${subject} - CW Person ID ${personId}`);
+        log(`${subject} - CW Person ID ${personId}`);
         capture.message(subject, {
           extra: {
             commonwellPatientId,
@@ -311,7 +312,7 @@ async function updatePatientAndLinksInCw(
       }
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      debug(
+      log(
         `ERR - Failed to update person - ` +
           `Patient @ CW: ${commonwellPatientId}, ` +
           `Person @ CW: ${personId}`
@@ -340,7 +341,7 @@ async function updatePatientAndLinksInCw(
         debug(`resp patientLink: `, JSON.stringify(respLink));
       }
     } catch (err) {
-      debug(
+      log(
         `ERR - Failed to updgrade patient/person link - ` +
           `Patient @ CW: ${commonwellPatientId}, ` +
           `Person @ CW: ${personId}`
@@ -389,7 +390,7 @@ async function validateCWEnabled({
 }): Promise<boolean> {
   const isSandbox = Config.isSandbox();
 
-  if (forceCW && isSandbox) {
+  if (forceCW || isSandbox) {
     debug(`CW forced, proceeding...`);
     return true;
   }

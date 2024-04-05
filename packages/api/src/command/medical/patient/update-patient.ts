@@ -39,9 +39,9 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cwCommands.patient.update(result, facilityId, getCqOrgIdsToDenyOnCw, forceCommonwell);
-
   await cqCommands.patient.discover(result, facility.data.npi, forceCarequality);
+
+  await cwCommands.patient.update(result, facilityId, getCqOrgIdsToDenyOnCw, forceCommonwell);
 
   return result;
 }
