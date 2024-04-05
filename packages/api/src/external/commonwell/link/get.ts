@@ -21,7 +21,7 @@ import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import { setCommonwellId } from "../patient-external-data";
+import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import {
   getPatientData,
   getPersonalIdentifiersFromPatient,
@@ -119,7 +119,7 @@ export const findCurrentLink = async (
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
       log(msg);
       capture.message(msg, { extra: captureExtra });
-      await setCommonwellId({
+      await setCommonwellIdsAndStatus({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
@@ -132,7 +132,7 @@ export const findCurrentLink = async (
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       log(`No patient linked to person`, patientLinkToPerson);
 
-      await setCommonwellId({
+      await setCommonwellIdsAndStatus({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
