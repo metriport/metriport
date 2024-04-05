@@ -57,7 +57,7 @@ export async function getPatientWithCWData(
  *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
-export const setCommonwellId = async ({
+export const setCommonwellIdsAndStatus = async ({
   patientId,
   cxId,
   commonwellPatientId,
