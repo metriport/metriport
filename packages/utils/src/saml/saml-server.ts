@@ -4,7 +4,7 @@
 import express from "express";
 import { json, Request, Response } from "express";
 import fs from "fs";
-import { createAndSignXCPDRequest } from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 // import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
 // import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -27,7 +27,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponse = createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
+    const xmlResponse = createAndSignBulkXCPDRequests(req.body, x509CertPem, privateKey);
     fs.writeFileSync("../../scratch/outbound_xcpd_2.xml", xmlResponse[0].signedRequest);
     const response = await sendSignedRequests(xmlResponse, certChain, privateKey);
 

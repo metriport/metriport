@@ -8,57 +8,13 @@ import {
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
 } from "../../carequality/shared";
+import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 
 const DATE_DASHES_REGEX = /-/g;
 
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
-type XCPDBodyData = {
-  id: string;
-  gateway: {
-    id: string;
-    oid: string;
-    url: string;
-  };
-  principalCareProviderIds: string[];
-  samlAttributes: {
-    subjectRole: {
-      display: string;
-    };
-    organization: string;
-    organizationId: string;
-    homeCommunityId: string;
-    purposeOfUse: string;
-  };
-  patientResource: {
-    gender: string;
-    birthDate: string;
-    name: Array<{
-      family: string;
-      given: string[];
-    }>;
-    address: Array<{
-      line: string[];
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    }>;
-    telecom?: Array<{
-      value: string;
-    }>;
-  };
-};
-
-type BulkXCPDBodyData = XCPDBodyData & {
-  gateways: Array<{
-    id: string;
-    oid: string;
-    url: string;
-  }>;
-};
-
-export type BulkXCPDResponse = {
+export type BulkSignedXCPD = {
   gateway: {
     id: string;
     oid: string;
@@ -71,12 +27,15 @@ function createSoapBody({
   bodyData,
   createdTimestamp,
 }: {
-  bodyData: XCPDBodyData;
+  bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
 }): object {
+  if (!bodyData.gateways[0]) {
+    throw new Error("Gateway must be provided");
+  }
   const messageId = `urn:uuid:${bodyData.id}`;
-  const receiverDeviceId = bodyData.gateway.oid;
-  const toUrl = bodyData.gateway.url;
+  const receiverDeviceId = bodyData.gateways?.[0].oid;
+  const toUrl = bodyData.gateways?.[0].url;
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
@@ -235,11 +194,14 @@ export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
 }: {
-  bodyData: XCPDBodyData;
+  bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
 }): string {
+  if (!bodyData.gateways[0]) {
+    throw new Error("Gateway must be provided");
+  }
   const messageId = `urn:uuid:${bodyData.id}`;
-  const toUrl = bodyData.gateway.url;
+  const toUrl = bodyData.gateways[0].url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
@@ -299,31 +261,17 @@ export function createITI5SoapEnvelope({
   return xmlContent;
 }
 
-export function createAndSignXCPDRequest(
-  bodyData: XCPDBodyData,
-  publicCert: string,
-  privateKey: string
-): BulkXCPDResponse[] {
-  const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
-  return [{ gateway: bodyData.gateway, signedRequest: fullySignedSaml }];
-}
-
 export function createAndSignBulkXCPDRequests(
-  bulkBodyData: BulkXCPDBodyData,
+  bulkBodyData: OutboundPatientDiscoveryReq,
   publicCert: string,
   privateKey: string
-): BulkXCPDResponse[] {
-  const signedRequests: BulkXCPDResponse[] = [];
+): BulkSignedXCPD[] {
+  const signedRequests: BulkSignedXCPD[] = [];
 
   for (const gateway of bulkBodyData.gateways) {
-    const bodyData: XCPDBodyData = {
+    const bodyData: OutboundPatientDiscoveryReq = {
       ...bulkBodyData,
-      gateway: {
-        id: gateway.id,
-        oid: gateway.oid,
-        url: gateway.url,
-      },
+      gateways: [gateway],
     };
 
     const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });

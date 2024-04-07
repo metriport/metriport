@@ -102,8 +102,8 @@ export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
 export const XCPDGatewaySchema = z.object({
   oid: z.string(),
-  url: z.string().optional(),
-  id: z.string().optional(),
+  url: z.string(),
+  id: z.string(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
 

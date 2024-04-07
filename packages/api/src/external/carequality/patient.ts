@@ -6,6 +6,7 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/patient-discovery-girth";
 import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -21,7 +22,7 @@ import {
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
-import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
+import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { validateCQEnabledAndInitGW } from "./shared";
 
@@ -58,19 +59,28 @@ async function prepareAndTriggerPD(
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI);
-    const numGateways = pdRequest.gateways.length;
+    const [pdRequestNoGirth, pdRequestGirth] = await prepareForPatientDiscovery(
+      patient,
+      facilityNPI
+    );
+    const numGatewaysNoGirth = pdRequestNoGirth.gateways.length;
 
-    const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
+    const { log } = out(
+      `${baseLogMessage}, requestIdNoGirth: ${pdRequestNoGirth.id}, requestIdGirth: ${pdRequestGirth.id}`
+    );
 
-    log(`Kicking off patient discovery`);
-    await enabledIHEGW.startPatientDiscovery(pdRequest);
+    log(`Kicking off patient discovery NoGirth`);
+    await enabledIHEGW.startPatientDiscovery(pdRequestNoGirth);
 
+    log(`Kicking off patient discovery Girth`);
+    await startPatientDiscoveryGirth({ pdRequestGirth, patientId: patient.id, cxId: patient.cxId });
+
+    // only poll for the NoGirth request
     await resultPoller.pollOutboundPatientDiscoveryResults({
-      requestId: pdRequest.id,
+      requestId: pdRequestNoGirth.id,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: numGateways,
+      numOfGateways: numGatewaysNoGirth,
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
@@ -89,25 +99,38 @@ async function prepareAndTriggerPD(
 async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string
-): Promise<OutboundPatientDiscoveryReq> {
+): Promise<[OutboundPatientDiscoveryReq, OutboundPatientDiscoveryReq]> {
   const fhirPatient = toFHIR(patient);
 
-  const { organization, xcpdGateways } = await gatherXCPDGateways(patient);
+  const { organization, xcpdGatewaysWithoutGirthEnabled, xcpdGatewaysWithGirthEnabled } =
+    await gatherXCPDGateways(patient);
 
-  const pdRequest = createOutboundPatientDiscoveryReq({
+  // split xcpd gateways into two buckets here. Not Girth and Girth
+  const pdRequestNoGirth = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
-    xcpdGateways,
+    xcpdGateways: xcpdGatewaysWithoutGirthEnabled,
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
   });
-  return pdRequest;
+
+  const pdRequestGirth = createOutboundPatientDiscoveryReq({
+    patient: fhirPatient,
+    cxId: patient.cxId,
+    xcpdGateways: xcpdGatewaysWithGirthEnabled,
+    facilityNPI,
+    orgName: organization.data.name,
+    orgOid: organization.oid,
+  });
+
+  return [pdRequestNoGirth, pdRequestGirth];
 }
 
 export async function gatherXCPDGateways(patient: Patient): Promise<{
   organization: Organization;
-  xcpdGateways: XCPDGateways;
+  xcpdGatewaysWithoutGirthEnabled: XCPDGateways;
+  xcpdGatewaysWithGirthEnabled: XCPDGateways;
 }> {
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
@@ -126,12 +149,13 @@ export async function gatherXCPDGateways(patient: Patient): Promise<{
 
   const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
-  const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
+  const [xcpdGatewaysWithoutGirthEnabled, xcpdGatewaysWithGirthEnabled] =
+    await cqOrgsToXCPDGateways(orgsToSearch);
 
   return {
     organization,
-    xcpdGateways,
+    xcpdGatewaysWithoutGirthEnabled,
+    xcpdGatewaysWithGirthEnabled,
   };
 }
 

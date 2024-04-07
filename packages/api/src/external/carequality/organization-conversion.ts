@@ -1,22 +1,29 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
+import { getOIDsWithGirthEnabledFeatureFlagValue } from "../aws/appConfig";
 
-export function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): XCPDGateways {
-  return cqOrgs.flatMap(org => {
+export async function cqOrgsToXCPDGateways(
+  cqOrgs: CQOrgBasicDetails[]
+): Promise<[XCPDGateways, XCPDGateways]> {
+  const gatewaysWithGirthEnabledFeatureFlag: XCPDGateways = [];
+  const gatewaysWithoutGirthEnabledFeatureFlag: XCPDGateways = [];
+
+  for (const org of cqOrgs) {
     if (org.urlXCPD) {
-      return {
+      const gateway = {
         url: org.urlXCPD,
         oid: org.id,
+        id: uuidv7(),
       };
-    }
-    return [];
-  });
-}
 
-export function generateIdsForGateways(gateways: XCPDGateways): XCPDGateways {
-  return gateways.map(gateway => ({
-    ...gateway,
-    id: uuidv7(),
-  }));
+      if ((await getOIDsWithGirthEnabledFeatureFlagValue()).includes(org.id)) {
+        gatewaysWithGirthEnabledFeatureFlag.push(gateway);
+      } else {
+        gatewaysWithoutGirthEnabledFeatureFlag.push(gateway);
+      }
+    }
+  }
+
+  return [gatewaysWithoutGirthEnabledFeatureFlag, gatewaysWithGirthEnabledFeatureFlag];
 }

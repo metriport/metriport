@@ -16,6 +16,7 @@ const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
   "cxsWithNoWebhookPongFeatureFlag",
   "commonwellFeatureFlag",
   "carequalityFeatureFlag",
+  "oidsWithGirthEnabled",
 ];
 
 /**
@@ -119,6 +120,10 @@ export async function getCxsWithIncreasedSandboxLimitFeatureFlagValue(): Promise
 
 export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
+}
+
+export async function getOIDsWithGirthEnabledFeatureFlagValue(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("oidsWithGirthEnabled");
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {

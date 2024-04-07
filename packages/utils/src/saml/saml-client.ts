@@ -1,7 +1,7 @@
 import axios from "axios";
 import fs from "fs";
 import https from "https";
-import { BulkXCPDResponse } from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { BulkSignedXCPD } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 
 export async function sendSignedXml(
   signedXml: string,
@@ -27,7 +27,7 @@ export async function sendSignedXml(
 }
 
 export async function sendSignedRequests(
-  signedRequests: BulkXCPDResponse[],
+  signedRequests: BulkSignedXCPD[],
   certChain: string,
   privateKey: string
 ) {
