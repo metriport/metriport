@@ -7,11 +7,13 @@ function createSignature({
   privateKey,
   xpath,
   locationReference,
+  action,
 }: {
   xml: string;
   privateKey: crypto.KeyLike;
   xpath: string;
   locationReference: string;
+  action: "append" | "prepend" | "before" | "after";
 }): SignedXml {
   const sig = new SignedXml({ privateKey });
   sig.addReference({
@@ -26,7 +28,7 @@ function createSignature({
   sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
   sig.computeSignature(xml, {
     prefix: "ds",
-    location: { reference: locationReference, action: "after" },
+    location: { reference: locationReference, action: action },
   });
   return sig;
 }
@@ -43,6 +45,7 @@ export function signTimestamp({
     privateKey,
     xpath: "//*[local-name(.)='Timestamp']",
     locationReference: "//*[local-name(.)='Timestamp']",
+    action: "after",
   }).getSignedXml();
 }
 
@@ -58,6 +61,7 @@ export function signEnvelope({
     privateKey,
     xpath: "//*[local-name(.)='Assertion']",
     locationReference: "//*[local-name(.)='Issuer']",
+    action: "after",
   }).getSignedXml();
 }
 

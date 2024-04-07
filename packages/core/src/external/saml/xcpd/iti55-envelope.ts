@@ -220,6 +220,7 @@ function createSoapBody({
                   "@_extension": providerId,
                   "@_root": "2.16.840.1.113883.4.6",
                 },
+                "urn:semanticsText": "AssignedProvider.id",
               },
             },
           },
@@ -302,18 +303,20 @@ export function createAndSignXCPDRequest(
   bodyData: XCPDBodyData,
   publicCert: string,
   privateKey: string
-): string {
+): BulkXCPDResponse[] {
   const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
-  return fullySignedSaml;
+  return [{ gateway: bodyData.gateway, signedRequest: fullySignedSaml }];
 }
 
-export async function createAndSignBulkXCPDRequests(
+export function createAndSignBulkXCPDRequests(
   bulkBodyData: BulkXCPDBodyData,
   publicCert: string,
   privateKey: string
-): Promise<BulkXCPDResponse[]> {
-  const signingPromises = bulkBodyData.gateways.map(async gateway => {
+): BulkXCPDResponse[] {
+  const signedRequests: BulkXCPDResponse[] = [];
+
+  for (const gateway of bulkBodyData.gateways) {
     const bodyData: XCPDBodyData = {
       ...bulkBodyData,
       gateway: {
@@ -325,9 +328,8 @@ export async function createAndSignBulkXCPDRequests(
 
     const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
     const signedRequest = signFullSaml({ xmlString, publicCert, privateKey });
-    return { gateway, signedRequest };
-  });
+    signedRequests.push({ gateway, signedRequest });
+  }
 
-  const signedRequests = await Promise.all(signingPromises);
   return signedRequests;
 }

@@ -1,6 +1,7 @@
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
 import {
   securityHeaderEnvelopedId,
+  securityHeaderTimestampId,
   stripPemCertificate,
   extractPublicKeyInfo,
 } from "./security-header";
@@ -52,6 +53,14 @@ export function insertKeyInfo({
             "#text": certPemStripped,
           },
         },
+        "wsse:SecurityTokenReference": {
+          "wsse:Reference": {
+            "@_URI": "#" + securityHeaderEnvelopedId,
+            "@_xmlns:wsse11": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
+            "@_wsse11:TokenType":
+              "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0",
+          },
+        },
       },
     };
 
@@ -64,13 +73,15 @@ export function insertKeyInfo({
     const keyInfoStructure = {
       "ds:KeyInfo": {
         "wsse:SecurityTokenReference": {
-          "@_xmlns:ns0": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
-          "@_ns0:TokenType":
+          "@_xmlns:wsse11": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
+          "@_xmlns:wsu":
+            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
+          "@_wsse11:TokenType":
             "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0",
           "@_wsu:Id": referenceId,
           "wsse:KeyIdentifier": {
             "@_ValueType": "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLID",
-            "#text": securityHeaderEnvelopedId,
+            "#text": securityHeaderTimestampId,
           },
         },
       },

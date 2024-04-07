@@ -49,6 +49,7 @@ export function createSecurityHeader({
       "@_xmlns:hl7": namespaces.hl7,
       "@_xmlns:xs": namespaces.xs,
       "saml2:Assertion": {
+        "@_xsi:type": "saml2:AssertionType",
         "@_ID": securityHeaderEnvelopedId,
         "@_IssueInstant": createdTimestamp,
         "@_Version": "2.0",
