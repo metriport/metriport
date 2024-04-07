@@ -128,6 +128,7 @@ export class IHEStack extends Stack {
       vpc,
       alarmSnsAction
     );
+    this.setupGirthPatientDiscoveryLambda(props, lambdaLayers, vpc, alarmSnsAction);
 
     createIHEGateway(this, {
       ...props,
@@ -215,6 +216,29 @@ export class IHEStack extends Stack {
       stack: this,
       name: "IHEInboundPatientDiscovery",
       entry: "ihe-inbound-patient-discovery",
+      layers: [lambdaLayers.shared],
+      envType: props.config.environmentType,
+      envVars: {
+        API_URL: props.config.loadBalancerDnsName,
+        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
+      },
+      vpc,
+      alarmSnsAction,
+      version: props.version,
+    });
+    return patientDiscoveryLambda;
+  }
+
+  private setupGirthPatientDiscoveryLambda(
+    props: IHEStackProps,
+    lambdaLayers: LambdaLayers,
+    vpc: ec2.IVpc,
+    alarmSnsAction?: SnsAction | undefined
+  ): Lambda {
+    const patientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "GirthOutboundPatientDiscovery",
+      entry: "girth-outbound-patient-discovery",
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
