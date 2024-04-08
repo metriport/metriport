@@ -67,6 +67,7 @@
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",
     "dayjs": "^1.11.9",
+    "fast-xml-parser": "^4.3.6",
     "http-status": "^1.7.0",
     "jaro-winkler": "^0.2.8",
     "json-stringify-safe": "^5.0.1",

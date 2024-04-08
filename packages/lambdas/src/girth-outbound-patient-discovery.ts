@@ -2,15 +2,21 @@ import axios from "axios";
 import fs from "fs";
 import https from "https";
 import { errorToString } from "@metriport/core/util/error/shared";
-import { outboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
+import {
+  outboundPatientDiscoveryReqSchema,
+  OutboundPatientDiscoveryResp,
+} from "@metriport/ihe-gateway-sdk";
 import {
   createAndSignBulkXCPDRequests,
   BulkSignedXCPD,
 } from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/process-xcpd-response";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as Sentry from "@sentry/serverless";
 import { capture } from "./shared/capture";
 
-// internal endpoint url
+const apiUrl = getEnvVarOrFail("API_URL");
+const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
 
 // get secrets
 const privateKey = "";
@@ -42,10 +48,16 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     patientId,
     cxId
   );
-  return responses;
+  const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
+    return processXCPDResponse({
+      xmlString: response,
+      outboundRequest: xcpdRequest.data,
+      gateway: xcpdRequest.data.gateways[index],
+    });
+  });
 
-  // process responses with code taken from mirth
-  // send back to app via internal endpoint
+  // send results to internal endpoint
+  await axios.post(patientDiscoveryUrl, results);
 });
 
 export async function sendSignedXml(
