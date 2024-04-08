@@ -57,7 +57,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
       throw new Error(`Gateway at index ${index} is undefined.`);
     }
     return processXCPDResponse({
-      xmlString: response,
+      xmlStringOrError: response,
       outboundRequest: xcpdRequest.data,
       gateway,
     });
@@ -99,7 +99,7 @@ export async function sendSignedRequests(
   privateKeyPassword: string,
   patientId: string,
   cxId: string
-): Promise<string[]> {
+): Promise<(string | { error: string })[]> {
   const certFilePath = "./tempCert.pem";
   const keyFilePath = "./tempKey.pem";
   fs.writeFileSync(certFilePath, certChain);
@@ -129,15 +129,21 @@ export async function sendSignedRequests(
         capture.error(msg, {
           extra: { context: `lambda.girth-outbound-patient-discovery`, error, patientId, cxId },
         });
+        const errorString: string = errorToString(error);
+        return { error: errorString };
       })
   );
 
   const responses = await Promise.allSettled(requestPromises);
-  const successfulResponses = responses
-    .filter((result): result is PromiseFulfilledResult<string> => result.status === "fulfilled")
-    .map(result => result.value);
+  const processedResponses = responses
+    .map(result => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      }
+    })
+    .filter((response): response is string | { error: string } => response !== undefined);
 
   fs.unlinkSync(certFilePath);
   fs.unlinkSync(keyFilePath);
-  return successfulResponses;
+  return processedResponses;
 }

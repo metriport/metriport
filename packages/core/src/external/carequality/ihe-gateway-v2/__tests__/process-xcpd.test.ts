@@ -66,7 +66,7 @@ describe("processXCPDResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_match.xml"), "utf8");
 
     const response = processXCPDResponse({
-      xmlString,
+      xmlStringOrError: xmlString,
       outboundRequest,
       gateway,
     });
@@ -116,7 +116,7 @@ describe("processXCPDResponse", () => {
   it("should correctly identify and process a no match XCPD response", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_no_match.xml"), "utf8");
     const response = processXCPDResponse({
-      xmlString,
+      xmlStringOrError: xmlString,
       outboundRequest,
       gateway,
     });
@@ -130,15 +130,30 @@ describe("processXCPDResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_error.xml"), "utf8");
 
     const response = processXCPDResponse({
-      xmlString,
+      xmlStringOrError: xmlString,
       outboundRequest,
       gateway,
     });
-    //console.log("response", JSON.stringify(response, null, 2));
     const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
     if (!xcpdResult.success) {
       throw new Error("Failed to parse response");
     }
+    expect(xcpdResult.data.patientMatch).toBeNull();
+  });
+  it("should process the HTTP error XCPD response correctly", async () => {
+    const httpError = { error: "HTTP 503 error" };
+
+    const response = processXCPDResponse({
+      xmlStringOrError: httpError,
+      outboundRequest,
+      gateway,
+    });
+    const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
+    if (!xcpdResult.success) {
+      throw new Error("Failed to parse response");
+    }
+    console.log(JSON.stringify(xcpdResult.data, null, 2));
+    expect(xcpdResult.data.operationOutcome).toBeDefined();
     expect(xcpdResult.data.patientMatch).toBeNull();
   });
 });
