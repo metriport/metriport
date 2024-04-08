@@ -44,8 +44,8 @@ export type EnvConfig = {
     placeIndexName: string;
     placeIndexRegion: string;
   };
-  carequality?: {
-    secretNames?: {
+  carequality: {
+    secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
       CQ_ORG_CERTIFICATE: string;

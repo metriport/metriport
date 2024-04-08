@@ -2,6 +2,7 @@ import axios from "axios";
 import fs from "fs";
 import https from "https";
 import * as Sentry from "@sentry/serverless";
+import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { errorToString } from "@metriport/core/util/error/shared";
 import {
   outboundPatientDiscoveryReqSchema,
@@ -20,10 +21,15 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
 
 // get secrets
-const privateKey = Config.getCQOrgPrivateKey();
-const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-const publicCert = Config.getCQOrgCertificate();
-const certChain = Config.getCQOrgCertificateIntermediate();
+const privateKeySecretName = Config.getCQOrgPrivateKey();
+const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
+const publicCertSecretName = Config.getCQOrgCertificate();
+const certChainSecretName = Config.getCQOrgCertificateIntermediate();
+
+const privateKey = getSecret(privateKeySecretName);
+const privateKeyPassword = getSecret(privateKeyPasswordSecretName);
+const publicCert = getSecret(publicCertSecretName);
+const certChain = getSecret(certChainSecretName);
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const { patientId, cxId, req } = JSON.parse(event);

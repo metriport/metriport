@@ -242,6 +242,12 @@ export class IHEStack extends Stack {
       layers: [lambdaLayers.shared],
       envType: props.config.environmentType,
       envVars: {
+        CQ_ORG_PRIVATE_KEY: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
+        CQ_ORG_CERTIFICATE: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
+        CQ_ORG_CERTIFICATE_INTERMEDIATE:
+          props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+        CQ_ORG_PRIVATE_KEY_PASSWORD:
+          props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
         API_URL: props.config.loadBalancerDnsName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
