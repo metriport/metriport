@@ -70,7 +70,7 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData,
@@ -87,7 +87,7 @@ export async function setDocQueryProgress({
   });
 
   await processDocQueryProgressWebhook({
-    patient: result.dataValues,
+    patient: result,
     documentQueryProgress: result.data.documentQueryProgress,
     requestId,
   });

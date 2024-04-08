@@ -3,7 +3,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
 import { Util } from "../../../shared/util";
 import { autoUpgradeNetworkLinks } from "../link/shared";
-import { setCommonwellId } from "../patient-external-data";
+import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 
@@ -68,7 +68,7 @@ export async function patchDuplicatedPersonsForPatient(
   );
 
   // update Metriport's DB
-  await setCommonwellId({
+  await setCommonwellIdsAndStatus({
     patientId: patient.id,
     cxId: patient.cxId,
     commonwellPatientId: cwPatientId,

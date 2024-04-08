@@ -40,6 +40,7 @@ export async function processPatientDiscoveryProgress({
           requestId: scheduledDocQueryRequestId,
           source: MedicalDataSource.CAREQUALITY,
           downloadProgress: { status: "failed", total: 0 },
+          convertProgress: { status: "failed", total: 0 },
         });
       }
 
