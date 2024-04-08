@@ -1,6 +1,7 @@
 import axios from "axios";
 import fs from "fs";
 import https from "https";
+import * as Sentry from "@sentry/serverless";
 import { errorToString } from "@metriport/core/util/error/shared";
 import {
   outboundPatientDiscoveryReqSchema,
@@ -12,16 +13,17 @@ import {
 } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/process-xcpd-response";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import * as Sentry from "@sentry/serverless";
+import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
 
 // get secrets
-const privateKey = "";
-const publicCert = "";
-const certChain = "";
+const privateKey = Config.getCQOrgPrivateKey();
+const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
+const publicCert = Config.getCQOrgCertificate();
+const certChain = Config.getCQOrgCertificateIntermediate();
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const { patientId, cxId, req } = JSON.parse(event);
@@ -45,14 +47,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
     signedRequests,
     certChain,
     privateKey,
+    privateKeyPassword,
     patientId,
     cxId
   );
   const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
+    const gateway = xcpdRequest.data.gateways[index];
+    if (!gateway) {
+      throw new Error(`Gateway at index ${index} is undefined.`);
+    }
     return processXCPDResponse({
       xmlString: response,
       outboundRequest: xcpdRequest.data,
-      gateway: xcpdRequest.data.gateways[index],
+      gateway,
     });
   });
 
@@ -64,12 +71,14 @@ export async function sendSignedXml(
   signedXml: string,
   url: string,
   certFilePath: string,
-  keyFilePath: string
+  keyFilePath: string,
+  passphrase: string
 ): Promise<string> {
   const agent = new https.Agent({
     rejectUnauthorized: false,
     cert: fs.readFileSync(certFilePath),
     key: fs.readFileSync(keyFilePath),
+    passphrase,
   });
 
   const response = await axios.post(url, signedXml, {
@@ -87,6 +96,7 @@ export async function sendSignedRequests(
   signedRequests: BulkSignedXCPD[],
   certChain: string,
   privateKey: string,
+  privateKeyPassword: string,
   patientId: string,
   cxId: string
 ): Promise<string[]> {
@@ -96,7 +106,13 @@ export async function sendSignedRequests(
   fs.writeFileSync(keyFilePath, privateKey);
 
   const requestPromises = signedRequests.map((request, index) =>
-    sendSignedXml(request.signedRequest, request.gateway.url, certFilePath, keyFilePath)
+    sendSignedXml(
+      request.signedRequest,
+      request.gateway.url,
+      certFilePath,
+      keyFilePath,
+      privateKeyPassword
+    )
       .then(response => {
         console.log(
           `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${

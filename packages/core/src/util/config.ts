@@ -61,4 +61,20 @@ export class Config {
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
+
+  static getCQOrgPrivateKey(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
+  }
+
+  static getCQOrgPrivateKeyPassword(): string {
+    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
+  }
+
+  static getCQOrgCertificate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
+  }
+
+  static getCQOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
 }
