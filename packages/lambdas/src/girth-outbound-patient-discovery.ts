@@ -26,13 +26,25 @@ const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
 const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
-const privateKey = getSecret(privateKeySecretName);
-const privateKeyPassword = getSecret(privateKeyPasswordSecretName);
-const publicCert = getSecret(publicCertSecretName);
-const certChain = getSecret(certChainSecretName);
-
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const { patientId, cxId, req } = JSON.parse(event);
+
+  const privateKey = await getSecret(privateKeySecretName);
+  const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
+  const publicCert = await getSecret(publicCertSecretName);
+  const certChain = await getSecret(certChainSecretName);
+  if (
+    !privateKey ||
+    typeof privateKey !== "string" ||
+    !privateKeyPassword ||
+    typeof privateKeyPassword !== "string" ||
+    !publicCert ||
+    typeof publicCert !== "string" ||
+    !certChain ||
+    typeof certChain !== "string"
+  ) {
+    throw new Error("Failed to get secrets or one of the secrets is not a string.");
+  }
 
   // validate request
   const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(req);
