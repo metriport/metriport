@@ -124,6 +124,21 @@ describe("processXCPDResponse", () => {
     if (!xcpdResult.success) {
       throw new Error("Failed to parse response");
     }
+    expect(xcpdResult.data.patientMatch).toBeFalsy();
+  });
+  it("should process the error XCPD response correctly", async () => {
+    const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_error.xml"), "utf8");
+
+    const response = processXCPDResponse({
+      xmlString,
+      outboundRequest,
+      gateway,
+    });
+    //console.log("response", JSON.stringify(response, null, 2));
+    const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
+    if (!xcpdResult.success) {
+      throw new Error("Failed to parse response");
+    }
     expect(xcpdResult.data.patientMatch).toBeNull();
   });
 });

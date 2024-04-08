@@ -3,6 +3,7 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryReq,
   XCPDGateway,
+  OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "./utils";
 
@@ -79,14 +80,58 @@ export function processXCPDResponse({
     };
 
     return response;
+  } else {
+    const operationOutcome: OperationOutcome = {
+      resourceType: "OperationOutcome",
+      id: outboundRequest.id,
+      issue: [],
+    };
+    if (ack === "AE" || queryResponseCode === "AE") {
+      try {
+        const acknowledgementDetail =
+          jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["acknowledgement"][
+            "acknowledgementDetail"
+          ];
+        const issue = {
+          severity: "error",
+          code: acknowledgementDetail["code"]["@_code"],
+          details: {
+            text: acknowledgementDetail["text"]["#text"] || acknowledgementDetail["text"],
+          },
+        };
+        operationOutcome.issue.push(issue);
+      } catch (error) {
+        // Handle error if acknowledgementDetail is not found
+      }
+      const response: OutboundPatientDiscoveryResp = {
+        id: outboundRequest.id,
+        timestamp: outboundRequest.timestamp,
+        responseTimestamp: new Date().toISOString(),
+        gateway: gateway,
+        patientId: outboundRequest.patientId || "",
+        patientMatch: null,
+        operationOutcome: operationOutcome,
+      };
+      return response;
+    } else {
+      const issue = {
+        severity: "information",
+        code: "not-found",
+        details: {
+          text: "NF",
+        },
+      };
+      operationOutcome.issue.push(issue);
+      const response: OutboundPatientDiscoveryResp = {
+        id: outboundRequest.id,
+        timestamp: outboundRequest.timestamp,
+        responseTimestamp: new Date().toISOString(),
+        gateway: gateway,
+        patientId: outboundRequest.patientId || "",
+        patientMatch: false,
+        operationOutcome: operationOutcome,
+      };
+      return response;
+    }
   }
-
-  return {
-    id: outboundRequest.id,
-    timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
-    gateway: gateway,
-    patientId: outboundRequest.patientId || "",
-    patientMatch: null,
-  };
 }
