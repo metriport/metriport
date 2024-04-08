@@ -15,7 +15,7 @@ export async function startPatientDiscoveryGirth({
   const params = { patientId, cxId, pdRequestGirth };
   await lambdaClient
     .invoke({
-      FunctionName: "girthOutboundPatientDiscoveryLambda",
+      FunctionName: "GirthOutboundPatientDiscoveryLambda",
       InvocationType: "Event",
       Payload: JSON.stringify(params),
     })
