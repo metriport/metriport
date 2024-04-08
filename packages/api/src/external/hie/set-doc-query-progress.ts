@@ -208,13 +208,14 @@ export function aggregateDocProgress(
   return tallyResults;
 }
 
-function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+export function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
   const hasFailed = docQueryProgress.some(status => status === "failed");
+  const hasCompleted = docQueryProgress.some(status => status === "completed");
 
   if (hasProcessing) return "processing";
+  if (hasCompleted) return "completed";
   if (hasFailed) return "failed";
-
   return "completed";
 }
 
