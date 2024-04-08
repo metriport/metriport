@@ -46,7 +46,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.11.9",
     "dotenv": "^16.0.3",
-    "express": "^4.18.1",
+    "express": "^4.19.2",
     "express-http-proxy": "^1.6.3",
     "express-promise-router": "^4.1.1",
     "helmet": "^6.0.1",
