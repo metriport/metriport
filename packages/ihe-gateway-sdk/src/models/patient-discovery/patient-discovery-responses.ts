@@ -67,15 +67,17 @@ const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   patientId: z.string(),
 });
 
-const outboundPatientDiscoveryRespSuccessfulSchema = outboundPatientDiscoveryRespDefaultSchema
-  .merge(patientDiscoveryRespSuccessfulDefaultSchema)
-  .extend({
-    patientResource: inboundPatientResourceSchema.optional(),
-  });
+export const outboundPatientDiscoveryRespSuccessfulSchema =
+  outboundPatientDiscoveryRespDefaultSchema
+    .merge(patientDiscoveryRespSuccessfulDefaultSchema)
+    .extend({
+      patientResource: inboundPatientResourceSchema.optional(),
+    });
 
-const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
-  patientMatch: z.literal(false).or(z.literal(null)),
-});
+export const outboundPatientDiscoveryRespFaultSchema =
+  outboundPatientDiscoveryRespDefaultSchema.extend({
+    patientMatch: z.literal(false).or(z.literal(null)),
+  });
 
 export const outboundPatientDiscoveryRespSchema = z.union([
   outboundPatientDiscoveryRespSuccessfulSchema,

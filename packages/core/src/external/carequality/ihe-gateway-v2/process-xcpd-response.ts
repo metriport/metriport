@@ -4,6 +4,7 @@ import {
   OutboundPatientDiscoveryReq,
   XCPDGateway,
 } from "@metriport/ihe-gateway-sdk";
+import { normalizeGender } from "./utils";
 
 export function processXCPDResponse({
   xmlString,
@@ -23,11 +24,13 @@ export function processXCPDResponse({
   const jsonObj = parser.parse(xmlString);
 
   const ack =
-    jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["acknowledgement"]["@_typeCode"];
+    jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["acknowledgement"]["typeCode"][
+      "@_code"
+    ];
   const queryResponseCode =
     jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["controlActProcess"]["queryAck"][
-      "@_queryResponseCode"
-    ];
+      "queryResponseCode"
+    ]["@_code"];
 
   if (ack === "AA" && queryResponseCode === "OK") {
     const subject1 =
@@ -49,11 +52,13 @@ export function processXCPDResponse({
     const patientResource = {
       name: [
         {
-          given: [subject1["patient"]["patientPerson"]["name"]["given"]["#text"]],
-          family: subject1["patient"]["patientPerson"]["name"]["family"]["#text"],
+          given: [subject1["patient"]["patientPerson"]["name"]["given"]],
+          family: subject1["patient"]["patientPerson"]["name"]["family"],
         },
       ],
-      gender: subject1["patient"]["patientPerson"]["administrativeGenderCode"]["@_code"],
+      gender: normalizeGender(
+        subject1["patient"]["patientPerson"]["administrativeGenderCode"]["@_code"]
+      ),
       birthDate: subject1["patient"]["patientPerson"]["birthTime"]["@_value"],
       address: addresses,
     };
@@ -63,13 +68,13 @@ export function processXCPDResponse({
       timestamp: outboundRequest.timestamp,
       responseTimestamp: new Date().toISOString(),
       externalGatewayPatient: {
-        id: subject1["patient"]["@_id"]["@_extension"].toString(),
-        system: subject1["patient"]["@_id"]["@_root"].toString(),
+        id: subject1["patient"]["id"]["@_extension"].toString(),
+        system: subject1["patient"]["id"]["@_root"].toString(),
       },
       gateway: gateway,
       patientId: outboundRequest.patientId,
       patientMatch: true,
-      gatewayHomeCommunityId: subject1["custodian"]["assignedEntity"]["@_id"]["@_root"],
+      gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,
       patientResource: patientResource,
     };
 
