@@ -1,4 +1,4 @@
-import { organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import { oid } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
@@ -9,7 +9,8 @@ import { getPatientData } from "../patient-shared";
 import { patientWithCWData } from "./shared";
 
 export async function reset(patientId: string, cxId: string, facilityId: string) {
-  const { log } = out("cw.link.reset");
+  const context = "cw.link.reset";
+  const { log } = out(context);
   if (!(await isCWEnabledForCx(cxId))) {
     log(`CW is disabled for cxId: ${cxId}`);
     return undefined;
@@ -30,11 +31,12 @@ export async function reset(patientId: string, cxId: string, facilityId: string)
 
   if (!cwPersonId) throw new Error(`No person id for patient: ${patient.id}`);
 
+  let commonWell: CommonWellAPI | undefined;
   try {
     const orgName = organization.data.name;
     const orgOID = organization.oid;
     const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-    const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
+    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
     const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
 
     await commonWell.resetPatientLink(queryMeta, cwPersonId, cwPatientId);
@@ -46,8 +48,14 @@ export async function reset(patientId: string, cxId: string, facilityId: string)
       commonwellPersonId: undefined,
     });
   } catch (error) {
-    const msg = `Failure resetting`;
-    log(`${msg} - patient id:`, patient.id);
-    throw new Error(msg, { cause: error });
+    const cwReference = commonWell?.lastReferenceHeader;
+    const msg = `Failure resetting CW link`;
+    log(`${msg} - patient id: ${patient.id}; cwReference ${cwReference}`);
+    throw new CommonwellError(msg, error, {
+      cwReference,
+      context,
+      patientId: patient.id,
+      cwPersonId,
+    });
   }
 }
