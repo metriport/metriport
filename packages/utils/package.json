@@ -14,6 +14,8 @@
     "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
+    "get-consolidated": "ts-node src/customer-requests/get-consolidated",
+    "download-docs": "ts-node src/customer-requests/download-docs",
     "mock-ihe-gateway": "ts-node src/carequality/mock-ihe-gateway",
     "build": "tsc -p .",
     "build:cloud": "npm run build",
