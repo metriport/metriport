@@ -60,7 +60,6 @@ const sequelize = initDBPool(Config.getDBCreds());
  */
 router.post(
   "/directory/rebuild",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     await rebuildCQDirectory();
@@ -78,7 +77,6 @@ router.post(
 router.post(
   "/directory/insert",
   upload.single("file"),
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) {
@@ -120,7 +118,6 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cq = makeCarequalityManagementAPI();
@@ -151,7 +148,6 @@ router.get(
  */
 router.post(
   "/directory/organization",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
     const orgDetails = cqOrgDetailsSchema.parse(body);
