@@ -13,6 +13,7 @@ import {
   BulkSignedXCPD,
 } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/process-xcpd-response";
+import { GirthXCPDRequestParams } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
@@ -26,8 +27,8 @@ const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
 const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
-  const { patientId, cxId, req } = JSON.parse(event);
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDRequestParams) => {
+  const { patientId, cxId, pdRequestGirth } = event;
 
   const privateKey = await getSecret(privateKeySecretName);
   const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
@@ -47,7 +48,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   }
 
   // validate request
-  const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(req);
+  const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGirth);
   if (!xcpdRequest.success) {
     const msg = `Invalid request: ${xcpdRequest.error}`;
     capture.error(msg, {
