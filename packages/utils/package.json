@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "1.10.9",
+  "version": "1.10.10",
   "description": "",
   "main": "mock-webhook.js",
   "private": true,

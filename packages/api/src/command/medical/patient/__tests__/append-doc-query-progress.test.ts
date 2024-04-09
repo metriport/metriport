@@ -19,6 +19,7 @@ let patientModel: PatientModel;
 
 let patientModel_update: jest.SpyInstance;
 let patientModel_findOne: jest.SpyInstance;
+jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
   documentQueryProgress = {
