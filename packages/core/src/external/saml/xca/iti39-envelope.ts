@@ -8,6 +8,7 @@ import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
 } from "../../carequality/shared";
+import { wrapIdInUrnUuid } from "../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 
@@ -41,7 +42,7 @@ export function createITI39SoapEnvelope({
   bodyData: DRBodyData;
   publicCert: string;
 }): string {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
 
   const documentReferences = bodyData.documentReference.map(docRef => ({

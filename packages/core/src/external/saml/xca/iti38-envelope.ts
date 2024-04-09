@@ -8,6 +8,7 @@ import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
 } from "../../carequality/shared";
+import { wrapIdInUrnUuid } from "../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -54,7 +55,7 @@ type DQBodyData = {
 };
 
 function createSoapBody(bodyData: DQBodyData): object {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const classCode = bodyData.classCode?.[0];
   const practiceSettingCode = bodyData.practiceSettingCode?.[0];
   const facilityTypeCode = bodyData.facilityTypeCode?.[0];
@@ -82,7 +83,7 @@ function createSoapBody(bodyData: DQBodyData): object {
         },
         "urn2:AdhocQuery": {
           "@_home": gatewayHomeCommunityId,
-          "@_id": `urn:uuid:${findDocumentId}`,
+          "@_id": wrapIdInUrnUuid(findDocumentId),
           "@_lid": "urn:oasis:names:tc:ebxml-regrep:query:AdhocQueryRequest",
           "@_objectType": namespaces.urn2,
           "@_status": namespaces.urn2,
@@ -145,7 +146,7 @@ function createSoapBody(bodyData: DQBodyData): object {
             {
               "@_name": "$XDSDocumentEntryType",
               "urn2:ValueList": {
-                "urn2:Value": [`('urn:uuid:${uuid.v4()}','urn:uuid:${uuid.v4()}')`],
+                "urn2:Value": [`(${wrapIdInUrnUuid(uuid.v4())},${wrapIdInUrnUuid(uuid.v4())})`],
               },
             },
           ],
@@ -163,7 +164,7 @@ export function createITI38SoapEnvelope({
   bodyData: DQBodyData;
   publicCert: string;
 }): string {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
 
   const subjectRole = bodyData.samlAttributes.subjectRole.display;

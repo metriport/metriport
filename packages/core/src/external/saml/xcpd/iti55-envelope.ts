@@ -8,6 +8,7 @@ import {
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
 } from "../../carequality/shared";
+import { wrapIdInUrnUuid } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
 
@@ -56,7 +57,7 @@ function createSoapBody({
   bodyData: XCPDBodyData;
   createdTimestamp: string;
 }): object {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const receiverDeviceId = bodyData.gateway.oid;
   const toUrl = bodyData.gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
@@ -219,7 +220,7 @@ export function createITI5SoapEnvelope({
   bodyData: XCPDBodyData;
   publicCert: string;
 }): string {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
