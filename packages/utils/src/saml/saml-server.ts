@@ -1,17 +1,13 @@
 // This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to to the gateway specified in the request body.
 // npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
-
+import * as dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import { json, Request, Response } from "express";
 import fs from "fs";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-// import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
-// import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
-
-import * as dotenv from "dotenv";
-dotenv.config();
 
 const app = express();
 const port = 8043;
@@ -51,6 +47,10 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 });
 
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
 // app.post("/xcadq", async (req: Request, res: Response) => {
 //   if (!req.is("application/json")) {
 //     return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
@@ -65,10 +65,6 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 //     res.status(500).send({ detail: "Internal Server Error" });
 //   }
 // });
-
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
 
 // app.post("/xcadr", async (req: Request, res: Response) => {
 //   if (!req.is("application/json")) {
