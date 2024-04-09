@@ -45,9 +45,6 @@ export function createAPIService({
   outboundPatientDiscoveryLambda,
   outboundDocumentQueryLambda,
   outboundDocumentRetrievalLambda,
-  girthPatientDiscoveryLambda,
-  girthDocumentQueryLambda,
-  girthDocumentRetrievalLambda,
   medicalDocumentsUploadBucket,
   fhirToMedicalRecordLambda,
   searchIngestionQueue,
@@ -74,9 +71,6 @@ export function createAPIService({
   outboundPatientDiscoveryLambda: ILambda;
   outboundDocumentQueryLambda: ILambda;
   outboundDocumentRetrievalLambda: ILambda;
-  girthPatientDiscoveryLambda: ILambda;
-  girthDocumentQueryLambda: ILambda;
-  girthDocumentRetrievalLambda: ILambda;
   medicalDocumentsUploadBucket: s3.Bucket;
   fhirToMedicalRecordLambda: ILambda | undefined;
   searchIngestionQueue: IQueue;
@@ -177,9 +171,6 @@ export function createAPIService({
           ...(fhirToMedicalRecordLambda && {
             FHIR_TO_MEDICAL_RECORD_LAMBDA_NAME: fhirToMedicalRecordLambda.functionName,
           }),
-          GIRTH_PATIENT_DISCOVERY_LAMBDA_NAME: girthPatientDiscoveryLambda.functionName,
-          GIRTH_DOCUMENT_QUERY_LAMBDA_NAME: girthDocumentQueryLambda.functionName,
-          GIRTH_DOCUMENT_RETRIEVAL_LAMBDA_NAME: girthDocumentRetrievalLambda.functionName,
           FHIR_SERVER_URL: fhirServerUrl,
           ...(fhirServerQueueUrl && {
             FHIR_SERVER_QUEUE_URL: fhirServerQueueUrl,
@@ -239,10 +230,6 @@ export function createAPIService({
   outboundPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
   outboundDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-
-  girthPatientDiscoveryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  girthDocumentQueryLambda.grantInvoke(fargateService.taskDefinition.taskRole);
-  girthDocumentRetrievalLambda.grantInvoke(fargateService.taskDefinition.taskRole);
 
   // Access grant for medical document buckets
   medicalDocumentsUploadBucket.grantReadWrite(fargateService.taskDefinition.taskRole);

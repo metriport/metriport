@@ -7,6 +7,7 @@ export type GirthXCPDRequestParams = {
   cxId: string;
   pdRequestGirth: OutboundPatientDiscoveryReq;
 };
+const girthOutboundPatientDiscoveryLambdaName = "GirthOutboundPatientDiscoveryLambda";
 
 export async function startPatientDiscoveryGirth({
   pdRequestGirth,
@@ -21,7 +22,7 @@ export async function startPatientDiscoveryGirth({
   const params = { patientId, cxId, pdRequestGirth };
   await lambdaClient
     .invoke({
-      FunctionName: Config.getGirthPatientDiscoveryLambdaName(),
+      FunctionName: girthOutboundPatientDiscoveryLambdaName,
       InvocationType: "Event",
       Payload: JSON.stringify(params),
     })
