@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { processXCPDResponse } from "../process-xcpd-response";
+import { processXCPDResponse } from "../xcpd/process-xcpd-response";
 import {
   outboundPatientDiscoveryRespSuccessfulSchema,
   outboundPatientDiscoveryRespFaultSchema,

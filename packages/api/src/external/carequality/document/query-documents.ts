@@ -16,6 +16,8 @@ import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
+import { getOIDsWithGirthEnabledFeatureFlagValue } from "../../aws/appConfig";
+import { startDocumentQueryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/dq/invoke-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -88,18 +90,42 @@ export async function getDocumentsFromCQ({
       numberOfParallelExecutions: 20,
     });
 
+    // separate mirth and girth here
+    const linksWithDqUrlNoGirth: CQLink[] = [];
+    const linksWithDqUrlGirth: CQLink[] = [];
+    for (const link of linksWithDqUrl) {
+      if ((await getOIDsWithGirthEnabledFeatureFlagValue()).includes(link.oid)) {
+        linksWithDqUrlGirth.push(link);
+      } else {
+        linksWithDqUrlNoGirth.push(link);
+      }
+    }
+
+    // no girth requests
     const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
       patientId,
       cxId,
       organization,
-      cqLinks: linksWithDqUrl,
+      cqLinks: linksWithDqUrlNoGirth,
     });
+
+    // girth requests
+    const documentQueryRequestsGirth = createOutboundDocumentQueryRequests({
+      requestId,
+      patientId,
+      cxId,
+      organization,
+      cqLinks: linksWithDqUrlGirth,
+    });
+
+    log(`Starting document query - Girth`);
+    startDocumentQueryGirth({ dqRequestGirth: documentQueryRequestsGirth, patientId, cxId });
 
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    log(`Starting document query`);
+    log(`Starting document query - No Girth`);
     await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequests });
 
     await resultPoller.pollOutboundDocQueryResults({

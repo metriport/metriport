@@ -1,4 +1,4 @@
-import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
+import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/invoke-patient-discovery";
 import * as dotenv from "dotenv";
 dotenv.config();
 

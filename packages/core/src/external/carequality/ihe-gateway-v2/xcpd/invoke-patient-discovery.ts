@@ -1,6 +1,6 @@
 import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { makeLambdaClient } from "../../aws/lambda";
-import { Config } from "../../../util/config";
+import { makeLambdaClient } from "../../../aws/lambda";
+import { Config } from "../../../../util/config";
 
 export type GirthXCPDRequestParams = {
   patientId: string;

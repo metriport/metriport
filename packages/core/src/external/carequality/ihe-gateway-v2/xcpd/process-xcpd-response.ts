@@ -5,7 +5,7 @@ import {
   XCPDGateway,
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
-import { normalizeGender } from "./utils";
+import { normalizeGender } from "../utils";
 
 function handleHTTPErrorResponse({
   httpError,

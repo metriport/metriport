@@ -1,17 +1,15 @@
 import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
+import { OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { createAndSignBulkDQRequests } from "@metriport/core/external/saml/xca/iti38-envelope";
 import {
-  outboundPatientDiscoveryReqSchema,
-  OutboundPatientDiscoveryResp,
-} from "@metriport/ihe-gateway-sdk";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/process-xcpd-response";
-import { GirthXCPDRequestParams } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/invoke-patient-discovery";
+  processDQResponse,
+  GirthDQRequestParams,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/dq/process-dq-response";
 import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
-import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
@@ -22,8 +20,8 @@ const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
 const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDRequestParams) => {
-  const { patientId, cxId, pdRequestGirth } = event;
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthDQRequestParams) => {
+  const { patientId, cxId, dqRequestsGirth } = event;
 
   const privateKey = await getSecret(privateKeySecretName);
   const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
@@ -42,21 +40,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
     throw new Error("Failed to get secrets or one of the secrets is not a string.");
   }
 
-  // validate request
-  const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGirth);
-  if (!xcpdRequest.success) {
-    const msg = `Invalid request: ${xcpdRequest.error}`;
-    capture.error(msg, {
-      extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
-        error: xcpdRequest.error,
-        patientId,
-        cxId,
-      },
-    });
-    throw Error;
-  }
-  const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest.data, publicCert, privateKey);
+  const signedRequests = createAndSignBulkDQRequests(dqRequestsGirth, publicCert, privateKey);
   const responses = await sendSignedRequests(
     signedRequests,
     certChain,
@@ -65,15 +49,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
     patientId,
     cxId
   );
-  const results: OutboundPatientDiscoveryResp[] = responses.map(
+  const results: OutboundDocumentQueryResp[] = responses.map(
     (response: string | { error: string }, index: number) => {
-      const gateway = xcpdRequest.data.gateways[index];
+      const outboundRequest = dqRequestsGirth[index];
+      if (!outboundRequest) {
+        throw new Error(`Outbound request at index ${index} is undefined.`);
+      }
+      const gateway = outboundRequest.gateway;
       if (!gateway) {
         throw new Error(`Gateway at index ${index} is undefined.`);
       }
-      return processXCPDResponse({
+      return processDQResponse({
         xmlStringOrError: response,
-        outboundRequest: xcpdRequest.data,
+        outboundRequest: outboundRequest,
         gateway,
       });
     }

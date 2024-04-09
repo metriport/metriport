@@ -6,7 +6,7 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
+import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/invoke-patient-discovery";
 import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -73,7 +73,7 @@ async function prepareAndTriggerPD(
     await enabledIHEGW.startPatientDiscovery(pdRequestNoGirth);
 
     log(`Kicking off patient discovery Girth`);
-    await startPatientDiscoveryGirth({ pdRequestGirth, patientId: patient.id, cxId: patient.cxId });
+    startPatientDiscoveryGirth({ pdRequestGirth, patientId: patient.id, cxId: patient.cxId });
 
     // only poll for the NoGirth request
     await resultPoller.pollOutboundPatientDiscoveryResults({

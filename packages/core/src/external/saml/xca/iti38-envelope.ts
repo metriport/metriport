@@ -8,62 +8,33 @@ import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
 } from "../../carequality/shared";
+import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
 
-type DQBodyData = {
-  id: string;
+export type BulkSignedDQ = {
   gateway: {
     homeCommunityId: string;
     url: string;
   };
-  externalGatewayPatient: {
-    id: string;
-    system: string;
-  };
-  classCode: Array<{
-    code: string;
-    system: string;
-  }>;
-  practiceSettingCode: Array<{
-    code: string;
-    system: string;
-  }>;
-  facilityTypeCode: Array<{
-    code: string;
-    system: string;
-  }>;
-  serviceDate: {
-    dateFrom: string;
-    dateTo: string;
-  };
-  documentCreationDate: {
-    dateFrom: string;
-    dateTo: string;
-  };
-  samlAttributes: {
-    subjectRole: {
-      display: string;
-    };
-    organization: string;
-    organizationId: string;
-    homeCommunityId: string;
-    purposeOfUse: string;
-  };
+  signedRequest: string;
 };
 
-function createSoapBody(bodyData: DQBodyData): object {
+function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
+  if (!bodyData.gateway) {
+    throw new Error("Gateway must be provided");
+  }
   const messageId = `urn:uuid:${bodyData.id}`;
-  const classCode = bodyData.classCode?.[0];
-  const practiceSettingCode = bodyData.practiceSettingCode?.[0];
-  const facilityTypeCode = bodyData.facilityTypeCode?.[0];
-  const serviceDateFrom = dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss");
-  const serviceDateTo = dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss");
-  const documentCreationDateFrom = dayjs(bodyData.documentCreationDate.dateFrom).format(
+  const classCode = bodyData.classCode;
+  const practiceSettingCode = bodyData.practiceSettingCode;
+  const facilityTypeCode = bodyData.facilityTypeCode;
+  const serviceDateFrom = dayjs(bodyData.serviceDate?.dateFrom).format("YYYYMMDDHHmmss");
+  const serviceDateTo = dayjs(bodyData.serviceDate?.dateTo).format("YYYYMMDDHHmmss");
+  const documentCreationDateFrom = dayjs(bodyData.documentCreationDate?.dateFrom).format(
     "YYYYMMDDHHmmss"
   );
-  const documentCreationDateTo = dayjs(bodyData.documentCreationDate.dateTo).format(
+  const documentCreationDateTo = dayjs(bodyData.documentCreationDate?.dateTo).format(
     "YYYYMMDDHHmmss"
   );
   const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
@@ -160,7 +131,7 @@ export function createITI38SoapEnvelope({
   bodyData,
   publicCert,
 }: {
-  bodyData: DQBodyData;
+  bodyData: OutboundDocumentQueryReq;
   publicCert: string;
 }): string {
   const messageId = `urn:uuid:${bodyData.id}`;
@@ -228,11 +199,26 @@ export function createITI38SoapEnvelope({
 }
 
 export function createAndSignDQRequest(
-  bodyData: DQBodyData,
+  bodyData: OutboundDocumentQueryReq,
   publicCert: string,
   privateKey: string
 ): string {
   const xmlString = createITI38SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
   return fullySignedSaml;
+}
+
+export function createAndSignBulkDQRequests(
+  bulkBodyData: OutboundDocumentQueryReq[],
+  publicCert: string,
+  privateKey: string
+): BulkSignedDQ[] {
+  const signedRequests: BulkSignedDQ[] = [];
+
+  for (const bodyData of bulkBodyData) {
+    const signedRequest = createAndSignDQRequest(bodyData, publicCert, privateKey);
+    signedRequests.push({ gateway: bodyData.gateway, signedRequest });
+  }
+
+  return signedRequests;
 }

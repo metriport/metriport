@@ -79,36 +79,18 @@ const iti38BodyData = {
     homeCommunityId: "3.16.846.1.113883.3.8395",
     purposeOfUse: "TREATMENT",
   },
-  classCode: [
-    {
-      system: "2.16.840.1.113883.6.1",
-      code: "57016-8",
-    },
-    {
-      system: "1.3.6.1.4.1.19376.1.2.6.1",
-      code: "SUMMARY",
-    },
-  ],
-  practiceSettingCode: [
-    {
-      system: "1.3.6.1.4.1.21367.2017.3",
-      code: "Practice-A",
-    },
-    {
-      system: "1.3.6.1.4.1.21367.2017.3",
-      code: "Practice-B",
-    },
-  ],
-  facilityTypeCode: [
-    {
-      system: "2.16.840.1.113883.6.96",
-      code: "22232009",
-    },
-    {
-      system: "2.16.840.1.113883.6.96",
-      code: "264372000",
-    },
-  ],
+  classCode: {
+    system: "2.16.840.1.113883.6.1",
+    code: "57016-8",
+  },
+  practiceSettingCode: {
+    system: "1.3.6.1.4.1.21367.2017.3",
+    code: "Practice-A",
+  },
+  facilityTypeCode: {
+    system: "2.16.840.1.113883.6.96",
+    code: "22232009",
+  },
   serviceDate: {
     dateFrom: "2022-07-01T00:00:00.000Z",
     dateTo: "2022-07-15T00:00:00.000Z",
