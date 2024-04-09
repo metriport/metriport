@@ -128,9 +128,6 @@ export class IHEStack extends Stack {
       vpc,
       alarmSnsAction
     );
-    this.setupGirthPatientDiscoveryLambda(props, lambdaLayers, vpc, alarmSnsAction);
-    this.setupGirthDocumentQueryLambda(props, lambdaLayers, vpc, alarmSnsAction);
-    this.setupGirthDocumentRetrievalLambda(props, lambdaLayers, vpc, alarmSnsAction);
 
     createIHEGateway(this, {
       ...props,
@@ -207,7 +204,6 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
-
   private setupPatientDiscoveryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
@@ -229,93 +225,6 @@ export class IHEStack extends Stack {
       version: props.version,
     });
     return patientDiscoveryLambda;
-  }
-
-  private setupGirthPatientDiscoveryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
-    const patientDiscoveryLambda = createLambda({
-      stack: this,
-      name: "GirthOutboundPatientDiscovery",
-      entry: "girth-outbound-patient-discovery",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        CQ_ORG_PRIVATE_KEY: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
-        CQ_ORG_CERTIFICATE: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE:
-          props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
-        CQ_ORG_PRIVATE_KEY_PASSWORD:
-          props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
-        API_URL: props.config.loadBalancerDnsName,
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-      version: props.version,
-    });
-    return patientDiscoveryLambda;
-  }
-
-  private setupGirthDocumentQueryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
-    const documentQueryLambda = createLambda({
-      stack: this,
-      name: "GirthOutboundDocumentQuery",
-      entry: "girth-outbound-document-query",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        CQ_ORG_PRIVATE_KEY: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
-        CQ_ORG_CERTIFICATE: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE:
-          props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
-        CQ_ORG_PRIVATE_KEY_PASSWORD:
-          props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
-        API_URL: props.config.loadBalancerDnsName,
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-      version: props.version,
-    });
-    return documentQueryLambda;
-  }
-
-  private setupGirthDocumentRetrievalLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
-    const documentRetrievalLambda = createLambda({
-      stack: this,
-      name: "GirthOutboundDocumentRetrieval",
-      entry: "girth-outbound-document-retrieval",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
-      envVars: {
-        CQ_ORG_PRIVATE_KEY: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
-        CQ_ORG_CERTIFICATE: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE:
-          props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
-        CQ_ORG_PRIVATE_KEY_PASSWORD:
-          props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
-        API_URL: props.config.loadBalancerDnsName,
-        ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
-      },
-      vpc,
-      alarmSnsAction,
-      version: props.version,
-    });
-    return documentRetrievalLambda;
   }
 }
 

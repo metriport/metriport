@@ -44,6 +44,7 @@ import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 const upload = multer();
@@ -81,6 +82,7 @@ const requestIdEmptyOverride = "empty-override";
  */
 router.post(
   "/re-convert",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
@@ -129,6 +131,7 @@ const convertResultSchema = z.enum(convertResult);
  */
 router.post(
   "/conversion-status",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -192,6 +195,7 @@ router.post(
  */
 router.post(
   "/override-progress",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
@@ -234,6 +238,7 @@ router.post(
  */
 router.post(
   "/check-doc-queries",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
     checkDocumentQueries(patientIds);
@@ -274,6 +279,7 @@ const uploadDocSchema = z.object({
 router.post(
   "/upload",
   upload.single("file"),
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
@@ -326,6 +332,7 @@ router.post(
  */
 router.post(
   "/doc-ref",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     console.log("Updating the DocRef on a CX-uploaded file...");
     const cxId = getFromQueryOrFail("cxId", req);
@@ -352,6 +359,7 @@ router.post(
  */
 router.get(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
@@ -374,6 +382,7 @@ router.get(
  */
 router.post(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
@@ -406,6 +415,7 @@ export default router;
  */
 router.post(
   "/triggerBulkDownloadWebhook",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);

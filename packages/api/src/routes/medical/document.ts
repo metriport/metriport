@@ -25,7 +25,7 @@ import { optionalDateSchema } from "../schemas/date";
 import { asyncHandler, getCxIdOrFail, getFrom, getFromQueryOrFail } from "../util";
 import { toDTO } from "./dtos/documentDTO";
 import { docConversionTypeSchema, docFileNameSchema } from "./schemas/documents";
-
+import { requestLogger } from "../helpers/request-logger";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
@@ -58,6 +58,7 @@ const getDocSchema = z.object({
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -87,6 +88,7 @@ router.get(
  */
 router.get(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -108,6 +110,7 @@ router.get(
  */
 router.post(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -168,6 +171,7 @@ async function getDownloadUrl(req: Request): Promise<string> {
  */
 router.get(
   "/downloadUrl",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
@@ -185,6 +189,7 @@ router.get(
  */
 router.get(
   "/download-url",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const url = await getDownloadUrl(req);
     return res.status(OK).json({ url });
@@ -203,6 +208,7 @@ router.get(
 
 router.post(
   "/download-url/bulk",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromQueryOrFail("patientId", req);
@@ -264,6 +270,7 @@ async function getUploadUrlAndCreateDocRef(req: Request): Promise<UploadDocument
  */
 router.post(
   "/upload-url",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     const url = resp.uploadUrl;
@@ -285,6 +292,7 @@ router.post(
  */
 router.post(
   "/upload",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const resp = await getUploadUrlAndCreateDocRef(req);
     return res.status(httpStatus.OK).json(resp);
