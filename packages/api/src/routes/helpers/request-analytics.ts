@@ -1,4 +1,5 @@
 import { Request } from "express";
+import QueryString from "qs";
 import { Product } from "../../domain/product";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { getCxId, getCxIdFromHeaders } from "../util";
@@ -23,11 +24,15 @@ export const analyzeRoute = ({
   req,
   method,
   url,
+  params,
+  query,
   duration,
 }: {
   req: Request;
   method: string;
   url: string;
+  params: Record<string, string> | undefined;
+  query: QueryString.ParsedQs | undefined;
   duration: number;
 }): void => {
   const reqCxId = getCxId(req);
@@ -37,15 +42,16 @@ export const analyzeRoute = ({
   const isMedical = medicalRoutes.some(route => url.includes(route));
   const isDevices = devicesRoutes.some(route => url.includes(route));
 
-  const distinctId = cxId ?? "not-available";
-  if (!isDevices) {
+  if (!isDevices && cxId) {
     analytics({
       event: EventTypes.query,
-      distinctId,
+      distinctId: cxId,
       properties: {
         method,
         url,
         duration,
+        ...params,
+        ...query,
       },
       apiType: isMedical ? Product.medical : "internal",
     });

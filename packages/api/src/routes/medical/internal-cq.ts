@@ -46,6 +46,7 @@ import { processPostRespOutboundPatientDiscoveryResps } from "../../external/car
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { requestLogger } from "../helpers/request-logger";
 
 dayjs.extend(duration);
 const router = Router();
@@ -168,6 +169,7 @@ router.post(
  */
 router.get(
   "/directory/nearby-organizations",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
@@ -234,6 +236,7 @@ router.post(
  */
 router.post(
   "/patient-discovery/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundPatientDiscoveryRespSchema
     processOutboundPatientDiscoveryResps(req.body);
@@ -285,6 +288,7 @@ router.post(
  */
 router.post(
   "/document-query/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentQueryRespSchema
     processOutboundDocumentQueryResps(req.body);
@@ -336,6 +340,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentRetrievalRespSchema
     processOutboundDocumentRetrievalResps(req.body);
