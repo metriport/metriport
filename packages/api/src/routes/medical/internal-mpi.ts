@@ -9,7 +9,6 @@ import { asyncHandler, getFrom } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { createPatientUniqueId } from "@metriport/core/external/carequality/shared";
 import { Patient } from "@metriport/core/domain/patient";
-import { requestLogger } from "../helpers/request-logger";
 
 dayjs.extend(duration);
 
@@ -32,7 +31,6 @@ const patientLoader = new PatientLoaderLocal();
  */
 router.get(
   "/patient",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const dob = getFrom("query").orFail("dob", req);
     const genderAtBirth = genderAtBirthSchema.parse(getFrom("query").orFail("genderAtBirth", req));

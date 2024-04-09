@@ -202,7 +202,6 @@ router.get(
  */
 router.post(
   "/patient-discovery/response",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundPatientDiscoveryRespSchema.parse(req.body);
 
@@ -257,7 +256,6 @@ router.post(
  */
 router.post(
   "/document-query/response",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentQueryRespSchema.parse(req.body);
 
@@ -310,7 +308,6 @@ router.post(
  */
 router.post(
   "/document-retrieval/response",
-  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentRetrievalRespSchema.parse(req.body);
 
