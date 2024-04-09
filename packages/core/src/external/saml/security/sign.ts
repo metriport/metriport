@@ -69,13 +69,24 @@ export function signFullSaml({
   xmlString,
   publicCert,
   privateKey,
+  privateKeyPassword,
 }: {
   xmlString: string;
   publicCert: string;
   privateKey: string;
+  privateKeyPassword: string;
 }): string {
-  const signedTimestamp = signTimestamp({ xml: xmlString, privateKey });
-  const signedTimestampAndEnvelope = signEnvelope({ xml: signedTimestamp, privateKey });
+  const decryptedPrivateKey = crypto.createPrivateKey({
+    key: privateKey,
+    passphrase: privateKeyPassword,
+    format: "pem",
+  });
+
+  const signedTimestamp = signTimestamp({ xml: xmlString, privateKey: decryptedPrivateKey });
+  const signedTimestampAndEnvelope = signEnvelope({
+    xml: signedTimestamp,
+    privateKey: decryptedPrivateKey,
+  });
   const insertedKeyInfo = insertKeyInfo({ xmlContent: signedTimestampAndEnvelope, publicCert });
   return insertedKeyInfo;
 }

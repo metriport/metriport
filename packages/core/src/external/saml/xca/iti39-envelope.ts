@@ -112,9 +112,10 @@ export function createITI39SoapEnvelope({
 export function createAndSignDRRequest(
   bodyData: DRBodyData,
   publicCert: string,
-  privateKey: string
+  privateKey: string,
+  privateKeyPassword: string
 ): string {
   const xmlString = createITI39SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
+  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
   return fullySignedSaml;
 }

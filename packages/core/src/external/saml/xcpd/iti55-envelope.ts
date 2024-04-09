@@ -264,7 +264,8 @@ export function createITI5SoapEnvelope({
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
   publicCert: string,
-  privateKey: string
+  privateKey: string,
+  privateKeyPassword: string
 ): BulkSignedXCPD[] {
   const signedRequests: BulkSignedXCPD[] = [];
 
@@ -275,7 +276,7 @@ export function createAndSignBulkXCPDRequests(
     };
 
     const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
-    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey });
+    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
     signedRequests.push({ gateway, signedRequest });
   }
 

@@ -3,17 +3,14 @@ import fs from "fs";
 import https from "https";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import { errorToString } from "@metriport/core/util/error/shared";
 import {
   outboundPatientDiscoveryReqSchema,
   OutboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import {
-  createAndSignBulkXCPDRequests,
-  BulkSignedXCPD,
-} from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/process-xcpd-response";
 import { GirthXCPDRequestParams } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
+import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
@@ -61,7 +58,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
     });
     throw Error;
   }
-  const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest.data, publicCert, privateKey);
+  const signedRequests = createAndSignBulkXCPDRequests(
+    xcpdRequest.data,
+    publicCert,
+    privateKey,
+    privateKeyPassword
+  );
   const responses = await sendSignedRequests(
     signedRequests,
     certChain,
@@ -109,60 +111,4 @@ export async function sendSignedXml(
   });
 
   return response.data;
-}
-
-export async function sendSignedRequests(
-  signedRequests: BulkSignedXCPD[],
-  certChain: string,
-  privateKey: string,
-  privateKeyPassword: string,
-  patientId: string,
-  cxId: string
-): Promise<(string | { error: string })[]> {
-  const certFilePath = "./tempCert.pem";
-  const keyFilePath = "./tempKey.pem";
-  fs.writeFileSync(certFilePath, certChain);
-  fs.writeFileSync(keyFilePath, privateKey);
-
-  const requestPromises = signedRequests.map((request, index) =>
-    sendSignedXml(
-      request.signedRequest,
-      request.gateway.url,
-      certFilePath,
-      keyFilePath,
-      privateKeyPassword
-    )
-      .then(response => {
-        console.log(
-          `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
-            request.gateway.oid
-          }`
-        );
-        return response;
-      })
-      .catch(error => {
-        const msg = `Request ${index + 1} ERRORs for gateway: ${request.gateway.url} + oid: ${
-          request.gateway.oid
-        }`;
-        console.log(`${msg}: ${errorToString(error)}`);
-        capture.error(msg, {
-          extra: { context: `lambda.girth-outbound-patient-discovery`, error, patientId, cxId },
-        });
-        const errorString: string = errorToString(error);
-        return { error: errorString };
-      })
-  );
-
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      }
-    })
-    .filter((response): response is string | { error: string } => response !== undefined);
-
-  fs.unlinkSync(certFilePath);
-  fs.unlinkSync(keyFilePath);
-  return processedResponses;
 }

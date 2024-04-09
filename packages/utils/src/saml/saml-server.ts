@@ -8,7 +8,7 @@ import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcp
 // import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
 // import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { sendSignedRequests } from "./saml-client";
+import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -20,6 +20,7 @@ app.use(json());
 const privateKey = getEnvVarOrFail("IHE_PRODUCTION_KEY");
 const x509CertPem = getEnvVarOrFail("IHE_PRODUCTION_CERT");
 const certChain = getEnvVarOrFail("IHE_PRODUCTION_CERT_CHAIN");
+const privateKeyPassword = getEnvVarOrFail("IHE_PRODUCTION_KEY_PASSWORD");
 
 app.post("/xcpd", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
@@ -27,9 +28,21 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponse = createAndSignBulkXCPDRequests(req.body, x509CertPem, privateKey);
+    const xmlResponse = createAndSignBulkXCPDRequests(
+      req.body,
+      x509CertPem,
+      privateKey,
+      privateKeyPassword
+    );
     fs.writeFileSync("../../scratch/outbound_xcpd_2.xml", xmlResponse[0].signedRequest);
-    const response = await sendSignedRequests(xmlResponse, certChain, privateKey);
+    const response = await sendSignedRequests(
+      xmlResponse,
+      certChain,
+      privateKey,
+      privateKeyPassword,
+      "patientId",
+      "cxId"
+    );
 
     res.type("application/xml").send(response);
   } catch (error) {
