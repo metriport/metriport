@@ -1,15 +1,6 @@
 import * as uuid from "uuid";
-import { createITI5SoapEnvelope } from "../xcpd/iti55-envelope";
-import { createITI38SoapEnvelope } from "../xca/iti38-envelope";
-import { createITI39SoapEnvelope } from "../xca/iti39-envelope";
-import { verifySaml } from "../security/verify";
-import { signTimestamp, signEnvelope } from "../security/sign";
-import { getEnvVarOrFail } from "../../../util/env-var";
 
-import * as dotenv from "dotenv";
-dotenv.config();
-
-const iti55BodyData = {
+export const iti55BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
   timestamp: "2024-03-03T08:44:00Z",
@@ -53,7 +44,7 @@ const iti55BodyData = {
   },
 };
 
-const iti38BodyData = {
+export const iti38BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
   timestamp: "2023-12-01T08:44:00Z",
@@ -117,7 +108,7 @@ const iti38BodyData = {
   },
 };
 
-const iti39BodyData = {
+export const iti39BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
   gateway: {
@@ -153,46 +144,31 @@ const iti39BodyData = {
   ],
 };
 
-const privateKey = getEnvVarOrFail("IHE_STAGING_KEY");
-const publicCert = getEnvVarOrFail("IHE_STAGING_CERT");
-
-describe("SAML Signature Verification", () => {
-  it("should sign and verify the XCPD SOAP envelope successfully", () => {
-    const soapEnvelope = createITI5SoapEnvelope({
-      bodyData: iti55BodyData,
-      publicCert: publicCert,
-    });
-
-    const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey });
-    expect(verifySaml({ xmlString: signedWithTimestamp, publicCert: publicCert })).toBeTruthy();
-
-    const signedEnvelope = signEnvelope({ xml: signedWithTimestamp, privateKey });
-    expect(verifySaml({ xmlString: signedEnvelope, publicCert: publicCert })).toBeTruthy();
-  });
-
-  it("should sign and verify the ITI38 envelope successfully", () => {
-    const soapEnvelope = createITI38SoapEnvelope({
-      bodyData: iti38BodyData,
-      publicCert: publicCert,
-    });
-
-    const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey });
-    expect(verifySaml({ xmlString: signedWithTimestamp, publicCert: publicCert })).toBeTruthy();
-
-    const signedEnvelope = signEnvelope({ xml: signedWithTimestamp, privateKey });
-    expect(verifySaml({ xmlString: signedEnvelope, publicCert: publicCert })).toBeTruthy();
-  });
-
-  it("should sign and verify the ITI39 envelope successfully", () => {
-    const soapEnvelope = createITI39SoapEnvelope({
-      bodyData: iti39BodyData,
-      publicCert: publicCert,
-    });
-
-    const signedWithTimestamp = signTimestamp({ xml: soapEnvelope, privateKey });
-    expect(verifySaml({ xmlString: signedWithTimestamp, publicCert: publicCert })).toBeTruthy();
-
-    const signedEnvelope = signEnvelope({ xml: signedWithTimestamp, privateKey });
-    expect(verifySaml({ xmlString: signedEnvelope, publicCert: publicCert })).toBeTruthy();
-  });
-});
+export const IHE_STAGING_CERT = `-----BEGIN CERTIFICATE-----
+MIIBxDCCAW6gAwIBAgIQxUSXFzWJYYtOZnmmuOMKkjANBgkqhkiG9w0BAQQFADAW
+MRQwEgYDVQQDEwtSb290IEFnZW5jeTAeFw0wMzA3MDgxODQ3NTlaFw0zOTEyMzEy
+MzU5NTlaMB8xHTAbBgNVBAMTFFdTRTJRdWlja1N0YXJ0Q2xpZW50MIGfMA0GCSqG
+SIb3DQEBAQUAA4GNADCBiQKBgQC+L6aB9x928noY4+0QBsXnxkQE4quJl7c3PUPd
+Vu7k9A02hRG481XIfWhrDY5i7OEB7KGW7qFJotLLeMec/UkKUwCgv3VvJrs2nE9x
+O3SSWIdNzADukYh+Cxt+FUU6tUkDeqg7dqwivOXhuOTRyOI3HqbWTbumaLdc8juf
+z2LhaQIDAQABo0swSTBHBgNVHQEEQDA+gBAS5AktBh0dTwCNYSHcFmRjoRgwFjEU
+MBIGA1UEAxMLUm9vdCBBZ2VuY3mCEAY3bACqAGSKEc+41KpcNfQwDQYJKoZIhvcN
+AQEEBQADQQAfIbnMPVYkNNfX1tG1F+qfLhHwJdfDUZuPyRPucWF5qkh6sSdWVBY5
+sT/txBnVJGziyO8DPYdu2fPMER8ajJfl
+-----END CERTIFICATE-----`;
+export const IHE_STAGING_KEY = `-----BEGIN PRIVATE KEY-----
+MIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAL4vpoH3H3byehjj
+7RAGxefGRATiq4mXtzc9Q91W7uT0DTaFEbjzVch9aGsNjmLs4QHsoZbuoUmi0st4
+x5z9SQpTAKC/dW8muzacT3E7dJJYh03MAO6RiH4LG34VRTq1SQN6qDt2rCK85eG4
+5NHI4jceptZNu6Zot1zyO5/PYuFpAgMBAAECgYAhspeyF3M/xB7WIixy1oBiXMLY
+isESFAumgfhwU2LotkVRD6rgNl1QtMe3kCNWa9pCWQcYkxeI0IzA+JmFu2shVvoR
+oL7eV4VCe1Af33z24E46+cY5grxNhHt/LyCnZKcitvCcrzXExUc5n6KngX0mMKgk
+W7skZDwsnKzhyUV8wQJBAN2bQMeASQVOqdfqBdFgC/NPnKY2cuDi6h659QN1l+kg
+X3ywdZ7KKftJo1G9l45SN9YpkyEd9zEO6PMFaufJvZUCQQDbtAWxk0i8BT3UTNWC
+T/9bUQROPcGZagwwnRFByX7gpmfkf1ImIvbWVXSpX68/IjbjSkTw1nj/Yj1NwFZ0
+nxeFAkEAzPhRpXVBlPgaXkvlz7AfvY+wW4hXHyyi0YK8XdPBi25XA5SPZiylQfjt
+Z6iN6qSfYqYXoPT/c0/QJR+orvVJNQJBANhRPNXljVTK2GDCseoXd/ZiI5ohxg+W
+UaA/1fDvQsRQM7TQA4NXI7BO/YmSk4rW1jIeOxjiIspY4MFAIh+7UL0CQFL6zTg6
+wfeMlEZzvgqwCGoLuvTnqtvyg45z7pfcrg2cHdgCXIy9kErcjwGiu6BOevEA1qTW
+Rk+bv0tknWvcz/s=
+-----END PRIVATE KEY-----`;
