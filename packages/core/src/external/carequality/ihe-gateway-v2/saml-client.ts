@@ -1,4 +1,3 @@
-import fs from "fs";
 import https from "https";
 import axios from "axios";
 import { errorToString } from "../../../util/error/shared";
@@ -7,14 +6,14 @@ import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 export async function sendSignedXml(
   signedXml: string,
   url: string,
-  certFilePath: string,
-  keyFilePath: string,
+  cert: string,
+  key: string,
   passphrase: string
 ): Promise<string> {
   const agent = new https.Agent({
     rejectUnauthorized: false,
-    cert: fs.readFileSync(certFilePath),
-    key: fs.readFileSync(keyFilePath),
+    cert: cert,
+    key: key,
     passphrase,
   });
 
@@ -37,17 +36,12 @@ export async function sendSignedRequests(
   patientId: string,
   cxId: string
 ): Promise<(string | { error: string })[]> {
-  const certFilePath = "./tempCert.pem";
-  const keyFilePath = "./tempKey.pem";
-  fs.writeFileSync(certFilePath, certChain);
-  fs.writeFileSync(keyFilePath, privateKey);
-
   const requestPromises = signedRequests.map((request, index) =>
     sendSignedXml(
       request.signedRequest,
       request.gateway.url,
-      certFilePath,
-      keyFilePath,
+      certChain,
+      privateKey,
       privateKeyPassword
     )
       .then(response => {
@@ -79,7 +73,5 @@ export async function sendSignedRequests(
     })
     .filter((response): response is string | { error: string } => response !== undefined);
 
-  fs.unlinkSync(certFilePath);
-  fs.unlinkSync(keyFilePath);
   return processedResponses;
 }
