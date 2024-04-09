@@ -47,6 +47,7 @@ import {
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { stringToBoolean } from "@metriport/shared";
+import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -64,6 +65,7 @@ const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
@@ -107,6 +109,7 @@ router.post(
  */
 router.put(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -150,6 +153,7 @@ router.put(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
@@ -170,6 +174,7 @@ router.get(
  */
 router.delete(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -198,6 +203,7 @@ router.delete(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
@@ -225,6 +231,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -256,6 +263,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -289,6 +297,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  */
 router.post(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -328,6 +337,7 @@ router.post(
  */
 router.get(
   "/:id/medical-record",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -351,6 +361,7 @@ router.get(
  */
 router.get(
   "/:id/medical-record-status",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -436,6 +447,7 @@ async function putConsolidated(req: Request, res: Response) {
  */
 router.get(
   "/:id/consolidated/count",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);

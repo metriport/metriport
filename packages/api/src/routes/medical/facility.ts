@@ -9,6 +9,7 @@ import { getETag } from "../../shared/http";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/facilityDTO";
 import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
+import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ const router = Router();
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityData = facilityCreateSchema.parse(req.body);
@@ -47,6 +49,7 @@ router.post(
  */
 router.put(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromParamsOrFail("id", req);
@@ -74,6 +77,7 @@ router.put(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
@@ -93,6 +97,7 @@ router.get(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromParamsOrFail("id", req);

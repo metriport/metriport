@@ -10,6 +10,7 @@ import { retryFailedRequests } from "../command/webhook/retry-failed";
 import BadRequestError from "../errors/bad-request";
 import { Settings } from "../models/settings";
 import { asyncHandler, getCxIdOrFail } from "./util";
+import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 const webhookURLIncludeBlacklist = [
@@ -98,6 +99,7 @@ class WebhookStatusDTO {
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
     let settings = await getSettings({ id });
@@ -125,6 +127,7 @@ const updateSettingsSchema = z
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const { webhookUrl } = updateSettingsSchema.parse(req.body);
@@ -154,6 +157,7 @@ router.post(
  */
 router.get(
   "/webhook",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const id = getCxIdOrFail(req);
     const settings = await getSettingsOrFail({ id });
@@ -180,6 +184,7 @@ router.get(
  */
 router.post(
   "/webhook/retry",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     await retryFailedRequests(cxId);
