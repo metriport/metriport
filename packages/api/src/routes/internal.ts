@@ -25,6 +25,7 @@ import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
+import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 
@@ -45,6 +46,7 @@ router.use("/mpi", mpiRoutes);
  */
 router.post(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
@@ -62,6 +64,7 @@ router.post(
  */
 router.get(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const hasMapi = await hasMapiAccess(cxId);
@@ -79,6 +82,7 @@ router.get(
  */
 router.delete(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
@@ -105,6 +109,7 @@ router.delete(
  */
 router.post(
   "/populate-fhir-server",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const allCustomers = getFrom("query").optional("allCustomers", req) === "true";
@@ -145,6 +150,7 @@ router.post(
  */
 router.get(
   "/count-fhir-resources",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await countResources({ patient: { cxId } });
@@ -159,6 +165,7 @@ router.get(
  */
 router.post(
   "/cq-include-list/reset",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     if (!(await isEnhancedCoverageEnabledForCx(cxId))) {
@@ -177,6 +184,7 @@ router.post(
  */
 router.get(
   "/cx-data",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const org = await getOrganizationOrFail({ cxId });
@@ -210,6 +218,7 @@ router.get(
  */
 router.post(
   "/check-api-quota",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxsWithLowQuota = await checkApiQuota();
     return res.status(httpStatus.OK).json({ cxsWithLowQuota });
@@ -223,6 +232,7 @@ router.post(
  */
 router.post(
   "/db-maintenance",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const result = await dbMaintenance();
     console.log(`DB Maintenance Result: ${JSON.stringify(result)}`);
@@ -237,6 +247,7 @@ router.post(
  */
 router.post(
   "/references-from-fhir",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
 

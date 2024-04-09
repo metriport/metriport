@@ -46,6 +46,7 @@ import { processPostRespOutboundPatientDiscoveryResps } from "../../external/car
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { requestLogger } from "../helpers/request-logger";
 
 dayjs.extend(duration);
 const router = Router();
@@ -59,6 +60,7 @@ const sequelize = initDBPool(Config.getDBCreds());
  */
 router.post(
   "/directory/rebuild",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     await rebuildCQDirectory();
@@ -76,6 +78,7 @@ router.post(
 router.post(
   "/directory/insert",
   upload.single("file"),
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) {
@@ -117,6 +120,7 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cq = makeCarequalityManagementAPI();
@@ -147,6 +151,7 @@ router.get(
  */
 router.post(
   "/directory/organization",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
     const orgDetails = cqOrgDetailsSchema.parse(body);
@@ -168,6 +173,7 @@ router.post(
  */
 router.get(
   "/directory/nearby-organizations",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
@@ -196,6 +202,7 @@ router.get(
  */
 router.post(
   "/patient-discovery/response",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundPatientDiscoveryRespSchema.parse(req.body);
 
@@ -234,6 +241,7 @@ router.post(
  */
 router.post(
   "/patient-discovery/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundPatientDiscoveryRespSchema
     processOutboundPatientDiscoveryResps(req.body);
@@ -249,6 +257,7 @@ router.post(
  */
 router.post(
   "/document-query/response",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentQueryRespSchema.parse(req.body);
 
@@ -285,6 +294,7 @@ router.post(
  */
 router.post(
   "/document-query/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentQueryRespSchema
     processOutboundDocumentQueryResps(req.body);
@@ -300,6 +310,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/response",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentRetrievalRespSchema.parse(req.body);
 
@@ -336,6 +347,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentRetrievalRespSchema
     processOutboundDocumentRetrievalResps(req.body);

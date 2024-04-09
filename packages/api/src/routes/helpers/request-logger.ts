@@ -22,7 +22,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   const reqId = nanoid();
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
-    const url = req.baseUrl + req.path;
+    const url = req.baseUrl;
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params = req.params && Object.keys(req.params).length ? req.params : undefined;
 
@@ -53,7 +53,11 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         elapsedTimeInMs
       );
 
-      analyzeRoute({ req, method, url, duration: elapsedTimeInMs });
+      const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
+
+      if (isSuccessful) {
+        analyzeRoute({ req, method, url, params, query, duration: elapsedTimeInMs });
+      }
     });
     next();
   });
