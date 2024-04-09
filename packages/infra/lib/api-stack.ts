@@ -1424,25 +1424,29 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to lambda
-    if (!secrets[cqOrgCertificate]) {
-      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
+    if (!secrets[cqOrgCertificateKey]) {
+      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
     }
-    secrets[cqOrgCertificate]?.grantRead(patientDiscoveryLambda);
+    secrets[cqOrgCertificateKey]?.grantRead(patientDiscoveryLambda);
 
-    if (!secrets[cqOrgPrivateKey]) {
-      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
+    if (!secrets[cqOrgCertificateIntermediateKey]) {
+      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
     }
-    secrets[cqOrgPrivateKey]?.grantRead(patientDiscoveryLambda);
+    secrets[cqOrgCertificateIntermediateKey]?.grantRead(patientDiscoveryLambda);
 
-    if (!secrets[cqOrgPrivateKeyPassword]) {
+    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
+    if (!secrets[cqOrgPrivateKeyKey]) {
+      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
+    }
+    secrets[cqOrgPrivateKeyKey]?.grantRead(patientDiscoveryLambda);
+
+    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
+    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
       throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
     }
-    secrets[cqOrgPrivateKeyPassword]?.grantRead(patientDiscoveryLambda);
-
-    if (!secrets[cqOrgCertificateIntermediate]) {
-      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
-    }
-    secrets[cqOrgCertificateIntermediate]?.grantRead(patientDiscoveryLambda);
+    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(patientDiscoveryLambda);
 
     return patientDiscoveryLambda;
   }
@@ -1493,23 +1497,29 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to lambda
-    if (!secrets.cqOrgCertificate) {
-      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
+    if (!secrets[cqOrgCertificateKey]) {
+      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
     }
-    secrets.cqOrgCertificate.grantRead(documentQueryLambda);
+    secrets[cqOrgCertificateKey]?.grantRead(documentQueryLambda);
 
-    if (!secrets.cqOrgPrivateKey) {
-      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
+    if (!secrets[cqOrgCertificateIntermediateKey]) {
+      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
     }
-    secrets.cqOrgPrivateKey.grantRead(documentQueryLambda);
-    if (!secrets.cqOrgPrivateKeyPassword) {
+    secrets[cqOrgCertificateIntermediateKey]?.grantRead(documentQueryLambda);
+
+    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
+    if (!secrets[cqOrgPrivateKeyKey]) {
+      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
+    }
+    secrets[cqOrgPrivateKeyKey]?.grantRead(documentQueryLambda);
+
+    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
+    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
       throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
     }
-    secrets.cqOrgPrivateKeyPassword.grantRead(documentQueryLambda);
-    if (!secrets.cqOrgCertificateIntermediate) {
-      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
-    }
-    secrets.cqOrgCertificateIntermediate.grantRead(documentQueryLambda);
+    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(documentQueryLambda);
 
     return documentQueryLambda;
   }
@@ -1560,23 +1570,29 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to lambda
-    if (!secrets.cqOrgCertificate) {
-      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
+    if (!secrets[cqOrgCertificateKey]) {
+      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
     }
-    secrets.cqOrgCertificate.grantRead(documentRetrievalLambda);
+    secrets[cqOrgCertificateKey]?.grantRead(documentRetrievalLambda);
 
-    if (!secrets.cqOrgPrivateKey) {
-      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
+    if (!secrets[cqOrgCertificateIntermediateKey]) {
+      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
     }
-    secrets.cqOrgPrivateKey.grantRead(documentRetrievalLambda);
-    if (!secrets.cqOrgPrivateKeyPassword) {
+    secrets[cqOrgCertificateIntermediateKey]?.grantRead(documentRetrievalLambda);
+
+    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
+    if (!secrets[cqOrgPrivateKeyKey]) {
+      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
+    }
+    secrets[cqOrgPrivateKeyKey]?.grantRead(documentRetrievalLambda);
+
+    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
+    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
       throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
     }
-    secrets.cqOrgPrivateKeyPassword.grantRead(documentRetrievalLambda);
-    if (!secrets.cqOrgCertificateIntermediate) {
-      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
-    }
-    secrets.cqOrgCertificateIntermediate.grantRead(documentRetrievalLambda);
+    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;
   }
