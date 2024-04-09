@@ -347,6 +347,46 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
+    const girthPatientDiscoveryLambda = this.setupGirthPatientDiscoveryLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      secrets,
+      cqOrgCertificate: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      apiURL: props.config.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+    const girthDocumentQueryLambda = this.setupGirthDocumentQueryLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      secrets,
+      cqOrgCertificate: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      apiURL: props.config.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+    const girthDocumentRetrievalLambda = this.setupGirthDocumentRetrievalLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      secrets,
+      cqOrgCertificate: props.config.carequality.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      apiURL: props.config.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+
     const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
       lambdaLayers,
       vpc: this.vpc,
@@ -437,6 +477,9 @@ export class APIStack extends Stack {
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
+      girthPatientDiscoveryLambda,
+      girthDocumentQueryLambda,
+      girthDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
       searchIngestionQueue: ccdaSearchQueue,
@@ -1333,6 +1376,207 @@ export class APIStack extends Stack {
     dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
 
     return outboundDocumentRetrievalLambda;
+  }
+
+  private setupGirthPatientDiscoveryLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cqOrgCertificate: string;
+    cqOrgPrivateKey: string;
+    cqOrgPrivateKeyPassword: string;
+    cqOrgCertificateIntermediate: string;
+    apiURL: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      cqOrgCertificate,
+      cqOrgPrivateKey,
+      cqOrgPrivateKeyPassword,
+      cqOrgCertificateIntermediate,
+      apiURL,
+      envType,
+      sentryDsn,
+    } = ownProps;
+
+    const patientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "GirthOutboundPatientDiscovery",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "girth-outbound-patient-discovery",
+      envType: envType,
+      envVars: {
+        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
+        CQ_ORG_CERTIFICATE: cqOrgCertificate,
+        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        API_URL: apiURL,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    // granting secrets read access to lambda
+    if (!secrets.cqOrgCertificate) {
+      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    }
+    secrets.cqOrgCertificate.grantRead(patientDiscoveryLambda);
+
+    if (!secrets.cqOrgPrivateKey) {
+      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKey.grantRead(patientDiscoveryLambda);
+    if (!secrets.cqOrgPrivateKeyPassword) {
+      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKeyPassword.grantRead(patientDiscoveryLambda);
+    if (!secrets.cqOrgCertificateIntermediate) {
+      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
+    }
+    secrets.cqOrgCertificateIntermediate.grantRead(patientDiscoveryLambda);
+
+    return patientDiscoveryLambda;
+  }
+
+  private setupGirthDocumentQueryLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cqOrgCertificate: string;
+    cqOrgPrivateKey: string;
+    cqOrgPrivateKeyPassword: string;
+    cqOrgCertificateIntermediate: string;
+    apiURL: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      cqOrgCertificate,
+      cqOrgPrivateKey,
+      cqOrgPrivateKeyPassword,
+      cqOrgCertificateIntermediate,
+      apiURL,
+      envType,
+      sentryDsn,
+    } = ownProps;
+
+    const documentQueryLambda = createLambda({
+      stack: this,
+      name: "GirthOutboundDocumentQuery",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "girth-outbound-document-query",
+      envType: envType,
+      envVars: {
+        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
+        CQ_ORG_CERTIFICATE: cqOrgCertificate,
+        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        API_URL: apiURL,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    // granting secrets read access to lambda
+    if (!secrets.cqOrgCertificate) {
+      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    }
+    secrets.cqOrgCertificate.grantRead(documentQueryLambda);
+
+    if (!secrets.cqOrgPrivateKey) {
+      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKey.grantRead(documentQueryLambda);
+    if (!secrets.cqOrgPrivateKeyPassword) {
+      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKeyPassword.grantRead(documentQueryLambda);
+    if (!secrets.cqOrgCertificateIntermediate) {
+      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
+    }
+    secrets.cqOrgCertificateIntermediate.grantRead(documentQueryLambda);
+
+    return documentQueryLambda;
+  }
+
+  private setupGirthDocumentRetrievalLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cqOrgCertificate: string;
+    cqOrgPrivateKey: string;
+    cqOrgPrivateKeyPassword: string;
+    cqOrgCertificateIntermediate: string;
+    apiURL: string;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      cqOrgCertificate,
+      cqOrgPrivateKey,
+      cqOrgPrivateKeyPassword,
+      cqOrgCertificateIntermediate,
+      apiURL,
+      envType,
+      sentryDsn,
+    } = ownProps;
+
+    const documentRetrievalLambda = createLambda({
+      stack: this,
+      name: "GirthOutboundDocumentRetrieval",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "girth-outbound-document-retrieval",
+      envType: envType,
+      envVars: {
+        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
+        CQ_ORG_CERTIFICATE: cqOrgCertificate,
+        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        API_URL: apiURL,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    // granting secrets read access to lambda
+    if (!secrets.cqOrgCertificate) {
+      throw new Error(`${cqOrgCertificate} is not defined in config`);
+    }
+    secrets.cqOrgCertificate.grantRead(documentRetrievalLambda);
+
+    if (!secrets.cqOrgPrivateKey) {
+      throw new Error(`${cqOrgPrivateKey} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKey.grantRead(documentRetrievalLambda);
+    if (!secrets.cqOrgPrivateKeyPassword) {
+      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
+    }
+    secrets.cqOrgPrivateKeyPassword.grantRead(documentRetrievalLambda);
+    if (!secrets.cqOrgCertificateIntermediate) {
+      throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
+    }
+    secrets.cqOrgCertificateIntermediate.grantRead(documentRetrievalLambda);
+
+    return documentRetrievalLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
