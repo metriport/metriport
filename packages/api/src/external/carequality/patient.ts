@@ -73,7 +73,7 @@ async function prepareAndTriggerPD(
     await enabledIHEGW.startPatientDiscovery(pdRequestNoGirth);
 
     log(`Kicking off patient discovery Girth`);
-    await startPatientDiscoveryGirth({ pdRequestGirth, patientId: patient.id, cxId: patient.cxId });
+    startPatientDiscoveryGirth({ pdRequestGirth, patientId: patient.id, cxId: patient.cxId });
 
     // only poll for the NoGirth request
     await resultPoller.pollOutboundPatientDiscoveryResults({

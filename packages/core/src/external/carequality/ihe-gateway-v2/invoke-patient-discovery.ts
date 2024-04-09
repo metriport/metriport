@@ -9,7 +9,8 @@ export type GirthXCPDRequestParams = {
 };
 const girthOutboundPatientDiscoveryLambdaName = "GirthOutboundPatientDiscoveryLambda";
 
-export async function startPatientDiscoveryGirth({
+// intentionally not async
+export function startPatientDiscoveryGirth({
   pdRequestGirth,
   patientId,
   cxId,
@@ -17,14 +18,18 @@ export async function startPatientDiscoveryGirth({
   pdRequestGirth: OutboundPatientDiscoveryReq;
   patientId: string;
   cxId: string;
-}): Promise<void> {
+}): void {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, pdRequestGirth };
-  await lambdaClient
+  console.log(
+    `Invoking Girth Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
+  );
+  lambdaClient
     .invoke({
       FunctionName: girthOutboundPatientDiscoveryLambdaName,
       InvocationType: "Event",
       Payload: JSON.stringify(params),
     })
-    .promise();
+    .promise()
+    .catch(error => console.error("Lambda invocation failed:", error));
 }
