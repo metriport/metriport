@@ -1424,23 +1424,25 @@ export class APIStack extends Stack {
     });
 
     // granting secrets read access to lambda
-    if (!secrets.cqOrgCertificate) {
+    if (!secrets[cqOrgCertificate]) {
       throw new Error(`${cqOrgCertificate} is not defined in config`);
     }
-    secrets.cqOrgCertificate.grantRead(patientDiscoveryLambda);
+    secrets[cqOrgCertificate]?.grantRead(patientDiscoveryLambda);
 
-    if (!secrets.cqOrgPrivateKey) {
+    if (!secrets[cqOrgPrivateKey]) {
       throw new Error(`${cqOrgPrivateKey} is not defined in config`);
     }
-    secrets.cqOrgPrivateKey.grantRead(patientDiscoveryLambda);
-    if (!secrets.cqOrgPrivateKeyPassword) {
+    secrets[cqOrgPrivateKey]?.grantRead(patientDiscoveryLambda);
+
+    if (!secrets[cqOrgPrivateKeyPassword]) {
       throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
     }
-    secrets.cqOrgPrivateKeyPassword.grantRead(patientDiscoveryLambda);
-    if (!secrets.cqOrgCertificateIntermediate) {
+    secrets[cqOrgPrivateKeyPassword]?.grantRead(patientDiscoveryLambda);
+
+    if (!secrets[cqOrgCertificateIntermediate]) {
       throw new Error(`${cqOrgCertificateIntermediate} is not defined in config`);
     }
-    secrets.cqOrgCertificateIntermediate.grantRead(patientDiscoveryLambda);
+    secrets[cqOrgCertificateIntermediate]?.grantRead(patientDiscoveryLambda);
 
     return patientDiscoveryLambda;
   }
