@@ -9,6 +9,7 @@ import {
   replyTo,
 } from "../../carequality/shared";
 import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnUuid } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
 
@@ -200,7 +201,7 @@ export function createITI5SoapEnvelope({
   if (!bodyData.gateways[0]) {
     throw new Error("Gateway must be provided");
   }
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateways[0].url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;

@@ -11,21 +11,23 @@ export function verifySaml({
   xmlString: string;
   publicCert: crypto.KeyLike;
 }): boolean {
-  const doc = new DOMParser().parseFromString(xmlString, "application/xml");
-  const signatures = xpath.select("//*[local-name(.)='Signature']", doc);
-  if (!Array.isArray(signatures)) return false;
+  try {
+    const doc = new DOMParser().parseFromString(xmlString, "application/xml");
+    const signatures = xpath.select("//*[local-name(.)='Signature']", doc);
+    if (!Array.isArray(signatures)) return false;
 
-  return signatures.every(signature => {
-    if (isDomNode.isNodeLike(signature)) {
-      try {
-        const sig = new SignedXml({ publicCert: publicCert });
-        sig.loadSignature(signature);
-        const verified = sig.checkSignature(xmlString);
-        return verified;
-      } catch (ex) {
+    return (
+      signatures.length > 0 &&
+      signatures.every(signature => {
+        if (isDomNode.isNodeLike(signature)) {
+          const sig = new SignedXml({ publicCert: publicCert });
+          sig.loadSignature(signature);
+          return sig.checkSignature(xmlString);
+        }
         return false;
-      }
-    }
+      })
+    );
+  } catch (ex) {
     return false;
-  });
+  }
 }
