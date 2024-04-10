@@ -1,6 +1,4 @@
 import axios from "axios";
-import fs from "fs";
-import https from "https";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import {
@@ -25,6 +23,7 @@ const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDRequestParams) => {
+  console.log("event", event);
   const { patientId, cxId, pdRequestGirth } = event;
 
   const privateKey = await getSecret(privateKeySecretName);
@@ -64,14 +63,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
     privateKey,
     privateKeyPassword
   );
-  const responses = await sendSignedRequests(
+  const responses = await sendSignedRequests({
     signedRequests,
     certChain,
+    publicCert,
     privateKey,
     privateKeyPassword,
     patientId,
-    cxId
-  );
+    cxId,
+  });
   const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
     const gateway = xcpdRequest.data.gateways[index];
     if (!gateway) {
@@ -85,30 +85,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
   });
 
   // send results to internal endpoint
-  await axios.post(patientDiscoveryUrl, results);
+  for (const result of results) {
+    await axios.post(patientDiscoveryUrl, result);
+  }
 });
-
-export async function sendSignedXml(
-  signedXml: string,
-  url: string,
-  certFilePath: string,
-  keyFilePath: string,
-  passphrase: string
-): Promise<string> {
-  const agent = new https.Agent({
-    rejectUnauthorized: false,
-    cert: fs.readFileSync(certFilePath),
-    key: fs.readFileSync(keyFilePath),
-    passphrase,
-  });
-
-  const response = await axios.post(url, signedXml, {
-    headers: {
-      "Content-Type": "application/soap+xml;charset=UTF-8",
-      "Cache-Control": "no-cache",
-    },
-    httpsAgent: agent,
-  });
-
-  return response.data;
-}

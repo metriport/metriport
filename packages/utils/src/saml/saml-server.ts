@@ -31,14 +31,15 @@ app.post("/xcpd", async (req: Request, res: Response) => {
       privateKeyPassword
     );
     fs.writeFileSync("../../scratch/outbound_xcpd_2.xml", xmlResponse[0].signedRequest);
-    const response = await sendSignedRequests(
-      xmlResponse,
+    const response = await sendSignedRequests({
+      signedRequests: xmlResponse,
       certChain,
+      publicCert: x509CertPem,
       privateKey,
       privateKeyPassword,
-      "patientId",
-      "cxId"
-    );
+      patientId: "patientId",
+      cxId: "cxId",
+    });
 
     res.type("application/xml").send(response);
   } catch (error) {

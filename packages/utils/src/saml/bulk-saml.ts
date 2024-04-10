@@ -27,14 +27,15 @@ async function bulkXcpdRequests() {
   fs.writeFileSync("../../scratch/outbound_xcpd.xml", signedRequests[0].signedRequest);
   const endTime = Date.now();
   console.log(`Time taken to sign ${signedRequests.length} requests: ${endTime - startTime} ms`);
-  await sendSignedRequests(
+  await sendSignedRequests({
     signedRequests,
     certChain,
+    publicCert,
     privateKey,
     privateKeyPassword,
-    "patientId",
-    "cxId"
-  );
+    patientId: "patientId",
+    cxId: "cxId",
+  });
 }
 
 async function main() {

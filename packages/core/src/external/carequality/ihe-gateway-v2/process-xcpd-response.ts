@@ -51,7 +51,7 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 =
-    jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["controlActProcess"]["subject"][
+    jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["controlActProcess"]["subject"][
       "registrationEvent"
     ]["subject1"];
 
@@ -108,22 +108,26 @@ function handlePatientErrorResponse({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
+  console.log("start handlePatientErrorResponse", JSON.stringify(jsonObj, null, 2));
   const acknowledgementDetail =
-    jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["acknowledgement"][
-      "acknowledgementDetail"
-    ];
+    jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["acknowledgement"]["acknowledgementDetail"];
+  console.log("acknowledgementDetail", acknowledgementDetail);
   const issue = {
     severity: "error",
-    code: acknowledgementDetail["code"]["@_code"],
-    details: {
-      text: acknowledgementDetail["text"]["#text"] || acknowledgementDetail["text"],
-    },
+    ...(acknowledgementDetail && {
+      code: acknowledgementDetail["code"]["@_code"],
+      details: {
+        text: acknowledgementDetail["text"]["#text"] || acknowledgementDetail["text"],
+      },
+    }),
   };
+  console.log("issue", issue);
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
     issue: [issue],
   };
+  console.log("operationOutcome", operationOutcome);
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
@@ -187,6 +191,7 @@ export function processXCPDResponse({
       ignoreAttributes: false,
       attributeNamePrefix: "@_",
       parseAttributeValue: false,
+      removeNSPrefix: true,
     });
 
     if (typeof xmlStringOrError !== "string") {
@@ -194,29 +199,32 @@ export function processXCPDResponse({
     }
     const jsonObj = parser.parse(xmlStringOrError);
 
+    console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
     const ack =
-      jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["acknowledgement"]["typeCode"][
-        "@_code"
-      ];
+      jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["acknowledgement"]["typeCode"]["@_code"];
+
+    console.log("ack", ack);
     const queryResponseCode =
-      jsonObj["soap:Envelope"]["soap:Body"]["PRPA_IN201306UV02"]["controlActProcess"]["queryAck"][
+      jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["controlActProcess"]["queryAck"][
         "queryResponseCode"
       ]["@_code"];
 
+    console.log("ack and queryResponseCode", ack, queryResponseCode);
     if (ack === "AA" && queryResponseCode === "OK") {
       return handlePatientMatchResponse({
         jsonObj,
         outboundRequest,
         gateway,
       });
-    } else if (ack === "AE" || queryResponseCode === "AE") {
-      return handlePatientErrorResponse({
-        jsonObj,
+    } else if (ack === "AA" && queryResponseCode === "NF") {
+      return handlePatientNoMatchResponse({
         outboundRequest,
         gateway,
       });
     } else {
-      return handlePatientNoMatchResponse({
+      console.log("ack and queryResponseCode", ack, queryResponseCode);
+      return handlePatientErrorResponse({
+        jsonObj,
         outboundRequest,
         gateway,
       });

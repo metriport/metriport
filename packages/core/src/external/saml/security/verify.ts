@@ -20,7 +20,8 @@ export function verifySaml({
       try {
         const sig = new SignedXml({ publicCert: publicCert });
         sig.loadSignature(signature);
-        return sig.checkSignature(xmlString);
+        const verified = sig.checkSignature(xmlString);
+        return verified;
       } catch (ex) {
         return false;
       }

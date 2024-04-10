@@ -207,8 +207,7 @@ export function createITI5SoapEnvelope({
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
-
+  const expiresTimestamp = dayjs(createdTimestamp).add(5, "minute").toISOString();
   const securityHeader = createSecurityHeader({
     publicCert,
     createdTimestamp,
