@@ -5,15 +5,15 @@ import { processDQResponse } from "../dq/process-dq-response";
 //   outboundDocumentQueryRespSuccessfulSchema,
 //   outboundDocumentQueryRespFaultSchema,
 // } from "@metriport/ihe-gateway-sdk";
-import { outboundRequest } from "./constants";
+import { outboundDQRequest } from "./constants";
 
 describe("processDQResponse", () => {
   it("should process the successful DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "dq_multiple_docs.xml"), "utf8");
     const response = processDQResponse({
       xmlStringOrError: xmlString,
-      outboundRequest,
-      gateway: outboundRequest.gateway,
+      outboundRequest: outboundDQRequest,
+      gateway: outboundDQRequest.gateway,
     });
     if (!response.documentReference) {
       throw new Error("No DocumentReferences found");
@@ -29,8 +29,8 @@ describe("processDQResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "dq_empty.xml"), "utf8");
     const response = processDQResponse({
       xmlStringOrError: xmlString,
-      outboundRequest,
-      gateway: outboundRequest.gateway,
+      outboundRequest: outboundDQRequest,
+      gateway: outboundDQRequest.gateway,
     });
     console.log(response);
   });

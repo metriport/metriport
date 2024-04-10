@@ -1,6 +1,7 @@
 import { SignedXml } from "xml-crypto";
 import * as crypto from "crypto";
 import { insertKeyInfo } from "./insert-key-info";
+import { verifySaml } from "./verify";
 
 function createSignature({
   xml,
@@ -16,13 +17,14 @@ function createSignature({
   action: "append" | "prepend" | "before" | "after";
 }): SignedXml {
   const sig = new SignedXml({ privateKey });
+  const transforms = [
+    "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+    "http://www.w3.org/2001/10/xml-exc-c14n#",
+  ];
   sig.addReference({
     xpath: xpath,
     digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
-    transforms: [
-      "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
-      "http://www.w3.org/2001/10/xml-exc-c14n#",
-    ],
+    transforms: transforms,
   });
   sig.canonicalizationAlgorithm = "http://www.w3.org/2001/10/xml-exc-c14n#";
   sig.signatureAlgorithm = "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
@@ -45,7 +47,7 @@ export function signTimestamp({
     privateKey,
     xpath: "//*[local-name(.)='Timestamp']",
     locationReference: "//*[local-name(.)='Timestamp']",
-    action: "after",
+    action: "before",
   }).getSignedXml();
 }
 
@@ -69,13 +71,29 @@ export function signFullSaml({
   xmlString,
   publicCert,
   privateKey,
+  privateKeyPassword,
 }: {
   xmlString: string;
   publicCert: string;
   privateKey: string;
+  privateKeyPassword: string;
 }): string {
-  const signedTimestamp = signTimestamp({ xml: xmlString, privateKey });
-  const signedTimestampAndEnvelope = signEnvelope({ xml: signedTimestamp, privateKey });
+  const decryptedPrivateKey = crypto.createPrivateKey({
+    key: privateKey,
+    passphrase: privateKeyPassword,
+    format: "pem",
+  });
+
+  const signedTimestamp = signTimestamp({ xml: xmlString, privateKey: decryptedPrivateKey });
+  const signedTimestampAndEnvelope = signEnvelope({
+    xml: signedTimestamp,
+    privateKey: decryptedPrivateKey,
+  });
   const insertedKeyInfo = insertKeyInfo({ xmlContent: signedTimestampAndEnvelope, publicCert });
+  const verified = verifySaml({ xmlString: insertedKeyInfo, publicCert });
+  if (!verified) {
+    console.log("Signature verification failed.");
+    throw new Error("Signature verification failed.");
+  }
   return insertedKeyInfo;
 }

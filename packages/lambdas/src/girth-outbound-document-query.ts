@@ -40,15 +40,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthDQRequest
     throw new Error("Failed to get secrets or one of the secrets is not a string.");
   }
 
-  const signedRequests = createAndSignBulkDQRequests(dqRequestsGirth, publicCert, privateKey);
-  const responses = await sendSignedRequests(
+  const signedRequests = createAndSignBulkDQRequests({
+    bulkBodyData: dqRequestsGirth,
+    publicCert,
+    privateKey,
+    privateKeyPassword,
+  });
+  const responses = await sendSignedRequests({
     signedRequests,
     certChain,
+    publicCert,
     privateKey,
     privateKeyPassword,
     patientId,
-    cxId
-  );
+    cxId,
+  });
   const results: OutboundDocumentQueryResp[] = responses.map(
     (response: string | { error: string }, index: number) => {
       const outboundRequest = dqRequestsGirth[index];

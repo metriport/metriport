@@ -9,6 +9,7 @@ import {
   replyTo,
 } from "../../carequality/shared";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnUuid } from "../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
@@ -25,7 +26,7 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   if (!bodyData.gateway) {
     throw new Error("Gateway must be provided");
   }
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const classCode = bodyData.classCode;
   const practiceSettingCode = bodyData.practiceSettingCode;
   const facilityTypeCode = bodyData.facilityTypeCode;
@@ -53,7 +54,7 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
         },
         "urn2:AdhocQuery": {
           "@_home": gatewayHomeCommunityId,
-          "@_id": `urn:uuid:${findDocumentId}`,
+          "@_id": wrapIdInUrnUuid(findDocumentId),
           "@_lid": "urn:oasis:names:tc:ebxml-regrep:query:AdhocQueryRequest",
           "@_objectType": namespaces.urn2,
           "@_status": namespaces.urn2,
@@ -116,7 +117,7 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
             {
               "@_name": "$XDSDocumentEntryType",
               "urn2:ValueList": {
-                "urn2:Value": [`('urn:uuid:${uuid.v4()}','urn:uuid:${uuid.v4()}')`],
+                "urn2:Value": [`(${wrapIdInUrnUuid(uuid.v4())},${wrapIdInUrnUuid(uuid.v4())})`],
               },
             },
           ],
@@ -134,7 +135,7 @@ export function createITI38SoapEnvelope({
   bodyData: OutboundDocumentQueryReq;
   publicCert: string;
 }): string {
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateway.url;
 
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
@@ -201,22 +202,34 @@ export function createITI38SoapEnvelope({
 export function createAndSignDQRequest(
   bodyData: OutboundDocumentQueryReq,
   publicCert: string,
-  privateKey: string
+  privateKey: string,
+  privateKeyPassword: string
 ): string {
   const xmlString = createITI38SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
+  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
   return fullySignedSaml;
 }
 
-export function createAndSignBulkDQRequests(
-  bulkBodyData: OutboundDocumentQueryReq[],
-  publicCert: string,
-  privateKey: string
-): BulkSignedDQ[] {
+export function createAndSignBulkDQRequests({
+  bulkBodyData,
+  publicCert,
+  privateKey,
+  privateKeyPassword,
+}: {
+  bulkBodyData: OutboundDocumentQueryReq[];
+  publicCert: string;
+  privateKey: string;
+  privateKeyPassword: string;
+}): BulkSignedDQ[] {
   const signedRequests: BulkSignedDQ[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDQRequest(bodyData, publicCert, privateKey);
+    const signedRequest = createAndSignDQRequest(
+      bodyData,
+      publicCert,
+      privateKey,
+      privateKeyPassword
+    );
     signedRequests.push({ gateway: bodyData.gateway, signedRequest });
   }
 

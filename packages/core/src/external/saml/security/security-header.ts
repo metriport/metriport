@@ -1,7 +1,6 @@
 import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
-import { EnvType } from "../../../util/env-var";
 import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../carequality/shared";
 import { namespaces } from "../namespaces";
 
@@ -21,7 +20,6 @@ export function createSecurityHeader({
   metriportOrganization,
   homeCommunityId,
   purposeOfUse,
-  envType,
 }: {
   publicCert: string;
   createdTimestamp: string;
@@ -31,13 +29,10 @@ export function createSecurityHeader({
   metriportOrganization: string;
   homeCommunityId: string;
   purposeOfUse: string;
-  envType?: EnvType;
 }): object {
   const certPemStripped = stripPemCertificate(publicCert);
   const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
-  const saml2NameID = `CN=ihe.${
-    envType === EnvType.production ? "metriport.com" : "staging.metriport.com"
-  },OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+  const saml2NameID = `CN=ihe."metriport.com",OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
 
   const securityHeader = {
     "wsse:Security": {

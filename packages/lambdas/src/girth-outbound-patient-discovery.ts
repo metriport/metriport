@@ -23,50 +23,56 @@ const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDRequestParams) => {
-  const { patientId, cxId, pdRequestGirth } = event;
+  try {
+    const { patientId, cxId, pdRequestGirth } = event;
 
-  const privateKey = await getSecret(privateKeySecretName);
-  const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
-  const publicCert = await getSecret(publicCertSecretName);
-  const certChain = await getSecret(certChainSecretName);
-  if (
-    !privateKey ||
-    typeof privateKey !== "string" ||
-    !privateKeyPassword ||
-    typeof privateKeyPassword !== "string" ||
-    !publicCert ||
-    typeof publicCert !== "string" ||
-    !certChain ||
-    typeof certChain !== "string"
-  ) {
-    throw new Error("Failed to get secrets or one of the secrets is not a string.");
-  }
+    const privateKey = await getSecret(privateKeySecretName);
+    const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
+    const publicCert = await getSecret(publicCertSecretName);
+    const certChain = await getSecret(certChainSecretName);
+    if (
+      !privateKey ||
+      typeof privateKey !== "string" ||
+      !privateKeyPassword ||
+      typeof privateKeyPassword !== "string" ||
+      !publicCert ||
+      typeof publicCert !== "string" ||
+      !certChain ||
+      typeof certChain !== "string"
+    ) {
+      throw new Error("Failed to get secrets or one of the secrets is not a string.");
+    }
 
-  // validate request
-  const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGirth);
-  if (!xcpdRequest.success) {
-    const msg = `Invalid request: ${xcpdRequest.error}`;
-    capture.error(msg, {
-      extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
-        error: xcpdRequest.error,
-        patientId,
-        cxId,
-      },
+    // validate request
+    const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGirth);
+    if (!xcpdRequest.success) {
+      const msg = `Invalid request: ${xcpdRequest.error}`;
+      capture.error(msg, {
+        extra: {
+          context: `lambda.girth-outbound-patient-discovery`,
+          error: xcpdRequest.error,
+          patientId,
+          cxId,
+        },
+      });
+      throw Error;
+    }
+    const signedRequests = createAndSignBulkXCPDRequests(
+      xcpdRequest.data,
+      publicCert,
+      privateKey,
+      privateKeyPassword
+    );
+    const responses = await sendSignedRequests({
+      signedRequests,
+      certChain,
+      publicCert,
+      privateKey,
+      privateKeyPassword,
+      patientId,
+      cxId,
     });
-    throw Error;
-  }
-  const signedRequests = createAndSignBulkXCPDRequests(xcpdRequest.data, publicCert, privateKey);
-  const responses = await sendSignedRequests(
-    signedRequests,
-    certChain,
-    privateKey,
-    privateKeyPassword,
-    patientId,
-    cxId
-  );
-  const results: OutboundPatientDiscoveryResp[] = responses.map(
-    (response: string | { error: string }, index: number) => {
+    const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
       const gateway = xcpdRequest.data.gateways[index];
       if (!gateway) {
         throw new Error(`Gateway at index ${index} is undefined.`);
@@ -75,10 +81,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
         xmlStringOrError: response,
         outboundRequest: xcpdRequest.data,
         gateway,
+        patientId,
       });
-    }
-  );
+    });
 
-  // send results to internal endpoint
-  await axios.post(patientDiscoveryUrl, results);
+    // send results to internal endpoint
+    for (const result of results) {
+      await axios.post(patientDiscoveryUrl, result);
+    }
+  } catch (error) {
+    const msg = `An error occurred in the girth-outbound-patient-discovery lambda`;
+    capture.error(msg, {
+      extra: {
+        context: `lambda.girth-outbound-patient-discovery`,
+        error,
+      },
+    });
+  }
 });

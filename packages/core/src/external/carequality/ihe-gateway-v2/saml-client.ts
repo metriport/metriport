@@ -1,25 +1,43 @@
-import fs from "fs";
 import https from "https";
 import axios from "axios";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { BulkSignedDQ } from "../../saml/xca/iti38-envelope";
 import { isGatewayWithOid } from "./utils";
+import { capture } from "../../../util/notifications";
+import { verifySaml } from "../../saml/security/verify";
 
-export async function sendSignedXml(
-  signedXml: string,
-  url: string,
-  certFilePath: string,
-  keyFilePath: string,
-  passphrase: string
-): Promise<string> {
+export async function sendSignedXml({
+  signedXml,
+  url,
+  certChain,
+  publicCert,
+  key,
+  passphrase,
+  trustedRootCert,
+}: {
+  signedXml: string;
+  url: string;
+  certChain: string;
+  publicCert: string;
+  key: string;
+  passphrase: string;
+  trustedRootCert?: string[];
+}): Promise<string> {
   const agent = new https.Agent({
     rejectUnauthorized: false,
-    cert: fs.readFileSync(certFilePath),
-    key: fs.readFileSync(keyFilePath),
+    cert: certChain,
+    key: key,
     passphrase,
+    ca: trustedRootCert,
   });
 
+  const verified = verifySaml({ xmlString: signedXml, publicCert });
+  if (!verified) {
+    throw new Error("Signature verification failed.");
+  } else {
+    console.log("Signature verification passed.");
+  }
   const response = await axios.post(url, signedXml, {
     headers: {
       "Content-Type": "application/soap+xml;charset=UTF-8",
@@ -31,27 +49,32 @@ export async function sendSignedXml(
   return response.data;
 }
 
-export async function sendSignedRequests(
-  signedRequests: BulkSignedXCPD[] | BulkSignedDQ[],
-  certChain: string,
-  privateKey: string,
-  privateKeyPassword: string,
-  patientId: string,
-  cxId: string
-): Promise<(string | { error: string })[]> {
-  const certFilePath = "./tempCert.pem";
-  const keyFilePath = "./tempKey.pem";
-  fs.writeFileSync(certFilePath, certChain);
-  fs.writeFileSync(keyFilePath, privateKey);
-
+export async function sendSignedRequests({
+  signedRequests,
+  certChain,
+  publicCert,
+  privateKey,
+  privateKeyPassword,
+  patientId,
+  cxId,
+}: {
+  signedRequests: BulkSignedXCPD[] | BulkSignedDQ[];
+  certChain: string;
+  publicCert: string;
+  privateKey: string;
+  privateKeyPassword: string;
+  patientId: string;
+  cxId: string;
+}): Promise<(string | { error: string })[]> {
   const requestPromises = signedRequests.map((request, index) =>
-    sendSignedXml(
-      request.signedRequest,
-      request.gateway.url,
-      certFilePath,
-      keyFilePath,
-      privateKeyPassword
-    )
+    sendSignedXml({
+      signedXml: request.signedRequest,
+      url: request.gateway.url,
+      certChain,
+      publicCert: publicCert,
+      key: privateKey,
+      passphrase: privateKeyPassword,
+    })
       .then(response => {
         console.log(
           `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
@@ -68,6 +91,15 @@ export async function sendSignedRequests(
         }`;
         const errorString: string = errorToString(error);
         console.log(`${msg}: ${errorString}, patientId: ${patientId}, cxId: ${cxId}`);
+        capture.error(msg, {
+          extra: {
+            context: `lambda.girth-outbound-patient-discovery`,
+            error: errorString,
+            patientId,
+            cxId,
+          },
+        });
+        console.log(error?.response?.data);
         return { error: errorString };
       })
   );
@@ -83,7 +115,5 @@ export async function sendSignedRequests(
     })
     .filter((response): response is string | { error: string } => response !== undefined);
 
-  fs.unlinkSync(certFilePath);
-  fs.unlinkSync(keyFilePath);
   return processedResponses;
 }

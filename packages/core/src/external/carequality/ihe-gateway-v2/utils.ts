@@ -1,14 +1,11 @@
-export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
-  if (!gender) return undefined;
-  if (gender === "M") {
-    return "male";
-  } else if (gender === "F") {
-    return "female";
-  }
-  return undefined;
-}
+import { genderMapping } from "../../fhir/patient";
 
-//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
+  if (gender === undefined) {
+    return undefined;
+  }
+  return genderMapping[gender];
+}
 export function isGatewayWithOid(
   gateway:
     | {

@@ -9,6 +9,7 @@ import {
   replyTo,
 } from "../../carequality/shared";
 import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnUuid } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
 
@@ -170,7 +171,10 @@ function createSoapBody({
                 : {},
               "urn:patientTelecom": patientTelecom
                 ? {
-                    "urn:value": patientTelecom,
+                    "urn:value": {
+                      "@_use": "HP",
+                      "@_value": patientTelecom,
+                    },
                     "urn:semanticsText": "Patient.telecom",
                   }
                 : {},
@@ -200,15 +204,14 @@ export function createITI5SoapEnvelope({
   if (!bodyData.gateways[0]) {
     throw new Error("Gateway must be provided");
   }
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = bodyData.gateways[0].url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
-
+  const expiresTimestamp = dayjs(createdTimestamp).add(5, "minute").toISOString();
   const securityHeader = createSecurityHeader({
     publicCert,
     createdTimestamp,
@@ -264,7 +267,8 @@ export function createITI5SoapEnvelope({
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
   publicCert: string,
-  privateKey: string
+  privateKey: string,
+  privateKeyPassword: string
 ): BulkSignedXCPD[] {
   const signedRequests: BulkSignedXCPD[] = [];
 
@@ -275,7 +279,7 @@ export function createAndSignBulkXCPDRequests(
     };
 
     const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
-    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey });
+    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
     signedRequests.push({ gateway, signedRequest });
   }
 
