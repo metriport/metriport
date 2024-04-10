@@ -1,5 +1,6 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { patientEvents } from "../../../event/medical/patient-event";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
@@ -39,9 +40,17 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cqCommands.patient.discover(result, facility.data.npi, forceCarequality);
+  const requestId = uuidv7();
 
-  await cwCommands.patient.update(result, facilityId, getCqOrgIdsToDenyOnCw, forceCommonwell);
+  await cqCommands.patient.discover(result, facility.data.npi, requestId, forceCarequality);
+
+  await cwCommands.patient.update(
+    result,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
 
   return result;
 }
