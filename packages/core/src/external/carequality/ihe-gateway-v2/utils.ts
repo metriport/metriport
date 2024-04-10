@@ -1,9 +1,8 @@
+import { genderMapping } from "../../fhir/patient";
+
 export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
-  if (!gender) return undefined;
-  if (gender === "M") {
-    return "male";
-  } else if (gender === "F") {
-    return "female";
+  if (gender === undefined) {
+    return undefined;
   }
-  return undefined;
+  return genderMapping[gender];
 }

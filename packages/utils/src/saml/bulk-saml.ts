@@ -13,11 +13,11 @@ const publicCert = getEnvVarOrFail("IHE_STAGING_CERT");
 const certChain = getEnvVarOrFail("IHE_STAGING_CERT_CHAIN");
 const privateKeyPassword = getEnvVarOrFail("IHE_STAGING_KEY_PASSWORD");
 
-const bulkRequestPath = "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bad_xcpd.json";
+// path to a file containing an XCPD request json with many gateways
+const bulkRequestPath = "";
 const bulkData = JSON.parse(fs.readFileSync(bulkRequestPath, "utf8"));
 
 async function bulkXcpdRequests() {
-  const startTime = Date.now();
   const signedRequests = createAndSignBulkXCPDRequests(
     bulkData,
     publicCert,
@@ -25,8 +25,6 @@ async function bulkXcpdRequests() {
     privateKeyPassword
   );
   fs.writeFileSync("../../scratch/outbound_xcpd.xml", signedRequests[0].signedRequest);
-  const endTime = Date.now();
-  console.log(`Time taken to sign ${signedRequests.length} requests: ${endTime - startTime} ms`);
   await sendSignedRequests({
     signedRequests,
     certChain,

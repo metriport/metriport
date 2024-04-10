@@ -204,6 +204,7 @@ export class IHEStack extends Stack {
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
+
   private setupPatientDiscoveryLambda(
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,

@@ -12,6 +12,7 @@ export async function sendSignedXml({
   publicCert,
   key,
   passphrase,
+  trustedRootCert,
 }: {
   signedXml: string;
   url: string;
@@ -19,12 +20,14 @@ export async function sendSignedXml({
   publicCert: string;
   key: string;
   passphrase: string;
+  trustedRootCert?: string[];
 }): Promise<string> {
   const agent = new https.Agent({
     rejectUnauthorized: false,
     cert: certChain,
     key: key,
     passphrase,
+    ca: trustedRootCert,
   });
 
   const verified = verifySaml({ xmlString: signedXml, publicCert });
