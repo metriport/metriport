@@ -8,6 +8,7 @@ export async function cqOrgsToXCPDGateways(
 ): Promise<[XCPDGateways, XCPDGateways]> {
   const gatewaysWithGirthEnabledFeatureFlag: XCPDGateways = [];
   const gatewaysWithoutGirthEnabledFeatureFlag: XCPDGateways = [];
+  const girthOIDs = await getOIDsWithGirthEnabledFeatureFlagValue();
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
@@ -17,7 +18,7 @@ export async function cqOrgsToXCPDGateways(
         id: uuidv7(),
       };
 
-      if ((await getOIDsWithGirthEnabledFeatureFlagValue()).includes(org.id)) {
+      if (girthOIDs.includes(org.id)) {
         gatewaysWithGirthEnabledFeatureFlag.push(gateway);
       } else {
         gatewaysWithoutGirthEnabledFeatureFlag.push(gateway);

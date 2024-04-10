@@ -84,9 +84,7 @@ export function signFullSaml({
     format: "pem",
   });
 
-  console.log("Signing timestamp message...");
   const signedTimestamp = signTimestamp({ xml: xmlString, privateKey: decryptedPrivateKey });
-  console.log("Signed envelope message...");
   const signedTimestampAndEnvelope = signEnvelope({
     xml: signedTimestamp,
     privateKey: decryptedPrivateKey,
@@ -95,8 +93,7 @@ export function signFullSaml({
   const verified = verifySaml({ xmlString: insertedKeyInfo, publicCert });
   if (!verified) {
     console.log("Signature verification failed.");
-  } else {
-    console.log("Signature verification passed.");
+    throw new Error("Signature verification failed.");
   }
   return insertedKeyInfo;
 }

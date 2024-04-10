@@ -3,6 +3,7 @@ import axios from "axios";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { verifySaml } from "../../saml/security/verify";
+import { capture } from "../../../util/notifications";
 
 export async function sendSignedXml({
   signedXml,
@@ -83,6 +84,14 @@ export async function sendSignedRequests({
         }`;
         const errorString: string = errorToString(error);
         console.log(`${msg}: ${errorString}, patientId: ${patientId}, cxId: ${cxId}`);
+        capture.error(msg, {
+          extra: {
+            context: `lambda.girth-outbound-patient-discovery`,
+            error: errorString,
+            patientId,
+            cxId,
+          },
+        });
         console.log(error?.response?.data);
         return { error: errorString };
       })

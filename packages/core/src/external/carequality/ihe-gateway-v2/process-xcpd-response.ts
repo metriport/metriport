@@ -2,10 +2,13 @@ import { XMLParser } from "fast-xml-parser";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryReq,
+  outboundPatientDiscoveryRespSuccessfulSchema,
+  outboundPatientDiscoveryRespFaultSchema,
   XCPDGateway,
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "./utils";
+import { capture } from "../../../util/notifications";
 
 function handleHTTPErrorResponse({
   httpError,
@@ -51,32 +54,31 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 =
-    jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["controlActProcess"]["subject"][
+    jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["controlActProcess"]?.["subject"]?.[
       "registrationEvent"
-    ]["subject1"];
-
-  const addr = subject1["patient"]["patientPerson"]["addr"];
+    ]?.["subject1"];
+  const addr = subject1?.["patient"]?.["patientPerson"]?.["addr"];
   const addresses = [
     {
-      line: [addr["streetAddressLine"]["#text"] || addr["streetAddressLine"]],
-      city: addr["city"]["#text"] || addr["city"],
-      state: addr["state"]["#text"] || addr["state"],
-      postalCode: addr["postalCode"]["#text"] || addr["postalCode"],
-      country: addr["country"]["#text"] || addr["country"],
+      line: [addr?.["streetAddressLine"]?.["#text"] ?? addr?.["streetAddressLine"]],
+      city: addr?.["city"]?.["#text"] ?? addr?.["city"],
+      state: addr?.["state"]?.["#text"] ?? addr?.["state"],
+      postalCode: String(addr?.["postalCode"]?.["#text"] ?? addr?.["postalCode"]),
+      country: addr?.["country"]?.["#text"] ?? addr?.["country"],
     },
   ];
 
   const patientResource = {
     name: [
       {
-        given: [subject1["patient"]["patientPerson"]["name"]["given"]],
-        family: subject1["patient"]["patientPerson"]["name"]["family"],
+        given: [subject1?.["patient"]?.["patientPerson"]?.["name"]?.["given"]],
+        family: subject1?.["patient"]?.["patientPerson"]?.["name"]?.["family"],
       },
     ],
     gender: normalizeGender(
-      subject1["patient"]["patientPerson"]["administrativeGenderCode"]["@_code"]
+      subject1?.["patient"]?.["patientPerson"]?.["administrativeGenderCode"]?.["@_code"]
     ),
-    birthDate: subject1["patient"]["patientPerson"]["birthTime"]["@_value"],
+    birthDate: subject1?.["patient"]?.["patientPerson"]?.["birthTime"]?.["@_value"],
     address: addresses,
   };
 
@@ -85,8 +87,8 @@ function handlePatientMatchResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
-      id: subject1["patient"]["id"]["@_extension"].toString(),
-      system: subject1["patient"]["id"]["@_root"].toString(),
+      id: subject1?.["patient"]?.["id"]?.["@_extension"]?.toString(),
+      system: subject1?.["patient"]?.["id"]?.["@_root"]?.toString(),
     },
     gateway: gateway,
     patientId: outboundRequest.patientId,
@@ -95,6 +97,18 @@ function handlePatientMatchResponse({
     patientResource: patientResource,
   };
 
+  try {
+    outboundPatientDiscoveryRespSuccessfulSchema.parse(response);
+  } catch (error) {
+    capture.error("Failed to validate outboundPatientDiscoveryRespSuccessfulSchema", {
+      extra: {
+        context: `lambda.girth-outbound-patient-discovery`,
+        response,
+        error,
+      },
+    });
+  }
+
   return response;
 }
 
@@ -102,32 +116,44 @@ function handlePatientErrorResponse({
   jsonObj,
   outboundRequest,
   gateway,
+  patientId,
+  cxId,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jsonObj: any;
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
+  patientId?: string | undefined;
+  cxId?: string | undefined;
 }): OutboundPatientDiscoveryResp {
-  console.log("start handlePatientErrorResponse", JSON.stringify(jsonObj, null, 2));
+  const msg = "An AbortedError (AE) was received from the responding gateway";
+  capture.error(msg, {
+    extra: {
+      context: `lambda.girth-outbound-patient-discovery`,
+      outboundRequest,
+      gateway,
+      patientId,
+      cxId,
+    },
+  });
   const acknowledgementDetail =
-    jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["acknowledgement"]["acknowledgementDetail"];
-  console.log("acknowledgementDetail", acknowledgementDetail);
+    jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["acknowledgement"]?.[
+      "acknowledgementDetail"
+    ];
   const issue = {
     severity: "error",
     ...(acknowledgementDetail && {
-      code: acknowledgementDetail["code"]["@_code"],
+      code: acknowledgementDetail?.["code"]?.["@_code"],
       details: {
-        text: acknowledgementDetail["text"]["#text"] || acknowledgementDetail["text"],
+        text: acknowledgementDetail?.["text"]?.["#text"] || acknowledgementDetail?.["text"],
       },
     }),
   };
-  console.log("issue", issue);
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
     issue: [issue],
   };
-  console.log("operationOutcome", operationOutcome);
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
@@ -137,6 +163,18 @@ function handlePatientErrorResponse({
     patientMatch: null,
     operationOutcome: operationOutcome,
   };
+
+  try {
+    outboundPatientDiscoveryRespFaultSchema.parse(response);
+  } catch (error) {
+    capture.error("Failed to validate outboundPatientDiscoveryRespFaultSchema", {
+      extra: {
+        context: `lambda.girth-outbound-patient-discovery`,
+        response,
+        error,
+      },
+    });
+  }
   return response;
 }
 
@@ -175,10 +213,14 @@ export function processXCPDResponse({
   xmlStringOrError,
   outboundRequest,
   gateway,
+  patientId,
+  cxId,
 }: {
   xmlStringOrError: string | { error: string };
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
+  patientId?: string;
+  cxId?: string;
 }): OutboundPatientDiscoveryResp {
   if (typeof xmlStringOrError === "object" && xmlStringOrError.error) {
     return handleHTTPErrorResponse({
@@ -199,17 +241,16 @@ export function processXCPDResponse({
     }
     const jsonObj = parser.parse(xmlStringOrError);
 
-    console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
     const ack =
-      jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["acknowledgement"]["typeCode"]["@_code"];
+      jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["acknowledgement"]?.["typeCode"]?.[
+        "@_code"
+      ];
 
-    console.log("ack", ack);
     const queryResponseCode =
-      jsonObj["Envelope"]["Body"]["PRPA_IN201306UV02"]["controlActProcess"]["queryAck"][
+      jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["controlActProcess"]?.["queryAck"]?.[
         "queryResponseCode"
-      ]["@_code"];
+      ]?.["@_code"];
 
-    console.log("ack and queryResponseCode", ack, queryResponseCode);
     if (ack === "AA" && queryResponseCode === "OK") {
       return handlePatientMatchResponse({
         jsonObj,
@@ -222,11 +263,12 @@ export function processXCPDResponse({
         gateway,
       });
     } else {
-      console.log("ack and queryResponseCode", ack, queryResponseCode);
       return handlePatientErrorResponse({
         jsonObj,
         outboundRequest,
         gateway,
+        patientId,
+        cxId,
       });
     }
   }

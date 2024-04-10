@@ -171,7 +171,10 @@ function createSoapBody({
                 : {},
               "urn:patientTelecom": patientTelecom
                 ? {
-                    "urn:value": patientTelecom,
+                    "urn:value": {
+                      "@_use": "HP",
+                      "@_value": patientTelecom,
+                    },
                     "urn:semanticsText": "Patient.telecom",
                   }
                 : {},
