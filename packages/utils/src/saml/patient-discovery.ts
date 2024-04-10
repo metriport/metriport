@@ -11,6 +11,7 @@ import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-ga
 import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as dotenv from "dotenv";
+import { startPatientDiscoveryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
 dotenv.config();
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -187,16 +188,27 @@ export async function sendSignedXml(
   return response.data;
 }
 
-export async function main() {
-  try {
-    await localXCPD({
-      patientId: "018ebfae-f304-742a-86a2-10150410f867",
-      cxId: "51f45a48-ae44-432f-bd10-a3717544a5f1",
-      pdRequestGirth: JSON.stringify(outboundRequest),
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error("Failed to process bulk XCPD requests:", JSON.stringify(error, null, 2));
-  }
+// export async function main() {
+//   try {
+//     await localXCPD({
+//       patientId: "018ebfae-f304-742a-86a2-10150410f867",
+//       cxId: "51f45a48-ae44-432f-bd10-a3717544a5f1",
+//       pdRequestGirth: JSON.stringify(outboundRequest),
+//     });
+//     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   } catch (error: any) {
+//     console.error("Failed to process bulk XCPD requests:", JSON.stringify(error, null, 2));
+//   }
+// }
+
+async function main() {
+  // const response1 = await postData(endpoint);
+  const response = await startPatientDiscoveryGirth({
+    pdRequestGirth: outboundRequest,
+    patientId: "018ebfae-f304-742a-86a2-10150410f867",
+    cxId: "51f45a48-ae44-432f-bd10-a3717544a5f1",
+  });
+  console.log(response);
+  // console.log(response1);
 }
 main();
