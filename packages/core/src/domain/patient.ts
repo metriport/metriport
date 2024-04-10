@@ -67,7 +67,6 @@ export type PatientData = {
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
   cxConsolidatedRequestMetadata?: unknown;
-  pdRequestId?: string;
 };
 
 export interface PatientCreate extends BaseDomainCreate {
