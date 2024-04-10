@@ -1,6 +1,7 @@
 import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
+import { processAsyncError } from "../../../util/error/shared";
 
 export type GirthXCPDRequestParams = {
   patientId: string;
@@ -9,8 +10,7 @@ export type GirthXCPDRequestParams = {
 };
 const girthOutboundPatientDiscoveryLambdaName = "GirthOutboundPatientDiscoveryLambda";
 
-// intentionally not async
-export function startPatientDiscoveryGirth({
+export async function startPatientDiscoveryGirth({
   pdRequestGirth,
   patientId,
   cxId,
@@ -18,12 +18,13 @@ export function startPatientDiscoveryGirth({
   pdRequestGirth: OutboundPatientDiscoveryReq;
   patientId: string;
   cxId: string;
-}): void {
+}): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, pdRequestGirth };
   console.log(
     `Invoking Girth Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
   );
+  // intentionally not waiting
   lambdaClient
     .invoke({
       FunctionName: girthOutboundPatientDiscoveryLambdaName,
@@ -31,5 +32,8 @@ export function startPatientDiscoveryGirth({
       Payload: JSON.stringify(params),
     })
     .promise()
-    .catch(error => console.error("Lambda invocation failed:", error));
+    .catch(
+      processAsyncError("Failed to invoke lambda to poll outbound patient discovery responses")
+    );
+  console.log("Lambda invoked");
 }
