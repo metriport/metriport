@@ -108,7 +108,7 @@ export async function create(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
-  requestId: string,
+  requestId?: string,
   forceCWCreate = false,
   patientData?: {
     organization: Organization;
@@ -279,7 +279,7 @@ async function updatePatientAndLinksInCw(
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      await create(patient, facilityId, getOrgIdExcludeList, "");
+      await create(patient, facilityId, getOrgIdExcludeList, undefined);
       return;
     }
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;

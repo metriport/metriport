@@ -90,7 +90,8 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
-  facilityNPI: string
+  facilityNPI: string,
+  requestId?: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
 
@@ -103,6 +104,7 @@ async function prepareForPatientDiscovery(
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
+    requestId,
   });
   return pdRequest;
 }

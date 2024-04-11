@@ -14,6 +14,8 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -41,6 +43,16 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   const requestId = uuidv7();
+
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientDiscovery,
+    properties: {
+      requestId,
+      patientId: patientUpdate.id,
+    },
+    apiType: Product.medical,
+  });
 
   await cqCommands.patient.discover(result, facility.data.npi, requestId, forceCarequality);
 
