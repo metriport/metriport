@@ -14,10 +14,10 @@ interface GirthLambdasNestedStackProps extends NestedStackProps {
   apiService: NetworkLoadBalancedFargateService;
   vpc: ec2.IVpc;
   secrets: Secrets;
-  cqOrgCertificate: string;
-  cqOrgPrivateKey: string;
-  cqOrgPrivateKeyPassword: string;
-  cqOrgCertificateIntermediate: string;
+  cqOrgCertificate: string | undefined;
+  cqOrgPrivateKey: string | undefined;
+  cqOrgPrivateKeyPassword: string | undefined;
+  cqOrgCertificateIntermediate: string | undefined;
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
@@ -42,10 +42,10 @@ export class GirthLambdasNestedStack extends NestedStack {
     vpc: ec2.IVpc;
     apiService: NetworkLoadBalancedFargateService;
     secrets: Secrets;
-    cqOrgCertificate: string;
-    cqOrgPrivateKey: string;
-    cqOrgPrivateKeyPassword: string;
-    cqOrgCertificateIntermediate: string;
+    cqOrgCertificate: string | undefined;
+    cqOrgPrivateKey: string | undefined;
+    cqOrgPrivateKeyPassword: string | undefined;
+    cqOrgCertificateIntermediate: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -69,10 +69,14 @@ export class GirthLambdasNestedStack extends NestedStack {
       entry: "girth-outbound-patient-discovery",
       envType: envType,
       envVars: {
-        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
-        CQ_ORG_CERTIFICATE: cqOrgCertificate,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
-        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
+        ...(cqOrgCertificate !== undefined && { CQ_ORG_CERTIFICATE: cqOrgCertificate }),
+        ...(cqOrgCertificateIntermediate !== undefined && {
+          CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        }),
+        ...(cqOrgPrivateKeyPassword !== undefined && {
+          CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -114,10 +118,10 @@ export class GirthLambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
-    cqOrgCertificate: string;
-    cqOrgPrivateKey: string;
-    cqOrgPrivateKeyPassword: string;
-    cqOrgCertificateIntermediate: string;
+    cqOrgCertificate: string | undefined;
+    cqOrgPrivateKey: string | undefined;
+    cqOrgPrivateKeyPassword: string | undefined;
+    cqOrgCertificateIntermediate: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -141,10 +145,14 @@ export class GirthLambdasNestedStack extends NestedStack {
       entry: "girth-outbound-document-query",
       envType: envType,
       envVars: {
-        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
-        CQ_ORG_CERTIFICATE: cqOrgCertificate,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
-        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
+        ...(cqOrgCertificate !== undefined && { CQ_ORG_CERTIFICATE: cqOrgCertificate }),
+        ...(cqOrgCertificateIntermediate !== undefined && {
+          CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        }),
+        ...(cqOrgPrivateKeyPassword !== undefined && {
+          CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
@@ -186,10 +194,10 @@ export class GirthLambdasNestedStack extends NestedStack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
-    cqOrgCertificate: string;
-    cqOrgPrivateKey: string;
-    cqOrgPrivateKeyPassword: string;
-    cqOrgCertificateIntermediate: string;
+    cqOrgCertificate: string | undefined;
+    cqOrgPrivateKey: string | undefined;
+    cqOrgPrivateKeyPassword: string | undefined;
+    cqOrgCertificateIntermediate: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -213,10 +221,14 @@ export class GirthLambdasNestedStack extends NestedStack {
       entry: "girth-outbound-document-retrieval",
       envType: envType,
       envVars: {
-        CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey,
-        CQ_ORG_CERTIFICATE: cqOrgCertificate,
-        CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
-        CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
+        ...(cqOrgCertificate !== undefined && { CQ_ORG_CERTIFICATE: cqOrgCertificate }),
+        ...(cqOrgCertificateIntermediate !== undefined && {
+          CQ_ORG_CERTIFICATE_INTERMEDIATE: cqOrgCertificateIntermediate,
+        }),
+        ...(cqOrgPrivateKeyPassword !== undefined && {
+          CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
