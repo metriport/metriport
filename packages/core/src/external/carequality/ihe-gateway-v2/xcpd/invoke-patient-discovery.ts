@@ -21,9 +21,6 @@ export async function startPatientDiscoveryGirth({
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, pdRequestGirth };
-  console.log(
-    `Invoking Girth Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
-  );
   // intentionally not waiting
   lambdaClient
     .invoke({
@@ -35,5 +32,4 @@ export async function startPatientDiscoveryGirth({
     .catch(
       processAsyncError("Failed to invoke lambda to poll outbound patient discovery responses")
     );
-  console.log("Lambda invoked");
 }

@@ -1,12 +1,15 @@
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import { makeLambdaClient } from "../../../aws/lambda";
 import { Config } from "../../../../util/config";
+import { processAsyncError } from "../../../../util/error/shared";
 
 export type GirthDQDRequestParams = {
   patientId: string;
   cxId: string;
   dqRequestGirth: OutboundDocumentQueryReq;
 };
+
+const GirthOutboundDocumentQueryLambdaName = "GirthOutboundDocumentQueryLambda";
 
 export async function startDocumentQueryGirth({
   dqRequestGirth,
@@ -19,9 +22,13 @@ export async function startDocumentQueryGirth({
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, dqRequestGirth };
-  lambdaClient.invoke({
-    FunctionName: "GirthOutboundDocumentQueryLambda",
-    InvocationType: "Event",
-    Payload: JSON.stringify(params),
-  });
+  // intentionally not waiting
+  lambdaClient
+    .invoke({
+      FunctionName: GirthOutboundDocumentQueryLambdaName,
+      InvocationType: "Event",
+      Payload: JSON.stringify(params),
+    })
+    .promise()
+    .catch(processAsyncError("Failed to invoke lambda to poll outbound document query responses"));
 }

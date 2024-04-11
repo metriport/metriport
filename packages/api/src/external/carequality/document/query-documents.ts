@@ -120,7 +120,7 @@ export async function getDocumentsFromCQ({
     });
 
     log(`Starting document query - Girth`);
-    startDocumentQueryGirth({ dqRequestGirth: documentQueryRequestsGirth, patientId, cxId });
+    await startDocumentQueryGirth({ dqRequestGirth: documentQueryRequestsGirth, patientId, cxId });
 
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
