@@ -109,6 +109,7 @@ async function prepareForPatientDiscovery(
   const pdRequestNoGirth = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
+    patientId: patient.id,
     xcpdGateways: xcpdGatewaysWithoutGirthEnabled,
     facilityNPI,
     orgName: organization.data.name,
@@ -118,6 +119,7 @@ async function prepareForPatientDiscovery(
   const pdRequestGirth = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
+    patientId: patient.id,
     xcpdGateways: xcpdGatewaysWithGirthEnabled,
     facilityNPI,
     orgName: organization.data.name,

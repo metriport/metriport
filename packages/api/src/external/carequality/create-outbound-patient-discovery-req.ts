@@ -8,6 +8,7 @@ import { createPurposeOfUse } from "./shared";
 export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
+  patientId,
   xcpdGateways,
   facilityNPI,
   orgName,
@@ -15,6 +16,7 @@ export function createOutboundPatientDiscoveryReq({
 }: {
   patient: FHIRPatient;
   cxId: string;
+  patientId: string;
   xcpdGateways: XCPDGateway[];
   facilityNPI: string;
   orgName: string;
@@ -41,5 +43,6 @@ export function createOutboundPatientDiscoveryReq({
       purposeOfUse: createPurposeOfUse(),
     },
     patientResource: patient,
+    patientId: patientId,
   };
 }
