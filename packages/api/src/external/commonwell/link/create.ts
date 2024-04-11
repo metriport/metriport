@@ -69,6 +69,7 @@ export async function create(
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
       commonwellStatus: "completed",
+      cqLinkStatus: undefined,
     });
 
     if (!link._links?.self?.href) {

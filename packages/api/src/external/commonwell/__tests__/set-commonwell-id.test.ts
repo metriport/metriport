@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { setCommonwellId, CWParams } from "../patient-external-data";
+import { setCommonwellIdsAndStatus, CWParams } from "../patient-external-data";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
@@ -40,7 +40,7 @@ const checkPatientUpdateWith = (cwParams: Partial<CWParams>) => {
   );
 };
 
-describe("setCommonwellId", () => {
+describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
@@ -53,7 +53,7 @@ describe("setCommonwellId", () => {
       cqLinkStatus: "processing",
     };
 
-    const result = await setCommonwellId({
+    const result = await setCommonwellIdsAndStatus({
       patientId: patient.id,
       cxId: patient.cxId,
       ...newValues,
@@ -90,7 +90,7 @@ describe("setCommonwellId", () => {
       cqLinkStatus: "linked",
     };
 
-    const result = await setCommonwellId({
+    const result = await setCommonwellIdsAndStatus({
       patientId: patient.id,
       cxId: patient.cxId,
       ...newValues,
@@ -127,7 +127,7 @@ describe("setCommonwellId", () => {
       cqLinkStatus: undefined,
     };
 
-    const result = await setCommonwellId({
+    const result = await setCommonwellIdsAndStatus({
       patientId: patient.id,
       cxId: patient.cxId,
       ...newStatus,
@@ -154,7 +154,7 @@ describe("setCommonwellId", () => {
       cqLinkStatus: undefined,
     };
 
-    const result = await setCommonwellId({
+    const result = await setCommonwellIdsAndStatus({
       patientId: patient.id,
       cxId: patient.cxId,
       ...onlyPatientId,
