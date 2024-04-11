@@ -39,6 +39,7 @@ export {
   InboundPatientDiscoveryResp,
   inboundPatientDiscoveryRespSchema,
   OutboundPatientDiscoveryResp,
+  OutboundPatientDiscoveryRespSuccessfulSchema,
   outboundPatientDiscoveryRespSchema,
   InboundPatientResource,
   inboundPatientResourceSchema,

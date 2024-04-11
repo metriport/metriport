@@ -21,6 +21,7 @@ import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
+import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
@@ -33,6 +34,7 @@ router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
+router.use("/hie", hieRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
