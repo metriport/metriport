@@ -292,12 +292,15 @@ describe("appendDocQueryProgress", () => {
     const patient = makePatient({
       data: makePatientData({ documentQueryProgress: { download: { status: "completed" } } }),
     });
-    jest.spyOn(PatientModel, "findOne").mockResolvedValue(patient as PatientModel);
+    jest
+      .spyOn(PatientModel, "findOne")
+      .mockResolvedValue({ ...patient, dataValues: { ...patient } } as PatientModel);
     const res = await appendDocQueryProgress({
       patient: { id: "theId", cxId: "theCxId" },
       downloadProgress: expectedDownloadProgress,
       requestId,
     });
+    expect(res).toBeTruthy();
     expect(res).toEqual(
       expect.objectContaining({
         ...patient,
