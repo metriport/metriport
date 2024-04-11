@@ -1,9 +1,9 @@
 import * as z from "zod";
 import {
-  XCPDGatewaySchema,
   baseErrorResponseSchema,
   baseResponseSchema,
   externalGatewayPatientSchema,
+  XCPDGatewaySchema,
 } from "../shared";
 
 export const inboundPatientResourceSchema = z.object({
@@ -72,6 +72,9 @@ const outboundPatientDiscoveryRespSuccessfulSchema = outboundPatientDiscoveryRes
   .extend({
     patientResource: inboundPatientResourceSchema.optional(),
   });
+export type OutboundPatientDiscoveryRespSuccessfulSchema = z.infer<
+  typeof outboundPatientDiscoveryRespSuccessfulSchema
+>;
 
 const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
   patientMatch: z.literal(false).or(z.literal(null)),

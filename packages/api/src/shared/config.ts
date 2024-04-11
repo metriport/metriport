@@ -122,6 +122,10 @@ export class Config {
     return getEnvVarOrFail("DB_CREDS");
   }
 
+  static getDBReadReplicaEndpoint(): string {
+    return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
+  }
+
   static getCronometerClientId(): string {
     return getEnvVarOrFail("CRONOMETER_CLIENT_ID");
   }

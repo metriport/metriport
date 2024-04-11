@@ -21,6 +21,7 @@ import { DnsZones } from "../shared/dns";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
 import { isProd } from "../shared/util";
+import * as rds from "aws-cdk-lib/aws-rds";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -33,6 +34,7 @@ export function createAPIService({
   secrets,
   vpc,
   dbCredsSecret,
+  dbReadReplicaEndpoint,
   dynamoDBTokenTable,
   alarmAction,
   dnsZones,
@@ -59,6 +61,7 @@ export function createAPIService({
   secrets: Secrets;
   vpc: ec2.IVpc;
   dbCredsSecret: secret.ISecret;
+  dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
@@ -108,6 +111,10 @@ export function createAPIService({
   const iheGateway = props.config.iheGateway;
 
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
+  const dbReadReplicaEndpointAsString = JSON.stringify({
+    host: dbReadReplicaEndpoint.hostname,
+    port: dbReadReplicaEndpoint.port.toString(),
+  });
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
@@ -132,6 +139,7 @@ export function createAPIService({
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
+          DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           ...(props.config.apiGatewayUsagePlanId
