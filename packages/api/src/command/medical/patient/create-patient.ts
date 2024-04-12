@@ -8,6 +8,8 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -50,9 +52,27 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  await cwCommands.patient.create(newPatient, facilityId, getCqOrgIdsToDenyOnCw, forceCommonwell);
+  const requestId = uuidv7();
 
-  await cqCommands.patient.discover(newPatient, facility.data.npi, forceCarequality);
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.patientDiscovery,
+    properties: {
+      requestId,
+      patientId: newPatient.id,
+    },
+    apiType: Product.medical,
+  });
+
+  await cwCommands.patient.create(
+    newPatient,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
+
+  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
 
   return newPatient;
 };

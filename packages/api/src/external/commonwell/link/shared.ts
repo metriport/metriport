@@ -81,7 +81,7 @@ export async function autoUpgradeNetworkLinks(
   commonwellPersonId: string,
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
-) {
+): Promise<NetworkLink[] | undefined> {
   const { log } = out("cw.autoUpgradeNetworkLinks");
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
@@ -160,5 +160,15 @@ export async function autoUpgradeNetworkLinks(
       }
     });
     await Promise.allSettled(upgradeRequests);
+
+    const validNetworkLinks: NetworkLink[] = [];
+
+    for (const networkLink of networkLinks._embedded.networkLink) {
+      if (networkLink) {
+        validNetworkLinks.push(networkLink);
+      }
+    }
+
+    return validNetworkLinks;
   }
 }

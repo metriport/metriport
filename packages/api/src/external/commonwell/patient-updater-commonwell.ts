@@ -1,5 +1,6 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { Patient } from "@metriport/core/domain/patient";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import cwCommands from ".";
 import { getPatients } from "../../command/medical/patient/get-patient";
@@ -32,7 +33,8 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        await cwCommands.patient.update(patient, facilityId, this.orgIdExcludeList);
+        const requestId = uuidv7();
+        await cwCommands.patient.update(patient, facilityId, this.orgIdExcludeList, requestId);
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CW patient`;
