@@ -16,7 +16,7 @@ import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
-const documentQueryResponseUrl = `${apiUrl}/internal/carequality/document-query/response`;
+const documentQueryResponseUrl = `http://${apiUrl}/internal/carequality/document-query/response`;
 
 const privateKeySecretName = Config.getCQOrgPrivateKey();
 const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
@@ -43,18 +43,20 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthDQRequest
     throw new Error("Failed to get secrets or one of the secrets is not a string.");
   }
 
-  const xcpdRequest = outboundDocumentQueryReqSchema.safeParse(dqRequestsGirth);
-  if (!xcpdRequest.success) {
-    const msg = `Invalid request: ${xcpdRequest.error}`;
-    capture.error(msg, {
-      extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
-        error: xcpdRequest.error,
-        patientId,
-        cxId,
-      },
-    });
-    throw Error;
+  for (const request of dqRequestsGirth) {
+    const xcpdRequest = outboundDocumentQueryReqSchema.safeParse(request);
+    if (!xcpdRequest.success) {
+      const msg = `Invalid request: ${xcpdRequest.error}`;
+      capture.error(msg, {
+        extra: {
+          context: `lambda.girth-outbound-patient-discovery`,
+          error: xcpdRequest.error,
+          patientId,
+          cxId,
+        },
+      });
+      throw new Error(msg);
+    }
   }
 
   const signedRequests = createAndSignBulkDQRequests({

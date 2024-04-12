@@ -18,7 +18,7 @@ export async function cqOrgsToXCPDGateways(
         id: uuidv7(),
       };
 
-      if (girthOIDs.includes(org.id)) {
+      if (girthOIDs.includes(gateway.oid)) {
         gatewaysWithGirthEnabledFeatureFlag.push(gateway);
       } else {
         gatewaysWithoutGirthEnabledFeatureFlag.push(gateway);

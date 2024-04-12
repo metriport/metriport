@@ -14,7 +14,7 @@ import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
-const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
+const patientDiscoveryUrl = `http://${apiUrl}/internal/carequality/patient-discovery/response`;
 
 // get secrets
 const privateKeySecretName = Config.getCQOrgPrivateKey();

@@ -12,16 +12,16 @@ export type GirthDQDRequestParams = {
 const GirthOutboundDocumentQueryLambdaName = "GirthOutboundDocumentQueryLambda";
 
 export async function startDocumentQueryGirth({
-  dqRequestGirth,
+  dqRequestsGirth,
   patientId,
   cxId,
 }: {
-  dqRequestGirth: OutboundDocumentQueryReq[];
+  dqRequestsGirth: OutboundDocumentQueryReq[];
   patientId: string;
   cxId: string;
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-  const params = { patientId, cxId, dqRequestGirth };
+  const params = { patientId, cxId, dqRequestsGirth };
   // intentionally not waiting
   lambdaClient
     .invoke({
