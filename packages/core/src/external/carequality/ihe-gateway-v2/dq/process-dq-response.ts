@@ -41,8 +41,7 @@ type Slot = {
 
 function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObject: any,
-  outboundRequest: OutboundDocumentQueryReq
+  extrinsicObject: any
 ): DocumentReference {
   const slots = extrinsicObject?.["Slot"] || [];
   const externalIdentifiers = extrinsicObject?.["ExternalIdentifier"];
@@ -70,7 +69,7 @@ function parseDocumentReference(
   };
 
   const documentReference: DocumentReference = {
-    homeCommunityId: outboundRequest.gateway.homeCommunityId,
+    homeCommunityId: extrinsicObject?.["@_home"].replace("urn:oid:", ""),
     repositoryUniqueId: findSlotValue("repositoryUniqueId"),
     docUniqueId: findExternalIdentifierValue("urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab"),
     contentType: extrinsicObject?.["@_mimeType"],
@@ -211,10 +210,8 @@ function handleSuccessResponse({
   gateway: DQGateway;
 }): OutboundDocumentQueryResp {
   const documentReferences = Array.isArray(extrinsicObjects)
-    ? extrinsicObjects.map(extrinsicObject =>
-        parseDocumentReference(extrinsicObject, outboundRequest)
-      )
-    : [parseDocumentReference(extrinsicObjects, outboundRequest)];
+    ? extrinsicObjects.map(extrinsicObject => parseDocumentReference(extrinsicObject))
+    : [parseDocumentReference(extrinsicObjects)];
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,

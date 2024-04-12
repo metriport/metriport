@@ -1,4 +1,3 @@
-import * as uuid from "uuid";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
@@ -13,6 +12,9 @@ import { wrapIdInUrnUuid } from "../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
+
+const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
+const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
 
 export type BulkSignedDQ = {
   gateway: {
@@ -117,7 +119,11 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
             {
               "@_name": "$XDSDocumentEntryType",
               "urn2:ValueList": {
-                "urn2:Value": [`(${wrapIdInUrnUuid(uuid.v4())},${wrapIdInUrnUuid(uuid.v4())})`],
+                "urn2:Value": [
+                  `(${wrapIdInUrnUuid(stableDocumentType)},${wrapIdInUrnUuid(
+                    onDemandDocumentType
+                  )})`,
+                ],
               },
             },
           ],
