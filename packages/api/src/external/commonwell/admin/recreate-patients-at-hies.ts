@@ -107,10 +107,17 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await registerAndLinkPatientInCW(patient, facilityId, getOrgIdExcludeList, log, {
-      organization,
-      facility,
-    });
+    const cwIds = await registerAndLinkPatientInCW(
+      patient,
+      facilityId,
+      getOrgIdExcludeList,
+      log,
+      undefined,
+      {
+        organization,
+        facility,
+      }
+    );
 
     if (!cwIds) {
       log(`Missing CW IDs while recreating patient at CW`);

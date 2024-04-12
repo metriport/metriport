@@ -4,7 +4,6 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 import { createPurposeOfUse } from "./shared";
 
-// TODO: https://github.com/metriport/metriport/pull/1302#discussion_r1422870828
 export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
@@ -13,6 +12,7 @@ export function createOutboundPatientDiscoveryReq({
   facilityNPI,
   orgName,
   orgOid,
+  requestId,
 }: {
   patient: FHIRPatient;
   cxId: string;
@@ -21,11 +21,13 @@ export function createOutboundPatientDiscoveryReq({
   facilityNPI: string;
   orgName: string;
   orgOid: string;
+  requestId?: string;
 }): OutboundPatientDiscoveryReq {
   const user = `${orgName} System User`;
+  const id = requestId ?? uuidv7();
 
   return {
-    id: uuidv7(),
+    id,
     cxId: cxId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
