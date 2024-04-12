@@ -33,6 +33,7 @@ const resultPoller = makeOutboundResultPoller();
 export async function discover(
   patient: Patient,
   facilityNPI: string,
+  requestId: string,
   forceEnabled = false
 ): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
@@ -45,7 +46,7 @@ export async function discover(
     await processPatientDiscoveryProgress({ patient, status: "processing" });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityNPI, enabledIHEGW, baseLogMessage).catch(
+    prepareAndTriggerPD(patient, facilityNPI, enabledIHEGW, requestId, baseLogMessage).catch(
       processAsyncError(context)
     );
   }
@@ -55,19 +56,20 @@ async function prepareAndTriggerPD(
   patient: Patient,
   facilityNPI: string,
   enabledIHEGW: IHEGateway,
+  requestId: string,
   baseLogMessage: string
 ): Promise<void> {
   try {
     const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI);
     const numGateways = pdRequest.gateways.length;
 
-    const { log } = out(`${baseLogMessage}, requestId: ${pdRequest.id}`);
+    const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
 
     log(`Kicking off patient discovery`);
     await enabledIHEGW.startPatientDiscovery(pdRequest);
 
     await resultPoller.pollOutboundPatientDiscoveryResults({
-      requestId: pdRequest.id,
+      requestId,
       patientId: patient.id,
       cxId: patient.cxId,
       numOfGateways: numGateways,
@@ -88,7 +90,8 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
-  facilityNPI: string
+  facilityNPI: string,
+  requestId?: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
 
@@ -101,6 +104,7 @@ async function prepareForPatientDiscovery(
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
+    requestId,
   });
   return pdRequest;
 }
