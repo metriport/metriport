@@ -30,5 +30,5 @@ export async function startDocumentQueryGirth({
       Payload: JSON.stringify(params),
     })
     .promise()
-    .catch(processAsyncError("Failed to invoke lambda to poll outbound document query responses"));
+    .catch(processAsyncError("Failed to invoke girth lambda for document query"));
 }

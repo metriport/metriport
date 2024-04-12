@@ -1,12 +1,15 @@
 import { OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
 import { makeLambdaClient } from "../../../aws/lambda";
 import { Config } from "../../../../util/config";
+import { processAsyncError } from "../../../../util/error/shared";
 
 export type GirthDQDRequestParams = {
   patientId: string;
   cxId: string;
   drRequestGirth: OutboundDocumentRetrievalReq;
 };
+
+const GirthOutboundDocumentRetrievalLambdaName = "GirthOutboundDocumentRetrievalLambda";
 
 export async function startDocumentRetrievalGirth({
   drRequestGirth,
@@ -19,9 +22,12 @@ export async function startDocumentRetrievalGirth({
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, drRequestGirth };
-  lambdaClient.invoke({
-    FunctionName: "GirthOutboundDocumentRetrievalLambda",
-    InvocationType: "Event",
-    Payload: JSON.stringify(params),
-  });
+  lambdaClient
+    .invoke({
+      FunctionName: GirthOutboundDocumentRetrievalLambdaName,
+      InvocationType: "Event",
+      Payload: JSON.stringify(params),
+    })
+    .promise()
+    .catch(processAsyncError("Failed to invoke girth lambda for document retrieval"));
 }

@@ -1,4 +1,3 @@
-import * as uuid from "uuid";
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
@@ -10,7 +9,7 @@ import {
 } from "../../carequality/shared";
 import { wrapIdInUrnUuid } from "../utils";
 
-const action = "urn:ihe:iti:2007:CrossGatewayQuery";
+const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
 type DRBodyData = {
   id: string;
@@ -72,12 +71,14 @@ export function createITI39SoapEnvelope({
 
   const soapBody = {
     "soap:Body": {
+      "@_xmlns:xsd": namespaces.xs,
+      "@_xmlns:xsi": namespaces.xsi,
+      "@_xmlns:urn": namespaces.urnihe,
       "urn:RetrieveDocumentSetRequest": {
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": docRef.homeCommunityId,
           "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
           "urn:DocumentUniqueId": docRef.documentUniqueId,
-          "urn:Id": uuid.v4(),
         })),
       },
     },
@@ -87,7 +88,6 @@ export function createITI39SoapEnvelope({
     "soap:Envelope": {
       "@_xmlns:soap": namespaces.soap,
       "@_xmlns:wsa": namespaces.wsa,
-      "@_xmlns:urn": namespaces.urnihe,
       "soap:Header": {
         "wsa:To": {
           "@_mustUnderstand": "1",

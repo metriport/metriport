@@ -117,3 +117,37 @@ export const outboundDQRequest = {
     dateTo: "2024-02-22T00:00:00.000Z",
   },
 };
+
+export const outboundDRRequest = {
+  id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
+  cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
+  gateway: {
+    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+  },
+  timestamp: "2023-12-01T08:44:00Z",
+  patientId: "7f518b03-2ef0-4785-9f0c-dd295458df06",
+  samlAttributes: {
+    subjectId: "Walter H.Brattain IV",
+    subjectRole: {
+      code: "46255001",
+      display: "Pharmacist",
+    },
+    organization: "Family Medical Clinic",
+    organizationId: "http://familymedicalclinic.org",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+    purposeOfUse: "TREATMENT",
+  },
+  documentReference: [
+    {
+      size: 61030,
+      title: "History of Immunization",
+      creation: "2020-01-01T12:30:00",
+      language: "en-US",
+      contentType: "text/xml",
+      docUniqueId: "2.25.9518609360022382120597398617426801793",
+      homeCommunityId: "2.16.840.1.113883.3.8391",
+      repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
+    },
+  ],
+};

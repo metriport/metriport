@@ -174,7 +174,7 @@ function handleHTTPErrorResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
-    patientId: outboundRequest.patientId || "",
+    patientId: outboundRequest.patientId,
     operationOutcome: operationOutcome,
   };
 }
