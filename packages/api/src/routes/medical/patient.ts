@@ -2,11 +2,15 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
+import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
+import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
@@ -16,7 +20,7 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -46,9 +50,6 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { stringToBoolean } from "@metriport/shared";
-import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
-import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
@@ -387,11 +388,14 @@ async function putConsolidated(req: Request, res: Response) {
   }
 
   const cxId = getCxIdOrFail(req);
+  const organization = await getOrganizationOrFail({ cxId });
   const patientId = getFrom("params").orFail("id", req);
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const fhirBundle = bundleSchema.parse(req.body);
+  console.log("FHIR BUNDLE", fhirBundle);
   const validatedBundle = validateFhirEntries(fhirBundle);
+  console.log("VALIDATED BUNDLE", JSON.stringify(validatedBundle));
   const incomingAmount = validatedBundle.entry.length;
 
   // Limit the amount of resources per patient
@@ -423,7 +427,7 @@ async function putConsolidated(req: Request, res: Response) {
     fhirBundle: validatedBundle,
   });
   if (!Config.isProdEnv()) {
-    const cdaBundles = convertFhirBundleToCda(validatedBundle);
+    const cdaBundles = convertFhirBundleToCda(validatedBundle, organization.oid);
     for (const cdaBundle of cdaBundles) {
       await cdaDocumentUploaderHandler(
         cxId,

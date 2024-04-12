@@ -6,15 +6,15 @@ import { buildCustodian } from "./cda-templates/clinical-document/custodian";
 import { buildRecordTargetFromFhirPatient } from "./cda-templates/clinical-document/record-target";
 import { buildStructuredBody } from "./cda-templates/clinical-document/structured-body";
 import { findOrganizationResource, findPatientResource } from "./fhir";
+import { placeholderOrgOid } from "./cda-templates/constants";
 
-export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
+export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): string {
   const patientResource: Patient | undefined = findPatientResource(fhirBundle);
   const organizationResources: Organization | undefined = findOrganizationResource(fhirBundle);
 
   if (!patientResource || !organizationResources) {
     throw new MetriportError("Required resource is missing.", fhirBundle);
   }
-
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
   const author = buildAuthor(organizationResources);
   const custodian = buildCustodian();
@@ -33,5 +33,15 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
     custodian,
     structuredBody
   );
-  return clinicalDocument;
+
+  const postProcessedXml = postProcessXml(clinicalDocument, oid);
+  return postProcessedXml;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function postProcessXml(xml: any, oid: string): string {
+  return xml
+    .replaceAll("<br>", "")
+    .replaceAll("</br>", "<br />")
+    .replaceAll(placeholderOrgOid, oid);
 }

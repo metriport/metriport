@@ -14,7 +14,7 @@ export const MetriportOrganization: Organization = {
   telecom: [
     {
       system: "phone",
-      value: "1--615-344-9551",
+      value: "+1-615-344-9551",
       use: "work",
     },
   ],

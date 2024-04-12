@@ -53,6 +53,9 @@ export class Config {
   static getSearchIngestionQueueUrl(): string {
     return getEnvVarOrFail("SEARCH_INGESTION_QUEUE_URL");
   }
+  static getSystemRootOID(): string {
+    return getEnvVarOrFail("SYSTEM_ROOT_OID");
+  }
 
   static getFHIRServerUrl(): string {
     return getEnvVarOrFail("FHIR_SERVER_URL");

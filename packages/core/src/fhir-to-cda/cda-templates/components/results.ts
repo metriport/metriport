@@ -10,8 +10,10 @@ import {
 } from "../commons";
 import {
   classCodeAttribute,
+  extensionValue2015,
   idAttribute,
   moodCodeAttribute,
+  placeholderOrgOid,
   typeCodeAttribute,
   valueAttribute,
 } from "../constants";
@@ -39,10 +41,11 @@ function buildEntriesFromDiagnosticReports(
       [moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
         root: "2.16.840.1.113883.10.20.22.4.1",
-        extension: "2015-08-01",
+        extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
-        root: report.id,
+        root: placeholderOrgOid,
+        extension: report.id,
       }),
       code: codeElement,
       statusCode: buildCodeCE({
@@ -64,7 +67,7 @@ function buildEntriesFromDiagnosticReports(
   });
 }
 
-export function buildResult(fhirBundle: Bundle): unknown {
+export function buildResult(fhirBundle: Bundle) {
   const diagnosticReports: DiagnosticReport[] =
     fhirBundle.entry?.flatMap(entry =>
       isDiagnosticReport(entry.resource) ? [entry.resource] : []
@@ -106,7 +109,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
           code: "30954-2",
           codeSystem: "2.16.840.1.113883.6.1",
           codeSystemName: "LOINC",
-          displayName: "Diagnostic Results",
+          displayName: "Relevant diagnostic tests/laboratory data Narrative",
         }),
         title: "Diagnostic Results",
         text,

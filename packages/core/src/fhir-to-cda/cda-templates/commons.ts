@@ -11,11 +11,13 @@ import {
   assigningAuthorityNameAttribute,
   extensionAttribute,
   inlineTextAttribute,
+  namespaceXsiAttribute,
+  namespaceXsiValue,
   nullFlavorAttribute,
+  placeholderOrgOid,
   rootAttribute,
   useAttribute,
   valueAttribute,
-  xmlnsXsiAttribute,
   xsiTypeAttribute,
 } from "./constants";
 import {
@@ -151,7 +153,7 @@ export function buildInstanceIdentifiersFromIdentifier(
     : [];
   return identifiersArray.map(identifier =>
     buildInstanceIdentifier({
-      root: identifier.system ? normalizeOid(identifier.system) : undefined,
+      root: placeholderOrgOid,
       extension: identifier.value,
       assigningAuthorityName: identifier.assigner?.display,
     })
@@ -204,11 +206,18 @@ export function formatDateToCDATimeStamp(dateString: string | undefined): string
   if (!dateString) {
     return undefined;
   }
-  const datePart = dateString.replace(/-/g, "");
-  const timePart = "000000";
-  const fractionalSeconds = "0000";
-  const cdaTimeStamp = `${datePart}${timePart}.${fractionalSeconds}`;
-  return cdaTimeStamp;
+  const formatted = dateString.replace(/-/g, "");
+  if (formatted.includes("T")) return formatted.split("T")[0];
+  return formatted;
+}
+
+export function formatDateToHumanReadableFormat(
+  dateString: string | undefined
+): string | undefined {
+  const date = formatDateToCDATimeStamp(dateString);
+  if (!date) return undefined;
+
+  return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
@@ -217,7 +226,7 @@ export function buildValueST(value: string | undefined): CDAValueST | undefined 
 
   const valueObject: CDAValueST = {};
   valueObject[xsiTypeAttribute] = "ST";
-  valueObject[xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject[namespaceXsiAttribute] = namespaceXsiValue;
   valueObject[inlineTextAttribute] = value;
   return valueObject;
 }
@@ -312,4 +321,15 @@ function mapCodingSystem(system: string | undefined): string | undefined {
   if (mappedCodingSystem) return mappedCodingSystem;
   if (system.includes("urn")) return normalizeOid(system);
   return system;
+}
+
+export function buildReferenceId(prefix: string, pairNumber: number): string {
+  return `${prefix}-pair${pairNumber}`;
+}
+
+export function isLoinc(system: string | undefined): boolean {
+  if (system?.toLowerCase().includes("loinc")) {
+    return true;
+  }
+  return false;
 }

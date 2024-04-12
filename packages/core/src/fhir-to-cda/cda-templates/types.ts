@@ -6,8 +6,8 @@ import {
   displayNameAttribute,
   extensionAttribute,
   inlineTextAttribute,
+  namespaceXsiAttribute,
   rootAttribute,
-  xmlnsXsiAttribute,
   xsiTypeAttribute,
 } from "./constants";
 
@@ -74,7 +74,7 @@ export type CDACodeCE = {
 
 export type CDAValueST = {
   [xsiTypeAttribute]?: string;
-  [xmlnsXsiAttribute]?: string;
+  [namespaceXsiAttribute]?: string;
   [inlineTextAttribute]?: string;
 };
 export interface CDACodeCV extends CDACodeCE {

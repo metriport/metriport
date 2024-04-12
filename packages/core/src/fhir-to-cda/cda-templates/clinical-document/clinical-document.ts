@@ -1,23 +1,34 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
+  buildCodeCE,
+  buildInstanceIdentifier,
+  formatDateToCDATimeStamp,
+  withNullFlavor,
+  withoutNullFlavorObject,
+} from "../commons";
+import {
+  clinicalDocumentConstants,
+  moodCodeAttribute,
+  namespaceAttribute,
+  namespaceSdtcAttribute,
+  namespaceXsiAttribute,
+  valueAttribute,
+} from "../constants";
+import {
   CDAAuthor,
+  CDACodeCE,
   CDACustodian,
   CDAInstanceIdentifier,
   CDARecordTarget,
-  CDACodeCE,
   Entry,
 } from "../types";
-import {
-  buildCodeCE,
-  buildInstanceIdentifier,
-  withoutNullFlavorObject,
-  withNullFlavor,
-} from "../commons";
-import { clinicalDocumentConstants, valueAttribute, namespaceAttribute } from "../constants";
 
 export type ClinicalDocument = {
   ClinicalDocument: {
     [namespaceAttribute]: string;
+    [namespaceSdtcAttribute]: string;
+    [namespaceXsiAttribute]: string;
+    [moodCodeAttribute]: string;
     realmCode?: CDACodeCE;
     typeId?: CDAInstanceIdentifier;
     templateId?: CDAInstanceIdentifier[];
@@ -64,7 +75,10 @@ export function buildClinicalDocumentXML(
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      "@_xmlns": "urn:hl7-org:v3",
+      [namespaceAttribute]: "urn:hl7-org:v3",
+      [namespaceSdtcAttribute]: "urn:hl7-org:sdtc",
+      [namespaceXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
+      [moodCodeAttribute]: "EVN",
       realmCode: buildCodeCE({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
@@ -81,13 +95,16 @@ export function buildClinicalDocumentXML(
         root: clinicalDocumentConstants.idRoot,
       }),
       code: buildCodeCE({
-        code: clinicalDocumentConstants.code.code,
+        code: "NOTE-TYPE", // TODO: Make this dynamic. IMPORTANT
         codeSystem: clinicalDocumentConstants.code.codeSystem,
         codeSystemName: clinicalDocumentConstants.code.codeSystemName,
-        displayName: clinicalDocumentConstants.code.displayName,
+        displayName: "NOTE-NAME", // TODO: Make this dynamic. IMPORTANT
       }),
-      title: clinicalDocumentConstants.title,
-      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, valueAttribute),
+      title: "NOTE-TITLE", // TODO: Make this dynamic. IMPORTANT
+      effectiveTime: withNullFlavor(
+        formatDateToCDATimeStamp(new Date().toISOString()),
+        valueAttribute
+      ),
       confidentialityCode: buildCodeCE({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
@@ -97,9 +114,9 @@ export function buildClinicalDocumentXML(
         code: clinicalDocumentConstants.languageCode,
       }),
       setId: buildInstanceIdentifier({
-        assigningAuthorityName: clinicalDocumentConstants.setId.assigningAuthorityName,
-        extension: clinicalDocumentConstants.setId.extension,
-        root: clinicalDocumentConstants.setId.root,
+        assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
+        extension: "OUR-EXTENSION", // TODO: What is our extension?
+        root: clinicalDocumentConstants.idRoot,
       }),
       versionNumber: withoutNullFlavorObject(
         clinicalDocumentConstants.versionNumber,
@@ -117,11 +134,5 @@ export function buildClinicalDocumentXML(
     ignoreAttributes: false,
   });
 
-  const generatedXml = builder.build(cleanedJsonObj);
-  return postProcessXml(generatedXml);
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function postProcessXml(xml: any): string {
-  return xml.replaceAll("<br>", "").replaceAll("</br>", "<br />");
+  return builder.build(cleanedJsonObj);
 }

@@ -3,11 +3,19 @@ import {
   TIMESTAMP_CLEANUP_REGEX,
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
-  buildInstanceIdentifiersFromIdentifier,
   buildValueST,
   withoutNullFlavorObject,
 } from "../commons";
-import { classCodeAttribute, codeAttribute, moodCodeAttribute, valueAttribute } from "../constants";
+import {
+  classCodeAttribute,
+  codeAttribute,
+  extensionAttribute,
+  extensionValue2015,
+  moodCodeAttribute,
+  placeholderOrgOid,
+  rootAttribute,
+  valueAttribute,
+} from "../constants";
 import { CDACodeCV, CDAInstanceIdentifier, CDAValueST, Entry, EntryObject } from "../types";
 
 export interface CDAObservation {
@@ -40,9 +48,12 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
           [moodCodeAttribute]: "EVN",
           templateId: buildInstanceIdentifier({
             root: "2.16.840.1.113883.10.20.22.4.2",
-            extension: "2015-08-01",
+            extension: extensionValue2015,
           }),
-          id: buildInstanceIdentifiersFromIdentifier(observation.identifier),
+          id: {
+            [rootAttribute]: placeholderOrgOid,
+            [extensionAttribute]: observation.id ?? observation.identifier?.[0]?.value ?? "",
+          },
           code: buildCodeCVFromCodeableConcept(observation.code),
           statusCode: withoutNullFlavorObject(observation.status, codeAttribute),
           effectiveTime: {

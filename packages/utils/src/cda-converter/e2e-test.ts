@@ -1,8 +1,6 @@
-// The objective of these tests are to test two things
-// 1. That we generate valid CDA that our CDA->FHIR converter doesn't error on. We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
-// 2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR, we get the same FHIR bundle as the original FHIR bundle. Obviously this introduces
-//    a dependency on another converter, but for now its the easiest approach since short of manually having exact string comparisons between two CDAs, we can't know if our CDA is accurate.
-
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
 import fs from "fs";
 import path from "path";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
@@ -10,9 +8,13 @@ import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-gener
 import axios, { AxiosInstance } from "axios";
 import { Bundle } from "@medplum/fhirtypes";
 
-const fhirBaseUrl = "http://localhost:8889";
+// The objective of these tests are to test two things
+// 1. That we generate valid CDA that our CDA->FHIR converter doesn't error on. We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
+// 2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR, we get the same FHIR bundle as the original FHIR bundle. Obviously this introduces
+//    a dependency on another converter, but for now its the easiest approach since short of manually having exact string comparisons between two CDAs, we can't know if our CDA is accurate.
 
-const baseInputFolder = "<your-path>/packages/utils/src/cda-converter/test-files/";
+const fhirBaseUrl = "http://localhost:8889";
+const baseInputFolder = "./src/cda-converter/test-files/";
 
 if (!fs.existsSync(baseInputFolder)) {
   console.error("Base input folder does not exist:", baseInputFolder);
@@ -53,7 +55,7 @@ fs.readdir(baseInputFolder, (err, files) => {
       return;
     }
 
-    convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA);
+    convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA, orgOid);
     convertCdaToFhir(
       outputFolderCDA,
       outputFolderFHIR,
@@ -66,24 +68,31 @@ fs.readdir(baseInputFolder, (err, files) => {
   });
 });
 
-export function convertFhirBundleToCdaTesting(fhirBundle: Bundle): {
+export function convertFhirBundleToCdaTesting(
+  fhirBundle: Bundle,
+  orgOid: string
+): {
   cdaDocuments: string[];
   splitBundles: Bundle[];
 } {
   const splitBundles = splitBundleByCompositions(fhirBundle);
-  return { cdaDocuments: splitBundles.map(generateCdaFromFhirBundle), splitBundles: splitBundles };
+  return {
+    cdaDocuments: splitBundles.map(bundle => generateCdaFromFhirBundle(bundle, orgOid)),
+    splitBundles: splitBundles,
+  };
 }
 
 function convertFhirToCda(
   fhirBundle: Bundle,
   inputFileName: string,
   outputFolderBundles: string,
-  outputFolderCDA: string
+  outputFolderCDA: string,
+  orgOid: string
 ) {
   let cdaDocuments;
   let splitBundles;
   try {
-    const result = convertFhirBundleToCdaTesting(fhirBundle);
+    const result = convertFhirBundleToCdaTesting(fhirBundle, orgOid);
     cdaDocuments = result.cdaDocuments;
     splitBundles = result.splitBundles;
   } catch (error) {

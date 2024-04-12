@@ -1,9 +1,15 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { buildResult } from "../components/results";
+import { buildSocialHistory } from "../components/social-history";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
+  const structuredBodySections = [buildResult(fhirBundle), buildSocialHistory(fhirBundle)];
   const structuredBody = {
-    structuredBody: buildResult(fhirBundle),
+    structuredBody: {
+      component: structuredBodySections.map(comp => ({
+        section: comp?.component.section,
+      })),
+    },
   };
   return structuredBody;
 }
