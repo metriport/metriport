@@ -1,12 +1,13 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { Bundle } from "@medplum/fhirtypes";
+import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
+import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
+import axios, { AxiosInstance } from "axios";
 import fs from "fs";
 import path from "path";
-import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
-import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
-import axios, { AxiosInstance } from "axios";
-import { Bundle } from "@medplum/fhirtypes";
+import { getEnvVarOrFail } from "../../../api/src/shared/config";
 
 // The objective of these tests are to test two things
 // 1. That we generate valid CDA that our CDA->FHIR converter doesn't error on. We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
@@ -14,6 +15,7 @@ import { Bundle } from "@medplum/fhirtypes";
 //    a dependency on another converter, but for now its the easiest approach since short of manually having exact string comparisons between two CDAs, we can't know if our CDA is accurate.
 
 const fhirBaseUrl = "http://localhost:8889";
+const orgOid = getEnvVarOrFail("ORG_OID");
 const baseInputFolder = "./src/cda-converter/test-files/";
 
 if (!fs.existsSync(baseInputFolder)) {
