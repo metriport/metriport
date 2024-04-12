@@ -24,7 +24,7 @@ type DocumentResponse = {
 
 function parseDocumentReference(documentResponse: DocumentResponse): DocumentReference {
   return {
-    size: documentResponse?.["@_size"],
+    size: parseInt(documentResponse?.["@_size"]),
     title: documentResponse?.["@_title"],
     creation: documentResponse?.["@_creation"],
     language: documentResponse?.["@_language"],
