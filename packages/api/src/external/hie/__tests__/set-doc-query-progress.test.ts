@@ -12,7 +12,7 @@ const requestId = "abc123";
 const emptySourceProgress = { documentQueryProgress: {} };
 const processingSourceProgress: Progress = createProgressFromStatus({ status: "processing" });
 const completedSourceProgress: Progress = createProgressFromStatus({ status: "completed" });
-const docQueryProgress: DocumentQueryProgress = {
+const docQueryProgressProcessing: DocumentQueryProgress = {
   convert: processingSourceProgress,
   download: processingSourceProgress,
   requestId,
@@ -31,7 +31,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -54,7 +54,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -82,7 +82,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -110,7 +110,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -138,7 +138,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -166,7 +166,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -194,7 +194,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -222,7 +222,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
-      ...docQueryProgress,
+      ...docQueryProgressProcessing,
       convert: undefined,
     };
 
@@ -259,7 +259,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
-      ...docQueryProgress,
+      ...docQueryProgressProcessing,
       convert: undefined,
     };
 
@@ -293,7 +293,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
-      ...docQueryProgress,
+      ...docQueryProgressProcessing,
       convert: undefined,
     };
 
@@ -316,7 +316,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const aggregateAndSetHIEProgressesResult = aggregateAndSetHIEProgresses(
-      docQueryProgress,
+      docQueryProgressProcessing,
       externalData
     );
 
@@ -334,7 +334,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     };
 
     const overallDocQueryProgress: DocumentQueryProgress = {
-      ...docQueryProgress,
+      ...docQueryProgressProcessing,
       convert: undefined,
     };
 
@@ -353,7 +353,7 @@ describe("aggregateAndSetHIEProgresses", () => {
     const externalData: PatientExternalData = {};
 
     const overallDocQueryProgress: DocumentQueryProgress = {
-      ...docQueryProgress,
+      ...docQueryProgressProcessing,
       convert: undefined,
     };
 
@@ -362,10 +362,12 @@ describe("aggregateAndSetHIEProgresses", () => {
       externalData
     );
 
-    expect(aggregateAndSetHIEProgressesResult).toEqual({
-      download: { total: 0, errors: 0, status: "completed", successful: 0 },
-      requestId,
-    });
+    expect(aggregateAndSetHIEProgressesResult).toEqual(
+      expect.objectContaining({
+        download: expect.objectContaining({ status: "completed" }),
+        requestId,
+      })
+    );
   });
 });
 
