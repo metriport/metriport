@@ -4,6 +4,7 @@ import {
   OutboundDocumentRetrievalResp,
   XCAGateway,
   DocumentReference,
+  OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import {
   handleRegistryErrorResponse,
@@ -23,7 +24,13 @@ type DocumentResponse = {
   RepositoryUniqueId: string;
 };
 
+export function parseFileFromString(document: string): void | OperationOutcome {
+  console.log(document[0]);
+}
+
 function parseDocumentReference(documentResponse: DocumentResponse): DocumentReference {
+  // lets extract the document here.
+
   return {
     size: documentResponse?.size ? parseInt(documentResponse?.size) : undefined,
     title: documentResponse?.title,
