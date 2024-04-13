@@ -393,9 +393,7 @@ async function putConsolidated(req: Request, res: Response) {
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const fhirBundle = bundleSchema.parse(req.body);
-  console.log("FHIR BUNDLE", fhirBundle);
   const validatedBundle = validateFhirEntries(fhirBundle);
-  console.log("VALIDATED BUNDLE", JSON.stringify(validatedBundle));
   const incomingAmount = validatedBundle.entry.length;
 
   // Limit the amount of resources per patient
