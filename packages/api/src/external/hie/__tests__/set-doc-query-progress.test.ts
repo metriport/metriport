@@ -1,6 +1,6 @@
 import { DocumentQueryProgress, Progress } from "@metriport/core/domain/document-query";
 import { PatientExternalData } from "@metriport/core/domain//patient";
-import { aggregateAndSetHIEProgresses } from "../set-doc-query-progress";
+import { aggregateAndSetHIEProgresses, aggregateStatus } from "../set-doc-query-progress";
 import { createProgress, addProgresses } from "./doc-progress-tests";
 
 const requestId = "abc123";
@@ -333,5 +333,40 @@ describe("aggregateAndSetHIEProgresses", () => {
       download: { total: 0, errors: 0, status: "completed", successful: 0 },
       requestId,
     });
+  });
+});
+
+describe("aggregateStatus", () => {
+  it("returns completed when gets no status", async () => {
+    const resp = aggregateStatus([]);
+    expect(resp).toEqual("completed");
+  });
+  it("returns completed when gets one completed", async () => {
+    const resp = aggregateStatus(["completed"]);
+    expect(resp).toEqual("completed");
+  });
+  it("returns completed when gets failed and completed", async () => {
+    const resp = aggregateStatus(["failed", "completed"]);
+    expect(resp).toEqual("completed");
+  });
+  it("returns failed when gets one failed", async () => {
+    const resp = aggregateStatus(["failed"]);
+    expect(resp).toEqual("failed");
+  });
+  it("returns processing when gets one processing", async () => {
+    const resp = aggregateStatus(["processing"]);
+    expect(resp).toEqual("processing");
+  });
+  it("returns processing when completed and processing", async () => {
+    const resp = aggregateStatus(["completed", "processing"]);
+    expect(resp).toEqual("processing");
+  });
+  it("returns processing when failed and processing", async () => {
+    const resp = aggregateStatus(["failed", "processing"]);
+    expect(resp).toEqual("processing");
+  });
+  it("returns processing when failed, completed and processing", async () => {
+    const resp = aggregateStatus(["failed", "completed", "processing"]);
+    expect(resp).toEqual("processing");
   });
 });

@@ -105,7 +105,7 @@ export function createExtrinsicObjectXml({
       </Slot>
       <Slot name="authorInstitution">
         <ValueList>
-          <Value>${ORGANIZATION_NAME_DEFAULT}^^^^^^^^^${METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX}</Value>
+          <Value>${organizationName}^^^^^^^^^${organizationId}</Value>
         </ValueList>
       </Slot>
     </Classification>

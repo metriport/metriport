@@ -26,7 +26,8 @@
     "compare-total-resource-counts": "bash src/fhir-converter/scripts/compare_total_resource_counts.sh",
     "compare-resource-counts-per-file": "bash src/fhir-converter/scripts/compare_resource_counts_per_file.sh",
     "compare-total-resource-count-post-fhir-insert": "bash src/fhir-converter/scripts/compare_total_resource_count_post_fhir_insert.sh",
-    "uuidv7": "ts-node src/make-uuidv7"
+    "uuidv7": "ts-node src/make-uuidv7",
+    "saml-server": "ts-node src/saml/saml-server"
   },
   "keywords": [],
   "author": "",
@@ -47,7 +48,7 @@
     "csv-parser": "^3.0.0",
     "dayjs": "^1.11.9",
     "dotenv": "^16.0.3",
-    "express": "^4.18.1",
+    "express": "^4.19.2",
     "express-promise-router": "^4.1.1",
     "lodash": "^4.17.21",
     "mime-types": "^2.1.35",

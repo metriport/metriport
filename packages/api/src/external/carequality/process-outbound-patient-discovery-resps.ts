@@ -1,5 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
@@ -9,6 +10,8 @@ import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { analytics, EventTypes } from "../../shared/analytics";
+import { Product } from "../../domain/product";
 
 dayjs.extend(duration);
 
@@ -33,7 +36,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     log(`Starting to handle patient discovery results`);
-    await handlePatientDiscoveryResults(
+    const cqLinks = await createCQLinks(
       {
         id: patientId,
         cxId,
@@ -42,6 +45,19 @@ export async function processOutboundPatientDiscoveryResps({
     );
 
     await processPatientDiscoveryProgress({ patient, status: "completed" });
+
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.patientDiscovery,
+      properties: {
+        hie: MedicalDataSource.CAREQUALITY,
+        patientId: patient.id,
+        requestId,
+        pdLinks: cqLinks.length,
+      },
+      apiType: Product.medical,
+    });
+
     log(`Completed.`);
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
@@ -58,13 +74,16 @@ export async function processOutboundPatientDiscoveryResps({
   }
 }
 
-async function handlePatientDiscoveryResults(
+async function createCQLinks(
   patient: Pick<Patient, "id" | "cxId">,
   pdResults: OutboundPatientDiscoveryResp[]
-): Promise<void> {
+): Promise<CQLink[]> {
   const { id, cxId } = patient;
   const cqLinks = buildCQLinks(pdResults);
+
   if (cqLinks.length) await createOrUpdateCQPatientData({ id, cxId, cqLinks });
+
+  return cqLinks;
 }
 
 function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {

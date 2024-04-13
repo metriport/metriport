@@ -25,6 +25,7 @@ import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
+import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 
@@ -45,6 +46,7 @@ router.use("/mpi", mpiRoutes);
  */
 router.post(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
@@ -62,6 +64,7 @@ router.post(
  */
 router.get(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const hasMapi = await hasMapiAccess(cxId);
@@ -79,6 +82,7 @@ router.get(
  */
 router.delete(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
@@ -145,6 +149,7 @@ router.post(
  */
 router.get(
   "/count-fhir-resources",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await countResources({ patient: { cxId } });
