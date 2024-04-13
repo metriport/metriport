@@ -8,8 +8,7 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
+import { storeQueryInit } from "./query-init";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -54,25 +53,22 @@ export const createPatient = async (
 
   const requestId = uuidv7();
 
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.patientDiscovery,
-    properties: {
-      requestId,
-      patientId: newPatient.id,
-    },
-    apiType: Product.medical,
+  // TODO: add progress to PD #1689
+  const updatedPatient = await storeQueryInit({
+    id: newPatient.id,
+    cxId,
+    cmd: { patientDiscovery: { requestId, startedAt: new Date() } },
   });
 
   await cwCommands.patient.create(
-    newPatient,
+    updatedPatient,
     facilityId,
     getCqOrgIdsToDenyOnCw,
     requestId,
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
+  await cqCommands.patient.discover(updatedPatient, facility.data.npi, requestId, forceCarequality);
 
-  return newPatient;
+  return updatedPatient;
 };

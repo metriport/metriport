@@ -1,6 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { diffFromNow } from "@metriport/shared/common/date";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
@@ -12,6 +13,7 @@ import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { Product } from "../../domain/product";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
 dayjs.extend(duration);
 
@@ -46,6 +48,10 @@ export async function processOutboundPatientDiscoveryResps({
 
     await processPatientDiscoveryProgress({ patient, status: "completed" });
 
+    const fullPatient = await getPatientOrFail({ id: patientId, cxId });
+    const startedAt = fullPatient.data.patientDiscovery?.startedAt;
+    const duration = diffFromNow(startedAt);
+
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -54,6 +60,7 @@ export async function processOutboundPatientDiscoveryResps({
         patientId: patient.id,
         requestId,
         pdLinks: cqLinks.length,
+        duration,
       },
       apiType: Product.medical,
     });

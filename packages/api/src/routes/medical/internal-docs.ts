@@ -7,7 +7,9 @@ import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
 import { isMedicalDataSource } from "@metriport/core/external/index";
+import { diffFromNow } from "@metriport/shared/common/date";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
@@ -45,6 +47,10 @@ import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } fro
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 import { requestLogger } from "../helpers/request-logger";
+import { analytics, EventTypes } from "../../shared/analytics";
+import { getCWData } from "../../external/commonwell/patient";
+import { getCQData } from "../../external/carequality/patient";
+import { Product } from "../../domain/product";
 
 const router = Router();
 const upload = multer();
@@ -159,7 +165,7 @@ router.post(
     log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
 
     if (hasSource) {
-      tallyDocQueryProgress({
+      const updatedPatient = await tallyDocQueryProgress({
         patient: patient,
         type: "convert",
         progress: {
@@ -168,6 +174,32 @@ router.post(
         requestId,
         source,
       });
+
+      const externalData =
+        source === MedicalDataSource.COMMONWELL
+          ? await getCWData(updatedPatient.data.externalData)
+          : await getCQData(updatedPatient.data.externalData);
+
+      const isConversionCompleted =
+        externalData?.documentQueryProgress?.convert?.status === "completed";
+
+      if (isConversionCompleted) {
+        const startedAt = externalData?.documentQueryProgress?.startedAt;
+
+        const duration = diffFromNow(startedAt);
+
+        analytics({
+          distinctId: cxId,
+          event: EventTypes.documentConversion,
+          properties: {
+            requestId,
+            patientId,
+            hie: source,
+            duration,
+          },
+          apiType: Product.medical,
+        });
+      }
     } else {
       const expectedPatient = await updateConversionProgress({
         patient: { id: patientId, cxId },

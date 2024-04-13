@@ -11,6 +11,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { oid } from "@metriport/core/domain/oid";
+import { diffFromNow } from "@metriport/shared/common/date";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -191,6 +192,9 @@ export async function registerAndLinkPatientInCW(
     });
 
     if (requestId) {
+      const startedAt = patient.data.patientDiscovery?.startedAt;
+      const duration = diffFromNow(startedAt);
+
       analytics({
         distinctId: patient.cxId,
         event: EventTypes.patientDiscovery,
@@ -199,6 +203,7 @@ export async function registerAndLinkPatientInCW(
           patientId: patient.id,
           requestId,
           pdLinks: networkLinks?.length ?? 0,
+          duration,
         },
         apiType: Product.medical,
       });

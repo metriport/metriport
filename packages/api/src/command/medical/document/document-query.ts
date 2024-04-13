@@ -78,18 +78,23 @@ export async function queryDocumentsAcrossHIEs({
     patient,
   });
 
+  const startedAt = new Date();
+
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    documentQueryProgress: { download: { status: "processing" } },
-    requestId,
-    cxDocumentRequestMetadata,
+    cmd: {
+      documentQueryProgress: { download: { status: "processing" } },
+      requestId,
+      startedAt,
+      cxDocumentRequestMetadata,
+    },
   });
 
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     getDocumentsFromCW({
-      patient,
+      patient: updatedPatient,
       facilityId,
       forceDownload: override,
       forceQuery,
@@ -101,7 +106,7 @@ export async function queryDocumentsAcrossHIEs({
   const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
-      patient,
+      patient: updatedPatient,
       requestId,
     }).catch(emptyFunction);
   }

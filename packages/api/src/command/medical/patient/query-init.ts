@@ -1,28 +1,46 @@
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
+import { QueryProgress, PatientDiscovery } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getPatientOrFail } from "./get-patient";
 
-export type QueryInitCmd = BaseUpdateCmdWithCustomer &
-  (
-    | {
-        documentQueryProgress: Required<Pick<DocumentQueryProgress, "download">>;
-        requestId: string;
-        cxDocumentRequestMetadata?: unknown;
-      }
-    | {
-        documentQueryProgress?: never;
-        consolidatedQuery: QueryProgress;
-        cxConsolidatedRequestMetadata?: unknown;
-      }
-  );
+type InitConsolidatedQueryCmd = {
+  consolidatedQuery: QueryProgress;
+  cxConsolidatedRequestMetadata?: unknown;
+  documentQueryProgress?: never;
+  patientDiscovery?: never;
+};
 
-export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
-  const { id, cxId } = cmd;
+type InitDocumentQueryCmd = {
+  documentQueryProgress: Required<Pick<DocumentQueryProgress, "download">>;
+  requestId: string;
+  startedAt: Date;
+  cxDocumentRequestMetadata?: unknown;
+  consolidatedQuery?: never;
+  patientDiscovery?: never;
+};
 
+type InitPatientDiscoveryCmd = {
+  patientDiscovery: PatientDiscovery;
+  documentQueryProgress?: never;
+  consolidatedQuery?: never;
+};
+
+export type QueryInitCmd =
+  | InitConsolidatedQueryCmd
+  | InitDocumentQueryCmd
+  | InitPatientDiscoveryCmd;
+
+export const storeQueryInit = async ({
+  id,
+  cxId,
+  cmd,
+}: {
+  id: string;
+  cxId: string;
+  cmd: QueryInitCmd;
+}): Promise<Patient> => {
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       id,
@@ -31,22 +49,11 @@ export const storeQueryInit = async (cmd: QueryInitCmd): Promise<Patient> => {
       transaction,
     });
 
-    const update = cmd.documentQueryProgress
-      ? {
-          documentQueryProgress: { ...cmd.documentQueryProgress, requestId: cmd.requestId },
-          requestId: cmd.requestId,
-          cxDocumentRequestMetadata: cmd.cxDocumentRequestMetadata,
-        }
-      : {
-          consolidatedQuery: cmd.consolidatedQuery,
-          cxConsolidatedRequestMetadata: cmd.cxConsolidatedRequestMetadata,
-        };
-
     return patient.update(
       {
         data: {
           ...patient.data,
-          ...update,
+          ...cmd,
         },
       },
       { transaction }

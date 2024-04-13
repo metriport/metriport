@@ -43,6 +43,9 @@ export enum EventTypes {
   error = "error",
   addressRelevance = "addressRelevance",
   patientDiscovery = "patientDiscovery",
+  documentQuery = "documentQuery",
+  documentConversion = "documentConversion",
+  consolidatedQuery = "consolidatedQuery",
 }
 
 export enum EventErrMessage {
