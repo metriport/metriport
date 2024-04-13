@@ -9,20 +9,20 @@ import {
 import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
 import { AugmentedObservation } from "./augmented-observation";
 
-const sectionName = "socialhistory";
+const sectionName = "mentalstatus";
 
-export function buildSocialHistory(fhirBundle: Bundle) {
-  const socialHistoryObservations: Observation[] =
+export function buildMentalStatus(fhirBundle: Bundle) {
+  const mentalStatusObservations: Observation[] =
     fhirBundle.entry?.flatMap(entry =>
-      isSocialHistoryObservation(entry.resource) ? [entry.resource] : []
+      isMentalSurveyObservation(entry.resource) ? [entry.resource] : []
     ) || [];
 
-  if (socialHistoryObservations.length === 0) {
+  if (mentalStatusObservations.length === 0) {
     return undefined;
   }
 
-  const augmentedObservations = socialHistoryObservations.map(
-    obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.38", sectionName, obs)
+  const augmentedObservations = mentalStatusObservations.map(
+    obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.74", sectionName, obs)
   );
 
   const { trs, entries } = createTableRowsAndEntriesFromObservations(augmentedObservations);
@@ -37,30 +37,33 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     },
   };
 
-  const socialHistorySection = {
+  const mentalStatusSection = {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.17",
+          root: "2.16.840.1.113883.10.20.22.2.56",
         }),
         code: buildCodeCE({
-          code: "29762-2",
+          code: "10190-7",
           codeSystem: loincCodeSystem,
           codeSystemName: loincSystemName,
-          displayName: "Social history Narrative",
+          displayName: "Mental status Narrative",
         }),
-        title: "SOCIAL HISTORY",
+        title: "MENTAL STATUS",
         text: { table },
         entry: entries,
       },
     },
   };
-  return socialHistorySection;
+  return mentalStatusSection;
 }
 
-function isSocialHistoryObservation(resource: Resource | undefined): resource is Observation {
-  return (
-    isObservation(resource) &&
-    resource?.category?.[0]?.coding?.[0]?.code?.toLowerCase() === "social-history"
-  );
+function isMentalSurveyObservation(resource: Resource | undefined): resource is Observation {
+  if (!isObservation(resource)) {
+    return false;
+  }
+
+  const hasSurveyCategory = resource.category?.[0]?.coding?.[0]?.code === "survey";
+  const hasPHQDisplay = resource.code?.coding?.[0]?.display?.toLowerCase().includes("phq") ?? false;
+  return hasSurveyCategory || hasPHQDisplay;
 }

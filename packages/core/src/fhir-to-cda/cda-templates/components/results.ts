@@ -111,7 +111,7 @@ export function buildResult(fhirBundle: Bundle) {
           codeSystemName: "LOINC",
           displayName: "Relevant diagnostic tests/laboratory data Narrative",
         }),
-        title: "Diagnostic Results",
+        title: "DIAGNOSTIC RESULTS",
         text,
         entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
       },
