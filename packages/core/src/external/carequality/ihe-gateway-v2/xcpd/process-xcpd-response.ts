@@ -54,31 +54,28 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 =
-    jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["controlActProcess"]?.["subject"]?.[
-      "registrationEvent"
-    ]?.["subject1"];
-  const addr = subject1?.["patient"]?.["patientPerson"]?.["addr"];
+    jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.controlActProcess?.subject?.registrationEvent
+      ?.subject1;
+  const addr = subject1?.patient?.patientPerson?.addr;
   const addresses = [
     {
-      line: [addr?.["streetAddressLine"]?.["#text"] ?? addr?.["streetAddressLine"]],
-      city: addr?.["city"]?.["#text"] ?? addr?.["city"],
-      state: addr?.["state"]?.["#text"] ?? addr?.["state"],
-      postalCode: String(addr?.["postalCode"]?.["#text"] ?? addr?.["postalCode"]),
-      country: addr?.["country"]?.["#text"] ?? addr?.["country"],
+      line: [addr?.streetAddressLine?._text ?? addr?.streetAddressLine],
+      city: addr?.city?._text ?? addr?.city,
+      state: addr?.state?._text ?? addr?.state,
+      postalCode: String(addr?.postalCode?._text ?? addr?.postalCode),
+      country: addr?.country?._text ?? addr?.country,
     },
   ];
 
   const patientResource = {
     name: [
       {
-        given: [subject1?.["patient"]?.["patientPerson"]?.["name"]?.["given"]],
-        family: subject1?.["patient"]?.["patientPerson"]?.["name"]?.["family"],
+        given: [subject1?.patient?.patientPerson?.name?.given],
+        family: subject1?.patient?.patientPerson?.name?.family,
       },
     ],
-    gender: normalizeGender(
-      subject1?.["patient"]?.["patientPerson"]?.["administrativeGenderCode"]?.["@_code"]
-    ),
-    birthDate: subject1?.["patient"]?.["patientPerson"]?.["birthTime"]?.["@_value"],
+    gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
+    birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
   };
 
@@ -87,8 +84,8 @@ function handlePatientMatchResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     externalGatewayPatient: {
-      id: subject1?.["patient"]?.["id"]?.["@_extension"]?.toString(),
-      system: subject1?.["patient"]?.["id"]?.["@_root"]?.toString(),
+      id: subject1?.patient?.id?._extension,
+      system: subject1?.patient?.id?._root,
     },
     gateway: gateway,
     patientId: outboundRequest.patientId,
@@ -137,15 +134,13 @@ function handlePatientErrorResponse({
     },
   });
   const acknowledgementDetail =
-    jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["acknowledgement"]?.[
-      "acknowledgementDetail"
-    ];
+    jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.acknowledgement?.acknowledgementDetail;
   const issue = {
     severity: "error",
     ...(acknowledgementDetail && {
-      code: acknowledgementDetail?.["code"]?.["@_code"],
+      code: acknowledgementDetail?.code?._code,
       details: {
-        text: acknowledgementDetail?.["text"]?.["#text"] || acknowledgementDetail?.["text"],
+        text: acknowledgementDetail?.text?._text || acknowledgementDetail?.text,
       },
     }),
   };
@@ -231,7 +226,8 @@ export function processXCPDResponse({
   } else {
     const parser = new XMLParser({
       ignoreAttributes: false,
-      attributeNamePrefix: "@_",
+      attributeNamePrefix: "_",
+      textNodeName: "_text",
       parseAttributeValue: false,
       removeNSPrefix: true,
     });
@@ -241,15 +237,11 @@ export function processXCPDResponse({
     }
     const jsonObj = parser.parse(xmlStringOrError);
 
-    const ack =
-      jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["acknowledgement"]?.["typeCode"]?.[
-        "@_code"
-      ];
+    const ack = jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.acknowledgement?.typeCode?._code;
 
     const queryResponseCode =
-      jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"]?.["controlActProcess"]?.["queryAck"]?.[
-        "queryResponseCode"
-      ]?.["@_code"];
+      jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.controlActProcess?.queryAck?.queryResponseCode
+        ?._code;
 
     if (ack === "AA" && queryResponseCode === "OK") {
       return handlePatientMatchResponse({

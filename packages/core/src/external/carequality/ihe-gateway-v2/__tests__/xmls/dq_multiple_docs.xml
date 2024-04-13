@@ -116,12 +116,12 @@
                             <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
                         </Name>
                     </Classification>
-                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ad0e7ecd26" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMQ==^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
+                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ad0e7ecd26" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="123456789^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
                         <Name>
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
                         </Name>
                     </ExternalIdentifier>
-                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ae5d6b73d7" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMS91cGxvYWRzLzgxZjJlYzRlLWM3MWMtNDA5MC1iZjFjLTlkODUyOWY2NWI1YV8wMThlODFkNy0wZTlmLTc5ZWMtYWE5ZS0xZGI4NzA5OWQwYzFfMDE4ZTgxZGQtNDFjMC03NGQ1LWI1ZWUtMzI1NzQ0MzNjY2JlLnBkZg==">
+                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ae5d6b73d7" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="987654321">
                         <Name>
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
                         </Name>
@@ -228,12 +228,12 @@
                             <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
                         </Name>
                     </Classification>
-                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-9477cf662f35" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMQ==^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
+                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-9477cf662f35" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="987654321^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
                         <Name>
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
                         </Name>
                     </ExternalIdentifier>
-                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-94783c9fa72f" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMS91cGxvYWRzLzgxZjJlYzRlLWM3MWMtNDA5MC1iZjFjLTlkODUyOWY2NWI1YV8wMThlODFkNy0wZTlmLTc5ZWMtYWE5ZS0xZGI4NzA5OWQwYzFfMDE4ZThiMGQtMTNjMy03YmVjLWJlYzYtZjEyMTJjMzA2MTRkLnBkZg==">
+                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-94783c9fa72f" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="987654321">
                         <Name>
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
                         </Name>

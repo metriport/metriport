@@ -19,7 +19,7 @@ const gateway = {
 
 describe("processXCPDResponse", () => {
   it("should process the match XCPD response correctly", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_match.xml"), "utf8");
+    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_match.xml"), "utf8");
 
     const response = processXCPDResponse({
       xmlStringOrError: xmlString,
@@ -43,7 +43,7 @@ describe("processXCPDResponse", () => {
     }
   });
   it("should correctly identify and process a no match XCPD response", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_no_match.xml"), "utf8");
+    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_no_match.xml"), "utf8");
     const response = processXCPDResponse({
       xmlStringOrError: xmlString,
       outboundRequest: outboundXCPDRequest,
@@ -56,7 +56,7 @@ describe("processXCPDResponse", () => {
     expect(xcpdResult.data.patientMatch).toBeFalsy();
   });
   it("should process the error XCPD response correctly", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xcpd_error.xml"), "utf8");
+    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_error.xml"), "utf8");
 
     const response = processXCPDResponse({
       xmlStringOrError: xmlString,
