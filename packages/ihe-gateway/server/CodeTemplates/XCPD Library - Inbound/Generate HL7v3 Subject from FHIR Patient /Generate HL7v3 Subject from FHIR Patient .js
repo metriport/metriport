@@ -78,7 +78,7 @@ function getXCPDResponseSubject(lambda) {
 	}
 
 	// A value representing the gender (sex) of this person
-	if (patientResource.birthDate && ['male','female'].indexOf(patientResource.gender.toString()) > -1) {
+	if (patientResource.gender && ['male','female'].indexOf(patientResource.gender.toString()) > -1) {
 		patient.appendChild(new XML('<administrativeGenderCode code="' + String(patientResource.gender)[0].toUpperCase() +  '"/>'))
 	}
 
