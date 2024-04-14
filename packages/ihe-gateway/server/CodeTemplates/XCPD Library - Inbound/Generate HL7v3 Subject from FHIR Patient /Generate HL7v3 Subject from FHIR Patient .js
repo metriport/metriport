@@ -44,7 +44,7 @@ function getXCPDResponseSubject(lambda) {
 	var patient = <patientPerson/>;
 
 	// (REQUIRED) Name(s) for this person
-	if (patientResource.hasOwnProperty('name')) {
+	if (patientResource.name) {
 		patientResource.name.forEach(function(name) {
 			try {
 				var personName = <name/>;
@@ -62,12 +62,12 @@ function getXCPDResponseSubject(lambda) {
 	}
 
 	// Telecommunication address(es) for communicating with this person
-	if (patientResource.hasOwnProperty('telecom')) {
+	if (patientResource.telecom) {
 		patientResource.telecom.forEach(function(entry) {
 			try {
 				var prefix = ['tel:','fax:','mailto:','tty:','http:','sms:',''][['phone','fax','email','pager','url','sms','other'].indexOf(entry.system.toString())];
 				var telecom = <telecom value={prefix.toString() + entry.value.toString()}/>;
-				if (entry.hasOwnProperty('use')) {
+				if (entry.use) {
 					telecom.@use = ['H','W','TMP','BAD','DIR'][['home','work','temp','old','mobile'].indexOf(entry.use.toString())];
 				}
 				patient.appendChild(telecom);
@@ -78,32 +78,32 @@ function getXCPDResponseSubject(lambda) {
 	}
 
 	// A value representing the gender (sex) of this person
-	if (patientResource.hasOwnProperty('gender') && ['male','female'].indexOf(patientResource.gender.toString()) > -1) {
+	if (patientResource.birthDate && ['male','female'].indexOf(patientResource.gender.toString()) > -1) {
 		patient.appendChild(new XML('<administrativeGenderCode code="' + String(patientResource.gender)[0].toUpperCase() +  '"/>'))
 	}
 
 	// The date and time this person was born 
-	if (patientResource.hasOwnProperty('birthDate')) try {
+	if (patientResource.birthDate) try {
 		patient.appendChild(new XML('<birthTime value="' + DateUtil.convertDate('yyyy-MM-dd', 'yyyyMMdd', patientResource.birthDate.toString().substring(0, 10)) +  '"/>'))
 	} catch(ex) {
 		if (globalMap.containsKey('TEST_MODE')) logger.error('Code Template: XCPD Inbound - getXCPDResponseSubject() - birthDate: ' + ex);
 	}
 
 	// Address(es) for corresponding with this person
-	if (patientResource.hasOwnProperty('address')) {
+	if (patientResource.address) {
 		patientResource.address.forEach(function(entry) {
 			try {
 				var addr = <addr/>;
 				// TODO: Address use
-				if (entry.hasOwnProperty('line')) {
+				if (entry.line) {
 					entry.line.forEach(function(line) {
 						addr.appendChild(new XML('<streetAddressLine>' + line.toString() + '</streetAddressLine>'));
 					});
 				}
-				if (entry.hasOwnProperty('city')) addr.appendChild(new XML('<city>' + entry.city.toString() + '</city>'));
-				if (entry.hasOwnProperty('state')) addr.appendChild(new XML('<state>' + entry.state.toString() + '</state>'));
-				if (entry.hasOwnProperty('postalCode')) addr.appendChild(new XML('<postalCode>' + entry.postalCode.toString() + '</postalCode>'));
-				if (entry.hasOwnProperty('country')) addr.appendChild(new XML('<country>' + entry.country.toString() + '</country>'));
+				if (entry.city) addr.appendChild(new XML('<city>' + entry.city.toString() + '</city>'));
+				if (entry.state) addr.appendChild(new XML('<state>' + entry.state.toString() + '</state>'));
+				if (entry.postalCode) addr.appendChild(new XML('<postalCode>' + entry.postalCode.toString() + '</postalCode>'));
+				if (entry.country) addr.appendChild(new XML('<country>' + entry.country.toString() + '</country>'));
 				if (addr.hasComplexContent()) patient.appendChild(addr);
 			} catch(ex) {
 				if (globalMap.containsKey('TEST_MODE')) logger.error('Code Template: XCPD Inbound - getXCPDResponseSubject() - address: ' + ex);
@@ -112,7 +112,7 @@ function getXCPDResponseSubject(lambda) {
 	}
 
 	// An identifying relationship between the focal living subject and a scoping organization
-	if (patientResource.hasOwnProperty('identifier'))  {
+	if (patientResource.identifier)  {
 		patientResource.identifier.forEach(function(entry) {
 			try {
 				var otherId = <asOtherIDs classCode="PAT"/>;
