@@ -11,6 +11,7 @@
     "doc-query": "ts-node src/document/document-query.ts",
     "cq-cert-check": "ts-node src/carequality/cq-cert-checker.ts",
     "bulk-insert": "ts-node src/bulk-insert-patients",
+    "bulk-query": "ts-node src/bulk-query-patients",
     "coverage-assessment": "ts-node src/commonwell/coverage-assessment",
     "enhance-coverage": "ts-node src/commonwell/enhance-coverage",
     "create-medical-records": "ts-node src/customer-requests/medical-records-create",
