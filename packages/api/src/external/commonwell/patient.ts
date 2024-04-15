@@ -395,6 +395,9 @@ async function updatePatientAndLinksInCw(
       getOrgIdExcludeList
     );
 
+    const startedAt = patient.data.patientDiscovery?.startedAt;
+    const duration = diffFromNow(startedAt);
+
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -403,6 +406,7 @@ async function updatePatientAndLinksInCw(
         patientId: patient.id,
         requestId,
         pdLinks: networkLinks?.length ?? 0,
+        duration,
       },
       apiType: Product.medical,
     });
@@ -538,16 +542,6 @@ export async function linkPatientToCW(
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
   const requestId = uuidv7();
-
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.patientDiscovery,
-    properties: {
-      requestId,
-      patientId: patient.id,
-    },
-    apiType: Product.medical,
-  });
 
   await update(patient, facilityId, getOrgIdExcludeList, requestId);
 }

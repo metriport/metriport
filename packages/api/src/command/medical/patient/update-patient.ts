@@ -14,8 +14,7 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
+import { storeQueryInit } from "./query-init";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -44,22 +43,16 @@ export async function updatePatient(
 
   const requestId = uuidv7();
 
-  // NEED TO UPDATE WITH STORE QUERY INIT
-
-  analytics({
-    distinctId: cxId,
-    event: EventTypes.patientDiscovery,
-    properties: {
-      requestId,
-      patientId: patientUpdate.id,
-    },
-    apiType: Product.medical,
+  const updatedPatient = await storeQueryInit({
+    id: result.id,
+    cxId,
+    cmd: { patientDiscovery: { requestId, startedAt: new Date() } },
   });
 
-  await cqCommands.patient.discover(result, facility.data.npi, requestId, forceCarequality);
+  await cqCommands.patient.discover(updatedPatient, facility.data.npi, requestId, forceCarequality);
 
   await cwCommands.patient.update(
-    result,
+    updatedPatient,
     facilityId,
     getCqOrgIdsToDenyOnCw,
     requestId,

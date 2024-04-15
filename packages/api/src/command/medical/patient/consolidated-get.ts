@@ -167,10 +167,13 @@ export async function getConsolidated({
         conversionType,
       });
 
+      const duration = diffFromNow(startedAt);
+
       analytics({
         ...defaultAnalyticsProps,
         properties: {
           ...defaultAnalyticsProps.properties,
+          duration,
           conversionType,
         },
       });
