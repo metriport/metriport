@@ -113,7 +113,7 @@ export function createAPIService({
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
   const dbReadReplicaEndpointAsString = JSON.stringify({
     host: dbReadReplicaEndpoint.hostname,
-    port: dbReadReplicaEndpoint.port.toString(),
+    port: dbReadReplicaEndpoint.port,
   });
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
