@@ -2,8 +2,11 @@ import { createExtrinsicObjectXml } from "../external/carequality/dq/create-meta
 import { createPatientUniqueId } from "../external/carequality/shared";
 import { S3Utils } from "../external/aws/s3";
 import { DocumentReference, Organization } from "@medplum/fhirtypes";
+import { out } from "../util/log";
 
-export async function createAndUploadMetadataFile({
+const { log } = out("Core Create and Upload Extrinsic Object");
+
+export async function createAndUploadDocumentdMetadataFile({
   s3Utils,
   cxId,
   patientId,
@@ -20,7 +23,7 @@ export async function createAndUploadMetadataFile({
   docId: string;
   hash: string;
   size: string;
-  docRef: DocumentReference | undefined;
+  docRef: DocumentReference;
   metadataFileName: string;
   destinationBucket: string;
   mimeType: string;
@@ -35,7 +38,7 @@ export async function createAndUploadMetadataFile({
   const organization: Organization | undefined = docRef?.contained?.find(
     (resource): resource is Organization => resource.resourceType === "Organization"
   );
-  console.log(`Creating metadata file for docId: ${docId}`);
+  log(`Creating metadata file for docId: ${docId}`);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
     size,
@@ -49,6 +52,44 @@ export async function createAndUploadMetadataFile({
     mimeType,
   });
 
-  console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
+  log(`Uploading metadata to S3 with key: ${metadataFileName}`);
+  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
+}
+
+export async function createAndUploadCDAMetadataFile({
+  s3Utils,
+  cxId,
+  patientId,
+  docId,
+  size,
+  organization,
+  metadataFileName,
+  destinationBucket,
+  mimeType,
+}: {
+  s3Utils: S3Utils;
+  cxId: string;
+  patientId: string;
+  docId: string;
+  hash: string;
+  size: string;
+  organization: Organization;
+  metadataFileName: string;
+  destinationBucket: string;
+  mimeType: string;
+}): Promise<void> {
+  const createdTime = new Date().toISOString();
+  const uniquePatientId = createPatientUniqueId(cxId, patientId);
+  log(`Creating metadata file for docId: ${docId}`);
+  const extrinsicObjectXml = createExtrinsicObjectXml({
+    createdTime,
+    size,
+    patientId: uniquePatientId,
+    documentUniqueId: docId,
+    organization,
+    mimeType,
+  });
+
+  log(`Uploading metadata to S3 with key: ${metadataFileName}`);
   await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
 }

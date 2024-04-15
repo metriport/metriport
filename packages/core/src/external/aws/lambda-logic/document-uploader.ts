@@ -8,11 +8,12 @@ import {
 import { parseFilePath } from "../../../domain/filename";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { S3Utils } from "../s3";
-import { createAndUploadMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
+import { createAndUploadDocumentdMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
+import { out } from "../../../util/log";
 
 const api = axios.create();
-
-const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
+const { log } = out(`Core Document Uploader`);
+const MAXIMUM_FILE_SIZE = 50_00_000; // 50 MB
 
 export type FileData = {
   mimeType?: string | undefined;
@@ -34,7 +35,7 @@ export async function documentUploaderHandler(
   const s3FileNameParts = parseFilePath(sourceKey);
   if (!s3FileNameParts) {
     const message = "Failed to parse S3 file key";
-    console.log(`${message} - sourceKey: ${sourceKey}`);
+    log(`${message} - sourceKey: ${sourceKey}`);
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
   const { cxId, patientId, fileId: docId } = s3FileNameParts;
@@ -54,12 +55,10 @@ export async function documentUploaderHandler(
   // Make a copy of the file to the general medical documents bucket
   try {
     await s3Utils.s3.copyObject(params).promise();
-    console.log(
-      `Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`
-    );
+    log(`Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`);
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
-    console.log(`${message}: ${error}`);
+    log(`${message}: ${error}`);
     throw new MetriportError(message, error, { copySource, destinationBucket, destinationKey });
   }
 
@@ -77,14 +76,14 @@ export async function documentUploaderHandler(
     const hash = eTag ? eTag : "";
     if (!contentType) {
       const message = "Failed to get the mime type of the uploaded file";
-      console.log(`${message}: ${contentType}`);
+      log(`${message}: ${contentType}`);
       throw new MetriportError(message, null, { sourceKey, destinationKey });
     }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
-      console.log(`${message}: ${docRef}`);
+      log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadMetadataFile({
+      await createAndUploadDocumentdMetadataFile({
         s3Utils,
         cxId,
         patientId,
@@ -100,12 +99,12 @@ export async function documentUploaderHandler(
     if (size && size > MAXIMUM_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
       const message = `Uploaded file size exceeds the maximum allowed size`;
-      console.log(`${message}: ${size}`);
+      log(`${message}: ${size}`);
       return { message, size };
     }
   } catch (error) {
     const message = "Failed with the call to update the doc-ref of an uploaded file";
-    console.log(`${message}: ${error}`);
+    log(`${message}: ${error}`);
     throw new MetriportError(message, error, { sourceKey, destinationKey });
   }
 }
@@ -119,7 +118,7 @@ async function forwardCallToServer(
   const encodedUrl = encodeURI(url);
 
   const resp = await api.post(encodedUrl, fileData);
-  console.log(`Server response - status: ${resp.status}`);
-  console.log(`Server response - body: ${JSON.stringify(resp.data)}`);
+  log(`Server response - status: ${resp.status}`);
+  log(`Server response - body: ${JSON.stringify(resp.data)}`);
   return resp.data;
 }

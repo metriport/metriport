@@ -20,6 +20,8 @@ import { createPatient, PatientCreateCmd } from "../../command/medical/patient/c
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { toFHIR as toFHIROrganization } from "../../external/fhir/organization";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
@@ -434,15 +436,18 @@ async function putConsolidated(req: Request, res: Response) {
     fhirBundle: validatedBundle,
   });
   if (!Config.isProdEnv()) {
+    const organization = await getOrganizationOrFail({ cxId });
+    const fhirOrganization = toFHIROrganization(organization);
     const cdaBundles = convertFhirBundleToCda(validatedBundle);
     for (const cdaBundle of cdaBundles) {
-      await cdaDocumentUploaderHandler(
+      await cdaDocumentUploaderHandler({
         cxId,
         patientId,
         cdaBundle,
-        Config.getMedicalDocumentsBucketName(),
-        Config.getAWSRegion()
-      );
+        destinationBucket: Config.getMedicalDocumentsBucketName(),
+        region: Config.getAWSRegion(),
+        organization: fhirOrganization,
+      });
     }
   }
   return res.json(data);

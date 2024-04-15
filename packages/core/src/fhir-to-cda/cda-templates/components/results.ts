@@ -16,7 +16,11 @@ import {
   idAttribute,
 } from "../constants";
 import { buildObservations } from "./observations";
-import { findResourceInBundle, isObservation, isDiagnosticReport } from "../../fhir";
+import {
+  findResourceInBundle,
+  isObservation,
+  isDiagnosticReport,
+} from "../../../external/fhir/shared";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],

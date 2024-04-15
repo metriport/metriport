@@ -1,5 +1,5 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
-import { isComposition, findResourceInBundle } from "./fhir";
+import { isComposition, findResourceInBundle } from "../external/fhir/shared";
 import { MetriportError } from "../util/error/metriport-error";
 
 /**

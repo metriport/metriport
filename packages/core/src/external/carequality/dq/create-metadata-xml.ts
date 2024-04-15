@@ -15,6 +15,7 @@ import {
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   ORGANIZATION_NAME_DEFAULT,
+  DEFAULT_TITLE,
   createDocumentUniqueId,
 } from "../shared";
 import { uuidv7 } from "../../../util/uuid-v7";
@@ -94,7 +95,7 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title}"/>
+      <LocalizedString charset="UTF-8" value="${title ? title : DEFAULT_TITLE}"/>
     </Name>
 
     <Classification classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
