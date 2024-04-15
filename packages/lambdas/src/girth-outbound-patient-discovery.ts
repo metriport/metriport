@@ -55,7 +55,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
           cxId,
         },
       });
-      throw Error;
+      throw new Error(msg);
     }
     const signedRequests = createAndSignBulkXCPDRequests(
       xcpdRequest.data,

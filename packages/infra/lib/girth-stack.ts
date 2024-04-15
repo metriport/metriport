@@ -183,7 +183,7 @@ export class GirthLambdasNestedStack extends NestedStack {
 
     const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
     if (!secrets[cqOrgPrivateKeyPasswordKey]) {
-      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
+      throw new Error(`${cqOrgPrivateKeyPasswordKey} is not defined in config`);
     }
     secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(documentQueryLambda);
 

@@ -93,8 +93,9 @@ export async function getDocumentsFromCQ({
     // separate mirth and girth here
     const linksWithDqUrlNoGirth: CQLink[] = [];
     const linksWithDqUrlGirth: CQLink[] = [];
+    const girthOIDs = await getOIDsWithGirthEnabledFeatureFlagValue();
     for (const link of linksWithDqUrl) {
-      if ((await getOIDsWithGirthEnabledFeatureFlagValue()).includes(link.oid)) {
+      if (girthOIDs.includes(link.oid)) {
         linksWithDqUrlGirth.push(link);
       } else {
         linksWithDqUrlNoGirth.push(link);

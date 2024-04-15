@@ -131,9 +131,6 @@
                         <principalCareProviderId>
                             <value extension="1234" root="2.16.840.1.113883.4.6"/>
                         </principalCareProviderId>
-                        <principalCareProviderId>
-                            <value extension="1234" root="2.16.840.1.113883.4.6"/>
-                        </principalCareProviderId>
                     </parameterList>
                 </queryByParameter>
             </controlActProcess>

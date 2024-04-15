@@ -57,10 +57,10 @@ function parseDocumentReference(
 
   const findClassificationName = (scheme: string) => {
     const classification = classifications?.find(
-      (classification: Classification) => classification._classificationScheme === scheme
+      (classification: Classification) => classification?._classificationScheme === scheme
     );
     if (!classification) return undefined;
-    const title = classification.Name.LocalizedString._value;
+    const title = classification?.Name?.LocalizedString?._value;
     return title;
   };
 

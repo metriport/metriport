@@ -34,7 +34,7 @@ function createSoapBody({
   if (!bodyData.gateways[0]) {
     throw new Error("Gateway must be provided");
   }
-  const messageId = `urn:uuid:${bodyData.id}`;
+  const messageId = wrapIdInUrnUuid(bodyData.id);
   const receiverDeviceId = bodyData.gateways?.[0].oid;
   const toUrl = bodyData.gateways?.[0].url;
   const providerId = bodyData.principalCareProviderIds[0];
@@ -161,10 +161,10 @@ function createSoapBody({
                 ? {
                     "urn:value": {
                       "urn:streetAddressLine": patientAddress.line.join(", "),
-                      "urn:city": patientAddress.city,
-                      "urn:state": patientAddress.state,
-                      "urn:postalCode": patientAddress.postalCode,
-                      "urn:country": patientAddress.country,
+                      "urn:city": patientAddress?.city,
+                      "urn:state": patientAddress?.state,
+                      "urn:postalCode": patientAddress?.postalCode,
+                      "urn:country": patientAddress?.country,
                     },
                     "urn:semanticsText": "Patient.addr",
                   }
