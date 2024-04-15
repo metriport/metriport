@@ -63,7 +63,8 @@ async function prepareAndTriggerPD(
   try {
     const [pdRequestNoGirth, pdRequestGirth] = await prepareForPatientDiscovery(
       patient,
-      facilityNPI
+      facilityNPI,
+      requestId
     );
     const numGatewaysNoGirth = pdRequestNoGirth.gateways.length;
 
@@ -101,7 +102,7 @@ async function prepareAndTriggerPD(
 async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string,
-  requestId?: string
+  requestId: string
 ): Promise<[OutboundPatientDiscoveryReq, OutboundPatientDiscoveryReq]> {
   const fhirPatient = toFHIR(patient);
 
