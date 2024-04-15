@@ -204,6 +204,9 @@ export function createAPIService({
           ...(cookieStore && {
             CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
           }),
+          ...(props.config.iheGateway?.trustStoreBucketName && {
+            CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
+          }),
         },
       },
       memoryLimitMiB: isProd(props.config) ? 4096 : 2048,

@@ -18,6 +18,7 @@ interface GirthLambdasNestedStackProps extends NestedStackProps {
   cqOrgPrivateKey: string | undefined;
   cqOrgPrivateKeyPassword: string | undefined;
   cqOrgCertificateIntermediate: string | undefined;
+  cqTrustBundleBucketName: string | undefined;
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
@@ -46,6 +47,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
+    cqTrustBundleBucketName: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -58,6 +60,7 @@ export class GirthLambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
+      cqTrustBundleBucketName,
       apiURL,
       envType,
       sentryDsn,
@@ -76,6 +79,9 @@ export class GirthLambdasNestedStack extends NestedStack {
         }),
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
+        ...(cqTrustBundleBucketName !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -122,6 +128,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
+    cqTrustBundleBucketName: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -134,6 +141,7 @@ export class GirthLambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
+      cqTrustBundleBucketName,
       apiURL,
       envType,
       sentryDsn,
@@ -152,6 +160,9 @@ export class GirthLambdasNestedStack extends NestedStack {
         }),
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
+        ...(cqTrustBundleBucketName !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
@@ -198,6 +209,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
+    cqTrustBundleBucketName: string | undefined;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -210,6 +222,7 @@ export class GirthLambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
+      cqTrustBundleBucketName,
       apiURL,
       envType,
       sentryDsn,
@@ -228,6 +241,9 @@ export class GirthLambdasNestedStack extends NestedStack {
         }),
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
+        }),
+        ...(cqTrustBundleBucketName !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),

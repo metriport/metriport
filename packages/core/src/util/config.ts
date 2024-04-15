@@ -87,4 +87,7 @@ export class Config {
   static getGirthDocumentRetrievalLambdaName(): string {
     return getEnvVarOrFail("GIRTH_DOCUMENT_RETRIEVAL_LAMBDA_NAME");
   }
+  static getCqTrustBundleBucketName(): string {
+    return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
+  }
 }

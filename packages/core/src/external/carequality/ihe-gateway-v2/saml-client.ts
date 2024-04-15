@@ -1,11 +1,15 @@
 import https from "https";
 import axios from "axios";
+import * as AWS from "aws-sdk";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { BulkSignedDQ } from "../../saml/xca/iti38-envelope";
 import { isGatewayWithOid } from "./utils";
 import { capture } from "../../../util/notifications";
 import { verifySaml } from "../../saml/security/verify";
+import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
+const { log } = out("Saml Client:");
 
 export async function sendSignedXml({
   signedXml,
@@ -14,7 +18,6 @@ export async function sendSignedXml({
   publicCert,
   key,
   passphrase,
-  trustedRootCert,
 }: {
   signedXml: string;
   url: string;
@@ -22,14 +25,15 @@ export async function sendSignedXml({
   publicCert: string;
   key: string;
   passphrase: string;
-  trustedRootCert?: string[];
 }): Promise<string> {
+  const trustedKeyStore = await getTrustedKeyStore();
+
   const agent = new https.Agent({
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
     cert: certChain,
     key: key,
     passphrase,
-    ca: trustedRootCert,
+    ca: trustedKeyStore,
   });
 
   const verified = verifySaml({ xmlString: signedXml, publicCert });
@@ -116,4 +120,17 @@ export async function sendSignedRequests({
     .filter((response): response is string | { error: string } => response !== undefined);
 
   return processedResponses;
+}
+
+async function getTrustedKeyStore(): Promise<string> {
+  const s3 = new AWS.S3({ region: Config.getAWSRegion() });
+  const trustBundleBucketName = Config.getCqTrustBundleBucketName();
+  const key = `trust_store_${Config.getEnvType()}_aws.pem`;
+  const response = await s3.getObject({ Bucket: trustBundleBucketName, Key: key }).promise();
+  if (!response.Body) {
+    log("Trust bundle not found.");
+    throw new Error("Trust bundle not found.");
+  }
+  const trustBundle = response.Body.toString();
+  return trustBundle;
 }
