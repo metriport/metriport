@@ -60,7 +60,7 @@ async function prepareAndTriggerPD(
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI);
+    const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI, requestId);
     const numGateways = pdRequest.gateways.length;
 
     const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -91,7 +91,7 @@ async function prepareAndTriggerPD(
 async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string,
-  requestId?: string
+  requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
 
