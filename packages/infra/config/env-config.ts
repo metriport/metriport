@@ -49,6 +49,7 @@ export type EnvConfig = {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
       CQ_ORG_CERTIFICATE: string;
+      CQ_ORG_CERTIFICATE_INTERMEDIATE: string;
       CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {

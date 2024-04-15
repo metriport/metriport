@@ -1,21 +1,21 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { processAsyncError } from "../../../errors";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { Config } from "../../../shared/config";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -42,25 +42,27 @@ export async function updatePatient(
   const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  // TODO move these to the respective "commands" files so this is fully async
-  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
-    isCommonwellEnabled(),
-    isCarequalityEnabled(),
-  ]);
+  const requestId = uuidv7();
 
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // Intentionally asynchronous
-    cwCommands.patient
-      .update(result, facilityId, getCqOrgIdsToDenyOnCw)
-      .catch(processAsyncError(`cw.patient.update`));
-  }
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientDiscovery,
+    properties: {
+      requestId,
+      patientId: patientUpdate.id,
+    },
+    apiType: Product.medical,
+  });
 
-  if (carequalityEnabled || forceCarequality) {
-    // Intentionally asynchronous
-    cqCommands.patient
-      .discover(result, facility.data.npi)
-      .catch(processAsyncError(`cq.patient.update`));
-  }
+  await cqCommands.patient.discover(result, facility.data.npi, requestId, forceCarequality);
+
+  await cwCommands.patient.update(
+    result,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
 
   return result;
 }

@@ -5,30 +5,14 @@ import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
 
-// TODO: 1411 - remove the DAPI-related routes when DAPI is fully discontinued
-const blackListedRoutes = [
-  "/internal/carequality/document-query/response",
-  "/internal/carequality/document-retrieval/response",
-  "/internal/carequality/patient-discovery/response",
-  "/internal/mpi/patient",
-  "/webhook/tenovi",
-  "/webhook/fitbit",
-  "/webhook/withings",
-  "/webhook/garmin",
-  "/webhook/apple",
-];
-
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
     const url = req.baseUrl + req.path;
+    const urlWithParams = replaceParamWithKey(url, req.params);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params = req.params && Object.keys(req.params).length ? req.params : undefined;
-
-    if (isBlackListed(url)) {
-      return next();
-    }
 
     console.log(
       "%s ..........Begins %s %s %s %s",
@@ -53,14 +37,18 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         elapsedTimeInMs
       );
 
-      analyzeRoute({ req, method, url, duration: elapsedTimeInMs });
+      const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
+
+      if (isSuccessful) {
+        analyzeRoute({ req, method, url: urlWithParams, params, query, duration: elapsedTimeInMs });
+      }
     });
     next();
   });
 };
 
-function isBlackListed(url: string): boolean {
-  return blackListedRoutes.some(route => url.includes(route));
+function replaceParamWithKey(url: string, params: Record<string, string>): string {
+  return Object.keys(params).reduce((acc, key) => acc.replace(params[key], `:${key}`), url);
 }
 
 function toString(obj: unknown): string {

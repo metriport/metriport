@@ -10,7 +10,7 @@ export async function allowMapiAccess(cxId: string): Promise<"new" | "existing">
 
 export async function hasMapiAccess(cxId: string): Promise<boolean> {
   const existing = await MAPIAccess.findByPk(cxId);
-  if (!existing) false;
+  if (!existing) return false;
   return true;
 }
 
