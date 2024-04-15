@@ -6,7 +6,7 @@ import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { makeSettingModel } from "../../../../models/__tests__/settings";
 import { Settings } from "../../../../models/settings";
 import { WebhookRequest } from "../../../../models/webhook-request";
-import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { makePatientAsPatientModel } from "../../../../models/medical/__tests__/patient";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import * as documentWebhook from "../document-webhook";
 import * as processDocQueryWebhook from "../process-doc-query-webhook";
@@ -19,7 +19,7 @@ import * as webhook from "../../../webhook/webhook";
 let processPatientDocumentRequest: jest.SpyInstance;
 let composeDocRefPayload: jest.SpyInstance;
 
-const patientModel = makePatientModel();
+const patientModel = makePatientAsPatientModel();
 let patient: Patient;
 let settingsModel: Settings;
 let webhookModel: WebhookRequest;

@@ -84,9 +84,7 @@ export async function queryDocumentsAcrossHIEs({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      documentQueryProgress: { download: { status: "processing" } },
-      requestId,
-      startedAt,
+      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
       cxDocumentRequestMetadata,
     },
   });

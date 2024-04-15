@@ -44,6 +44,8 @@ export async function updatePatient(
 
   const requestId = uuidv7();
 
+  // NEED TO UPDATE WITH STORE QUERY INIT
+
   analytics({
     distinctId: cxId,
     event: EventTypes.patientDiscovery,

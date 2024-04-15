@@ -5,23 +5,23 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
-type InitConsolidatedQueryCmd = {
+export type InitConsolidatedQueryCmd = {
   consolidatedQuery: QueryProgress;
   cxConsolidatedRequestMetadata?: unknown;
   documentQueryProgress?: never;
   patientDiscovery?: never;
 };
 
-type InitDocumentQueryCmd = {
-  documentQueryProgress: Required<Pick<DocumentQueryProgress, "download">>;
-  requestId: string;
-  startedAt: Date;
+export type InitDocumentQueryCmd = {
+  documentQueryProgress: Required<
+    Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
+  >;
   cxDocumentRequestMetadata?: unknown;
   consolidatedQuery?: never;
   patientDiscovery?: never;
 };
 
-type InitPatientDiscoveryCmd = {
+export type InitPatientDiscoveryCmd = {
   patientDiscovery: PatientDiscovery;
   documentQueryProgress?: never;
   consolidatedQuery?: never;
@@ -32,15 +32,13 @@ export type QueryInitCmd =
   | InitDocumentQueryCmd
   | InitPatientDiscoveryCmd;
 
-export const storeQueryInit = async ({
-  id,
-  cxId,
-  cmd,
-}: {
+export type StoreQueryParams = {
   id: string;
   cxId: string;
   cmd: QueryInitCmd;
-}): Promise<Patient> => {
+};
+
+export const storeQueryInit = async ({ id, cxId, cmd }: StoreQueryParams): Promise<Patient> => {
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const patient = await getPatientOrFail({
       id,

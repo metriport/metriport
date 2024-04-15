@@ -7,7 +7,7 @@ import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { makePatient, makePatientData } from "../../../../domain/medical/__tests__/patient";
 import { PatientModel } from "../../../../models/medical/patient";
-import { makePatientModel } from "../../../../models/medical/__tests__/patient";
+import { makePatientAsPatientModel } from "../../../../models/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { appendDocQueryProgress } from "../append-doc-query-progress";
 // import { setDocQueryProgress } from "../../../../external/hie/set-doc-query-progress";
@@ -184,7 +184,7 @@ describe("appendDocQueryProgress", () => {
     it("sets convert.total to zero when no prior convert and downloadErrors is provided", async () => {
       const convertibleDownloadErrors = faker.number.int({ min: 1, max: 10 });
       const convertProgress = { status: "completed" as const };
-      const patient = makePatientModel({
+      const patient = makePatientAsPatientModel({
         data: makePatientData({
           documentQueryProgress: { convert: undefined },
         }),
@@ -202,7 +202,7 @@ describe("appendDocQueryProgress", () => {
       const total = faker.number.int({ min: 0, max: 10 });
       const convertibleDownloadErrors = faker.number.int({ min: 11, max: 20 });
       const convertProgress = { status: "completed" as const };
-      const patient = makePatientModel({
+      const patient = makePatientAsPatientModel({
         data: makePatientData({
           documentQueryProgress: { convert: { status: "processing", total } },
         }),
@@ -220,7 +220,7 @@ describe("appendDocQueryProgress", () => {
       const total = faker.number.int({ min: 3, max: 100 });
       const convertibleDownloadErrors = faker.number.int({ min: 1, max: total - 1 });
       const convertProgress = { status: "completed" as const };
-      const patient = makePatientModel({
+      const patient = makePatientAsPatientModel({
         data: makePatientData({
           documentQueryProgress: { convert: { status: "processing", total } },
         }),
@@ -243,7 +243,7 @@ describe("appendDocQueryProgress", () => {
         status: "completed" as const,
         total: faker.number.int({ min: 200 }),
       };
-      const patient = makePatientModel({
+      const patient = makePatientAsPatientModel({
         data: makePatientData({
           documentQueryProgress: { convert: { status: "processing", total } },
         }),
@@ -263,7 +263,7 @@ describe("appendDocQueryProgress", () => {
       const total = faker.number.int({ min: 3, max: 100 });
       const convertibleDownloadErrors = 1;
       const downloadProgress = { status: "completed" as const };
-      const patient = makePatientModel({
+      const patient = makePatientAsPatientModel({
         data: makePatientData({
           documentQueryProgress: {
             convert: {
