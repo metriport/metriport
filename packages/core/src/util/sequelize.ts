@@ -15,7 +15,7 @@ export const dbReadReplicaEndpointSchema = z.object({
   host: z.string(),
   port: z.number(),
 });
-export type DbReadReplicaEndpoint = z.infer<typeof dbCredsSchema>;
+export type DbReadReplicaEndpoint = z.infer<typeof dbReadReplicaEndpointSchema>;
 
 /**
  * This function is used to initialize the readonly DB pool for queries that require the read replica.
@@ -23,7 +23,7 @@ export type DbReadReplicaEndpoint = z.infer<typeof dbCredsSchema>;
  * Note that this is a workaround while we don't have https://github.com/metriport/metriport-internal/issues/1174
  * in place.
  */
-export function initReadonlyDBPool(
+export function initReadonlyDbPool(
   dbCreds: string,
   dbReadReplicaEndpoint: string,
   poolOptions?: PoolOptions,
@@ -38,22 +38,22 @@ export function initReadonlyDBPool(
   parsedDbCreds.host = parsedDbReadReplicaEndpoint.host;
   parsedDbCreds.port = parsedDbReadReplicaEndpoint.port;
 
-  return initDBPoolFromCreds(parsedDbCreds, poolOptions, logging);
+  return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
 }
 
 /**
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
-export function initDBPool(dbCreds: string, poolOptions?: PoolOptions, logging?: boolean) {
+export function initDbPool(dbCreds: string, poolOptions?: PoolOptions, logging?: boolean) {
   const sqlDBCreds = JSON.parse(dbCreds);
   const parsedDbCreds = dbCredsSchema.parse(sqlDBCreds);
-  return initDBPoolFromCreds(parsedDbCreds, poolOptions, logging);
+  return initDbPoolFromCreds(parsedDbCreds, poolOptions, logging);
 }
 
 /**
  * This function is used to initialize the DB pool for raw queries that can't rely on Models.
  */
-function initDBPoolFromCreds(
+function initDbPoolFromCreds(
   dbCreds: DbCreds,
   poolOptions: PoolOptions = {
     max: 5,

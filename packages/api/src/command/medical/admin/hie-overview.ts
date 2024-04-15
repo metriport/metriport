@@ -1,18 +1,28 @@
-import { GenderAtBirth, PatientData } from "@metriport/core/domain/patient";
+import { GenderAtBirth, Patient, PatientData } from "@metriport/core/domain/patient";
 import { genderMapping } from "@metriport/core/external/fhir/patient/index";
-import { initReadonlyDBPool } from "@metriport/core/util/sequelize";
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import NotFoundError from "@metriport/core/util/error/not-found";
+import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
+import {
+  OutboundPatientDiscoveryResp,
+  OutboundPatientDiscoveryRespSuccessfulSchema,
+} from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryRespFaultSchema } from "@metriport/ihe-gateway-sdk/models/patient-discovery/patient-discovery-responses";
+import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import distance from "jaro-winkler";
 import { partition } from "lodash";
 import { QueryTypes } from "sequelize";
+import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
+import cwCommands from "../../../external/commonwell";
+import { PatientModel } from "../../../models/medical/patient";
+import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";
 import { Config } from "../../../shared/config";
 
 dayjs.extend(duration);
 
-const readOnlyDBPool = initReadonlyDBPool(Config.getDBCreds(), Config.getDBReadReplicaEndpoint());
+const readOnlyDBPool = initReadonlyDbPool(Config.getDBCreds(), Config.getDbReadReplicaEndpoint());
 
 type DebugLevel = "info" | "success" | "error";
 
@@ -40,7 +50,7 @@ type HiePatient = {
 
 type CqPdSuccessResponse = {
   gateway: HieGateway;
-  patient: HiePatient;
+  patient: HiePatient | undefined;
 };
 
 type CqPdErrorConsolidated = {
@@ -59,33 +69,48 @@ type HiePatientOverview = {
   };
 };
 
-type DbQueryResponseRecord = {
+type DbQueryResponseRecordBase = {
   cx_id: string;
   id: string;
   patient_data: PatientData;
   cq_links: { links: CQLink[] };
-  response_data: OutboundPatientDiscoveryResp | undefined;
   name: string | undefined | null;
 };
+type DbQueryResponseRecordSuccess = DbQueryResponseRecordBase & {
+  response_data: OutboundPatientDiscoveryRespSuccessfulSchema | undefined;
+};
+type DbQueryResponseRecordError = DbQueryResponseRecordBase & {
+  response_data: OutboundPatientDiscoveryRespFaultSchema | undefined;
+};
+type DbQueryResponseRecord = DbQueryResponseRecordSuccess | DbQueryResponseRecordError;
+
+type CwLinks = PatientLinksDTO & { networkLinks: unknown };
 
 export async function getHieOverview(
   patientId: string,
+  facilityIdParam: string | undefined,
   debugLevel: DebugLevel
 ): Promise<HiePatientOverview | undefined> {
-  const queryResp: DbQueryResponseRecord[] = await getDataFromDb(patientId, debugLevel);
-  const [respErrors, respSuccess] = partition(
-    queryResp,
-    r => r.response_data?.patientMatch === false
-  );
-  const patientData = respSuccess[0]?.patient_data;
+  const patient = await PatientModel.findOne({ where: { id: patientId } });
+  if (!patient) throw new NotFoundError("Patient not found");
 
-  const errors: CqPdErrorConsolidated[] = respErrors.reduce(
-    (acc: CqPdErrorConsolidated[], row: DbQueryResponseRecord) => {
+  const getCqData = async () => {
+    const queryResp = await getDataFromDb(patientId, debugLevel);
+    const [respSuccess, respErrors] = partition(queryResp, isQueryRespSuccessful);
+    return { cqSuccess: respSuccess, cqErrors: respErrors };
+  };
+  const getCwData = async () => await getDataFromCw(patient, facilityIdParam, debugLevel);
+
+  const [cqData, cwData] = await Promise.all([getCqData(), getCwData()]);
+  const { cqSuccess, cqErrors } = cqData;
+
+  const errors: CqPdErrorConsolidated[] = cqErrors.reduce(
+    (acc: CqPdErrorConsolidated[], curr: DbQueryResponseRecordError) => {
       const rowErrorDetail = (
-        row.response_data?.operationOutcome?.issue[0]?.details as { text: string | undefined }
+        curr.response_data?.operationOutcome?.issue[0]?.details as { text: string | undefined }
       )?.text;
       if (!rowErrorDetail) return acc;
-      const gatewayName = getGatewayName(row);
+      const gatewayName = getGatewayName(curr);
       const existingErrorEntry = acc.find(a => a.error === rowErrorDetail);
       if (existingErrorEntry) {
         existingErrorEntry.gatewayNames.push(gatewayName);
@@ -100,16 +125,12 @@ export async function getHieOverview(
     new Array<CqPdErrorConsolidated>()
   );
 
-  const hieOverview = respSuccess.reduce(
-    (acc: HiePatientOverview | undefined, row: DbQueryResponseRecord) => {
-      if (!row.response_data) return acc;
-      const patientOfSuccessfulResp = responseToPatient(row.response_data, patientData);
-      if (!patientOfSuccessfulResp) {
-        console.log(`Skipping response with missing patient data: ${row.response_data.id}`);
-        return acc;
-      }
-      const gatewayName = getGatewayName(row);
-      const gateway = responseToGateway(row.response_data, gatewayName);
+  const hieOverview = cqSuccess.reduce(
+    (acc: HiePatientOverview | undefined, curr: DbQueryResponseRecordSuccess) => {
+      if (!curr.response_data) return acc;
+      const patientOfSuccessfulResp = responseToPatient(curr.response_data, patient.data);
+      const gatewayName = getGatewayName(curr);
+      const gateway = responseToGateway(curr.response_data, gatewayName);
       const success = {
         patient: patientOfSuccessfulResp,
         gateway,
@@ -118,16 +139,17 @@ export async function getHieOverview(
         acc.carequality.success.push(success);
         return acc;
       }
-      const cqLinks = responseToCqLinks(row);
+      const cqLinks = responseToCqLinks(curr);
       return {
-        cxId: row.cx_id,
-        patientId: row.id,
-        patientData,
+        cxId: curr.cx_id,
+        patientId: curr.id,
+        patientData: patient.data,
         carequality: {
           links: cqLinks,
           success: [success],
           errors,
         },
+        commonwell: cwData,
       };
     },
     undefined
@@ -135,26 +157,36 @@ export async function getHieOverview(
   return hieOverview;
 }
 
+function isQueryRespSuccessful(
+  entry: DbQueryResponseRecord
+): entry is DbQueryResponseRecordSuccess {
+  return entry.response_data?.patientMatch === true;
+}
+
+// Using raw SQL because our models don't represent the joining of these tables, so not only we
+// need a custom type as result, but it also it didn't work trying to join Models "on-the-fly"
+// without changing their definition, like:
+// https://sequelize.org/docs/v6/advanced-association-concepts/eager-loading/#complex-where-clauses-at-the-top-level
 async function getDataFromDb(
   patientId: string,
   debugLevel: DebugLevel
 ): Promise<DbQueryResponseRecord[]> {
-  const matchQuery = debugLevel === "success" ? `and r.data->>'patientMatch' = 'true'` : "";
+  const matchQuery = debugLevel === "success" ? `and pdr.data->>'patientMatch' = 'true'` : "";
   const query =
     debugLevel !== "info"
       ? `
-          select p.cx_id, p.id, p.data as patient_data, pd.data as cq_links, r.data as response_data, d.name as gateway_name
+          select p.cx_id, p.id, p.data as patient_data, pd.data as cq_links, pdr.data as response_data, de.name as gateway_name
           from patient p
-            left outer join cq_patient_data pd on pd.id = p.id
-            left join patient_discovery_result r on r.patient_id::text = p.id ${matchQuery}
-            left join cq_directory_entry d on d.id = r.data->>'gatewayHomeCommunityId'
-          where p.id = ':patientId'
+            left outer join cq_patient_data pd ON pd.id = p.id
+            left join patient_discovery_result pdr ON pdr.patient_id::text = p.id ${matchQuery}
+            left join cq_directory_entry de ON de.id = pdr.data->>'gatewayHomeCommunityId'
+          where p.id = :patientId
         `
       : `
         select p.cx_id, p.id, p.data as patient_data, pd.data as cq_links, null as response_data, null as gateway_name
         from patient p
-          left outer join cq_patient_data pd on pd.id = p.id
-        where p.id = ':patientId'
+          left outer join cq_patient_data pd ON pd.id = p.id
+        where p.id = :patientId
       `;
   const replacements = {
     patientId,
@@ -167,10 +199,9 @@ async function getDataFromDb(
 }
 
 function responseToPatient(
-  resp: OutboundPatientDiscoveryResp,
+  resp: OutboundPatientDiscoveryRespSuccessfulSchema,
   patientOnMetriport: PatientData
 ): HiePatient | undefined {
-  if (!resp.patientMatch) return undefined;
   const patientOnExternalGw = resp.patientResource;
   if (!patientOnExternalGw) return undefined;
   return {
@@ -198,11 +229,11 @@ function addStringDiff(
   name: string | undefined,
   referenceName: string | undefined
 ): string | undefined {
-  const nameAdj = name?.trim().toLowerCase();
+  const nameAdjusted = name?.trim().toLowerCase();
   const referenceNameAdj = referenceName?.trim().toLowerCase();
-  if (!nameAdj || !referenceNameAdj) return name;
-  const dist = distance(nameAdj, referenceNameAdj);
-  const suffix = dist === 1 ? "same" : dist.toString();
+  if (!nameAdjusted || !referenceNameAdj) return name;
+  const dist = formatNumber(distance(nameAdjusted, referenceNameAdj));
+  const suffix = dist === 1 ? "same" : `dist: ${dist.toString()}; metriport: ${referenceName}`;
   return `${name} (${suffix})`;
 }
 
@@ -214,13 +245,13 @@ function addGenderDiff(
   if (!genderAdj) return undefined;
   const referenceGenderAdj = genderMapping[referenceGender];
   if (genderAdj === referenceGenderAdj) return `${genderAdj} (same)`;
-  return `${genderAdj} (diff)`;
+  return `${genderAdj} (diff; metriport: ${referenceGender})`;
 }
 
 function addDobDiff(dob: string | undefined, referenceDob: string): string | undefined {
   const dobAdj = dob?.trim();
   if (dayjs(dobAdj).isSame(referenceDob)) return `${dobAdj} (same)`;
-  return `${dobAdj} (diff)`;
+  return `${dobAdj} (diff); metriport: ${referenceDob}`;
 }
 
 function responseToGateway(resp: OutboundPatientDiscoveryResp, name: string): HieGateway {
@@ -231,10 +262,33 @@ function responseToGateway(resp: OutboundPatientDiscoveryResp, name: string): Hi
   };
 }
 
-function getGatewayName(row: DbQueryResponseRecord): string {
+function getGatewayName(row: DbQueryResponseRecordBase): string {
   return row.name || "Unknown";
 }
 
-function responseToCqLinks(resp: DbQueryResponseRecord): CQLink[] {
+function responseToCqLinks(resp: DbQueryResponseRecordBase): CQLink[] {
   return resp.cq_links.links;
+}
+
+async function getDataFromCw(
+  patient: Patient,
+  facilityIdParam: string | undefined,
+  debugLevel: DebugLevel
+): Promise<CwLinks | undefined> {
+  if (debugLevel === "info") {
+    return undefined;
+  }
+  const facilityId = getFacilityIdOrFail(patient, facilityIdParam);
+
+  const cwPersonLinks = await cwCommands.link.get(patient.id, patient.cxId, facilityId);
+  const cwConvertedLinks = dtoFromCW({
+    cwPotentialPersons: cwPersonLinks.potentialLinks,
+    cwCurrentPersons: cwPersonLinks.currentLinks,
+  });
+
+  return {
+    currentLinks: cwConvertedLinks.currentLinks,
+    potentialLinks: cwConvertedLinks.potentialLinks,
+    networkLinks: cwPersonLinks.networkLinks,
+  };
 }

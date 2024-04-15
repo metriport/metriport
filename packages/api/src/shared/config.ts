@@ -122,7 +122,7 @@ export class Config {
     return getEnvVarOrFail("DB_CREDS");
   }
 
-  static getDBReadReplicaEndpoint(): string {
+  static getDbReadReplicaEndpoint(): string {
     return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
   }
 
