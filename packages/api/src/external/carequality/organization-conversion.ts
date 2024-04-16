@@ -1,14 +1,15 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
-import { getOidsWithGirthEnabled } from "../aws/appConfig";
+import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
 
-export async function cqOrgsToXCPDGateways(
-  cqOrgs: CQOrgBasicDetails[]
-): Promise<{ gatewaysWithGirthEnabled: XCPDGateways; gatewaysWithoutGirthEnabled: XCPDGateways }> {
-  const gatewaysWithGirthEnabled: XCPDGateways = [];
-  const gatewaysWithoutGirthEnabled: XCPDGateways = [];
-  const girthOIDs = await getOidsWithGirthEnabled();
+export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<{
+  gatewaysWithIHEGatewayV2Enabled: XCPDGateways;
+  gatewaysWithoutIHEGatewayV2Enabled: XCPDGateways;
+}> {
+  const gatewaysWithIHEGatewayV2Enabled: XCPDGateways = [];
+  const gatewaysWithoutIHEGatewayV2Enabled: XCPDGateways = [];
+  const iheGatewayV2OIDs = await getOidsWithIHEGatewayV2Enabled();
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
@@ -18,16 +19,16 @@ export async function cqOrgsToXCPDGateways(
         id: uuidv7(),
       };
 
-      if (girthOIDs.includes(org.id)) {
-        gatewaysWithGirthEnabled.push(gateway);
+      if (iheGatewayV2OIDs.includes(org.id)) {
+        gatewaysWithIHEGatewayV2Enabled.push(gateway);
       } else {
-        gatewaysWithoutGirthEnabled.push(gateway);
+        gatewaysWithoutIHEGatewayV2Enabled.push(gateway);
       }
     }
   }
 
   return {
-    gatewaysWithGirthEnabled,
-    gatewaysWithoutGirthEnabled,
+    gatewaysWithIHEGatewayV2Enabled,
+    gatewaysWithoutIHEGatewayV2Enabled,
   };
 }

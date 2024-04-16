@@ -89,7 +89,7 @@ export async function sendSignedRequests({
         console.log(`${msg}: ${errorString}, patientId: ${patientId}, cxId: ${cxId}`);
         capture.error(msg, {
           extra: {
-            context: `lambda.girth-outbound-patient-discovery`,
+            context: `lambda.iheGatewayV2-outbound-patient-discovery`,
             error: errorString,
             patientId,
             cxId,

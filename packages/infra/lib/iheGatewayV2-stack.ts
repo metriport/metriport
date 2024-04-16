@@ -9,7 +9,7 @@ import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Duration } from "aws-cdk-lib";
 import { NetworkLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 
-interface GirthLambdasNestedStackProps extends NestedStackProps {
+interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   apiService: NetworkLoadBalancedFargateService;
   vpc: ec2.IVpc;
@@ -23,13 +23,13 @@ interface GirthLambdasNestedStackProps extends NestedStackProps {
   sentryDsn: string | undefined;
 }
 
-export class GirthLambdasNestedStack extends NestedStack {
-  constructor(scope: Construct, id: string, props: GirthLambdasNestedStackProps) {
+export class IHEGatewayV2LambdasNestedStack extends NestedStack {
+  constructor(scope: Construct, id: string, props: IHEGatewayV2LambdasNestedStackProps) {
     super(scope, id, props);
 
-    const patientDiscoveryLambda = this.setupGirthPatientDiscoveryLambda(props);
-    const documentQueryLambda = this.setupGirthDocumentQueryLambda(props);
-    const documentRetrievalLambda = this.setupGirthDocumentRetrievalLambda(props);
+    const patientDiscoveryLambda = this.setupIHEGatewayV2PatientDiscoveryLambda(props);
+    const documentQueryLambda = this.setupIHEGatewayV2DocumentQueryLambda(props);
+    const documentRetrievalLambda = this.setupIHEGatewayV2DocumentRetrievalLambda(props);
 
     // granting lambda invoke access to api service
     patientDiscoveryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
@@ -37,7 +37,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     documentRetrievalLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
   }
 
-  private setupGirthPatientDiscoveryLambda(ownProps: {
+  private setupIHEGatewayV2PatientDiscoveryLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     apiService: NetworkLoadBalancedFargateService;
@@ -65,8 +65,8 @@ export class GirthLambdasNestedStack extends NestedStack {
 
     const patientDiscoveryLambda = createLambda({
       stack: this,
-      name: "GirthOutboundPatientDiscovery",
-      entry: "girth-outbound-patient-discovery",
+      name: "IHEGatewayV2OutboundPatientDiscovery",
+      entry: "iheGatewayV2-outbound-patient-discovery",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
@@ -114,7 +114,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     return patientDiscoveryLambda;
   }
 
-  private setupGirthDocumentQueryLambda(ownProps: {
+  private setupIHEGatewayV2DocumentQueryLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
@@ -141,8 +141,8 @@ export class GirthLambdasNestedStack extends NestedStack {
 
     const documentQueryLambda = createLambda({
       stack: this,
-      name: "GirthOutboundDocumentQuery",
-      entry: "girth-outbound-document-query",
+      name: "IHEGatewayV2OutboundDocumentQuery",
+      entry: "iheGatewayV2-outbound-document-query",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
@@ -190,7 +190,7 @@ export class GirthLambdasNestedStack extends NestedStack {
     return documentQueryLambda;
   }
 
-  private setupGirthDocumentRetrievalLambda(ownProps: {
+  private setupIHEGatewayV2DocumentRetrievalLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     secrets: Secrets;
@@ -217,8 +217,8 @@ export class GirthLambdasNestedStack extends NestedStack {
 
     const documentRetrievalLambda = createLambda({
       stack: this,
-      name: "GirthOutboundDocumentRetrieval",
-      entry: "girth-outbound-document-retrieval",
+      name: "IHEGatewayV2OutboundDocumentRetrieval",
+      entry: "iheGatewayV2-outbound-document-retrieval",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),

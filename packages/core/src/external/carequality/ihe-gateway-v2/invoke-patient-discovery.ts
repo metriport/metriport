@@ -3,31 +3,31 @@ import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
 
-export type GirthXCPDRequestParams = {
+export type IHEGatewayV2XCPDRequestParams = {
   patientId: string;
   cxId: string;
-  pdRequestGirth: OutboundPatientDiscoveryReq;
+  pdRequestIHEGatewayV2: OutboundPatientDiscoveryReq;
 };
-const girthOutboundPatientDiscoveryLambdaName = "GirthOutboundPatientDiscoveryLambda";
+const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 
-export async function startPatientDiscoveryGirth({
-  pdRequestGirth,
+export async function startPatientDiscoveryIHEGatewayV2({
+  pdRequestIHEGatewayV2,
   patientId,
   cxId,
 }: {
-  pdRequestGirth: OutboundPatientDiscoveryReq;
+  pdRequestIHEGatewayV2: OutboundPatientDiscoveryReq;
   patientId: string;
   cxId: string;
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-  const params = { patientId, cxId, pdRequestGirth };
+  const params = { patientId, cxId, pdRequestIHEGatewayV2 };
   console.log(
-    `Invoking Girth Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
+    `Invoking IHEGatewayV2 Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
   );
   // intentionally not waiting
   lambdaClient
     .invoke({
-      FunctionName: girthOutboundPatientDiscoveryLambdaName,
+      FunctionName: iheGatewayV2OutboundPatientDiscoveryLambdaName,
       InvocationType: "Event",
       Payload: JSON.stringify(params),
     })

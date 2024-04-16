@@ -78,13 +78,13 @@ export class Config {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
 
-  static getGirthPatientDiscoveryLambdaName(): string {
+  static getIHEGatewayV2PatientDiscoveryLambdaName(): string {
     return getEnvVarOrFail("GIRTH_PATIENT_DISCOVERY_LAMBDA_NAME");
   }
-  static getGirthDocumentQueryLambdaName(): string {
+  static getIHEGatewayV2DocumentQueryLambdaName(): string {
     return getEnvVarOrFail("GIRTH_DOCUMENT_QUERY_LAMBDA_NAME");
   }
-  static getGirthDocumentRetrievalLambdaName(): string {
+  static getIHEGatewayV2DocumentRetrievalLambdaName(): string {
     return getEnvVarOrFail("GIRTH_DOCUMENT_RETRIEVAL_LAMBDA_NAME");
   }
 }
