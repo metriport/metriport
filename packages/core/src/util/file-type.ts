@@ -42,6 +42,12 @@ const XML_MAGIC_NUMBER_3 = 0x78;
 const XML_MAGIC_NUMBER_4 = 0x6d;
 const XML_MAGIC_NUMBER_5 = 0x6c;
 const XML_MAGIC_NUMBER_6 = 0x20;
+const XML_MAGIC_NUMBER_7 = 0x3c;
+const XML_MAGIC_NUMBER_8 = 0x43;
+const XML_MAGIC_NUMBER_9 = 0x6c;
+const XML_MAGIC_NUMBER_10 = 0x69;
+const XML_MAGIC_NUMBER_11 = 0x6e;
+const XML_MAGIC_NUMBER_12 = 0x69;
 const PNG_MAGIC_NUMBER_1 = 0x89;
 const PNG_MAGIC_NUMBER_2 = 0x50;
 const PNG_MAGIC_NUMBER_3 = 0x4e;
@@ -92,13 +98,13 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
  * matches it against known file type headers.
  *
  * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
- * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
+ * contents of a file. The first 6 bytes of this buffer, which generally contain the magic number, are used to
  * identify the file type.
  * @returns The function `detectFileType` returns a string representing the detected file type.
  */
-export function detectFileType(document: string): [string, string] {
+export function detectFileType(document: Buffer): { mimeType: string; extension: string } {
   const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
-  const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
+  const fileBuffer = document.slice(0, maxBytesNeeded);
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -109,7 +115,7 @@ export function detectFileType(document: string): [string, string] {
       fileBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
       fileBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
-    return [TIFF_MIME_TYPE, TIFF_FILE_EXTENSION];
+    return { mimeType: TIFF_MIME_TYPE, extension: TIFF_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PDF_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PDF_MAGIC_NUMBER_2 &&
@@ -117,35 +123,49 @@ export function detectFileType(document: string): [string, string] {
     fileBuffer[3] === PDF_MAGIC_NUMBER_4 &&
     fileBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
-    return [PDF_MIME_TYPE, PDF_FILE_EXTENSION];
+    return { mimeType: PDF_MIME_TYPE, extension: PDF_FILE_EXTENSION };
   } else if (
-    fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === XML_MAGIC_NUMBER_3 &&
-    fileBuffer[3] === XML_MAGIC_NUMBER_4 &&
-    fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
-    fileBuffer[5] === XML_MAGIC_NUMBER_6
+    (fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
+      fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
+      fileBuffer[2] === XML_MAGIC_NUMBER_3 &&
+      fileBuffer[3] === XML_MAGIC_NUMBER_4 &&
+      fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
+      fileBuffer[5] === XML_MAGIC_NUMBER_6) ||
+    (fileBuffer[0] === XML_MAGIC_NUMBER_7 &&
+      fileBuffer[1] === XML_MAGIC_NUMBER_8 &&
+      fileBuffer[2] === XML_MAGIC_NUMBER_9 &&
+      fileBuffer[3] === XML_MAGIC_NUMBER_10 &&
+      fileBuffer[4] === XML_MAGIC_NUMBER_11 &&
+      fileBuffer[5] === XML_MAGIC_NUMBER_12)
   ) {
-    return [XML_APP_MIME_TYPE, XML_FILE_EXTENSION];
+    return { mimeType: XML_APP_MIME_TYPE, extension: XML_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === PNG_MAGIC_NUMBER_3 &&
     fileBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
-    return [PNG_MIME_TYPE, PNG_FILE_EXTENSION];
+    return { mimeType: PNG_MIME_TYPE, extension: PNG_FILE_EXTENSION };
   } else if (
+    (console.log(fileBuffer[0], fileBuffer[1], fileBuffer[2], fileBuffer[3], fileBuffer[4]),
+    console.log(
+      fileBuffer[0]?.toString(16),
+      fileBuffer[1]?.toString(16),
+      fileBuffer[2]?.toString(16),
+      fileBuffer[3]?.toString(16),
+      fileBuffer[4]?.toString(16)
+    ),
     fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === JPEG_MAGIC_NUMBER_1
+      fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
+      fileBuffer[2] === JPEG_MAGIC_NUMBER_1)
   ) {
-    return [JPEG_MIME_TYPE, JPEG_FILE_EXTENSION];
+    return { mimeType: JPEG_MIME_TYPE, extension: JPEG_FILE_EXTENSION };
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
-    return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
-  } else if (isLikelyTextFile(Buffer.from(document))) {
-    return [TXT_MIME_TYPE, TXT_FILE_EXTENSION];
+    return { mimeType: BMP_MIME_TYPE, extension: BMP_FILE_EXTENSION };
+  } else if (isLikelyTextFile(document)) {
+    return { mimeType: TXT_MIME_TYPE, extension: TXT_FILE_EXTENSION };
   } else {
-    return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
+    return { mimeType: OCTET_MIME_TYPE, extension: OCTET_FILE_EXTENSION };
   }
 }
 /**
