@@ -24,3 +24,29 @@ export function isGatewayWithOid(
 export function stripUrnPrefix(urn: string): string {
   return urn.replace("urn:oid:", "");
 }
+
+export function constructFileName({
+  cxId,
+  patientId,
+  metriportId,
+  extension,
+}: {
+  cxId?: string | undefined;
+  patientId?: string | undefined;
+  metriportId: string;
+  extension: string;
+}): string {
+  return `${cxId}_${patientId}_${metriportId}${extension}`;
+}
+
+export function constructFilePath({
+  cxId,
+  patientId,
+  fileName,
+}: {
+  cxId?: string | undefined;
+  patientId?: string | undefined;
+  fileName: string;
+}): string {
+  return `${cxId}/${patientId}/${fileName}`;
+}

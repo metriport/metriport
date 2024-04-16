@@ -14,6 +14,7 @@ import {
 import { parseFileFromString } from "./parse-file-from-string";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
+import { stripUrnPrefix, constructFileName, constructFilePath } from "../utils";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -45,15 +46,30 @@ async function parseDocumentReference({
 }): Promise<DocumentReference> {
   // lets extract the document here.
   const { mimeType, extension, decodedBytes } = parseFileFromString(documentResponse?.Document);
-  const metriportId = idMapping[documentResponse?.DocumentUniqueId];
-  const fileName = [outboundRequest.cxId, outboundRequest.patientId, metriportId + extension].join(
-    "_"
-  );
-  const filePath = [outboundRequest.cxId, outboundRequest.patientId, fileName].join("/");
+  const metriportId = idMapping[stripUrnPrefix(documentResponse?.DocumentUniqueId)];
+  if (!metriportId) {
+    throw new Error("MetriportId not found for document");
+  }
+  const fileName = constructFileName({
+    cxId: outboundRequest.cxId,
+    patientId: outboundRequest.patientId,
+    metriportId,
+    extension,
+  });
+  const filePath = constructFilePath({
+    cxId: outboundRequest.cxId,
+    patientId: outboundRequest.patientId,
+    fileName,
+  });
   const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
   if (!fileInfo.exists) {
-    await s3Utils.uploadFile(bucket, filePath, decodedBytes);
+    await s3Utils.uploadFile({
+      bucket,
+      key: filePath,
+      file: decodedBytes,
+      contentType: mimeType,
+    });
   }
 
   return {
@@ -90,7 +106,7 @@ async function handleSuccessResponse({
   const idMapping = outboundRequest.documentReference.reduce(
     (acc: Record<string, string>, entry) => {
       if (entry.docUniqueId && entry.metriportId) {
-        acc[entry.docUniqueId] = entry.metriportId;
+        acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
       }
       return acc;
     },

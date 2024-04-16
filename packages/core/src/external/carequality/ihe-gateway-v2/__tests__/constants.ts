@@ -145,7 +145,19 @@ export const outboundDRRequest = {
       creation: "2020-01-01T12:30:00",
       language: "en-US",
       contentType: "text/xml",
-      docUniqueId: "2.25.9518609360022382120597398617426801793",
+      docUniqueId: "123456789",
+      metriportId: uuidv4(),
+      homeCommunityId: "2.16.840.1.113883.3.8391",
+      repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
+    },
+    {
+      size: 61030,
+      title: "History of Immunization",
+      creation: "2020-01-01T12:30:00",
+      language: "en-US",
+      contentType: "text/xml",
+      docUniqueId: "987654321",
+      metriportId: uuidv4(),
       homeCommunityId: "2.16.840.1.113883.3.8391",
       repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
     },
@@ -163,4 +175,12 @@ export const testFiles = [
   { name: "test.png", mimeType: "image/png", extension: ".png" },
   { name: "test.bmp", mimeType: "image/bmp", extension: ".bmp" },
   { name: "test.webp", mimeType: "application/octet-stream", extension: ".bin" },
+];
+
+export const testFilesForUploadVerification = [
+  { name: "test.pdf", mimeType: "application/pdf", extension: ".pdf" },
+  { name: "test-little-endian.tiff", mimeType: "image/tiff", extension: ".tiff" },
+  { name: "test-with-declaration.xml", mimeType: "application/xml", extension: ".xml" },
+  { name: "test.txt", mimeType: "text/plain", extension: ".txt" },
+  { name: "test.jpeg", mimeType: "image/jpeg", extension: ".jpeg" },
 ];

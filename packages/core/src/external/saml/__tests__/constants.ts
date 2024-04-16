@@ -3,6 +3,7 @@ import * as uuid from "uuid";
 export const iti55BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
+  patientId: uuid.v4(),
   timestamp: "2024-03-03T08:44:00Z",
   gateways: [
     {
@@ -95,12 +96,12 @@ export const iti38BodyData = {
 export const iti39BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
+  patientId: uuid.v4(),
   gateway: {
     homeCommunityId: "3.19.840.1.113893.3.9801.2.8",
     url: "http://localhost:9093/Gateway/DocumentRetrieve/3_0/NhinService/RespondingGateway_Retrieve_Service/DocRetrieve",
   },
   timestamp: "2023-12-01T08:44:00Z",
-  patientId: uuid.v4(),
   samlAttributes: {
     subjectId: "Walter H.Brattain IV",
     subjectRole: {
