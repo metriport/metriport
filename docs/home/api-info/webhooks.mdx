@@ -44,7 +44,7 @@ When Metriport sends a webhook message, it includes an `x-metriport-signature` h
 
 At a high level, an HMAC works by taking a secret key and a message, and performing iterative hashes of the two to create 
 a signature. That signature is compared against the signature in the header for equality. If the signatures are equal, you can trust the webhook 
-payload is authentic and has not been tampered with. If they aren't equal, you should throw it awasy. 
+payload is authentic and has not been tampered with. If they aren't equal, you should throw it away. 
 
 You can use this header to verify that the webhook messages sent to your endpoint are from Metriport. Here's an example of how you can do this in Node.js:
 
