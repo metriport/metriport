@@ -106,7 +106,10 @@ export const processPatientDocumentRequest = async (
     }
 
     const canReportUsage =
-      documents && documents?.length > 0 && whType === "medical.document-download";
+      status === MAPIWebhookStatus.completed &&
+      documents &&
+      documents?.length > 0 &&
+      whType === "medical.document-download";
 
     if (canReportUsage) {
       reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
