@@ -241,7 +241,7 @@ async function storeInitDocRefInFHIR(
 
         const fhirDocRef = cqToFHIR(docId, docRef, "preliminary", patientId, cqExtension);
 
-        await upsertDocumentToFHIRServer(cxId, fhirDocRef);
+        await upsertDocumentToFHIRServer(cxId, fhirDocRef, log);
       } catch (error) {
         const msg = `Failed to store initial doc ref in FHIR`;
         log(`${msg}: ${errorToString(error)}`);

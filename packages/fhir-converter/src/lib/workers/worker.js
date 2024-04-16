@@ -105,7 +105,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                   status: 400,
                   resultMsg: errorMessage(
                     errorCodes.BadRequest,
-                    `Unable to parse input data. ${err.message}`
+                    `Unable to parse input data from b64. ${err.message}`
                   ),
                 });
               }
@@ -154,7 +154,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                     status: 400,
                     resultMsg: errorMessage(
                       errorCodes.BadRequest,
-                      `Unable to parse input data. ${err.toString()}`
+                      `Unable to parse input data for data type ${dataTypeHandler.dataType}. ${err.toString()}`
                     ),
                   });
                 });
@@ -264,7 +264,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                   status: 400,
                   resultMsg: errorMessage(
                     errorCodes.BadRequest,
-                    `Unable to parse input data. ${err.toString()}`
+                    `Unable to parse input data for template ${templateName}. ${err.toString()}`
                   ),
                 });
               });

@@ -5,10 +5,17 @@ import { ConsolidatedCountResponse, MetriportMedicalApi } from "@metriport/api-s
 import { DetailedConfig } from "@metriport/core/domain/document-query/trigger-and-query";
 import { TriggerAndQueryDocRefsRemote } from "@metriport/core/domain/document-query/trigger-and-query-remote";
 import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { out } from "@metriport/core/util/log";
 import { sleep } from "@metriport/core/util/sleep";
 import axios from "axios";
+import { Command } from "commander";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
+import { getCxData } from "./shared/get-cx-data";
+
+dayjs.extend(duration);
 
 /**
  * This script kicks off document queries in bulk for the configured cx.
@@ -28,8 +35,6 @@ const triggerWHNotificationsToCx = false;
 
 // auth stuff
 const cxId = getEnvVarOrFail("CX_ID");
-// TODO update these to use `getCxData()` instead
-const cxName = getEnvVarOrFail("CX_NAME");
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const metriportAPI = new MetriportMedicalApi(apiKey, {
@@ -37,8 +42,8 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 });
 
 // query stuff
-const delayTime = parseInt(getEnvVar("BULK_QUERY_DELAY_TIME") ?? "5000");
-const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "25");
+const delayTime = dayjs.duration(30, "seconds");
+const patientChunkSize = parseInt(getEnvVar("PATIENT_CHUNK_SIZE") ?? "10");
 const detailedConfig: DetailedConfig = {
   patientChunkDelayJitterMs: parseInt(getEnvVar("PATIENT_CHUNK_DELAY_JITTER_MS") ?? "1000"),
   queryPollDurationMs: 10_000,
@@ -46,28 +51,41 @@ const detailedConfig: DetailedConfig = {
   maxDocQueryAttempts: 3,
   minDocsToConsiderCompleted: 2,
 };
+const confirmationTime = dayjs.duration(10, "seconds");
 
 // csv stuff
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 const curDateTime = new Date();
-const csvName = `./runs/${cxName
-  .replaceAll(" ", "")
-  .trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
+const csvName = (cxName: string): string =>
+  `./runs/${cxName.replaceAll(" ", "").trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
 
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
-function initCsv() {
-  fs.writeFileSync(csvName, csvHeader);
+function initCsv(cxName: string) {
+  fs.writeFileSync(csvName(cxName), csvHeader);
 }
 
-async function getAllPatientIds(): Promise<string[]> {
+async function getAllPatientIds(dryRun: boolean, log: typeof console.log): Promise<string[]> {
+  if (!dryRun) {
+    log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+    log(
+      "You are about to trigger a document query for all patients of the CX. This is very expensive!"
+    );
+    log("Cancel this script now if you're not sure.");
+    await sleep(confirmationTime.asMilliseconds());
+  }
   const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
   const patientIds = resp.data.patientIds;
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
-async function queryDocsForPatient(patientId: string) {
+async function queryDocsForPatient(
+  patientId: string,
+  cxName: string,
+  dryRun: boolean,
+  log: typeof console.log
+) {
   try {
     let docCount = 0;
     let totalFhirResourceCount = 0;
@@ -83,10 +101,19 @@ async function queryDocsForPatient(patientId: string) {
         patientId,
         triggerWHNotificationsToCx,
         config: detailedConfig,
-        log: console.log,
+        log,
       });
-
     const getPatientPromise = async () => metriportAPI.getPatient(patientId);
+
+    if (dryRun) {
+      const patient = await getPatientPromise();
+      log(
+        `Would be triggering the DQ for patient ${patient.id} ` +
+          `${patient.firstName} ${patient.lastName}...`
+      );
+      return;
+    }
+
     const [patient, docQueryResult] = await Promise.all([getPatientPromise(), docQueryPromise()]);
     const { queryComplete, docQueryAttempts } = docQueryResult;
 
@@ -105,47 +132,64 @@ async function queryDocsForPatient(patientId: string) {
     // write line to results csv
     const state = Array.isArray(patient.address) ? patient.address[0].state : patient.address.state;
     fs.appendFileSync(
-      csvName,
+      csvName(cxName),
       `${patient.id},${patient.firstName},${
         patient.lastName
       },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${JSON.stringify(
         fhirResourceTypesToCounts
       ).replaceAll(",", " ")},${status}\n`
     );
-    console.log(`>>> Done doc query for patient ${patient.id} with status ${status}...`);
+    log(`>>> Done doc query for patient ${patient.id} with status ${status}...`);
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
-    console.log(`ERROR processing patient ${patientId}: `, error.message);
+    log(`ERROR processing patient ${patientId}: `, error.message);
   }
 }
 
-async function main() {
-  const startedAt = Date.now();
-  initCsv();
-  console.log(`>>> Starting with ${patientIds.length} patient IDs...`);
+type Params = {
+  dryrun?: boolean;
+};
+const program = new Command();
+program
+  .name("bulk-query-patients")
+  .description("CLI to trigger Document Queries for multiple patients.")
+  .option(`--dryrun`, "Just simulate DQ without actually triggering it.")
+  .showHelpAfterError();
 
-  const patientIdsToQuery = patientIds.length > 0 ? patientIds : await getAllPatientIds();
+async function main() {
+  program.parse();
+  const { dryrun: dryRunParam } = program.opts<Params>();
+  const dryRun = dryRunParam ?? false;
+  const { log } = out(dryRun ? "DRY-RUN" : "");
+
+  const startedAt = Date.now();
+  log(`>>> Starting with ${patientIds.length} patient IDs...`);
+  const { orgName } = await getCxData(cxId, undefined, false);
+
+  initCsv(orgName);
+
+  const patientIdsToQuery =
+    patientIds.length > 0 ? patientIds : await getAllPatientIds(dryRun, log);
   const chunks = chunk(patientIdsToQuery, patientChunkSize);
 
   let count = 0;
   // TODO move to core's executeAsynchronously()
   for (const chunk of chunks) {
-    console.log(`>>> Querying docs for chunk of ${chunk.length} patients...`);
+    log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
     const docQueries: Promise<void>[] = [];
     for (const patientId of chunk) {
-      docQueries.push(queryDocsForPatient(patientId));
+      docQueries.push(queryDocsForPatient(patientId, orgName, dryRun, log));
       count++;
     }
     await Promise.allSettled(docQueries);
 
-    console.log(
-      `>>> Progress: ${count + 1}/${patientIdsToQuery.length} patient doc queries complete`
-    );
-    console.log(`>>> Sleeping for ${delayTime} ms before the next chunk...`);
-    await sleep(delayTime);
+    log(`>>> Progress: ${count + 1}/${patientIdsToQuery.length} patient doc queries complete`);
+    log(`>>> Sleeping for ${delayTime.asMilliseconds()} ms before the next chunk...`);
+    await sleep(delayTime.asMilliseconds());
   }
 
-  console.log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+  log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);
+  process.exit(0);
 }
 
 main();
