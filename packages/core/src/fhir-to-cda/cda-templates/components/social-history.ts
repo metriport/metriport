@@ -10,6 +10,7 @@ import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
 import { AugmentedObservation } from "./augmented-observation";
 
 const sectionName = "socialhistory";
+const mentalHealthSurveyCodes = ["lg51306-5"];
 
 export function buildSocialHistory(fhirBundle: Bundle) {
   const socialHistoryObservations: Observation[] =
@@ -27,7 +28,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
 
   const { trs, entries } = createTableRowsAndEntriesFromObservations(augmentedObservations);
   const table = {
-    [idAttribute]: sectionName,
+    [idAttribute]: sectionName + "1", // TODO: make the number dynamic if we add more tables
     thead: createTableHeader(),
     tbody: {
       tr: trs.map(row => ({
@@ -59,8 +60,11 @@ export function buildSocialHistory(fhirBundle: Bundle) {
 }
 
 function isSocialHistoryObservation(resource: Resource | undefined): resource is Observation {
-  return (
-    isObservation(resource) &&
-    resource?.category?.[0]?.coding?.[0]?.code?.toLowerCase() === "social-history"
-  );
+  if (!isObservation(resource)) {
+    return false;
+  }
+
+  return resource?.code?.coding?.[0]?.code
+    ? mentalHealthSurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
+    : false;
 }

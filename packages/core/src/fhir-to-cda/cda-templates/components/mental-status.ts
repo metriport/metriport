@@ -10,6 +10,7 @@ import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
 import { AugmentedObservation } from "./augmented-observation";
 
 const sectionName = "mentalstatus";
+const mentalHealthSurveyCodes = ["44249-1"];
 
 export function buildMentalStatus(fhirBundle: Bundle) {
   const mentalStatusObservations: Observation[] =
@@ -63,7 +64,7 @@ function isMentalSurveyObservation(resource: Resource | undefined): resource is 
     return false;
   }
 
-  const hasSurveyCategory = resource.category?.[0]?.coding?.[0]?.code === "survey";
-  const hasPHQDisplay = resource.code?.coding?.[0]?.display?.toLowerCase().includes("phq") ?? false;
-  return hasSurveyCategory || hasPHQDisplay;
+  return resource?.code?.coding?.[0]?.code
+    ? mentalHealthSurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
+    : false;
 }

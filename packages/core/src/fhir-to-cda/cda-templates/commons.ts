@@ -86,6 +86,8 @@ export type ObservationEntry = {
     effectiveTime?: {
       [valueAttribute]?: string | undefined;
     };
+    entryRelationship?: ObservationEntry[];
+    interpretationCode?: CDACodeCE;
   };
 };
 
@@ -445,8 +447,9 @@ export function createTableRowFromObservation(
   referenceId: string,
   date: string | undefined
 ): ObservationTableRow {
-  const display = observation.valueCodeableConcept?.coding?.[0]?.display;
-  const intValue = display ? parseInt(display) : undefined;
+  const interpretation = observation.interpretation;
+  const score = interpretation?.[0]?.coding?.[0]?.display;
+  const intValue = score ? parseInt(score) : undefined;
   const scoreValue = intValue != undefined && !isNaN(intValue) ? intValue.toString() : "N/A";
 
   return {
@@ -457,7 +460,10 @@ export function createTableRowFromObservation(
           [inlineTextAttribute]: observation.code?.coding?.[0]?.display ?? observation.code?.text,
         },
         {
-          [inlineTextAttribute]: observation.valueCodeableConcept?.text,
+          [inlineTextAttribute]:
+            observation.valueCodeableConcept?.coding?.[0]?.display ??
+            observation.valueCodeableConcept?.text ??
+            "Not on file",
         },
         {
           [inlineTextAttribute]: scoreValue,
@@ -485,29 +491,25 @@ function createEntriesFromObservation(
   socHistNumber: string,
   date: string | undefined
 ): ObservationEntry[] {
-  const entries: ObservationEntry[] = [];
   let pairNumber = 0;
+  const observationEntry = createEntryFromObservation(aug.observation, aug, socHistNumber, date);
+  observationEntry.observation.entryRelationship = [];
+
   if (aug.observation.component && aug.observation.component.length > 0) {
     aug.observation.component.map(pair => {
       pairNumber++;
-      entries.push(
-        createEntryFromObservation(pair, aug, buildReferenceId(socHistNumber, pairNumber), date)
-      );
-    });
-  }
-  if (hasObservationInCode(aug.observation)) {
-    pairNumber++;
-    entries.push(
-      createEntryFromObservation(
-        aug.observation,
+      const entryRelationshipObservation = createEntryFromObservation(
+        pair,
         aug,
         buildReferenceId(socHistNumber, pairNumber),
         date
-      )
-    );
+      );
+      if (observationEntry.observation.entryRelationship)
+        observationEntry.observation.entryRelationship.push(entryRelationshipObservation);
+    });
   }
 
-  return entries;
+  return [observationEntry];
 }
 
 function createEntryFromObservation(
@@ -546,6 +548,12 @@ function createEntryFromObservation(
         [codeAttribute]: "completed",
       },
       effectiveTime: withoutNullFlavorObject(date, valueAttribute),
+      interpretationCode: buildCodeCE({
+        code: observation.interpretation?.[0]?.coding?.[0]?.code,
+        codeSystem: observation.interpretation?.[0]?.coding?.[0]?.system,
+        codeSystemName: observation.interpretation?.[0]?.coding?.[0]?.display,
+        displayName: observation.interpretation?.[0]?.coding?.[0]?.display,
+      }),
     },
   };
   return entry;
