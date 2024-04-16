@@ -8,7 +8,6 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { storeQueryInit } from "./query-init";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -35,12 +34,22 @@ export const createPatient = async (
   // validate facility exists and cx has access to it
   const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
+  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
     externalId,
-    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    data: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address,
+      contact,
+      patientDiscovery: { requestId, startedAt: new Date() },
+    },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
@@ -51,24 +60,15 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  const requestId = uuidv7();
-
-  // TODO: add progress to PD #1689
-  const updatedPatient = await storeQueryInit({
-    id: newPatient.id,
-    cxId,
-    cmd: { patientDiscovery: { requestId, startedAt: new Date() } },
-  });
-
   await cwCommands.patient.create(
-    updatedPatient,
+    newPatient,
     facilityId,
     getCqOrgIdsToDenyOnCw,
     requestId,
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(updatedPatient, facility.data.npi, requestId, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
 
-  return updatedPatient;
+  return newPatient;
 };

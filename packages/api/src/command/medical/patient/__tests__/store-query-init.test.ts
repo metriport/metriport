@@ -4,12 +4,10 @@ import { makePatientModel } from "../../../../models/medical/__tests__/patient";
 
 import { storeQueryInit, StoreQueryParams } from "../query-init";
 import {
-  pdParams,
   dqParams,
   cqParams,
   mockedPatientAllProgresses,
   documentQueryProgress,
-  patientDiscovery,
   consolidatedQuery,
 } from "./store-query-cmd";
 
@@ -39,15 +37,6 @@ const checkPatientUpdateWith = (params: StoreQueryParams) => {
   );
 };
 
-const checkPatientDataUpdatedWithMockedPatient = async (params: StoreQueryParams) => {
-  patientModel_findOne.mockResolvedValueOnce(mockedPatientAllProgresses);
-  patientModel_update = jest.spyOn(mockedPatientAllProgresses, "update");
-
-  await storeQueryInit(params);
-
-  checkPatientUpdateWith(params);
-};
-
 const checkUnchanged = (value: object) => {
   expect(patientModel_update).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -58,42 +47,33 @@ const checkUnchanged = (value: object) => {
 };
 
 describe("storeQueryInit", () => {
-  describe("patientDiscovery", () => {
-    it("has pdParams in patient when running storeQueryInit", async () => {
-      await storeQueryInit(pdParams);
-
-      checkPatientUpdateWith(pdParams);
-    });
-
-    it("does not clear other patient data when running storeQueryInit with pdParams", async () => {
-      await checkPatientDataUpdatedWithMockedPatient(pdParams);
-      checkUnchanged({ documentQueryProgress, consolidatedQuery });
-    });
-  });
-
   describe("documentQuery", () => {
     it("has dqParams in patient when running storeQueryInit", async () => {
       await storeQueryInit(dqParams);
-
       checkPatientUpdateWith(dqParams);
     });
 
     it("does not clear other patient data when running storeQueryInit with dqParams", async () => {
-      await checkPatientDataUpdatedWithMockedPatient(dqParams);
-      checkUnchanged({ patientDiscovery, consolidatedQuery });
+      patientModel_findOne.mockResolvedValueOnce(mockedPatientAllProgresses);
+      patientModel_update = jest.spyOn(mockedPatientAllProgresses, "update");
+      await storeQueryInit(dqParams);
+      checkPatientUpdateWith(dqParams);
+      checkUnchanged({ consolidatedQuery });
     });
   });
 
   describe("consolidatedQuery", () => {
     it("has cqParams in patient when running storeQueryInit", async () => {
       await storeQueryInit(cqParams);
-
       checkPatientUpdateWith(cqParams);
     });
 
     it("does not clear other patient data when running storeQueryInit with cq with cqParams", async () => {
-      await checkPatientDataUpdatedWithMockedPatient(cqParams);
-      checkUnchanged({ documentQueryProgress, patientDiscovery });
+      patientModel_findOne.mockResolvedValueOnce(mockedPatientAllProgresses);
+      patientModel_update = jest.spyOn(mockedPatientAllProgresses, "update");
+      await storeQueryInit(cqParams);
+      checkPatientUpdateWith(cqParams);
+      checkUnchanged({ documentQueryProgress });
     });
   });
 });

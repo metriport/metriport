@@ -7,7 +7,7 @@ import {
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { diffFromNow } from "@metriport/shared/common/date";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
@@ -63,7 +63,6 @@ import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { linkPatientToCW } from "../patient";
 import { getCWData } from "../patient";
 import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -185,7 +184,7 @@ export async function queryAndProcessDocuments({
     log(`Got ${cwDocuments.length} documents from CW`);
 
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = diffFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(docQueryStartedAt);
 
     analytics({
       distinctId: cxId,
@@ -197,7 +196,6 @@ export async function queryAndProcessDocuments({
         duration,
         documentCount: cwDocuments.length,
       },
-      apiType: Product.medical,
     });
 
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({

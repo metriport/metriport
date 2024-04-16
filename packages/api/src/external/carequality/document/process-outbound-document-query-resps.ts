@@ -3,7 +3,7 @@ import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
-import { diffFromNow } from "@metriport/shared/common/date";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
@@ -20,7 +20,6 @@ import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
 import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const parallelUpsertsToFhir = 10;
@@ -43,7 +42,7 @@ export async function processOutboundDocumentQueryResps({
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = diffFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(docQueryStartedAt);
 
     analytics({
       distinctId: cxId,
@@ -55,7 +54,6 @@ export async function processOutboundDocumentQueryResps({
         duration,
         documentCount: results.length,
       },
-      apiType: Product.medical,
     });
 
     const docRefsPromises = results.map(toDocumentReference);

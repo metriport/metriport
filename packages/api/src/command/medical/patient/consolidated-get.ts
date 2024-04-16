@@ -9,7 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
-import { diffFromNow } from "@metriport/shared/common/date";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import {
   buildBundle,
@@ -31,7 +31,6 @@ import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
 import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
 
 export type GetConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
@@ -139,7 +138,6 @@ export async function getConsolidated({
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && hasResources;
     const startedAt = patient.data.consolidatedQuery?.startedAt;
-    const duration = diffFromNow(startedAt);
 
     const defaultAnalyticsProps = {
       distinctId: patient.cxId,
@@ -147,10 +145,9 @@ export async function getConsolidated({
       properties: {
         patientId: patient.id,
         conversionType: "bundle",
-        duration,
+        duration: elapsedTimeFromNow(startedAt),
         resourceCount: bundle.entry?.length,
       },
-      apiType: Product.medical,
     };
 
     analytics(defaultAnalyticsProps);
@@ -167,13 +164,11 @@ export async function getConsolidated({
         conversionType,
       });
 
-      const duration = diffFromNow(startedAt);
-
       analytics({
         ...defaultAnalyticsProps,
         properties: {
           ...defaultAnalyticsProps.properties,
-          duration,
+          duration: elapsedTimeFromNow(startedAt),
           conversionType,
         },
       });

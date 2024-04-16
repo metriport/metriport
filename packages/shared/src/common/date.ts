@@ -16,9 +16,9 @@ export const optionalDateSchema = z
   .nullish()
   .refine(isValidISODateOptional, { message: "Invalid ISO date" });
 
-export const diffFromNow = (date1?: Date, format: dayjs.UnitTypeLong = "millisecond"): number => {
-  const now = dayjs();
-
-  const diff = dayjs(now).diff(dayjs(date1), format);
-  return diff;
+export const elapsedTimeFromNow = (
+  date?: Date,
+  format: dayjs.UnitTypeLong = "millisecond"
+): number => {
+  return dayjs().diff(dayjs(date), format);
 };

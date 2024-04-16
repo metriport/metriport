@@ -11,7 +11,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { oid } from "@metriport/core/domain/oid";
-import { diffFromNow } from "@metriport/shared/common/date";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -42,7 +42,6 @@ import {
 import { setPatientDiscoveryStatus } from "./patient-external-data";
 import { Config } from "../../shared/config";
 import { analytics, EventTypes } from "../../shared/analytics";
-import { Product } from "../../domain/product";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -193,7 +192,6 @@ export async function registerAndLinkPatientInCW(
 
     if (requestId) {
       const startedAt = patient.data.patientDiscovery?.startedAt;
-      const duration = diffFromNow(startedAt);
 
       analytics({
         distinctId: patient.cxId,
@@ -203,9 +201,8 @@ export async function registerAndLinkPatientInCW(
           patientId: patient.id,
           requestId,
           pdLinks: networkLinks?.length ?? 0,
-          duration,
+          duration: elapsedTimeFromNow(startedAt),
         },
-        apiType: Product.medical,
       });
     }
 
@@ -396,7 +393,6 @@ async function updatePatientAndLinksInCw(
     );
 
     const startedAt = patient.data.patientDiscovery?.startedAt;
-    const duration = diffFromNow(startedAt);
 
     analytics({
       distinctId: patient.cxId,
@@ -406,9 +402,8 @@ async function updatePatientAndLinksInCw(
         patientId: patient.id,
         requestId,
         pdLinks: networkLinks?.length ?? 0,
-        duration,
+        duration: elapsedTimeFromNow(startedAt),
       },
-      apiType: Product.medical,
     });
 
     await queryDocsIfScheduled(patient, getOrgIdExcludeList);

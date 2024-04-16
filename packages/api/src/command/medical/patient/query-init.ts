@@ -1,6 +1,6 @@
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress, PatientDiscovery } from "@metriport/core/domain/query-status";
+import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
@@ -20,17 +20,7 @@ export type InitDocumentQueryCmd = {
   consolidatedQuery?: never;
   patientDiscovery?: never;
 };
-
-export type InitPatientDiscoveryCmd = {
-  patientDiscovery: PatientDiscovery;
-  documentQueryProgress?: never;
-  consolidatedQuery?: never;
-};
-
-export type QueryInitCmd =
-  | InitConsolidatedQueryCmd
-  | InitDocumentQueryCmd
-  | InitPatientDiscoveryCmd;
+export type QueryInitCmd = InitConsolidatedQueryCmd | InitDocumentQueryCmd;
 
 export type StoreQueryParams = {
   id: string;
