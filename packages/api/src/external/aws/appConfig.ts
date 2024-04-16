@@ -122,7 +122,7 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
   return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
 }
 
-export async function getOIDsWithGirthEnabledFeatureFlagValue(): Promise<string[]> {
+export async function getOidsWithGirthEnabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("oidsWithGirthEnabled");
 }
 

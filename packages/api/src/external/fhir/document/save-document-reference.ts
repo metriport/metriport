@@ -1,4 +1,5 @@
-import { DocumentReference, Bundle } from "@medplum/fhirtypes";
+import { Bundle, DocumentReference } from "@medplum/fhirtypes";
+import { out } from "@metriport/core/util/log";
 import { executeWithRetriesOrFail } from "@metriport/shared";
 import { errorToString } from "../../../shared/log";
 import { makeFhirApi } from "../api/api-factory";
@@ -9,7 +10,7 @@ const WAIT_TIME = 200;
 export const upsertDocumentToFHIRServer = async (
   cxId: string,
   docRef: DocumentReference,
-  log = console.log
+  log = out("upsertDocumentToFHIRServer").log
 ): Promise<void> => {
   const fhir = makeFhirApi(cxId);
   try {

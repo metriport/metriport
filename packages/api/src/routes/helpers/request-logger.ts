@@ -9,7 +9,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   const reqId = nanoid();
   asyncLocalStorage.run(reqId, () => {
     const method = req.method;
-    const url = req.baseUrl;
+    const url = req.baseUrl + req.path;
+    const urlWithParams = replaceParamWithKey(url, req.params);
     const query = req.query && Object.keys(req.query).length ? req.query : undefined;
     const params = req.params && Object.keys(req.params).length ? req.params : undefined;
 
@@ -39,12 +40,16 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
 
       if (isSuccessful) {
-        analyzeRoute({ req, method, url, params, query, duration: elapsedTimeInMs });
+        analyzeRoute({ req, method, url: urlWithParams, params, query, duration: elapsedTimeInMs });
       }
     });
     next();
   });
 };
+
+function replaceParamWithKey(url: string, params: Record<string, string>): string {
+  return Object.keys(params).reduce((acc, key) => acc.replace(params[key], `:${key}`), url);
+}
 
 function toString(obj: unknown): string {
   return obj ? ` ${JSON.stringify(obj)}` : "";

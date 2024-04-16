@@ -1,5 +1,5 @@
-import { Stack, StackProps } from "aws-cdk-lib";
-import { CfnOutput } from "aws-cdk-lib";
+import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import * as cert from "aws-cdk-lib/aws-certificatemanager";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -12,7 +12,6 @@ import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
-import * as apigwv2 from "aws-cdk-lib/aws-apigatewayv2";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 
 interface IHEStackProps extends StackProps {

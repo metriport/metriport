@@ -1,6 +1,5 @@
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 import { createPurposeOfUse } from "./shared";
 
@@ -21,10 +20,10 @@ export function createOutboundPatientDiscoveryReq({
   facilityNPI: string;
   orgName: string;
   orgOid: string;
-  requestId?: string;
+  requestId: string;
 }): OutboundPatientDiscoveryReq {
   const user = `${orgName} System User`;
-  const id = requestId ?? uuidv7();
+  const id = requestId;
 
   return {
     id,

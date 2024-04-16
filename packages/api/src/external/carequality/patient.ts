@@ -63,7 +63,8 @@ async function prepareAndTriggerPD(
   try {
     const [pdRequestNoGirth, pdRequestGirth] = await prepareForPatientDiscovery(
       patient,
-      facilityNPI
+      facilityNPI,
+      requestId
     );
     const numGatewaysNoGirth = pdRequestNoGirth.gateways.length;
 
@@ -101,11 +102,11 @@ async function prepareAndTriggerPD(
 async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string,
-  requestId?: string
+  requestId: string
 ): Promise<[OutboundPatientDiscoveryReq, OutboundPatientDiscoveryReq]> {
   const fhirPatient = toFHIR(patient);
 
-  const { organization, xcpdGatewaysWithoutGirthEnabled, xcpdGatewaysWithGirthEnabled } =
+  const { organization, gatewaysWithoutGirthEnabled, gatewaysWithGirthEnabled } =
     await gatherXCPDGateways(patient);
 
   // split xcpd gateways into two buckets here. Not Girth and Girth
@@ -113,7 +114,7 @@ async function prepareForPatientDiscovery(
     patient: fhirPatient,
     cxId: patient.cxId,
     patientId: patient.id,
-    xcpdGateways: xcpdGatewaysWithoutGirthEnabled,
+    xcpdGateways: gatewaysWithoutGirthEnabled,
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
@@ -124,7 +125,7 @@ async function prepareForPatientDiscovery(
     patient: fhirPatient,
     cxId: patient.cxId,
     patientId: patient.id,
-    xcpdGateways: xcpdGatewaysWithGirthEnabled,
+    xcpdGateways: gatewaysWithGirthEnabled,
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
@@ -136,8 +137,8 @@ async function prepareForPatientDiscovery(
 
 export async function gatherXCPDGateways(patient: Patient): Promise<{
   organization: Organization;
-  xcpdGatewaysWithoutGirthEnabled: XCPDGateways;
-  xcpdGatewaysWithGirthEnabled: XCPDGateways;
+  gatewaysWithoutGirthEnabled: XCPDGateways;
+  gatewaysWithGirthEnabled: XCPDGateways;
 }> {
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
@@ -156,13 +157,14 @@ export async function gatherXCPDGateways(patient: Patient): Promise<{
 
   const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const [xcpdGatewaysWithoutGirthEnabled, xcpdGatewaysWithGirthEnabled] =
-    await cqOrgsToXCPDGateways(orgsToSearch);
+  const { gatewaysWithGirthEnabled, gatewaysWithoutGirthEnabled } = await cqOrgsToXCPDGateways(
+    orgsToSearch
+  );
 
   return {
     organization,
-    xcpdGatewaysWithoutGirthEnabled,
-    xcpdGatewaysWithGirthEnabled,
+    gatewaysWithoutGirthEnabled,
+    gatewaysWithGirthEnabled,
   };
 }
 

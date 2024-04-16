@@ -1,5 +1,5 @@
 import { out } from "@metriport/core/util/log";
-import { initDBPool } from "@metriport/core/util/sequelize";
+import { initDbPool } from "@metriport/core/util/sequelize";
 import { sleep } from "@metriport/core/util/sleep";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -20,7 +20,7 @@ const BATCH_SIZE = 1000;
 const SLEEP_TIME = dayjs.duration({ milliseconds: 750 });
 
 const dbCreds = Config.getDBCreds();
-const sequelize = initDBPool(dbCreds, {
+const sequelize = initDbPool(dbCreds, {
   max: 10,
   min: 1,
   acquire: 30000,

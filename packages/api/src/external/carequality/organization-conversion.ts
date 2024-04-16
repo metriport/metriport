@@ -1,14 +1,14 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
-import { getOIDsWithGirthEnabledFeatureFlagValue } from "../aws/appConfig";
+import { getOidsWithGirthEnabled } from "../aws/appConfig";
 
 export async function cqOrgsToXCPDGateways(
   cqOrgs: CQOrgBasicDetails[]
-): Promise<[XCPDGateways, XCPDGateways]> {
-  const gatewaysWithGirthEnabledFeatureFlag: XCPDGateways = [];
-  const gatewaysWithoutGirthEnabledFeatureFlag: XCPDGateways = [];
-  const girthOIDs = await getOIDsWithGirthEnabledFeatureFlagValue();
+): Promise<{ gatewaysWithGirthEnabled: XCPDGateways; gatewaysWithoutGirthEnabled: XCPDGateways }> {
+  const gatewaysWithGirthEnabled: XCPDGateways = [];
+  const gatewaysWithoutGirthEnabled: XCPDGateways = [];
+  const girthOIDs = await getOidsWithGirthEnabled();
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
@@ -18,13 +18,16 @@ export async function cqOrgsToXCPDGateways(
         id: uuidv7(),
       };
 
-      if (girthOIDs.includes(gateway.oid)) {
-        gatewaysWithGirthEnabledFeatureFlag.push(gateway);
+      if (girthOIDs.includes(org.id)) {
+        gatewaysWithGirthEnabled.push(gateway);
       } else {
-        gatewaysWithoutGirthEnabledFeatureFlag.push(gateway);
+        gatewaysWithoutGirthEnabled.push(gateway);
       }
     }
   }
 
-  return [gatewaysWithoutGirthEnabledFeatureFlag, gatewaysWithGirthEnabledFeatureFlag];
+  return {
+    gatewaysWithGirthEnabled,
+    gatewaysWithoutGirthEnabled,
+  };
 }

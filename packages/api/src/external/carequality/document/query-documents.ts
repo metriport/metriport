@@ -16,7 +16,7 @@ import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
-import { getOIDsWithGirthEnabledFeatureFlagValue } from "../../aws/appConfig";
+import { getOidsWithGirthEnabled } from "../../aws/appConfig";
 import { startDocumentQueryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/dq/invoke-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
@@ -93,7 +93,7 @@ export async function getDocumentsFromCQ({
     // separate mirth and girth here
     const linksWithDqUrlNoGirth: CQLink[] = [];
     const linksWithDqUrlGirth: CQLink[] = [];
-    const girthOIDs = await getOIDsWithGirthEnabledFeatureFlagValue();
+    const girthOIDs = await getOidsWithGirthEnabled();
     for (const link of linksWithDqUrl) {
       if (girthOIDs.includes(link.oid)) {
         linksWithDqUrlGirth.push(link);
