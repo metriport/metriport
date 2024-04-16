@@ -12,6 +12,11 @@ import {
   handleSOAPFaultResponse,
 } from "./error";
 import { parseFileFromString } from "./parse-file-from-string";
+import { S3Utils } from "../../../aws/s3";
+import { Config } from "../../../../util/config";
+
+const bucket = Config.getMedicalDocumentsBucketName();
+const region = Config.getAWSRegion();
 
 type DocumentResponse = {
   size: string;
@@ -22,32 +27,55 @@ type DocumentResponse = {
   DocumentUniqueId: string;
   HomeCommunityId: string;
   RepositoryUniqueId: string;
+  NewDocumentUniqueId: string;
+  NewRepositoryUniqueId: string;
   Document: string;
 };
 
-function writeFileToS3(extension: string, decodedBytes: Buffer): void {
-  console.log(`Writing file with ${decodedBytes.length} bytes to S3 with extension: ${extension}`);
-}
-
-function parseDocumentReference(documentResponse: DocumentResponse): DocumentReference {
+async function parseDocumentReference({
+  documentResponse,
+  outboundRequest,
+  s3Utils,
+  idMapping,
+}: {
+  documentResponse: DocumentResponse;
+  outboundRequest: OutboundDocumentRetrievalReq;
+  s3Utils: S3Utils;
+  idMapping: Record<string, string>;
+}): Promise<DocumentReference> {
   // lets extract the document here.
-
   const { mimeType, extension, decodedBytes } = parseFileFromString(documentResponse?.Document);
-  writeFileToS3(extension, decodedBytes);
+  const metriportId = idMapping[documentResponse?.DocumentUniqueId];
+  const fileName = [outboundRequest.cxId, outboundRequest.patientId, metriportId + extension].join(
+    "_"
+  );
+  const filePath = [outboundRequest.cxId, outboundRequest.patientId, fileName].join("/");
+  const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
+
+  if (!fileInfo.exists) {
+    await s3Utils.uploadFile(bucket, filePath, decodedBytes);
+  }
 
   return {
+    url: "https://" + bucket + ".s3." + region + ".amazonaws.com/" + filePath,
     size: documentResponse?.size ? parseInt(documentResponse?.size) : undefined,
     title: documentResponse?.title,
+    fileName: fileName,
     creation: documentResponse?.creation,
     language: documentResponse?.language,
     contentType: mimeType,
     docUniqueId: documentResponse?.DocumentUniqueId?.toString(),
+    metriportId: metriportId,
+    fileLocation: bucket,
     homeCommunityId: documentResponse?.HomeCommunityId,
     repositoryUniqueId: documentResponse?.RepositoryUniqueId,
+    newDocumentUniqueId: documentResponse?.NewDocumentUniqueId,
+    newRepositoryUniqueId: documentResponse?.NewRepositoryUniqueId,
+    isNew: fileInfo.exists,
   };
 }
 
-function handleSuccessResponse({
+async function handleSuccessResponse({
   documentResponses,
   outboundRequest,
   gateway,
@@ -56,13 +84,34 @@ function handleSuccessResponse({
   documentResponses: any;
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-}): OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentRetrievalResp> {
+  const s3Utils = new S3Utils(region);
+
+  const idMapping = outboundRequest.documentReference.reduce(
+    (acc: Record<string, string>, entry) => {
+      if (entry.docUniqueId && entry.metriportId) {
+        acc[entry.docUniqueId] = entry.metriportId;
+      }
+      return acc;
+    },
+    {}
+  );
+
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const documentReferences = Array.isArray(documentResponses)
-    ? documentResponses.map((documentResponse: DocumentResponse) =>
-        parseDocumentReference(documentResponse)
+    ? await Promise.all(
+        documentResponses.map(async (documentResponse: DocumentResponse) =>
+          parseDocumentReference({ documentResponse, outboundRequest, s3Utils, idMapping })
+        )
       )
-    : [parseDocumentReference(documentResponses)];
+    : [
+        await parseDocumentReference({
+          documentResponse: documentResponses,
+          outboundRequest,
+          s3Utils,
+          idMapping,
+        }),
+      ];
 
   const response: OutboundDocumentRetrievalResp = {
     id: outboundRequest.id,
@@ -74,7 +123,7 @@ function handleSuccessResponse({
   return response;
 }
 
-export function processDRResponse({
+export async function processDRResponse({
   xmlStringOrError,
   outboundRequest,
   gateway,
@@ -82,7 +131,7 @@ export function processDRResponse({
   xmlStringOrError: string | { error: string };
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-}): OutboundDocumentRetrievalResp {
+}): Promise<OutboundDocumentRetrievalResp> {
   if (typeof xmlStringOrError === "object" && xmlStringOrError.error) {
     return handleHTTPErrorResponse({
       httpError: xmlStringOrError.error,

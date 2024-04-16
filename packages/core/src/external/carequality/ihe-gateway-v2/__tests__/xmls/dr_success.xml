@@ -28,6 +28,7 @@
                 <DocumentUniqueId>987654321</DocumentUniqueId>
                 <mimeType>application/xml</mimeType>
                 <Document>Metriport is the best!</Document>
+                <CreationTime>2024-04-04T22:15:35.094Z</CreationTime>
             </DocumentResponse>
         </ihe:RetrieveDocumentSetResponse>
     </soap:Body>

@@ -20,3 +20,7 @@ export function isGatewayWithOid(
 ): gateway is { id: string; oid: string; url: string } {
   return "oid" in gateway;
 }
+
+export function stripUrnPrefix(urn: string): string {
+  return urn.replace("urn:oid:", "");
+}

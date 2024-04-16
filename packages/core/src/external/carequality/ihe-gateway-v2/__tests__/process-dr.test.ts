@@ -6,7 +6,7 @@ import { outboundDRRequest, testFiles } from "./constants";
 describe("processDRResponse", () => {
   it("should process the successful DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_success.xml"), "utf8");
-    const response = processDRResponse({
+    const response = await processDRResponse({
       xmlStringOrError: xmlString,
       outboundRequest: outboundDRRequest,
       gateway: outboundDRRequest.gateway,
@@ -30,7 +30,7 @@ describe("processDRResponse", () => {
 
   it("should process the soap fault DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
-    const response = processDRResponse({
+    const response = await processDRResponse({
       xmlStringOrError: xmlString,
       outboundRequest: outboundDRRequest,
       gateway: outboundDRRequest.gateway,
@@ -41,7 +41,7 @@ describe("processDRResponse", () => {
 
   it("should process the registry error DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_registry_error.xml"), "utf8");
-    const response = processDRResponse({
+    const response = await processDRResponse({
       xmlStringOrError: xmlString,
       outboundRequest: outboundDRRequest,
       gateway: outboundDRRequest.gateway,
@@ -51,7 +51,7 @@ describe("processDRResponse", () => {
 
   it("should process the empty DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_empty.xml"), "utf8");
-    const response = processDRResponse({
+    const response = await processDRResponse({
       xmlStringOrError: xmlString,
       outboundRequest: outboundDRRequest,
       gateway: outboundDRRequest.gateway,
@@ -71,7 +71,7 @@ describe("processDRResponse", () => {
         `<Document>${fileContentB64}</Document>`
       );
       it(`should process the ${extension} DR response correctly`, async () => {
-        const response = processDRResponse({
+        const response = await processDRResponse({
           xmlStringOrError: modifiedXml,
           outboundRequest: outboundDRRequest,
           gateway: outboundDRRequest.gateway,
