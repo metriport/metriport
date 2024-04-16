@@ -121,7 +121,7 @@
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
                         </Name>
                     </ExternalIdentifier>
-                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ae5d6b73d7" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="987654321">
+                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ae5d6b73d7" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="123456789">
                         <Name>
                             <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
                         </Name>

@@ -4,7 +4,6 @@ import {
   OutboundDocumentRetrievalResp,
   XCAGateway,
   DocumentReference,
-  OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import {
   handleRegistryErrorResponse,
@@ -12,6 +11,7 @@ import {
   handleEmptyResponse,
   handleSOAPFaultResponse,
 } from "./error";
+import { parseFileFromString } from "./parse-file-from-string";
 
 type DocumentResponse = {
   size: string;
@@ -22,21 +22,25 @@ type DocumentResponse = {
   DocumentUniqueId: string;
   HomeCommunityId: string;
   RepositoryUniqueId: string;
+  Document: string;
 };
 
-export function parseFileFromString(document: string): void | OperationOutcome {
-  console.log(document[0]);
+function writeFileToS3(extension: string, decodedBytes: Buffer): void {
+  console.log(`Writing file with ${decodedBytes.length} bytes to S3 with extension: ${extension}`);
 }
 
 function parseDocumentReference(documentResponse: DocumentResponse): DocumentReference {
   // lets extract the document here.
+
+  const { mimeType, extension, decodedBytes } = parseFileFromString(documentResponse?.Document);
+  writeFileToS3(extension, decodedBytes);
 
   return {
     size: documentResponse?.size ? parseInt(documentResponse?.size) : undefined,
     title: documentResponse?.title,
     creation: documentResponse?.creation,
     language: documentResponse?.language,
-    contentType: documentResponse?.mimeType,
+    contentType: mimeType,
     docUniqueId: documentResponse?.DocumentUniqueId?.toString(),
     homeCommunityId: documentResponse?.HomeCommunityId,
     repositoryUniqueId: documentResponse?.RepositoryUniqueId,
