@@ -74,7 +74,7 @@ type DbQueryResponseRecordBase = {
   id: string;
   patient_data: PatientData;
   cq_links: { links: CQLink[] };
-  name: string | undefined | null;
+  gateway_name: string | undefined | null;
 };
 type DbQueryResponseRecordSuccess = DbQueryResponseRecordBase & {
   response_data: OutboundPatientDiscoveryRespSuccessfulSchema | undefined;
@@ -179,7 +179,7 @@ async function getDataFromDb(
           from patient p
             left outer join cq_patient_data pd ON pd.id = p.id
             left join patient_discovery_result pdr ON pdr.patient_id::text = p.id ${matchQuery}
-            left join cq_directory_entry de ON de.id = pdr.data->>'gatewayHomeCommunityId'
+            left join cq_directory_entry de ON de.id = pdr.data->'gateway'->>'oid'
           where p.id = :patientId
         `
       : `
@@ -263,7 +263,7 @@ function responseToGateway(resp: OutboundPatientDiscoveryResp, name: string): Hi
 }
 
 function getGatewayName(row: DbQueryResponseRecordBase): string {
-  return row.name || "Unknown";
+  return row.gateway_name || "Unknown";
 }
 
 function responseToCqLinks(resp: DbQueryResponseRecordBase): CQLink[] {
