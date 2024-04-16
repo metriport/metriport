@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:xf="http://www.w3.org/2005/02/xpath-functions"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    classCode="DOCCLIN" moodCode="EVN">
+    <component typeCode="COMP" contextConductionInd="true">
+        <nonXMLBody classCode="DOCBODY" moodCode="EVN">
+            <text mediaType="" representation="B64" />
+        </nonXMLBody>
+    </component>
+</ClinicalDocument>

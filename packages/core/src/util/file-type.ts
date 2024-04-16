@@ -147,17 +147,9 @@ export function detectFileType(document: Buffer): { mimeType: string; extension:
   ) {
     return { mimeType: PNG_MIME_TYPE, extension: PNG_FILE_EXTENSION };
   } else if (
-    (console.log(fileBuffer[0], fileBuffer[1], fileBuffer[2], fileBuffer[3], fileBuffer[4]),
-    console.log(
-      fileBuffer[0]?.toString(16),
-      fileBuffer[1]?.toString(16),
-      fileBuffer[2]?.toString(16),
-      fileBuffer[3]?.toString(16),
-      fileBuffer[4]?.toString(16)
-    ),
     fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
-      fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
-      fileBuffer[2] === JPEG_MAGIC_NUMBER_1)
+    fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
+    fileBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
     return { mimeType: JPEG_MIME_TYPE, extension: JPEG_FILE_EXTENSION };
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
