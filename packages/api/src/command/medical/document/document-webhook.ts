@@ -105,13 +105,13 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    const canReportUsage =
+    const shouldReportUsage =
       status === MAPIWebhookStatus.completed &&
       documents &&
       documents?.length > 0 &&
       whType === "medical.document-download";
 
-    if (canReportUsage) {
+    if (shouldReportUsage) {
       reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
     }
   } catch (err) {
