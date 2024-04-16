@@ -1,7 +1,7 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
-import { initDBPool } from "@metriport/core/util/sequelize";
+import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   isSuccessfulOutboundDocQueryResponse,
@@ -51,7 +51,7 @@ import { requestLogger } from "../helpers/request-logger";
 dayjs.extend(duration);
 const router = Router();
 const upload = multer();
-const sequelize = initDBPool(Config.getDBCreds());
+const sequelize = initDbPool(Config.getDBCreds());
 
 /**
  * POST /internal/carequality/directory/rebuild
