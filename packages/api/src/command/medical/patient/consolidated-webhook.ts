@@ -1,11 +1,9 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
-import { Product } from "../../../domain/product";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
@@ -49,7 +47,6 @@ export const processConsolidatedDataWebhook = async ({
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
-  const apiType = Product.medical;
   const { id: patientId, cxId, externalId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
@@ -100,8 +97,6 @@ export const processConsolidatedDataWebhook = async ({
       patient,
       progress: { status },
     });
-
-    reportUsageCmd({ cxId, entityId: patientId, product: apiType });
   } catch (err) {
     log(`Error on processConsolidatedDataWebhook: ${errorToString(err)}`);
     capture.error(err, {
