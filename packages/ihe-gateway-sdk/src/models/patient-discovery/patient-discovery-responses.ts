@@ -78,7 +78,6 @@ export const outboundPatientDiscoveryRespFaultSchema =
   outboundPatientDiscoveryRespDefaultSchema.extend({
     patientMatch: z.literal(false).or(z.literal(null)),
   });
-
 export type OutboundPatientDiscoveryRespSuccessfulSchema = z.infer<
   typeof outboundPatientDiscoveryRespSuccessfulSchema
 >;
