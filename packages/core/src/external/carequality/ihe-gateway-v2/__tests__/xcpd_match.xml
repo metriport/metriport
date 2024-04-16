@@ -66,9 +66,9 @@
                                     <addr>
                                         <streetAddressLine>1100 Test Street</streetAddressLine>
                                         <city>Helena</city>
-                                        <state>Helena</state>
-                                        <postalCode>Helena</postalCode>
-                                        <country>Helena</country>
+                                        <state>AL</state>
+                                        <postalCode>35080</postalCode>
+                                        <country>USA</country>
                                     </addr>
                                 </patientPerson>
                                 <subjectOf1>
