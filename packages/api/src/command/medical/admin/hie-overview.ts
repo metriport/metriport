@@ -15,6 +15,7 @@ import { partition } from "lodash";
 import { QueryTypes } from "sequelize";
 import { getFacilityIdOrFail } from "../../../domain/medical/patient-facility";
 import { CQLink } from "../../../external/carequality/cq-patient-data";
+import { CQPatientDataModel } from "../../../external/carequality/models/cq-patient-data";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { dtoFromCW, PatientLinksDTO } from "../../../routes/medical/dtos/linkDTO";
@@ -67,7 +68,10 @@ type HiePatientOverview = {
     success: CqPdSuccessResponse[];
     errors: CqPdErrorConsolidated[];
   };
+  commonwell: CwLinks | undefined;
 };
+
+type CwLinks = PatientLinksDTO & { networkLinks: unknown };
 
 type DbQueryResponseRecordBase = {
   cx_id: string;
@@ -84,77 +88,77 @@ type DbQueryResponseRecordError = DbQueryResponseRecordBase & {
 };
 type DbQueryResponseRecord = DbQueryResponseRecordSuccess | DbQueryResponseRecordError;
 
-type CwLinks = PatientLinksDTO & { networkLinks: unknown };
-
 export async function getHieOverview(
   patientId: string,
   facilityIdParam: string | undefined,
   debugLevel: DebugLevel
 ): Promise<HiePatientOverview | undefined> {
-  const patient = await PatientModel.findOne({ where: { id: patientId } });
+  const [patient, cqPatientData] = await Promise.all([
+    PatientModel.findOne({ where: { id: patientId } }),
+    CQPatientDataModel.findOne({ where: { id: patientId } }),
+  ]);
   if (!patient) throw new NotFoundError("Patient not found");
 
-  const getCqData = async () => {
-    const queryResp = await getDataFromDb(patientId, debugLevel);
-    const [respSuccess, respErrors] = partition(queryResp, isQueryRespSuccessful);
-    return { cqSuccess: respSuccess, cqErrors: respErrors };
+  const [cqData, cwData] = await Promise.all([
+    getCqData(patient, debugLevel),
+    getCwData(patient, facilityIdParam, debugLevel),
+  ]);
+  const { success: cqSuccess, errors: cqErrors } = cqData;
+
+  const hieOverview: HiePatientOverview = {
+    cxId: patient.cxId,
+    patientId: patient.id,
+    patientData: patient.data,
+    carequality: {
+      links: cqPatientData?.data.links ?? [],
+      success: cqSuccess,
+      errors: cqErrors,
+    },
+    commonwell: cwData,
   };
-  const getCwData = async () => await getDataFromCw(patient, facilityIdParam, debugLevel);
 
-  const [cqData, cwData] = await Promise.all([getCqData(), getCwData()]);
-  const { cqSuccess, cqErrors } = cqData;
-
-  const errors: CqPdErrorConsolidated[] = cqErrors.reduce(
-    (acc: CqPdErrorConsolidated[], curr: DbQueryResponseRecordError) => {
-      const rowErrorDetail = (
-        curr.response_data?.operationOutcome?.issue[0]?.details as { text: string | undefined }
-      )?.text;
-      if (!rowErrorDetail) return acc;
-      const gatewayName = getGatewayName(curr);
-      const existingErrorEntry = acc.find(a => a.error === rowErrorDetail);
-      if (existingErrorEntry) {
-        existingErrorEntry.gatewayNames.push(gatewayName);
-        return acc;
-      }
-      acc.push({
-        error: rowErrorDetail,
-        gatewayNames: [gatewayName],
-      });
-      return acc;
-    },
-    new Array<CqPdErrorConsolidated>()
-  );
-
-  const hieOverview = cqSuccess.reduce(
-    (acc: HiePatientOverview | undefined, curr: DbQueryResponseRecordSuccess) => {
-      if (!curr.response_data) return acc;
-      const patientOfSuccessfulResp = responseToPatient(curr.response_data, patient.data);
-      const gatewayName = getGatewayName(curr);
-      const gateway = responseToGateway(curr.response_data, gatewayName);
-      const success = {
-        patient: patientOfSuccessfulResp,
-        gateway,
-      };
-      if (acc) {
-        acc.carequality.success.push(success);
-        return acc;
-      }
-      const cqLinks = responseToCqLinks(curr);
-      return {
-        cxId: curr.cx_id,
-        patientId: curr.id,
-        patientData: patient.data,
-        carequality: {
-          links: cqLinks,
-          success: [success],
-          errors,
-        },
-        commonwell: cwData,
-      };
-    },
-    undefined
-  );
   return hieOverview;
+}
+
+async function getCqData(
+  patient: Patient,
+  debugLevel: DebugLevel
+): Promise<{ success: CqPdSuccessResponse[]; errors: CqPdErrorConsolidated[] }> {
+  const queryResp = await getCqDataFromDb(patient.id, debugLevel);
+  const [respSuccess, respErrors] = partition(queryResp, isQueryRespSuccessful);
+
+  const cqErrors: CqPdErrorConsolidated[] = [];
+  for (const entry of respErrors) {
+    const rowErrorDetail = (
+      entry.response_data?.operationOutcome?.issue[0]?.details as { text: string | undefined }
+    )?.text;
+    if (!rowErrorDetail) continue;
+    const gatewayName = getGatewayName(entry);
+    const existingErrorEntry = cqErrors.find(a => a.error === rowErrorDetail);
+    if (existingErrorEntry) {
+      existingErrorEntry.gatewayNames.push(gatewayName);
+      continue;
+    }
+    cqErrors.push({
+      error: rowErrorDetail,
+      gatewayNames: [gatewayName],
+    });
+  }
+
+  const cqSuccess: CqPdSuccessResponse[] = [];
+  for (const entry of respSuccess) {
+    if (!entry.response_data) continue;
+    const patientOfSuccessfulResp = responseToPatient(entry.response_data, patient.data);
+    const gatewayName = getGatewayName(entry);
+    const gateway = responseToGateway(entry.response_data, gatewayName);
+    const success = {
+      patient: patientOfSuccessfulResp,
+      gateway,
+    };
+    cqSuccess.push(success);
+  }
+
+  return { success: cqSuccess, errors: cqErrors };
 }
 
 function isQueryRespSuccessful(
@@ -167,27 +171,21 @@ function isQueryRespSuccessful(
 // need a custom type as result, but it also it didn't work trying to join Models "on-the-fly"
 // without changing their definition, like:
 // https://sequelize.org/docs/v6/advanced-association-concepts/eager-loading/#complex-where-clauses-at-the-top-level
-async function getDataFromDb(
+// Also, this might return a lot of records, so the alternative would be to load all CQ directory and
+// and join the results in-memory.
+async function getCqDataFromDb(
   patientId: string,
   debugLevel: DebugLevel
 ): Promise<DbQueryResponseRecord[]> {
+  if (debugLevel === "info") return [];
   const matchQuery = debugLevel === "success" ? `and pdr.data->>'patientMatch' = 'true'` : "";
-  const query =
-    debugLevel !== "info"
-      ? `
-          select p.cx_id, p.id, p.data as patient_data, pd.data as cq_links, pdr.data as response_data, de.name as gateway_name
-          from patient p
-            left outer join cq_patient_data pd ON pd.id = p.id
-            left join patient_discovery_result pdr ON pdr.patient_id::text = p.id ${matchQuery}
-            left join cq_directory_entry de ON de.id = pdr.data->'gateway'->>'oid'
-          where p.id = :patientId
-        `
-      : `
-        select p.cx_id, p.id, p.data as patient_data, pd.data as cq_links, null as response_data, null as gateway_name
-        from patient p
-          left outer join cq_patient_data pd ON pd.id = p.id
-        where p.id = :patientId
-      `;
+  const query = `
+    select p.cx_id, p.id, pdr.data as response_data, de.name as gateway_name
+    from patient p
+      left join patient_discovery_result pdr ON pdr.patient_id::text = p.id ${matchQuery}
+      left join cq_directory_entry de ON de.id = pdr.data->'gateway'->>'oid'
+    where p.id = :patientId
+  `;
   const replacements = {
     patientId,
   };
@@ -266,11 +264,7 @@ function getGatewayName(row: DbQueryResponseRecordBase): string {
   return row.gateway_name || "Unknown";
 }
 
-function responseToCqLinks(resp: DbQueryResponseRecordBase): CQLink[] {
-  return resp.cq_links.links;
-}
-
-async function getDataFromCw(
+async function getCwData(
   patient: Patient,
   facilityIdParam: string | undefined,
   debugLevel: DebugLevel
