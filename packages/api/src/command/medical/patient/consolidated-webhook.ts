@@ -101,7 +101,7 @@ export const processConsolidatedDataWebhook = async ({
       progress: { status },
     });
 
-    reportUsageCmd({ cxId, entityId: patientId, product: apiType });
+    reportUsageCmd({ cxId, entityId: patientId, product: apiType, docQuery: true });
   } catch (err) {
     log(`Error on processConsolidatedDataWebhook: ${errorToString(err)}`);
     capture.error(err, {

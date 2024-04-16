@@ -105,7 +105,7 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
+    reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
   } catch (err) {
     log(`Error on processPatientDocumentRequest: ${err}`);
     capture.error(err, {
