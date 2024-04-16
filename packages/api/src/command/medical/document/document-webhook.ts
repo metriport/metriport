@@ -105,7 +105,15 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
+    const canReportUsage =
+      status === MAPIWebhookStatus.completed &&
+      documents &&
+      documents?.length > 0 &&
+      whType === "medical.document-download";
+
+    if (canReportUsage) {
+      reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
+    }
   } catch (err) {
     log(`Error on processPatientDocumentRequest: ${err}`);
     capture.error(err, {
