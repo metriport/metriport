@@ -1,10 +1,8 @@
 import { Request } from "express";
 import QueryString from "qs";
-import { Product } from "../../domain/product";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { getCxId, getCxIdFromHeaders } from "../util";
 
-const medicalRoutes = ["medical", "fhir"];
 const devicesRoutes = [
   "activity",
   "body",
@@ -39,7 +37,6 @@ export const analyzeRoute = ({
   const headerCxId = getCxIdFromHeaders(req);
   const cxId = reqCxId ?? headerCxId;
 
-  const isMedical = medicalRoutes.some(route => url.includes(route));
   const isDevices = devicesRoutes.some(route => url.includes(route));
 
   if (!isDevices && cxId) {
@@ -53,7 +50,6 @@ export const analyzeRoute = ({
         ...params,
         ...query,
       },
-      apiType: isMedical ? Product.medical : "internal",
     });
   }
 };
