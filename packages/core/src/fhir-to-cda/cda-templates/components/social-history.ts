@@ -1,16 +1,17 @@
 import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
-import {
-  buildCodeCE,
-  buildInstanceIdentifier,
-  createTableRowsAndEntriesFromObservations,
-  createTableHeader,
-} from "../commons";
+import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
 import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
-import { AugmentedObservation } from "./augmented-observation";
+import {
+  createEntriesFromObservation,
+  createTableRowsAndEntriesFromObservations,
+  createTableRowsFromObservation,
+} from "../table-rows-and-entries";
+import { AugmentedObservation } from "./augmented-resources";
 
 const sectionName = "socialhistory";
 const mentalHealthSurveyCodes = ["lg51306-5"];
+const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
 
 export function buildSocialHistory(fhirBundle: Bundle) {
   const socialHistoryObservations: Observation[] =
@@ -26,10 +27,14 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.38", sectionName, obs)
   );
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(augmentedObservations);
+  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+    augmentedObservations,
+    createTableRowsFromObservation,
+    createEntriesFromObservation
+  );
   const table = {
     [idAttribute]: sectionName + "1", // TODO: make the number dynamic if we add more tables
-    thead: createTableHeader(),
+    thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
         [idAttribute]: row.tr[idAttribute],
