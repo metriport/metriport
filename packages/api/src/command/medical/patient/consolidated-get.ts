@@ -9,6 +9,7 @@ import {
 } from "@medplum/fhirtypes";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { Patient } from "@metriport/core/domain/patient";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import {
   buildBundle,
@@ -29,6 +30,7 @@ import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
+import { analytics, EventTypes } from "../../../shared/analytics";
 
 export type GetConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
@@ -64,13 +66,16 @@ export async function startConsolidatedQuery({
     return patient.data.consolidatedQuery;
   }
 
-  const progress: QueryProgress = { status: "processing" };
+  const startedAt = new Date();
+  const progress: QueryProgress = { status: "processing", startedAt };
 
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    consolidatedQuery: progress,
-    cxConsolidatedRequestMetadata,
+    cmd: {
+      consolidatedQuery: progress,
+      cxConsolidatedRequestMetadata,
+    },
   });
 
   getConsolidatedAndSendToCx({
@@ -132,6 +137,20 @@ export async function getConsolidated({
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && hasResources;
+    const startedAt = patient.data.consolidatedQuery?.startedAt;
+
+    const defaultAnalyticsProps = {
+      distinctId: patient.cxId,
+      event: EventTypes.consolidatedQuery,
+      properties: {
+        patientId: patient.id,
+        conversionType: "bundle",
+        duration: elapsedTimeFromNow(startedAt),
+        resourceCount: bundle.entry?.length,
+      },
+    };
+
+    analytics(defaultAnalyticsProps);
 
     if (shouldCreateMedicalRecord) {
       // If we need to convert to medical record, we also have to update the resulting
@@ -143,6 +162,15 @@ export async function getConsolidated({
         dateFrom,
         dateTo,
         conversionType,
+      });
+
+      analytics({
+        ...defaultAnalyticsProps,
+        properties: {
+          ...defaultAnalyticsProps.properties,
+          duration: elapsedTimeFromNow(startedAt),
+          conversionType,
+        },
       });
     }
     return { bundle, filters };
