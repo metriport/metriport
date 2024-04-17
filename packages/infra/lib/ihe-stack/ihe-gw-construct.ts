@@ -174,7 +174,6 @@ export default class IHEGatewayConstruct extends Construct {
     });
 
     const fargateService = { service, taskDefinition };
-    const lbTargets: ecs.EcsTarget[] = [];
 
     const url = `${dnsSubdomain}.${props.config.subdomain}.${mainConfig.domain}`;
 
@@ -230,13 +229,13 @@ export default class IHEGatewayConstruct extends Construct {
             ...healthCheck,
             ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
           },
+          // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+          deregistrationDelay: Duration.minutes(10),
         }),
       });
     };
     defaultPorts.forEach(port => addPortToLB(port, alb));
     httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
-
-    service.registerLoadBalancerTargets(...lbTargets);
 
     this.server = fargateService.service;
     if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
@@ -277,10 +276,6 @@ export default class IHEGatewayConstruct extends Construct {
     // TODO: #489 ain't the most secure, but the above code doesn't work as CDK complains we can't use the connections
     // from the cluster created above, should be fine for now as it will only accept connections in the VPC
     fargateService.service.connections.allowFromAnyIpv4(ec2.Port.allTcp());
-
-    // This speeds up deployments so the tasks are swapped quicker.
-    // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-    // fargateService.targetGroup.setAttribute("deregistration_delay.timeout_seconds", "17");
 
     // hookup autoscaling based on 90% thresholds
     const scaling = fargateService.service.autoScaleTaskCount({
