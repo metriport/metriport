@@ -12,7 +12,6 @@ export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd>(patient:
 }
 
 export function validate<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): boolean {
-  if (!patient.address || patient.address.length < 1) return false;
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
   return true;
 }
