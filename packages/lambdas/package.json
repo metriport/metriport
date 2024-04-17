@@ -27,8 +27,8 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
-    "@metriport/api-sdk": "^7.2.3-alpha2.0",
-    "@metriport/commonwell-sdk": "^4.8.17",
+    "@metriport/api-sdk": "^7.12.7",
+    "@metriport/commonwell-sdk": "^4.12.10",
     "@opensearch-project/opensearch": "^2.3.1",
     "@sentry/serverless": "^7.46.0",
     "@types/xmldom": "^0.1.32",
@@ -52,6 +52,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@metriport/shared": "file:packages/shared",
     "@metriport/core": "file:packages/core",
     "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@sparticuz/chromium": "106.0.2",
