@@ -53,12 +53,12 @@ export type CDAAssignedAuthor = {
 
 export type CDAPatientRole = {
   name?: CDAName[] | undefined;
-  administrativeGenderCode?: EntryObject;
+  administrativeGenderCode?: EntryObject | CDACodeCE;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
-  maritalStatusCode?: EntryObject;
+  maritalStatusCode?: EntryObject | CDACodeCE;
   languageCommunication?: {
-    languageCode: EntryObject;
+    languageCode: EntryObject | CDACodeCE;
   };
 };
 
