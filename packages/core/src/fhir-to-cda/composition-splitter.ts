@@ -1,6 +1,6 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
+import { findResourceInBundle, isComposition } from "../external/fhir/shared";
 import NotFoundError from "../util/error/not-found";
-import { findResourceInBundle, isComposition } from "./fhir";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.

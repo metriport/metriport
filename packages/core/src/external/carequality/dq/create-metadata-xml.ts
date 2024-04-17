@@ -15,6 +15,7 @@ import {
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   ORGANIZATION_NAME_DEFAULT,
+  DEFAULT_TITLE,
   createDocumentUniqueId,
 } from "../shared";
 import { uuidv7 } from "../../../util/uuid-v7";
@@ -54,9 +55,14 @@ export function createExtrinsicObjectXml({
     healthcareFacilityTypeCode?.coding?.[0]?.code || DEFAULT_HEALTHCARE_FACILITY_TYPE_CODE_NODE;
 
   const organizationName = organization?.name || ORGANIZATION_NAME_DEFAULT;
-  const organizationId = organization?.id || METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
+  const organizationId =
+    organization?.identifier?.find(identifier =>
+      identifier.value?.startsWith(METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX)
+    )?.value || METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX;
 
-  const metadataXml = `<ExtrinsicObject xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="${mimeType}" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+  const stableDocumentId = "urn:uuid:7edca82f-054d-47f2-a032-9b2a5b5186c1";
+
+  const metadataXml = `<ExtrinsicObject xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" home="${METRIPORT_HOME_COMMUNITY_ID}" id="${documentUUID}" isOpaque="false" mimeType="${mimeType}" objectType="${stableDocumentId}" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
 
     <Slot name="creationTime">
       <ValueList>
@@ -89,7 +95,7 @@ export function createExtrinsicObjectXml({
     </Slot>
     
     <Name>
-      <LocalizedString charset="UTF-8" value="${title}"/>
+      <LocalizedString charset="UTF-8" value="${title ? title : DEFAULT_TITLE}"/>
     </Name>
 
     <Classification classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
@@ -100,7 +106,7 @@ export function createExtrinsicObjectXml({
       </Slot>
       <Slot name="authorInstitution">
         <ValueList>
-          <Value>${ORGANIZATION_NAME_DEFAULT}^^^^^^^^^${METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX}</Value>
+          <Value>${organizationName}^^^^^^^^^${organizationId}</Value>
         </ValueList>
       </Slot>
     </Classification>

@@ -1,5 +1,11 @@
 import { OperationOutcomeError, Operator } from "@medplum/core";
 import {
+  Bundle,
+  Patient,
+  Organization,
+  Composition,
+  Observation,
+  DiagnosticReport,
   DocumentReference,
   Extension,
   OperationOutcomeIssue,
@@ -120,4 +126,51 @@ export function getIdFromSubjectRef(subject: Reference | undefined): string | un
     if (reference.includes(SEPARATOR_REF)) return subject.reference.split(SEPARATOR_REF)[1];
   }
   return undefined;
+}
+
+function isPatient(resource: Resource | undefined): resource is Patient {
+  return resource?.resourceType === "Patient";
+}
+
+function isOrganization(resource: Resource | undefined): resource is Organization {
+  return resource?.resourceType === "Organization";
+}
+
+export function isComposition(resource: Resource | undefined): resource is Composition {
+  return resource?.resourceType === "Composition";
+}
+
+export function isObservation(resource: Resource | undefined): resource is Observation {
+  return resource?.resourceType === "Observation";
+}
+
+export function isDiagnosticReport(resource: Resource | undefined): resource is DiagnosticReport {
+  return resource?.resourceType === "DiagnosticReport";
+}
+
+export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {
+  const organizationEntry = fhirBundle.entry?.find(entry => isOrganization(entry.resource));
+  if (organizationEntry && isOrganization(organizationEntry.resource)) {
+    return organizationEntry.resource;
+  }
+  return undefined;
+}
+
+export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
+  return fhirBundle.entry?.map(e => e.resource).find(isPatient);
+}
+
+export function findResourceInBundle(bundle: Bundle, reference: string): Resource | undefined {
+  if (!bundle.entry) {
+    return undefined;
+  }
+  const entry = bundle.entry.find(entry => {
+    const entryReference = buildEntryReference(entry.resource);
+    return entryReference === reference;
+  });
+  return entry?.resource;
+}
+
+export function buildEntryReference(resource: Resource | undefined): string {
+  return resource ? `${resource.resourceType}/${resource.id}` : "";
 }

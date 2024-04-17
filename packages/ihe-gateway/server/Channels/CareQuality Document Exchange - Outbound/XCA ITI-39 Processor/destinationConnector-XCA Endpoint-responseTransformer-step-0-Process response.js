@@ -12,27 +12,15 @@ var 	queryResponseCode = '',
 	soapReason = null;
 
 try {
-	var soap = msg.toString();
-	
-	// SOAP level error
-	if (soap.indexOf('Fault') > 0) {
-		
-		channelMap.put('QACK', 'SOAP_FAULT');
-		// Stop further processing
-		return;
-		
-	} else {
+	xml = msg.*::Body.*::RetrieveDocumentSetResponse;
 
-		xml = new XML(soap);
-		xml = xml.*::Body.*::RetrieveDocumentSetResponse;
+	// The status attribute reflects the status of the operation and shall be one of the following values:
+	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
+	// urn:ihe:iti:2007:ResponseStatusType:PartialSuccess
+	// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure
+	queryResponseCode = xml.*::RegistryResponse.@status.toString().split(':').pop();		
+	channelMap.put('QACK', queryResponseCode.toString());
 
-		// The status attribute reflects the status of the operation and shall be one of the following values:
-		// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success
-		// urn:ihe:iti:2007:ResponseStatusType:PartialSuccess
-		// urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Failure
-		queryResponseCode = xml.*::RegistryResponse.@status.toString().split(':').pop();		
-		channelMap.put('QACK', queryResponseCode.toString());
-	}
 	
 } catch(ex) {
 	if (globalMap.containsKey('TEST_MODE')) logger.error('XCA ITI-39 Processor: Response - ' + ex);

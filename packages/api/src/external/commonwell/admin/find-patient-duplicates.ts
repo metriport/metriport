@@ -1,10 +1,16 @@
-import { getPersonId, PatientLinkSearchResp, Person } from "@metriport/commonwell-sdk";
+import {
+  CommonWellAPI,
+  getPersonId,
+  PatientLinkSearchResp,
+  Person,
+} from "@metriport/commonwell-sdk";
+import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import stringify from "json-stringify-safe";
 import { chunk, groupBy } from "lodash";
-import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getCWAccessForPatient } from "./shared";
 
@@ -54,7 +60,7 @@ export type DuplicatedPersons = {
  * Checks for duplicated persons in CommonWell.
  */
 export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPersons> {
-  const { log } = Util.out(`findDuplicatedPersons`);
+  const { log } = out(`findDuplicatedPersons`);
   log(cxId ? `Querying patients of cxId ${cxId}...` : `Querying all patients...`);
 
   // TODO paginate this
@@ -81,7 +87,7 @@ export async function findDuplicatedPersons(cxId?: string): Promise<DuplicatedPe
       await Promise.allSettled(
         chunk.map(async patient => {
           await jitterInsideChunk(); // add some randomness before each request
-          personByCx[patient.id] = await findDuplicatedPersonsByPatient(patient);
+          personByCx[patient.id] = await findDuplicatedPersonsByPatient(patient, log);
         })
       );
       await sleepBetweenChunks();
@@ -98,17 +104,20 @@ const failed = (reason: string, isMetriport?: true): DuplicatedPersonsOfPatient 
 });
 
 export async function findDuplicatedPersonsByPatient(
-  patient: Patient
+  patient: Patient,
+  log: typeof console.log
 ): Promise<DuplicatedPersonsOfPatient | undefined> {
   const simpleErrorLog = (op: string) => (err: unknown) => {
-    console.log(`[patient ${patient.id}] Failed/error to ${op}: ${err}`);
+    log(`[patient ${patient.id}] Failed/error to ${op}: ${err}`);
     return undefined;
   };
+  let commonWell: CommonWellAPI | undefined;
   try {
     const cwAccess = await getCWAccessForPatient(patient);
     if (cwAccess.error != null) return failed(cwAccess.error, true);
 
-    const { commonWell, queryMeta, cwPatientId, cwPersonId: storedPersonId } = cwAccess;
+    const { queryMeta, cwPatientId, cwPersonId: storedPersonId } = cwAccess;
+    commonWell = cwAccess.commonWell;
 
     const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, cwPatientId);
 
@@ -120,10 +129,10 @@ export async function findDuplicatedPersonsByPatient(
       const thePerson = filteredPersons[0];
       const foundPersonId = getPersonId(thePerson);
       if (foundPersonId === storedPersonId && storedPersonId != undefined) {
-        console.log(`Good! No duplicates found for patient ${patient.id} AND person IDs match!`);
+        log(`Good! No duplicates found for patient ${patient.id} AND person IDs match!`);
         return undefined;
       } else {
-        console.log(
+        log(
           `No duplicates found for patient ${patient.id}, but person IDs dont match or are falsy (stored: ${storedPersonId}, found: ${foundPersonId})`
         );
         const [foundPersonLinks, storedPerson, storedPersonLinks] = await Promise.all([
@@ -154,14 +163,14 @@ export async function findDuplicatedPersonsByPatient(
         };
       }
     } else if (filteredPersons.length < 1) {
-      console.log(`Ouch, no person found for patient ${patient.id} - we should look into this!`);
+      log(`Ouch, no person found for patient ${patient.id} - we should look into this!`);
       return failed("no-person-found-at-cw");
     }
-    console.log(`Found ${filteredPersons.length} persons for patient ${patient.id}`);
+    log(`Found ${filteredPersons.length} persons for patient ${patient.id}`);
 
     const personIds = filteredPersons.map(getPersonId).flatMap(filterTruthy);
     if (personIds.length < 1) {
-      console.log(`Got FALSY person IDs for patient ${patient.id} - we should look into this!`);
+      log(`Got FALSY person IDs for patient ${patient.id} - we should look into this!`);
       return failed("falsy-person-id");
     }
 
@@ -171,9 +180,7 @@ export async function findDuplicatedPersonsByPatient(
     for (const person of filteredPersons) {
       const personId = getPersonId(person);
       if (!personId) {
-        console.log(
-          `Got a person without ID for patient ${patient.id}, skipping - ${stringify(person)}`
-        );
+        log(`Got a person without ID for patient ${patient.id}, skipping - ${stringify(person)}`);
         continue;
       }
       const patientLinks = await commonWell
@@ -187,10 +194,14 @@ export async function findDuplicatedPersonsByPatient(
     return res;
   } catch (error) {
     const msg = "Error while checking duplicates for patient";
-    console.log(`${msg} ${patient.id} - error: ${error}`);
-    capture.message(msg, {
-      extra: { context: `findDuplicatedPersonsByPatient`, patient, error },
-      level: "error",
+    log(`${msg} ${patient.id} - error: ${error}`);
+    capture.error(msg, {
+      extra: {
+        context: `findDuplicatedPersonsByPatient`,
+        patient,
+        cwReference: commonWell?.lastReferenceHeader,
+        error,
+      },
     });
     return undefined;
   }

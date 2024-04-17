@@ -3,7 +3,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 2,
+            "y": 8,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -24,7 +24,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 130,
+            "y": 136,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -45,7 +45,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 20,
+            "y": 26,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -82,7 +82,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 149,
+            "y": 155,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -116,7 +116,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 158,
+            "y": 164,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -150,7 +150,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 167,
+            "y": 173,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -170,7 +170,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 76,
+            "y": 82,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -191,7 +191,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 130,
+            "y": 136,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -216,14 +216,14 @@
             "x": 0,
             "type": "text",
             "properties": {
-                "markdown": "# OSS API\n",
+                "markdown": "# Product\n",
                 "background": "solid"
             }
         },
         {
             "height": 2,
             "width": 24,
-            "y": 110,
+            "y": 116,
             "x": 0,
             "type": "text",
             "properties": {
@@ -234,7 +234,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 74,
+            "y": 80,
             "x": 0,
             "type": "text",
             "properties": {
@@ -245,7 +245,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 84,
+            "y": 90,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -266,7 +266,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 138,
+            "y": 144,
             "x": 0,
             "type": "text",
             "properties": {
@@ -277,7 +277,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 28,
+            "y": 34,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -292,13 +292,27 @@
                 "stat": "Average",
                 "period": 300,
                 "title": "API DB - Latency",
-                "liveData": false
+                "liveData": false,
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "color": "#1f77b4",
+                            "label": "1 second",
+                            "value": 1
+                        },
+                        {
+                            "label": "1 second",
+                            "value": 1,
+                            "yAxis": "right"
+                        }
+                    ]
+                }
             }
         },
         {
             "height": 8,
             "width": 10,
-            "y": 20,
+            "y": 26,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -339,7 +353,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 100,
+            "y": 106,
             "x": 0,
             "type": "text",
             "properties": {
@@ -350,7 +364,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 102,
+            "y": 108,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -371,7 +385,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 84,
+            "y": 90,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -404,7 +418,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 92,
+            "y": 98,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -425,7 +439,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 92,
+            "y": 98,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -443,7 +457,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 76,
+            "y": 82,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -461,7 +475,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 130,
+            "y": 136,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -479,7 +493,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 2,
+            "y": 8,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -497,7 +511,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 84,
+            "y": 90,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -524,7 +538,7 @@
         {
             "height": 8,
             "width": 4,
-            "y": 20,
+            "y": 26,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -551,7 +565,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 102,
+            "y": 108,
             "x": 14,
             "type": "log",
             "properties": {
@@ -565,7 +579,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 76,
+            "y": 82,
             "x": 14,
             "type": "log",
             "properties": {
@@ -579,7 +593,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 140,
+            "y": 146,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -600,7 +614,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 158,
+            "y": 164,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -625,7 +639,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 149,
+            "y": 155,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -668,7 +682,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 92,
+            "y": 98,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -687,13 +701,14 @@
         {
             "height": 8,
             "width": 10,
-            "y": 10,
+            "y": 16,
             "x": 4,
             "type": "metric",
             "properties": {
                 "metrics": [
                     [ "Metriport", "API Success", { "label": "2xx", "region": "us-west-1" } ],
-                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx", "region": "us-west-1" } ]
+                    [ ".", "API Failures", { "label": "3xx | 4xx | 5xx", "region": "us-west-1" } ],
+                    [ "AWS/ApplicationELB", "TargetResponseTime", "LoadBalancer", "app/APIIn-FHIRC-1V37740IU38KW/f208b7a1d98ccc2e", { "yAxis": "right", "stat": "Maximum", "region": "us-west-1", "label": "Response time" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
@@ -706,7 +721,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 28,
+            "y": 34,
             "x": 4,
             "type": "metric",
             "properties": {
@@ -725,7 +740,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 140,
+            "y": 146,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -748,7 +763,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 120,
+            "y": 126,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -769,7 +784,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 112,
+            "y": 118,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -789,7 +804,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 112,
+            "y": 118,
             "x": 7,
             "type": "metric",
             "properties": {
@@ -809,7 +824,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 120,
+            "y": 126,
             "x": 7,
             "type": "metric",
             "properties": {
@@ -831,7 +846,7 @@
         {
             "height": 8,
             "width": 7,
-            "y": 112,
+            "y": 118,
             "x": 14,
             "type": "metric",
             "properties": {
@@ -853,7 +868,7 @@
         {
             "height": 8,
             "width": 10,
-            "y": 2,
+            "y": 8,
             "x": 14,
             "type": "log",
             "properties": {
@@ -866,7 +881,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 167,
+            "y": 173,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -886,7 +901,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 128,
+            "y": 134,
             "x": 0,
             "type": "text",
             "properties": {
@@ -897,7 +912,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 18,
+            "y": 24,
             "x": 0,
             "type": "text",
             "properties": {
@@ -908,7 +923,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 52,
+            "y": 58,
             "x": 0,
             "type": "text",
             "properties": {
@@ -918,7 +933,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 54,
+            "y": 60,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -939,7 +954,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 54,
+            "y": 60,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -957,7 +972,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 63,
+            "y": 69,
             "x": 0,
             "type": "text",
             "properties": {
@@ -967,7 +982,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 65,
+            "y": 71,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -988,7 +1003,7 @@
         {
             "height": 9,
             "width": 12,
-            "y": 65,
+            "y": 71,
             "x": 12,
             "type": "metric",
             "properties": {
@@ -1007,7 +1022,7 @@
         {
             "height": 7,
             "width": 8,
-            "y": 45,
+            "y": 51,
             "x": 0,
             "type": "log",
             "properties": {
@@ -1021,7 +1036,7 @@
         {
             "height": 2,
             "width": 24,
-            "y": 36,
+            "y": 42,
             "x": 0,
             "type": "text",
             "properties": {
@@ -1031,7 +1046,7 @@
         {
             "height": 7,
             "width": 8,
-            "y": 38,
+            "y": 44,
             "x": 8,
             "type": "metric",
             "properties": {
@@ -1056,7 +1071,7 @@
         {
             "height": 7,
             "width": 8,
-            "y": 38,
+            "y": 44,
             "x": 16,
             "type": "metric",
             "properties": {
@@ -1087,7 +1102,7 @@
         {
             "height": 7,
             "width": 8,
-            "y": 38,
+            "y": 44,
             "x": 0,
             "type": "metric",
             "properties": {
@@ -1108,27 +1123,41 @@
         {
             "height": 7,
             "width": 8,
-            "y": 45,
+            "y": 51,
             "x": 8,
             "type": "metric",
             "properties": {
                 "metrics": [
-                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "ihe-db", { "yAxis": "left" } ],
-                    [ ".", "CommitLatency", ".", ".", { "yAxis": "right" } ],
-                    [ ".", "WriteLatency", ".", ".", { "yAxis": "right" } ]
+                    [ "AWS/RDS", "ReadLatency", "DBClusterIdentifier", "ihe-db", { "yAxis": "left", "region": "us-west-1" } ],
+                    [ ".", "CommitLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ],
+                    [ ".", "WriteLatency", ".", ".", { "yAxis": "right", "region": "us-west-1" } ]
                 ],
                 "view": "timeSeries",
                 "stacked": false,
                 "region": "us-west-1",
                 "stat": "Average",
                 "period": 300,
-                "title": "IHE GW DB - Latency"
+                "title": "IHE GW DB - Latency",
+                "annotations": {
+                    "horizontal": [
+                        {
+                            "color": "#1f77b4",
+                            "label": "1 second",
+                            "value": 1
+                        },
+                        {
+                            "label": "1 second",
+                            "value": 1,
+                            "yAxis": "right"
+                        }
+                    ]
+                }
             }
         },
         {
             "height": 7,
             "width": 8,
-            "y": 45,
+            "y": 51,
             "x": 16,
             "type": "metric",
             "properties": {
@@ -1139,6 +1168,60 @@
                 ],
                 "region": "us-west-1",
                 "title": "IHE GW DB -Connections"
+            }
+        },
+        {
+            "height": 2,
+            "width": 24,
+            "y": 6,
+            "x": 0,
+            "type": "text",
+            "properties": {
+                "markdown": "# OSS API\n",
+                "background": "solid"
+            }
+        },
+        {
+            "height": 4,
+            "width": 6,
+            "y": 2,
+            "x": 0,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Duration", "FunctionName", "FhirToMedicalRecordLambda", { "region": "us-west-1", "stat": "Average", "label": "Duration Average" } ],
+                    [ "...", { "region": "us-west-1", "label": "Duration p99" } ]
+                ],
+                "sparkline": false,
+                "view": "singleValue",
+                "region": "us-west-1",
+                "stat": "p99",
+                "period": 300,
+                "title": "MR generation",
+                "start": "-PT168H",
+                "end": "P0D",
+                "setPeriodToTimeRange": true,
+                "trend": false
+            }
+        },
+        {
+            "height": 4,
+            "width": 4,
+            "y": 2,
+            "x": 6,
+            "type": "metric",
+            "properties": {
+                "metrics": [
+                    [ "AWS/Lambda", "Duration", "FunctionName", "FHIRConverterLambda", { "region": "us-west-1" } ]
+                ],
+                "sparkline": false,
+                "view": "singleValue",
+                "region": "us-west-1",
+                "stat": "p99",
+                "period": 300,
+                "title": "FHIR Conversion",
+                "start": "-PT168H",
+                "end": "P0D"
             }
         }
     ]
