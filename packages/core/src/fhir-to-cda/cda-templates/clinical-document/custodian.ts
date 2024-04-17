@@ -1,6 +1,6 @@
 import { MetriportOrganization } from "@metriport/shared";
 import { buildRepresentedOrganization } from "../commons";
-import { CDACustodian } from "../types";
+import { CDACustodian } from "../../cda-types/shared-types";
 
 export function buildCustodian(): CDACustodian | undefined {
   const custodian = {

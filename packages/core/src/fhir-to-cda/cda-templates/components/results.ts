@@ -74,27 +74,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
   if (diagnosticReports.length === 0) {
     return undefined;
   }
-  const items = diagnosticReports
-    .map(report => {
-      const contentLines = report.presentedForm?.[0]?.data
-        ? base64ToString(report.presentedForm[0].data).split(/\n/)
-        : [];
-      if (contentLines.length > 0) {
-        const contentObjects = contentLines.map(line => ({
-          br: line,
-        }));
-        return {
-          item: {
-            content: {
-              [idAttribute]: report.id,
-              br: contentObjects.map(o => o.br),
-            },
-          },
-        };
-      }
-      return undefined;
-    })
-    .filter(item => item !== undefined);
+  const textItems = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
     component: {
@@ -112,7 +92,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
         text: {
           list: {
             [styleCodeAttribute]: "xTOC",
-            item: items.map(item => item?.item),
+            item: textItems.map(item => item?.item),
           },
         },
         entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
@@ -120,4 +100,25 @@ export function buildResult(fhirBundle: Bundle): unknown {
     },
   };
   return resultsSection;
+}
+
+function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
+  return (
+    diagnosticReports.flatMap(report => {
+      const contentLines = report.presentedForm?.[0]?.data
+        ? base64ToString(report.presentedForm[0].data).split(/\n/)
+        : [];
+      if (contentLines.length > 0) {
+        return {
+          item: {
+            content: {
+              [idAttribute]: report.id,
+              br: contentLines,
+            },
+          },
+        };
+      }
+      return undefined;
+    }) || []
+  );
 }

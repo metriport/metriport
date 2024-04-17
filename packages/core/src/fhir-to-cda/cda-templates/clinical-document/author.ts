@@ -5,7 +5,7 @@ import {
   buildRepresentedOrganization,
   buildTelecom,
 } from "../commons";
-import { CDAAuthor } from "../types";
+import { CDAAuthor } from "../../cda-types/shared-types";
 import { rootAttribute, valueAttribute } from "../constants";
 
 export function buildAuthor(organization: Organization): CDAAuthor {

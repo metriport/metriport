@@ -1,33 +1,12 @@
 import { Observation } from "@medplum/fhirtypes";
-import { CDAInstanceIdentifier, CDACodeCV, Entry } from "../types";
+import { CDAObservation } from "../../cda-types/observation";
 import {
-  buildInstanceIdentifiersFromIdentifier,
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
+  buildInstanceIdentifiersFromIdentifier,
   withoutNullFlavorString,
 } from "../commons";
 import { classCodeAttribute, moodCodeAttribute } from "../constants";
-
-export interface CDAObservation {
-  component: {
-    observation: {
-      [classCodeAttribute]: Entry;
-      [moodCodeAttribute]: Entry;
-      id?: CDAInstanceIdentifier[] | Entry;
-      code: CDACodeCV | Entry;
-      text?: Entry;
-      statusCode?: {
-        code: Entry;
-      };
-      effectiveTime?: {
-        value: Entry;
-      };
-      priorityCode?: Entry;
-      // TODO support other types of values like CodeableConcept, Quantity, etc.
-      value?: string | undefined;
-    };
-  };
-}
 
 export function buildObservations(observations: Observation[]): CDAObservation[] {
   return observations.map(observation => {

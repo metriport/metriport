@@ -5,7 +5,7 @@ import {
   buildTelecom,
   withNullFlavor,
 } from "./commons";
-import { CDAAuthor } from "./types";
+import { CDAAuthor } from "../cda-types/shared-types";
 import { rootAttribute, valueAttribute } from "./constants";
 
 export function buildAuthor(organization: Organization): CDAAuthor {
@@ -15,7 +15,8 @@ export function buildAuthor(organization: Organization): CDAAuthor {
       id: withNullFlavor(organization.id, rootAttribute),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
-      representedOrganization: buildRepresentedOrganization(organization),
+      representedOrganization: buildRepresentedOrganization(organization), // TODO: organization shouldn't actually be required
+      // TODO: one of (assignedPerson / assignedAuthoringDevice) should be required
     },
   };
   return author;

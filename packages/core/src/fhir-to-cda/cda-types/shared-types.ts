@@ -1,12 +1,34 @@
 import {
-  rootAttribute,
-  extensionAttribute,
   assigningAuthorityNameAttribute,
   codeAttribute,
   codeSystemAttribute,
   codeSystemNameAttribute,
   displayNameAttribute,
-} from "./constants";
+  extensionAttribute,
+  namespaceAttribute,
+  rootAttribute,
+} from "../cda-templates/constants";
+
+export type ClinicalDocument = {
+  ClinicalDocument: {
+    [namespaceAttribute]: string;
+    realmCode?: CDACodeCE;
+    typeId?: CDAInstanceIdentifier;
+    templateId?: CDAInstanceIdentifier[];
+    id: CDAInstanceIdentifier;
+    code: CDACodeCE;
+    title?: string;
+    effectiveTime: Entry;
+    confidentialityCode: CDACodeCE;
+    languageCode?: CDACodeCE;
+    setId?: CDAInstanceIdentifier;
+    versionNumber?: Entry;
+    recordTarget: CDARecordTarget;
+    author: CDAAuthor;
+    custodian: CDACustodian;
+    component: unknown;
+  };
+};
 
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };

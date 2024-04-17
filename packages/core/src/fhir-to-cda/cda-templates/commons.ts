@@ -14,7 +14,7 @@ import {
   CDAAddress,
   CDAOrganization,
   CDATelecom,
-} from "./types";
+} from "../cda-types/shared-types";
 import {
   rootAttribute,
   extensionAttribute,
@@ -166,7 +166,7 @@ export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
       low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
       high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
     },
-  })); // Using only first address
+  }));
 }
 
 export function buildRepresentedOrganization(
@@ -180,7 +180,7 @@ export function buildRepresentedOrganization(
   };
 }
 
-export function formatDateToCDATimeStamp(dateString: string | undefined): string | undefined {
+export function formatDateToCDATimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }
