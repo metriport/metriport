@@ -425,6 +425,7 @@ export class APIStack extends Stack {
       secrets,
       vpc: this.vpc,
       dbCredsSecret,
+      dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
@@ -1422,6 +1423,10 @@ export class APIStack extends Stack {
       stack: this,
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
+      // TODO https://github.com/metriport/metriport-internal/issues/1672
+      runtimeManagementMode: lambda.RuntimeManagementMode.manual(
+        "arn:aws:lambda:us-west-1::runtime:0163909785ec2e11db2b64bb2636ada67bb348dd5764aa83e7eb011bc0f365d8"
+      ),
       entry: "fhir-to-medical-record",
       envType,
       envVars: {
