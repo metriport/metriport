@@ -1,7 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
@@ -12,7 +11,7 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { analytics, EventTypes } from "../../shared/analytics";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { Product } from "../../domain/product";
 
 dayjs.extend(duration);
 
@@ -27,12 +26,12 @@ export async function processOutboundPatientDiscoveryResps({
   const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const { log: outerLog } = out(baseLogMessage);
-  const patientIds = { id: patientId, cxId };
+  const patient = { id: patientId, cxId };
 
   try {
     if (results.length === 0) {
       log(`No patient discovery results found.`);
-      await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
+      await processPatientDiscoveryProgress({ patient, status: "completed" });
       return;
     }
 
@@ -45,10 +44,7 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
-    await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
-
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-    const startedAt = patient.data.patientDiscovery?.startedAt;
+    await processPatientDiscoveryProgress({ patient, status: "completed" });
 
     analytics({
       distinctId: patient.cxId,
@@ -58,15 +54,15 @@ export async function processOutboundPatientDiscoveryResps({
         patientId: patient.id,
         requestId,
         pdLinks: cqLinks.length,
-        duration: elapsedTimeFromNow(startedAt),
       },
+      apiType: Product.medical,
     });
 
     log(`Completed.`);
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
-    await processPatientDiscoveryProgress({ patient: patientIds, status: "failed" });
+    await processPatientDiscoveryProgress({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
         patientId,
