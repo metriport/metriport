@@ -1,5 +1,6 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { startDocumentRetrievalGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/xca/invoke-document-retrieval";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -28,6 +29,7 @@ export async function processOutboundDocumentQueryResps({
   patientId,
   cxId,
   results,
+  girth,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
@@ -144,16 +146,25 @@ export async function processOutboundDocumentQueryResps({
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
-    await iheGateway.startDocumentsRetrieval({
-      outboundDocumentRetrievalReq: documentRetrievalRequests,
-    });
+    if (girth) {
+      log(`Starting document retrieval - Girth`);
+      await startDocumentRetrievalGirth({
+        drRequestsGirth: documentRetrievalRequests,
+        patientId,
+        cxId,
+      });
+    } else {
+      await iheGateway.startDocumentsRetrieval({
+        outboundDocumentRetrievalReq: documentRetrievalRequests,
+      });
 
-    await resultPoller.pollOutboundDocRetrievalResults({
-      requestId,
-      patientId: patientId,
-      cxId: cxId,
-      numOfGateways: documentRetrievalRequests.length,
-    });
+      await resultPoller.pollOutboundDocRetrievalResults({
+        requestId,
+        patientId: patientId,
+        cxId: cxId,
+        numOfGateways: documentRetrievalRequests.length,
+      });
+    }
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;
     log(`${msg}. Error: ${errorToString(error)}`);
