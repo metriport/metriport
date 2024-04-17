@@ -13,9 +13,9 @@ function extractEncounterTimePeriod(srcData) {
     removeNSPrefix: true,
   });
   const jsonObj = parser.parse(srcData);
-  const effectiveTime = jsonObj.ClinicalDocument.documentationOf.serviceEvent.effectiveTime;
-  const low = effectiveTime.low;
-  const high = effectiveTime.high;
+  const effectiveTime = jsonObj.ClinicalDocument?.documentationOf?.serviceEvent?.effectiveTime;
+  const low = effectiveTime?.low;
+  const high = effectiveTime?.high;
   return { low, high };
 }
 
