@@ -89,6 +89,7 @@ export const processRequest = async (
         whStatus: status,
         ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
       },
+      apiType: productType,
     });
   };
 

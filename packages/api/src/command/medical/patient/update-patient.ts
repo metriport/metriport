@@ -14,6 +14,8 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -35,29 +37,34 @@ export async function updatePatient(
   // validate facility exists and cx has access to it
   const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
+  const result = await updatePatientWithoutHIEs(patientUpdate, emit);
 
-  const patientUpdateWithPD: PatientUpdateCmd = {
-    ...patientUpdate,
-    patientDiscovery: { requestId, startedAt: new Date() },
-  };
-
-  const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
-
-  const fhirPatient = toFHIR(patient);
+  const fhirPatient = toFHIR(result);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cqCommands.patient.discover(patient, facility.data.npi, requestId, forceCarequality);
+  const requestId = uuidv7();
+
+  analytics({
+    distinctId: cxId,
+    event: EventTypes.patientDiscovery,
+    properties: {
+      requestId,
+      patientId: patientUpdate.id,
+    },
+    apiType: Product.medical,
+  });
+
+  await cqCommands.patient.discover(result, facility.data.npi, requestId, forceCarequality);
 
   await cwCommands.patient.update(
-    patient,
+    result,
     facilityId,
     getCqOrgIdsToDenyOnCw,
     requestId,
     forceCommonwell
   );
 
-  return patient;
+  return result;
 }
 
 export async function updatePatientWithoutHIEs(

@@ -17,7 +17,6 @@ export type ProgressType = (typeof progressTypes)[number];
 export type DocumentQueryProgress = Partial<
   Record<ProgressType, Progress> & {
     requestId: string;
-    startedAt: Date;
   }
 >;
 
