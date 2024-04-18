@@ -7,7 +7,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { startPatientDiscoveryIHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
-import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
@@ -61,33 +61,33 @@ async function prepareAndTriggerPD(
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const [pdRequestNoIHEGatewayV2, pdRequestIHEGatewayV2] = await prepareForPatientDiscovery(
+    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery(
       patient,
       facilityNPI,
       requestId
     );
-    const numGatewaysNoIHEGatewayV2 = pdRequestNoIHEGatewayV2.gateways.length;
+    const numGatewaysV1 = pdRequestGatewayV1.gateways.length;
 
     const { log } = out(
-      `${baseLogMessage}, requestIdNoIHEGatewayV2: ${pdRequestNoIHEGatewayV2.id}, requestIdIHEGatewayV2: ${pdRequestIHEGatewayV2.id}`
+      `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
     );
 
     log(`Kicking off patient discovery NoIHEGatewayV2`);
-    await enabledIHEGW.startPatientDiscovery(pdRequestNoIHEGatewayV2);
+    await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
 
     log(`Kicking off patient discovery IHEGatewayV2`);
     await startPatientDiscoveryIHEGatewayV2({
-      pdRequestIHEGatewayV2,
+      pdRequestGatewayV2,
       patientId: patient.id,
       cxId: patient.cxId,
     });
 
     // only poll for the NoIHEGatewayV2 request
     await resultPoller.pollOutboundPatientDiscoveryResults({
-      requestId: pdRequestNoIHEGatewayV2.id,
+      requestId: pdRequestGatewayV1.id,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: numGatewaysNoIHEGatewayV2,
+      numOfGateways: numGatewaysV1,
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
@@ -107,40 +107,45 @@ async function prepareForPatientDiscovery(
   patient: Patient,
   facilityNPI: string,
   requestId: string
-): Promise<[OutboundPatientDiscoveryReq, OutboundPatientDiscoveryReq]> {
+): Promise<{
+  pdRequestGatewayV1: OutboundPatientDiscoveryReq;
+  pdRequestGatewayV2: OutboundPatientDiscoveryReq;
+}> {
   const fhirPatient = toFHIR(patient);
 
-  const { organization, gatewaysWithoutIHEGatewayV2Enabled, gatewaysWithIHEGatewayV2Enabled } =
-    await gatherXCPDGateways(patient);
+  const { organization, v1Gateways, v2Gateways } = await gatherXCPDGateways(patient);
 
   // split xcpd gateways into two buckets here. Not IHEGatewayV2 and IHEGatewayV2
-  const pdRequestNoIHEGatewayV2 = createOutboundPatientDiscoveryReq({
+  const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
-    xcpdGateways: gatewaysWithoutIHEGatewayV2Enabled,
+    xcpdGateways: v1Gateways,
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
     requestId: requestId,
   });
 
-  const pdRequestIHEGatewayV2 = createOutboundPatientDiscoveryReq({
+  const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
-    xcpdGateways: gatewaysWithIHEGatewayV2Enabled,
+    xcpdGateways: v2Gateways,
     facilityNPI,
     orgName: organization.data.name,
     orgOid: organization.oid,
     requestId: requestId,
   });
 
-  return [pdRequestNoIHEGatewayV2, pdRequestIHEGatewayV2];
+  return {
+    pdRequestGatewayV1,
+    pdRequestGatewayV2,
+  };
 }
 
 export async function gatherXCPDGateways(patient: Patient): Promise<{
   organization: Organization;
-  gatewaysWithoutIHEGatewayV2Enabled: XCPDGateways;
-  gatewaysWithIHEGatewayV2Enabled: XCPDGateways;
+  v1Gateways: XCPDGateway[];
+  v2Gateways: XCPDGateway[];
 }> {
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
@@ -159,13 +164,12 @@ export async function gatherXCPDGateways(patient: Patient): Promise<{
 
   const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const { gatewaysWithIHEGatewayV2Enabled, gatewaysWithoutIHEGatewayV2Enabled } =
-    await cqOrgsToXCPDGateways(orgsToSearch);
+  const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch);
 
   return {
     organization,
-    gatewaysWithoutIHEGatewayV2Enabled,
-    gatewaysWithIHEGatewayV2Enabled,
+    v1Gateways,
+    v2Gateways,
   };
 }
 

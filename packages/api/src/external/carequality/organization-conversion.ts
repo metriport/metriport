@@ -1,14 +1,14 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
 
 export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<{
-  gatewaysWithIHEGatewayV2Enabled: XCPDGateways;
-  gatewaysWithoutIHEGatewayV2Enabled: XCPDGateways;
+  v1Gateways: XCPDGateway[];
+  v2Gateways: XCPDGateway[];
 }> {
-  const gatewaysWithIHEGatewayV2Enabled: XCPDGateways = [];
-  const gatewaysWithoutIHEGatewayV2Enabled: XCPDGateways = [];
+  const v1Gateways: XCPDGateway[] = [];
+  const v2Gateways: XCPDGateway[] = [];
   const iheGatewayV2OIDs = await getOidsWithIHEGatewayV2Enabled();
 
   for (const org of cqOrgs) {
@@ -20,15 +20,15 @@ export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise
       };
 
       if (iheGatewayV2OIDs.includes(org.id)) {
-        gatewaysWithIHEGatewayV2Enabled.push(gateway);
+        v2Gateways.push(gateway);
       } else {
-        gatewaysWithoutIHEGatewayV2Enabled.push(gateway);
+        v1Gateways.push(gateway);
       }
     }
   }
 
   return {
-    gatewaysWithIHEGatewayV2Enabled,
-    gatewaysWithoutIHEGatewayV2Enabled,
+    v1Gateways,
+    v2Gateways,
   };
 }

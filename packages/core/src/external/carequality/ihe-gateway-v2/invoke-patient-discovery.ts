@@ -11,16 +11,16 @@ export type IHEGatewayV2XCPDRequestParams = {
 const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 
 export async function startPatientDiscoveryIHEGatewayV2({
-  pdRequestIHEGatewayV2,
+  pdRequestGatewayV2,
   patientId,
   cxId,
 }: {
-  pdRequestIHEGatewayV2: OutboundPatientDiscoveryReq;
+  pdRequestGatewayV2: OutboundPatientDiscoveryReq;
   patientId: string;
   cxId: string;
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-  const params = { patientId, cxId, pdRequestIHEGatewayV2 };
+  const params = { patientId, cxId, pdRequestGatewayV2 };
   console.log(
     `Invoking IHEGatewayV2 Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
   );

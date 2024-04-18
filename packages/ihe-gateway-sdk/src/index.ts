@@ -62,5 +62,4 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
-  XCPDGateways,
 } from "./models/shared";
