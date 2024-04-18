@@ -1,7 +1,7 @@
 import { EnvType } from "../lib/env-type";
-import { EnvConfig } from "./env-config";
+import { EnvConfigNonSandbox } from "./env-config";
 
-export const config: EnvConfig = {
+export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
   secretsStackName: "MetriportSecretsStack",
   environmentType: EnvType.production,
@@ -13,6 +13,9 @@ export const config: EnvConfig = {
   dbName: "my_db",
   dbUsername: "my_db_user",
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
+  fhirToMedicalLambda: {
+    nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
+  },
   fhirServerUrl: "http://localhost:8888",
   systemRootOID: "2.16.840.1.113883.3.999999",
   systemRootOrgName: "Name of the Organization",
@@ -44,13 +47,6 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
-  // TODO 1377 Update this
-  // iheGateway: {
-  //   vpcId: "<your-vpc-id>",
-  //   certArn: "<your-cert-arn>",
-  //   subdomain: "ihe",
-  //   snsTopicArn: "<your-sns-topic-arn>",
-  // },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
