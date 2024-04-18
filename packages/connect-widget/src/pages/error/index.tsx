@@ -1,12 +1,10 @@
 import { NotAllowedIcon } from "@chakra-ui/icons";
 import { Card, Container, Flex, Heading, IconButton, Text } from "@chakra-ui/react";
-import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 import WidgetContainer from "../../shared/components/WidgetContainer";
-import { capture } from "../../shared/notifications";
-import { redirectToCustomUrl, redirectToMain } from "../../shared/util";
 import Constants from "../../shared/constants";
+import { redirectToCustomUrl, redirectToMain } from "../../shared/util";
 
 export default function Error() {
   const [searchParams] = useSearchParams();
@@ -19,9 +17,6 @@ export default function Error() {
     }
     redirectToMain(navigate, searchParams);
   };
-  useEffect(() => {
-    capture.message("errorPage.loaded", { extra: { searchParams } });
-  }, []);
 
   return (
     <WidgetContainer>

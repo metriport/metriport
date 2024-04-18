@@ -40536,8 +40536,8 @@ RoseTree XML to Schema: $Id: VocabXMLtoXSD.xsl,v 1.8 2007/03/20 02:48:50 wbeeler
         <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
+        <pruneMetaDataDays>15</pruneMetaDataDays>
+        <pruneContentDays>15</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>

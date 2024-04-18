@@ -3,9 +3,6 @@ import Router from "express-promise-router";
 import { processAppleData } from "../../command/webhook/apple";
 import { appleSchema, mapData } from "../../mappings/apple";
 import { asyncHandler, getCxIdOrFail } from "../util";
-import { capture } from "../../shared/notifications";
-import { analytics, EventTypes } from "../../shared/analytics";
-import { Product } from "../../domain/product";
 
 const routes = Router();
 /** ---------------------------------------------------------------------------
@@ -25,28 +22,7 @@ routes.post(
     // TEMP LOGS FOR DEBUGGING
     console.log(metriportUserId, JSON.stringify(payload));
 
-    const key = Object.keys(payload)[0];
-
-    analytics({
-      distinctId: cxId,
-      event: EventTypes.webhook,
-      properties: {
-        metriportUserId,
-        type: key,
-        payload,
-      },
-      apiType: Product.devices,
-    });
-
-    if (payload.error) {
-      capture.error(new Error(payload.error), {
-        extra: {
-          metriportUserId,
-          context: `webhook.appleError`,
-          ...(payload.extra ? JSON.parse(payload.extra) : {}),
-        },
-      });
-    } else {
+    if (!payload.error) {
       const mappedData = mapData(appleSchema.parse(payload), hourly);
       processAppleData(mappedData, metriportUserId, cxId);
     }

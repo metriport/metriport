@@ -50,7 +50,11 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 				if (newDocumentUniqueId) attachment.newDocumentUniqueId = newDocumentUniqueId.toString();
 
 				var documentEncoded = entry.*::Document;
-				var parsedFile = parseFileFromString(documentEncoded, false);
+				var parsedFile = parseFileFromString(documentEncoded);
+				if (!parsedFile) {
+					logError("Error parsing file, result is undefined");
+					continue;
+				}
 				var detectedExtension = parsedFile.extension;
 				var detectedFileType = parsedFile.mimeType;
 				var decodedAsString = parsedFile.decodedString;
@@ -85,7 +89,6 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 							if (effectiveTimeValue) {
 								var effectiveTime = effectiveTimeValue.split('"')[0];
 								if (effectiveTime) attachment.date = effectiveTime;
-								logger.info("Effective time: " + effectiveTime);
 							}
 						}
 					}
@@ -97,6 +100,10 @@ if ('Success' == queryResponseCode.toString() || 'PartialSuccess' == queryRespon
 
 				var resultFromS3 = xcaWriteToFile(filePathString, decodedBytes, attachment);
 				contentList.push(attachment);
+				// free memory asap
+				decodedBytes = null;
+				decodedAsString = null;
+				parsedFile = null;
 
 				// TODO 1350 remove this log
 				logger.info("[XCA ITI-39 Processor] File stored on S3 (" + filePathString + "): " + resultFromS3.toString());

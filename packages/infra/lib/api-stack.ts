@@ -1,11 +1,11 @@
 import {
   Aspects,
+  aws_wafv2 as wafv2,
   CfnOutput,
   Duration,
   RemovalPolicy,
   Stack,
   StackProps,
-  aws_wafv2 as wafv2,
 } from "aws-cdk-lib";
 import * as apig from "aws-cdk-lib/aws-apigateway";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
@@ -29,7 +29,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
+import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -45,9 +45,9 @@ import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
-import { MAXIMUM_LAMBDA_TIMEOUT, addErrorAlarmToLambdaFunc, createLambda } from "./shared/lambda";
+import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { Secrets, getSecrets } from "./shared/secrets";
+import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
@@ -301,20 +301,24 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    const existingSandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? s3.Bucket.fromBucketName(
+    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
+      const seedBucketCfnName = "APISandboxSeedDataBucket";
+      try {
+        return s3.Bucket.fromBucketName(
           this,
-          "APISandboxSeedDataBucket",
-          props.config.sandboxSeedDataBucketName
-        )
-      : undefined;
-    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? existingSandboxSeedDataBucket ??
-        new s3.Bucket(this, "APISandboxSeedDataBucket", {
-          bucketName: props.config.sandboxSeedDataBucketName,
+          seedBucketCfnName,
+          sandboxConfig.sandboxSeedDataBucketName
+        );
+      } catch (error) {
+        return new s3.Bucket(this, seedBucketCfnName, {
+          bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
-        })
+        });
+      }
+    };
+    const sandboxSeedDataBucket = isSandbox(props.config)
+      ? getSandboxSeedDataBucket(props.config)
       : undefined;
 
     const fhirServerQueue = fhirServerConnector.createConnector({
@@ -356,7 +360,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
       dbCluster,
       // TODO move this to a config
-      maxPollingDuration: Duration.minutes(10),
+      maxPollingDuration: Duration.minutes(11),
     });
 
     const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
@@ -396,6 +400,7 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
         },
+        ...props.config.fhirToMedicalLambda,
       });
     }
 
@@ -425,6 +430,7 @@ export class APIStack extends Stack {
       secrets,
       vpc: this.vpc,
       dbCredsSecret,
+      dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
@@ -1224,7 +1230,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1271,7 +1277,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1318,7 +1324,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
         DB_CREDS: dbCredsSecret.secretArn,
         MAX_POLLING_DURATION: maxPollingDuration
-          .minus(Duration.seconds(15))
+          .minus(Duration.minutes(1))
           .toMilliseconds()
           .toString(),
       },
@@ -1394,6 +1400,7 @@ export class APIStack extends Stack {
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
+    nodeRuntimeArn: string;
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1406,6 +1413,7 @@ export class APIStack extends Stack {
     };
   }): Lambda {
     const {
+      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1422,6 +1430,8 @@ export class APIStack extends Stack {
       stack: this,
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
+      // TODO https://github.com/metriport/metriport-internal/issues/1672
+      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
       entry: "fhir-to-medical-record",
       envType,
       envVars: {

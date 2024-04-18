@@ -1,5 +1,6 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import {
+  CommonwellError,
   Document,
   documentReferenceResourceType,
   OperationOutcome,
@@ -57,6 +58,9 @@ import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { processFhirResponse } from "../../fhir/document/process-fhir-search-response";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
+import { linkPatientToCW } from "../patient";
+import { getCWData } from "../patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -89,6 +93,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer,
   ignoreFhirConversionAndUpsert,
   requestId,
+  getOrgIdExcludeList,
 }: {
   patient: Patient;
   facilityId?: string | undefined;
@@ -97,6 +102,7 @@ export async function queryAndProcessDocuments({
   ignoreDocRefOnFHIRServer?: boolean;
   ignoreFhirConversionAndUpsert?: boolean;
   requestId: string;
+  getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<void> {
   const { id: patientId, cxId } = patientParam;
   const { log } = Util.out(`CW queryDocuments: ${requestId} - M patient ${patientId}`);
@@ -115,6 +121,37 @@ export async function queryAndProcessDocuments({
   }
 
   try {
+    const { organization, facility } = await getPatientDataWithSingleFacility(
+      patientParam,
+      facilityId
+    );
+
+    await setDocQueryProgress({
+      patient: { id: patientId, cxId },
+      downloadProgress: { status: "processing" },
+      convertProgress: { status: "processing" },
+      requestId,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    const patientCWData = getCWData(patientParam.data.externalData);
+    const hasNoCWStatus = !patientCWData || !patientCWData.status;
+    const isProcessing = patientCWData?.status === "processing";
+
+    if (hasNoCWStatus || isProcessing) {
+      await scheduleDocQuery({
+        requestId,
+        patient: { id: patientId, cxId },
+        source: MedicalDataSource.COMMONWELL,
+      });
+
+      if (hasNoCWStatus) {
+        await linkPatientToCW(patientParam, facility.id, getOrgIdExcludeList);
+      }
+
+      return;
+    }
+
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
@@ -128,8 +165,6 @@ export async function queryAndProcessDocuments({
         patientId,
       });
     }
-
-    const { organization, facility } = await getPatientDataWithSingleFacility(patient, facilityId);
 
     const cwData = patient.data.externalData.COMMONWELL;
 
@@ -159,7 +194,7 @@ export async function queryAndProcessDocuments({
     log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
     const msg = `Failed to query and process documents - CommonWell`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
+    log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
@@ -167,6 +202,8 @@ export async function queryAndProcessDocuments({
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
+
+    const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
     capture.message(msg, {
       extra: {
@@ -177,6 +214,7 @@ export async function queryAndProcessDocuments({
         forceDownload,
         requestId,
         ignoreDocRefOnFHIRServer,
+        cwReference,
       },
       level: "error",
     });
@@ -223,56 +261,63 @@ export async function internalGetDocuments({
   const docs: Document[] = [];
   const cwErrs: OperationOutcome[] = [];
   const queryStart = Date.now();
-  const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
-  reportDocQueryMetric(queryStart);
-  log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
+  try {
+    const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
+    reportDocQueryMetric(queryStart);
+    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
-  for (const item of queryResponse.entry) {
-    if (item.content?.resourceType === documentReferenceResourceType) {
-      docs.push(item as Document);
-    } else if (item.content?.resourceType === operationOutcomeResourceType) {
-      cwErrs.push(item as OperationOutcome);
-    } else {
-      log(`Unexpected resource type: ${item.content?.resourceType}`);
+    for (const item of queryResponse.entry) {
+      if (item.content?.resourceType === documentReferenceResourceType) {
+        docs.push(item as Document);
+      } else if (item.content?.resourceType === operationOutcomeResourceType) {
+        cwErrs.push(item as OperationOutcome);
+      } else {
+        log(`Unexpected resource type: ${item.content?.resourceType}`);
+      }
     }
-  }
 
-  if (cwErrs.length > 0) {
-    reportCWErrors({
-      errors: cwErrs,
-      context: {
-        cwReference: commonWell.lastReferenceHeader,
-        patientId: patient.id,
-      },
-      log,
+    if (cwErrs.length > 0) {
+      reportCWErrors({
+        errors: cwErrs,
+        context: {
+          cwReference: commonWell.lastReferenceHeader,
+          patientId: patient.id,
+        },
+        log,
+      });
+    }
+
+    log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
+    const documents: Document[] = docs.flatMap(d => {
+      if (d.content && d.content.masterIdentifier?.value && d.content.location) {
+        return {
+          id: d.content.masterIdentifier.value,
+          content: { location: d.content.location, ...d.content },
+          contained: d.content.contained,
+          masterIdentifier: d.content.masterIdentifier,
+          subject: d.content.subject,
+          context: d.content.context,
+          fileName: getFileName(patient, d),
+          description: d.content.description,
+          type: d.content.type,
+          status: d.content.status,
+          location: d.content.location,
+          indexed: d.content.indexed,
+          mimeType: d.content.mimeType,
+          size: d.content.size, // bytes
+        };
+      }
+      log(`content, master ID or location not present, skipping - ${JSON.stringify(d)}`);
+      return [];
+    });
+
+    return documents;
+  } catch (error) {
+    throw new CommonwellError("Error querying documents from CommonWell", error, {
+      cwReference: commonWell.lastReferenceHeader,
+      context,
     });
   }
-
-  log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
-  const documents: Document[] = docs.flatMap(d => {
-    if (d.content && d.content.masterIdentifier?.value && d.content.location) {
-      return {
-        id: d.content.masterIdentifier.value,
-        content: { location: d.content.location, ...d.content },
-        contained: d.content.contained,
-        masterIdentifier: d.content.masterIdentifier,
-        subject: d.content.subject,
-        context: d.content.context,
-        fileName: getFileName(patient, d),
-        description: d.content.description,
-        type: d.content.type,
-        status: d.content.status,
-        location: d.content.location,
-        indexed: d.content.indexed,
-        mimeType: d.content.mimeType,
-        size: d.content.size, // bytes
-      };
-    }
-    log(`content, master ID or location not present, skipping - ${JSON.stringify(d)}`);
-    return [];
-  });
-
-  return documents;
 }
 
 function reportCWErrors({

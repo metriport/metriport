@@ -28,6 +28,9 @@ export const analytics = (params: EventMessageV1 & { apiType: Product | "interna
       environment: Config.getEnvType(),
       platform: "oss-api",
       apiType: params.apiType,
+      $set_once: {
+        cxId: params.distinctId,
+      },
     };
 
     posthog.capture(params);

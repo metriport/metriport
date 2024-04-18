@@ -2,6 +2,7 @@ import { Product } from "./product";
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
 import { WebhookRequestStatus } from "../models/webhook-request";
 
+// TODO: 1411 - remove this section when DAPI is fully discontinued
 export const dapiWHPrefix = Product.devices;
 export const dapiWebhookType = [
   `${dapiWHPrefix}.provider-connected`,

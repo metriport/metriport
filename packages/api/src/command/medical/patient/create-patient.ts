@@ -1,16 +1,15 @@
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { processAsyncError } from "../../../errors";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
-import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
 import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { Product } from "../../../domain/product";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -53,25 +52,27 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // TODO move these to the respective "commands" files so this is fully async
-  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
-    isCommonwellEnabled(),
-    isCarequalityEnabled(),
-  ]);
+  const requestId = uuidv7();
 
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // Intentionally asynchronous
-    cwCommands.patient
-      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
-      .catch(processAsyncError(`cw.patient.create`));
-  }
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.patientDiscovery,
+    properties: {
+      requestId,
+      patientId: newPatient.id,
+    },
+    apiType: Product.medical,
+  });
 
-  if (carequalityEnabled || forceCarequality) {
-    // Intentionally asynchronous
-    cqCommands.patient
-      .discover(newPatient, facility.data.npi)
-      .catch(processAsyncError(`cq.patient.create`));
-  }
+  await cwCommands.patient.create(
+    newPatient,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
+
+  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
 
   return newPatient;
 };

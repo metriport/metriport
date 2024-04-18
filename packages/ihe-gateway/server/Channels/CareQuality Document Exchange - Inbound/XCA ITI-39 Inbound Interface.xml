@@ -5722,8 +5722,8 @@ Last updated: Jan 02 2024
         <timezone>America/New_York</timezone>
       </lastModified>
       <pruningSettings>
-        <pruneMetaDataDays>5</pruneMetaDataDays>
-        <pruneContentDays>5</pruneContentDays>
+        <pruneMetaDataDays>15</pruneMetaDataDays>
+        <pruneContentDays>15</pruneContentDays>
         <archiveEnabled>false</archiveEnabled>
         <pruneErroredMessages>true</pruneErroredMessages>
       </pruningSettings>

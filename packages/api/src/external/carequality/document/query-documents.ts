@@ -15,7 +15,7 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { scheduleDocQuery } from "./schedule-document-query";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -39,11 +39,18 @@ export async function getDocumentsFromCQ({
     const [organization, cqPatientData] = await Promise.all([
       getOrganizationOrFail({ cxId }),
       getCQPatientData({ id: patient.id, cxId }),
+      setDocQueryProgress({
+        patient: { id: patient.id, cxId: patient.cxId },
+        downloadProgress: { status: "processing" },
+        convertProgress: { status: "processing" },
+        requestId,
+        source: MedicalDataSource.CAREQUALITY,
+      }),
     ]);
 
     // If DQ is triggered while the PD is in progress, schedule it to be done when PD is completed
     if (getCQData(patient.data.externalData)?.discoveryStatus === "processing") {
-      await scheduleDocQuery({ requestId, patient });
+      await scheduleDocQuery({ requestId, patient, source: MedicalDataSource.CAREQUALITY });
       return;
     }
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
@@ -108,6 +115,7 @@ export async function getDocumentsFromCQ({
     await setDocQueryProgress({
       patient: { id: patient.id, cxId: patient.cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });

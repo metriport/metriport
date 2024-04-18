@@ -2,14 +2,18 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { MetriportMedicalApi, PatientCreate, USState } from "@metriport/api-sdk";
-import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { sleep } from "@metriport/core/util/sleep";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
 import { getCxData } from "./shared/get-cx-data";
+
+dayjs.extend(duration);
 
 /**
  * This script will read patients from a .csv file and insert them into the Metriport API.
@@ -17,10 +21,14 @@ import { getCxData } from "./shared/get-cx-data";
  * Format of the .csv file:
  * - first line contains column names
  * - columns can be in any order
- * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email
+ * - minimum columns: firstname,lastname,dob,gender,zip,city,state,address1,address2,phone,email,externalId
  * - it may contain more columns, only those above will be used
  *
  * Either set the env vars below on the OS or create a .env file in the root folder of this package.
+ *
+ * Execute this with:
+ * $ npm run bulk-insert -- --dryrun
+ * $ npm run bulk-insert
  */
 
 /**
@@ -32,10 +40,12 @@ const facilityId: string = ""; // eslint-disable-line @typescript-eslint/no-infe
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
-const delayTime = parseInt(getEnvVar("BULK_INSERT_DELAY_TIME") ?? "200");
+const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
 const inputFileName = "bulk-insert-patients.csv";
 const outputFileName = "./runs/bulk-insert-patient-ids.txt";
+const filePath = path.join(__dirname, outputFileName);
 const ISO_DATE = "YYYY-MM-DD";
+const confirmationTime = dayjs.duration(10, "seconds");
 
 type Params = {
   dryrun?: boolean;
@@ -53,66 +63,83 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 
 async function main() {
   program.parse();
-  const { dryrun: dryRun } = program.opts<Params>();
+  const { dryrun: dryRunParam } = program.opts<Params>();
+  const dryRun = dryRunParam ?? false;
 
   if (!dryRun) initPatientIdRepository();
 
-  const { facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
+  const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
-
-  const results: PatientCreate[] = [];
-  const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
+  const results: PatientCreate[] = [];
   fs.createReadStream(path.join(__dirname, inputFileName))
-    .pipe(
-      csv({
-        mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", ""),
-      })
-    )
+    .pipe(csv({ mapHeaders: ({ header }) => header.replaceAll(" ", "").replaceAll("*", "") }))
     .on("data", async data => {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
-      if (metriportPatient) {
-        results.push(metriportPatient);
-      }
+      if (metriportPatient) results.push(metriportPatient);
     })
-    .on("end", async () => {
-      console.log(`Loaded ${results.length} patients from the CSV file.`);
-      if (dryRun) {
-        console.log("Dry run, not inserting patients.");
-        console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
-        console.log("Done.");
-        return;
-      }
-      let successfulCount = 0;
-      for (const [i, patient] of results.entries()) {
-        try {
-          await sleep(delayTime);
-          const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
-          successfulCount++;
-          console.log(i + 1, createdPatient);
-          storePatientId(createdPatient.id);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-          errors.push({
-            firstName: patient.firstName,
-            lastName: patient.lastName,
-            dob: patient.dob,
-            message: error.message,
-          });
-        }
-      }
-      console.log(errors);
-      console.log(`Done, inserted ${successfulCount} patients.`);
-    });
+    .on("end", async () => loadData(results, orgName, localFacilityId, dryRun));
+}
+
+async function loadData(
+  results: PatientCreate[],
+  orgName: string,
+  localFacilityId: string,
+  dryRun: boolean
+) {
+  console.log(
+    `Loaded ${results.length} patients from the CSV file to be inserted at org/cx ${orgName}`
+  );
+  if (dryRun) {
+    console.log("Dry run, not inserting patients.");
+    console.log(`List of patients: ${JSON.stringify(results, null, 2)}`);
+    console.log("Done.");
+    return;
+  }
+  await displayWarningAndConfirmation(results, orgName, dryRun);
+  let successfulCount = 0;
+  const errors: Array<{ firstName: string; lastName: string; dob: string; message: string }> = [];
+
+  for (const [i, patient] of results.entries()) {
+    try {
+      await sleep(delayTime);
+      const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
+      successfulCount++;
+      console.log(i + 1, createdPatient);
+      storePatientId(createdPatient.id);
+    } catch (error) {
+      errors.push({
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        dob: patient.dob,
+        message: errorToString(error),
+      });
+    }
+  }
+  console.log(errors);
+  console.log(`Done, inserted ${successfulCount} patients.`);
+}
+
+async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
+  if (!dryRun) {
+    console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+  }
+  console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
+  await sleep(confirmationTime.asMilliseconds());
 }
 
 function initPatientIdRepository() {
-  fs.writeFileSync(path.join(__dirname, outputFileName), "");
+  const dirname = path.dirname(filePath);
+  if (!fs.existsSync(dirname)) {
+    fs.mkdirSync(dirname, { recursive: true });
+  }
+  fs.writeFileSync(filePath, "");
 }
+
 function storePatientId(patientId: string) {
-  fs.appendFileSync(path.join(__dirname, outputFileName), patientId + "\n");
+  fs.appendFileSync(filePath, patientId + "\n");
 }
 
 function toTitleCase(str: string): string {

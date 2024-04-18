@@ -104,7 +104,7 @@
     "convert-units": "^2.3.4",
     "cookie-parser": "^1.4.4",
     "deepmerge": "^4.2.2",
-    "express": "^4.16.4",
+    "express": "^4.19.2",
     "fast-xml-parser": "^4.3.3",
     "fhir": "^4.7.9",
     "fs-extra": "^8.1.0",

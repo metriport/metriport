@@ -11,23 +11,6 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
                 <RegistryResponse xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success"/>
             </ihe:RetrieveDocumentSetResponse>;
 
-    if (mtom) {
-        // If MTOM is true, return a registry error saying MTOM not supported right now
-        var outcome = {
-            "resourceType": "OperationOutcome",
-            "issue": [{
-                "severity": "error",
-                "code": "MTOMNotSupported",
-                "details": {
-                    "text": "MTOM is not supported at this time."
-                }
-            }]
-        };
-        var registryErrorList = getXCARegistryErrorList(outcome, _response);
-        if (registryErrorList) _response.appendChild(registryErrorList);
-        return _response;
-    }
-
     // Process response entries from 'request'
     if (request && request.hasOwnProperty('documentReference')) {
         request.documentReference.forEach(function(entry) {
@@ -36,7 +19,7 @@ function getXCAITI39QueryResponse(request, operationOutcome, mtom) {
                 
                 var doc64 = xcaReadFromFileB64(entry.urn.toString());
                 
-				var docResponse = <DocumentResponse>
+				var docResponse = <DocumentResponse xmlns="urn:ihe:iti:xds-b:2007">
                                     <HomeCommunityId>{'urn:oid:' + entry.homeCommunityId.toString()}</HomeCommunityId>
                                     <RepositoryUniqueId>{entry.repositoryUniqueId.toString()}</RepositoryUniqueId>
                                     <DocumentUniqueId>{entry.docUniqueId.toString()}</DocumentUniqueId>

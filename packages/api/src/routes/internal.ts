@@ -1,5 +1,6 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { getReferencesFromResources } from "@metriport/core/external/fhir/shared/bundle";
+import BadRequestError from "@metriport/core/util/error/bad-request";
 import { Request, Response, Router } from "express";
 import httpStatus from "http-status";
 import { checkApiQuota } from "../command/medical/admin/api";
@@ -9,9 +10,9 @@ import {
   PopulateFhirServerResponse,
 } from "../command/medical/admin/populate-fhir";
 import { getFacilities } from "../command/medical/facility/get-facility";
-import { allowMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
+import { allowMapiAccess, hasMapiAccess, revokeMapiAccess } from "../command/medical/mapi-access";
 import { getOrganizationOrFail } from "../command/medical/organization/get-organization";
-import BadRequestError from "../errors/bad-request";
+import { isEnhancedCoverageEnabledForCx } from "../external/aws/appConfig";
 import { initCQOrgIncludeList } from "../external/commonwell/organization";
 import { makeFhirApi } from "../external/fhir/api/api-factory";
 import { countResources } from "../external/fhir/patient/count-resources";
@@ -20,10 +21,12 @@ import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
+import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
+import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 
@@ -32,6 +35,7 @@ router.use("/patient", patientRoutes);
 router.use("/user", userRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
+router.use("/hie", hieRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -44,10 +48,29 @@ router.use("/mpi", mpiRoutes);
  */
 router.post(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
     return res.sendStatus(outcome === "new" ? httpStatus.CREATED : httpStatus.OK);
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * GET /internal/mapi-access
+ *
+ * Returns a boolean indicating whether MAPI access has been provided for a customer.
+ *
+ * @param req.query.cxId - The customer/account's ID.
+ * @return payload Indicating access has been given (prop hasMapiAccess).
+ */
+router.get(
+  "/mapi-access",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    const hasMapi = await hasMapiAccess(cxId);
+    return res.status(httpStatus.OK).json({ hasMapiAccess: hasMapi });
   })
 );
 
@@ -61,6 +84,7 @@ router.post(
  */
 router.delete(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
@@ -127,6 +151,7 @@ router.post(
  */
 router.get(
   "/count-fhir-resources",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await countResources({ patient: { cxId } });
@@ -142,14 +167,11 @@ router.get(
 router.post(
   "/cq-include-list/reset",
   asyncHandler(async (req: Request, res: Response) => {
-    const getOID = async (): Promise<string> => {
-      const cxId = getUUIDFrom("query", req, "cxId").optional();
-      if (cxId) return (await getOrganizationOrFail({ cxId })).oid;
-      const orgOID = getFrom("query").optional("orgOID", req);
-      if (orgOID) return orgOID;
-      throw new BadRequestError(`Either cxId or orgOID must be provided`);
-    };
-    const orgOID = await getOID();
+    const cxId = getUUIDFrom("query", req, "cxId").orFail();
+    if (!(await isEnhancedCoverageEnabledForCx(cxId))) {
+      throw new BadRequestError("Enhanced Coverage is not enabled for this customer");
+    }
+    const orgOID = (await getOrganizationOrFail({ cxId })).oid;
     await initCQOrgIncludeList(orgOID);
     return res.sendStatus(httpStatus.OK);
   })

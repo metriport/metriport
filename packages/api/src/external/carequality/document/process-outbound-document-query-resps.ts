@@ -60,6 +60,7 @@ export async function processOutboundDocumentQueryResps({
       await setDocQueryProgress({
         patient: { id: patientId, cxId: cxId },
         downloadProgress: { status: "completed" },
+        convertProgress: { status: "completed" },
         requestId,
         source: MedicalDataSource.CAREQUALITY,
       });
@@ -80,7 +81,12 @@ export async function processOutboundDocumentQueryResps({
               total: convertibleDocCount,
             },
           }
-        : {}),
+        : {
+            convertProgress: {
+              status: "completed",
+              total: 0,
+            },
+          }),
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -195,6 +201,7 @@ function buildInterrupt({
     await setDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
       downloadProgress: { status: "failed" },
+      convertProgress: { status: "failed" },
       requestId,
       source: MedicalDataSource.CAREQUALITY,
     });
@@ -215,7 +222,7 @@ async function storeInitDocRefInFHIR(
 
         const fhirDocRef = cqToFHIR(docId, docRef, "preliminary", patientId, cqExtension);
 
-        await upsertDocumentToFHIRServer(cxId, fhirDocRef);
+        await upsertDocumentToFHIRServer(cxId, fhirDocRef, log);
       } catch (error) {
         const msg = `Failed to store initial doc ref in FHIR`;
         log(`${msg}: ${errorToString(error)}`);
