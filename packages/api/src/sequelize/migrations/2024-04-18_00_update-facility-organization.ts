@@ -62,7 +62,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction }
     );
-    // TODO: need to write update query to generate OIDs on existing facilities
+
     const [orgResults] = await queryInterface.sequelize.query(
       `select * from ${organizationTableName}`,
       {
@@ -73,7 +73,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
       for (const org of orgResults as any[]) {
         const [facilityResults] = await queryInterface.sequelize.query(
-          `select * from ${facilityTableName} where cx_id = '${org.cxId}'`,
+          `select * from ${facilityTableName} where cx_id = '${org["cx_id"]}'`,
           {
             transaction,
           }
