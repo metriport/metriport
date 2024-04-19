@@ -1,12 +1,10 @@
-import { PurposeOfUse } from "@metriport/shared";
-import z from "zod";
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
-import { isCQDirectEnabledForCx } from "../aws/appConfig";
-import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
-import { isCarequalityEnabled } from "../aws/appConfig";
-import { errorToString } from "@metriport/shared/common/error";
 import { capture } from "@metriport/core/util/notifications";
-import { AddressStrictSchema } from "../../routes/medical/schemas/address";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { PurposeOfUse } from "@metriport/shared";
+import { errorToString } from "@metriport/shared/common/error";
+import z from "zod";
+import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
+import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -67,13 +65,10 @@ export type CQOrgUrls = z.infer<typeof cqOrgUrlsSchema>;
 export const cqOrgDetailsSchema = z.object({
   name: z.string(),
   oid: z.string(),
-  // address: AddressStrictSchema, // TODO: uncomment this
-  // TODO: remove these and deal with consequences of replacing with this ^
   addressLine1: z.string(),
   city: z.string(),
   state: z.string(),
   postalCode: z.string(),
-  // up to here ^
   lat: z.string(),
   lon: z.string(),
   contactName: z.string(),
@@ -85,20 +80,6 @@ export const cqOrgDetailsSchema = z.object({
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
 export type CQOrgDetailsWithUrls = CQOrgDetails & CQOrgUrls;
-
-export const cqOboOrgDetailsSchema = z.object({
-  healthcareItVendorOrgName: z.string().optional(),
-  cqOboOid: z.string().optional(),
-  cqActive: z.boolean().optional(),
-});
-
-export type CqOboOrgDetails = z.infer<typeof cqOboOrgDetailsSchema>;
-
-export const cqOboFullOrgDetailsSchema = cqOrgDetailsSchema
-  .omit({ oid: true })
-  .merge(z.object({ oid: z.string().optional() }))
-  .merge(cqOboOrgDetailsSchema);
-export type CqOboFullOrgDetails = z.infer<typeof cqOboFullOrgDetailsSchema>;
 
 export function formatDate(dateString: string | undefined): string | undefined {
   if (!dateString) return undefined;

@@ -1,63 +1,122 @@
+import { metriportCompanyDetails } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
+import { z } from "zod";
+import { createFacility } from "../../command/medical/facility/create-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import { cqOboFullOrgDetailsSchema } from "../../external/carequality/shared";
+import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { requestLogger } from "../helpers/request-logger";
+import { required } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
-import { asyncHandler, getFromParamsOrFail } from "../util";
+import { asyncHandler } from "../util";
+import { AddressStrictSchema } from "./schemas/address";
 
 const router = Router();
 
+export const cqOboOrgDetailsSchema = z.object({});
+export type CqOboOrgDetails = z.infer<typeof cqOboOrgDetailsSchema>;
+
+const facilityOboDetailsSchemaBase = z
+  .object({
+    name: z.string(),
+    npi: z.string(),
+    lat: z.string(),
+    lon: z.string(),
+    // CQ
+    cqActive: z.boolean().optional(),
+    cqOboOid: z.string().optional(),
+    // TODO 1706: implement this
+    // CW
+    // cwActive: z.boolean().optional(),
+    // cwOboOid: z.string().optional(),
+  })
+  .merge(AddressStrictSchema);
+type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
+
+const facilityOboDetailsSchema = facilityOboDetailsSchemaBase.refine(
+  required<FacilityOboDetails>("cqOboOid").when("cqActive"),
+  {
+    message: "cqObOid is required and can't be empty when cqActive is true",
+    path: ["cqObOid"],
+  }
+);
+
 /** ---------------------------------------------------------------------------
  *
- * POST /internal/facility/
+ * PUT /internal/facility/
  *
- * TODO: Add description.
+ * Creates a new facility and registers it with HIEs the facility is enabled at.
+ *
+ * WIP: This endpoint is a work in progress and is not yet fully implemented.
  *
  * @return {FacilityDTO} The updated facility.
  */
-router.post(
+router.put(
   "/",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
-    const facilityId = getFromParamsOrFail("id", req);
+    const facilityInput = facilityOboDetailsSchema.parse(req.body);
+    // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
 
-    // TODO: Fix the logic to create the facility in the DB
-    // const facilityData = facilityCreateSchema.parse(req.body); // TODO: Combine the two schemas into one.
-
-    // const facility = await createFacility({
-    //   cxId,
-    //   data: {
-    //     ...facilityData,
-    //     tin: facilityData.tin ?? undefined,
-    //     active: facilityData.active ?? undefined,
-    //   },
-    // });
+    await createFacility({
+      cxId,
+      data: {
+        name: facilityInput.name,
+        npi: facilityInput.npi,
+        address: {
+          addressLine1: facilityInput.addressLine1,
+          addressLine2: facilityInput.addressLine2,
+          city: facilityInput.city,
+          state: facilityInput.state,
+          zip: facilityInput.zip,
+          country: facilityInput.country,
+        },
+      },
+      cqOboActive: facilityInput.cqActive,
+      cqOboOid: facilityInput.cqOboOid,
+      // cwOboActive: facilityInput.cwActive,
+      // cwOboOid: facilityInput.cwOboOid,
+    });
 
     const cxOrg = await getOrganizationOrFail({ cxId });
 
-    const body = req.body;
-    const orgDetails = cqOboFullOrgDetailsSchema.parse(body);
-    const vendorName = orgDetails.healthcareItVendorOrgName ?? cxOrg.dataValues.data?.name;
+    // TODO 1706: prob want to move these to a separate commands/functions
 
-    // if (!orgDetails.cqOboOid && !orgDetails.oid) throw new Error("Missing OID");
+    // CAREQUALITY
+    if (facilityInput.cqActive && facilityInput.cqOboOid) {
+      const vendorName = cxOrg.dataValues.data?.name;
+      const orgName = buildCqOrgName(vendorName, facilityInput.name, facilityInput.cqOboOid);
+      const addressLine = facilityInput.addressLine2
+        ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
+        : facilityInput.addressLine1;
 
-    if (orgDetails.cqActive && orgDetails.cqOboOid) {
-      const orgName = buildOrgName(vendorName, orgDetails.name, orgDetails.cqOboOid);
-      orgDetails.oid = orgDetails.cqOboOid;
-      orgDetails.name = orgName;
-      orgDetails.hostOrgOID = cxOrg.dataValues.oid;
-      await createOrUpdateCQOrganization(orgDetails);
+      await createOrUpdateCQOrganization({
+        name: orgName,
+        addressLine1: addressLine,
+        lat: facilityInput.lat,
+        lon: facilityInput.lon,
+        city: facilityInput.city,
+        state: facilityInput.state,
+        postalCode: facilityInput.zip,
+        oid: facilityInput.cqOboOid,
+        contactName: metriportCompanyDetails.name,
+        phone: metriportCompanyDetails.phone,
+        email: metriportEmailForCq,
+        role: "Connection" as const,
+      });
     }
+
+    // COMMONWELL
+    // TODO 1706: implement it
 
     return res.sendStatus(httpStatus.OK);
   })
 );
 
-function buildOrgName(vendorName: string, orgName: string, oid: string) {
+function buildCqOrgName(vendorName: string, orgName: string, oid: string) {
   return `${vendorName} - ${orgName} #OBO# ${oid}`;
 }
 
