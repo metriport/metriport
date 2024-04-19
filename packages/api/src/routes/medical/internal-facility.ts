@@ -1,3 +1,5 @@
+import BadRequestError from "@metriport/core/util/error/bad-request";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -64,20 +66,6 @@ router.put(
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
     // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
 
-    let cqFacilityName: string | undefined;
-    if (facilityInput.cqOboOid) {
-      const existingFacility = await getCqOrganization(facilityInput.cqOboOid);
-      if (!existingFacility) {
-        return res
-          .status(httpStatus.BAD_REQUEST)
-          .send("CQ OBO organization with the specified CQ OBO OID was not found");
-      }
-      const existingFacilityName = existingFacility.name?.value;
-      if (!existingFacilityName)
-        return res.status(httpStatus.NOT_FOUND).send("CQ OBO organization has no name");
-      cqFacilityName = existingFacilityName;
-    }
-
     const facility = await createFacility({
       cxId,
       data: {
@@ -104,12 +92,9 @@ router.put(
 
     // CAREQUALITY
     if (facilityInput.cqActive && facilityInput.cqOboOid) {
+      const cqFacilityName = await getCqFacilityName(facilityInput.cqOboOid);
       const vendorName = cxOrg.dataValues.data?.name;
-      const orgName = buildCqOboOrgName(
-        vendorName,
-        cqFacilityName as string,
-        facilityInput.cqOboOid
-      );
+      const orgName = buildCqOboOrgName(vendorName, cqFacilityName, facilityInput.cqOboOid);
       const addressLine = facilityInput.addressLine2
         ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
         : facilityInput.addressLine1;
@@ -139,8 +124,18 @@ router.put(
   })
 );
 
-function buildCqOboOrgName(vendorName: string, orgName: string, oid: string) {
-  return `${vendorName} - ${orgName} #OBO# ${oid}`;
+async function getCqFacilityName(oid: string) {
+  const existingFacility = await getCqOrganization(oid);
+  if (!existingFacility) {
+    throw new BadRequestError("CQ OBO organization with the specified CQ OBO OID was not found");
+  }
+  const existingFacilityName = existingFacility.name?.value;
+  if (!existingFacilityName) throw new NotFoundError("CQ OBO organization has no name");
+  return existingFacilityName;
+}
+
+function buildCqOboOrgName(vendorName: string, orgName: string, oboOid: string) {
+  return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
 }
 
 export default router;
