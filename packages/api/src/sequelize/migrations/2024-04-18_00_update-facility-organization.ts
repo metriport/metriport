@@ -82,7 +82,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
           let facilityNumber = 100;
           //eslint-disable-next-line @typescript-eslint/no-explicit-any
           for (const facility of facilityResults as any[]) {
-            const facilityOid = `2.16.840.1.113883.3.9621.5.${org.organizationNumber}.4.${facilityNumber}`;
+            const facilityOid = `2.16.840.1.113883.3.9621.5.${org["organization_number"]}.4.${facilityNumber}`;
             await queryInterface.sequelize.query(
               `update ${facilityTableName} set facility_number = '${facilityNumber}', oid = '${facilityOid}' where id = '${facility.id}'`,
               {
