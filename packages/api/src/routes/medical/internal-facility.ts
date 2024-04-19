@@ -64,7 +64,7 @@ router.put(
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
     // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
 
-    let facilityName: string | undefined;
+    let cqFacilityName: string | undefined;
     if (facilityInput.cqOboOid) {
       const existingFacility = await getCqOrganization(facilityInput.cqOboOid);
       if (!existingFacility) {
@@ -72,7 +72,10 @@ router.put(
           .status(httpStatus.BAD_REQUEST)
           .send("CQ OBO organization with the specified CQ OBO OID was not found");
       }
-      facilityName = existingFacility.name?.value ?? undefined;
+      const existingFacilityName = existingFacility.name?.value;
+      if (!existingFacilityName)
+        return res.status(httpStatus.NOT_FOUND).send("CQ OBO organization has no name");
+      cqFacilityName = existingFacilityName;
     }
 
     const facility = await createFacility({
@@ -104,7 +107,7 @@ router.put(
       const vendorName = cxOrg.dataValues.data?.name;
       const orgName = buildCqOboOrgName(
         vendorName,
-        facilityName ?? facilityInput.name,
+        cqFacilityName as string,
         facilityInput.cqOboOid
       );
       const addressLine = facilityInput.addressLine2
