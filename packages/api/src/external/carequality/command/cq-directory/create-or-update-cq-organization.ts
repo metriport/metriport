@@ -1,4 +1,5 @@
 import { CarequalityManagementAPI } from "@metriport/carequality-sdk";
+import { Organization } from "@metriport/carequality-sdk/models/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import { makeCarequalityManagementAPI } from "../../api";
 import { CQOrganization } from "../../organization";
@@ -25,6 +26,12 @@ async function doesOrganizationExistInCQ(
     return true;
   }
   return false;
+}
+
+export async function getCqOrganization(oid: string): Promise<Organization> {
+  if (!cq) throw new Error("Carequality API not initialized");
+  const organizations = await cq.listOrganizations({ count: 1, oid });
+  return organizations[0];
 }
 
 async function updateCQOrganization(
