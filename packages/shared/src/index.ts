@@ -8,3 +8,4 @@ export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
 export { limitStringLength } from "./common/string";
 export { errorToString } from "./common/error";
+export { metriportCompanyDetails } from "./domain/metriport";

@@ -27,7 +27,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
     phone,
     email,
     role,
-    hostOrgOID,
+    parentOrgOid,
   } = orgDetails;
 
   const urnOid = "urn:oid:" + oid;
@@ -100,7 +100,7 @@ export function buildXmlStringFromTemplate(orgDetails: CQOrgDetailsWithUrls) {
             </valueCodeableConcept>
         </extension>
     </address>
-    ${getPartOf(hostOrgOID)}
+    ${getPartOf(parentOrgOid)}
     ${endpoints}
     <managingOrg>
         <reference value="org.sequoiaproject.fhir.stu3/Organization/${metriportName}">
@@ -202,8 +202,8 @@ function getEndpoint(oid: string, urlType: ChannelUrl, url?: string) {
 `;
 }
 
-function getPartOf(hostOrgOid?: string): string {
-  const oid = hostOrgOid ?? metriportOid;
+function getPartOf(parentOrgOid?: string): string {
+  const oid = parentOrgOid ?? metriportOid;
   return `<partOf>
         <identifier>
             <use value="official"/>
