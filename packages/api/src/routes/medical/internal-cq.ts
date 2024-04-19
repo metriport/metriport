@@ -60,6 +60,7 @@ const sequelize = initDbPool(Config.getDBCreds());
  */
 router.post(
   "/directory/rebuild",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     await rebuildCQDirectory();
@@ -118,6 +119,7 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cq = makeCarequalityManagementAPI();
@@ -148,6 +150,7 @@ router.get(
  */
 router.post(
   "/directory/organization",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
     const orgDetails = cqOrgDetailsSchema.parse(body);
@@ -198,6 +201,7 @@ router.get(
  */
 router.post(
   "/patient-discovery/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundPatientDiscoveryRespSchema.parse(req.body);
 
@@ -252,6 +256,7 @@ router.post(
  */
 router.post(
   "/document-query/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentQueryRespSchema.parse(req.body);
 
@@ -304,6 +309,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentRetrievalRespSchema.parse(req.body);
 
