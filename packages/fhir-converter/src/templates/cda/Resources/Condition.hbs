@@ -22,22 +22,7 @@
             ]
         },
         "code":{{>DataType/CodeableConcept.hbs code=conditionEntry.value text=conditionEntry.text._}},
-
-        {{#if (and conditionEntry.effectiveTime.low.value conditionEntry.effectiveTime.high.value)}}
-            "onsetPeriod":{{>DataType/Period.hbs period=conditionEntry.effectiveTime}},
-        {{else if conditionEntry.effectiveTime.low.value}} 
-            "onsetDateTime":"{{formatAsDateTime conditionEntry.effectiveTime.low.value}}",
-        {{else}}
-            "onsetAge":
-            [
-                {{#each (toArray conditionEntry.entryRelationship)}}
-                    {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.31')}} 
-                        "{{this.observation.value.value}}",
-                    {{/if}}
-                {{/each}}
-            ],
-        {{/if}}
-
+        "onsetPeriod":{{>Utils/PeriodOrDefaultPeriod.hbs period=conditionEntry.effectiveTime}},
         "category":[{{>DataType/CodeableConcept.hbs code=conditionEntry.code}}],
 
         {{! Missing meta}}
