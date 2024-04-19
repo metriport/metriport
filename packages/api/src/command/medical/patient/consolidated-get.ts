@@ -1,4 +1,5 @@
 import { OperationOutcomeError } from "@medplum/core";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   Bundle,
   BundleEntry,
@@ -41,6 +42,7 @@ export type GetConsolidatedFilters = {
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
+  requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
 
@@ -67,7 +69,17 @@ export async function startConsolidatedQuery({
   }
 
   const startedAt = new Date();
+  const requestId = uuidv7();
   const progress: QueryProgress = { status: "processing", startedAt };
+
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.consolidatedQuery,
+    properties: {
+      patientId: patient.id,
+      requestId,
+    },
+  });
 
   const updatedPatient = await storeQueryInit({
     id: patient.id,
@@ -84,18 +96,20 @@ export async function startConsolidatedQuery({
     dateFrom,
     dateTo,
     conversionType,
+    requestId,
   }).catch(emptyFunction);
 
   return progress;
 }
 
 async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promise<void> {
-  const { patient, resources, dateFrom, dateTo, conversionType } = params;
+  const { patient, requestId, resources, dateFrom, dateTo, conversionType } = params;
   try {
     const { bundle, filters } = await getConsolidated(params);
     // trigger WH call
     processConsolidatedDataWebhook({
       patient,
+      requestId,
       status: "completed",
       bundle,
       filters,
@@ -103,6 +117,7 @@ async function getConsolidatedAndSendToCx(params: GetConsolidatedParams): Promis
   } catch (error) {
     processConsolidatedDataWebhook({
       patient,
+      requestId,
       status: "failed",
       filters: {
         resources: resources ? resources.join(", ") : undefined,

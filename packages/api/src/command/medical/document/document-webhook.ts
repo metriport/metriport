@@ -79,7 +79,7 @@ export const processPatientDocumentRequest = async (
       await processRequest(
         webhookRequest,
         settings,
-        undefined,
+        requestId ? { requestId } : undefined,
         patient.data.cxDocumentRequestMetadata
       );
     } else {

@@ -70,7 +70,7 @@ export async function calculateDocumentConversionStatus({
     });
 
     if (isConversionCompleted) {
-      const startedAt = externalData?.documentQueryProgress?.startedAt;
+      const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
 
       analytics({
         distinctId: cxId,

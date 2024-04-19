@@ -22,6 +22,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { analytics, EventTypes } from "../../../shared/analytics";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -86,6 +87,15 @@ export async function queryDocumentsAcrossHIEs({
     cmd: {
       documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
       cxDocumentRequestMetadata,
+    },
+  });
+
+  analytics({
+    event: EventTypes.documentQuery,
+    distinctId: cxId,
+    properties: {
+      requestId,
+      patientId,
     },
   });
 
