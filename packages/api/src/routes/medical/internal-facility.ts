@@ -48,6 +48,16 @@ const facilityOboDetailsSchema = facilityOboDetailsSchemaBase.refine(
   }
 );
 
+type CqOboDetails =
+  | {
+      enabled: true;
+      cqFacilityName: string;
+      cqOboOid: string;
+    }
+  | {
+      enabled: false;
+    };
+
 /** ---------------------------------------------------------------------------
  *
  * PUT /internal/facility/
@@ -65,6 +75,8 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
     // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
+
+    const cqOboData = await getCqOboData(facilityInput.cqActive, facilityInput.cqOboOid);
 
     const facility = await createFacility({
       cxId,
@@ -91,10 +103,9 @@ router.put(
     // TODO 1706: prob want to move these to a separate commands/functions
 
     // CAREQUALITY
-    if (facilityInput.cqActive && facilityInput.cqOboOid) {
-      const cqFacilityName = await getCqFacilityName(facilityInput.cqOboOid);
+    if (cqOboData.enabled) {
       const vendorName = cxOrg.dataValues.data?.name;
-      const orgName = buildCqOboOrgName(vendorName, cqFacilityName, facilityInput.cqOboOid);
+      const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
       const addressLine = facilityInput.addressLine2
         ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
         : facilityInput.addressLine1;
@@ -123,6 +134,21 @@ router.put(
     return res.sendStatus(httpStatus.OK);
   })
 );
+
+async function getCqOboData(
+  cqActive: boolean | undefined,
+  cqOboOid: string | undefined
+): Promise<CqOboDetails> {
+  if (cqActive && cqOboOid) {
+    const cqFacilityName = await getCqFacilityName(cqOboOid);
+    return {
+      enabled: true,
+      cqFacilityName,
+      cqOboOid,
+    };
+  }
+  return { enabled: false };
+}
 
 async function getCqFacilityName(oid: string) {
   const existingFacility = await getCqOrganization(oid);
