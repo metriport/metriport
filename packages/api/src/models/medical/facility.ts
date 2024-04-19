@@ -17,8 +17,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare facilityNumber: number;
   declare cqOBOActive: boolean;
   declare cwOBOActive: boolean;
-  declare cqOBOOID: string;
-  declare cwOBOOID: string;
+  declare cqOboOid: string | null;
+  declare cwOboOid: string | null;
   declare type: FacilityType;
   declare data: FacilityData; // TODO #414 move to strong type
 
@@ -48,11 +48,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
-        cqOBOOID: {
+        cqOboOid: {
           type: DataTypes.STRING,
           allowNull: true,
         },
-        cwOBOOID: {
+        cwOboOid: {
           type: DataTypes.STRING,
           allowNull: true,
         },
