@@ -23,9 +23,10 @@ export const up: Migration = async ({ context: queryInterface }) => {
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.removeIndex(tableName, indexToCreate, { transaction });
-    await queryInterface.addIndex(tableName, {
+    await queryInterface.addConstraint(tableName, {
       name: constraintToRemove,
       fields: [constraintToRemoveFieldName],
+      type: "primary key",
       transaction,
     });
   });
