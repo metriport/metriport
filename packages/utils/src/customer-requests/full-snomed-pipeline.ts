@@ -54,7 +54,7 @@ export async function ensureDirectory(): Promise<void> {
 
 async function fetchAndSavePatientData(patientId: string): Promise<void> {
   try {
-    const resources = ["Conditions, Procedures, MedicationAdministration"];
+    const resources = ["Condition, Procedure, MedicationStatement, MedicationAdministration"];
     const data = await metriportApi.getPatientConsolidated(patientId, resources);
     const fhirPatient = await getFhirPatientData(patientId);
     const resourceWrappedFhirPatient = { resource: fhirPatient };

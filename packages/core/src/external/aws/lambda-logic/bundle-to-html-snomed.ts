@@ -39,6 +39,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
     patient,
     medications,
     medicationAdministrations,
+    medicationStatements,
     conditions,
     allergies,
     procedures,
@@ -219,7 +220,8 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createMRHeader(patient)}
           <div class="divider"></div>
           <div id="mr-sections">
-            ${createConditionLinkedMedicationSection(medications, medicationAdministrations)}
+            ${createDischargeMedicationsSection(medications, medicationAdministrations)}
+            ${createMedicationSection(medications, medicationStatements)}
             ${createConditionSection(conditions, encounters)}
             ${createAllergySection(allergies)}
             ${createProcedureSection(procedures)}
@@ -744,7 +746,7 @@ function createOrganiztionField(
   return organization?.name ? `<p>Facility: ${organization.name}</p>` : "";
 }
 
-function createConditionLinkedMedicationSection(
+function createDischargeMedicationsSection(
   medications: Medication[],
   medicationAdministrations: MedicationAdministration[]
 ) {
@@ -779,17 +781,35 @@ function createConditionLinkedMedicationSection(
     );
   });
 
-  const medicationSection = createMedLinkedConditionSectionInMedications(
+  const activeMedications = removeDuplicate.filter(
+    medicationAdministration => medicationAdministration.status !== "stopped"
+  );
+
+  const oneYearAgo = dayjs().subtract(1, "year");
+
+  const activeMedicationsWithinLastYear = activeMedications.filter(medicationAdministration => {
+    const start = medicationAdministration.effectivePeriod?.start;
+    const end = medicationAdministration.effectivePeriod?.end;
+    const medicationStart = start ? dayjs(start) : undefined;
+    const medicationEnd = end ? dayjs(end) : undefined;
+    const isActive = medicationAdministration.status != "stopped";
+    const isWithinLastYear1 = medicationStart && medicationStart.isAfter(oneYearAgo);
+    const isWithinLastYear2 = medicationEnd && medicationEnd.isAfter(oneYearAgo);
+    const isWithinLastYear = isWithinLastYear1 || isWithinLastYear2;
+    return isActive && isWithinLastYear;
+  });
+
+  const medicationSection = createDischargeMedicationSection(
     mappedMedications,
-    removeDuplicate,
-    "Condition Linked Medications"
+    activeMedicationsWithinLastYear,
+    "Active Medications"
   );
 
   const medicalTableContents = `
     ${medicationSection}
     `;
 
-  return createSection("Medications", medicalTableContents);
+  return createSection("Discharge Medications", medicalTableContents);
 }
 
 export function createMedicationSection(
@@ -801,6 +821,7 @@ export function createMedicationSection(
   }
 
   const mappedMedications = mapResourceToId<Medication>(medications);
+  //console.log("mappedMedications", mappedMedications);
 
   const medicationsSortedByDate = medicationStatements.sort((a, b) => {
     return dayjs(a.effectivePeriod?.start).isBefore(dayjs(b.effectivePeriod?.start)) ? 1 : -1;
@@ -813,51 +834,52 @@ export function createMedicationSection(
     return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
   });
 
-  const otherMedications = removeDuplicate.filter(
-    medicationStatement => medicationStatement.status !== ("active" || "unknown")
-  );
-
   const activeMedications = removeDuplicate.filter(
     medicationStatement => medicationStatement.status === "active"
   );
 
-  const emptyMedications = removeDuplicate.filter(
-    medicationStatement => !medicationStatement.status || medicationStatement.status === "unknown"
-  );
+  const oneYearAgo = dayjs().subtract(1, "year");
+
+  const activeMedicationsWithinLastYear = activeMedications.filter(medicationStatement => {
+    const start = medicationStatement.effectivePeriod?.start;
+    const end = medicationStatement.effectivePeriod?.end;
+    const medicationStart = start ? dayjs(start) : undefined;
+    const medicationEnd = end ? dayjs(end) : undefined;
+    const isActive = medicationStatement.status === "active";
+    const isWithinLastYear1 = medicationStart && medicationStart.isAfter(oneYearAgo);
+    const isWithinLastYear2 = medicationEnd && medicationEnd.isAfter(oneYearAgo);
+    const isWithinLastYear = isWithinLastYear1 || isWithinLastYear2;
+    return isActive && isWithinLastYear;
+  });
+
+  // console.log("medications", medications);
+  // console.log("activeMedicationsWithinLastYear", activeMedicationsWithinLastYear);
 
   const activeMedicationsSection = createSectionInMedications(
     mappedMedications,
-    activeMedications,
+    activeMedicationsWithinLastYear,
     "Active Medications"
-  );
-
-  const emptyMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    emptyMedications,
-    "Unknown Status Medications"
-  );
-
-  const completedMedicationsSection = createSectionInMedications(
-    mappedMedications,
-    otherMedications,
-    "Other Status Medications"
   );
 
   const medicalTableContents = `
     ${activeMedicationsSection}
-    ${emptyMedicationsSection}
-      ${completedMedicationsSection}
     `;
 
   return createSection("Medications", medicalTableContents);
 }
 
-function getDateFromMedicationStatement(v: MedicationStatement): string | undefined {
+function getStartDateFromMedicationStatement(v: MedicationStatement): string | undefined {
   return v.effectivePeriod?.start;
 }
+function getEndDateFromMedicationStatement(v: MedicationStatement): string | undefined {
+  return v.effectivePeriod?.end;
+}
 
-function getDateFromMedicationAdministration(v: MedicationAdministration): string | undefined {
+function getStartDateFromMedicationAdministration(v: MedicationAdministration): string | undefined {
   return v.effectivePeriod?.start;
+}
+function getEndDateFromMedicationAdministration(v: MedicationAdministration): string | undefined {
+  return v.effectivePeriod?.end;
 }
 
 function createSectionInMedications(
@@ -870,8 +892,8 @@ function createSectionInMedications(
     return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
   }
   const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
-    const aDate = getDateFromMedicationStatement(a);
-    const bDate = getDateFromMedicationStatement(b);
+    const aDate = getStartDateFromMedicationStatement(a);
+    const bDate = getStartDateFromMedicationStatement(b);
     if (!aDate && !bDate) return 0;
     if (aDate && !bDate) return -1;
     if (!aDate && bDate) return 1;
@@ -888,7 +910,8 @@ function createSectionInMedications(
             <th>Dosage</th>
             <th>Status</th>
             <th>Code</th>
-            <th>Date</th>
+            <th> Start Date</th>
+            <th> End Date</th>
           </div>
         </tr>
       </thead>
@@ -923,7 +946,10 @@ function createSectionInMedications(
                 <td>${medicationStatement.status ?? ""}</td>
                 <td>${code ?? ""}</td>
                 <td>${formatDateForDisplay(
-                  getDateFromMedicationStatement(medicationStatement)
+                  getStartDateFromMedicationStatement(medicationStatement)
+                )}</td>
+                <td>${formatDateForDisplay(
+                  getEndDateFromMedicationStatement(medicationStatement)
                 )}</td>
               </tr>
             `;
@@ -935,7 +961,7 @@ function createSectionInMedications(
   return medicalTableContents;
 }
 
-function createMedLinkedConditionSectionInMedications(
+function createDischargeMedicationSection(
   mappedMedications: Record<string, Medication>,
   medicationAdministrations: MedicationAdministration[],
   title: string
@@ -945,8 +971,8 @@ function createMedLinkedConditionSectionInMedications(
     return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
   }
   const medicationStatementsSortedByDate = medicationAdministrations.sort((a, b) => {
-    const aDate = getDateFromMedicationAdministration(a);
-    const bDate = getDateFromMedicationAdministration(b);
+    const aDate = getStartDateFromMedicationAdministration(a);
+    const bDate = getStartDateFromMedicationAdministration(b);
     if (!aDate && !bDate) return 0;
     if (aDate && !bDate) return -1;
     if (!aDate && bDate) return 1;
@@ -963,7 +989,8 @@ function createMedLinkedConditionSectionInMedications(
             <th>Dosage</th>
             <th>Status</th>
             <th>Code</th>
-            <th>Date</th>
+            <th> Start Date</th>
+            <th> End Date</th>
           </div>
         </tr>
       </thead>
@@ -992,7 +1019,12 @@ function createMedLinkedConditionSectionInMedications(
             }</td>
                 <td>${medicationAdministration.status ?? ""}</td>
                 <td>${code ?? ""}</td>
-                <td>${formatDateForDisplay(medicationAdministration.effectivePeriod?.start)}</td>
+                <td>${formatDateForDisplay(
+                  getStartDateFromMedicationAdministration(medicationAdministration)
+                )}</td>
+                <td>${formatDateForDisplay(
+                  getEndDateFromMedicationAdministration(medicationAdministration)
+                )}</td>
               </tr>
             `;
           })

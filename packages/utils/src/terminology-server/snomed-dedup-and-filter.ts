@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import daysjs from "dayjs";
 import { getCodeDisplay, getCodeDetailsFull } from "./term-server-api";
 import { populateHashTableFromCodeDetails, SnomedHierarchyTableEntry } from "./snomed-heirarchies";
 import { RemovalStats, createInitialRemovalStats, prettyPrintRemovalStats } from "./stats";
@@ -86,14 +87,26 @@ async function removeNonRootSnomedCodes(
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
-async function removeConditionsProceduresMedAdmins(
-  filePath: string,
-  conditionSet: Set<string>,
-  cptSet: Set<string>,
-  medicationConditionDict: Record<string, string>,
-  allRemainingEnries: Set<string>,
-  removalStats: RemovalStats
-) {
+async function removeConditionsProceduresMedAdmins({
+  filePath,
+  conditionSet,
+  cptSet,
+  allRemainingEnries,
+  removalStats,
+  medicationDuplicates,
+  medicationToMedicationStatementMap,
+}: {
+  filePath: string;
+  conditionSet: Set<string>;
+  cptSet: Set<string>;
+  allRemainingEnries: Set<string>;
+  removalStats: RemovalStats;
+  medicationDuplicates: Map<string, string[]>;
+  medicationToMedicationStatementMap: Map<
+    string,
+    { medicationStatement: string; startDate: string }
+  >;
+}) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
 
@@ -168,64 +181,79 @@ async function removeConditionsProceduresMedAdmins(
         removalStats.entriesWithoutCptCodes.count += 1;
         entries.splice(i, 1);
       }
-    } else if (resource && resource.resourceType === "MedicationAdministration") {
-      if (resource.reasonReference) {
-        const medicationRef = resource.medicationReference?.reference.split("/")[1];
-        const conditionRef = resource.reasonReference[0]?.reference.split("/")[1];
-
-        if (medicationRef && conditionRef) {
-          medicationConditionDict[medicationRef] = conditionRef;
-          allRemainingEnries.add(resource.id);
+    } else if (resource && resource.resourceType === "MedicationStatement") {
+      const medicationId = resource.medicationReference?.reference.split("/")[1];
+      if (medicationId) {
+        medicationToMedicationStatementMap.set(medicationId, {
+          medicationStatement: resource.id,
+          startDate: resource?.effectivePeriod?.start,
+        });
+      }
+    } else if (resource && resource.resourceType === "Medication") {
+      const codings = resource.code?.coding || [];
+      for (const coding of codings) {
+        if (coding.system === "http://www.nlm.nih.gov/research/umls/rxnorm") {
+          if (medicationDuplicates.has(coding.code)) {
+            medicationDuplicates.get(coding.code)?.push(resource.id);
+          } else {
+            medicationDuplicates.set(coding.code, [resource.id]);
+          }
         }
-      } else {
-        console.log("Removing MedicationAdministration entry without condition reference");
-        entries.splice(i, 1);
       }
     }
   }
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
-
-async function filterMedicationsEntries(
-  filePath: string,
-  conditionIdsDictionary: Set<string>,
-  medicationConditionDict: Record<string, string>,
-  rxNormSet: Set<string>,
-  removalStats: RemovalStats
-) {
+async function filterMedicationStatements({
+  filePath,
+  medicationDuplicates,
+  medicationToMedicationStatementMap,
+  removalStats,
+}: {
+  filePath: string;
+  medicationDuplicates: Map<string, string[]>;
+  medicationToMedicationStatementMap: Map<
+    string,
+    { medicationStatement: string; startDate: string }
+  >;
+  removalStats: RemovalStats;
+}) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
+  const medicationStatementsToRemove = [];
 
+  // for every key in medicationDuplicates, iterate through the string[] if its length is greater than 1
+  for (const [rxNormCode, medications] of medicationDuplicates) {
+    if (medications.length > 1) {
+      console.log(
+        "Duplicate medications found for RXNORM code:",
+        rxNormCode,
+        "Medications:",
+        medications
+      );
+      // for every value in the string[], check if the medication exists in the medicationToMedicationStatementMap
+      // if it does,figure out which medicationStatement has the latest medication start date and keep that one
+      let latestDate = daysjs("1900-01-01").format();
+      let latestMedicationStatement;
+      for (const medication of medications) {
+        const medicationInfo = medicationToMedicationStatementMap.get(medication);
+        if (medicationInfo && daysjs(medicationInfo.startDate).isAfter(latestDate)) {
+          latestDate = medicationInfo.startDate;
+          // push the old medicationStatement into be removed
+          medicationStatementsToRemove.push(latestMedicationStatement);
+          latestMedicationStatement = medicationInfo.medicationStatement;
+        } else if (medicationInfo) {
+          medicationStatementsToRemove.push(medicationInfo.medicationStatement);
+        }
+      }
+    }
+  }
   for (let i = entries.length - 1; i >= 0; i--) {
     const entry = entries[i];
     const resource = entry.resource;
-    if (resource && resource.resourceType === "Medication") {
-      const conditionRef = medicationConditionDict[resource.id];
-
-      // if the medication is linked to a conditon that is a non-duplicate disorder
-      if (conditionIdsDictionary.has(conditionRef)) {
-        const codings = resource.code?.coding || [];
-        for (const coding of codings) {
-          if (coding.system === "http://www.nlm.nih.gov/research/umls/rxnorm") {
-            if (rxNormSet.has(coding.code)) {
-              removalStats.rxnormDuplicates.count += 1;
-              removalStats.rxnormDuplicates.codes.add(coding.code);
-              entries.splice(i, 1);
-            } else {
-              rxNormSet.add(coding.code);
-              console.log(
-                "Keeping Medication. RXNORM code:",
-                coding.code,
-                "linked to condition:",
-                conditionRef,
-                "Resource.id:",
-                resource.id
-              );
-            }
-          }
-        }
-      } else {
-        removalStats.nonConditionLinkedMedications.count += 1;
+    if (resource && resource.resourceType === "MedicationStatement") {
+      if (medicationStatementsToRemove.includes(resource.id)) {
+        removalStats.duplicateMedicationStatements.count += 1;
         entries.splice(i, 1);
       }
     }
@@ -238,18 +266,23 @@ export async function fullProcessing(directoryPath: string) {
 
   // Removal of non-disorder SNOMED codes, invalid CPT codes, and duplicate CPT codes
   const cptSet = new Set<string>();
-  const conditionsSet = new Set<string>();
+  const conditionSet = new Set<string>();
   const allRemainingEnries = new Set<string>();
-  const medicationConditionDict: Record<string, string> = {};
+  const medicationDuplicates = new Map<string, string[]>();
+  const medicationToMedicationStatementMap = new Map<
+    string,
+    { medicationStatement: string; startDate: string }
+  >();
   await processDirectoryOrFile(directoryPath, async filePath => {
-    await removeConditionsProceduresMedAdmins(
+    await removeConditionsProceduresMedAdmins({
       filePath,
-      conditionsSet,
+      conditionSet,
       cptSet,
-      medicationConditionDict,
       allRemainingEnries,
-      removalStats
-    );
+      removalStats,
+      medicationDuplicates,
+      medicationToMedicationStatementMap,
+    });
   });
 
   prettyPrintRemovalStats(removalStats);
@@ -272,19 +305,14 @@ export async function fullProcessing(directoryPath: string) {
     );
   });
 
-  console.log("conditionIdsDictionary", conditionIdsDictionary);
-  console.log("medicationConditionDict", medicationConditionDict);
-
   // Removal of duplicate RXNORM codes and medications without condition reference
-  const rxNormSet = new Set<string>();
   await processDirectoryOrFile(directoryPath, async filePath => {
-    await filterMedicationsEntries(
+    await filterMedicationStatements({
       filePath,
-      conditionIdsDictionary,
-      medicationConditionDict,
-      rxNormSet,
-      removalStats
-    );
+      medicationDuplicates,
+      medicationToMedicationStatementMap,
+      removalStats,
+    });
   });
 
   prettyPrintRemovalStats(removalStats);

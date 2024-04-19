@@ -8,8 +8,7 @@ export type RemovalStats = {
   invalidCptCodes: { count: number; codes: Set<string> };
   entriesWithoutCptCodes: { count: number; codes: Set<string> };
   duplicateCptCodes: { count: number; codes: Set<string> };
-  rxnormDuplicates: { count: number; codes: Set<string> };
-  nonConditionLinkedMedications: { count: number; codes: Set<string> };
+  duplicateMedicationStatements: { count: number; codes: Set<string> };
 };
 
 export function prettyPrintHashTable(hashTable: Record<string, SnomedHierarchyTableEntry>): void {
@@ -49,8 +48,7 @@ export function createInitialRemovalStats(): RemovalStats {
     invalidCptCodes: { count: 0, codes: new Set<string>() },
     entriesWithoutCptCodes: { count: 0, codes: new Set<string>() },
     duplicateCptCodes: { count: 0, codes: new Set<string>() },
-    rxnormDuplicates: { count: 0, codes: new Set<string>() },
-    nonConditionLinkedMedications: { count: 0, codes: new Set<string>() },
+    duplicateMedicationStatements: { count: 0, codes: new Set<string>() },
   };
 }
 
