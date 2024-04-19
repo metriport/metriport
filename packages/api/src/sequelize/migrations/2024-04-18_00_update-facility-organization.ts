@@ -63,6 +63,37 @@ export const up: Migration = async ({ context: queryInterface }) => {
       { transaction }
     );
     // TODO: need to write update query to generate OIDs on existing facilities
+    const [orgResults] = await queryInterface.sequelize.query(
+      `select * from ${organizationTableName}`,
+      {
+        transaction,
+      }
+    );
+    if (orgResults && orgResults.length) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const org of orgResults as any[]) {
+        const [facilityResults] = await queryInterface.sequelize.query(
+          `select * from ${facilityTableName} where cx_id = '${org.cxId}'`,
+          {
+            transaction,
+          }
+        );
+        if (facilityResults && facilityResults.length) {
+          let facilityNumber = 1;
+          //eslint-disable-next-line @typescript-eslint/no-explicit-any
+          for (const facility of facilityResults as any[]) {
+            const facilityOid = `2.16.840.1.113883.3.9621.5.${org.organizationNumber}.4.${facilityNumber}`;
+            await queryInterface.sequelize.query(
+              `update ${facilityTableName} set facility_number = '${facilityNumber}', oid = '${facilityOid}' where id = '${facility.id}'`,
+              {
+                transaction,
+              }
+            );
+            facilityNumber++;
+          }
+        }
+      }
+    }
   });
 };
 
