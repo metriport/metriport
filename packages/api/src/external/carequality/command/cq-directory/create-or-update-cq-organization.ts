@@ -8,12 +8,13 @@ const cq = makeCarequalityManagementAPI();
 export async function createOrUpdateCQOrganization(orgDetails: CQOrgDetails): Promise<void> {
   if (!cq) throw new Error("Carequality API not initialized");
   const org = CQOrganization.fromDetails(orgDetails);
-  const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
-  if (orgExists) {
-    await updateCQOrganization(cq, org);
-  } else {
-    await registerOrganization(cq, org);
-  }
+  console.log("ORG IS", org.getXmlString());
+  // const orgExists = await doesOrganizationExistInCQ(cq, org.oid);
+  // if (orgExists) {
+  //   await updateCQOrganization(cq, org);
+  // } else {
+  //   await registerOrganization(cq, org);
+  // }
 }
 
 async function doesOrganizationExistInCQ(

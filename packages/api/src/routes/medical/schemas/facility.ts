@@ -15,3 +15,5 @@ export const facilityCreateSchema = z.object({
 });
 
 export const facilityUpdateSchema = facilityCreateSchema;
+
+// TODO: export extended schema for facilityCreateSchema + OBO CQ fields + OBO CW fields
