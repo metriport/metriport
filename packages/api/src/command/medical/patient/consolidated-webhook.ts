@@ -45,7 +45,7 @@ export const processConsolidatedDataWebhook = async ({
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
-  requestId: string;
+  requestId?: string;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
@@ -77,9 +77,9 @@ export const processConsolidatedDataWebhook = async ({
         payload,
       });
 
-      const additionalWHRequestMeta: Record<string, string> = {
-        requestId,
-      };
+      const additionalWHRequestMeta: Record<string, string> = {};
+
+      if (requestId) additionalWHRequestMeta.requestId = requestId;
 
       if (bundle) {
         additionalWHRequestMeta.bundleLength =

@@ -42,7 +42,7 @@ export type GetConsolidatedFilters = {
 
 export type GetConsolidatedParams = {
   patient: Pick<Patient, "id" | "cxId" | "data">;
-  requestId: string;
+  requestId?: string;
   documentIds?: string[];
 } & GetConsolidatedFilters;
 
