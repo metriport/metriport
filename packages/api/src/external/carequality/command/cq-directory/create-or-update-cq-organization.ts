@@ -28,7 +28,7 @@ async function doesOrganizationExistInCQ(
   return false;
 }
 
-export async function getCqOrganization(oid: string): Promise<Organization> {
+export async function getCqOrganization(oid: string): Promise<Organization | undefined> {
   if (!cq) throw new Error("Carequality API not initialized");
   const organizations = await cq.listOrganizations({ count: 1, oid });
   return organizations[0];
