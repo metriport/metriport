@@ -6,16 +6,16 @@ export const createFacility = async ({
   cxId,
   data,
   type = FacilityType.initiatorAndResponder,
-  cqOBOActive = false,
-  cwOBOActive = false,
+  cqOboActive = false,
+  cwOboActive = false,
   cqOboOid,
   cwOboOid,
 }: {
   cxId: string;
   data: FacilityData;
   type?: FacilityType;
-  cqOBOActive?: boolean;
-  cwOBOActive?: boolean;
+  cqOboActive?: boolean;
+  cwOboActive?: boolean;
   cqOboOid?: string;
   cwOboOid?: string;
 }): Promise<FacilityModel> => {
@@ -25,8 +25,8 @@ export const createFacility = async ({
     type,
     oid: "", // will be set when facility is created in hook
     facilityNumber: 0, // will be set when facility is created in hook
-    cqOBOActive,
-    cwOBOActive,
+    cqOboActive,
+    cwOboActive,
     cqOboOid,
     cwOboOid,
     data,

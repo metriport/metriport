@@ -4,6 +4,7 @@ import { getOrganizationOrFail } from "../../command/medical/organization/get-or
 import { Facility, FacilityData } from "../../domain/medical/facility";
 import { BaseModel, ModelSetup } from "../../models/_default";
 import { Config } from "../../shared/config";
+import { executeOnDBTx } from "../transaction-wrapper";
 
 export enum FacilityType {
   initiatorAndResponder = "initiator_and_responder",
@@ -15,8 +16,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cxId: string;
   declare oid: string;
   declare facilityNumber: number;
-  declare cqOBOActive: boolean;
-  declare cwOBOActive: boolean;
+  declare cqOboActive: boolean;
+  declare cwOboActive: boolean;
   declare cqOboOid: string | null;
   declare cwOboOid: string | null;
   declare type: FacilityType;
@@ -31,7 +32,6 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         },
         oid: {
           type: DataTypes.STRING,
-          defaultValue: "",
         },
         facilityNumber: {
           type: DataTypes.INTEGER,
@@ -40,11 +40,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         data: {
           type: DataTypes.JSONB,
         },
-        cqOBOActive: {
+        cqOboActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
-        cwOBOActive: {
+        cwOboActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
@@ -66,17 +66,20 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         tableName: FacilityModel.NAME,
         hooks: {
           async beforeCreate(attributes) {
-            const curMaxNumber = (await FacilityModel.max("facilityNumber", {
-              where: {
-                cxId: attributes.cxId,
-              },
-            })) as number;
             const org = await getOrganizationOrFail({ cxId: attributes.cxId });
-            const facNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
-            attributes.oid = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
-              org.organizationNumber
-            }.${OIDNode.locations}.${facNumber}`;
-            attributes.facilityNumber = facNumber;
+            await executeOnDBTx(FacilityModel.prototype, async transaction => {
+              const curMaxNumber = (await FacilityModel.max("facilityNumber", {
+                where: {
+                  cxId: attributes.cxId,
+                },
+                transaction,
+              })) as number;
+              const facNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+              attributes.oid = `${Config.getSystemRootOID()}.${OIDNode.organizations}.${
+                org.organizationNumber
+              }.${OIDNode.locations}.${facNumber}`;
+              attributes.facilityNumber = facNumber;
+            });
           },
         },
       }
