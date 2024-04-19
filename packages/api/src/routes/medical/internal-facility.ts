@@ -5,7 +5,10 @@ import httpStatus from "http-status";
 import { z } from "zod";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
+import {
+  createOrUpdateCQOrganization,
+  getCqOrganization,
+} from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { requestLogger } from "../helpers/request-logger";
 import { required } from "../schemas/shared";
@@ -61,7 +64,18 @@ router.put(
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
     // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
 
-    await createFacility({
+    let facilityName: string | undefined;
+    if (facilityInput.cqOboOid) {
+      const existingFacility = await getCqOrganization(facilityInput.cqOboOid);
+      if (!existingFacility) {
+        return res
+          .status(httpStatus.BAD_REQUEST)
+          .send("CQ OBO organization with the specified CQ OBO OID was not found");
+      }
+      facilityName = existingFacility.name?.value ?? undefined;
+    }
+
+    const facility = await createFacility({
       cxId,
       data: {
         name: facilityInput.name,
@@ -88,11 +102,16 @@ router.put(
     // CAREQUALITY
     if (facilityInput.cqActive && facilityInput.cqOboOid) {
       const vendorName = cxOrg.dataValues.data?.name;
-      const orgName = buildCqOrgName(vendorName, facilityInput.name, facilityInput.cqOboOid);
+      const orgName = buildCqOboOrgName(
+        vendorName,
+        facilityName ?? facilityInput.name,
+        facilityInput.cqOboOid
+      );
       const addressLine = facilityInput.addressLine2
         ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
         : facilityInput.addressLine1;
 
+      console.log("Creating a CQ entry with this OID:", facility.oid);
       await createOrUpdateCQOrganization({
         name: orgName,
         addressLine1: addressLine,
@@ -101,10 +120,11 @@ router.put(
         city: facilityInput.city,
         state: facilityInput.state,
         postalCode: facilityInput.zip,
-        oid: facilityInput.cqOboOid,
+        oid: facility.oid,
         contactName: metriportCompanyDetails.name,
         phone: metriportCompanyDetails.phone,
         email: metriportEmailForCq,
+        parentOrgOid: cxOrg.oid,
         role: "Connection" as const,
       });
     }
@@ -116,7 +136,7 @@ router.put(
   })
 );
 
-function buildCqOrgName(vendorName: string, orgName: string, oid: string) {
+function buildCqOboOrgName(vendorName: string, orgName: string, oid: string) {
   return `${vendorName} - ${orgName} #OBO# ${oid}`;
 }
 

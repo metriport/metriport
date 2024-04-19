@@ -75,7 +75,7 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
-  hostOrgOID: z.string().optional(),
+  parentOrgOid: z.string().optional(),
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
