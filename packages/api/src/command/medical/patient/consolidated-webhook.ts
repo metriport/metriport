@@ -81,8 +81,10 @@ export const processConsolidatedDataWebhook = async ({
         requestId,
       };
 
-      if (bundle)
-        additionalWHRequestMeta.bundleLength = bundle.entry?.length?.toString() ?? "unknown";
+      if (bundle) {
+        additionalWHRequestMeta.bundleLength =
+          optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown";
+      }
 
       await processRequest(
         webhookRequest,
