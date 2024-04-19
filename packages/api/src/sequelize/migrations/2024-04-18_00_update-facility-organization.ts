@@ -11,7 +11,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
     await queryInterface.addColumn(
       facilityTableName,
       "oid",
-      { type: DataTypes.STRING },
+      { type: DataTypes.STRING, unique: true },
       { transaction }
     );
     await queryInterface.addColumn(

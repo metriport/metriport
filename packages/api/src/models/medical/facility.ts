@@ -32,10 +32,10 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         },
         oid: {
           type: DataTypes.STRING,
+          unique: true,
         },
         facilityNumber: {
           type: DataTypes.INTEGER,
-          defaultValue: 0,
         },
         data: {
           type: DataTypes.JSONB,
