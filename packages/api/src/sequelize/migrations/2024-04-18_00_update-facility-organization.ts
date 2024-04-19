@@ -1,7 +1,5 @@
 import { DataTypes } from "sequelize";
 import type { Migration } from "..";
-import { FacilityType } from "../../models/medical/facility";
-import { OrganizationType } from "../../models/medical/organization";
 
 const facilityTableName = "facility";
 const organizationTableName = "organization";
@@ -50,8 +48,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       facilityTableName,
       "type",
       {
-        type: DataTypes.ENUM(...Object.values(FacilityType)),
-        defaultValue: FacilityType.initiatorAndResponder,
+        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
+        defaultValue: "initiator_and_responder",
       },
       { transaction }
     );
@@ -59,8 +57,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       organizationTableName,
       "type",
       {
-        type: DataTypes.ENUM(...Object.values(OrganizationType)),
-        defaultValue: OrganizationType.healthcareProvider,
+        type: DataTypes.ENUM("healthcare_provider", "healthcare_it_vendor"),
+        defaultValue: "healthcare_provider",
       },
       { transaction }
     );
