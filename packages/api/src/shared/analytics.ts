@@ -1,5 +1,4 @@
 import { PostHog } from "posthog-node";
-import { Product } from "../domain/product";
 import { Config } from "./config";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
@@ -19,7 +18,7 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 
 const postApiKey = Config.getPostHogApiKey();
 
-export const analytics = (params: EventMessageV1 & { apiType: Product | "internal" }) => {
+export const analytics = (params: EventMessageV1) => {
   if (postApiKey) {
     const posthog = new PostHog(postApiKey);
 
@@ -27,7 +26,6 @@ export const analytics = (params: EventMessageV1 & { apiType: Product | "interna
       ...(params.properties ? { ...params.properties } : undefined),
       environment: Config.getEnvType(),
       platform: "oss-api",
-      apiType: params.apiType,
       $set_once: {
         cxId: params.distinctId,
       },
@@ -43,6 +41,9 @@ export enum EventTypes {
   error = "error",
   addressRelevance = "addressRelevance",
   patientDiscovery = "patientDiscovery",
+  documentQuery = "documentQuery",
+  documentConversion = "documentConversion",
+  consolidatedQuery = "consolidatedQuery",
 }
 
 export enum EventErrMessage {

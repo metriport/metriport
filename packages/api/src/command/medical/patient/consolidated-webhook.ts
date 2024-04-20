@@ -39,11 +39,13 @@ type PayloadWithoutMeta = Omit<Payload, "meta">;
 export const processConsolidatedDataWebhook = async ({
   patient,
   status,
+  requestId,
   bundle,
   filters,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
+  requestId?: string;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
@@ -75,14 +77,19 @@ export const processConsolidatedDataWebhook = async ({
         payload,
       });
 
+      const additionalWHRequestMeta: Record<string, string> = {};
+
+      if (requestId) additionalWHRequestMeta.requestId = requestId;
+
+      if (bundle) {
+        additionalWHRequestMeta.bundleLength =
+          optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown";
+      }
+
       await processRequest(
         webhookRequest,
         settings,
-        bundle
-          ? {
-              bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
-            }
-          : undefined,
+        additionalWHRequestMeta,
         currentPatient.data.cxConsolidatedRequestMetadata
       );
     } else {
