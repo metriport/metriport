@@ -55,11 +55,12 @@ that will contain a URL to retrieve the data from.
 
 <ParamField query="conversionType" type="string">
   The output format of the resulting . Can be one of `pdf`, `html`, or `json`. 
-  If provided, the Webhook will contain a URL to the file of chosen type. Otherwise, the data will
-  be returned in JSON format in the Webhook payload.
+
+  If provided, the Webhook will contain a URL to the file of chosen type. The URL is active for 3 minutes.
+  
+  Otherwise, the data will be returned in JSON format in the Webhook payload.
 
   <Info>This parameter is to indicate how the medical record should be rendered.</Info>
-  <Info>The URL is active for 3 minutes.</Info>
 </ParamField>
 
 <Info>
