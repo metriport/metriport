@@ -51,14 +51,11 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
 </ParamField>
 
 <ParamField query="conversionType" type="string">
-  The doc type to convert to. Either `html` or `pdf`.
+  The doc type to convert to. Can be one of "pdf", "html", or "json". 
+  If provided, the Webhook will contain a URL to the file of chosen type. Otherwise, the data will
+  be returned in json format in the Webhook payload.
 
   <Info>This parameter is to indicate how the medical record should be rendered.</Info>
-</ParamField>
-
-<ParamField query="getUrl" type="boolean">
-  If set to true, the Webhook response will contain a signed URL to the file containing the FHIR
-  bundle.
 </ParamField>
 
 <Info>

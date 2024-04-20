@@ -3,6 +3,7 @@ import {
   ConsolidationConversionType,
   Input as ConversionInput,
   Output as ConversionOutput,
+  MedicalRecordDocType,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
@@ -43,7 +44,7 @@ export async function handleBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: MedicalRecordDocType;
 }): Promise<Bundle<Resource>> {
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
@@ -119,7 +120,7 @@ async function convertFHIRBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: MedicalRecordDocType;
 }): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
 

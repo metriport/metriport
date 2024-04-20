@@ -46,7 +46,6 @@ export type GetConsolidatedFilters = {
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
-  getUrl?: boolean;
 };
 
 export type GetConsolidatedParams = {
@@ -69,7 +68,6 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-  getUrl,
 }: ConsolidatedQueryParams): Promise<QueryProgress> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -107,7 +105,6 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
     requestId,
-    getUrl,
   }).catch(emptyFunction);
 
   return progress;
@@ -147,7 +144,6 @@ export async function getConsolidated({
   dateFrom,
   dateTo,
   conversionType,
-  getUrl,
 }: GetConsolidatedParams): Promise<{
   bundle: Bundle<Resource>;
   filters: Record<string, string | undefined>;
@@ -164,7 +160,7 @@ export async function getConsolidated({
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
 
-    if (getUrl && !conversionType) {
+    if (conversionType === "json") {
       return uploadConsolidatedJsonAndReturnUrl({
         patient,
         bundle,
