@@ -33,7 +33,7 @@ import { Util } from "../../../shared/util";
 import { getSignedURL } from "../document/document-download";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
 import {
-  buildDocRefBundle,
+  buildDocRefBundleWithAttachment,
   emptyMetaProp,
   handleBundleToMedicalRecord,
   uploadJsonBundleToS3,
@@ -160,14 +160,7 @@ export async function getConsolidated({
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
 
-    if (conversionType === "json") {
-      return uploadConsolidatedJsonAndReturnUrl({
-        patient,
-        bundle,
-        filters,
-      });
-    }
-    const shouldCreateMedicalRecord = conversionType && hasResources;
+    const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const startedAt = patient.data.consolidatedQuery?.startedAt;
 
     const defaultAnalyticsProps = {
@@ -204,15 +197,24 @@ export async function getConsolidated({
         },
       });
     }
+
+    if (conversionType === "json") {
+      return uploadConsolidatedJsonAndReturnUrl({
+        patient,
+        bundle,
+        filters,
+      });
+    }
     return { bundle, filters };
   } catch (error) {
-    log(`Failed to get FHIR resources: ${JSON.stringify(filters)}`);
-    capture.error(error, {
+    const msg = "Failed to get FHIR resources";
+    log(`${msg}: ${JSON.stringify(filters)}`);
+    capture.error(msg, {
       extra: {
+        error,
         context: `getConsolidated`,
         patientId: patient.id,
         filters,
-        error,
       },
     });
     throw error;
@@ -250,7 +252,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
       bucketName: Config.getMedicalDocumentsBucketName(),
       fileName,
     });
-    const newBundle = buildDocRefBundle(patient, signedUrl, "json");
+    const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
     return { bundle: newBundle, filters };
   }
 }

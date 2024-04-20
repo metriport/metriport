@@ -2,7 +2,7 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
-  mrDocType,
+  mrFormat,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { stringToBoolean } from "@metriport/shared";
@@ -281,7 +281,7 @@ router.get(
 );
 
 const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
-const medicalRecordDocTypeSchema = z.enum(mrDocType);
+const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query
@@ -347,7 +347,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const type = getFrom("query").orFail("conversionType", req);
-    const conversionType = medicalRecordDocTypeSchema.parse(type);
+    const conversionType = medicalRecordFormatSchema.parse(type);
 
     const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
     if (!url) throw new NotFoundError("Medical record summary not found");

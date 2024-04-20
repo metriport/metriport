@@ -3,7 +3,7 @@ import {
   ConsolidationConversionType,
   Input as ConversionInput,
   Output as ConversionOutput,
-  MedicalRecordDocType,
+  MedicalRecordFormat,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
@@ -44,7 +44,7 @@ export async function handleBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: MedicalRecordDocType;
+  conversionType: MedicalRecordFormat;
 }): Promise<Bundle<Resource>> {
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
@@ -56,7 +56,7 @@ export async function handleBundleToMedicalRecord({
       fileName,
       durationSeconds: 60,
     });
-    return buildDocRefBundle(patient, url, conversionType);
+    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -68,7 +68,7 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildDocRefBundle(patient, url, conversionType);
+  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   if (!hasContents) {
     console.log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -77,10 +77,10 @@ export async function handleBundleToMedicalRecord({
   return newBundle;
 }
 
-export function buildDocRefBundle(
-  patient: Pick<Patient, "id">,
-  url: string,
-  conversionType: ConsolidationConversionType | "json"
+export function buildDocRefBundleWithAttachment(
+  patientId: string,
+  attachmentUrl: string,
+  mimeType: ConsolidationConversionType
 ): Bundle<Resource> {
   return {
     resourceType: "Bundle",
@@ -91,13 +91,13 @@ export function buildDocRefBundle(
         resource: {
           resourceType: "DocumentReference",
           subject: {
-            reference: `Patient/${patient.id}`,
+            reference: `Patient/${patientId}`,
           },
           content: [
             {
               attachment: {
-                contentType: `application/${conversionType}`,
-                url: url,
+                contentType: `application/${mimeType}`,
+                url: attachmentUrl,
               },
             },
           ],
@@ -120,15 +120,10 @@ async function convertFHIRBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: MedicalRecordDocType;
+  conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
-
-  if (!lambdaName) {
-    const msg = "FHIR to Medical Record Lambda Name is undefined";
-    console.log(msg);
-    throw new Error(msg);
-  }
+  if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
