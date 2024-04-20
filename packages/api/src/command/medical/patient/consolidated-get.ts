@@ -9,8 +9,8 @@ import {
   ResourceType,
 } from "@medplum/fhirtypes";
 import { ConsolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { QueryProgress } from "@metriport/core/domain/query-status";
 import {
   buildBundle,
@@ -18,6 +18,7 @@ import {
 } from "@metriport/core/external/fhir/shared/bundle";
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { emptyFunction } from "@metriport/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
@@ -25,19 +26,27 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { getReferencesFromFHIR } from "../../../external/fhir/references/get-references";
+import { EventTypes, analytics } from "../../../shared/analytics";
+import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
+import { getSignedURL } from "../document/document-download";
 import { processConsolidatedDataWebhook } from "./consolidated-webhook";
-import { handleBundleToMedicalRecord } from "./convert-fhir-bundle";
+import {
+  buildDocRefBundle,
+  emptyMetaProp,
+  handleBundleToMedicalRecord,
+  uploadJsonBundleToS3,
+} from "./convert-fhir-bundle";
 import { getPatientOrFail } from "./get-patient";
 import { storeQueryInit } from "./query-init";
-import { analytics, EventTypes } from "../../../shared/analytics";
 
 export type GetConsolidatedFilters = {
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
   conversionType?: ConsolidationConversionType;
+  getUrl?: boolean;
 };
 
 export type GetConsolidatedParams = {
@@ -60,6 +69,7 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
+  getUrl,
 }: ConsolidatedQueryParams): Promise<QueryProgress> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -97,6 +107,7 @@ export async function startConsolidatedQuery({
     dateTo,
     conversionType,
     requestId,
+    getUrl,
   }).catch(emptyFunction);
 
   return progress;
@@ -136,6 +147,7 @@ export async function getConsolidated({
   dateFrom,
   dateTo,
   conversionType,
+  getUrl,
 }: GetConsolidatedParams): Promise<{
   bundle: Bundle<Resource>;
   filters: Record<string, string | undefined>;
@@ -151,6 +163,14 @@ export async function getConsolidated({
       dateTo,
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
+
+    if (getUrl && !conversionType) {
+      return uploadConsolidatedJsonAndReturnUrl({
+        patient,
+        bundle,
+        filters,
+      });
+    }
     const shouldCreateMedicalRecord = conversionType && hasResources;
     const startedAt = patient.data.consolidatedQuery?.startedAt;
 
@@ -200,6 +220,42 @@ export async function getConsolidated({
       },
     });
     throw error;
+  }
+}
+
+async function uploadConsolidatedJsonAndReturnUrl({
+  patient,
+  bundle,
+  filters,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  bundle: Bundle<Resource>;
+  filters: Record<string, string | undefined>;
+}): Promise<{
+  bundle: Bundle<Resource>;
+  filters: Record<string, string | undefined>;
+}> {
+  {
+    const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
+    await uploadJsonBundleToS3({
+      bundle,
+      fileName,
+      metadata: {
+        patientId: patient.id,
+        cxId: patient.cxId,
+        resources: filters.resources?.toString() ?? emptyMetaProp,
+        dateFrom: filters.dateFrom ?? emptyMetaProp,
+        dateTo: filters.dateTo ?? emptyMetaProp,
+        conversionType: filters.conversionType ?? emptyMetaProp,
+      },
+    });
+
+    const signedUrl = await getSignedURL({
+      bucketName: Config.getMedicalDocumentsBucketName(),
+      fileName,
+    });
+    const newBundle = buildDocRefBundle(patient, signedUrl, "json");
+    return { bundle: newBundle, filters };
   }
 }
 

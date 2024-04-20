@@ -56,6 +56,11 @@ This will be returned [via a webook](/medical-api/more-info/webhooks#medical-rec
   <Info>This parameter is to indicate how the medical record should be rendered.</Info>
 </ParamField>
 
+<ParamField query="getUrl" type="boolean">
+  If set to true, the Webhook response will contain a signed URL to the file containing the FHIR
+  bundle.
+</ParamField>
+
 <Info>
   You can scroll to the bottom of the page to view all [available
   resources](/medical-api/api-reference/fhir/get-patient-consolidated#available-fhir-resources).

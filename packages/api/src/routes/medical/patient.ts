@@ -292,6 +292,8 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
  * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
  *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.getUrl Optional to indicate if the URL to download the consolidated json file should be returned in the Webhook.
+ *        Defaults to false, and sends the data through Webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
@@ -305,6 +307,7 @@ router.post(
     const dateFrom = parseISODate(getFrom("query").optional("dateFrom", req));
     const dateTo = parseISODate(getFrom("query").optional("dateTo", req));
     const type = getFrom("query").optional("conversionType", req);
+    const getUrl = stringToBoolean(getFrom("query").optional("getUrl", req));
     const conversionType = type ? consolidationConversionTypeSchema.parse(type) : undefined;
     const cxConsolidatedRequestMetadata = cxRequestMetadataSchema.parse(req.body);
 
@@ -316,6 +319,7 @@ router.post(
       dateTo,
       conversionType,
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
+      getUrl,
     });
     const respPayload: QueryProgressFromSDK = {
       status: queryResponse.status ?? null,
