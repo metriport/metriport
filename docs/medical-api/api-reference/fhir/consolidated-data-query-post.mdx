@@ -9,12 +9,12 @@ data from the FHIR repository.
 
 Once the data is consolidated and ready for consumption, a [Webhook request](/medical-api/more-info/webhooks#patient-consolidated-data)
 is sent to [your configured URL](/home/api-reference/settings/post-settings) containing the Patient's
-data in FHIR-compliant format, based on the filters used to trigger the query.
+data in FHIR-compliant format, based on the [parameters](#query-params) used to trigger the query.
 
 You can check the status of the data query by calling [get consolidated data query](/medical-api/api-reference/fhir/consolidated-data-query-get).
 
-This endpoint also provides the ability to render a medical record summary from the FHIR bundle as a
-PDF or HTML document. This will be returned [via a webook](/medical-api/more-info/webhooks#medical-record)
+This endpoint also provides the ability to render a [Medical Record Summary](/medical-api/more-info/medical-record-summary)
+from the FHIR bundle as a PDF or HTML document. This will be returned [via a webook](/medical-api/more-info/webhooks#medical-record)
 as a FHIR bundle with a [DocumentReference](/medical-api/fhir/resources/documentreference) resource
 that will contain a URL to retrieve the data from.
 
@@ -53,14 +53,15 @@ that will contain a URL to retrieve the data from.
   ISO 8601. If not provided, no end date filter will be applied.
 </ParamField>
 
-<ParamField query="conversionType" type="string">
-  The output format of the resulting . Can be one of `pdf`, `html`, or `json`. 
+<ParamField query="conversionType" type="string" optional>
+  The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
 
   If provided, the Webhook will contain a URL to the file of chosen type. The URL is active for 3 minutes.
   
-  Otherwise, the data will be returned in JSON format in the Webhook payload.
+  Otherwise, the data will be returned in JSON format in the Webhook payload (default).
 
-  <Info>This parameter is to indicate how the medical record should be rendered.</Info>
+  <Info>Providing `pdf` or `html` results in a
+  [Medical Record Summary](/medical-api/more-info/webhooks#medical-record) being sent.</Info>
 </ParamField>
 
 <Info>
