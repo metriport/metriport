@@ -222,7 +222,7 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           <div id="mr-sections">
             ${createDischargeMedicationsSection(medications, medicationAdministrations)}
             ${createMedicationSection(medications, medicationStatements)}
-            ${createConditionSection(conditions, encounters)}
+            ${createConditionSection(conditions, encounters, patient)}
             ${createAllergySection(allergies)}
             ${createProcedureSection(procedures)}
           </div>
@@ -868,11 +868,22 @@ export function createMedicationSection(
   return createSection("Medications", medicalTableContents);
 }
 
-function getStartDateFromMedicationStatement(v: MedicationStatement): string | undefined {
-  return v.effectivePeriod?.start;
-}
-function getEndDateFromMedicationStatement(v: MedicationStatement): string | undefined {
-  return v.effectivePeriod?.end;
+function getPeriodDateFromMedicationStatement(
+  v: MedicationStatement,
+  type: "start" | "end" | "lastSeen"
+): string | undefined {
+  const start = v.effectivePeriod?.start ? dayjs(v.effectivePeriod.start) : undefined;
+  const end = v.effectivePeriod?.end ? dayjs(v.effectivePeriod.end) : undefined;
+  const yearDiff = start && end ? end.diff(start, "year") : undefined;
+
+  if (type === "start" && yearDiff !== undefined && yearDiff < 5) {
+    return v.effectivePeriod?.start;
+  } else if (type === "end" && yearDiff !== undefined && yearDiff < 5) {
+    return v.effectivePeriod?.end;
+  } else if (type === "lastSeen" && yearDiff !== undefined && yearDiff > 5) {
+    return v.effectivePeriod?.end;
+  }
+  return undefined;
 }
 
 function getStartDateFromMedicationAdministration(v: MedicationAdministration): string | undefined {
@@ -892,13 +903,27 @@ function createSectionInMedications(
     return ` <h4>${title}</h4><table><tbody><tr><td>${noMedFound}</td></tr></tbody></table>`;
   }
   const medicationStatementsSortedByDate = medicationStatements.sort((a, b) => {
-    const aDate = getStartDateFromMedicationStatement(a);
-    const bDate = getStartDateFromMedicationStatement(b);
+    const aDate = getPeriodDateFromMedicationStatement(a, "start");
+    const bDate = getPeriodDateFromMedicationStatement(b, "start");
     if (!aDate && !bDate) return 0;
     if (aDate && !bDate) return -1;
     if (!aDate && bDate) return 1;
     return dayjs(aDate).isBefore(dayjs(bDate)) ? 1 : -1;
   });
+
+  // Filter out medication statements based on the specific code availability
+  const medicationStatementsWithSpecificCode = medicationStatementsSortedByDate.filter(
+    medicationStatement => {
+      const medicationRefId = medicationStatement.medicationReference?.reference?.split("/")[1];
+      const medication = mappedMedications[medicationRefId ?? ""];
+      const specificCode = getSpecificCode(medication?.code?.coding ?? [], [
+        RX_NORM_CODE,
+        NDC_CODE,
+      ]);
+      return specificCode; // Only include if specificCode is not null or empty
+    }
+  );
+
   const medicalTableContents = `
         <h4>${title}</h4>
         <table>
@@ -912,16 +937,16 @@ function createSectionInMedications(
             <th>Code</th>
             <th> Start Date</th>
             <th> End Date</th>
+            <th> Last Seen</th>
           </div>
         </tr>
       </thead>
       <tbody>
-        ${medicationStatementsSortedByDate
+        ${medicationStatementsWithSpecificCode
           .map(medicationStatement => {
             const medicationRefId =
               medicationStatement.medicationReference?.reference?.split("/")[1];
             const medication = mappedMedications[medicationRefId ?? ""];
-
             const code = getSpecificCode(medication?.code?.coding ?? [], [RX_NORM_CODE, NDC_CODE]);
             const blacklistInstructions = ["not defined"];
 
@@ -946,10 +971,13 @@ function createSectionInMedications(
                 <td>${medicationStatement.status ?? ""}</td>
                 <td>${code ?? ""}</td>
                 <td>${formatDateForDisplay(
-                  getStartDateFromMedicationStatement(medicationStatement)
+                  getPeriodDateFromMedicationStatement(medicationStatement, "start")
                 )}</td>
                 <td>${formatDateForDisplay(
-                  getEndDateFromMedicationStatement(medicationStatement)
+                  getPeriodDateFromMedicationStatement(medicationStatement, "end")
+                )}</td>
+                <td>${formatDateForDisplay(
+                  getPeriodDateFromMedicationStatement(medicationStatement, "lastSeen")
                 )}</td>
               </tr>
             `;
@@ -1038,17 +1066,18 @@ function createDischargeMedicationSection(
 type RenderCondition = {
   code: string | null;
   name: string;
-  firstSeen: string;
+  firstSeen: string | undefined;
   lastSeen: string;
   clinicalStatus: string;
 };
 
-function createConditionSection(conditions: Condition[], encounter: Encounter[]) {
+function createConditionSection(conditions: Condition[], encounter: Encounter[], patient: Patient) {
   if (!conditions) {
     return "";
   }
 
   const conditionDateDict = getConditionDatesFromEncounters(encounter);
+  const patientDOB = dayjs(patient.birthDate);
 
   const removeDuplicate = uniqWith(conditions, (a, b) => {
     const aText = a.code?.text;
@@ -1083,11 +1112,17 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
         onsetEndTime = conditionDateDict[condition.id]?.end ?? "";
       }
 
+      // Adjust dates based on patient's date of birth
+      let firstSeen: string | undefined =
+        onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime;
+      const lastSeen = onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime;
+      firstSeen = dayjs(firstSeen).isBefore(patientDOB) ? undefined : firstSeen;
+
       const newCondition: RenderCondition = {
         code: codeName,
         name,
-        firstSeen: onsetStartTime && onsetStartTime.length ? onsetStartTime : onsetDateTime,
-        lastSeen: onsetEndTime && onsetEndTime.length ? onsetEndTime : onsetDateTime,
+        firstSeen,
+        lastSeen,
         clinicalStatus,
       };
 
@@ -1111,7 +1146,6 @@ function createConditionSection(conditions: Condition[], encounter: Encounter[])
 
       return acc;
     }, [] as RenderCondition[])
-    // logic to filter out conditions that are duplictates in all but date, and throw away the ones that dont have dates.
     .reduce((acc, condition) => {
       const conditionText = condition.name;
       const conditionCode = condition.code;

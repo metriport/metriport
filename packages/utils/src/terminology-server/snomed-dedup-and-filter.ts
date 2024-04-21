@@ -94,7 +94,7 @@ async function removeConditionsProceduresMedAdmins({
   allRemainingEnries,
   removalStats,
   medicationDuplicates,
-  medicationToMedicationStatementMap,
+  medicationToMedicationStatementOrAdministrationMap,
 }: {
   filePath: string;
   conditionSet: Set<string>;
@@ -102,7 +102,7 @@ async function removeConditionsProceduresMedAdmins({
   allRemainingEnries: Set<string>;
   removalStats: RemovalStats;
   medicationDuplicates: Map<string, string[]>;
-  medicationToMedicationStatementMap: Map<
+  medicationToMedicationStatementOrAdministrationMap: Map<
     string,
     { medicationStatement: string; startDate: string }
   >;
@@ -181,10 +181,14 @@ async function removeConditionsProceduresMedAdmins({
         removalStats.entriesWithoutCptCodes.count += 1;
         entries.splice(i, 1);
       }
-    } else if (resource && resource.resourceType === "MedicationStatement") {
+    } else if (
+      resource &&
+      (resource.resourceType === "MedicationStatement" ||
+        resource.resourceType === "MedicationAdministration")
+    ) {
       const medicationId = resource.medicationReference?.reference.split("/")[1];
       if (medicationId) {
-        medicationToMedicationStatementMap.set(medicationId, {
+        medicationToMedicationStatementOrAdministrationMap.set(medicationId, {
           medicationStatement: resource.id,
           startDate: resource?.effectivePeriod?.start,
         });
@@ -207,12 +211,12 @@ async function removeConditionsProceduresMedAdmins({
 async function filterMedicationStatements({
   filePath,
   medicationDuplicates,
-  medicationToMedicationStatementMap,
+  medicationToMedicationStatementOrAdministrationMap,
   removalStats,
 }: {
   filePath: string;
   medicationDuplicates: Map<string, string[]>;
-  medicationToMedicationStatementMap: Map<
+  medicationToMedicationStatementOrAdministrationMap: Map<
     string,
     { medicationStatement: string; startDate: string }
   >;
@@ -220,7 +224,7 @@ async function filterMedicationStatements({
 }) {
   const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const entries = data.bundle ? data.bundle.entry : data.entry;
-  const medicationStatementsToRemove = [];
+  const medicationStatementsOrAdministrationsToRemove = [];
 
   // for every key in medicationDuplicates, iterate through the string[] if its length is greater than 1
   for (const [rxNormCode, medications] of medicationDuplicates) {
@@ -236,14 +240,14 @@ async function filterMedicationStatements({
       let latestDate = daysjs("1900-01-01").format();
       let latestMedicationStatement;
       for (const medication of medications) {
-        const medicationInfo = medicationToMedicationStatementMap.get(medication);
+        const medicationInfo = medicationToMedicationStatementOrAdministrationMap.get(medication);
         if (medicationInfo && daysjs(medicationInfo.startDate).isAfter(latestDate)) {
           latestDate = medicationInfo.startDate;
           // push the old medicationStatement into be removed
-          medicationStatementsToRemove.push(latestMedicationStatement);
+          medicationStatementsOrAdministrationsToRemove.push(latestMedicationStatement);
           latestMedicationStatement = medicationInfo.medicationStatement;
         } else if (medicationInfo) {
-          medicationStatementsToRemove.push(medicationInfo.medicationStatement);
+          medicationStatementsOrAdministrationsToRemove.push(medicationInfo.medicationStatement);
         }
       }
     }
@@ -251,8 +255,12 @@ async function filterMedicationStatements({
   for (let i = entries.length - 1; i >= 0; i--) {
     const entry = entries[i];
     const resource = entry.resource;
-    if (resource && resource.resourceType === "MedicationStatement") {
-      if (medicationStatementsToRemove.includes(resource.id)) {
+    if (
+      resource &&
+      (resource.resourceType === "MedicationStatement" ||
+        resource.resourceType === "MedicationAdministration")
+    ) {
+      if (medicationStatementsOrAdministrationsToRemove.includes(resource.id)) {
         removalStats.duplicateMedicationStatements.count += 1;
         entries.splice(i, 1);
       }
@@ -269,7 +277,7 @@ export async function fullProcessing(directoryPath: string) {
   const conditionSet = new Set<string>();
   const allRemainingEnries = new Set<string>();
   const medicationDuplicates = new Map<string, string[]>();
-  const medicationToMedicationStatementMap = new Map<
+  const medicationToMedicationStatementOrAdministrationMap = new Map<
     string,
     { medicationStatement: string; startDate: string }
   >();
@@ -281,7 +289,7 @@ export async function fullProcessing(directoryPath: string) {
       allRemainingEnries,
       removalStats,
       medicationDuplicates,
-      medicationToMedicationStatementMap,
+      medicationToMedicationStatementOrAdministrationMap,
     });
   });
 
@@ -310,7 +318,7 @@ export async function fullProcessing(directoryPath: string) {
     await filterMedicationStatements({
       filePath,
       medicationDuplicates,
-      medicationToMedicationStatementMap,
+      medicationToMedicationStatementOrAdministrationMap,
       removalStats,
     });
   });
