@@ -27,10 +27,11 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
   Required<Pick<CWOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Organization
+  org: Organization,
+  isObo = false
 ): Promise<CWOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
-  return {
+  const cwOrg: CWOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -53,25 +54,29 @@ export async function organizationToCommonwell(
     memberName: Config.getCWMemberOrgName(),
     securityTokenKeyType: "BearerKey",
     isActive: true,
-    gateways: [
-      {
-        serviceType: "XCA_Query",
-        gatewayType: "R4",
-        endpointLocation: Config.getGatewayEndpoint(),
-      },
-    ],
-    authorizationInformation: {
+    technicalContacts: [technicalContact],
+  };
+  // if this org isn't OBO, then we need to provide query responder details
+  if (!isObo) {
+    cwOrg.authorizationInformation = {
       authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
       clientId: Config.getGatewayAuthorizationClientId(),
       clientSecret: Config.getGatewayAuthorizationClientSecret(),
       documentReferenceScope: "fhir/document",
       binaryScope: "fhir/document",
-    },
-    technicalContacts: [technicalContact],
-  };
+    };
+    cwOrg.gateways = [
+      {
+        serviceType: "XCA_Query",
+        gatewayType: "R4",
+        endpointLocation: Config.getGatewayEndpoint(),
+      },
+    ];
+  }
+  return cwOrg;
 }
 
-export const create = async (org: Organization): Promise<void> => {
+export const create = async (org: Organization, isObo = false): Promise<void> => {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -79,7 +84,7 @@ export const create = async (org: Organization): Promise<void> => {
     return undefined;
   }
 
-  const cwOrg = await organizationToCommonwell(org);
+  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
