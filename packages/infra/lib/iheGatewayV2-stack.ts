@@ -37,6 +37,19 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     documentRetrievalLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
   }
 
+  private grantSecretsReadAccess(
+    lambdaFunction: Lambda,
+    secrets: Secrets,
+    secretKeys: string[]
+  ): void {
+    secretKeys.forEach(key => {
+      if (!secrets[key]) {
+        throw new Error(`${key} is not defined in config`);
+      }
+      secrets[key]?.grantRead(lambdaFunction);
+    });
+  }
+
   private setupIHEGatewayV2PatientDiscoveryLambda(ownProps: {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
@@ -81,35 +94,17 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 512,
+      memory: 1024,
       timeout: Duration.minutes(5),
       vpc,
     });
 
-    // granting secrets read access to lambda
-    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
-    if (!secrets[cqOrgCertificateKey]) {
-      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateKey]?.grantRead(patientDiscoveryLambda);
-
-    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
-    if (!secrets[cqOrgCertificateIntermediateKey]) {
-      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateIntermediateKey]?.grantRead(patientDiscoveryLambda);
-
-    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
-    if (!secrets[cqOrgPrivateKeyKey]) {
-      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyKey]?.grantRead(patientDiscoveryLambda);
-
-    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
-    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
-      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(patientDiscoveryLambda);
+    this.grantSecretsReadAccess(patientDiscoveryLambda, secrets, [
+      "CQ_ORG_CERTIFICATE",
+      "CQ_ORG_CERTIFICATE_INTERMEDIATE",
+      "CQ_ORG_PRIVATE_KEY",
+      "CQ_ORG_PRIVATE_KEY_PASSWORD",
+    ]);
 
     return patientDiscoveryLambda;
   }
@@ -157,35 +152,17 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 512,
+      memory: 1024,
       timeout: Duration.minutes(5),
       vpc,
     });
 
-    // granting secrets read access to lambda
-    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
-    if (!secrets[cqOrgCertificateKey]) {
-      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateKey]?.grantRead(documentQueryLambda);
-
-    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
-    if (!secrets[cqOrgCertificateIntermediateKey]) {
-      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateIntermediateKey]?.grantRead(documentQueryLambda);
-
-    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
-    if (!secrets[cqOrgPrivateKeyKey]) {
-      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyKey]?.grantRead(documentQueryLambda);
-
-    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
-    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
-      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(documentQueryLambda);
+    this.grantSecretsReadAccess(documentQueryLambda, secrets, [
+      "CQ_ORG_CERTIFICATE",
+      "CQ_ORG_CERTIFICATE_INTERMEDIATE",
+      "CQ_ORG_PRIVATE_KEY",
+      "CQ_ORG_PRIVATE_KEY_PASSWORD",
+    ]);
 
     return documentQueryLambda;
   }
@@ -233,35 +210,17 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 512,
+      memory: 1024,
       timeout: Duration.minutes(5),
       vpc,
     });
 
-    // granting secrets read access to lambda
-    const cqOrgCertificateKey = "CQ_ORG_CERTIFICATE";
-    if (!secrets[cqOrgCertificateKey]) {
-      throw new Error(`${cqOrgCertificateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateKey]?.grantRead(documentRetrievalLambda);
-
-    const cqOrgCertificateIntermediateKey = "CQ_ORG_CERTIFICATE_INTERMEDIATE";
-    if (!secrets[cqOrgCertificateIntermediateKey]) {
-      throw new Error(`${cqOrgCertificateIntermediateKey} is not defined in config`);
-    }
-    secrets[cqOrgCertificateIntermediateKey]?.grantRead(documentRetrievalLambda);
-
-    const cqOrgPrivateKeyKey = "CQ_ORG_PRIVATE_KEY";
-    if (!secrets[cqOrgPrivateKeyKey]) {
-      throw new Error(`${cqOrgPrivateKeyKey} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyKey]?.grantRead(documentRetrievalLambda);
-
-    const cqOrgPrivateKeyPasswordKey = "CQ_ORG_PRIVATE_KEY_PASSWORD";
-    if (!secrets[cqOrgPrivateKeyPasswordKey]) {
-      throw new Error(`${cqOrgPrivateKeyPassword} is not defined in config`);
-    }
-    secrets[cqOrgPrivateKeyPasswordKey]?.grantRead(documentRetrievalLambda);
+    this.grantSecretsReadAccess(documentRetrievalLambda, secrets, [
+      "CQ_ORG_CERTIFICATE",
+      "CQ_ORG_CERTIFICATE_INTERMEDIATE",
+      "CQ_ORG_PRIVATE_KEY",
+      "CQ_ORG_PRIVATE_KEY_PASSWORD",
+    ]);
 
     return documentRetrievalLambda;
   }

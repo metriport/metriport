@@ -36,9 +36,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-lambda-powertools/parameters": "^2.0.3",
     "@aws-sdk/client-cognito-identity-provider": "^3.301.0",
-    "@aws-sdk/client-secrets-manager": "^3.552.0",
     "@medplum/core": "^2.0.32",
     "@medplum/fhirtypes": "^2.0.32",
     "@metriport/api-sdk": "file:packages/api-sdk",

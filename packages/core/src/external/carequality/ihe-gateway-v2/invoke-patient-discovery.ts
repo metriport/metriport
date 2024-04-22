@@ -3,14 +3,14 @@ import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";
 
-export type IHEGatewayV2XCPDRequestParams = {
+export type PDRequestGatewayV2Params = {
   patientId: string;
   cxId: string;
-  pdRequestIHEGatewayV2: OutboundPatientDiscoveryReq;
+  pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 };
 const iheGatewayV2OutboundPatientDiscoveryLambdaName = "IHEGatewayV2OutboundPatientDiscoveryLambda";
 
-export async function startPatientDiscoveryIHEGatewayV2({
+export async function startPatientDiscoveryGatewayV2({
   pdRequestGatewayV2,
   patientId,
   cxId,
@@ -21,9 +21,6 @@ export async function startPatientDiscoveryIHEGatewayV2({
 }): Promise<void> {
   const lambdaClient = makeLambdaClient(Config.getAWSRegion());
   const params = { patientId, cxId, pdRequestGatewayV2 };
-  console.log(
-    `Invoking IHEGatewayV2 Outbound Patient Discovery Lambda with params: ${JSON.stringify(params)}`
-  );
   // intentionally not waiting
   lambdaClient
     .invoke({
@@ -35,5 +32,4 @@ export async function startPatientDiscoveryIHEGatewayV2({
     .catch(
       processAsyncError("Failed to invoke lambda to poll outbound patient discovery responses")
     );
-  console.log("Lambda invoked");
 }

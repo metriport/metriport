@@ -77,14 +77,4 @@ export class Config {
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
-
-  static getIHEGatewayV2PatientDiscoveryLambdaName(): string {
-    return getEnvVarOrFail("GIRTH_PATIENT_DISCOVERY_LAMBDA_NAME");
-  }
-  static getIHEGatewayV2DocumentQueryLambdaName(): string {
-    return getEnvVarOrFail("GIRTH_DOCUMENT_QUERY_LAMBDA_NAME");
-  }
-  static getIHEGatewayV2DocumentRetrievalLambdaName(): string {
-    return getEnvVarOrFail("GIRTH_DOCUMENT_RETRIEVAL_LAMBDA_NAME");
-  }
 }

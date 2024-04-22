@@ -3,6 +3,7 @@ import * as uuid from "uuid";
 export const iti55BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
+  patientId: uuid.v4(),
   timestamp: "2024-03-03T08:44:00Z",
   gateways: [
     {

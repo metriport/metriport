@@ -1,17 +1,18 @@
-// This is a helper script that lets you send xcpd requests in bulk
+import * as dotenv from "dotenv";
+dotenv.config();
 import fs from "fs";
-
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
 import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 
-import * as dotenv from "dotenv";
-dotenv.config();
+/*This is a helper script that lets you sign and send xcpd requests in bulk to as many gateways as you want.
+ *Its purpose is to allow you test specific gateways responses with granularity when debugging or testing.
+ */
 
-const privateKey = getEnvVarOrFail("IHE_STAGING_KEY");
-const publicCert = getEnvVarOrFail("IHE_STAGING_CERT");
-const certChain = getEnvVarOrFail("IHE_STAGING_CERT_CHAIN");
-const privateKeyPassword = getEnvVarOrFail("IHE_STAGING_KEY_PASSWORD");
+const privateKey = getEnvVarOrFail("IHE_PRODUCTION_KEY");
+const publicCert = getEnvVarOrFail("IHE_PRODUCTION_CERT");
+const certChain = getEnvVarOrFail("IHE_PRODUCTION_CERT_CHAIN");
+const privateKeyPassword = getEnvVarOrFail("IHE_PRODUCTION_KEY_PASSWORD");
 
 // path to a file containing an XCPD request json with many gateways
 const bulkRequestPath = "";
@@ -24,8 +25,8 @@ async function bulkXcpdRequests() {
     privateKey,
     privateKeyPassword
   );
-  fs.writeFileSync("../../scratch/outbound_xcpd.xml", signedRequests[0].signedRequest);
-  await sendSignedRequests({
+  fs.writeFileSync("./runs/saml/outbound_xcpd.xml", signedRequests[0].signedRequest);
+  const responses = await sendSignedRequests({
     signedRequests,
     certChain,
     publicCert,
@@ -34,6 +35,7 @@ async function bulkXcpdRequests() {
     patientId: "patientId",
     cxId: "cxId",
   });
+  fs.writeFileSync("./runs/saml/inbound_xcpd.xml", responses[0].response);
 }
 
 async function main() {

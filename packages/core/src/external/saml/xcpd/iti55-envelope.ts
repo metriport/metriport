@@ -8,19 +8,15 @@ import {
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
 } from "../../carequality/shared";
-import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid } from "../utils";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnUuid, timestampToSoapBody } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
-
+const expiresIn = 5;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
 export type BulkSignedXCPD = {
-  gateway: {
-    id: string;
-    oid: string;
-    url: string;
-  };
+  gateway: XCPDGateway;
   signedRequest: string;
 };
 
@@ -31,12 +27,13 @@ function createSoapBody({
   bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
 }): object {
-  if (!bodyData.gateways[0]) {
-    throw new Error("Gateway must be provided");
+  const gateway = bodyData.gateways?.[0];
+  if (!gateway) {
+    throw new Error("Gateway is required to build ITI-55 Request body");
   }
   const messageId = `urn:uuid:${bodyData.id}`;
-  const receiverDeviceId = bodyData.gateways?.[0].oid;
-  const toUrl = bodyData.gateways?.[0].url;
+  const receiverDeviceId = gateway.oid;
+  const toUrl = gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
@@ -56,7 +53,7 @@ function createSoapBody({
           "@_root": homeCommunityId,
         },
         "urn:creationTime": {
-          "@_value": dayjs(createdTimestamp).format("YYYYMMDDHHmmss"),
+          "@_value": timestampToSoapBody(createdTimestamp),
         },
         "urn:interactionId": {
           "@_extension": "PRPA_IN201305UV02",
@@ -201,17 +198,18 @@ export function createITI5SoapEnvelope({
   bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
 }): string {
-  if (!bodyData.gateways[0]) {
-    throw new Error("Gateway must be provided");
+  const gateway = bodyData.gateways?.[0];
+  if (!gateway) {
+    throw new Error("Gateway is required to build ITI-55 Request body");
   }
   const messageId = wrapIdInUrnUuid(bodyData.id);
-  const toUrl = bodyData.gateways[0].url;
+  const toUrl = gateway.url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(5, "minute").toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
   const securityHeader = createSecurityHeader({
     publicCert,
     createdTimestamp,

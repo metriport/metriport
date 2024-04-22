@@ -11,6 +11,7 @@ export function createOutboundPatientDiscoveryReq({
   orgName,
   orgOid,
   requestId,
+  patientId,
 }: {
   patient: FHIRPatient;
   cxId: string;
@@ -19,6 +20,7 @@ export function createOutboundPatientDiscoveryReq({
   orgName: string;
   orgOid: string;
   requestId: string;
+  patientId: string;
 }): OutboundPatientDiscoveryReq {
   const user = `${orgName} System User`;
   const id = requestId;
@@ -26,6 +28,7 @@ export function createOutboundPatientDiscoveryReq({
   return {
     id,
     cxId: cxId,
+    patientId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
     principalCareProviderIds: [facilityNPI],

@@ -4,5 +4,5 @@ export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female
   if (gender === undefined) {
     return undefined;
   }
-  return genderMapping[gender];
+  return genderMapping[gender] || undefined;
 }

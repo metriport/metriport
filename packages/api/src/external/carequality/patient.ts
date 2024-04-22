@@ -6,7 +6,7 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { startPatientDiscoveryIHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
+import { startPatientDiscoveryGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -72,17 +72,17 @@ async function prepareAndTriggerPD(
       `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
     );
 
-    log(`Kicking off patient discovery NoIHEGatewayV2`);
+    log(`Kicking off patient discovery Gateway V1`);
     await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
 
-    log(`Kicking off patient discovery IHEGatewayV2`);
-    await startPatientDiscoveryIHEGatewayV2({
+    log(`Kicking off patient discovery Gateway V2`);
+    await startPatientDiscoveryGatewayV2({
       pdRequestGatewayV2,
       patientId: patient.id,
       cxId: patient.cxId,
     });
 
-    // only poll for the NoIHEGatewayV2 request
+    // only poll for the Gateway V1 request
     await resultPoller.pollOutboundPatientDiscoveryResults({
       requestId: pdRequestGatewayV1.id,
       patientId: patient.id,
@@ -115,7 +115,6 @@ async function prepareForPatientDiscovery(
 
   const { organization, v1Gateways, v2Gateways } = await gatherXCPDGateways(patient);
 
-  // split xcpd gateways into two buckets here. Not IHEGatewayV2 and IHEGatewayV2
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
@@ -124,6 +123,7 @@ async function prepareForPatientDiscovery(
     orgName: organization.data.name,
     orgOid: organization.oid,
     requestId: requestId,
+    patientId: patient.id,
   });
 
   const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
@@ -134,6 +134,7 @@ async function prepareForPatientDiscovery(
     orgName: organization.data.name,
     orgOid: organization.oid,
     requestId: requestId,
+    patientId: patient.id,
   });
 
   return {
