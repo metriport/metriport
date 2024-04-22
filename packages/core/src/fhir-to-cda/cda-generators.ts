@@ -1,6 +1,5 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { findOrganizationResource, findPatientResource } from "../external/fhir/shared";
-import { MetriportError } from "../util/error/metriport-error";
 import NotFoundError from "../util/error/not-found";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXML } from "./cda-templates/clinical-document/clinical-document";
@@ -18,15 +17,9 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
       missing.push("Patient");
     }
     if (!organizationResources) {
-      missing.push("Organization"); // TODO: organization shouldn't actually be required
+      missing.push("Organization");
     }
-    const additionalInfo = { missing: missing.join(", ") }; // TODO: This is a bit of a hack. We should probably have a better way to handle this.
-
-    throw new MetriportError(
-      "Required resource is missing.",
-      new NotFoundError("Resource(s) not found"),
-      additionalInfo
-    );
+    throw new NotFoundError(`${missing.join(", ")} resource(s) not found`);
   }
 
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
@@ -48,13 +41,8 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
     if (!structuredBody) {
       missing.push("structuredBody");
     }
-    const additionalInfo = { missing: missing.join(", ") };
 
-    throw new MetriportError(
-      "Missing required CDA components. Failed to generate CDA.",
-      new NotFoundError("Resource(s) not found"),
-      additionalInfo
-    );
+    throw new NotFoundError(`${missing.join(", ")} resource(s) not found`);
   }
 
   const clinicalDocument = buildClinicalDocumentXML(

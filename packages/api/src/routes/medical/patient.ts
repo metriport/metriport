@@ -2,6 +2,8 @@ import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -12,16 +14,15 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
+import { convertToCdaAndUpload } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { toFHIR as toFHIROrganization } from "../../external/fhir/organization";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
@@ -33,6 +34,7 @@ import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -48,15 +50,10 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { stringToBoolean } from "@metriport/shared";
-import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
-import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
-import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -393,9 +390,9 @@ router.put("/:id/consolidated", asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];
-  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+  if (contentLength && parseInt(contentLength) >= MAXIMUM_UPLOAD_FILE_SIZE) {
     throw new BadRequestError(
-      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+      `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
 
@@ -435,21 +432,7 @@ async function putConsolidated(req: Request, res: Response) {
     patientId: patient.id,
     fhirBundle: validatedBundle,
   });
-  if (!Config.isProdEnv()) {
-    const organization = await getOrganizationOrFail({ cxId });
-    const fhirOrganization = toFHIROrganization(organization);
-    const cdaBundles = convertFhirBundleToCda(validatedBundle);
-    for (const cdaBundle of cdaBundles) {
-      await cdaDocumentUploaderHandler({
-        cxId,
-        patientId,
-        cdaBundle,
-        destinationBucket: Config.getMedicalDocumentsBucketName(),
-        region: Config.getAWSRegion(),
-        organization: fhirOrganization,
-      });
-    }
-  }
+  convertToCdaAndUpload(cxId, patientId, validatedBundle);
   return res.json(data);
 }
 

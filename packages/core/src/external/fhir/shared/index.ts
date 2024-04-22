@@ -132,7 +132,7 @@ function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
 }
 
-function isOrganization(resource: Resource | undefined): resource is Organization {
+export function isOrganization(resource: Resource | undefined): resource is Organization {
   return resource?.resourceType === "Organization";
 }
 
@@ -165,12 +165,12 @@ export function findResourceInBundle(bundle: Bundle, reference: string): Resourc
     return undefined;
   }
   const entry = bundle.entry.find(entry => {
-    const entryReference = buildEntryReference(entry.resource);
+    const entryReference = entry.resource ? buildEntryReference(entry.resource) : undefined;
     return entryReference === reference;
   });
   return entry?.resource;
 }
 
-export function buildEntryReference(resource: Resource | undefined): string {
-  return resource ? `${resource.resourceType}/${resource.id}` : "";
+export function buildEntryReference(resource: Resource): string {
+  return `${resource.resourceType}/${resource.id}`;
 }

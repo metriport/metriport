@@ -15,8 +15,7 @@ export function buildAuthor(organization: Organization): CDAAuthor {
       id: withNullFlavor(organization.id, rootAttribute),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
-      representedOrganization: buildRepresentedOrganization(organization), // TODO: organization shouldn't actually be required
-      // TODO: one of (assignedPerson / assignedAuthoringDevice) should be required
+      representedOrganization: buildRepresentedOrganization(organization),
     },
   };
   return author;

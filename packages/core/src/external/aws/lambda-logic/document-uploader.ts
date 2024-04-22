@@ -1,4 +1,5 @@
 import { DocumentReference } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
 import axios from "axios";
 import { createDocumentFileName } from "../../../domain/document/filename";
 import {
@@ -6,14 +7,14 @@ import {
   createUploadMetadataFilePath,
 } from "../../../domain/document/upload";
 import { parseFilePath } from "../../../domain/filename";
-import { MetriportError } from "../../../util/error/metriport-error";
-import { S3Utils } from "../s3";
 import { createAndUploadDocumentdMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
+import { MetriportError } from "../../../util/error/metriport-error";
 import { out } from "../../../util/log";
+import { S3Utils } from "../s3";
 
 const api = axios.create();
 const { log } = out(`Core Document Uploader`);
-const MAXIMUM_FILE_SIZE = 50_00_000; // 50 MB
+export const MAXIMUM_UPLOAD_FILE_SIZE = 50_000_000; // 50 MB
 
 export type FileData = {
   mimeType?: string | undefined;
@@ -39,7 +40,7 @@ export async function documentUploaderHandler(
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
   const { cxId, patientId, fileId: docId } = s3FileNameParts;
-  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
+  const { size, contentType } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
 
   const docName = createDocumentFileName(docId, contentType);
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
@@ -58,8 +59,14 @@ export async function documentUploaderHandler(
     log(`Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`);
   } catch (error) {
     const message = "Error copying the uploaded file to medical documents bucket";
-    log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { copySource, destinationBucket, destinationKey });
+    log(`${message} - error ${errorToString(error)}`);
+    throw new MetriportError(message, error, {
+      copySource,
+      destinationBucket,
+      destinationKey,
+      cxId,
+      patientId,
+    });
   }
 
   const fileData: FileData = {
@@ -73,11 +80,10 @@ export async function documentUploaderHandler(
   try {
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
-    const hash = eTag ? eTag : "";
     if (!contentType) {
       const message = "Failed to get the mime type of the uploaded file";
       log(`${message}: ${contentType}`);
-      throw new MetriportError(message, null, { sourceKey, destinationKey });
+      throw new MetriportError(message, null, { sourceKey, destinationKey, cxId, patientId });
     }
     if (!docRef) {
       const message = "Failed with the call to update the doc-ref of an uploaded file";
@@ -88,7 +94,6 @@ export async function documentUploaderHandler(
         cxId,
         patientId,
         docId: destinationKey,
-        hash,
         size: stringSize,
         docRef,
         metadataFileName,
@@ -96,7 +101,7 @@ export async function documentUploaderHandler(
         mimeType: contentType,
       });
     }
-    if (size && size > MAXIMUM_FILE_SIZE) {
+    if (size && size > MAXIMUM_UPLOAD_FILE_SIZE) {
       // #1207 TODO: Delete the file if it's too large and alert the customer.
       const message = `Uploaded file size exceeds the maximum allowed size`;
       log(`${message}: ${size}`);
@@ -104,8 +109,8 @@ export async function documentUploaderHandler(
     }
   } catch (error) {
     const message = "Failed with the call to update the doc-ref of an uploaded file";
-    log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { sourceKey, destinationKey });
+    log(`${message} - error ${errorToString(error)}`);
+    throw new MetriportError(message, error, { sourceKey, destinationKey, cxId, patientId });
   }
 }
 

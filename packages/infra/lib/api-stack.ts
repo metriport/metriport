@@ -404,6 +404,15 @@ export class APIStack extends Stack {
       });
     }
 
+    const fhirToCdaConverterLambda = this.setupFhirToCdaConverterLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
       stack: this,
       vpc: this.vpc,
@@ -445,6 +454,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      fhirToCdaConverterLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -1467,6 +1477,39 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
     return fhirToMedicalRecordLambda;
+  }
+
+  private setupFhirToCdaConverterLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    medicalDocumentsBucket: s3.Bucket;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, alarmAction, envType } = ownProps;
+
+    const fhirToCdaConverterLambda = createLambda({
+      stack: this,
+      name: "FhirToCdaConverter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-cda-converter",
+      envType,
+      envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantRead(fhirToCdaConverterLambda);
+    // fhirToCdaConverterLambda.grantInvoke(apiService.taskDefinition.taskRole);
+
+    return fhirToCdaConverterLambda;
   }
 
   private setupCWDocContribution(ownProps: {

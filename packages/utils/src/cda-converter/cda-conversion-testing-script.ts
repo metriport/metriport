@@ -1,8 +1,3 @@
-// The objective of these tests are to test two things
-// 1. That we generate valid CDA that our CDA->FHIR converter doesn't error on. We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
-// 2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR, we get the same FHIR bundle as the original FHIR bundle. Obviously this introduces
-//    a dependency on another converter, but for now its the easiest approach since short of manually having exact string comparisons between two CDAs, we can't know if our CDA is accurate.
-
 import fs from "fs";
 import path from "path";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";
@@ -10,62 +5,77 @@ import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-gener
 import axios, { AxiosInstance } from "axios";
 import { Bundle } from "@medplum/fhirtypes";
 
+/**
+ * The objective of these tests are to test two things:
+ *
+ *  1. That we generate valid CDA that our CDA->FHIR converter doesn't error on.
+ *     We cant know if EPIC won't error on our CDA yet, but not erroring on our own CDA is a good start
+ *
+ *  2. That our FHIR to CDA converter generates accurate CDA, such that when our CDA is converted back to FHIR,
+ *     we get the same FHIR bundle as the original FHIR bundle. Obviously this introduces a dependency on
+ *     another converter, but for now its the easiest approach since short of manually having exact string
+ *     comparisons between two CDAs, we can't know if our CDA is accurate.
+ *
+ */
+
 const fhirBaseUrl = "http://localhost:8888";
 const baseInputFolder = "./src/cda-converter/scratch/";
 
-if (!fs.existsSync(baseInputFolder)) {
-  console.error("Base input folder does not exist:", baseInputFolder);
-  process.exit(1);
-}
-
-fs.readdir(baseInputFolder, (err, files) => {
-  if (err) {
-    console.error("Error reading base input folder:", err);
+async function main() {
+  if (!fs.existsSync(baseInputFolder)) {
+    console.error("Base input folder does not exist:", baseInputFolder);
     process.exit(1);
   }
 
-  files.forEach(file => {
-    if (!file.endsWith("12345.json")) {
-      return;
+  fs.readdir(baseInputFolder, (err, files) => {
+    if (err) {
+      console.error("Error reading base input folder:", err);
+      process.exit(1);
     }
-    const filePath = path.join(baseInputFolder, file);
 
-    const fileBaseName = path.basename(file, ".json");
-    const fileSpecificBaseFolder = path.join(baseInputFolder, fileBaseName);
-    const inputJsonBundlesFolder = path.join(fileSpecificBaseFolder, "input-fhir");
-    const outputFolderCDA = path.join(fileSpecificBaseFolder, "output-cda");
-    const outputFolderFHIR = path.join(fileSpecificBaseFolder, "output-fhir");
-
-    [inputJsonBundlesFolder, outputFolderCDA, outputFolderFHIR].forEach(folder => {
-      if (!fs.existsSync(folder)) {
-        fs.mkdirSync(folder, { recursive: true });
+    files.forEach(file => {
+      if (!file.endsWith(".json")) {
+        return;
       }
+      const filePath = path.join(baseInputFolder, file);
+
+      const fileBaseName = path.basename(file, ".json");
+      const fileSpecificBaseFolder = path.join(baseInputFolder, fileBaseName);
+      const inputJsonBundlesFolder = path.join(fileSpecificBaseFolder, "input-fhir");
+      const outputFolderCDA = path.join(fileSpecificBaseFolder, "output-cda");
+      const outputFolderFHIR = path.join(fileSpecificBaseFolder, "output-fhir");
+
+      [inputJsonBundlesFolder, outputFolderCDA, outputFolderFHIR].forEach(folder => {
+        if (!fs.existsSync(folder)) {
+          fs.mkdirSync(folder, { recursive: true });
+        }
+      });
+
+      const fileContent = fs.readFileSync(filePath, "utf8");
+      let fhirBundle;
+
+      try {
+        fhirBundle = JSON.parse(fileContent);
+      } catch (error) {
+        console.error(`Error parsing JSON for file ${file}:`, error);
+        return;
+      }
+
+      convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA);
+      convertCdaToFhir(
+        outputFolderCDA,
+        outputFolderFHIR,
+        axios.create({ baseURL: fhirBaseUrl }),
+        fileBaseName,
+        ".json"
+      ).catch(error => console.error("Error converting CDA to FHIR:", error));
+
+      compareFhirBundles(inputJsonBundlesFolder, outputFolderFHIR);
     });
-
-    const fileContent = fs.readFileSync(filePath, "utf8");
-    let fhirBundle;
-
-    try {
-      fhirBundle = JSON.parse(fileContent);
-    } catch (error) {
-      console.error(`Error parsing JSON for file ${file}:`, error);
-      return;
-    }
-
-    convertFhirToCda(fhirBundle, file, inputJsonBundlesFolder, outputFolderCDA);
-    convertCdaToFhir(
-      outputFolderCDA,
-      outputFolderFHIR,
-      axios.create({ baseURL: fhirBaseUrl }),
-      fileBaseName,
-      ".json"
-    ).catch(error => console.error("Error converting CDA to FHIR:", error));
-
-    compareFhirBundles(inputJsonBundlesFolder, outputFolderFHIR);
   });
-});
+}
 
-export function convertFhirBundleToCdaTesting(fhirBundle: Bundle): {
+function convertFhirBundleToCdaTesting(fhirBundle: Bundle): {
   cdaDocuments: string[];
   splitBundles: Bundle[];
 } {
@@ -204,3 +214,5 @@ function compareResourceCounts(
 
   return true;
 }
+
+main();

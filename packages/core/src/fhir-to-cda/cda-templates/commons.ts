@@ -1,51 +1,42 @@
 import {
-  Organization,
   Address,
-  ContactPoint,
   CodeableConcept,
+  ContactPoint,
   Identifier,
+  Organization,
 } from "@medplum/fhirtypes";
 import {
-  Entry,
-  EntryObject,
+  CDAAddress,
   CDACodeCE,
   CDACodeCV,
   CDAInstanceIdentifier,
-  CDAAddress,
   CDAOrganization,
   CDATelecom,
+  Entry,
+  EntryObject,
 } from "../cda-types/shared-types";
 import {
-  rootAttribute,
-  extensionAttribute,
   assigningAuthorityNameAttribute,
-  valueAttribute,
-  useAttribute,
+  extensionAttribute,
   nullFlavorAttribute,
+  rootAttribute,
+  useAttribute,
+  valueAttribute,
 } from "./constants";
 
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
-  if (value === undefined) {
-    return {};
-  } else {
-    return { [key]: value };
-  }
+  if (value == undefined) return {};
+  return { [key]: value };
 }
 
 export function withoutNullFlavorString(value: string | undefined): Entry {
-  if (value === undefined) {
-    return {};
-  } else {
-    return value;
-  }
+  if (value == undefined) return {};
+  return value;
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value === undefined) {
-    return { [nullFlavorAttribute]: "UNK" };
-  } else {
-    return { [key]: value };
-  }
+  if (value == undefined) return { [nullFlavorAttribute]: "UNK" };
+  return { [key]: value };
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
@@ -157,7 +148,7 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
   return address?.map(addr => ({
     ...withoutNullFlavorObject(addr.use, useAttribute),
-    streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
+    streetAddressLine: withoutNullFlavorString(addr.line?.join(", ")),
     city: withoutNullFlavorString(addr.city),
     state: withoutNullFlavorString(addr.state),
     postalCode: withoutNullFlavorString(addr.postalCode),
