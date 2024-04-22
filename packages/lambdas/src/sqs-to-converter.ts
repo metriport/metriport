@@ -47,6 +47,7 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
+    if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
