@@ -79,7 +79,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "IHEGatewayV2OutboundPatientDiscovery",
-      entry: "iheGatewayV2-outbound-patient-discovery",
+      entry: "ihe-gateway-v2-outbound-patient-discovery",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),

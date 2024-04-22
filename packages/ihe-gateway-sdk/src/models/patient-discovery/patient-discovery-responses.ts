@@ -64,7 +64,6 @@ export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscovery
 // FROM EXTERNAL GATEWAY
 const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   gateway: XCPDGatewaySchema,
-  patientId: z.string(),
 });
 
 export const outboundPatientDiscoveryRespSuccessfulSchema =

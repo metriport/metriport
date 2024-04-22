@@ -6,7 +6,6 @@ import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { startPatientDiscoveryGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -25,6 +24,7 @@ import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-dis
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { validateCQEnabledAndInitGW } from "./shared";
+import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 dayjs.extend(duration);
 
@@ -76,7 +76,8 @@ async function prepareAndTriggerPD(
     await enabledIHEGW.startPatientDiscovery(pdRequestGatewayV1);
 
     log(`Kicking off patient discovery Gateway V2`);
-    await startPatientDiscoveryGatewayV2({
+    const iheGatewayV2 = makeIHEGatewayV2();
+    await iheGatewayV2.startPatientDiscoveryGatewayV2({
       pdRequestGatewayV2,
       patientId: patient.id,
       cxId: patient.cxId,

@@ -52,6 +52,7 @@ export const outboundRequest: OutboundPatientDiscoveryReq = {
 
 export const expectedResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
   id: outboundRequest.id,
+  patientId: outboundRequest.patientId,
   timestamp: outboundRequest.timestamp,
   responseTimestamp: dayjs().toISOString(),
   gatewayHomeCommunityId: outboundRequest.samlAttributes.homeCommunityId,

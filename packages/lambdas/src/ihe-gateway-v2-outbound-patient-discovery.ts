@@ -1,18 +1,12 @@
 import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import {
-  outboundPatientDiscoveryReqSchema,
-  OutboundPatientDiscoveryResp,
-} from "@metriport/ihe-gateway-sdk";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/process-xcpd-response";
-import { PDRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/invoke-patient-discovery";
-import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
+import { outboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { PDRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
+import { createSignSendProcessXCPDRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const patientDiscoveryUrl = `${apiUrl}/internal/carequality/patient-discovery/response`;
@@ -58,33 +52,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: PDRequestGatew
       });
       throw new Error(msg);
     }
-    const signedRequests = createAndSignBulkXCPDRequests(
-      xcpdRequest.data,
-      publicCert,
-      privateKey,
-      privateKeyPassword
-    );
-    const responses = await sendSignedRequests({
-      signedRequests,
-      certChain,
+
+    const results = await createSignSendProcessXCPDRequest({
+      xcpdRequest: xcpdRequest.data,
       publicCert,
       privateKey,
       privateKeyPassword,
+      certChain,
       patientId,
       cxId,
-    });
-    const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
-      const gateway = response.gateway;
-      if (!gateway) {
-        throw new MetriportError(`Gateway at index is undefined`, index);
-      }
-      return processXCPDResponse({
-        xcpdResponse: response,
-        outboundRequest: xcpdRequest.data,
-        gateway,
-        patientId,
-        cxId,
-      });
     });
 
     // send results to internal endpoint
