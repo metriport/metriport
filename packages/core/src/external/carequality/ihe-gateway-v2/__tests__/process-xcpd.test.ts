@@ -13,9 +13,9 @@ if (!gateway) {
   throw new Error("Gateway must be provided");
 }
 
-const xmlMatchString = fs.readFileSync(path.join(__dirname, "xcpd_match.xml"), "utf8");
-const xmlNoMatchString = fs.readFileSync(path.join(__dirname, "xcpd_no_match.xml"), "utf8");
-const xmlErrorString = fs.readFileSync(path.join(__dirname, "xcpd_error.xml"), "utf8");
+const xmlMatchString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_match.xml"), "utf8");
+const xmlNoMatchString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_no_match.xml"), "utf8");
+const xmlErrorString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_error.xml"), "utf8");
 
 describe("processXCPDResponse", () => {
   it("should process the match XCPD response correctly", async () => {
@@ -28,7 +28,6 @@ describe("processXCPDResponse", () => {
       outboundRequest: outboundXCPDRequest,
       gateway,
     });
-
     const xcpdResult = outboundPatientDiscoveryRespSuccessfulSchema.safeParse(response);
     expect(xcpdResult.success).toBe(true);
     if (xcpdResult.success) {

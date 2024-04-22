@@ -56,10 +56,8 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 =
-    getPatientRegistryProfile(jsonObj)?.["controlActProcess"]?.["subject"]?.["registrationEvent"]?.[
-      "subject1"
-    ];
-  const addr = subject1?.["patient"]?.["patientPerson"]?.["addr"];
+    getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
+  const addr = subject1?.patient?.patientPerson?.addr;
   const addresses = [
     {
       line: [addr?.streetAddressLine?._text ?? addr?.streetAddressLine],
@@ -137,7 +135,7 @@ function handlePatientErrorResponse({
     },
   });
   const acknowledgementDetail =
-    getPatientRegistryProfile(jsonObj)?.["acknowledgement"]?.["acknowledgementDetail"];
+    getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {
     severity: "error",
     ...(acknowledgementDetail && {
@@ -230,7 +228,8 @@ export function processXCPDResponse({
 
   const parser = new XMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: "@_",
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
@@ -274,7 +273,7 @@ function isXCPDRespNotFound(queryResponseCode: string): boolean {
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getPatientRegistryProfile(jsonObj: any): any {
-  return jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"];
+  return jsonObj?.Envelope?.Body?.PRPA_IN201306UV02;
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -283,10 +282,8 @@ function getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj: any): {
   queryResponseCode: string;
 } {
   return {
-    ack: getPatientRegistryProfile(jsonObj)?.["acknowledgement"]?.["typeCode"]?.["@_code"],
+    ack: getPatientRegistryProfile(jsonObj)?.acknowledgement?.typeCode?._code,
     queryResponseCode:
-      getPatientRegistryProfile(jsonObj)?.["controlActProcess"]?.["queryAck"]?.[
-        "queryResponseCode"
-      ]?.["@_code"],
+      getPatientRegistryProfile(jsonObj)?.controlActProcess?.queryAck?.queryResponseCode?._code,
   };
 }

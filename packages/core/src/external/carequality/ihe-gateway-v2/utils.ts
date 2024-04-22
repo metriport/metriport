@@ -21,7 +21,10 @@ export function isGatewayWithOid(
   return "oid" in gateway;
 }
 
-export function stripUrnPrefix(urn: string): string {
+export function stripUrnPrefix(urn: string | number): string {
+  if (typeof urn === "number") {
+    return urn.toString();
+  }
   return urn.replace("urn:oid:", "");
 }
 

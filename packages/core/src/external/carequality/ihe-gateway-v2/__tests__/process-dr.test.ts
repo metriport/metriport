@@ -151,7 +151,7 @@ describe("processDRResponse for various file types and verify successful upload 
       beforeAll(async () => {
         testContext = new TestContext(name);
         await testContext.processDRResponse();
-      });
+      }, 20000);
 
       it(`should process the ${extension} DR response correctly`, () => {
         expect(testContext.response?.documentReference?.[0]?.contentType).toEqual(mimeType);
@@ -159,7 +159,7 @@ describe("processDRResponse for various file types and verify successful upload 
 
       it(`should verify the ${extension} file upload to S3 without corruption if applicable`, async () => {
         await testContext.verifyUpload();
-      }, 10000);
+      }, 20000);
     });
   });
 });

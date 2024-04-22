@@ -46,7 +46,8 @@ async function parseDocumentReference({
 }): Promise<DocumentReference> {
   // lets extract the document here.
   const { mimeType, extension, decodedBytes } = parseFileFromString(documentResponse?.Document);
-  const metriportId = idMapping[stripUrnPrefix(documentResponse?.DocumentUniqueId)];
+  const strippedDocUniqueId = stripUrnPrefix(documentResponse?.DocumentUniqueId);
+  const metriportId = idMapping[strippedDocUniqueId];
   if (!metriportId) {
     throw new Error("MetriportId not found for document");
   }
