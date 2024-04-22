@@ -44,6 +44,9 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
+    const docRefsPromises = results.map(toDocumentReference);
+    const docRefs = (await Promise.all(docRefsPromises)).flat();
+
     analytics({
       distinctId: cxId,
       event: EventTypes.documentQuery,
@@ -52,12 +55,10 @@ export async function processOutboundDocumentQueryResps({
         patientId,
         hie: MedicalDataSource.CAREQUALITY,
         duration,
-        documentCount: results.length,
+        documentCount: docRefs.length,
       },
     });
 
-    const docRefsPromises = results.map(toDocumentReference);
-    const docRefs = (await Promise.all(docRefsPromises)).flat();
     const docRefsWithMetriportId = await Promise.all(
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );
