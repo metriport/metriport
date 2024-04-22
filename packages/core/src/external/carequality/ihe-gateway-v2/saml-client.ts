@@ -69,52 +69,51 @@ export async function sendSignedRequests({
   patientId: string;
   cxId: string;
 }): Promise<SamlClientResponse[]> {
-  const requestPromises = signedRequests.map((request, index) =>
-    sendSignedXml({
-      signedXml: request.signedRequest,
-      url: request.gateway.url,
-      certChain,
-      publicCert,
-      key: privateKey,
-      passphrase: privateKeyPassword,
-    })
-      .then(response => {
-        console.log(
-          `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
-            request.gateway.oid
-          }`
-        );
-        return {
-          gateway: request.gateway,
-          response,
-          success: true,
-        };
-      })
-      .catch(error => {
-        const msg = "HTTP/SSL Failure Sending Signed SAML Request";
-        const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
-          request.gateway.url
-        } + oid: ${request.gateway.oid}`;
-        const errorString: string = errorToString(error);
-        const extra = {
-          errorString,
-          requestDetails,
-          patientId,
-          cxId,
-        };
-        capture.error(msg, {
-          extra: {
-            context: `lambda.iheGatewayV2-outbound-patient-discovery`,
-            extra,
-          },
-        });
-        return {
-          gateway: request.gateway,
-          response: errorString,
-          success: false,
-        };
-      })
-  );
+  const requestPromises = signedRequests.map(async (request, index) => {
+    try {
+      const response = await sendSignedXml({
+        signedXml: request.signedRequest,
+        url: request.gateway.url,
+        certChain,
+        publicCert,
+        key: privateKey,
+        passphrase: privateKeyPassword,
+      });
+      console.log(
+        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
+          request.gateway.oid
+        }`
+      );
+      return {
+        gateway: request.gateway,
+        response,
+        success: true,
+      };
+    } catch (error) {
+      const msg = "HTTP/SSL Failure Sending Signed SAML Request";
+      const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
+        request.gateway.url
+      } + oid: ${request.gateway.oid}`;
+      const errorString: string = errorToString(error);
+      const extra = {
+        errorString,
+        requestDetails,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, {
+        extra: {
+          context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+          extra,
+        },
+      });
+      return {
+        gateway: request.gateway,
+        response: errorString,
+        success: false,
+      };
+    }
+  });
 
   const responses = await Promise.allSettled(requestPromises);
   const processedResponses: SamlClientResponse[] = responses
