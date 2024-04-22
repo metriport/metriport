@@ -44,8 +44,7 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    const docRefsPromises = results.map(toDocumentReference);
-    const docRefs = (await Promise.all(docRefsPromises)).flat();
+    const docRefs = results.map(toDocumentReference).flat();
 
     analytics({
       distinctId: cxId,
