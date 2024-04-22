@@ -11,6 +11,7 @@ import {
   Function as Lambda,
   ILayerVersion,
   Runtime,
+  RuntimeManagementMode,
   SingletonFunction,
 } from "aws-cdk-lib/aws-lambda";
 import * as lambda_node from "aws-cdk-lib/aws-lambda-nodejs";
@@ -53,6 +54,7 @@ export interface LambdaProps extends StackProps {
   readonly maxEventAge?: Duration;
   readonly alarmSnsAction?: SnsAction;
   readonly runtime?: Runtime;
+  readonly runtimeManagementMode?: RuntimeManagementMode;
   readonly architecture?: Architecture;
   readonly layers: ILayerVersion[];
   readonly version?: string | undefined;
@@ -62,6 +64,7 @@ export function createLambda(props: LambdaProps): Lambda {
   const lambda = new Lambda(props.stack, props.name, {
     functionName: props.name + "Lambda",
     runtime: props.runtime ?? Runtime.NODEJS_18_X,
+    runtimeManagementMode: props.runtimeManagementMode,
     // TODO move our lambdas to use layers, quicker to deploy and execute them
     code: Code.fromAsset(`${pathToLambdas}/dist`),
     handler: props.entry + ".handler",

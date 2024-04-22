@@ -3,4 +3,10 @@ export type QueryStatus = (typeof queryStatus)[number];
 
 export type QueryProgress = {
   status: QueryStatus | undefined;
+  startedAt?: Date;
+};
+
+export type PatientDiscovery = {
+  startedAt: Date;
+  requestId: string;
 };

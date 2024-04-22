@@ -22,6 +22,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { analytics, EventTypes } from "../../../shared/analytics";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -78,18 +79,30 @@ export async function queryDocumentsAcrossHIEs({
     patient,
   });
 
+  const startedAt = new Date();
+
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    documentQueryProgress: { download: { status: "processing" } },
-    requestId,
-    cxDocumentRequestMetadata,
+    cmd: {
+      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
+      cxDocumentRequestMetadata,
+    },
+  });
+
+  analytics({
+    event: EventTypes.documentQuery,
+    distinctId: cxId,
+    properties: {
+      requestId,
+      patientId,
+    },
   });
 
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     getDocumentsFromCW({
-      patient,
+      patient: updatedPatient,
       facilityId,
       forceDownload: override,
       forceQuery,
@@ -101,7 +114,7 @@ export async function queryDocumentsAcrossHIEs({
   const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
-      patient,
+      patient: updatedPatient,
       requestId,
     }).catch(emptyFunction);
   }
