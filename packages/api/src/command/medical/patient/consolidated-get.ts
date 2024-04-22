@@ -198,7 +198,7 @@ export async function getConsolidated({
     }
 
     if (conversionType === "json" && hasResources) {
-      return uploadConsolidatedJsonAndReturnUrl({
+      return await uploadConsolidatedJsonAndReturnUrl({
         patient,
         bundle,
         filters,
