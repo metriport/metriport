@@ -45,6 +45,5 @@ export function createOutboundPatientDiscoveryReq({
       purposeOfUse: createPurposeOfUse(),
     },
     patientResource: patient,
-    patientId: patientId,
   };
 }
