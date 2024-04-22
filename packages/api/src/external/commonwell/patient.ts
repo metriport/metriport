@@ -11,6 +11,7 @@ import {
 } from "@metriport/commonwell-sdk";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { oid } from "@metriport/core/domain/oid";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { processAsyncError } from "@metriport/core/util/error/shared";
@@ -41,7 +42,6 @@ import {
 import { setPatientDiscoveryStatus } from "./patient-external-data";
 import { Config } from "../../shared/config";
 import { analytics, EventTypes } from "../../shared/analytics";
-import { Product } from "../../domain/product";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -191,6 +191,8 @@ export async function registerAndLinkPatientInCW(
     });
 
     if (requestId) {
+      const startedAt = patient.data.patientDiscovery?.startedAt;
+
       analytics({
         distinctId: patient.cxId,
         event: EventTypes.patientDiscovery,
@@ -199,8 +201,8 @@ export async function registerAndLinkPatientInCW(
           patientId: patient.id,
           requestId,
           pdLinks: networkLinks?.length ?? 0,
+          duration: elapsedTimeFromNow(startedAt),
         },
-        apiType: Product.medical,
       });
     }
 
@@ -390,6 +392,8 @@ async function updatePatientAndLinksInCw(
       getOrgIdExcludeList
     );
 
+    const startedAt = patient.data.patientDiscovery?.startedAt;
+
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -398,8 +402,8 @@ async function updatePatientAndLinksInCw(
         patientId: patient.id,
         requestId,
         pdLinks: networkLinks?.length ?? 0,
+        duration: elapsedTimeFromNow(startedAt),
       },
-      apiType: Product.medical,
     });
 
     await queryDocsIfScheduled(patient, getOrgIdExcludeList);
@@ -533,16 +537,6 @@ export async function linkPatientToCW(
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
   const requestId = uuidv7();
-
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.patientDiscovery,
-    properties: {
-      requestId,
-      patientId: patient.id,
-    },
-    apiType: Product.medical,
-  });
 
   await update(patient, facilityId, getOrgIdExcludeList, requestId);
 }

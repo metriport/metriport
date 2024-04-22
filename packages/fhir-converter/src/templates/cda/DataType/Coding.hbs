@@ -1,6 +1,6 @@
 {
 	"code":"{{code.code}}",
-	"display": "{{code.displayName}}",
+	"display": "{{{ parseReferenceData code.displayName }}}",
 	"version":"{{code.codeSystemVersion}}",
 	{{#with (evaluate 'ValueSet/SystemReference.hbs' code=code.codeSystem) as |system|}}
 		"system": "{{system.oid}}"",

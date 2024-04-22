@@ -1,6 +1,9 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import {
+  consolidationConversionType,
+  mrFormat,
+} from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { stringToBoolean } from "@metriport/shared";
@@ -279,6 +282,7 @@ router.get(
 );
 
 const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
+const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query
@@ -291,8 +295,9 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
- *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.docType Optional to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
@@ -343,7 +348,7 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const type = getFrom("query").orFail("conversionType", req);
-    const conversionType = consolidationConversionTypeSchema.parse(type);
+    const conversionType = medicalRecordFormatSchema.parse(type);
 
     const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
     if (!url) throw new NotFoundError("Medical record summary not found");

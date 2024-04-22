@@ -14,6 +14,7 @@ import {
   ResourceType as MedplumResourceType,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
+import { isCarequalityExtension } from "../../carequality/extension";
 import { DOC_ID_EXTENSION_URL } from "./extensions/doc-id-extension";
 import { isMetriportExtension } from "./extensions/metriport";
 
@@ -34,8 +35,13 @@ export function isUploadedByCustomer(doc: DocumentReference): boolean {
 export function downloadedFromCW(doc: DocumentReference): boolean {
   return doc.extension?.some(isCommonwellExtension) ?? false;
 }
+
+export function downloadedFromCQ(doc: DocumentReference): boolean {
+  return doc.extension?.some(isCarequalityExtension) ?? false;
+}
+
 export function downloadedFromHIEs(doc: DocumentReference): boolean {
-  return downloadedFromCW(doc);
+  return downloadedFromCW(doc) || downloadedFromCQ(doc);
 }
 
 // Creates a FHIR data query string based on the specified range.

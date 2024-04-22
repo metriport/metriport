@@ -8,8 +8,6 @@ import { getCqOrgIdsToDenyOnCw } from "../hie";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { analytics, EventTypes } from "../../../shared/analytics";
-import { Product } from "../../../domain/product";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -36,12 +34,22 @@ export const createPatient = async (
   // validate facility exists and cx has access to it
   const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
+  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
     externalId,
-    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    data: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address,
+      contact,
+      patientDiscovery: { requestId, startedAt: new Date() },
+    },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
@@ -51,18 +59,6 @@ export const createPatient = async (
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
-
-  const requestId = uuidv7();
-
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.patientDiscovery,
-    properties: {
-      requestId,
-      patientId: newPatient.id,
-    },
-    apiType: Product.medical,
-  });
 
   await cwCommands.patient.create(
     newPatient,

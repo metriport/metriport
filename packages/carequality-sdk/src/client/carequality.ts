@@ -170,6 +170,7 @@ export class CarequalityManagementAPIImpl implements CarequalityManagementAPI {
 
     const url = `${CarequalityManagementAPIImpl.ORG_ENDPOINT}?${queryString}`;
     const resp = await this.sendGetRequest(url, { "Content-Type": "application/json" });
+    if (!resp.data.Bundle) return [];
     const bundle: STU3Bundle = stu3BundleSchema.parse(resp.data.Bundle);
     const orgs = bundle.entry.map(e => e.resource.Organization);
     return orgs;
