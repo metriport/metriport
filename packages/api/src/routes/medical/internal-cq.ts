@@ -209,6 +209,8 @@ router.post(
 
     const status = getPDResultStatus({ patientMatch: response.patientMatch });
 
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
+
     await createOutboundPatientDiscoveryResp({
       id: uuidv7(),
       requestId: response.id,
@@ -269,6 +271,8 @@ router.post(
       });
     }
 
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
+
     await createOutboundDocumentQueryResp({
       id: uuidv7(),
       requestId: response.id,
@@ -320,6 +324,8 @@ router.post(
         docRefLength: response.documentReference?.length,
       });
     }
+
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
 
     await createOutboundDocumentRetrievalResp({
       id: uuidv7(),
