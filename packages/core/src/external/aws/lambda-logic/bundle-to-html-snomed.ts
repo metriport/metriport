@@ -38,7 +38,6 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
   const {
     patient,
     medications,
-    medicationAdministrations,
     medicationStatements,
     conditions,
     allergies,
@@ -220,7 +219,6 @@ export const bundleToHtml = (fhirBundle: Bundle): string => {
           ${createMRHeader(patient)}
           <div class="divider"></div>
           <div id="mr-sections">
-            ${createDischargeMedicationsSection(medications, medicationAdministrations)}
             ${createMedicationSection(medications, medicationStatements)}
             ${createConditionSection(conditions, encounters, patient)}
             ${createAllergySection(allergies)}
@@ -746,7 +744,7 @@ function createOrganiztionField(
   return organization?.name ? `<p>Facility: ${organization.name}</p>` : "";
 }
 
-function createDischargeMedicationsSection(
+export function createDischargeMedicationsSection(
   medications: Medication[],
   medicationAdministrations: MedicationAdministration[]
 ) {
@@ -827,14 +825,14 @@ export function createMedicationSection(
     return dayjs(a.effectivePeriod?.start).isBefore(dayjs(b.effectivePeriod?.start)) ? 1 : -1;
   });
 
-  const removeDuplicate = uniqWith(medicationsSortedByDate, (a, b) => {
-    const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
-    const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
+  // const removeDuplicate = uniqWith(medicationsSortedByDate, (a, b) => {
+  //   const aDate = dayjs(a.effectivePeriod?.start).format(ISO_DATE);
+  //   const bDate = dayjs(b.effectivePeriod?.start).format(ISO_DATE);
 
-    return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
-  });
+  //   return aDate === bDate && a.dosage?.[0]?.text === b.dosage?.[0]?.text;
+  // });
 
-  const activeMedications = removeDuplicate.filter(
+  const activeMedications = medicationsSortedByDate.filter(
     medicationStatement => medicationStatement.status === "active"
   );
 
@@ -876,11 +874,11 @@ function getPeriodDateFromMedicationStatement(
   const end = v.effectivePeriod?.end ? dayjs(v.effectivePeriod.end) : undefined;
   const yearDiff = start && end ? end.diff(start, "year") : undefined;
 
-  if (type === "start" && yearDiff !== undefined && yearDiff < 5) {
+  if (type === "start" && (yearDiff == undefined || yearDiff < 5)) {
     return v.effectivePeriod?.start;
-  } else if (type === "end" && yearDiff !== undefined && yearDiff < 5) {
+  } else if (type === "end" && (yearDiff == undefined || yearDiff < 5)) {
     return v.effectivePeriod?.end;
-  } else if (type === "lastSeen" && yearDiff !== undefined && yearDiff > 5) {
+  } else if (type === "lastSeen" && yearDiff && yearDiff > 5) {
     return v.effectivePeriod?.end;
   }
   return undefined;

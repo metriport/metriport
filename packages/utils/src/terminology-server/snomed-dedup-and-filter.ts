@@ -4,6 +4,7 @@ import daysjs from "dayjs";
 import { getCodeDisplay, getCodeDetailsFull } from "./term-server-api";
 import { populateHashTableFromCodeDetails, SnomedHierarchyTableEntry } from "./snomed-heirarchies";
 import { RemovalStats, createInitialRemovalStats, prettyPrintRemovalStats } from "./stats";
+import { convertMedicationAdministrationToStatement } from "./fhir";
 
 async function processDirectoryOrFile(
   directoryOrFile: string,
@@ -269,6 +270,22 @@ async function filterMedicationStatements({
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
 }
 
+function convertMedicationAdministrationsToMedicationStatements({
+  filePath,
+}: {
+  filePath: string;
+}) {
+  const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const entries = data.bundle ? data.bundle.entry : data.entry;
+  for (const entry of entries) {
+    const resource = entry.resource;
+    if (resource && resource.resourceType === "MedicationAdministration") {
+      entry.resource = convertMedicationAdministrationToStatement(resource);
+    }
+  }
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+}
+
 export async function fullProcessing(directoryPath: string) {
   const removalStats = createInitialRemovalStats();
 
@@ -320,6 +337,12 @@ export async function fullProcessing(directoryPath: string) {
       medicationDuplicates,
       medicationToMedicationStatementOrAdministrationMap,
       removalStats,
+    });
+  });
+
+  await processDirectoryOrFile(directoryPath, async filePath => {
+    await convertMedicationAdministrationsToMedicationStatements({
+      filePath,
     });
   });
 
