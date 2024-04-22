@@ -1,6 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import {
   OutboundPatientDiscoveryResp,
+  OutboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryReq,
   outboundPatientDiscoveryRespSuccessfulSchema,
   outboundPatientDiscoveryRespFaultSchema,
@@ -9,6 +10,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../utils";
 import { capture } from "../../../../util/notifications";
+import { SamlClientResponse } from "../saml-client";
 
 function handleHTTPErrorResponse({
   httpError,
@@ -18,7 +20,7 @@ function handleHTTPErrorResponse({
   httpError: string;
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
-}): OutboundPatientDiscoveryResp {
+}): OutboundPatientDiscoveryRespFaultSchema {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
     id: outboundRequest.id,
@@ -37,7 +39,7 @@ function handleHTTPErrorResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
-    patientId: outboundRequest.patientId || "",
+    patientId: outboundRequest?.patientId,
     patientMatch: null,
     operationOutcome: operationOutcome,
   };
@@ -54,9 +56,10 @@ function handlePatientMatchResponse({
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
   const subject1 =
-    jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.controlActProcess?.subject?.registrationEvent
-      ?.subject1;
-  const addr = subject1?.patient?.patientPerson?.addr;
+    getPatientRegistryProfile(jsonObj)?.["controlActProcess"]?.["subject"]?.["registrationEvent"]?.[
+      "subject1"
+    ];
+  const addr = subject1?.["patient"]?.["patientPerson"]?.["addr"];
   const addresses = [
     {
       line: [addr?.streetAddressLine?._text ?? addr?.streetAddressLine],
@@ -99,7 +102,7 @@ function handlePatientMatchResponse({
   } catch (error) {
     capture.error("Failed to validate outboundPatientDiscoveryRespSuccessfulSchema", {
       extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
+        context: `lambda.iheGatewayV2-outbound-patient-discovery`,
         response,
         error,
       },
@@ -126,7 +129,7 @@ function handlePatientErrorResponse({
   const msg = "An AbortedError (AE) was received from the responding gateway";
   capture.error(msg, {
     extra: {
-      context: `lambda.girth-outbound-patient-discovery`,
+      context: `lambda.iheGatewayV2-outbound-patient-discovery`,
       outboundRequest,
       gateway,
       patientId,
@@ -134,7 +137,7 @@ function handlePatientErrorResponse({
     },
   });
   const acknowledgementDetail =
-    jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.acknowledgement?.acknowledgementDetail;
+    getPatientRegistryProfile(jsonObj)?.["acknowledgement"]?.["acknowledgementDetail"];
   const issue = {
     severity: "error",
     ...(acknowledgementDetail && {
@@ -154,7 +157,7 @@ function handlePatientErrorResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
-    patientId: outboundRequest.patientId || "",
+    patientId: outboundRequest.patientId,
     patientMatch: null,
     operationOutcome: operationOutcome,
   };
@@ -164,7 +167,7 @@ function handlePatientErrorResponse({
   } catch (error) {
     capture.error("Failed to validate outboundPatientDiscoveryRespFaultSchema", {
       extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
+        context: `lambda.iheGatewayV2-outbound-patient-discovery`,
         response,
         error,
       },
@@ -197,7 +200,7 @@ function handlePatientNoMatchResponse({
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway: gateway,
-    patientId: outboundRequest.patientId || "",
+    patientId: outboundRequest.patientId,
     patientMatch: false,
     operationOutcome: operationOutcome,
   };
@@ -205,63 +208,85 @@ function handlePatientNoMatchResponse({
 }
 
 export function processXCPDResponse({
-  xmlStringOrError,
+  xcpdResponse,
   outboundRequest,
   gateway,
   patientId,
   cxId,
 }: {
-  xmlStringOrError: string | { error: string };
+  xcpdResponse: SamlClientResponse;
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
   patientId?: string;
   cxId?: string;
 }): OutboundPatientDiscoveryResp {
-  if (typeof xmlStringOrError === "object" && xmlStringOrError.error) {
+  if (xcpdResponse.success === false) {
     return handleHTTPErrorResponse({
-      httpError: xmlStringOrError.error,
+      httpError: xcpdResponse.response,
+      outboundRequest,
+      gateway,
+    });
+  }
+
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "@_",
+    parseAttributeValue: false,
+    removeNSPrefix: true,
+  });
+
+  const jsonObj = parser.parse(xcpdResponse.response);
+  const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
+
+  if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
+    return handlePatientMatchResponse({
+      jsonObj,
+      outboundRequest,
+      gateway,
+    });
+  } else if (isApplicationAccept(ack) && isXCPDRespNotFound(queryResponseCode)) {
+    return handlePatientNoMatchResponse({
       outboundRequest,
       gateway,
     });
   } else {
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "_",
-      textNodeName: "_text",
-      parseAttributeValue: false,
-      removeNSPrefix: true,
+    return handlePatientErrorResponse({
+      jsonObj,
+      outboundRequest,
+      gateway,
+      patientId,
+      cxId,
     });
-
-    if (typeof xmlStringOrError !== "string") {
-      throw new Error("xmlStringOrError is not a string");
-    }
-    const jsonObj = parser.parse(xmlStringOrError);
-
-    const ack = jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.acknowledgement?.typeCode?._code;
-
-    const queryResponseCode =
-      jsonObj?.Envelope?.Body?.PRPA_IN201306UV02?.controlActProcess?.queryAck?.queryResponseCode
-        ?._code;
-
-    if (ack === "AA" && queryResponseCode === "OK") {
-      return handlePatientMatchResponse({
-        jsonObj,
-        outboundRequest,
-        gateway,
-      });
-    } else if (ack === "AA" && queryResponseCode === "NF") {
-      return handlePatientNoMatchResponse({
-        outboundRequest,
-        gateway,
-      });
-    } else {
-      return handlePatientErrorResponse({
-        jsonObj,
-        outboundRequest,
-        gateway,
-        patientId,
-        cxId,
-      });
-    }
   }
+}
+
+function isApplicationAccept(ack: string): boolean {
+  return ack === "AA";
+}
+
+function isXCPDRespOk(queryResponseCode: string): boolean {
+  return queryResponseCode === "OK";
+}
+
+function isXCPDRespNotFound(queryResponseCode: string): boolean {
+  return queryResponseCode === "NF";
+}
+
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getPatientRegistryProfile(jsonObj: any): any {
+  return jsonObj?.["Envelope"]?.["Body"]?.["PRPA_IN201306UV02"];
+}
+
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj: any): {
+  ack: string;
+  queryResponseCode: string;
+} {
+  return {
+    ack: getPatientRegistryProfile(jsonObj)?.["acknowledgement"]?.["typeCode"]?.["@_code"],
+    queryResponseCode:
+      getPatientRegistryProfile(jsonObj)?.["controlActProcess"]?.["queryAck"]?.[
+        "queryResponseCode"
+      ]?.["@_code"],
+  };
 }

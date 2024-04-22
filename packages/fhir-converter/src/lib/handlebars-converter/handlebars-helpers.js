@@ -1320,4 +1320,17 @@ module.exports.external = [
       return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
     }
   },
+  {
+    name: "nullFlavorAwareOr",
+    description: "OR logic that checks for nullFlavor in objects.",
+    func: function (...args) {
+      const values = args.slice(0, -1);
+      for (let arg of values) {
+        if (arg && typeof arg !== 'object' || (typeof arg === 'object' && !allValuesInObjAreNullFlavor(arg))) {
+          return true;
+        }
+      }
+      return false;
+    },
+  },
 ];

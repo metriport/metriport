@@ -54,6 +54,7 @@ export function handleRegistryErrorResponse({
   const operationOutcome = processRegistryErrorList(registryErrorList, outboundRequest);
   return {
     id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
@@ -115,6 +116,7 @@ export function handleEmptyResponse({
   };
   return {
     id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
@@ -152,6 +154,7 @@ export function handleSOAPFaultResponse({
 
   return {
     id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,

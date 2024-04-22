@@ -4,6 +4,7 @@ import { startDocumentRetrievalGirth } from "@metriport/core/external/carequalit
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
@@ -19,6 +20,8 @@ import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-en
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
+import { analytics, EventTypes } from "../../../shared/analytics";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -39,8 +42,24 @@ export async function processOutboundDocumentQueryResps({
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const docRefsPromises = results.map(toDocumentReference);
-    const docRefs = (await Promise.all(docRefsPromises)).flat();
+    const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
+    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
+    const duration = elapsedTimeFromNow(docQueryStartedAt);
+
+    const docRefs = results.map(toDocumentReference).flat();
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: docRefs.length,
+      },
+    });
+
     const docRefsWithMetriportId = await Promise.all(
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );

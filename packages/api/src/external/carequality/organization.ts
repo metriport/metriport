@@ -24,7 +24,7 @@ export class CQOrganization {
     public phone: string,
     public email: string,
     public role: "Implementer" | "Connection",
-    public hostOrgOID?: string,
+    public parentOrgOid?: string,
     public urlXCPD?: string,
     public urlDQ?: string,
     public urlDR?: string
@@ -44,7 +44,7 @@ export class CQOrganization {
       orgDetails.phone,
       orgDetails.email,
       orgDetails.role,
-      orgDetails.hostOrgOID
+      orgDetails.parentOrgOid
     );
 
     this.addUrls(organization);
@@ -71,7 +71,7 @@ export class CQOrganization {
       phone: this.phone,
       email: this.email,
       role: this.role,
-      hostOrgOID: this.hostOrgOID,
+      parentOrgOid: this.parentOrgOid,
     };
   }
 

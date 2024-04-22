@@ -28,6 +28,7 @@ export function createOutboundPatientDiscoveryReq({
   return {
     id,
     cxId: cxId,
+    patientId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
     principalCareProviderIds: [facilityNPI],

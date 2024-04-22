@@ -6,6 +6,7 @@ import {
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
+import { SamlClientResponse } from "../saml-client";
 
 export type GirthDQRequestParams = {
   patientId: string;
@@ -94,6 +95,7 @@ function handleSuccessResponse({
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,
@@ -103,17 +105,17 @@ function handleSuccessResponse({
 }
 
 export function processDQResponse({
-  xmlStringOrError,
+  dqResponse,
   outboundRequest,
   gateway,
 }: {
-  xmlStringOrError: string | { error: string };
+  dqResponse: SamlClientResponse;
   outboundRequest: OutboundDocumentQueryReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
-  if (typeof xmlStringOrError === "object" && xmlStringOrError.error) {
+  if (dqResponse.success === false) {
     return handleHTTPErrorResponse({
-      httpError: xmlStringOrError.error,
+      httpError: dqResponse.response,
       outboundRequest,
       gateway,
     });
@@ -126,10 +128,7 @@ export function processDQResponse({
       removeNSPrefix: true,
     });
 
-    if (typeof xmlStringOrError !== "string") {
-      throw new Error("xmlStringOrError is not a string");
-    }
-    const jsonObj = parser.parse(xmlStringOrError);
+    const jsonObj = parser.parse(dqResponse.response);
     const status = jsonObj?.Envelope?.Body?.AdhocQueryResponse?._status?.split(":").pop();
     const extrinsicObjects =
       jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryObjectList?.ExtrinsicObject;

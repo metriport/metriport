@@ -7,7 +7,11 @@ describe("processDQResponse", () => {
   it("should process the successful DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_multiple_docs.xml"), "utf8");
     const response = processDQResponse({
-      xmlStringOrError: xmlString,
+      dqResponse: {
+        response: xmlString,
+        success: true,
+        gateway: outboundDQRequest.gateway,
+      },
       outboundRequest: outboundDQRequest,
       gateway: outboundDQRequest.gateway,
     });
@@ -20,7 +24,11 @@ describe("processDQResponse", () => {
   it("should process the empty DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_empty.xml"), "utf8");
     const response = processDQResponse({
-      xmlStringOrError: xmlString,
+      dqResponse: {
+        response: xmlString,
+        success: true,
+        gateway: outboundDQRequest.gateway,
+      },
       outboundRequest: outboundDQRequest,
       gateway: outboundDQRequest.gateway,
     });
@@ -30,7 +38,11 @@ describe("processDQResponse", () => {
   it("should process the DQ response with registry error correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_error.xml"), "utf8");
     const response = processDQResponse({
-      xmlStringOrError: xmlString,
+      dqResponse: {
+        response: xmlString,
+        success: true,
+        gateway: outboundDQRequest.gateway,
+      },
       outboundRequest: outboundDQRequest,
       gateway: outboundDQRequest.gateway,
     });

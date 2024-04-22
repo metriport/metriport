@@ -1,7 +1,6 @@
 import { Address, combineAddresses } from "@metriport/core/domain/address";
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
-import { Product } from "../../../domain/product";
 import { AddressGeocodingResult, geocodeAddress } from "../../../external/aws/address";
 import { EventTypes, analytics } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
@@ -79,7 +78,6 @@ export async function addGeographicCoordinates(
             relevance: result.relevance,
             aboveThreshold,
           },
-          apiType: Product.medical,
         });
 
         if (!aboveThreshold) {

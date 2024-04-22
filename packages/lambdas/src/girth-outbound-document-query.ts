@@ -9,7 +9,7 @@ import { createAndSignBulkDQRequests } from "@metriport/core/external/saml/xca/i
 import {
   processDQResponse,
   GirthDQRequestParams,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/dq/process-dq-response";
+} from "@metriport/core/external/carequality/ihe-gateway-v2/xca/process-dq-response";
 import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
@@ -74,23 +74,21 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthDQRequest
     patientId,
     cxId,
   });
-  const results: OutboundDocumentQueryResp[] = responses.map(
-    (response: string | { error: string }, index: number) => {
-      const outboundRequest = dqRequestsGirth[index];
-      if (!outboundRequest) {
-        throw new Error(`Outbound request at index ${index} is undefined.`);
-      }
-      const gateway = outboundRequest.gateway;
-      if (!gateway) {
-        throw new Error(`Gateway at index ${index} is undefined.`);
-      }
-      return processDQResponse({
-        xmlStringOrError: response,
-        outboundRequest: outboundRequest,
-        gateway,
-      });
+  const results: OutboundDocumentQueryResp[] = responses.map((response, index) => {
+    const outboundRequest = dqRequestsGirth[index];
+    if (!outboundRequest) {
+      throw new Error(`Outbound request at index ${index} is undefined.`);
     }
-  );
+    const gateway = outboundRequest.gateway;
+    if (!gateway) {
+      throw new Error(`Gateway at index ${index} is undefined.`);
+    }
+    return processDQResponse({
+      dqResponse: response,
+      outboundRequest: outboundRequest,
+      gateway,
+    });
+  });
 
   for (const result of results) {
     await axios.post(documentQueryResponseUrl, result);

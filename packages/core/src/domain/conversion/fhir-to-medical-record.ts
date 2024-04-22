@@ -1,6 +1,8 @@
-export const consolidationConversionType = ["html", "pdf"] as const;
-
+export const consolidationConversionType = ["html", "pdf", "json"] as const;
 export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
+
+export const mrFormat = ["html", "pdf"] as const;
+export type MedicalRecordFormat = (typeof mrFormat)[number];
 
 export type Input = {
   fileName: string;
@@ -9,7 +11,7 @@ export type Input = {
   cxId: string;
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: MedicalRecordFormat;
 };
 
 export type Output = {

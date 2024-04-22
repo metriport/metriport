@@ -9,6 +9,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -20,8 +21,7 @@ import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
-import { isProd } from "../shared/util";
-import * as rds from "aws-cdk-lib/aws-rds";
+import { isProd, isSandbox } from "../shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -103,10 +103,9 @@ export function createAPIService({
     value: ecrRepo.repositoryUri,
   });
 
-  const connectWidgetUrlEnvVar =
-    props.config.connectWidgetUrl != undefined
-      ? props.config.connectWidgetUrl
-      : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
+  const connectWidgetUrlEnvVar = isSandbox(props.config)
+    ? props.config.connectWidgetUrl
+    : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
   const iheGateway = props.config.iheGateway;
 
@@ -160,7 +159,7 @@ export function createAPIService({
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
-          ...(props.config.sandboxSeedDataBucketName && {
+          ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,

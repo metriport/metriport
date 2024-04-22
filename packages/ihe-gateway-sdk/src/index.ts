@@ -42,6 +42,7 @@ export {
   outboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,
+  OutboundPatientDiscoveryRespFaultSchema,
   outboundPatientDiscoveryRespSchema,
   InboundPatientResource,
   inboundPatientResourceSchema,
@@ -62,5 +63,4 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
-  XCPDGateways,
 } from "./models/shared";

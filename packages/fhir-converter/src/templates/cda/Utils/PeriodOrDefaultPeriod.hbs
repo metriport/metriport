@@ -1,0 +1,6 @@
+{{#if (nullFlavorAwareOr period.low period.high)}}
+    {{>DataType/Period.hbs period=period}}
+{{else}}
+    {{>DataType/Period.hbs period=@encounterTimePeriod}}
+{{/if}}
+

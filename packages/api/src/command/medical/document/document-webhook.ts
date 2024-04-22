@@ -79,7 +79,7 @@ export const processPatientDocumentRequest = async (
       await processRequest(
         webhookRequest,
         settings,
-        undefined,
+        requestId ? { requestId } : undefined,
         patient.data.cxDocumentRequestMetadata
       );
     } else {
@@ -105,7 +105,15 @@ export const processPatientDocumentRequest = async (
       );
     }
 
-    reportUsageCmd({ cxId, entityId: patientId, product: Product.medical });
+    const shouldReportUsage =
+      status === MAPIWebhookStatus.completed &&
+      documents &&
+      documents?.length > 0 &&
+      whType === "medical.document-download";
+
+    if (shouldReportUsage) {
+      reportUsageCmd({ cxId, entityId: patientId, product: Product.medical, docQuery: true });
+    }
   } catch (err) {
     log(`Error on processPatientDocumentRequest: ${err}`);
     capture.error(err, {

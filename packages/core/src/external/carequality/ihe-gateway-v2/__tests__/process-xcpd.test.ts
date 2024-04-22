@@ -8,29 +8,29 @@ import {
 
 import { outboundXCPDRequest, expectedXCPDResponse } from "./constants";
 
-if (!outboundXCPDRequest.gateways[0]) {
+const gateway = outboundXCPDRequest.gateways[0];
+if (!gateway) {
   throw new Error("Gateway must be provided");
 }
-const gateway = {
-  url: outboundXCPDRequest.gateways[0].url,
-  oid: outboundXCPDRequest.gateways[0].oid,
-  id: outboundXCPDRequest.gateways[0].id,
-};
+
+const xmlMatchString = fs.readFileSync(path.join(__dirname, "xcpd_match.xml"), "utf8");
+const xmlNoMatchString = fs.readFileSync(path.join(__dirname, "xcpd_no_match.xml"), "utf8");
+const xmlErrorString = fs.readFileSync(path.join(__dirname, "xcpd_error.xml"), "utf8");
 
 describe("processXCPDResponse", () => {
   it("should process the match XCPD response correctly", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_match.xml"), "utf8");
-
     const response = processXCPDResponse({
-      xmlStringOrError: xmlString,
+      xcpdResponse: {
+        success: true,
+        response: xmlMatchString,
+        gateway,
+      },
       outboundRequest: outboundXCPDRequest,
       gateway,
     });
 
     const xcpdResult = outboundPatientDiscoveryRespSuccessfulSchema.safeParse(response);
-    if (!xcpdResult.success) {
-      throw new Error("Failed to parse response");
-    }
+    expect(xcpdResult.success).toBe(true);
     if (xcpdResult.success) {
       expect(xcpdResult.data.externalGatewayPatient?.id).toEqual(
         expectedXCPDResponse?.externalGatewayPatient?.id
@@ -43,45 +43,54 @@ describe("processXCPDResponse", () => {
     }
   });
   it("should correctly identify and process a no match XCPD response", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_no_match.xml"), "utf8");
     const response = processXCPDResponse({
-      xmlStringOrError: xmlString,
+      xcpdResponse: {
+        success: true,
+        response: xmlNoMatchString,
+        gateway,
+      },
       outboundRequest: outboundXCPDRequest,
       gateway,
     });
     const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    if (!xcpdResult.success) {
-      throw new Error("Failed to parse response");
+    expect(xcpdResult.success).toBe(true);
+    if (xcpdResult.success) {
+      expect(xcpdResult.data.patientMatch).toBeFalsy();
     }
-    expect(xcpdResult.data.patientMatch).toBeFalsy();
   });
   it("should process the error XCPD response correctly", async () => {
-    const xmlString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_error.xml"), "utf8");
-
     const response = processXCPDResponse({
-      xmlStringOrError: xmlString,
+      xcpdResponse: {
+        success: false,
+        response: xmlErrorString,
+        gateway,
+      },
       outboundRequest: outboundXCPDRequest,
       gateway,
     });
     const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    if (!xcpdResult.success) {
-      throw new Error("Failed to parse response");
+    expect(xcpdResult.success).toBe(true);
+    if (xcpdResult.success) {
+      expect(xcpdResult.data.patientMatch).toBeNull();
     }
-    expect(xcpdResult.data.patientMatch).toBeNull();
   });
   it("should process the HTTP error XCPD response correctly", async () => {
     const httpError = { error: "HTTP 503 error" };
 
     const response = processXCPDResponse({
-      xmlStringOrError: httpError,
+      xcpdResponse: {
+        success: false,
+        response: httpError.error,
+        gateway,
+      },
       outboundRequest: outboundXCPDRequest,
       gateway,
     });
     const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    if (!xcpdResult.success) {
-      throw new Error("Failed to parse response");
+    expect(xcpdResult.success).toBe(true);
+    if (xcpdResult.success) {
+      expect(xcpdResult.data.operationOutcome).toBeDefined();
+      expect(xcpdResult.data.patientMatch).toBeNull();
     }
-    expect(xcpdResult.data.operationOutcome).toBeDefined();
-    expect(xcpdResult.data.patientMatch).toBeNull();
   });
 });

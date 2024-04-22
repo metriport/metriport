@@ -34,7 +34,7 @@ export const baseRequestSchema = z.object({
   cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
-  patientId: z.string().optional(),
+  patientId: z.string(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -79,7 +79,7 @@ export const baseResponseSchema = z.object({
   responseTimestamp: z.string(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string().optional(),
+  patientId: z.string(),
   operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
@@ -106,8 +106,6 @@ export const XCPDGatewaySchema = z.object({
   id: z.string(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
-
-export type XCPDGateways = XCPDGateway[];
 
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),

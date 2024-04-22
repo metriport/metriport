@@ -1,14 +1,9 @@
 import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
-import {
-  outboundPatientDiscoveryReqSchema,
-  OutboundPatientDiscoveryResp,
-} from "@metriport/ihe-gateway-sdk";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/process-xcpd-response";
-import { GirthXCPDRequestParams } from "@metriport/core/external/carequality/ihe-gateway-v2/xcpd/invoke-patient-discovery";
-import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
+import { outboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { PDRequestGatewayV2Params } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
+import { createSignSendProcessXCPDRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
@@ -22,9 +17,9 @@ const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
 const publicCertSecretName = Config.getCQOrgCertificate();
 const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
-export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDRequestParams) => {
+export const handler = Sentry.AWSLambda.wrapHandler(async (event: PDRequestGatewayV2Params) => {
   try {
-    const { patientId, cxId, pdRequestGirth } = event;
+    const { patientId, cxId, pdRequestGatewayV2 } = event;
 
     const privateKey = await getSecret(privateKeySecretName);
     const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
@@ -44,12 +39,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
     }
 
     // validate request
-    const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGirth);
+    const xcpdRequest = outboundPatientDiscoveryReqSchema.safeParse(pdRequestGatewayV2);
     if (!xcpdRequest.success) {
-      const msg = `Invalid request: ${xcpdRequest.error}`;
+      const msg = `Invalid XCPD request - Does not conform to schema.`;
       capture.error(msg, {
         extra: {
-          context: `lambda.girth-outbound-patient-discovery`,
+          context: `lambda.iheGatewayV2-outbound-patient-discovery`,
           error: xcpdRequest.error,
           patientId,
           cxId,
@@ -57,32 +52,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
       });
       throw new Error(msg);
     }
-    const signedRequests = createAndSignBulkXCPDRequests(
-      xcpdRequest.data,
-      publicCert,
-      privateKey,
-      privateKeyPassword
-    );
-    const responses = await sendSignedRequests({
-      signedRequests,
-      certChain,
+
+    const results = await createSignSendProcessXCPDRequest({
+      xcpdRequest: xcpdRequest.data,
       publicCert,
       privateKey,
       privateKeyPassword,
+      certChain,
       patientId,
       cxId,
-    });
-    const results: OutboundPatientDiscoveryResp[] = responses.map((response, index) => {
-      const gateway = xcpdRequest.data.gateways[index];
-      if (!gateway) {
-        throw new Error(`Gateway at index ${index} is undefined.`);
-      }
-      return processXCPDResponse({
-        xmlStringOrError: response,
-        outboundRequest: xcpdRequest.data,
-        gateway,
-        patientId,
-      });
     });
 
     // send results to internal endpoint
@@ -90,11 +68,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: GirthXCPDReque
       await axios.post(patientDiscoveryUrl, result);
     }
   } catch (error) {
-    const msg = `An error occurred in the girth-outbound-patient-discovery lambda`;
+    const msg = `An error occurred in the iheGatewayV2-outbound-patient-discovery lambda`;
     capture.error(msg, {
       extra: {
-        context: `lambda.girth-outbound-patient-discovery`,
+        context: `lambda.iheGatewayV2-outbound-patient-discovery`,
         error,
+        event,
       },
     });
   }

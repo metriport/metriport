@@ -131,6 +131,7 @@ async function handleSuccessResponse({
 
   const response: OutboundDocumentRetrievalResp = {
     id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
     responseTimestamp: new Date().toISOString(),
     gateway,

@@ -1,6 +1,7 @@
 import https from "https";
 import axios from "axios";
 import * as AWS from "aws-sdk";
+import { XCPDGateway, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { BulkSignedDQ } from "../../saml/xca/iti38-envelope";
@@ -10,6 +11,12 @@ import { verifySaml } from "../../saml/security/verify";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 const { log } = out("Saml Client:");
+
+export type SamlClientResponse = {
+  gateway: XCPDGateway | XCAGateway;
+  response: string;
+  success: boolean;
+};
 
 export async function sendSignedXml({
   signedXml,
@@ -39,8 +46,6 @@ export async function sendSignedXml({
   const verified = verifySaml({ xmlString: signedXml, publicCert });
   if (!verified) {
     throw new Error("Signature verification failed.");
-  } else {
-    console.log("Signature verification passed.");
   }
   const response = await axios.post(url, signedXml, {
     headers: {
@@ -69,47 +74,57 @@ export async function sendSignedRequests({
   privateKeyPassword: string;
   patientId: string;
   cxId: string;
-}): Promise<(string | { error: string })[]> {
-  const requestPromises = signedRequests.map((request, index) =>
-    sendSignedXml({
-      signedXml: request.signedRequest,
-      url: request.gateway.url,
-      certChain,
-      publicCert: publicCert,
-      key: privateKey,
-      passphrase: privateKeyPassword,
-    })
-      .then(response => {
-        console.log(
-          `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
-            isGatewayWithOid(request.gateway)
-              ? request.gateway.oid
-              : request.gateway.homeCommunityId
-          }`
-        );
-        return response;
-      })
-      .catch(error => {
-        const msg = `Request ${index + 1} ERRORs for gateway: ${request.gateway.url} + oid: ${
+}): Promise<SamlClientResponse[]> {
+  const requestPromises = signedRequests.map(async (request, index) => {
+    try {
+      const response = await sendSignedXml({
+        signedXml: request.signedRequest,
+        url: request.gateway.url,
+        certChain,
+        publicCert,
+        key: privateKey,
+        passphrase: privateKeyPassword,
+      });
+      console.log(
+        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
           isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
-        }`;
-        const errorString: string = errorToString(error);
-        console.log(`${msg}: ${errorString}, patientId: ${patientId}, cxId: ${cxId}`);
-        capture.error(msg, {
-          extra: {
-            context: `lambda.girth-outbound-patient-discovery`,
-            error: errorString,
-            patientId,
-            cxId,
-          },
-        });
-        console.log(error?.response?.data);
-        return { error: errorString };
-      })
-  );
+        }`
+      );
+      return {
+        gateway: request.gateway,
+        response,
+        success: true,
+      };
+    } catch (error) {
+      const msg = "HTTP/SSL Failure Sending Signed SAML Request";
+      const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
+        request.gateway.url
+      } + oid: ${
+        isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
+      }`;
+      const errorString: string = errorToString(error);
+      const extra = {
+        errorString,
+        requestDetails,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, {
+        extra: {
+          context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+          extra,
+        },
+      });
+      return {
+        gateway: request.gateway,
+        response: errorString,
+        success: false,
+      };
+    }
+  });
 
   const responses = await Promise.allSettled(requestPromises);
-  const processedResponses = responses
+  const processedResponses: SamlClientResponse[] = responses
     .map(result => {
       if (result.status === "fulfilled") {
         return result.value;
@@ -117,7 +132,7 @@ export async function sendSignedRequests({
         return undefined;
       }
     })
-    .filter((response): response is string | { error: string } => response !== undefined);
+    .filter((response): response is SamlClientResponse => response !== undefined);
 
   return processedResponses;
 }
