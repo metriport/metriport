@@ -2,6 +2,7 @@
 channelMap.put('MSG_ID', msg.id.toString());
 channelMap.put('CUSTOMER_ID', msg.cxId.toString());
 channelMap.put('PATIENT_ID', msg.patientResource.id.toString());
+channelMap.put('REQUEST_TIME', DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss.SSSZ"));
 channelMap.put('GATEWAY_ID', msg.gateway.id.toString());
 
 // Store for further processing
