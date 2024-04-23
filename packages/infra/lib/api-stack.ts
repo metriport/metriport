@@ -1507,8 +1507,6 @@ export class APIStack extends Stack {
     });
 
     medicalDocumentsBucket.grantRead(fhirToCdaConverterLambda);
-    // fhirToCdaConverterLambda.grantInvoke(apiService.taskDefinition.taskRole);
-
     return fhirToCdaConverterLambda;
   }
 

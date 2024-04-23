@@ -25,7 +25,7 @@ export async function cdaDocumentUploaderHandler({
   medicalDocumentsBucket: string;
   region: string;
   organization: Organization;
-}): Promise<void | { message: string; size: number }> {
+}): Promise<void> {
   checkFileSizeRestrictions(cdaBundle);
 
   const s3Utils = new S3Utils(region);
@@ -51,7 +51,6 @@ export async function cdaDocumentUploaderHandler({
 
   try {
     const { size } = await s3Utils.getFileInfoFromS3(destinationKey, medicalDocumentsBucket);
-
     const stringSize = size ? size.toString() : "";
     await createAndUploadDocumentdMetadataFile({
       s3Utils,
