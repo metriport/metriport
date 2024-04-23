@@ -32,14 +32,10 @@ export async function cdaDocumentUploaderHandler({
   const s3Utils = new S3Utils(region);
   const docId = uuidv7();
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
-  const destinationKey = createUploadFilePath(cxId, patientId, docId);
+  const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
-    await s3Utils.uploadFile(
-      medicalDocumentsBucket,
-      `${destinationKey}.xml`,
-      Buffer.from(cdaBundle)
-    );
+    await s3Utils.uploadFile(medicalDocumentsBucket, destinationKey, Buffer.from(cdaBundle));
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
     const msg = "Error uploading file to medical documents bucket";
@@ -74,7 +70,7 @@ export async function cdaDocumentUploaderHandler({
   }
 }
 
-export function checkFileSizeRestrictions(fileSize: number, log: typeof console.log): void {
+function checkFileSizeRestrictions(fileSize: number, log: typeof console.log): void {
   if (fileSize > MAXIMUM_UPLOAD_FILE_SIZE) {
     const msg = `Uploaded file size exceeds the maximum allowed size of ${MAXIMUM_UPLOAD_FILE_SIZE} bytes`;
     log(`${msg} - error ${fileSize}`);

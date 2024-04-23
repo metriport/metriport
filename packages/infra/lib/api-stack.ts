@@ -1506,7 +1506,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
-    medicalDocumentsBucket.grantRead(fhirToCdaConverterLambda);
+    medicalDocumentsBucket.grantReadWrite(fhirToCdaConverterLambda);
     return fhirToCdaConverterLambda;
   }
 
