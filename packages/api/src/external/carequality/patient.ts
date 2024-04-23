@@ -77,7 +77,7 @@ async function prepareAndTriggerPD(
 
     log(`Kicking off patient discovery Gateway V2`);
     const iheGatewayV2 = makeIHEGatewayV2();
-    await iheGatewayV2.startPatientDiscoveryGatewayV2({
+    await iheGatewayV2.startPatientDiscovery({
       pdRequestGatewayV2,
       patientId: patient.id,
       cxId: patient.cxId,

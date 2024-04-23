@@ -23,7 +23,7 @@ export type DRRequestGatewayV2Params = {
 };
 
 export abstract class IHEGatewayV2 {
-  abstract startPatientDiscoveryGatewayV2(params: PDRequestGatewayV2Params): Promise<void>;
+  abstract startPatientDiscovery(params: PDRequestGatewayV2Params): Promise<void>;
   abstract startDocumentQueryGatewayV2(params: DQRequestGatewayV2Params): Promise<void>;
   abstract startDocumentRetrievalGatewayV2(params: DRRequestGatewayV2Params): Promise<void>;
 }

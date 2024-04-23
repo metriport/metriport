@@ -18,7 +18,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     super();
   }
 
-  async startPatientDiscoveryGatewayV2({
+  async startPatientDiscovery({
     pdRequestGatewayV2,
     patientId,
     cxId,
