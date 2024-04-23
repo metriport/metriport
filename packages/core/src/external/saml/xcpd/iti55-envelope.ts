@@ -1,5 +1,6 @@
 import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
 import { namespaces } from "../namespaces";
@@ -11,8 +12,10 @@ import {
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { wrapIdInUrnUuid, timestampToSoapBody } from "../utils";
 
+dayjs.extend(duration);
+
 const DATE_DASHES_REGEX = /-/g;
-const expiresIn = 5;
+const EXPIRES_IN = dayjs.duration({ minutes: 5 });
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
 export type BulkSignedXCPD = {
@@ -209,7 +212,7 @@ export function createITI5SoapEnvelope({
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(EXPIRES_IN).toISOString();
   const securityHeader = createSecurityHeader({
     publicCert,
     createdTimestamp,

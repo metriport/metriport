@@ -1,11 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { processXCPDResponse } from "../process-xcpd-response";
-import {
-  outboundPatientDiscoveryRespSuccessfulSchema,
-  outboundPatientDiscoveryRespFaultSchema,
-} from "@metriport/ihe-gateway-sdk";
-
 import { outboundRequest, expectedResponse } from "./constants";
 
 const gateway = outboundRequest.gateways[0];
@@ -29,18 +24,10 @@ describe("processXCPDResponse", () => {
       gateway,
     });
 
-    const xcpdResult = outboundPatientDiscoveryRespSuccessfulSchema.safeParse(response);
-    expect(xcpdResult.success).toBe(true);
-    if (xcpdResult.success) {
-      expect(xcpdResult.data.externalGatewayPatient?.id).toEqual(
-        expectedResponse?.externalGatewayPatient?.id
-      );
-      expect(xcpdResult.data.externalGatewayPatient?.system).toEqual(
-        expectedResponse?.externalGatewayPatient?.system
-      );
-      expect(xcpdResult.data.patientMatch).toBe(expectedResponse?.patientMatch);
-      expect(xcpdResult.data.patientResource).toEqual(expectedResponse?.patientResource);
-    }
+    expect(response).toEqual({
+      ...expectedResponse,
+      responseTimestamp: expect.any(String),
+    });
   });
   it("should correctly identify and process a no match XCPD response", async () => {
     const response = processXCPDResponse({
@@ -52,11 +39,8 @@ describe("processXCPDResponse", () => {
       outboundRequest,
       gateway,
     });
-    const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    expect(xcpdResult.success).toBe(true);
-    if (xcpdResult.success) {
-      expect(xcpdResult.data.patientMatch).toBeFalsy();
-    }
+
+    expect(response.patientMatch).toBeFalsy();
   });
   it("should process the error XCPD response correctly", async () => {
     const response = processXCPDResponse({
@@ -68,11 +52,8 @@ describe("processXCPDResponse", () => {
       outboundRequest,
       gateway,
     });
-    const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    expect(xcpdResult.success).toBe(true);
-    if (xcpdResult.success) {
-      expect(xcpdResult.data.patientMatch).toBeNull();
-    }
+
+    expect(response.patientMatch).toBeNull();
   });
   it("should process the HTTP error XCPD response correctly", async () => {
     const httpError = { error: "HTTP 503 error" };
@@ -86,11 +67,8 @@ describe("processXCPDResponse", () => {
       outboundRequest,
       gateway,
     });
-    const xcpdResult = outboundPatientDiscoveryRespFaultSchema.safeParse(response);
-    expect(xcpdResult.success).toBe(true);
-    if (xcpdResult.success) {
-      expect(xcpdResult.data.operationOutcome).toBeDefined();
-      expect(xcpdResult.data.patientMatch).toBeNull();
-    }
+
+    expect(response.operationOutcome).toBeDefined();
+    expect(response.patientMatch).toBeNull();
   });
 });

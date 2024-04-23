@@ -7,5 +7,5 @@ export type PDRequestGatewayV2Params = {
 };
 
 export abstract class IHEGatewayV2 {
-  abstract startPatientDiscoveryGatewayV2(params: PDRequestGatewayV2Params): Promise<void>;
+  abstract startPatientDiscovery(params: PDRequestGatewayV2Params): Promise<void>;
 }

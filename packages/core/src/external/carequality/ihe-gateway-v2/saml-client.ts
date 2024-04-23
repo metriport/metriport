@@ -1,6 +1,8 @@
 import https from "https";
 import axios from "axios";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { out } from "@metriport/core/util/log";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { verifySaml } from "../../saml/security/verify";
@@ -11,6 +13,8 @@ export type SamlClientResponse = {
   response: string;
   success: boolean;
 };
+
+const numberOfParallelExecutions = 10;
 
 export async function sendSignedXml({
   signedXml,
@@ -30,7 +34,6 @@ export async function sendSignedXml({
   trustedRootCert?: string[];
 }): Promise<string> {
   const agent = new https.Agent({
-    rejectUnauthorized: false,
     cert: certChain,
     key: key,
     passphrase,
@@ -69,62 +72,59 @@ export async function sendSignedRequests({
   patientId: string;
   cxId: string;
 }): Promise<SamlClientResponse[]> {
-  const requestPromises = signedRequests.map(async (request, index) => {
-    try {
-      const response = await sendSignedXml({
-        signedXml: request.signedRequest,
-        url: request.gateway.url,
-        certChain,
-        publicCert,
-        key: privateKey,
-        passphrase: privateKeyPassword,
-      });
-      console.log(
-        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
-          request.gateway.oid
-        }`
-      );
-      return {
-        gateway: request.gateway,
-        response,
-        success: true,
-      };
-    } catch (error) {
-      const msg = "HTTP/SSL Failure Sending Signed SAML Request";
-      const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
-        request.gateway.url
-      } + oid: ${request.gateway.oid}`;
-      const errorString: string = errorToString(error);
-      const extra = {
-        errorString,
-        requestDetails,
-        patientId,
-        cxId,
-      };
-      capture.error(msg, {
-        extra: {
-          context: `lambda.iheGatewayV2-outbound-patient-discovery`,
-          extra,
-        },
-      });
-      return {
-        gateway: request.gateway,
-        response: errorString,
-        success: false,
-      };
-    }
-  });
+  const { log } = out(`Send signed requests - patientId: ${patientId}`);
 
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses: SamlClientResponse[] = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        return undefined;
+  const processedResponses: SamlClientResponse[] = [];
+
+  await executeAsynchronously(
+    signedRequests,
+    async (request, index) => {
+      try {
+        const response = await sendSignedXml({
+          signedXml: request.signedRequest,
+          url: request.gateway.url,
+          certChain,
+          publicCert,
+          key: privateKey,
+          passphrase: privateKeyPassword,
+        });
+        log(
+          `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
+            request.gateway.oid
+          }`
+        );
+        processedResponses.push({
+          gateway: request.gateway,
+          response,
+          success: true,
+        });
+      } catch (error) {
+        const msg = "HTTP/SSL Failure Sending Signed SAML Request";
+        const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
+          request.gateway.url
+        } + oid: ${request.gateway.oid}`;
+        const errorString: string = errorToString(error);
+        const extra = {
+          errorString,
+          requestDetails,
+          patientId,
+          cxId,
+        };
+        capture.error(msg, {
+          extra: {
+            context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+            extra,
+          },
+        });
+        processedResponses.push({
+          gateway: request.gateway,
+          response: errorString,
+          success: false,
+        });
       }
-    })
-    .filter((response): response is SamlClientResponse => response !== undefined);
+    },
+    { numberOfParallelExecutions }
+  );
 
   return processedResponses;
 }
