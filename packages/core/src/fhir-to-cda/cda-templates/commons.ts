@@ -148,11 +148,11 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
   return address?.map(addr => ({
     ...withoutNullFlavorObject(addr.use, useAttribute),
-    streetAddressLine: withoutNullFlavorString(addr.line?.join(", ")),
-    city: withoutNullFlavorString(addr.city),
-    state: withoutNullFlavorString(addr.state),
-    postalCode: withoutNullFlavorString(addr.postalCode),
-    country: withoutNullFlavorString(addr.country),
+    streetAddressLine: addr.line?.join(", "),
+    city: addr.city,
+    state: addr.state,
+    postalCode: addr.postalCode,
+    country: addr.country,
     useablePeriod: {
       low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
       high: withoutNullFlavorObject(addr.period?.end, valueAttribute),

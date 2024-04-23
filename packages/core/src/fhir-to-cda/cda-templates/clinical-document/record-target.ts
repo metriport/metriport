@@ -16,7 +16,7 @@ function buildPatient(patient: Patient): CDAPatientRole {
     name: patient.name?.map(name => ({
       ...withoutNullFlavorObject(name.use, useAttribute),
       given: withoutNullFlavorString(name.given?.join(" ")),
-      family: withoutNullFlavorString(name.family),
+      family: name.family,
       validTime: {
         low: withoutNullFlavorObject(undefined, valueAttribute),
         high: withoutNullFlavorObject(undefined, valueAttribute),

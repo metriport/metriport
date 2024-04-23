@@ -44,11 +44,11 @@ export type CDAPeriod = {
 };
 
 export type CDAAddress = {
-  streetAddressLine?: Entry;
-  city?: Entry;
-  state?: Entry;
-  postalCode?: Entry;
-  country?: Entry;
+  streetAddressLine?: Entry | undefined;
+  city?: string | undefined;
+  state?: string | undefined;
+  postalCode?: string | undefined;
+  country?: string | undefined;
   useablePeriod?: CDAPeriod | undefined;
 };
 
@@ -80,7 +80,7 @@ export type CDAPatientRole = {
 export type CDAName = {
   use?: EntryObject;
   given?: Entry;
-  family?: Entry;
+  family?: string | undefined;
   validTime: CDAPeriod;
 };
 
