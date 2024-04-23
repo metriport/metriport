@@ -9,7 +9,7 @@ function getXCA39ResponseTemplate(request, operationOutcome) {
 	
 	var result = request;
   var requestTime = channelMap.get("REQUEST_TIME");
-  var responseTime = DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss.SSSZ");
+  var responseTime = getCurrentDate()
   result.requestTimestamp = requestTime;
 	result.responseTimestamp = responseTime;
 	if (operationOutcome) result.operationOutcome = operationOutcome;
