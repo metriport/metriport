@@ -1,7 +1,7 @@
-import { out } from "@metriport/core/util/log";
 import { Input } from "../domain/conversion/fhir-to-cda";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
+import { out } from "../util/log";
 import { convertFhirBundleToCda } from "./fhir-to-cda";
 
 export async function convertToCdaAndUpload({
