@@ -19,6 +19,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   cqOrgPrivateKeyPassword: string | undefined;
   cqOrgCertificateIntermediate: string | undefined;
   cqTrustBundleBucketName: string | undefined;
+  medicalDocumentsBucketName: string;
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
@@ -124,6 +125,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
     cqTrustBundleBucketName: string | undefined;
+    medicalDocumentsBucketName: string;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -137,6 +139,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
       cqTrustBundleBucketName,
+      medicalDocumentsBucketName,
       apiURL,
       envType,
       sentryDsn,
@@ -161,6 +164,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
@@ -187,6 +191,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
     cqTrustBundleBucketName: string | undefined;
+    medicalDocumentsBucketName: string;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -200,6 +205,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
       cqTrustBundleBucketName,
+      medicalDocumentsBucketName,
       apiURL,
       envType,
       sentryDsn,
@@ -224,6 +230,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,

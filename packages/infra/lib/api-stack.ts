@@ -467,6 +467,7 @@ export class APIStack extends Stack {
         props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
       cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
       cqTrustBundleBucketName: props.config.iheGateway?.trustStoreBucketName,
+      medicalDocumentsBucketName: props.config.medicalDocumentsBucketName,
       apiURL: apiService.loadBalancer.loadBalancerDnsName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
