@@ -12,6 +12,7 @@ import {
   getCqOrganization,
 } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
+import cwCommands from "../../external/commonwell";
 import { requestLogger } from "../helpers/request-logger";
 import { required } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -32,21 +33,22 @@ const facilityOboDetailsSchemaBase = z
     // CQ
     cqActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
-    // TODO 1706: implement this
     // CW
-    // cwActive: z.boolean().optional(),
-    // cwOboOid: z.string().optional(),
+    cwActive: z.boolean().optional(),
+    cwOboOid: z.string().optional(),
   })
   .merge(AddressStrictSchema);
 type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
 
-const facilityOboDetailsSchema = facilityOboDetailsSchemaBase.refine(
-  required<FacilityOboDetails>("cqOboOid").when("cqActive"),
-  {
+const facilityOboDetailsSchema = facilityOboDetailsSchemaBase
+  .refine(required<FacilityOboDetails>("cqOboOid").when("cqActive"), {
     message: "cqObOid is required and can't be empty when cqActive is true",
     path: ["cqObOid"],
-  }
-);
+  })
+  .refine(required<FacilityOboDetails>("cwOboOid").when("cwActive"), {
+    message: "cwOboOid is required and can't be empty when cwActive is true",
+    path: ["cwOboOid"],
+  });
 
 type CqOboDetails =
   | {
@@ -94,17 +96,18 @@ router.put(
       },
       cqOboActive: facilityInput.cqActive,
       cqOboOid: facilityInput.cqOboOid,
-      // cwOboActive: facilityInput.cwActive,
-      // cwOboOid: facilityInput.cwOboOid,
+      cwOboActive: facilityInput.cwActive,
+      cwOboOid: facilityInput.cwOboOid,
     });
 
     const cxOrg = await getOrganizationOrFail({ cxId });
 
     // TODO 1706: prob want to move these to a separate commands/functions
 
+    const vendorName = cxOrg.dataValues.data?.name;
+
     // CAREQUALITY
     if (cqOboData.enabled) {
-      const vendorName = cxOrg.dataValues.data?.name;
       const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
       const addressLine = facilityInput.addressLine2
         ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
@@ -129,7 +132,27 @@ router.put(
     }
 
     // COMMONWELL
-    // TODO 1706: implement it
+    if (facilityInput.cwActive && facilityInput.cwOboOid) {
+      // TODO 1706: lookup CW org name from specified OID in DB
+      const cwOboOrgName = buildCwOboOrgName(
+        vendorName,
+        facility.data.name,
+        facilityInput.cwOboOid
+      );
+      await cwCommands.organization.create(
+        {
+          cxId,
+          id: facility.id,
+          oid: facility.oid,
+          data: { name: cwOboOrgName, type: cxOrg.data.type, location: facility.data.address },
+          organizationNumber: facility.facilityNumber,
+          eTag: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        true
+      );
+    }
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -160,6 +183,9 @@ async function getCqFacilityName(oid: string) {
   return existingFacilityName;
 }
 
+function buildCwOboOrgName(vendorName: string, orgName: string, oboOid: string) {
+  return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
+}
 function buildCqOboOrgName(vendorName: string, orgName: string, oboOid: string) {
   return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
 }

@@ -159,7 +159,6 @@ export async function getConsolidated({
       dateTo,
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
-
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const startedAt = patient.data.consolidatedQuery?.startedAt;
 
@@ -198,8 +197,8 @@ export async function getConsolidated({
       });
     }
 
-    if (conversionType === "json") {
-      return uploadConsolidatedJsonAndReturnUrl({
+    if (conversionType === "json" && hasResources) {
+      return await uploadConsolidatedJsonAndReturnUrl({
         patient,
         bundle,
         filters,
