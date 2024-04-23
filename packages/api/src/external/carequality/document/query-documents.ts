@@ -17,7 +17,7 @@ import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
-import { startDocumentQueryGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/xca/invoke-document-query";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -90,50 +90,52 @@ export async function getDocumentsFromCQ({
       numberOfParallelExecutions: 20,
     });
 
-    // separate mirth and girth here
-    const linksWithDqUrlNoGirth: CQLink[] = [];
-    const linksWithDqUrlGirth: CQLink[] = [];
-    const girthOIDs = await getOidsWithIHEGatewayV2Enabled();
+    const linksWithDqUrlV1Gateway: CQLink[] = [];
+    const linksWithDqUrlV2Gateway: CQLink[] = [];
+    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
     for (const link of linksWithDqUrl) {
-      if (girthOIDs.includes(link.oid)) {
-        linksWithDqUrlGirth.push(link);
+      if (v2GatewayOIDs.includes(link.oid)) {
+        linksWithDqUrlV2Gateway.push(link);
       } else {
-        linksWithDqUrlNoGirth.push(link);
+        linksWithDqUrlV1Gateway.push(link);
       }
     }
 
-    // no girth requests
-    const documentQueryRequests = createOutboundDocumentQueryRequests({
+    const documentQueryRequestsV1 = createOutboundDocumentQueryRequests({
       requestId,
       patientId,
       cxId,
       organization,
-      cqLinks: linksWithDqUrlNoGirth,
+      cqLinks: linksWithDqUrlV1Gateway,
     });
 
-    // girth requests
-    const documentQueryRequestsGirth = createOutboundDocumentQueryRequests({
+    const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
       patientId,
       cxId,
       organization,
-      cqLinks: linksWithDqUrlGirth,
+      cqLinks: linksWithDqUrlV2Gateway,
     });
-
-    log(`Starting document query - Girth`);
-    await startDocumentQueryGirth({ dqRequestsGirth: documentQueryRequestsGirth, patientId, cxId });
 
     // We send the request to IHE Gateway to initiate the doc query.
     // Then as they are processed by each gateway it will start
     // sending them to the internal route one by one
-    log(`Starting document query - No Girth`);
-    await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequests });
+    log(`Starting document query - Gateway V1`);
+    await iheGateway.startDocumentsQuery({ outboundDocumentQueryReq: documentQueryRequestsV1 });
+
+    log(`Starting document query - Gateway V2`);
+    const iheGatewayV2 = makeIHEGatewayV2();
+    await iheGatewayV2.startDocumentQueryGatewayV2({
+      dqRequestsGatewayV2: documentQueryRequestsV2,
+      patientId,
+      cxId,
+    });
 
     await resultPoller.pollOutboundDocQueryResults({
       requestId,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: documentQueryRequests.length,
+      numOfGateways: documentQueryRequestsV1.length,
     });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;

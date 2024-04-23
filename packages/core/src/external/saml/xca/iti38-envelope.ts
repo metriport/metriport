@@ -7,7 +7,7 @@ import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
 } from "../../carequality/shared";
-import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { wrapIdInUrnUuid } from "../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
@@ -17,10 +17,7 @@ const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
 const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
 
 export type BulkSignedDQ = {
-  gateway: {
-    homeCommunityId: string;
-    url: string;
-  };
+  gateway: XCAGateway;
   signedRequest: string;
 };
 

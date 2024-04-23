@@ -15,6 +15,7 @@ import { parseFileFromString } from "./parse-file-from-string";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { stripUrnPrefix, constructFileName, constructFilePath } from "../utils";
+import { SamlClientResponse } from "../saml-client";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -142,17 +143,17 @@ async function handleSuccessResponse({
 }
 
 export async function processDRResponse({
-  xmlStringOrError,
+  drResponse,
   outboundRequest,
   gateway,
 }: {
-  xmlStringOrError: string | { error: string };
+  drResponse: SamlClientResponse;
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): Promise<OutboundDocumentRetrievalResp> {
-  if (typeof xmlStringOrError === "object" && xmlStringOrError.error) {
+  if (drResponse.success === false) {
     return handleHTTPErrorResponse({
-      httpError: xmlStringOrError.error,
+      httpError: drResponse.response,
       outboundRequest,
       gateway,
     });
@@ -164,12 +165,8 @@ export async function processDRResponse({
       parseAttributeValue: false,
       removeNSPrefix: true,
     });
-
-    if (typeof xmlStringOrError !== "string") {
-      throw new Error("xmlStringOrError is not a string");
-    }
-
-    const jsonObj = parser.parse(xmlStringOrError);
+    const jsonObj = parser.parse(drResponse.response);
+    console.log("jsonObj", jsonObj);
     const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
       ?.split(":")
       .pop();
@@ -178,6 +175,8 @@ export async function processDRResponse({
     const documentResponses =
       jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse;
     const soapFault = jsonObj?.Envelope?.Body?.Fault;
+
+    console.log();
 
     if ((status === "Success" || status === "PartialSuccess") && documentResponses) {
       return handleSuccessResponse({

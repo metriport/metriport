@@ -8,37 +8,20 @@ import {
   replyTo,
 } from "../../carequality/shared";
 import { wrapIdInUrnUuid } from "../utils";
+import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
-type DRBodyData = {
-  id: string;
-  gateway: {
-    homeCommunityId: string;
-    url: string;
-  };
-  documentReference: Array<{
-    homeCommunityId: string;
-    docUniqueId: string;
-    repositoryUniqueId: string;
-    metriportId: string;
-  }>;
-  samlAttributes: {
-    subjectRole: {
-      display: string;
-    };
-    organization: string;
-    organizationId: string;
-    homeCommunityId: string;
-    purposeOfUse: string;
-  };
+export type BulkSignedDR = {
+  gateway: XCAGateway;
+  signedRequest: string;
 };
 
 export function createITI39SoapEnvelope({
   bodyData,
   publicCert,
 }: {
-  bodyData: DRBodyData;
+  bodyData: OutboundDocumentRetrievalReq;
   publicCert: string;
 }): string {
   const messageId = wrapIdInUrnUuid(bodyData.id);
@@ -111,7 +94,7 @@ export function createITI39SoapEnvelope({
 }
 
 export function createAndSignDRRequest(
-  bodyData: DRBodyData,
+  bodyData: OutboundDocumentRetrievalReq,
   publicCert: string,
   privateKey: string,
   privateKeyPassword: string
@@ -119,4 +102,30 @@ export function createAndSignDRRequest(
   const xmlString = createITI39SoapEnvelope({ bodyData, publicCert });
   const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
   return fullySignedSaml;
+}
+
+export function createAndSignBulkDRRequests({
+  bulkBodyData,
+  publicCert,
+  privateKey,
+  privateKeyPassword,
+}: {
+  bulkBodyData: OutboundDocumentRetrievalReq[];
+  publicCert: string;
+  privateKey: string;
+  privateKeyPassword: string;
+}): BulkSignedDR[] {
+  const signedRequests: BulkSignedDR[] = [];
+
+  for (const bodyData of bulkBodyData) {
+    const signedRequest = createAndSignDRRequest(
+      bodyData,
+      publicCert,
+      privateKey,
+      privateKeyPassword
+    );
+    signedRequests.push({ gateway: bodyData.gateway, signedRequest });
+  }
+
+  return signedRequests;
 }

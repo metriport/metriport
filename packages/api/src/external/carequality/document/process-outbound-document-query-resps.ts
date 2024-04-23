@@ -1,6 +1,5 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
-import { startDocumentRetrievalGirth } from "@metriport/core/external/carequality/ihe-gateway-v2/xca/invoke-document-retrieval";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
 import { errorToString } from "@metriport/core/util/error/shared";
@@ -22,6 +21,7 @@ import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
 import { analytics, EventTypes } from "../../../shared/analytics";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -32,7 +32,7 @@ export async function processOutboundDocumentQueryResps({
   patientId,
   cxId,
   results,
-  girth,
+  gatewayV2,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
@@ -165,14 +165,16 @@ export async function processOutboundDocumentQueryResps({
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
-    if (girth) {
-      log(`Starting document retrieval - Girth`);
-      await startDocumentRetrievalGirth({
-        drRequestsGirth: documentRetrievalRequests,
+    if (gatewayV2) {
+      log(`Starting document retrieval - Gateway V2`);
+      const iheGatewayV2 = makeIHEGatewayV2();
+      await iheGatewayV2.startDocumentRetrievalGatewayV2({
+        drRequestsGatewayV2: documentRetrievalRequests,
         patientId,
         cxId,
       });
     } else {
+      log(`Starting document retrieval - Gateway V1`);
       await iheGateway.startDocumentsRetrieval({
         outboundDocumentRetrievalReq: documentRetrievalRequests,
       });

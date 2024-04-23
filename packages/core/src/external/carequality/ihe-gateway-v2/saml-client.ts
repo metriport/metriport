@@ -5,6 +5,7 @@ import { XCPDGateway, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { BulkSignedDQ } from "../../saml/xca/iti38-envelope";
+import { BulkSignedDR } from "../../saml/xca/iti39-envelope";
 import { isGatewayWithOid } from "./utils";
 import { capture } from "../../../util/notifications";
 import { verifySaml } from "../../saml/security/verify";
@@ -67,7 +68,7 @@ export async function sendSignedRequests({
   patientId,
   cxId,
 }: {
-  signedRequests: BulkSignedXCPD[] | BulkSignedDQ[];
+  signedRequests: BulkSignedXCPD[] | BulkSignedDQ[] | BulkSignedDR[];
   certChain: string;
   publicCert: string;
   privateKey: string;

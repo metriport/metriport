@@ -145,7 +145,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "IHEGatewayV2OutboundDocumentQuery",
-      entry: "iheGatewayV2-outbound-document-query",
+      entry: "ihe-gateway-v2-outbound-document-query",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
@@ -208,7 +208,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "IHEGatewayV2OutboundDocumentRetrieval",
-      entry: "iheGatewayV2-outbound-document-retrieval",
+      entry: "ihe-gateway-v2-outbound-document-retrieval",
       envType: envType,
       envVars: {
         ...(cqOrgPrivateKey !== undefined && { CQ_ORG_PRIVATE_KEY: cqOrgPrivateKey }),
