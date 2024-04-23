@@ -13,7 +13,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
   constructor() {
     super();
   }
-  async startPatientDiscoveryGatewayV2({
+  async startPatientDiscovery({
     pdRequestGatewayV2,
     patientId,
     cxId,
