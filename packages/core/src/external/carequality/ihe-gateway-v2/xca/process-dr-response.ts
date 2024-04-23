@@ -166,7 +166,7 @@ export async function processDRResponse({
       removeNSPrefix: true,
     });
     const jsonObj = parser.parse(drResponse.response);
-    console.log("jsonObj", jsonObj);
+
     const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
       ?.split(":")
       .pop();
@@ -175,8 +175,6 @@ export async function processDRResponse({
     const documentResponses =
       jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse;
     const soapFault = jsonObj?.Envelope?.Body?.Fault;
-
-    console.log();
 
     if ((status === "Success" || status === "PartialSuccess") && documentResponses) {
       return handleSuccessResponse({

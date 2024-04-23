@@ -58,7 +58,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
     const response = await processDRResponse({
       drResponse: {
-        success: false,
+        success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
       },
@@ -73,7 +73,7 @@ describe("processDRResponse", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_registry_error.xml"), "utf8");
     const response = await processDRResponse({
       drResponse: {
-        success: false,
+        success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
       },
