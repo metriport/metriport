@@ -8,8 +8,9 @@ const fhirToCdaConverterLambdaName = Config.getFhirToCdaConverterLambdaName();
 
 export class FhirToCdaConverterLambda implements FhirToCdaConverter {
   async requestConvert({ cxId, patientId, bundle }: FhirToCdaConverterRequest): Promise<void> {
-    if (!fhirToCdaConverterLambdaName)
+    if (!fhirToCdaConverterLambdaName) {
       throw new Error("FHIR to CDA Converter Lambda Name is undefined");
+    }
 
     try {
       await lambdaClient
@@ -21,8 +22,8 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
         .promise();
     } catch (error) {
       const msg = "Error converting FHIR to CDA";
-      console.log(`${msg}: ${error}`);
-      throw new Error(`${msg}: ${error}`);
+      console.log(`${msg} - error: ${error}`);
+      throw new Error(`${msg} - error: ${error}`);
     }
   }
 }

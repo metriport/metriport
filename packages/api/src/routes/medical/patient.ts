@@ -428,10 +428,6 @@ async function putConsolidated(req: Request, res: Response) {
       );
     }
   }
-  console.log(
-    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
-      `${incomingAmount} resources, ${contentLength} bytes`
-  );
   const data = await createOrUpdateConsolidatedPatientData({
     cxId,
     patientId: patient.id,

@@ -9,7 +9,6 @@ import { capture } from "../util/notifications";
 import { sizeInBytes } from "../util/string";
 import { uuidv7 } from "../util/uuid-v7";
 import { createAndUploadDocumentdMetadataFile } from "./create-and-upload-extrinsic-object";
-const { log } = out(`Core CDA Uploader`);
 
 export async function cdaDocumentUploaderHandler({
   cxId,
@@ -26,7 +25,9 @@ export async function cdaDocumentUploaderHandler({
   region: string;
   organization: Organization;
 }): Promise<void> {
-  checkFileSizeRestrictions(cdaBundle);
+  const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
+  const fileSize = sizeInBytes(cdaBundle);
+  checkFileSizeRestrictions(fileSize, log);
 
   const s3Utils = new S3Utils(region);
   const docId = uuidv7();
@@ -50,8 +51,7 @@ export async function cdaDocumentUploaderHandler({
   }
 
   try {
-    const { size } = await s3Utils.getFileInfoFromS3(destinationKey, medicalDocumentsBucket);
-    const stringSize = size ? size.toString() : "";
+    const stringSize = fileSize ? fileSize.toString() : "";
     await createAndUploadDocumentdMetadataFile({
       s3Utils,
       cxId,
@@ -63,6 +63,7 @@ export async function cdaDocumentUploaderHandler({
       destinationBucket: medicalDocumentsBucket,
       mimeType: "application/xml",
     });
+    log(`Successfully uploaded the metadata file`);
   } catch (error) {
     const msg = "Failed to create the metadata file of a CDA";
     log(`${msg} - error ${errorToString(error)}`);
@@ -73,8 +74,7 @@ export async function cdaDocumentUploaderHandler({
   }
 }
 
-export function checkFileSizeRestrictions(cdaBundle: string): void {
-  const fileSize = sizeInBytes(cdaBundle);
+export function checkFileSizeRestrictions(fileSize: number, log: typeof console.log): void {
   if (fileSize > MAXIMUM_UPLOAD_FILE_SIZE) {
     const msg = `Uploaded file size exceeds the maximum allowed size of ${MAXIMUM_UPLOAD_FILE_SIZE} bytes`;
     log(`${msg} - error ${fileSize}`);

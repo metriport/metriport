@@ -1,3 +1,4 @@
+import { out } from "@metriport/core/util/log";
 import { Input } from "../domain/conversion/fhir-to-cda";
 import { cdaDocumentUploaderHandler } from "../shareback/cda-uploader";
 import { Config } from "../util/config";
@@ -9,7 +10,9 @@ export async function convertToCdaAndUpload({
   bundle,
   organization,
 }: Input): Promise<void> {
+  const { log } = out(`CDA Upload cx ${cxId}, patient ${patientId}`);
   const cdaBundles = convertFhirBundleToCda(bundle);
+  log(`Converted ${cdaBundles.length} CDA bundles. Will upload them to S3.`);
   for (const cdaBundle of cdaBundles) {
     await cdaDocumentUploaderHandler({
       cxId,
