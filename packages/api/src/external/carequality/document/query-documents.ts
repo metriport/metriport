@@ -7,6 +7,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
@@ -15,7 +16,6 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { scheduleDocQuery } from "../../hie/schedule-document-query";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -88,9 +88,9 @@ export async function getDocumentsFromCQ({
       numberOfParallelExecutions: 20,
     });
 
-    const documentQueryRequests = createOutboundDocumentQueryRequests({
+    const documentQueryRequests = await createOutboundDocumentQueryRequests({
       requestId,
-      patientId,
+      patient,
       cxId,
       organization,
       cqLinks: linksWithDqUrl,

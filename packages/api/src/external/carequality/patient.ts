@@ -1,16 +1,16 @@
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { Organization } from "@metriport/core/domain/organization";
+import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 
+import { FacilityModel } from "../../models/medical/facility";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -19,10 +19,10 @@ import {
   toBasicOrgAttributes,
 } from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
+import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { validateCQEnabledAndInitGW } from "./shared";
 
 dayjs.extend(duration);
@@ -32,7 +32,7 @@ const resultPoller = makeOutboundResultPoller();
 
 export async function discover(
   patient: Patient,
-  facilityNPI: string,
+  facility: FacilityModel,
   requestId: string,
   forceEnabled = false
 ): Promise<void> {
@@ -46,7 +46,7 @@ export async function discover(
     await processPatientDiscoveryProgress({ patient, status: "processing" });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityNPI, enabledIHEGW, requestId, baseLogMessage).catch(
+    prepareAndTriggerPD(patient, facility, enabledIHEGW, requestId, baseLogMessage).catch(
       processAsyncError(context)
     );
   }
@@ -54,13 +54,13 @@ export async function discover(
 
 async function prepareAndTriggerPD(
   patient: Patient,
-  facilityNPI: string,
+  facility: FacilityModel,
   enabledIHEGW: IHEGateway,
   requestId: string,
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, facilityNPI, requestId);
+    const pdRequest = await prepareForPatientDiscovery(patient, facility, requestId);
     const numGateways = pdRequest.gateways.length;
 
     const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -79,7 +79,7 @@ async function prepareAndTriggerPD(
     await processPatientDiscoveryProgress({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
-        facilityNPI,
+        facilityId: facility.id,
         patientId: patient.id,
         context,
         error,
@@ -90,20 +90,21 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
-  facilityNPI: string,
+  facility: FacilityModel,
   requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
-
   const { organization, xcpdGateways } = await gatherXCPDGateways(patient);
+
+  const isObo = facility.type === "initiator_only";
 
   const pdRequest = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
     xcpdGateways,
-    facilityNPI,
-    orgName: organization.data.name,
-    orgOid: organization.oid,
+    facilityNPI: facility.data.npi,
+    orgName: isObo ? facility.data.name : organization.data.name,
+    orgOid: isObo ? facility.oid : organization.oid,
     requestId,
   });
   return pdRequest;

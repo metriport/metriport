@@ -68,7 +68,7 @@ export const createPatient = async (
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facility, requestId, forceCarequality);
 
   return newPatient;
 };

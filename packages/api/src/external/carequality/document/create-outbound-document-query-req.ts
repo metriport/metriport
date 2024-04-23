@@ -1,29 +1,37 @@
 import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
+import {
+  getFacilityFromPatientOrFail,
+  isOboFacility,
+} from "../../../command/medical/facility/get-facility";
 import { CQLink } from "../cq-patient-data";
 import { createPurposeOfUse } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
-export function createOutboundDocumentQueryRequests({
+export async function createOutboundDocumentQueryRequests({
   requestId,
-  patientId,
+  patient,
   cxId,
   organization,
   cqLinks,
 }: {
   requestId: string;
-  patientId: string;
+  patient: Patient;
   cxId: string;
   organization: Organization;
   cqLinks: CQLink[];
-}): OutboundDocumentQueryReq[] {
+}): Promise<OutboundDocumentQueryReq[]> {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
+
+  const facility = await getFacilityFromPatientOrFail(patient);
+  const isObo = isOboFacility(facility.type);
 
   return cqLinks.map(externalGateway => {
     return {
@@ -36,9 +44,9 @@ export function createOutboundDocumentQueryRequests({
           code: SUBJECT_ROLE_CODE,
           display: SUBJECT_ROLE_DISPLAY,
         },
-        organization: orgName,
-        organizationId: orgOid,
-        homeCommunityId: orgOid,
+        organization: isObo ? facility.data.name : orgName,
+        organizationId: isObo ? facility.oid : orgOid,
+        homeCommunityId: isObo ? facility.oid : orgOid,
         purposeOfUse: createPurposeOfUse(),
       },
       gateway: {
@@ -49,7 +57,7 @@ export function createOutboundDocumentQueryRequests({
         id: externalGateway.patientId,
         system: externalGateway.systemId,
       },
-      patientId: patientId,
+      patientId: patient.id,
     };
   });
 }

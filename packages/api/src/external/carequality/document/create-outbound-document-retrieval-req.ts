@@ -1,4 +1,5 @@
 import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import {
   OutboundDocumentQueryResp,
@@ -6,6 +7,10 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
+import {
+  getFacilityFromPatientOrFail,
+  isOboFacility,
+} from "../../../command/medical/facility/get-facility";
 import { createPurposeOfUse, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
@@ -13,23 +18,26 @@ const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 export const maxDocRefsPerDocRetrievalRequest = 5;
 
-export function createOutboundDocumentRetrievalReqs({
+export async function createOutboundDocumentRetrievalReqs({
   requestId,
-  cxId,
+  patient,
   organization,
   documentReferences,
   outboundDocumentQueryResps,
 }: {
   requestId: string;
-  cxId: string;
+  patient: Patient;
   organization: Organization;
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
-}): OutboundDocumentRetrievalReq[] {
+}): Promise<OutboundDocumentRetrievalReq[]> {
   const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
+
+  const facility = await getFacilityFromPatientOrFail(patient);
+  const isObo = isOboFacility(facility.type);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
     documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
@@ -47,7 +55,7 @@ export function createOutboundDocumentRetrievalReqs({
 
       const baseRequest: Omit<OutboundDocumentRetrievalReq, "documentReference"> = {
         id: requestId,
-        cxId: cxId,
+        cxId: patient.cxId,
         patientId: patientId,
         timestamp: now,
         samlAttributes: {
@@ -56,9 +64,9 @@ export function createOutboundDocumentRetrievalReqs({
             code: SUBJECT_ROLE_CODE,
             display: SUBJECT_ROLE_DISPLAY,
           },
-          organization: orgName,
-          organizationId: orgOid,
-          homeCommunityId: orgOid,
+          organization: isObo ? facility.data.name : orgName,
+          organizationId: isObo ? facility.oid : orgOid,
+          homeCommunityId: isObo ? facility.oid : orgOid,
           purposeOfUse: createPurposeOfUse(),
         },
         gateway: {
@@ -89,7 +97,7 @@ export function createOutboundDocumentRetrievalReqs({
       extra: {
         requestId,
         patientIds: patientsWithInvalidGW,
-        cxId,
+        cxId: patient.cxId,
       },
     });
   }
