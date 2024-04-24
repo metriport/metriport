@@ -1,12 +1,12 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
+import { Organization } from "@metriport/core/domain/organization";
+import { getStatesFromAddresses, Patient, PatientData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
-import { getStatesFromAddresses, Patient, PatientData } from "@metriport/core/domain/patient";
+import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
 import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
-import { FacilityModel } from "../../../models/medical/facility";
-import { OrganizationModel } from "../../../models/medical/organization";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
@@ -118,22 +118,22 @@ export const getPatientOrFail = async (params: GetPatient): Promise<PatientModel
   return patient;
 };
 
-export const getPatientWithDependencies = async ({
+export async function getPatientWithDependencies({
   id,
   cxId,
 }: {
   id: string;
   cxId: string;
 }): Promise<{
-  patient: PatientModel;
-  facilities: FacilityModel[];
-  organization: OrganizationModel;
-}> => {
+  patient: Patient;
+  facilities: Facility[];
+  organization: Organization;
+}> {
   const patient = await getPatientOrFail({ id, cxId });
   const facilities = await getFacilities({ cxId, ids: patient.facilityIds });
   const organization = await getOrganizationOrFail({ cxId });
   return { patient, facilities, organization };
-};
+}
 
 export const getPatientStates = async ({
   cxId,

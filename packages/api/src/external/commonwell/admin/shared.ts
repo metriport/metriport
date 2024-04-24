@@ -1,9 +1,9 @@
 import { CommonWellAPI, organizationQueryMeta, RequestMetadata } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import { getPatientData } from "../patient-shared";
 
 export type CWAccess =
   | {
@@ -35,14 +35,20 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess>
   const cwPatientId = commonwellData.patientId;
   const cwPersonId = commonwellData.personId;
 
-  // Get Org info to setup API access
-  const { organization, facility } = await getPatientData(patient, facilityId);
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+  const initiator = await getHieInitiator(patient, facilityId);
+  const initiatorName = initiator.name;
+  const initiatorOID = initiator.oid;
+  const initiatorNpi = initiator.npi;
 
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOID));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
 
-  return { commonWell, queryMeta, cwPatientId, cwPersonId, orgOID, orgName };
+  return {
+    commonWell,
+    queryMeta,
+    cwPatientId,
+    cwPersonId,
+    orgOID: initiatorOID,
+    orgName: initiatorName,
+  };
 }

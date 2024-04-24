@@ -1,25 +1,18 @@
 import { organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DocumentDownloader } from "@metriport/core/external/commonwell/document/document-downloader";
 import { DocumentDownloaderLambda } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
-import { oid } from "@metriport/core/domain/oid";
+import { HieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { Config } from "../../../shared/config";
 import { makeCommonWellAPI } from "../api";
 
-export function makeDocumentDownloader({
-  orgName,
-  orgOid,
-  npi,
-}: {
-  orgName: string;
-  orgOid: string;
-  npi: string;
-}): DocumentDownloader {
+export function makeDocumentDownloader({ name, oid, npi }: HieInitiator): DocumentDownloader {
   const region = Config.getAWSRegion();
   const bucketName = Config.getMedicalDocumentsBucketName();
   if (Config.isDev()) {
-    const commonWell = makeCommonWellAPI(orgName, oid(orgOid));
-    const queryMeta = organizationQueryMeta(orgName, { npi });
+    const commonWell = makeCommonWellAPI(name, addOidPrefix(oid));
+    const queryMeta = organizationQueryMeta(name, { npi });
     return new DocumentDownloaderLocal({
       region,
       bucketName,
@@ -33,8 +26,8 @@ export function makeDocumentDownloader({
     region,
     bucketName,
     lambdaName: Config.getDocumentDownloaderLambdaName(),
-    orgName,
-    orgOid,
+    orgName: name,
+    orgOid: oid,
     npi,
   });
 }

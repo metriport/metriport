@@ -1,9 +1,9 @@
+import { OrganizationData, OrganizationType } from "@metriport/core/domain/organization";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
-import { OrganizationData } from "@metriport/core/domain/organization";
 import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
-import { OrganizationModel, OrganizationType } from "../../../models/medical/organization";
+import { OrganizationModel } from "../../../models/medical/organization";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { createOrganizationId } from "../customer-sequence/create-id";
@@ -34,7 +34,7 @@ export const createOrganization = async (
 
 async function createOrganizationInternal(
   orgData: OrganizationCreateCmd,
-  orgType: OrganizationType = OrganizationType.healthcareProvider,
+  orgType = OrganizationType.healthcareProvider,
   attempt = 1
 ): Promise<OrganizationModel> {
   try {

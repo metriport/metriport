@@ -1,15 +1,15 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
-import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie";
+import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie/cross-hie-ids";
+import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { PatientModel } from "../../../models/medical/patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData, registerAndLinkPatientInCW } from "../patient";
-import { getPatientData } from "../patient-shared";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -96,14 +96,9 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    // Get Org info to setup API access
-    const { organization, facility } = await getPatientData(patient, facilityId);
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-
-    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+    const initiator = await getHieInitiator(patient, facilityId);
+    commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+    const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
@@ -113,10 +108,7 @@ export async function recreatePatientAtCW(
       getOrgIdExcludeList,
       log,
       undefined,
-      {
-        organization,
-        facility,
-      }
+      initiator
     );
 
     if (!cwIds) {

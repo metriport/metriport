@@ -1,13 +1,13 @@
 import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { reset } from ".";
+import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
-import { getPatientData } from "../patient-shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
 const context = "cw.link.create";
@@ -27,7 +27,7 @@ export async function create(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const { organization, facility } = await getPatientData(patient, facilityId);
+  const initiator = await getHieInitiator(patient, facilityId);
 
   const externalData = patient.data.externalData;
 
@@ -49,11 +49,8 @@ export async function create(
       await reset(patientId, cxId, facilityId);
     }
 
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+    commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+    const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 
     const cwPatient = await commonWell.getPatient(queryMeta, cwPatientId);
 
