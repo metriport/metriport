@@ -1,4 +1,3 @@
-import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import {
   OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
@@ -18,6 +17,11 @@ import { createOutboundDocumentQueryResp } from "../carequality/command/outbound
 import { getPDResultStatus, getDQResultStatus } from "../carequality/ihe-result";
 import { Config } from "../../shared/config";
 
+const privateKey = Config.getCQOrgPrivateKey();
+const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
+const publicCert = Config.getCQOrgCertificate();
+const certChain = Config.getCQOrgCertificateIntermediate();
+
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
   constructor() {
     super();
@@ -31,15 +35,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    const privateKeySecretName = Config.getCQOrgPrivateKey();
-    const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
-    const publicCertSecretName = Config.getCQOrgCertificate();
-    const certChainSecretName = Config.getCQOrgCertificateIntermediate();
-
-    const privateKey = await getSecret(privateKeySecretName);
-    const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
-    const publicCert = await getSecret(publicCertSecretName);
-    const certChain = await getSecret(certChainSecretName);
     if (
       !privateKey ||
       typeof privateKey !== "string" ||
@@ -89,17 +84,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    // MAKE REUSABLE
-    const privateKeySecretName = Config.getCQOrgPrivateKey();
-    const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
-    const publicCertSecretName = Config.getCQOrgCertificate();
-    const certChainSecretName = Config.getCQOrgCertificateIntermediate();
-
-    const privateKey = await getSecret(privateKeySecretName);
-    const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
-    const publicCert = await getSecret(publicCertSecretName);
-    const certChain = await getSecret(certChainSecretName);
-
     if (
       !privateKey ||
       typeof privateKey !== "string" ||
