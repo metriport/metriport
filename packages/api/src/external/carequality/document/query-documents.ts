@@ -15,6 +15,7 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
+import { getCqInitiator } from "../shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -86,9 +87,11 @@ export async function getDocumentsFromCQ({
       numberOfParallelExecutions: 20,
     });
 
+    const initiator = await getCqInitiator(patient);
     const documentQueryRequests = await createOutboundDocumentQueryRequests({
       requestId,
       patient,
+      initiator,
       cxId,
       cqLinks: linksWithDqUrl,
     });

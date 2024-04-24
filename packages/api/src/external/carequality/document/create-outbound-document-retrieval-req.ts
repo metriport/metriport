@@ -6,7 +6,8 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
-import { createPurposeOfUse, getCqInitiator, getSystemUserName, isGWValid } from "../shared";
+import { HieInitiator } from "../../hie/get-hie-initiator";
+import { createPurposeOfUse, getSystemUserName, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -16,16 +17,17 @@ export const maxDocRefsPerDocRetrievalRequest = 5;
 export async function createOutboundDocumentRetrievalReqs({
   requestId,
   patient,
+  initiator,
   documentReferences,
   outboundDocumentQueryResps,
 }: {
   requestId: string;
   patient: Patient;
+  initiator: HieInitiator;
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): Promise<OutboundDocumentRetrievalReq[]> {
   const now = dayjs().toISOString();
-  const initiator = await getCqInitiator(patient);
   const user = getSystemUserName(initiator.orgName);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>

@@ -56,7 +56,7 @@ async function prepareAndTriggerPD(
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, requestId);
+    const pdRequest = await prepareForPatientDiscovery(patient, facilityId, requestId);
     const numGateways = pdRequest.gateways.length;
 
     const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -86,11 +86,14 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
+  facilityId: string,
   requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
-  const xcpdGateways = await gatherXCPDGateways(patient);
-  const initiator = await getCqInitiator(patient);
+  const [xcpdGateways, initiator] = await Promise.all([
+    gatherXCPDGateways(patient),
+    getCqInitiator(patient, facilityId),
+  ]);
 
   const pdRequest = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,

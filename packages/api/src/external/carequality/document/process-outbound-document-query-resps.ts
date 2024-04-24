@@ -17,6 +17,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
+import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { DocumentReferenceWithMetriportId, cqToFHIR, toDocumentReference } from "./shared";
@@ -149,9 +150,11 @@ export async function processOutboundDocumentQueryResps({
       numberOfParallelExecutions: 20,
     });
 
+    const initiator = await getCqInitiator(patient);
     const documentRetrievalRequests = await createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
+      initiator,
       documentReferences: docsToDownload,
       outboundDocumentQueryResps: respWithDRUrl,
     });
