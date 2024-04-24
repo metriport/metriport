@@ -17,11 +17,6 @@ import { createOutboundDocumentQueryResp } from "../carequality/command/outbound
 import { getPDResultStatus, getDQResultStatus } from "../carequality/ihe-result";
 import { Config } from "../../shared/config";
 
-const privateKey = Config.getCQOrgPrivateKey();
-const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-const publicCert = Config.getCQOrgCertificate();
-const certChain = Config.getCQOrgCertificateIntermediate();
-
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
   constructor() {
     super();
@@ -35,6 +30,11 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
+    const privateKey = Config.getCQOrgPrivateKey();
+    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
+    const publicCert = Config.getCQOrgCertificate();
+    const certChain = Config.getCQOrgCertificateIntermediate();
+
     if (
       !privateKey ||
       typeof privateKey !== "string" ||
@@ -84,6 +84,12 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
+    // MAKE REUSABLE
+    const privateKey = Config.getCQOrgPrivateKey();
+    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
+    const publicCert = Config.getCQOrgCertificate();
+    const certChain = Config.getCQOrgCertificateIntermediate();
+
     if (
       !privateKey ||
       typeof privateKey !== "string" ||
