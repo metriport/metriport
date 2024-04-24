@@ -29,11 +29,11 @@ export async function createOutboundDocumentRetrievalReqs({
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): Promise<OutboundDocumentRetrievalReq[]> {
-  const orgOid = organization.oid;
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
+  const orgOid = organization.oid;
   const facility = await getFacilityFromPatientOrFail(patient); // TODO: replace with getHieInitiator
   // const facility = await getHieInitiator(patient);
   const isObo = isCqOboFacility(facility);

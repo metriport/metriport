@@ -9,8 +9,7 @@ import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateways } from "@metripor
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-
-import { FacilityModel } from "../../models/medical/facility";
+import { Facility } from "../../domain/medical/facility";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -33,7 +32,7 @@ const resultPoller = makeOutboundResultPoller();
 
 export async function discover(
   patient: Patient,
-  facility: FacilityModel,
+  facility: Facility,
   requestId: string,
   forceEnabled = false
 ): Promise<void> {
@@ -55,7 +54,7 @@ export async function discover(
 
 async function prepareAndTriggerPD(
   patient: Patient,
-  facility: FacilityModel,
+  facility: Facility,
   enabledIHEGW: IHEGateway,
   requestId: string,
   baseLogMessage: string
@@ -91,7 +90,7 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
-  facility: FacilityModel,
+  facility: Facility,
   requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
