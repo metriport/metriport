@@ -4,12 +4,12 @@ import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
-import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie/cross-hie-ids";
-import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { PatientModel } from "../../../models/medical/patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
+import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
 import { getCWData, registerAndLinkPatientInCW } from "../patient";
+import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -96,7 +96,7 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    const initiator = await getHieInitiator(patient, facilityId);
+    const initiator = await getCwInitiator(patient, facilityId);
     commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
     const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 

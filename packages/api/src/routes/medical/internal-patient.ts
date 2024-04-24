@@ -13,7 +13,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie/cross-hie-ids";
+import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {

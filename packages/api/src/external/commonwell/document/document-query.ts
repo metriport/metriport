@@ -24,7 +24,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { getHieInitiator, HieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import NotFoundError from "../../../errors/not-found";
 import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
@@ -44,6 +43,7 @@ import { processFhirResponse } from "../../fhir/document/process-fhir-search-res
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
+import { HieInitiator } from "../../hie/get-hie-initiator";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -52,6 +52,7 @@ import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, linkPatientToCW } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import { getCwInitiator } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
 import {
@@ -120,7 +121,7 @@ export async function queryAndProcessDocuments({
   }
 
   try {
-    const initiatorData = await getHieInitiator(patientParam, facilityId);
+    const initiatorData = await getCwInitiator(patientParam, facilityId);
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId },
@@ -538,7 +539,7 @@ async function downloadDocsAndUpsertFHIR({
             if (!fileInfo.fileExists) {
               // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const initiator = await getHieInitiator({ id: patient.id, cxId }, facilityId);
+                const initiator = await getCwInitiator({ id: patient.id, cxId }, facilityId);
                 const newFile = triggerDownloadDocument({
                   doc,
                   fileInfo,

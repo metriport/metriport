@@ -1,7 +1,8 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { isOboFacility } from "../../../domain/medical/facility";
-import { getPatientWithDependencies } from "../patient/get-patient";
+import { isOboEnabled } from "../../domain/medical/facility";
+import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 
 export type HieInitiator = {
   oid: string;
@@ -12,7 +13,9 @@ export type HieInitiator = {
 
 export async function getHieInitiator(
   patient: Pick<Patient, "id" | "cxId">,
-  facilityId?: string
+  facilityId: string | undefined,
+  // had to specify them instead of using the type because of the item ALL
+  hie: MedicalDataSource.COMMONWELL | MedicalDataSource.COMMONWELL
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
   if (!facilityId && facilities.length > 1) {
@@ -37,7 +40,7 @@ export async function getHieInitiator(
       patientId: patient.id,
     });
   }
-  if (isOboFacility(facility.type)) {
+  if (isOboEnabled(facility, hie)) {
     return {
       oid: facility.oid,
       name: facility.data.name,
