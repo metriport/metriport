@@ -10,7 +10,7 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
