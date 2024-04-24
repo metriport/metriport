@@ -81,7 +81,7 @@ export async function getXcpdStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM ${PD_TABLE_NAME}
+  SELECT patient_id, status, data FROM ${PD_TABLE_NAME}
   WHERE data->>'cxId'=:cxId
   `;
 

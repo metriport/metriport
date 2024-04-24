@@ -8,7 +8,7 @@ import { getWhStatistics } from "@metriport/core/util/statistics/get-wh-statisti
 import { getEnvVarOrFail } from "../../../api/src/shared/config";
 import * as fs from "fs";
 
-const apiUrl = getEnvVarOrFail("API_URL");
+const apiUrl = getEnvVarOrFail("API_URL"); // Use the load balancer + VPN for production
 const cxId = getEnvVarOrFail("CX_ID");
 const cxName = getEnvVarOrFail("CX_NAME");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS"); // !!!MAKE SURE TO USE THE READ REPLICA CREDENTIALS!!!
