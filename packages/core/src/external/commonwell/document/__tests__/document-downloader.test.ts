@@ -1,6 +1,6 @@
 import { APIMode, CommonWell, organizationQueryMeta } from "@metriport/commonwell-sdk";
 import * as stream from "stream";
-import { oid } from "../../../../domain/oid";
+import { addOidPrefix } from "../../../../domain/oid";
 import { getEnvVarOrFail } from "../../../../util/env-var";
 import { S3Utils } from "../../../aws/s3";
 import { DocumentDownloaderLocal } from "../document-downloader-local";
@@ -49,7 +49,7 @@ describe.skip("document-downloader", () => {
           cwOrgCertificate,
           cwOrgPrivateKey,
           org.name,
-          oid(org.oid),
+          addOidPrefix(org.oid),
           APIMode.integration
         )
       : undefined;

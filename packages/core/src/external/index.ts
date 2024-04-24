@@ -1,4 +1,7 @@
 export enum MedicalDataSource {
+  /**
+   * @deprecated There's no HIE called "ALL", we should accept a list of HIEs instead when needed.
+   */
   ALL = "ALL",
   COMMONWELL = "COMMONWELL",
   CAREQUALITY = "CAREQUALITY",
