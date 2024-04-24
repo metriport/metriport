@@ -49,7 +49,7 @@ export async function getDqStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM ${DQ_TABLE_NAME} 
+  SELECT patient_id, status, data FROM ${DQ_TABLE_NAME} 
   WHERE data->>'cxId'=:cxId
   `;
 

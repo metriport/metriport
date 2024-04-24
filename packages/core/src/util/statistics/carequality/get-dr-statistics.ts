@@ -50,7 +50,7 @@ export async function getDrStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM ${DR_TABLE_NAME} 
+  SELECT patient_id, status, data FROM ${DR_TABLE_NAME} 
   WHERE data->>'cxId'=:cxId
   `;
     const drResults = await getQueryResults({

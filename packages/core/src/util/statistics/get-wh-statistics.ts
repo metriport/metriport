@@ -79,7 +79,7 @@ export async function getWhStatistics({
 
   try {
     const baseQuery = `
-  SELECT * FROM ${WH_TABLE_NAME} 
+  SELECT cx_id, type, status, payload FROM ${WH_TABLE_NAME} 
   WHERE cx_id=:cxId
   `;
     const whResponse = await getQueryResults({
