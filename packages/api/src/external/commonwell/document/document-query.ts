@@ -121,7 +121,7 @@ export async function queryAndProcessDocuments({
   }
 
   try {
-    const initiatorData = await getCwInitiator(patientParam, facilityId);
+    const initiator = await getCwInitiator(patientParam, facilityId);
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId },
@@ -143,7 +143,7 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        await linkPatientToCW(patientParam, initiatorData.facilityId, getOrgIdExcludeList);
+        await linkPatientToCW(patientParam, initiator.facilityId, getOrgIdExcludeList);
       }
 
       return;
@@ -177,7 +177,7 @@ export async function queryAndProcessDocuments({
     log(`Querying for documents of patient ${patient.id}...`);
     const cwDocuments = await internalGetDocuments({
       patient,
-      queryInitiator: initiatorData,
+      initiator,
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
@@ -245,10 +245,10 @@ export async function queryAndProcessDocuments({
  */
 export async function internalGetDocuments({
   patient,
-  queryInitiator,
+  initiator,
 }: {
   patient: PatientWithCWData;
-  queryInitiator: HieInitiator;
+  initiator: HieInitiator;
 }): Promise<Document[]> {
   const context = "cw.queryDocument";
   const { log } = Util.out(`CW internalGetDocuments - M patient ${patient.id}`);
@@ -264,8 +264,8 @@ export async function internalGetDocuments({
       additionalDimension: "CommonWell",
     });
   };
-  const commonWell = makeCommonWellAPI(queryInitiator.name, addOidPrefix(queryInitiator.oid));
-  const queryMeta = organizationQueryMeta(queryInitiator.oid, { npi: queryInitiator.npi });
+  const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+  const queryMeta = organizationQueryMeta(initiator.oid, { npi: initiator.npi });
 
   const docs: Document[] = [];
   const cwErrs: OperationOutcome[] = [];

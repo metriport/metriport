@@ -159,9 +159,6 @@ export async function registerAndLinkPatientInCW(
 
     commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
     const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
     const commonwellPatient = patientToCommonwell({
       patient,
       orgName: initiatorName,
@@ -559,14 +556,17 @@ async function setupUpdate(
 
   if (!commonwellPatientId || !personId) return undefined;
 
-  const initiatorData = await getCwInitiator(patient, facilityId);
-  const orgName = initiatorData.name;
-  const orgOID = initiatorData.oid;
-  const facilityNPI = initiatorData.npi;
+  const initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = initiator.name;
+  const initiatorOid = initiator.oid;
 
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
-  const commonWell = makeCommonWellAPI(orgName, addOidPrefix(orgOID));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiator.npi });
+  const commonwellPatient = patientToCommonwell({
+    patient,
+    orgName: initiatorName,
+    orgOID: initiatorOid,
+  });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }
