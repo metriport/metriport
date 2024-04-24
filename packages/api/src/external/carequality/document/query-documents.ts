@@ -127,6 +127,7 @@ export async function getDocumentsFromCQ({
     const iheGatewayV2 = makeIHEGatewayV2();
     await iheGatewayV2.startDocumentQueryGatewayV2({
       dqRequestsGatewayV2: documentQueryRequestsV2,
+      requestId,
       patientId,
       cxId,
     });

@@ -25,7 +25,6 @@ export type OutboundDocQueryRespParam = {
   cxId: string;
   requestId: string;
   results: OutboundDocumentQueryResp[];
-  gatewayV2: boolean;
 };
 
 export type OutboundDocRetrievalRespParam = {
@@ -102,7 +101,6 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       patientId,
       cxId,
       results,
-      gatewayV2: false,
     };
 
     await api.post(this.docQueryResultsUrl, payload);

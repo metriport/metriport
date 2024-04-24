@@ -46,13 +46,15 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
     dqRequestsGatewayV2,
     patientId,
     cxId,
+    requestId,
   }: {
     dqRequestsGatewayV2: OutboundDocumentQueryReq[];
     patientId: string;
     cxId: string;
+    requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const params = { patientId, cxId, dqRequestsGatewayV2 };
+    const params = { patientId, cxId, requestId, dqRequestsGatewayV2 };
     // intentionally not waiting
     lambdaClient
       .invoke({
@@ -61,19 +63,22 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
         Payload: JSON.stringify(params),
       })
       .promise()
-      .catch(processAsyncError("Failed to invoke girth lambda for document query"));
+      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
   }
   async startDocumentRetrievalGatewayV2({
     drRequestsGatewayV2,
     patientId,
     cxId,
+    requestId,
   }: {
     drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
     patientId: string;
     cxId: string;
+    requestId: string;
   }): Promise<void> {
     const lambdaClient = makeLambdaClient(Config.getAWSRegion());
-    const params = { patientId, cxId, drRequestsGatewayV2 };
+    const params = { patientId, cxId, requestId, drRequestsGatewayV2 };
+
     lambdaClient
       .invoke({
         FunctionName: iheGatewayV2OutboundDocumentRetrievalLambdaName,
@@ -81,6 +86,6 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
         Payload: JSON.stringify(params),
       })
       .promise()
-      .catch(processAsyncError("Failed to invoke girth lambda for document retrieval"));
+      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
   }
 }
