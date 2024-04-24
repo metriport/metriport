@@ -13,7 +13,7 @@ import {
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
 import { AdditionalInfo } from "@metriport/commonwell-sdk/common/commonwell-error";
-import { oid } from "@metriport/core/domain/oid";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
@@ -26,11 +26,11 @@ import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import {
-  getPatientData,
   getPersonalIdentifiersFromPatient,
   PatientDataCommonwell,
   searchPersons,
 } from "../patient-shared";
+import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
 type NetworkLinks = {
@@ -62,13 +62,10 @@ export async function get(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const { organization, facility } = await getPatientData(patient, facilityId);
+  const initiator = await getCwInitiator(patient, facilityId);
 
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+  const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+  const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 
   const patientCWData = getCWData(patient.data.externalData);
 
