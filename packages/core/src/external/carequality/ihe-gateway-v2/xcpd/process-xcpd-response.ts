@@ -134,6 +134,8 @@ function handlePatientErrorResponse({
       cxId,
     },
   });
+  // TEMP
+  console.log({ jsonObj });
   const acknowledgementDetail =
     getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {

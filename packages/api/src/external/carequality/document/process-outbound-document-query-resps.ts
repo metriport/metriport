@@ -161,7 +161,6 @@ export async function processOutboundDocumentQueryResps({
     const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
 
     for (const doc of docsToDownload) {
-      doc.homeCommunityId;
       if (v2GatewayOIDs.includes(doc.homeCommunityId)) {
         docsWithDqUrlV2Gateway.push(doc);
       }
