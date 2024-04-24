@@ -36,8 +36,10 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
     facilityNumber,
     cqOboActive,
     cwOboActive,
-    cqOboOid: params.cqOboOid ?? cqOboActive ? faker.string.uuid() : null,
-    cwOboOid: params.cwOboOid ?? cwOboActive ? faker.string.uuid() : null,
+    cqOboOid:
+      params.cqOboOid !== undefined ? params.cqOboOid : cqOboActive ? faker.string.uuid() : null,
+    cwOboOid:
+      params.cwOboOid !== undefined ? params.cwOboOid : cwOboActive ? faker.string.uuid() : null,
     type: params.type ?? faker.helpers.arrayElement(Object.values(FacilityType)),
     data: makeFacilityData(params.data),
   };

@@ -2,12 +2,12 @@ import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk"
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { reset } from ".";
-import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
+import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
 const context = "cw.link.create";
@@ -27,7 +27,7 @@ export async function create(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const initiator = await getHieInitiator(patient, facilityId);
+  const initiator = await getCwInitiator(patient, facilityId);
 
   const externalData = patient.data.externalData;
 

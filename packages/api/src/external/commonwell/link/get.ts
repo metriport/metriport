@@ -19,7 +19,6 @@ import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
-import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
 import { isCWEnabledForCx } from "../../aws/appConfig";
@@ -31,6 +30,7 @@ import {
   PatientDataCommonwell,
   searchPersons,
 } from "../patient-shared";
+import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
 type NetworkLinks = {
@@ -62,7 +62,7 @@ export async function get(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const initiator = await getHieInitiator(patient, facilityId);
+  const initiator = await getCwInitiator(patient, facilityId);
 
   const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
   const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });

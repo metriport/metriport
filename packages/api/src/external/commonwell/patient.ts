@@ -16,7 +16,6 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { getHieInitiator, HieInitiator } from "../../command/medical/hie/get-hie-initiator";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
 import { analytics, EventTypes } from "../../shared/analytics";
@@ -28,6 +27,7 @@ import {
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
 } from "../aws/appConfig";
+import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -42,6 +42,7 @@ import {
   getMatchingStrongIds,
   PatientDataCommonwell,
 } from "./patient-shared";
+import { getCwInitiator } from "./shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -144,7 +145,7 @@ export async function registerAndLinkPatientInCW(
   let commonWell: CommonWellAPI | undefined;
 
   try {
-    const _initiator = initiator ?? (await getHieInitiator(patient, facilityId));
+    const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
     const initiatorName = _initiator.name;
     const initiatorOid = _initiator.oid;
     const initiatorNpi = _initiator.npi;
@@ -158,9 +159,6 @@ export async function registerAndLinkPatientInCW(
 
     commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
     const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
-    // TODO 1706 Do we want to use Org/Facility OID for the CW Patient, or always the Org one?
     const commonwellPatient = patientToCommonwell({
       patient,
       orgName: initiatorName,
@@ -558,14 +556,17 @@ async function setupUpdate(
 
   if (!commonwellPatientId || !personId) return undefined;
 
-  const initiatorData = await getHieInitiator(patient, facilityId);
-  const orgName = initiatorData.name;
-  const orgOID = initiatorData.oid;
-  const facilityNPI = initiatorData.npi;
+  const initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = initiator.name;
+  const initiatorOid = initiator.oid;
 
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
-  const commonWell = makeCommonWellAPI(orgName, addOidPrefix(orgOID));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiator.npi });
+  const commonwellPatient = patientToCommonwell({
+    patient,
+    orgName: initiatorName,
+    orgOID: initiatorOid,
+  });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }
