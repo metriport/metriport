@@ -9,7 +9,7 @@ function getXCPD55ResponseTemplate(request, operationOutcome) {
 	
 	var result = request;
   var requestTime = channelMap.get("REQUEST_TIME");
-  var responseTime = getCurrentDate();
+  var responseTime = channelMap.get("RESPONSE_TIME");
 	// Dec 20: patientResourceId to patientId
 	result.patientId = channelMap.get('PATIENT_ID');
 	result.patientMatch = false;
