@@ -4,9 +4,9 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
+import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
@@ -15,9 +15,9 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { getCqInitiator } from "../shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -38,8 +38,7 @@ export async function getDocumentsFromCQ({
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const [organization, cqPatientData] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
+    const [cqPatientData] = await Promise.all([
       getCQPatientData({ id: patient.id, cxId }),
       setDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
@@ -101,19 +100,21 @@ export async function getDocumentsFromCQ({
       }
     }
 
+    const initiator = await getCqInitiator(patient);
+
     const documentQueryRequestsV1 = createOutboundDocumentQueryRequests({
       requestId,
-      patientId,
+      patient,
+      initiator,
       cxId,
-      organization,
       cqLinks: linksWithDqUrlV1Gateway,
     });
 
     const documentQueryRequestsV2 = createOutboundDocumentQueryRequests({
       requestId,
-      patientId,
+      patient,
+      initiator,
       cxId,
-      organization,
       cqLinks: linksWithDqUrlV2Gateway,
     });
 

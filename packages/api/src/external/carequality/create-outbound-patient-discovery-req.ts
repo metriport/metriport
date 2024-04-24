@@ -1,28 +1,25 @@
-import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import { createPurposeOfUse } from "./shared";
+import { HieInitiator } from "../hie/get-hie-initiator";
+import { createPurposeOfUse, getSystemUserName } from "./shared";
 
 export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
   patientId,
   xcpdGateways,
-  facilityNPI,
-  orgName,
-  orgOid,
+  initiator,
   requestId,
 }: {
   patient: FHIRPatient;
   cxId: string;
   patientId: string;
   xcpdGateways: XCPDGateway[];
-  facilityNPI: string;
-  orgName: string;
-  orgOid: string;
+  initiator: HieInitiator;
   requestId: string;
 }): OutboundPatientDiscoveryReq {
-  const user = `${orgName} System User`;
+  const user = getSystemUserName(initiator.orgName);
   const id = requestId;
 
   return {
@@ -31,7 +28,7 @@ export function createOutboundPatientDiscoveryReq({
     patientId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
-    principalCareProviderIds: [facilityNPI],
+    principalCareProviderIds: [initiator.npi],
     samlAttributes: {
       subjectId: user,
       // TODO https://github.com/metriport/metriport/pull/1302#discussion_r1422876830
@@ -39,9 +36,9 @@ export function createOutboundPatientDiscoveryReq({
         code: "106331006",
         display: "Administrative AND/OR managerial worker",
       },
-      organization: orgName,
-      organizationId: orgOid,
-      homeCommunityId: orgOid,
+      organization: initiator.name,
+      organizationId: initiator.oid,
+      homeCommunityId: initiator.oid,
       purposeOfUse: createPurposeOfUse(),
     },
     patientResource: patient,
