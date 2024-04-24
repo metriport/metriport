@@ -19,8 +19,8 @@ export enum OIDNode {
   other = 13,
 }
 
-export function oid(id: string): string {
-  return `${OID_PREFIX}${id}`;
+export function addOidPrefix(oid: string): string {
+  return `${OID_PREFIX}${oid}`;
 }
 
 export const driversLicenseURIs: { [k in USState]: string } = {

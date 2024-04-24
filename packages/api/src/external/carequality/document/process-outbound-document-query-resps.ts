@@ -1,13 +1,14 @@
-import { MedicalDataSource } from "@metriport/core/external/index";
-import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
-import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { cqExtension } from "@metriport/core/external/carequality/extension";
+import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { EventTypes, analytics } from "../../../shared/analytics";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { isConvertible } from "../../fhir-converter/converter";
@@ -16,11 +17,10 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { makeIheGatewayAPIForDocRetrieval } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
+import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
-import { analytics, EventTypes } from "../../../shared/analytics";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { DocumentReferenceWithMetriportId, cqToFHIR, toDocumentReference } from "./shared";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -62,10 +62,7 @@ export async function processOutboundDocumentQueryResps({
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );
 
-    const [docsToDownload, organization] = await Promise.all([
-      getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId),
-      getOrganizationOrFail({ cxId }),
-    ]);
+    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
 
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
@@ -153,10 +150,11 @@ export async function processOutboundDocumentQueryResps({
       numberOfParallelExecutions: 20,
     });
 
+    const initiator = await getCqInitiator(patient);
     const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
       requestId,
-      cxId,
-      organization,
+      patient,
+      initiator,
       documentReferences: docsToDownload,
       outboundDocumentQueryResps: respWithDRUrl,
     });

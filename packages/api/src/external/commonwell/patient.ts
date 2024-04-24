@@ -2,46 +2,47 @@ import {
   CommonWellAPI,
   getIdTrailingSlash,
   LOLA,
+  NetworkLink,
   organizationQueryMeta,
   Patient as CommonwellPatient,
   Person,
   RequestMetadata,
   StrongId,
-  NetworkLink,
 } from "@metriport/commonwell-sdk";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { oid } from "@metriport/core/domain/oid";
-import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { Organization } from "@metriport/core/domain/organization";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { processAsyncError } from "@metriport/core/util/error/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { Facility } from "../../domain/medical/facility";
-import { isCommonwellEnabled } from "../aws/appConfig";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
+import { analytics, EventTypes } from "../../shared/analytics";
+import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { isEnhancedCoverageEnabledForCx, isCWEnabledForCx } from "../aws/appConfig";
+import {
+  isCommonwellEnabled,
+  isCWEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+} from "../aws/appConfig";
+import { HieInitiator } from "../hie/get-hie-initiator";
+import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
+import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import { queryAndProcessDocuments } from "./document/document-query";
-import { setCommonwellIdsAndStatus } from "./patient-external-data";
-import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { setCommonwellIdsAndStatus, setPatientDiscoveryStatus } from "./patient-external-data";
 import {
   CQLinkStatus,
   findOrCreatePerson,
   FindOrCreatePersonResponse,
   getMatchingStrongIds,
-  getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
-import { setPatientDiscoveryStatus } from "./patient-external-data";
-import { Config } from "../../shared/config";
-import { analytics, EventTypes } from "../../shared/analytics";
+import { getCwInitiator } from "./shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -109,11 +110,7 @@ export async function create(
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
   requestId?: string,
-  forceCWCreate = false,
-  patientData?: {
-    organization: Organization;
-    facility: Facility;
-  }
+  forceCWCreate = false
 ): Promise<void> {
   const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
@@ -131,14 +128,9 @@ export async function create(
     });
 
     // intentionally async
-    registerAndLinkPatientInCW(
-      patient,
-      facilityId,
-      getOrgIdExcludeList,
-      debug,
-      requestId,
-      patientData
-    ).catch(processAsyncError(createContext));
+    registerAndLinkPatientInCW(patient, facilityId, getOrgIdExcludeList, debug, requestId).catch(
+      processAsyncError(createContext)
+    );
   }
 }
 
@@ -148,18 +140,15 @@ export async function registerAndLinkPatientInCW(
   getOrgIdExcludeList: () => Promise<string[]>,
   debug: typeof console.log,
   requestId?: string,
-  patientData?: {
-    organization: Organization;
-    facility: Facility;
-  }
+  initiator?: HieInitiator
 ): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
 
   try {
-    const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+    const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
+    const initiatorName = _initiator.name;
+    const initiatorOid = _initiator.oid;
+    const initiatorNpi = _initiator.npi;
 
     // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
     // when we enable it
@@ -168,9 +157,13 @@ export async function registerAndLinkPatientInCW(
       : undefined;
     const storeIdsAndStatus = getStoreIdsAndStatusFn(patient.id, patient.cxId, cqLinkStatus);
 
-    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
+    commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
+    const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
+    const commonwellPatient = patientToCommonwell({
+      patient,
+      orgName: initiatorName,
+      orgOID: initiatorOid,
+    });
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
@@ -563,14 +556,17 @@ async function setupUpdate(
 
   if (!commonwellPatientId || !personId) return undefined;
 
-  const { organization, facility } = await getPatientData(patient, facilityId);
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+  const initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = initiator.name;
+  const initiatorOid = initiator.oid;
 
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiator.npi });
+  const commonwellPatient = patientToCommonwell({
+    patient,
+    orgName: initiatorName,
+    orgOID: initiatorOid,
+  });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }

@@ -1,11 +1,10 @@
+import {
+  Organization,
+  OrganizationData,
+  OrganizationType,
+} from "@metriport/core/domain/organization";
 import { DataTypes, Sequelize } from "sequelize";
-import { Organization, OrganizationData } from "@metriport/core/domain/organization";
 import { BaseModel, ModelSetup } from "../../models/_default";
-
-export enum OrganizationType {
-  healthcareProvider = "healthcare_provider",
-  healthcareITVendor = "healthcare_it_vendor",
-}
 
 export class OrganizationModel extends BaseModel<OrganizationModel> implements Organization {
   static NAME = "organization";
