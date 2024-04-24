@@ -9,6 +9,7 @@ export type HieInitiator = {
   name: string;
   npi: string;
   facilityId: string;
+  orgName: string;
 };
 
 export async function getHieInitiator(
@@ -46,6 +47,7 @@ export async function getHieInitiator(
       name: facility.data.name,
       npi: facility.data.npi,
       facilityId: facility.id,
+      orgName: organization.data.name,
     };
   }
   return {
@@ -53,5 +55,6 @@ export async function getHieInitiator(
     name: organization.data.name,
     npi: facility.data.npi,
     facilityId: facility.id,
+    orgName: organization.data.name,
   };
 }

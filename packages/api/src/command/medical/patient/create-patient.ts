@@ -32,7 +32,7 @@ export const createPatient = async (
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
   const requestId = uuidv7();
   const patientCreate: PatientCreate = {
@@ -68,7 +68,7 @@ export const createPatient = async (
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(newPatient, facility.data.npi, requestId, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
 
   return newPatient;
 };
