@@ -35,9 +35,6 @@ const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
-    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
-    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
-    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
     const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName });
