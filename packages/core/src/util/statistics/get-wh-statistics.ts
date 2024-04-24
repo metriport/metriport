@@ -4,7 +4,7 @@ dotenv.config();
 import z from "zod";
 import { executeAsynchronously } from "../concurrency";
 import { out } from "../log";
-import { initDBPool } from "../sequelize";
+import { initDbPool } from "../sequelize";
 import { StatisticsProps, getQueryResults, tableNameHeader } from "./shared";
 
 const MAX_NUMBER_OF_PARALLEL_DQ_PROCESSING_REQUESTS = 20;
@@ -75,7 +75,7 @@ export async function getWhStatistics({
   dateString,
 }: StatisticsProps): Promise<WhStatisticsOutput> {
   out("Starting WH statistics calculation...");
-  const sequelize = initDBPool(sqlDBCreds);
+  const sequelize = initDbPool(sqlDBCreds);
 
   try {
     const baseQuery = `

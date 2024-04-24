@@ -8,7 +8,7 @@ import { mapPatientResourceToPatientData } from "../../../external/carequality/p
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";
 import { executeAsynchronously } from "../../concurrency";
 import { out } from "../../log";
-import { initDBPool } from "../../sequelize";
+import { initDbPool } from "../../sequelize";
 import {
   BaseStatisticsProps,
   calculateMapStats,
@@ -77,7 +77,7 @@ export async function getXcpdStatistics({
     `Starting XCPD statistics calculation ${patientIds ? `For patient IDs: ${patientIds}.` : ""}...`
   );
   const mpi = new MPIMetriportAPI(apiUrl);
-  const sequelize = initDBPool(sqlDBCreds);
+  const sequelize = initDbPool(sqlDBCreds);
 
   try {
     const baseQuery = `
