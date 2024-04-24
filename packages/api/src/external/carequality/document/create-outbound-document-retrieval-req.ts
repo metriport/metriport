@@ -1,4 +1,3 @@
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import {
@@ -7,7 +6,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
-import { createPurposeOfUse, getCqInitiator, isGWValid } from "../shared";
+import { createPurposeOfUse, getCqInitiator, getSystemUserName, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -17,20 +16,17 @@ export const maxDocRefsPerDocRetrievalRequest = 5;
 export async function createOutboundDocumentRetrievalReqs({
   requestId,
   patient,
-  organization,
   documentReferences,
   outboundDocumentQueryResps,
 }: {
   requestId: string;
   patient: Patient;
-  organization: Organization;
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): Promise<OutboundDocumentRetrievalReq[]> {
-  const orgName = organization.data.name;
-  const user = `${orgName} System User`;
   const now = dayjs().toISOString();
   const initiator = await getCqInitiator(patient);
+  const user = getSystemUserName(initiator.orgName);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
     documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);

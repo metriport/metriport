@@ -4,7 +4,6 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
@@ -36,8 +35,7 @@ export async function getDocumentsFromCQ({
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
 
   try {
-    const [organization, cqPatientData] = await Promise.all([
-      getOrganizationOrFail({ cxId }),
+    const [cqPatientData] = await Promise.all([
       getCQPatientData({ id: patient.id, cxId }),
       setDocQueryProgress({
         patient: { id: patient.id, cxId: patient.cxId },
@@ -92,7 +90,6 @@ export async function getDocumentsFromCQ({
       requestId,
       patient,
       cxId,
-      organization,
       cqLinks: linksWithDqUrl,
     });
 

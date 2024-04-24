@@ -96,9 +96,7 @@ async function prepareForPatientDiscovery(
     patient: fhirPatient,
     cxId: patient.cxId,
     xcpdGateways,
-    facilityNPI: initiator.npi,
-    orgName: initiator.name,
-    orgOid: initiator.oid,
+    initiator,
     requestId,
   });
   return pdRequest;

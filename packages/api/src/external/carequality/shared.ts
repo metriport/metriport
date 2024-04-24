@@ -109,3 +109,7 @@ export async function getCqInitiator(
 ): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId, MedicalDataSource.CAREQUALITY);
 }
+
+export function getSystemUserName(orgName: string): string {
+  return `${orgName} System User`;
+}

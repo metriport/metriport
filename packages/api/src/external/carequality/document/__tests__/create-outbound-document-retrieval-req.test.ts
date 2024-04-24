@@ -17,6 +17,7 @@ import {
 } from "../create-outbound-document-retrieval-req";
 import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
+import * as getPatientMethods from "../../../../command/medical/patient/get-patient";
 
 let requestId: string;
 let facilityId: string;
@@ -25,6 +26,7 @@ let patient: Patient;
 let organization: Organization;
 let homeCommunityId: string;
 let getFacilityOrFailMock: jest.SpyInstance;
+let getPatientWithDependencies: jest.SpyInstance;
 
 describe("outboundDocumentRetrievalRequest", () => {
   beforeEach(() => {
@@ -35,6 +37,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     organization = makeOrganization();
     homeCommunityId = faker.string.uuid();
     getFacilityOrFailMock = jest.spyOn(getFacilityMethods, "getFacilityFromPatientOrFail");
+    getPatientWithDependencies = jest.spyOn(getPatientMethods, "getPatientWithDependencies");
   });
 
   it("returns zero req when no doc refs matching GW homeCommunityId", async () => {
@@ -45,11 +48,10 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
@@ -66,11 +68,10 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
     facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
-    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
@@ -86,11 +87,10 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
@@ -105,11 +105,10 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
@@ -127,10 +126,10 @@ describe("outboundDocumentRetrievalRequest", () => {
     ];
     facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
     getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
@@ -150,10 +149,10 @@ describe("outboundDocumentRetrievalRequest", () => {
     ];
     facility = makeFacility({ id: facilityId, type: FacilityType.initiatorAndResponder });
     getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    getPatientWithDependencies.mockResolvedValueOnce({ facilities: [facility], organization });
     const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
-      organization,
       documentReferences,
       outboundDocumentQueryResps,
     });

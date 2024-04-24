@@ -1,9 +1,8 @@
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { CQLink } from "../cq-patient-data";
-import { createPurposeOfUse, getCqInitiator } from "../shared";
+import { createPurposeOfUse, getCqInitiator, getSystemUserName } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -12,19 +11,16 @@ export async function createOutboundDocumentQueryRequests({
   requestId,
   patient,
   cxId,
-  organization,
   cqLinks,
 }: {
   requestId: string;
   patient: Patient;
   cxId: string;
-  organization: Organization;
   cqLinks: CQLink[];
 }): Promise<OutboundDocumentQueryReq[]> {
-  const orgName = organization.data.name;
-  const user = `${orgName} System User`;
   const now = dayjs().toISOString();
   const initiator = await getCqInitiator(patient);
+  const user = getSystemUserName(initiator.orgName);
 
   return cqLinks.map(externalGateway => {
     return {

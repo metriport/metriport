@@ -7,7 +7,6 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
-import { getOrganizationOrFail } from "../../../command/medical/organization/get-organization";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { EventTypes, analytics } from "../../../shared/analytics";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -62,10 +61,7 @@ export async function processOutboundDocumentQueryResps({
       docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
     );
 
-    const [docsToDownload, organization] = await Promise.all([
-      getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId),
-      getOrganizationOrFail({ cxId }),
-    ]);
+    const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
 
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
@@ -156,7 +152,6 @@ export async function processOutboundDocumentQueryResps({
     const documentRetrievalRequests = await createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
-      organization,
       documentReferences: docsToDownload,
       outboundDocumentQueryResps: respWithDRUrl,
     });
