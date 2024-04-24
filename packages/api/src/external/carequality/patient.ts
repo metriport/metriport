@@ -1,4 +1,3 @@
-import { Organization } from "@metriport/core/domain/organization";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MedicalDataSource } from "@metriport/core/external/index";
@@ -8,8 +7,6 @@ import { capture } from "@metriport/core/util/notifications";
 import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateways } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { Facility } from "../../domain/medical/facility";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
 import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
 import {
@@ -19,11 +16,10 @@ import {
 } from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
-import { isCqOboFacility } from "./facility";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
-import { validateCQEnabledAndInitGW } from "./shared";
+import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 
 dayjs.extend(duration);
 
@@ -32,7 +28,7 @@ const resultPoller = makeOutboundResultPoller();
 
 export async function discover(
   patient: Patient,
-  facility: Facility,
+  facilityId: string,
   requestId: string,
   forceEnabled = false
 ): Promise<void> {
@@ -46,7 +42,7 @@ export async function discover(
     await processPatientDiscoveryProgress({ patient, status: "processing" });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facility, enabledIHEGW, requestId, baseLogMessage).catch(
+    prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
       processAsyncError(context)
     );
   }
@@ -54,13 +50,13 @@ export async function discover(
 
 async function prepareAndTriggerPD(
   patient: Patient,
-  facility: Facility,
+  facilityId: string,
   enabledIHEGW: IHEGateway,
   requestId: string,
   baseLogMessage: string
 ): Promise<void> {
   try {
-    const pdRequest = await prepareForPatientDiscovery(patient, facility, requestId);
+    const pdRequest = await prepareForPatientDiscovery(patient, requestId);
     const numGateways = pdRequest.gateways.length;
 
     const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
@@ -79,7 +75,7 @@ async function prepareAndTriggerPD(
     await processPatientDiscoveryProgress({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
-        facilityId: facility.id,
+        facilityId,
         patientId: patient.id,
         context,
         error,
@@ -90,29 +86,25 @@ async function prepareAndTriggerPD(
 
 async function prepareForPatientDiscovery(
   patient: Patient,
-  facility: Facility,
   requestId: string
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
-  const { organization, xcpdGateways } = await gatherXCPDGateways(patient);
-  const isObo = isCqOboFacility(facility);
+  const xcpdGateways = await gatherXCPDGateways(patient);
+  const initiator = await getCqInitiator(patient);
 
   const pdRequest = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
     xcpdGateways,
-    facilityNPI: facility.data.npi,
-    orgName: isObo ? facility.data.name : organization.data.name,
-    orgOid: isObo ? facility.oid : organization.oid,
+    facilityNPI: initiator.npi,
+    orgName: initiator.name,
+    orgOid: initiator.oid,
     requestId,
   });
   return pdRequest;
 }
 
-export async function gatherXCPDGateways(patient: Patient): Promise<{
-  organization: Organization;
-  xcpdGateways: XCPDGateways;
-}> {
+async function gatherXCPDGateways(patient: Patient): Promise<XCPDGateways> {
   const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
     patient,
     mustHaveXcpdLink: true,
@@ -123,20 +115,13 @@ export async function gatherXCPDGateways(patient: Patient): Promise<{
     orgOrderMap.set(org.id, index);
   });
 
-  const [organization, allOrgs] = await Promise.all([
-    getOrganizationOrFail({ cxId: patient.cxId }),
-    getOrganizationsForXCPD(orgOrderMap),
-  ]);
-
+  const allOrgs = await getOrganizationsForXCPD(orgOrderMap);
   const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
   const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
   const xcpdGatewaysWithoutIds = cqOrgsToXCPDGateways(orgsToSearch);
   const xcpdGateways = generateIdsForGateways(xcpdGatewaysWithoutIds);
 
-  return {
-    organization,
-    xcpdGateways,
-  };
+  return xcpdGateways;
 }
 
 export function getCQData(

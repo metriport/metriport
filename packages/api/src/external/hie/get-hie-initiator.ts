@@ -15,7 +15,7 @@ export async function getHieInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId: string | undefined,
   // had to specify them instead of using the type because of the item ALL
-  hie: MedicalDataSource.COMMONWELL | MedicalDataSource.COMMONWELL
+  hie: MedicalDataSource.COMMONWELL | MedicalDataSource.CAREQUALITY
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
   if (!facilityId && facilities.length > 1) {

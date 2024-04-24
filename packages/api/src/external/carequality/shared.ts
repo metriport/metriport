@@ -1,9 +1,12 @@
+import { Patient } from "@metriport/core/domain/patient";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
+import { getHieInitiator, HieInitiator } from "../hie/get-hie-initiator";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
@@ -98,4 +101,11 @@ export function formatDate(dateString: string | undefined): string | undefined {
   }
 
   return undefined;
+}
+
+export async function getCqInitiator(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId?: string
+): Promise<HieInitiator> {
+  return getHieInitiator(patient, facilityId, MedicalDataSource.CAREQUALITY);
 }

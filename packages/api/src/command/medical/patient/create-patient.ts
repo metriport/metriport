@@ -2,9 +2,9 @@ import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/pati
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -32,7 +32,7 @@ export const createPatient = async (
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
   const requestId = uuidv7();
   const patientCreate: PatientCreate = {
@@ -68,7 +68,7 @@ export const createPatient = async (
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(newPatient, facility, requestId, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
 
   return newPatient;
 };

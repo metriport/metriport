@@ -2,10 +2,8 @@ import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import { getFacilityFromPatientOrFail } from "../../../command/medical/facility/get-facility";
 import { CQLink } from "../cq-patient-data";
-import { isCqOboFacility } from "../facility";
-import { createPurposeOfUse } from "../shared";
+import { createPurposeOfUse, getCqInitiator } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -26,11 +24,7 @@ export async function createOutboundDocumentQueryRequests({
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
-
-  const orgOid = organization.oid;
-  const facility = await getFacilityFromPatientOrFail(patient); // TODO: replace with getHieInitiator
-  // const facility = await getHieInitiator(patient);
-  const isObo = isCqOboFacility(facility);
+  const initiator = await getCqInitiator(patient);
 
   return cqLinks.map(externalGateway => {
     return {
@@ -43,9 +37,9 @@ export async function createOutboundDocumentQueryRequests({
           code: SUBJECT_ROLE_CODE,
           display: SUBJECT_ROLE_DISPLAY,
         },
-        organization: isObo ? facility.data.name : orgName,
-        organizationId: isObo ? facility.oid : orgOid,
-        homeCommunityId: isObo ? facility.oid : orgOid,
+        organization: initiator.name,
+        organizationId: initiator.oid,
+        homeCommunityId: initiator.oid,
         purposeOfUse: createPurposeOfUse(),
       },
       gateway: {

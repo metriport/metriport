@@ -7,9 +7,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
-import { getFacilityFromPatientOrFail } from "../../../command/medical/facility/get-facility";
-import { isCqOboFacility } from "../facility";
-import { createPurposeOfUse, isGWValid } from "../shared";
+import { createPurposeOfUse, getCqInitiator, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -32,11 +30,7 @@ export async function createOutboundDocumentRetrievalReqs({
   const orgName = organization.data.name;
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
-
-  const orgOid = organization.oid;
-  const facility = await getFacilityFromPatientOrFail(patient); // TODO: replace with getHieInitiator
-  // const facility = await getHieInitiator(patient);
-  const isObo = isCqOboFacility(facility);
+  const initiator = await getCqInitiator(patient);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
     documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
@@ -63,9 +57,9 @@ export async function createOutboundDocumentRetrievalReqs({
             code: SUBJECT_ROLE_CODE,
             display: SUBJECT_ROLE_DISPLAY,
           },
-          organization: isObo ? facility.data.name : orgName,
-          organizationId: isObo ? facility.oid : orgOid,
-          homeCommunityId: isObo ? facility.oid : orgOid,
+          organization: initiator.name,
+          organizationId: initiator.oid,
+          homeCommunityId: initiator.oid,
           purposeOfUse: createPurposeOfUse(),
         },
         gateway: {
