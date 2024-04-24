@@ -17,7 +17,7 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { convertToCdaAndUpload } from "../../command/medical/patient/convert-fhir-to-cda";
+import { convertFhirToCdaAndUpload } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -428,12 +428,14 @@ async function putConsolidated(req: Request, res: Response) {
       );
     }
   }
-  const data = await createOrUpdateConsolidatedPatientData({
-    cxId,
-    patientId: patient.id,
-    fhirBundle: validatedBundle,
-  });
-  convertToCdaAndUpload(cxId, patientId, validatedBundle);
+  const [data] = await Promise.all([
+    await createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    }),
+    await convertFhirToCdaAndUpload(cxId, patientId, validatedBundle),
+  ]);
   return res.json(data);
 }
 

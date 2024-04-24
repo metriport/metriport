@@ -27,8 +27,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      log(`Error converting FHIR bundle to CDA: ${error.message}`);
-      capture.error(error, {
+      const msg = `Error converting FHIR bundle to CDA`;
+      log(`${msg} - error: ${error.message}`);
+      capture.error(msg, {
         extra: {
           error,
           cxId,

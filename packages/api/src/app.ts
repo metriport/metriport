@@ -68,7 +68,7 @@ app.listen(port, "0.0.0.0", async () => {
   } catch (error) {
     const msg = "API server failed to start";
     console.error(msg, error);
-    capture.message(msg, { extra: { error }, level: "info" });
+    capture.message(msg, { extra: { error }, level: "fatal" });
     // give some time to make sure the previous message is sent to Sentry
     await sleep(200);
     process.exit(1);
