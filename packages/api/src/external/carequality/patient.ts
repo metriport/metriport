@@ -20,6 +20,7 @@ import {
 } from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
+import { isCqOboFacility } from "./facility";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
@@ -95,8 +96,7 @@ async function prepareForPatientDiscovery(
 ): Promise<OutboundPatientDiscoveryReq> {
   const fhirPatient = toFHIR(patient);
   const { organization, xcpdGateways } = await gatherXCPDGateways(patient);
-
-  const isObo = facility.type === "initiator_only";
+  const isObo = isCqOboFacility(facility);
 
   const pdRequest = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,

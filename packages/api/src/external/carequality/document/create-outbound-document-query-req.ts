@@ -2,11 +2,9 @@ import { Organization } from "@metriport/core/domain/organization";
 import { Patient } from "@metriport/core/domain/patient";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import {
-  getFacilityFromPatientOrFail,
-  isOboFacility,
-} from "../../../command/medical/facility/get-facility";
+import { getFacilityFromPatientOrFail } from "../../../command/medical/facility/get-facility";
 import { CQLink } from "../cq-patient-data";
+import { isCqOboFacility } from "../facility";
 import { createPurposeOfUse } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -30,8 +28,9 @@ export async function createOutboundDocumentQueryRequests({
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  const facility = await getFacilityFromPatientOrFail(patient);
-  const isObo = isOboFacility(facility.type);
+  const facility = await getFacilityFromPatientOrFail(patient); // TODO: replace with getHieInitiator
+  // const facility = await getHieInitiator(patient);
+  const isObo = isCqOboFacility(facility);
 
   return cqLinks.map(externalGateway => {
     return {

@@ -1,11 +1,16 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
+import * as getFacilityMethods from "../../../../command/medical/facility/get-facility";
+import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
+import { makePatient } from "../../../../domain/medical/__tests__/patient";
+import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import {
   createOutboundDocumentRetrievalReqs,
   maxDocRefsPerDocRetrievalRequest,
@@ -14,16 +19,22 @@ import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-w
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
 
 let requestId: string;
-let cxId: string;
+let facilityId: string;
+let facility: Facility;
+let patient: Patient;
 let organization: Organization;
 let homeCommunityId: string;
+let getFacilityOrFailMock: jest.SpyInstance;
 
-describe("allowMapiAccess", () => {
+describe("outboundDocumentRetrievalRequest", () => {
   beforeEach(() => {
     requestId = faker.string.uuid();
-    cxId = faker.string.uuid();
+    facilityId = faker.string.uuid();
+    facility = makeFacility({ id: facilityId });
+    patient = makePatient({ facilityIds: [facilityId] });
     organization = makeOrganization();
     homeCommunityId = faker.string.uuid();
+    getFacilityOrFailMock = jest.spyOn(getFacilityMethods, "getFacilityFromPatientOrFail");
   });
 
   it("returns zero req when no doc refs matching GW homeCommunityId", async () => {
@@ -34,8 +45,9 @@ describe("allowMapiAccess", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
-      cxId,
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+      patient,
       requestId,
       organization,
       documentReferences,
@@ -53,13 +65,16 @@ describe("allowMapiAccess", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
-      cxId,
+    facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+      patient,
       requestId,
       organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
+
     expect(res).toBeTruthy();
     expect(res.length).toEqual(outboundDocumentQueryResps.length);
   });
@@ -71,9 +86,10 @@ describe("allowMapiAccess", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
-      cxId,
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       requestId,
+      patient,
       organization,
       documentReferences,
       outboundDocumentQueryResps,
@@ -89,14 +105,61 @@ describe("allowMapiAccess", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
-      cxId,
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
       requestId,
+      patient,
       organization,
       documentReferences,
       outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(3);
+  });
+
+  it("uses facility details for saml attributes for obo facilities", async () => {
+    const documentReferences = [
+      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+    ];
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+    ];
+    facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      organization,
+      documentReferences,
+      outboundDocumentQueryResps,
+    });
+
+    expect(res[0].samlAttributes.organization).toEqual(facility.data.name);
+    expect(res[0].samlAttributes.organizationId).toEqual(facility.oid);
+    expect(res[0].samlAttributes.homeCommunityId).toEqual(facility.oid);
+  });
+
+  it("uses org details for saml attributes for non-obo facilities", async () => {
+    const documentReferences = [
+      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+      makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+    ];
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
+    ];
+    facility = makeFacility({ id: facilityId, type: FacilityType.initiatorAndResponder });
+    getFacilityOrFailMock.mockResolvedValueOnce(facility);
+    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      organization,
+      documentReferences,
+      outboundDocumentQueryResps,
+    });
+
+    expect(res[0].samlAttributes.organization).toEqual(organization.data.name);
+    expect(res[0].samlAttributes.organizationId).toEqual(organization.oid);
+    expect(res[0].samlAttributes.homeCommunityId).toEqual(organization.oid);
   });
 });

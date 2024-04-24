@@ -7,10 +7,8 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
-import {
-  getFacilityFromPatientOrFail,
-  isOboFacility,
-} from "../../../command/medical/facility/get-facility";
+import { getFacilityFromPatientOrFail } from "../../../command/medical/facility/get-facility";
+import { isCqOboFacility } from "../facility";
 import { createPurposeOfUse, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
@@ -36,8 +34,9 @@ export async function createOutboundDocumentRetrievalReqs({
   const user = `${orgName} System User`;
   const now = dayjs().toISOString();
 
-  const facility = await getFacilityFromPatientOrFail(patient);
-  const isObo = isOboFacility(facility.type);
+  const facility = await getFacilityFromPatientOrFail(patient); // TODO: replace with getHieInitiator
+  // const facility = await getHieInitiator(patient);
+  const isObo = isCqOboFacility(facility);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
     documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);

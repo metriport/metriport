@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import NotFoundError from "../../../errors/not-found";
-import { FacilityModel, FacilityType } from "../../../models/medical/facility";
+import { FacilityModel } from "../../../models/medical/facility";
 
 type GetFacilitiesQuery = Pick<FacilityModel, "cxId"> & Partial<{ ids: FacilityModel["id"][] }>;
 
@@ -33,8 +33,4 @@ export const getFacilityOrFail = async ({ cxId, id }: GetFacilityQuery): Promise
 
 export async function getFacilityFromPatientOrFail(patient: Patient): Promise<FacilityModel> {
   return getFacilityOrFail({ cxId: patient.cxId, id: patient.facilityIds[0] });
-}
-
-export function isOboFacility(facilityType: FacilityType) {
-  return facilityType === FacilityType.initiatorOnly;
 }
