@@ -51,7 +51,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
       initiator,
@@ -71,7 +71,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
     facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
       initiator,
@@ -90,7 +90,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
@@ -108,7 +108,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
@@ -129,7 +129,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     ];
     facility = makeFacility({ ...facility, type: FacilityType.initiatorOnly });
     initiator = { ...initiator, name: facility.data.name, oid: facility.oid };
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
       initiator,
@@ -151,7 +151,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
     facility = makeFacility({ ...facility, type: FacilityType.initiatorAndResponder });
-    const res: OutboundDocumentRetrievalReq[] = await createOutboundDocumentRetrievalReqs({
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
       initiator,

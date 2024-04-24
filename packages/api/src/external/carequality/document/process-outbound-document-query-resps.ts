@@ -151,7 +151,7 @@ export async function processOutboundDocumentQueryResps({
     });
 
     const initiator = await getCqInitiator(patient);
-    const documentRetrievalRequests = await createOutboundDocumentRetrievalReqs({
+    const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,

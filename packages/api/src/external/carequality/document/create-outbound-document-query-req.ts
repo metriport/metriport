@@ -8,7 +8,7 @@ import { createPurposeOfUse, getSystemUserName } from "../shared";
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
-export async function createOutboundDocumentQueryRequests({
+export function createOutboundDocumentQueryRequests({
   requestId,
   patient,
   initiator,
@@ -20,7 +20,7 @@ export async function createOutboundDocumentQueryRequests({
   initiator: HieInitiator;
   cxId: string;
   cqLinks: CQLink[];
-}): Promise<OutboundDocumentQueryReq[]> {
+}): OutboundDocumentQueryReq[] {
   const now = dayjs().toISOString();
   const user = getSystemUserName(initiator.orgName);
 

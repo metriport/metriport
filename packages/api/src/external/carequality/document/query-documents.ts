@@ -88,7 +88,7 @@ export async function getDocumentsFromCQ({
     });
 
     const initiator = await getCqInitiator(patient);
-    const documentQueryRequests = await createOutboundDocumentQueryRequests({
+    const documentQueryRequests = createOutboundDocumentQueryRequests({
       requestId,
       patient,
       initiator,

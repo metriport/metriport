@@ -14,7 +14,7 @@ const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 export const maxDocRefsPerDocRetrievalRequest = 5;
 
-export async function createOutboundDocumentRetrievalReqs({
+export function createOutboundDocumentRetrievalReqs({
   requestId,
   patient,
   initiator,
@@ -26,7 +26,7 @@ export async function createOutboundDocumentRetrievalReqs({
   initiator: HieInitiator;
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
-}): Promise<OutboundDocumentRetrievalReq[]> {
+}): OutboundDocumentRetrievalReq[] {
   const now = dayjs().toISOString();
   const user = getSystemUserName(initiator.orgName);
 
