@@ -135,7 +135,7 @@ export async function getDocumentsFromCQ({
       requestId,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: documentQueryRequestsV1.length,
+      numOfGateways: documentQueryRequestsV1.length + documentQueryRequestsV2.length,
     });
   } catch (error) {
     const msg = `Failed to query and process documents - Carequality`;
