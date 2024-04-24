@@ -70,7 +70,7 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData,
@@ -87,7 +87,7 @@ export async function setDocQueryProgress({
   });
 
   await processDocQueryProgressWebhook({
-    patient: result.dataValues,
+    patient: result,
     documentQueryProgress: result.data.documentQueryProgress,
     requestId,
   });
@@ -208,13 +208,14 @@ export function aggregateDocProgress(
   return tallyResults;
 }
 
-function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+export function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
   const hasFailed = docQueryProgress.some(status => status === "failed");
+  const hasCompleted = docQueryProgress.some(status => status === "completed");
 
   if (hasProcessing) return "processing";
+  if (hasCompleted) return "completed";
   if (hasFailed) return "failed";
-
   return "completed";
 }
 

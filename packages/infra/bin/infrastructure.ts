@@ -9,7 +9,7 @@ import { IHEStack } from "../lib/ihe-stack";
 import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
-import { getEnvVar } from "../lib/shared/util";
+import { getEnvVar, isSandbox } from "../lib/shared/util";
 
 const app = new cdk.App();
 
@@ -61,7 +61,7 @@ async function deploy(config: EnvConfig) {
   //---------------------------------------------------------------------------------
   // 5. Deploy the Connect widget stack.
   //---------------------------------------------------------------------------------
-  if (config.connectWidget) {
+  if (!isSandbox(config)) {
     new ConnectWidgetStack(app, config.connectWidget.stackName, {
       env: { ...env, region: config.connectWidget.region },
       config: { ...config, connectWidget: config.connectWidget },

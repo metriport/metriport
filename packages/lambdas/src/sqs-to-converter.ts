@@ -10,6 +10,7 @@ import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
 import { SQSUtils } from "./shared/sqs";
+import { cleanUpPayload } from "./sqs-to-converter/cleanup";
 
 // Keep this as early on the file as possible
 capture.init();
@@ -46,6 +47,7 @@ const ossApi = apiClient(apiURL);
 function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
   const stringsToReplace: { old: string; new: string }[] = [];
   for (const bundleEntry of fhirBundle.entry) {
+    if (!bundleEntry.resource) throw new Error(`Missing resource`);
     if (!bundleEntry.resource.id) throw new Error(`Missing resource id`);
     if (bundleEntry.resource.id === patientId) continue;
     const idToUse = bundleEntry.resource.id;
@@ -390,21 +392,4 @@ async function sendConversionResult(
     },
   };
   await sqsUtils.sqs.sendMessage(sendParams).promise();
-}
-function cleanUpPayload(payloadRaw: string): string {
-  const payloadNoCDUNK = removeCDUNK(payloadRaw);
-  const payloadNoNullFlavor = removeNullFlavor(payloadNoCDUNK);
-  return payloadNoNullFlavor;
-}
-
-function removeCDUNK(payloadRaw: string): string {
-  const stringToReplace = /xsi:type="CD UNK"/g;
-  const replacement = `xsi:type="CD"`;
-  return payloadRaw.replace(stringToReplace, replacement);
-}
-
-function removeNullFlavor(payloadRaw: string): string {
-  const stringToReplace = /<id\s*nullFlavor\s*=\s*".*?"\s*\/>/g;
-  const replacement = `<id extension="1" root="1"/>`;
-  return payloadRaw.replace(stringToReplace, replacement);
 }

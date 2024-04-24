@@ -13,6 +13,8 @@ var errorMessage = require("../error/error").errorMessage;
 var HandlebarsConverter = require("../handlebars-converter/handlebars-converter");
 var WorkerUtils = require("./workerUtils");
 var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
+var { extractEncounterTimePeriod } = require('../inputProcessor/dateProcessor');
+
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);
 
@@ -38,9 +40,9 @@ function expireCache() {
   compileCache.clear();
 }
 
-function generateResult(dataTypeHandler, dataContext, template, patientId) {
+function generateResult(dataTypeHandler, dataContext, template, patientId, encounterTimePeriod) {
   var result = dataTypeHandler.postProcessResult(
-    template(dataContext, { data: { metriportPatientId: patientId } })
+    template(dataContext, { data: { metriportPatientId: patientId, encounterTimePeriod }})
   );
   return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
     fhirResource: result,
@@ -105,7 +107,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                   status: 400,
                   resultMsg: errorMessage(
                     errorCodes.BadRequest,
-                    `Unable to parse input data. ${err.message}`
+                    `Unable to parse input data from b64. ${err.message}`
                   ),
                 });
               }
@@ -154,7 +156,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                     status: 400,
                     resultMsg: errorMessage(
                       errorCodes.BadRequest,
-                      `Unable to parse input data. ${err.toString()}`
+                      `Unable to parse input data for data type ${dataTypeHandler.dataType}. ${err.toString()}`
                     ),
                   });
                 });
@@ -173,6 +175,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let templateName = msg.templateName;
             let srcDataType = msg.srcDataType;
             let patientId = msg.patientId;
+            let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
@@ -241,7 +244,8 @@ WorkerUtils.workerTaskProcessor(msg => {
                           dataTypeHandler,
                           dataContext,
                           compiledTemplate,
-                          patientId
+                          patientId,
+                          encounterTimePeriod
                         ),
                       });
                     } catch (convertErr) {
@@ -264,7 +268,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                   status: 400,
                   resultMsg: errorMessage(
                     errorCodes.BadRequest,
-                    `Unable to parse input data. ${err.toString()}`
+                    `Unable to parse input data for template ${templateName}. ${err.toString()}`
                   ),
                 });
               });

@@ -22,6 +22,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
 import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { analytics, EventTypes } from "../../../shared/analytics";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (
@@ -78,18 +79,30 @@ export async function queryDocumentsAcrossHIEs({
     patient,
   });
 
+  const startedAt = new Date();
+
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
-    documentQueryProgress: { download: { status: "processing" } },
-    requestId,
-    cxDocumentRequestMetadata,
+    cmd: {
+      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
+      cxDocumentRequestMetadata,
+    },
+  });
+
+  analytics({
+    event: EventTypes.documentQuery,
+    distinctId: cxId,
+    properties: {
+      requestId,
+      patientId,
+    },
   });
 
   const commonwellEnabled = await isCommonwellEnabled();
   if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
     getDocumentsFromCW({
-      patient,
+      patient: updatedPatient,
       facilityId,
       forceDownload: override,
       forceQuery,
@@ -101,7 +114,7 @@ export async function queryDocumentsAcrossHIEs({
   const carequalityEnabled = await isCarequalityEnabled();
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
-      patient,
+      patient: updatedPatient,
       requestId,
     }).catch(emptyFunction);
   }
@@ -135,7 +148,6 @@ export const updateConversionProgress = async ({
     id: patient.id,
     cxId: patient.cxId,
   };
-  const { log } = Util.out(`updateConversionProgress - patient ${patient.id}`);
   return executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
@@ -149,41 +161,13 @@ export const updateConversionProgress = async ({
     });
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         documentQueryProgress,
       },
     };
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-
-    // START TODO 785 remove this once we're confident with the flow
-    const maxAttempts = 3;
-    let curAttempt = 1;
-    while (curAttempt++ < maxAttempts) {
-      const patientPost = await getPatientOrFail({
-        id: patient.id,
-        cxId: patient.cxId,
-        transaction,
-      });
-      log(
-        `[txn attempt ${curAttempt}] Status post-update: ${JSON.stringify(
-          patientPost.data.documentQueryProgress
-        )}`
-      );
-      if (
-        !isDocumentQueryProgressEqual(documentQueryProgress, patientPost.data.documentQueryProgress)
-      ) {
-        log(
-          `[txn attempt ${curAttempt}] Status post-update not expected... trying to update again`
-        );
-        await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
-      } else {
-        log(`[txn attempt ${curAttempt}] Status post-update is as expected!`);
-        break;
-      }
-    }
-    // END TODO 785
 
     return updatedPatient;
   });

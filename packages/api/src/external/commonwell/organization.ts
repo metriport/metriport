@@ -2,9 +2,10 @@ import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
+import { out } from "@metriport/core/util/log";
+import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
 import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import {
   getCertificate,
@@ -26,10 +27,11 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
   Required<Pick<CWOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Organization
+  org: Organization,
+  isObo = false
 ): Promise<CWOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
-  return {
+  const cwOrg: CWOrganizationWithOrgId = {
     name: org.data.name,
     type: org.data.type,
     locations: [
@@ -52,33 +54,37 @@ export async function organizationToCommonwell(
     memberName: Config.getCWMemberOrgName(),
     securityTokenKeyType: "BearerKey",
     isActive: true,
-    gateways: [
-      {
-        serviceType: "XCA_Query",
-        gatewayType: "R4",
-        endpointLocation: Config.getGatewayEndpoint(),
-      },
-    ],
-    authorizationInformation: {
+    technicalContacts: [technicalContact],
+  };
+  // if this org isn't OBO, then we need to provide query responder details
+  if (!isObo) {
+    cwOrg.authorizationInformation = {
       authorizationServerEndpoint: Config.getGatewayAuthorizationServerEndpoint(),
       clientId: Config.getGatewayAuthorizationClientId(),
       clientSecret: Config.getGatewayAuthorizationClientSecret(),
       documentReferenceScope: "fhir/document",
       binaryScope: "fhir/document",
-    },
-    technicalContacts: [technicalContact],
-  };
+    };
+    cwOrg.gateways = [
+      {
+        serviceType: "XCA_Query",
+        gatewayType: "R4",
+        endpointLocation: Config.getGatewayEndpoint(),
+      },
+    ];
+  }
+  return cwOrg;
 }
 
-export const create = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW create - M oid ${org.oid}, id ${org.id}`);
+export const create = async (org: Organization, isObo = false): Promise<void> => {
+  const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
-    console.log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
+    log(`CW disabled for cx ${org.cxId}, skipping CW org creation`);
     return undefined;
   }
 
-  const cwOrg = await organizationToCommonwell(org);
+  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respCreate = await commonWell.createOrg(metriportQueryMeta, cwOrg);
@@ -112,7 +118,7 @@ export const create = async (org: Organization): Promise<void> => {
 };
 
 export const update = async (org: Organization): Promise<void> => {
-  const { log, debug } = Util.out(`CW update - M oid ${org.oid}, id ${org.id}`);
+  const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
     debug(`CW disabled for cx ${org.cxId}, skipping...`);
@@ -148,26 +154,25 @@ export const update = async (org: Organization): Promise<void> => {
 };
 
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
+  const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);
   try {
     const managementApi = makeCommonWellManagementAPI();
     if (!managementApi) {
-      console.log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
+      log(`Not linking org ${orgOID} to CQ Bridge b/c no managementAPI is available`);
       return;
     }
     const highPrioOrgs = getOrgsByPrio().high;
     const cqOrgIds = highPrioOrgs.map(o => o.id);
     const cqOrgIdsLimited =
       cqOrgIds.length > MAX_HIGH_PRIO_ORGS ? cqOrgIds.slice(0, MAX_HIGH_PRIO_ORGS) : cqOrgIds;
-    console.log(
-      `Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`
-    );
+    log(`Updating CQ include list for org ${orgOID} with ${cqOrgIdsLimited.length} high prio orgs`);
     await managementApi.updateIncludeList({ oid: orgOID, careQualityOrgIds: cqOrgIdsLimited });
   } catch (error) {
-    const additional = { orgOID, error, context: `initCQOrgIncludeList` };
+    const extra = { orgOID, context: `initCQOrgIncludeList` };
     const msg = `Error while updating CQ include list`;
-    console.log(`${msg}. Cause: ${additional}`);
+    log(`${msg}. Cause: ${errorToString(error)}`, extra);
     capture.message(msg, {
-      extra: additional,
+      extra: { ...extra, error },
       level: "error",
     });
   }

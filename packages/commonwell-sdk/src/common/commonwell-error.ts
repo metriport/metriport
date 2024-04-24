@@ -4,11 +4,22 @@ class Response {
   status: number | undefined;
 }
 
+export type AdditionalInfo = {
+  /**
+   * The CommonWell correlation/log code.
+   */
+  cwReference?: string;
+} & Record<string, string | number | undefined | null | Record<string, string>>;
+
 export class CommonwellError extends Error {
   private _status: number | undefined;
+  public readonly cwReference: string | undefined;
 
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  constructor(message?: string | undefined, readonly cause?: any, readonly additionalInfo?: any) {
+  constructor(
+    message?: string | undefined,
+    readonly cause?: any, //eslint-disable-line @typescript-eslint/no-explicit-any
+    readonly additionalInfo?: AdditionalInfo
+  ) {
     super(message);
     if (cause) {
       if (axios.isAxiosError(cause)) {
@@ -17,6 +28,7 @@ export class CommonwellError extends Error {
         this._status = cause.status;
       }
     }
+    this.cwReference = additionalInfo?.cwReference;
   }
 
   get status(): number | undefined {

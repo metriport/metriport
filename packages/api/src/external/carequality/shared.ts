@@ -1,11 +1,10 @@
-import { PurposeOfUse } from "@metriport/shared";
-import z from "zod";
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
-import { isCQDirectEnabledForCx } from "../aws/appConfig";
-import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
-import { isCarequalityEnabled } from "../aws/appConfig";
-import { errorToString } from "@metriport/shared/common/error";
 import { capture } from "@metriport/core/util/notifications";
+import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { PurposeOfUse } from "@metriport/shared";
+import { errorToString } from "@metriport/shared/common/error";
+import z from "zod";
+import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
+import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
 export function createPurposeOfUse() {
@@ -76,7 +75,7 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
-  hostOrgOID: z.string().optional(),
+  parentOrgOid: z.string().optional(),
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;

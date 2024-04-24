@@ -7,6 +7,7 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
+import { errorToString } from "@metriport/core/util/error/shared";
 import {
   Patient,
   PatientData,
@@ -15,8 +16,8 @@ import {
 } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
 import { PatientDataCommonwell } from "../patient-shared";
 
 const urnOidRegex = /^urn:oid:/;
@@ -54,7 +55,6 @@ function isInsideOrgExcludeList(link: NetworkLink, orgIdExcludeList: string[]): 
   return identifiers.some(id => {
     const idSystem = id.system?.replace(urnOidRegex, "");
     if (idSystem && orgIdExcludeList.includes(idSystem)) {
-      out(`isInsideOrgExcludeList`).log(`OrgID ${idSystem} is in the exclude list.`);
       return true;
     }
     return false;
@@ -81,7 +81,7 @@ export async function autoUpgradeNetworkLinks(
   commonwellPersonId: string,
   executionContext: string,
   getOrgIdExcludeList: () => Promise<string[]>
-) {
+): Promise<NetworkLink[] | undefined> {
   const { log } = out("cw.autoUpgradeNetworkLinks");
   const [networkLinks, orgIdExcludeList] = await Promise.all([
     commonWell.getNetworkLinks(queryMeta, commonwellPatientId),
@@ -94,13 +94,10 @@ export async function autoUpgradeNetworkLinks(
       .flatMap(filterTruthy)
       .filter(isLOLA2 || isLOLA3);
 
-    log(`lola1Links: ${JSON.stringify(lola1Links)}`);
-    log(`lola2or3Links: ${JSON.stringify(lola2or3Links)}`);
     const lola2or3LinksToDowngrade = lola2or3Links.filter(link =>
       isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const downgradeRequests: Promise<NetworkLink>[] = [];
-    log(`lola2or3LinksToDowngrade: ${JSON.stringify(lola2or3LinksToDowngrade)}`);
     lola2or3LinksToDowngrade.forEach(async link => {
       if (link._links?.downgrade?.href) {
         downgradeRequests.push(
@@ -108,15 +105,15 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.downgrade.href)
             .catch(error => {
               const msg = `Failed to downgrade link`;
-              log(`${msg}. Cause: ${error}`);
-              capture.message(msg, {
+              log(`${msg}. Cause: ${errorToString(error)}`);
+              capture.error(msg, {
                 extra: {
                   commonwellPatientId,
                   commonwellPersonId,
                   cwReference: commonWell.lastReferenceHeader,
                   context: executionContext,
+                  error,
                 },
-                level: "error",
               });
               throw error;
             })
@@ -140,7 +137,6 @@ export async function autoUpgradeNetworkLinks(
       link => !isInsideOrgExcludeList(link, orgIdExcludeList)
     );
     const upgradeRequests: Promise<NetworkLink>[] = [];
-    log(`lola1LinksToUpgrade: ${JSON.stringify(lola1LinksToUpgrade)}`);
     lola1LinksToUpgrade.forEach(async link => {
       if (link._links?.upgrade?.href) {
         upgradeRequests.push(
@@ -148,15 +144,15 @@ export async function autoUpgradeNetworkLinks(
             .upgradeOrDowngradeNetworkLink(queryMeta, link._links.upgrade.href)
             .catch(error => {
               const msg = `Failed to upgrade link`;
-              log(`${msg}. Cause: ${error}`);
-              capture.message(msg, {
+              log(`${msg}. Cause: ${errorToString(error)}`);
+              capture.error(msg, {
                 extra: {
                   commonwellPatientId,
                   commonwellPersonId,
                   cwReference: commonWell.lastReferenceHeader,
                   context: executionContext,
+                  error,
                 },
-                level: "error",
               });
               throw error;
             })
@@ -164,5 +160,15 @@ export async function autoUpgradeNetworkLinks(
       }
     });
     await Promise.allSettled(upgradeRequests);
+
+    const validNetworkLinks: NetworkLink[] = [];
+
+    for (const networkLink of networkLinks._embedded.networkLink) {
+      if (networkLink) {
+        validNetworkLinks.push(networkLink);
+      }
+    }
+
+    return validNetworkLinks;
   }
 }

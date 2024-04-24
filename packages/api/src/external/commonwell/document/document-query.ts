@@ -1,11 +1,13 @@
 import { DocumentReference } from "@medplum/fhirtypes";
 import {
+  CommonwellError,
   Document,
   documentReferenceResourceType,
   OperationOutcome,
   operationOutcomeResourceType,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { oid } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
@@ -60,6 +62,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { linkPatientToCW } from "../patient";
 import { getCWData } from "../patient";
+import { analytics, EventTypes } from "../../../shared/analytics";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -180,6 +183,21 @@ export async function queryAndProcessDocuments({
     const cwDocuments = await internalGetDocuments({ patient, organization, facility });
     log(`Got ${cwDocuments.length} documents from CW`);
 
+    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
+    const duration = elapsedTimeFromNow(docQueryStartedAt);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.COMMONWELL,
+        duration,
+        documentCount: cwDocuments.length,
+      },
+    });
+
     const fhirDocRefs = await downloadDocsAndUpsertFHIR({
       patient,
       facilityId,
@@ -193,7 +211,7 @@ export async function queryAndProcessDocuments({
     log(`Finished processing ${fhirDocRefs.length} documents.`);
   } catch (error) {
     const msg = `Failed to query and process documents - CommonWell`;
-    console.log(`${msg}. Error: ${errorToString(error)}`);
+    log(`${msg}. Error: ${errorToString(error)}`);
 
     await setDocQueryProgress({
       patient: { id: patientParam.id, cxId: patientParam.cxId },
@@ -201,6 +219,8 @@ export async function queryAndProcessDocuments({
       requestId,
       source: MedicalDataSource.COMMONWELL,
     });
+
+    const cwReference = error instanceof CommonwellError ? error.cwReference : undefined;
 
     capture.message(msg, {
       extra: {
@@ -211,6 +231,7 @@ export async function queryAndProcessDocuments({
         forceDownload,
         requestId,
         ignoreDocRefOnFHIRServer,
+        cwReference,
       },
       level: "error",
     });
@@ -257,56 +278,63 @@ export async function internalGetDocuments({
   const docs: Document[] = [];
   const cwErrs: OperationOutcome[] = [];
   const queryStart = Date.now();
-  const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
-  reportDocQueryMetric(queryStart);
-  log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
+  try {
+    const queryResponse = await commonWell.queryDocumentsFull(queryMeta, cwData.patientId);
+    reportDocQueryMetric(queryStart);
+    log(`resp queryDocumentsFull: ${JSON.stringify(queryResponse)}`);
 
-  for (const item of queryResponse.entry) {
-    if (item.content?.resourceType === documentReferenceResourceType) {
-      docs.push(item as Document);
-    } else if (item.content?.resourceType === operationOutcomeResourceType) {
-      cwErrs.push(item as OperationOutcome);
-    } else {
-      log(`Unexpected resource type: ${item.content?.resourceType}`);
+    for (const item of queryResponse.entry) {
+      if (item.content?.resourceType === documentReferenceResourceType) {
+        docs.push(item as Document);
+      } else if (item.content?.resourceType === operationOutcomeResourceType) {
+        cwErrs.push(item as OperationOutcome);
+      } else {
+        log(`Unexpected resource type: ${item.content?.resourceType}`);
+      }
     }
-  }
 
-  if (cwErrs.length > 0) {
-    reportCWErrors({
-      errors: cwErrs,
-      context: {
-        cwReference: commonWell.lastReferenceHeader,
-        patientId: patient.id,
-      },
-      log,
+    if (cwErrs.length > 0) {
+      reportCWErrors({
+        errors: cwErrs,
+        context: {
+          cwReference: commonWell.lastReferenceHeader,
+          patientId: patient.id,
+        },
+        log,
+      });
+    }
+
+    log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
+    const documents: Document[] = docs.flatMap(d => {
+      if (d.content && d.content.masterIdentifier?.value && d.content.location) {
+        return {
+          id: d.content.masterIdentifier.value,
+          content: { location: d.content.location, ...d.content },
+          contained: d.content.contained,
+          masterIdentifier: d.content.masterIdentifier,
+          subject: d.content.subject,
+          context: d.content.context,
+          fileName: getFileName(patient, d),
+          description: d.content.description,
+          type: d.content.type,
+          status: d.content.status,
+          location: d.content.location,
+          indexed: d.content.indexed,
+          mimeType: d.content.mimeType,
+          size: d.content.size, // bytes
+        };
+      }
+      log(`content, master ID or location not present, skipping - ${JSON.stringify(d)}`);
+      return [];
+    });
+
+    return documents;
+  } catch (error) {
+    throw new CommonwellError("Error querying documents from CommonWell", error, {
+      cwReference: commonWell.lastReferenceHeader,
+      context,
     });
   }
-
-  log(`Document query got ${docs.length} documents${docs.length ? ", processing" : ""}...`);
-  const documents: Document[] = docs.flatMap(d => {
-    if (d.content && d.content.masterIdentifier?.value && d.content.location) {
-      return {
-        id: d.content.masterIdentifier.value,
-        content: { location: d.content.location, ...d.content },
-        contained: d.content.contained,
-        masterIdentifier: d.content.masterIdentifier,
-        subject: d.content.subject,
-        context: d.content.context,
-        fileName: getFileName(patient, d),
-        description: d.content.description,
-        type: d.content.type,
-        status: d.content.status,
-        location: d.content.location,
-        indexed: d.content.indexed,
-        mimeType: d.content.mimeType,
-        size: d.content.size, // bytes
-      };
-    }
-    log(`content, master ID or location not present, skipping - ${JSON.stringify(d)}`);
-    return [];
-  });
-
-  return documents;
 }
 
 function reportCWErrors({
