@@ -16,7 +16,6 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { getHieInitiator, HieInitiator } from "../../command/medical/hie/get-hie-initiator";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
 import { analytics, EventTypes } from "../../shared/analytics";
@@ -28,6 +27,7 @@ import {
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
 } from "../aws/appConfig";
+import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -42,6 +42,7 @@ import {
   getMatchingStrongIds,
   PatientDataCommonwell,
 } from "./patient-shared";
+import { getCwInitiator } from "./shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -144,7 +145,7 @@ export async function registerAndLinkPatientInCW(
   let commonWell: CommonWellAPI | undefined;
 
   try {
-    const _initiator = initiator ?? (await getHieInitiator(patient, facilityId));
+    const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
     const initiatorName = _initiator.name;
     const initiatorOid = _initiator.oid;
     const initiatorNpi = _initiator.npi;
@@ -558,7 +559,7 @@ async function setupUpdate(
 
   if (!commonwellPatientId || !personId) return undefined;
 
-  const initiatorData = await getHieInitiator(patient, facilityId);
+  const initiatorData = await getCwInitiator(patient, facilityId);
   const orgName = initiatorData.name;
   const orgOID = initiatorData.oid;
   const facilityNPI = initiatorData.npi;

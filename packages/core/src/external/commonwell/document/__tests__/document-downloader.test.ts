@@ -45,10 +45,7 @@ describe.skip("document-downloader", () => {
 
   const commonWell =
     cwOrgCertificate && cwOrgPrivateKey
-      ? // TODO 1706 Update this? Remove this file?
-        // TODO 1706 Update this? Remove this file?
-        // TODO 1706 Update this? Remove this file?
-        new CommonWell(
+      ? new CommonWell(
           cwOrgCertificate,
           cwOrgPrivateKey,
           org.name,

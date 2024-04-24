@@ -3,7 +3,7 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DocumentDownloader } from "@metriport/core/external/commonwell/document/document-downloader";
 import { DocumentDownloaderLambda } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
-import { HieInitiator } from "../../../command/medical/hie/get-hie-initiator";
+import { HieInitiator } from "../../hie/get-hie-initiator";
 import { Config } from "../../../shared/config";
 import { makeCommonWellAPI } from "../api";
 

@@ -4,7 +4,7 @@ import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../hie/cross-hie-ids";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";

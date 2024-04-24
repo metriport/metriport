@@ -1,9 +1,9 @@
 import { CommonWellAPI, organizationQueryMeta, RequestMetadata } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
-import { getHieInitiator } from "../../../command/medical/hie/get-hie-initiator";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
+import { getCwInitiator } from "../shared";
 
 export type CWAccess =
   | {
@@ -35,7 +35,7 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess>
   const cwPatientId = commonwellData.patientId;
   const cwPersonId = commonwellData.personId;
 
-  const initiator = await getHieInitiator(patient, facilityId);
+  const initiator = await getCwInitiator(patient, facilityId);
   const initiatorName = initiator.name;
   const initiatorOID = initiator.oid;
   const initiatorNpi = initiator.npi;
