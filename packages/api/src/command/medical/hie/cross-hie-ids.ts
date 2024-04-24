@@ -1,4 +1,4 @@
-import { getOrganizationIds } from "../../external/carequality/command/cq-directory/cq-gateways";
+import { getOrganizationIds } from "../../../external/carequality/command/cq-directory/cq-gateways";
 
 export async function getCqOrgIdsToDenyOnCw() {
   return getOrganizationIds(["CommonWell"]);

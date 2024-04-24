@@ -5,7 +5,7 @@ import {
   CommonWellAPI,
   organizationQueryMeta,
 } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { DocumentDownloaderLambdaRequest } from "@metriport/core/external/commonwell/document/document-downloader-lambda";
 import { DocumentDownloaderLocal } from "@metriport/core/external/commonwell/document/document-downloader-local";
@@ -35,6 +35,9 @@ const apiMode = isProduction() ? APIMode.production : APIMode.integration;
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async (req: DocumentDownloaderLambdaRequest): Promise<DownloadResult> => {
+    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
+    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
+    // TODO 1706 Rename orgName, orgOid, and npi to Initiator
     const { orgName, orgOid, npi, cxId, fileInfo, document } = req;
     capture.setUser({ id: cxId });
     capture.setExtra({ lambdaName });
@@ -55,7 +58,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       throw new Error(`Config error - CW_ORG_PRIVATE_KEY doesn't exist`);
     }
 
-    const commonWell = makeCommonWellAPI(cwOrgCertificate, cwOrgPrivateKey, orgName, oid(orgOid));
+    const commonWell = makeCommonWellAPI(
+      cwOrgCertificate,
+      cwOrgPrivateKey,
+      orgName,
+      addOidPrefix(orgOid)
+    );
     const queryMeta = organizationQueryMeta(orgName, { npi: npi });
 
     const docDownloader = new DocumentDownloaderLocal({

@@ -1,6 +1,11 @@
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { AddressStrict } from "./location-address";
 
+export enum OrganizationType {
+  healthcareProvider = "healthcare_provider",
+  healthcareITVendor = "healthcare_it_vendor",
+}
+
 export enum OrgType {
   acuteCare = "acuteCare",
   ambulatory = "ambulatory",
@@ -20,6 +25,7 @@ export interface OrganizationCreate extends BaseDomainCreate {
   cxId: string;
   oid: string;
   organizationNumber: number;
+  type: OrganizationType;
   data: OrganizationData;
 }
 
