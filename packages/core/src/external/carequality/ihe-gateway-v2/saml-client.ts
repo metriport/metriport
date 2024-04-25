@@ -56,6 +56,9 @@ export async function sendSignedXml({
     httpsAgent: agent,
   });
 
+  // TEMP
+  console.log("Response from gateway: ", response.data);
+
   return response.data;
 }
 
