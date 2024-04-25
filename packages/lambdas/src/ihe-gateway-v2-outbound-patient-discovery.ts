@@ -67,6 +67,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         cxId,
       });
 
+      console.log(`Results: ${JSON.stringify(results, null, 2)}`);
+
       // send results to internal endpoint
       for (const result of results) {
         await axios.post(patientDiscoveryUrl, result);

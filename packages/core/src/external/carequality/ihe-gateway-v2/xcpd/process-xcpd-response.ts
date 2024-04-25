@@ -221,6 +221,7 @@ export function processXCPDResponse({
   cxId?: string;
 }): OutboundPatientDiscoveryResp {
   if (xcpdResponse.success === false) {
+    console.log("HTTP error response");
     return handleHTTPErrorResponse({
       httpError: xcpdResponse.response,
       outboundRequest,
@@ -240,17 +241,20 @@ export function processXCPDResponse({
   const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
 
   if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
+    console.log("Patient match response");
     return handlePatientMatchResponse({
       jsonObj,
       outboundRequest,
       gateway,
     });
   } else if (isApplicationAccept(ack) && isXCPDRespNotFound(queryResponseCode)) {
+    console.log("Patient no match response");
     return handlePatientNoMatchResponse({
       outboundRequest,
       gateway,
     });
   } else {
+    console.log("Patient error response");
     return handlePatientErrorResponse({
       jsonObj,
       outboundRequest,

@@ -38,6 +38,7 @@ export async function createSignSendProcessXCPDRequest({
     privateKey,
     privateKeyPassword
   );
+  console.log("Signed requests: ", JSON.stringify(signedRequests, null, 2));
   const responses = await sendSignedRequests({
     signedRequests,
     certChain,
@@ -47,6 +48,7 @@ export async function createSignSendProcessXCPDRequest({
     patientId,
     cxId,
   });
+  console.log("Responses: ", JSON.stringify(responses, null, 2));
   const results: OutboundPatientDiscoveryResp[] = responses.map(response => {
     const gateway = response.gateway;
     if (!gateway) {

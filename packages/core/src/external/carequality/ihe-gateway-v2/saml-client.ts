@@ -35,6 +35,7 @@ export async function sendSignedXml({
   passphrase: string;
 }): Promise<string> {
   const trustedKeyStore = await getTrustedKeyStore();
+  console.log("Trusted key store: ", trustedKeyStore);
 
   const agent = new https.Agent({
     rejectUnauthorized: true,
@@ -46,6 +47,7 @@ export async function sendSignedXml({
 
   const verified = verifySaml({ xmlString: signedXml, publicCert });
   if (!verified) {
+    console.log("Signature verification failed.");
     throw new Error("Signature verification failed.");
   }
   const response = await axios.post(url, signedXml, {
@@ -106,6 +108,8 @@ export async function sendSignedRequests({
       } + oid: ${
         isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
       }`;
+      console.log(msg, error);
+
       const errorString: string = errorToString(error);
       const extra = {
         errorString,

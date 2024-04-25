@@ -17,10 +17,10 @@ const app = express();
 const port = 8043;
 app.use(json());
 
-const privateKey = getEnvVarOrFail("IHE_PRODUCTION_KEY");
-const x509CertPem = getEnvVarOrFail("IHE_PRODUCTION_CERT");
-const certChain = getEnvVarOrFail("IHE_PRODUCTION_CERT_CHAIN");
-const privateKeyPassword = getEnvVarOrFail("IHE_PRODUCTION_KEY_PASSWORD");
+const privateKey = getEnvVarOrFail("IHE_STAGING_KEY_ENCRYPTED");
+const x509CertPem = getEnvVarOrFail("IHE_STAGING_CERT");
+const certChain = getEnvVarOrFail("IHE_STAGING_CERT_CHAIN");
+const privateKeyPassword = getEnvVarOrFail("IHE_STAGING_KEY_PASSWORD");
 
 app.post("/xcpd", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
