@@ -72,29 +72,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
   if (diagnosticReports.length === 0) {
     return undefined;
   }
-  const items = diagnosticReports
-    .map(report => {
-      const contentLines = report.presentedForm?.[0]?.data
-        ? base64ToString(report.presentedForm[0].data).split(/\n/)
-        : [];
-      if (contentLines.length > 0) {
-        const contentObjects = contentLines.map(line => ({
-          br: line,
-        }));
-        return {
-          item: {
-            content: {
-              [idAttribute]: `_${report.id}`,
-              br: contentObjects.map(o => o.br),
-            },
-          },
-        };
-      }
-      return undefined;
-    })
-    .filter(item => item !== undefined);
-
-  const text = items.length > 0 ? { text: items.map(item => item?.item) } : undefined;
+  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
     component: {
@@ -115,4 +93,28 @@ export function buildResult(fhirBundle: Bundle): unknown {
     },
   };
   return resultsSection;
+}
+
+function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
+  return (
+    diagnosticReports.flatMap(report => {
+      const contentLines = report.presentedForm?.[0]?.data
+        ? base64ToString(report.presentedForm[0].data).split(/\n/)
+        : [];
+      if (contentLines.length > 0) {
+        const contentObjects = contentLines.map(line => ({
+          br: line,
+        }));
+        return {
+          item: {
+            content: {
+              [idAttribute]: `_${report.id}`,
+              br: contentObjects.map(o => o.br),
+            },
+          },
+        };
+      }
+      return undefined;
+    }) || []
+  );
 }

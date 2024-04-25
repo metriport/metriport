@@ -3,6 +3,7 @@ import {
   ConsolidationConversionType,
   Input as ConversionInput,
   Output as ConversionOutput,
+  MedicalRecordFormat,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
@@ -28,7 +29,7 @@ export const TIMEOUT_CALLING_CONVERTER_LAMBDA = dayjs.duration(15, "minutes").ad
 const region = Config.getAWSRegion();
 const lambdaClient = makeLambdaClient(region, TIMEOUT_CALLING_CONVERTER_LAMBDA.asMilliseconds());
 const s3 = makeS3Client(Config.getAWSRegion());
-const emptyMetaProp = "na";
+export const emptyMetaProp = "na";
 
 export async function handleBundleToMedicalRecord({
   bundle,
@@ -43,7 +44,7 @@ export async function handleBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: MedicalRecordFormat;
 }): Promise<Bundle<Resource>> {
   const bucketName = Config.getSandboxSeedBucketName();
   if (Config.isSandbox() && bucketName) {
@@ -55,7 +56,7 @@ export async function handleBundleToMedicalRecord({
       fileName,
       durationSeconds: 60,
     });
-    return buildBundle(patient, url, conversionType);
+    return buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   }
 
   const { url, hasContents } = await convertFHIRBundleToMedicalRecord({
@@ -67,7 +68,7 @@ export async function handleBundleToMedicalRecord({
     conversionType,
   });
 
-  const newBundle = buildBundle(patient, url, conversionType);
+  const newBundle = buildDocRefBundleWithAttachment(patient.id, url, conversionType);
   if (!hasContents) {
     console.log(`No contents in the consolidated data for patient ${patient.id}`);
     newBundle.entry = [];
@@ -76,10 +77,10 @@ export async function handleBundleToMedicalRecord({
   return newBundle;
 }
 
-function buildBundle(
-  patient: Pick<Patient, "id">,
-  url: string,
-  conversionType: ConsolidationConversionType
+export function buildDocRefBundleWithAttachment(
+  patientId: string,
+  attachmentUrl: string,
+  mimeType: ConsolidationConversionType
 ): Bundle<Resource> {
   return {
     resourceType: "Bundle",
@@ -90,13 +91,13 @@ function buildBundle(
         resource: {
           resourceType: "DocumentReference",
           subject: {
-            reference: `Patient/${patient.id}`,
+            reference: `Patient/${patientId}`,
           },
           content: [
             {
               attachment: {
-                contentType: `application/${conversionType}`,
-                url: url,
+                contentType: `application/${mimeType}`,
+                url: attachmentUrl,
               },
             },
           ],
@@ -119,32 +120,27 @@ async function convertFHIRBundleToMedicalRecord({
   resources?: ResourceTypeForConsolidation[];
   dateFrom?: string;
   dateTo?: string;
-  conversionType: ConsolidationConversionType;
+  conversionType: MedicalRecordFormat;
 }): Promise<ConversionOutput> {
   const lambdaName = Config.getFHIRToMedicalRecordLambdaName();
-
   if (!lambdaName) throw new Error("FHIR to Medical Record Lambda Name is undefined");
 
   // Store the bundle on S3
   const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
+  const metadata = {
+    patientId: patient.id,
+    cxId: patient.cxId,
+    resources: resources?.toString() ?? emptyMetaProp,
+    dateFrom: dateFrom ?? emptyMetaProp,
+    dateTo: dateTo ?? emptyMetaProp,
+    conversionType,
+  };
 
-  await s3
-    .putObject({
-      Bucket: Config.getMedicalDocumentsBucketName(),
-      Key: fileName,
-      Body: JSON.stringify(bundle),
-      ContentType: "application/json",
-      Metadata: {
-        patientId: patient.id,
-        cxId: patient.cxId,
-        resources: resources?.toString() ?? emptyMetaProp,
-        dateFrom: dateFrom ?? emptyMetaProp,
-        dateTo: dateTo ?? emptyMetaProp,
-        conversionType,
-      },
-    })
-    .promise();
-
+  await uploadJsonBundleToS3({
+    bundle,
+    fileName,
+    metadata,
+  });
   // Send it to conversion
   const payload: ConversionInput = {
     fileName,
@@ -165,4 +161,24 @@ async function convertFHIRBundleToMedicalRecord({
     .promise();
   const resultPayload = getLambdaResultPayload({ result, lambdaName });
   return JSON.parse(resultPayload) as ConversionOutput;
+}
+
+export async function uploadJsonBundleToS3({
+  bundle,
+  fileName,
+  metadata,
+}: {
+  bundle: Bundle<Resource>;
+  fileName: string;
+  metadata: Record<string, string>;
+}) {
+  await s3
+    .putObject({
+      Bucket: Config.getMedicalDocumentsBucketName(),
+      Key: fileName,
+      Body: JSON.stringify(bundle),
+      ContentType: "application/json",
+      Metadata: metadata,
+    })
+    .promise();
 }

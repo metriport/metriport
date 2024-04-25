@@ -122,6 +122,10 @@ export class Config {
     return getEnvVarOrFail("DB_CREDS");
   }
 
+  static getDbReadReplicaEndpoint(): string {
+    return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
+  }
+
   static getCronometerClientId(): string {
     return getEnvVarOrFail("CRONOMETER_CLIENT_ID");
   }
@@ -258,6 +262,10 @@ export class Config {
 
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
+  }
+
+  static getFhirToCdaConverterLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
   }
 
   static getDocumentDownloaderLambdaName(): string {

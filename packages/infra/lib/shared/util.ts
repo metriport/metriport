@@ -1,4 +1,4 @@
-import { EnvConfig } from "../../config/env-config";
+import { EnvConfig, EnvConfigSandbox } from "../../config/env-config";
 import { EnvType } from "../env-type";
 
 export function isStagingEnv(env: EnvType): boolean {
@@ -17,7 +17,7 @@ export function isStaging(config: EnvConfig): boolean {
 export function isProd(config: EnvConfig): boolean {
   return isProdEnv(config.environmentType);
 }
-export function isSandbox(config: EnvConfig): boolean {
+export function isSandbox(config: EnvConfig): config is EnvConfigSandbox {
   return isSandboxEnv(config.environmentType);
 }
 export function isLocalEnvironment(): boolean {

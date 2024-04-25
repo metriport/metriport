@@ -20,7 +20,10 @@ export function genericErrorToString(err: unknown): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function detailedErrorToString(err: any): string {
   const thisErrorMessage = err.message;
-  const additionalInfo = err.additionalInfo ? inspect(err.additionalInfo) : undefined;
+  // this can lead to multi-line
+  const additionalInfo = err.additionalInfo
+    ? inspect(err.additionalInfo, { compact: true, breakLength: undefined })
+    : undefined;
   const causeMessage = err.cause ? detailedErrorToString(err.cause) : undefined;
   return (
     `${thisErrorMessage}` +
@@ -33,9 +36,9 @@ export function getErrorMessage(error: unknown) {
   return errorToString(error);
 }
 
-export function processAsyncError(msg: string) {
+export function processAsyncError(msg: string, log = console.error) {
   return (err: unknown) => {
-    console.error(`${msg}: ${getErrorMessage(err)}`);
+    log(`${msg}: ${getErrorMessage(err)}`);
     capture.error(err, { extra: { message: msg, err } });
   };
 }

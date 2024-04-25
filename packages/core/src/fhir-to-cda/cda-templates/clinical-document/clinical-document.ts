@@ -1,51 +1,28 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
-  CDAAuthor,
-  CDACustodian,
-  CDAInstanceIdentifier,
-  CDARecordTarget,
-  CDACodeCE,
-  Entry,
-} from "../types";
-import {
   buildCodeCE,
   buildInstanceIdentifier,
-  withoutNullFlavorObject,
   withNullFlavor,
+  withoutNullFlavorObject,
 } from "../commons";
-import { clinicalDocumentConstants, valueAttribute, namespaceAttribute } from "../constants";
-
-export type ClinicalDocument = {
-  ClinicalDocument: {
-    [namespaceAttribute]: string;
-    realmCode?: CDACodeCE;
-    typeId?: CDAInstanceIdentifier;
-    templateId?: CDAInstanceIdentifier[];
-    id: CDAInstanceIdentifier;
-    code: CDACodeCE;
-    title?: string;
-    effectiveTime: Entry;
-    confidentialityCode: CDACodeCE;
-    languageCode?: CDACodeCE;
-    setId?: CDAInstanceIdentifier;
-    versionNumber?: Entry;
-    recordTarget: CDARecordTarget;
-    author: CDAAuthor;
-    custodian: CDACustodian;
-    component: unknown;
-  };
-};
+import { clinicalDocumentConstants, valueAttribute } from "../constants";
+import {
+  CDAAuthor,
+  CDACustodian,
+  CDARecordTarget,
+  ClinicalDocument,
+} from "../../cda-types/shared-types";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-function removeEmptyFields(obj: any): ClinicalDocument {
+export function removeEmptyFields(obj: any): unknown {
   if (typeof obj === "object" && obj !== undefined) {
     Object.keys(obj).forEach(key => {
       const value = obj[key];
-      if (value === undefined || value === "") {
+      if (value == undefined || value === "") {
         delete obj[key];
       } else if (typeof value === "object") {
         const result = removeEmptyFields(value);
-        if (Object.keys(result).length === 0) {
+        if (result && typeof result === "object" && Object.keys(result).length === 0) {
           delete obj[key];
         }
       }

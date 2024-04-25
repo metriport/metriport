@@ -23,7 +23,7 @@
                                 "contributedToDeath":true,
                             {{/if}}
                             {{#if (eq this.observation.templateId.root '2.16.840.1.113883.10.20.22.4.31')}}
-                                "onsetAge":{{>DataType/Quantity.hbs quantity=this.observationEntry.value}},
+                                "onsetAge":{{>DataType/Quantity.hbs quantity=this.observation.value}},
                             {{/if}}
                         {{/each}} 
                 },

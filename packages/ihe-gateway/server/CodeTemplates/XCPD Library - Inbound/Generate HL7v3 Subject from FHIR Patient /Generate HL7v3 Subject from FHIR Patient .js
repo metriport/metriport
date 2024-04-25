@@ -101,9 +101,9 @@ function getXCPDResponseSubject(lambda) {
 					});
 				}
 				if (entry.hasOwnProperty('city')) addr.appendChild(new XML('<city>' + entry.city.toString() + '</city>'));
-				if (entry.hasOwnProperty('state')) addr.appendChild(new XML('<state>' + entry.city.toString() + '</state>'));
-				if (entry.hasOwnProperty('postalCode')) addr.appendChild(new XML('<postalCode>' + entry.city.toString() + '</postalCode>'));
-				if (entry.hasOwnProperty('country')) addr.appendChild(new XML('<country>' + entry.city.toString() + '</country>'));
+				if (entry.hasOwnProperty('state')) addr.appendChild(new XML('<state>' + entry.state.toString() + '</state>'));
+				if (entry.hasOwnProperty('postalCode')) addr.appendChild(new XML('<postalCode>' + entry.postalCode.toString() + '</postalCode>'));
+				if (entry.hasOwnProperty('country')) addr.appendChild(new XML('<country>' + entry.country.toString() + '</country>'));
 				if (addr.hasComplexContent()) patient.appendChild(addr);
 			} catch(ex) {
 				if (globalMap.containsKey('TEST_MODE')) logger.error('Code Template: XCPD Inbound - getXCPDResponseSubject() - address: ' + ex);

@@ -1,7 +1,12 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import {
+  consolidationConversionType,
+  mrFormat,
+} from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
@@ -12,11 +17,12 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
+import { convertFhirToCdaAndUpload } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
+import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
@@ -31,6 +37,7 @@ import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -46,14 +53,10 @@ import {
   schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { stringToBoolean } from "@metriport/shared";
-import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
-import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
 
 const router = Router();
 const MAX_RESOURCE_POST_COUNT = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -66,6 +69,7 @@ const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
@@ -109,6 +113,7 @@ router.post(
  */
 router.put(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -152,6 +157,7 @@ router.put(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
@@ -172,6 +178,7 @@ router.get(
  */
 router.delete(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -200,6 +207,7 @@ router.delete(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
@@ -227,6 +235,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -258,6 +267,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -272,6 +282,7 @@ router.get(
 );
 
 const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
+const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query
@@ -284,13 +295,15 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
- *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.docType Optional to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -330,11 +343,12 @@ router.post(
  */
 router.get(
   "/:id/medical-record",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const type = getFrom("query").orFail("conversionType", req);
-    const conversionType = consolidationConversionTypeSchema.parse(type);
+    const conversionType = medicalRecordFormatSchema.parse(type);
 
     const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
     if (!url) throw new NotFoundError("Medical record summary not found");
@@ -353,6 +367,7 @@ router.get(
  */
 router.get(
   "/:id/medical-record-status",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -380,9 +395,9 @@ router.put("/:id/consolidated", asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];
-  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+  if (contentLength && parseInt(contentLength) >= MAXIMUM_UPLOAD_FILE_SIZE) {
     throw new BadRequestError(
-      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+      `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
 
@@ -413,27 +428,14 @@ async function putConsolidated(req: Request, res: Response) {
       );
     }
   }
-  console.log(
-    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
-      `${incomingAmount} resources, ${contentLength} bytes`
-  );
-  const data = await createOrUpdateConsolidatedPatientData({
-    cxId,
-    patientId: patient.id,
-    fhirBundle: validatedBundle,
-  });
-  if (!Config.isProdEnv()) {
-    const cdaBundles = convertFhirBundleToCda(validatedBundle);
-    for (const cdaBundle of cdaBundles) {
-      await cdaDocumentUploaderHandler(
-        cxId,
-        patientId,
-        cdaBundle,
-        Config.getMedicalDocumentsBucketName(),
-        Config.getAWSRegion()
-      );
-    }
-  }
+  const [data] = await Promise.all([
+    await createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    }),
+    await convertFhirToCdaAndUpload(cxId, patientId, validatedBundle),
+  ]);
   return res.json(data);
 }
 
@@ -450,6 +452,7 @@ async function putConsolidated(req: Request, res: Response) {
  */
 router.get(
   "/:id/consolidated/count",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);

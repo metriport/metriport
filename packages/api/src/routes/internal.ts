@@ -21,18 +21,23 @@ import { OrganizationModel } from "../models/medical/organization";
 import userRoutes from "./devices/internal-user";
 import carequalityRoutes from "./medical/internal-cq";
 import docsRoutes from "./medical/internal-docs";
+import hieRoutes from "./medical/internal-hie";
 import mpiRoutes from "./medical/internal-mpi";
 import patientRoutes from "./medical/internal-patient";
+import facilityRoutes from "./medical/internal-facility";
 import { getUUIDFrom } from "./schemas/uuid";
 import { asyncHandler, getFrom } from "./util";
+import { requestLogger } from "./helpers/request-logger";
 
 const router = Router();
 
 router.use("/docs", docsRoutes);
 router.use("/patient", patientRoutes);
+router.use("/facility", facilityRoutes);
 router.use("/user", userRoutes);
 router.use("/carequality", carequalityRoutes);
 router.use("/mpi", mpiRoutes);
+router.use("/hie", hieRoutes);
 
 /** ---------------------------------------------------------------------------
  * POST /internal/mapi-access
@@ -45,6 +50,7 @@ router.use("/mpi", mpiRoutes);
  */
 router.post(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const outcome = await allowMapiAccess(cxId);
@@ -62,6 +68,7 @@ router.post(
  */
 router.get(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const hasMapi = await hasMapiAccess(cxId);
@@ -79,6 +86,7 @@ router.get(
  */
 router.delete(
   "/mapi-access",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     await revokeMapiAccess(cxId);
@@ -145,6 +153,7 @@ router.post(
  */
 router.get(
   "/count-fhir-resources",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const result = await countResources({ patient: { cxId } });

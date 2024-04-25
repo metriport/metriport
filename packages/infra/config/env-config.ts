@@ -14,7 +14,8 @@ export type CWCoverageEnhancementConfig = {
   codeChallengeNotificationUrl: string;
 };
 
-export type EnvConfig = {
+type EnvConfigBase = {
+  environmentType: EnvType;
   stackName: string;
   secretsStackName: string;
   region: string;
@@ -49,6 +50,7 @@ export type EnvConfig = {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
       CQ_ORG_CERTIFICATE: string;
+      CQ_ORG_CERTIFICATE_INTERMEDIATE: string;
       CQ_ORG_PRIVATE_KEY_PASSWORD: string;
     };
     envVars?: {
@@ -121,17 +123,20 @@ export type EnvConfig = {
   cqDirectoryRebuilder?: {
     scheduleExpressions: string | string[];
   };
-} & (
-  | {
-      environmentType: EnvType.staging | EnvType.production;
-      connectWidget: ConnectWidgetConfig;
-      connectWidgetUrl?: never;
-      sandboxSeedDataBucketName?: never;
-    }
-  | {
-      environmentType: EnvType.sandbox;
-      connectWidget?: never;
-      connectWidgetUrl: string;
-      sandboxSeedDataBucketName: string;
-    }
-);
+};
+
+export type EnvConfigNonSandbox = EnvConfigBase & {
+  environmentType: EnvType.staging | EnvType.production;
+  fhirToMedicalLambda: {
+    nodeRuntimeArn: string;
+  };
+  connectWidget: ConnectWidgetConfig;
+};
+
+export type EnvConfigSandbox = EnvConfigBase & {
+  environmentType: EnvType.sandbox;
+  connectWidgetUrl: string;
+  sandboxSeedDataBucketName: string;
+};
+
+export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;

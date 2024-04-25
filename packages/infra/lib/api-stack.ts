@@ -29,7 +29,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
+import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -301,20 +301,24 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    const existingSandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? s3.Bucket.fromBucketName(
+    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
+      const seedBucketCfnName = "APISandboxSeedDataBucket";
+      try {
+        return s3.Bucket.fromBucketName(
           this,
-          "APISandboxSeedDataBucket",
-          props.config.sandboxSeedDataBucketName
-        )
-      : undefined;
-    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? existingSandboxSeedDataBucket ??
-        new s3.Bucket(this, "APISandboxSeedDataBucket", {
-          bucketName: props.config.sandboxSeedDataBucketName,
+          seedBucketCfnName,
+          sandboxConfig.sandboxSeedDataBucketName
+        );
+      } catch (error) {
+        return new s3.Bucket(this, seedBucketCfnName, {
+          bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
-        })
+        });
+      }
+    };
+    const sandboxSeedDataBucket = isSandbox(props.config)
+      ? getSandboxSeedDataBucket(props.config)
       : undefined;
 
     const fhirServerQueue = fhirServerConnector.createConnector({
@@ -396,8 +400,18 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
         },
+        ...props.config.fhirToMedicalLambda,
       });
     }
+
+    const fhirToCdaConverterLambda = this.setupFhirToCdaConverterLambda({
+      lambdaLayers,
+      vpc: this.vpc,
+      medicalDocumentsBucket,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     const cwEnhancedQueryQueues = cwEnhancedCoverageConnector.setupRequiredInfra({
       stack: this,
@@ -425,6 +439,7 @@ export class APIStack extends Stack {
       secrets,
       vpc: this.vpc,
       dbCredsSecret,
+      dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
@@ -439,6 +454,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      fhirToCdaConverterLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -1394,6 +1410,7 @@ export class APIStack extends Stack {
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
+    nodeRuntimeArn: string;
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1406,6 +1423,7 @@ export class APIStack extends Stack {
     };
   }): Lambda {
     const {
+      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1422,6 +1440,8 @@ export class APIStack extends Stack {
       stack: this,
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
+      // TODO https://github.com/metriport/metriport-internal/issues/1672
+      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
       entry: "fhir-to-medical-record",
       envType,
       envVars: {
@@ -1457,6 +1477,37 @@ export class APIStack extends Stack {
     medicalDocumentsBucket.grantReadWrite(fhirToMedicalRecordLambda);
 
     return fhirToMedicalRecordLambda;
+  }
+
+  private setupFhirToCdaConverterLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    medicalDocumentsBucket: s3.Bucket;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, alarmAction, envType } = ownProps;
+
+    const fhirToCdaConverterLambda = createLambda({
+      stack: this,
+      name: "FhirToCdaConverter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-cda-converter",
+      envType,
+      envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantReadWrite(fhirToCdaConverterLambda);
+    return fhirToCdaConverterLambda;
   }
 
   private setupCWDocContribution(ownProps: {

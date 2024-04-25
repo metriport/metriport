@@ -28,7 +28,7 @@ import {
   CDAValueST,
   Entry,
   EntryObject,
-} from "./types";
+} from "../cda-types/shared-types";
 
 const CODING_MAP = new Map<string, string>();
 CODING_MAP.set("http://loinc.org", "2.16.840.1.113883.6.1");
@@ -39,27 +39,18 @@ CODING_MAP.set("http://fdasis.nlm.nih.gov", "2.16.840.1.113883.4.9");
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
-  if (value === undefined) {
-    return {};
-  } else {
-    return { [key]: value };
-  }
+  if (value == undefined) return {};
+  return { [key]: value };
 }
 
 export function withoutNullFlavorString(value: string | undefined): Entry {
-  if (value === undefined) {
-    return {};
-  } else {
-    return value;
-  }
+  if (value == undefined) return {};
+  return value;
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value === undefined) {
-    return { [nullFlavorAttribute]: "UNK" };
-  } else {
-    return { [key]: value };
-  }
+  if (value == undefined) return { [nullFlavorAttribute]: "UNK" };
+  return { [key]: value };
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
@@ -172,21 +163,18 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
 }
 
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
-  return address?.map(addr => {
-    const addrUse = mapAddressUse(addr.use);
-    return {
-      ...withoutNullFlavorObject(addrUse, useAttribute),
-      streetAddressLine: withoutNullFlavorString(addr.line?.join(" ")),
-      city: withoutNullFlavorString(addr.city),
-      state: withoutNullFlavorString(addr.state),
-      postalCode: withoutNullFlavorString(addr.postalCode),
-      country: withoutNullFlavorString(addr.country),
-      useablePeriod: {
-        low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
-        high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
-      },
-    };
-  }); // Using only first address
+  return address?.map(addr => ({
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), useAttribute),
+    streetAddressLine: addr.line?.join(", "),
+    city: addr.city,
+    state: addr.state,
+    postalCode: addr.postalCode,
+    country: addr.country,
+    useablePeriod: {
+      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+    },
+  }));
 }
 
 export function buildRepresentedOrganization(
@@ -200,7 +188,7 @@ export function buildRepresentedOrganization(
   };
 }
 
-export function formatDateToCDATimeStamp(dateString: string | undefined): string | undefined {
+export function formatDateToCDATimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }

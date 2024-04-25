@@ -1,64 +1,81 @@
-import { createUploadMetadataFilePath } from "../domain/document/upload";
-import { MetriportError } from "../util/error/metriport-error";
-import { createAndUploadMetadataFile } from "./create-and-upload-extrinsic-object";
-import { createUploadFilePath } from "../domain/document/upload";
-import { uuidv7 } from "../util/uuid-v7";
+import { Organization } from "@medplum/fhirtypes";
+import { errorToString } from "@metriport/shared";
+import { createUploadFilePath, createUploadMetadataFilePath } from "../domain/document/upload";
+import { MAXIMUM_UPLOAD_FILE_SIZE } from "../external/aws/lambda-logic/document-uploader";
 import { S3Utils } from "../external/aws/s3";
+import { MetriportError } from "../util/error/metriport-error";
+import { out } from "../util/log";
+import { capture } from "../util/notifications";
+import { sizeInBytes } from "../util/string";
+import { uuidv7 } from "../util/uuid-v7";
+import { createAndUploadDocumentdMetadataFile } from "./create-and-upload-extrinsic-object";
 
-const MAXIMUM_FILE_SIZE = 50_000_000; // 50 MB
+export async function cdaDocumentUploaderHandler({
+  cxId,
+  patientId,
+  cdaBundle,
+  medicalDocumentsBucket,
+  region,
+  organization,
+}: {
+  cxId: string;
+  patientId: string;
+  cdaBundle: string;
+  medicalDocumentsBucket: string;
+  region: string;
+  organization: Organization;
+}): Promise<void> {
+  const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
+  const fileSize = sizeInBytes(cdaBundle);
+  checkFileSizeRestrictions(fileSize, log);
 
-export async function cdaDocumentUploaderHandler(
-  cxId: string,
-  patientId: string,
-  document: string,
-  destinationBucket: string,
-  region: string
-): Promise<void | { message: string; size: number }> {
   const s3Utils = new S3Utils(region);
-
   const docId = uuidv7();
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
-  const destinationKey = createUploadFilePath(cxId, patientId, docId);
+  const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
-  console.log("destinationKey: ", destinationKey);
-
-  // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Utils.uploadFile(destinationBucket, `${destinationKey}.xml`, Buffer.from(document));
-    console.log(
-      `Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`
-    );
+    await s3Utils.uploadFile(medicalDocumentsBucket, destinationKey, Buffer.from(cdaBundle));
+    log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
-    const message = "Error copying the uploaded file to medical documents bucket";
-    console.log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { destinationBucket, destinationKey });
+    const msg = "Error uploading file to medical documents bucket";
+    log(`${msg}: ${errorToString(error)}`);
+    throw new MetriportError(msg, error, {
+      medicalDocumentsBucket,
+      destinationKey,
+    });
   }
 
   try {
-    const { size, eTag } = await s3Utils.getFileInfoFromS3(destinationKey, destinationBucket);
-    const stringSize = size ? size.toString() : "";
-    const hash = eTag ? eTag : "";
-    await createAndUploadMetadataFile({
+    const stringSize = fileSize ? fileSize.toString() : "";
+    await createAndUploadDocumentdMetadataFile({
       s3Utils,
       cxId,
       patientId,
       docId: destinationKey,
-      hash,
       size: stringSize,
-      docRef: undefined,
+      organization,
       metadataFileName,
-      destinationBucket,
+      destinationBucket: medicalDocumentsBucket,
       mimeType: "application/xml",
     });
-    if (size && size > MAXIMUM_FILE_SIZE) {
-      // #1207 TODO: Delete the file if it's too large and alert the customer.
-      const message = `Uploaded file size exceeds the maximum allowed size`;
-      console.log(`${message}: ${size}`);
-      return { message, size };
-    }
+    log(`Successfully uploaded the metadata file`);
   } catch (error) {
-    const message = "Failed with the call to create the metadata file of a CDA";
-    console.log(`${message}: ${error}`);
-    throw new MetriportError(message, error, { destinationBucket, destinationKey });
+    const msg = "Failed to create the metadata file of a CDA";
+    log(`${msg} - error ${errorToString(error)}`);
+    throw new MetriportError(msg, error, {
+      medicalDocumentsBucket,
+      destinationKey,
+    });
+  }
+}
+
+function checkFileSizeRestrictions(fileSize: number, log: typeof console.log): void {
+  if (fileSize > MAXIMUM_UPLOAD_FILE_SIZE) {
+    const msg = `Uploaded file size exceeds the maximum allowed size of ${MAXIMUM_UPLOAD_FILE_SIZE} bytes`;
+    log(`${msg} - error ${fileSize}`);
+    const error = new Error(msg);
+    capture.message(msg, { extra: { error }, level: "info" });
+    throw error;
   }
 }

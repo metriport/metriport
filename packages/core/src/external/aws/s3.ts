@@ -9,11 +9,13 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
+import * as util from "util";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
 
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
+const pipeline = util.promisify(stream.pipeline);
 
 /**
  * @deprecated Use S3Utils instead, adding functions as needed
@@ -60,9 +62,22 @@ export class S3Utils {
     return this._s3Client;
   }
 
+  async getFileContentsIntoStream(
+    s3BucketName: string,
+    s3FileName: string,
+    writeStream: stream.Writable
+  ): Promise<void> {
+    const readStream = this.getReadStream(s3BucketName, s3FileName);
+    return await pipeline(readStream, writeStream);
+  }
+
   getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
-    const stream = this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
+    const stream = this.getReadStream(s3BucketName, s3FileName);
     return this.streamToString(stream);
+  }
+
+  private getReadStream(s3BucketName: string, s3FileName: string): stream.Readable {
+    return this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   }
 
   streamToString(stream: stream.Readable): Promise<string> {
@@ -264,5 +279,10 @@ export class S3Utils {
       console.error(`Error retrieving document IDs from S3: ${error}`);
       return undefined;
     }
+  }
+
+  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
+    const res = await this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise();
+    return res.Contents;
   }
 }
