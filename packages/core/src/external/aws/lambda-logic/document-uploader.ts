@@ -7,7 +7,7 @@ import {
   createUploadMetadataFilePath,
 } from "../../../domain/document/upload";
 import { parseFilePath } from "../../../domain/filename";
-import { createAndUploadDocumentdMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
+import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 import { MetriportError } from "../../../util/error/metriport-error";
 import { out } from "../../../util/log";
 import { S3Utils } from "../s3";
@@ -89,7 +89,7 @@ export async function documentUploaderHandler(
       const message = "Failed with the call to update the doc-ref of an uploaded file";
       log(`${message}: ${docRef}`);
     } else {
-      await createAndUploadDocumentdMetadataFile({
+      await createAndUploadDocumentMetadataFile({
         s3Utils,
         cxId,
         patientId,

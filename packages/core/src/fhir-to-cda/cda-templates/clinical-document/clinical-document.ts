@@ -15,7 +15,7 @@ import {
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
-  if (typeof obj === "object" && obj !== undefined) {
+  if (typeof obj === "object" && obj != undefined) {
     Object.keys(obj).forEach(key => {
       const value = obj[key];
       if (value == undefined || value === "") {

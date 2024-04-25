@@ -7,7 +7,7 @@ import { out } from "../util/log";
 
 const { log } = out("Core Create and Upload Extrinsic Object");
 
-export async function createAndUploadDocumentdMetadataFile({
+export async function createAndUploadDocumentMetadataFile({
   s3Utils,
   cxId,
   patientId,

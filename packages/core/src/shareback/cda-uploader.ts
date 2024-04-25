@@ -8,7 +8,7 @@ import { out } from "../util/log";
 import { capture } from "../util/notifications";
 import { sizeInBytes } from "../util/string";
 import { uuidv7 } from "../util/uuid-v7";
-import { createAndUploadDocumentdMetadataFile } from "./create-and-upload-extrinsic-object";
+import { createAndUploadDocumentMetadataFile } from "./create-and-upload-extrinsic-object";
 
 export async function cdaDocumentUploaderHandler({
   cxId,
@@ -48,7 +48,7 @@ export async function cdaDocumentUploaderHandler({
 
   try {
     const stringSize = fileSize ? fileSize.toString() : "";
-    await createAndUploadDocumentdMetadataFile({
+    await createAndUploadDocumentMetadataFile({
       s3Utils,
       cxId,
       patientId,

@@ -32,7 +32,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, organizationReference)
       : undefined;
     if (!organizationResource) {
-      throw new NotFoundError("Organization resource not found"); // TODO: organization shouldn't actually be required
+      throw new NotFoundError("Organization resource not found");
     }
 
     const bundle: Bundle = {
