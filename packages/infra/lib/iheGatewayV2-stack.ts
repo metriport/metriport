@@ -19,7 +19,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   cqOrgPrivateKey: string | undefined;
   cqOrgPrivateKeyPassword: string | undefined;
   cqOrgCertificateIntermediate: string | undefined;
-  cqTrustBundleBucket: s3.Bucket;
+  cqTrustBundleBucket: s3.IBucket;
   medicalDocumentsBucket: s3.Bucket;
   apiURL: string;
   envType: EnvType;
@@ -64,7 +64,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgCertificateIntermediate: string | undefined;
     // ONLY FOR TESTING SHOULD RETHINK LOGIC
     medicalDocumentsBucket: s3.Bucket;
-    cqTrustBundleBucket: s3.Bucket;
+    cqTrustBundleBucket: s3.IBucket;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -133,7 +133,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucket: s3.Bucket;
+    cqTrustBundleBucket: s3.IBucket;
     medicalDocumentsBucket: s3.Bucket;
     apiURL: string;
     envType: EnvType;
@@ -202,7 +202,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucket: s3.Bucket;
+    cqTrustBundleBucket: s3.IBucket;
     medicalDocumentsBucket: s3.Bucket;
     apiURL: string;
     envType: EnvType;

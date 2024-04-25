@@ -245,11 +245,14 @@ export class APIStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    const mtlsBucketName = new s3.Bucket(this, "TruststoreBucket", {
-      bucketName: props.config.iheGateway?.trustStoreBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
+    }
+    const mtlsBucketName = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
 
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
