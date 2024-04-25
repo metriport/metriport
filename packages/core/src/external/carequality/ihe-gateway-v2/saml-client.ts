@@ -34,34 +34,39 @@ export async function sendSignedXml({
   key: string;
   passphrase: string;
 }): Promise<string> {
-  const trustedKeyStore = await getTrustedKeyStore();
-  console.log("Trusted key store: ", trustedKeyStore);
+  try {
+    const trustedKeyStore = await getTrustedKeyStore();
+    console.log("Trusted key store: ", trustedKeyStore);
 
-  const agent = new https.Agent({
-    rejectUnauthorized: true,
-    cert: certChain,
-    key: key,
-    passphrase,
-    ca: trustedKeyStore,
-  });
+    const agent = new https.Agent({
+      rejectUnauthorized: true,
+      cert: certChain,
+      key: key,
+      passphrase,
+      ca: trustedKeyStore,
+    });
 
-  const verified = verifySaml({ xmlString: signedXml, publicCert });
-  if (!verified) {
-    console.log("Signature verification failed.");
-    throw new Error("Signature verification failed.");
+    const verified = verifySaml({ xmlString: signedXml, publicCert });
+    if (!verified) {
+      console.log("Signature verification failed.");
+      throw new Error("Signature verification failed.");
+    }
+    const response = await axios.post(url, signedXml, {
+      headers: {
+        "Content-Type": "application/soap+xml;charset=UTF-8",
+        "Cache-Control": "no-cache",
+      },
+      httpsAgent: agent,
+    });
+
+    // TEMP
+    console.log("Response from gateway: ", response.data);
+
+    return response.data;
+  } catch (error) {
+    console.log("Error sending signed XML: ", error);
+    throw error;
   }
-  const response = await axios.post(url, signedXml, {
-    headers: {
-      "Content-Type": "application/soap+xml;charset=UTF-8",
-      "Cache-Control": "no-cache",
-    },
-    httpsAgent: agent,
-  });
-
-  // TEMP
-  console.log("Response from gateway: ", response.data);
-
-  return response.data;
 }
 
 export async function sendSignedRequests({

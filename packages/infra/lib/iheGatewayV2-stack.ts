@@ -1,4 +1,5 @@
 import { NestedStack, NestedStackProps } from "aws-cdk-lib";
+import * as s3 from "aws-cdk-lib/aws-s3";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
 import { EnvType } from "./env-type";
@@ -18,8 +19,8 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   cqOrgPrivateKey: string | undefined;
   cqOrgPrivateKeyPassword: string | undefined;
   cqOrgCertificateIntermediate: string | undefined;
-  cqTrustBundleBucketName: string | undefined;
-  medicalDocumentsBucketName: string;
+  cqTrustBundleBucket: s3.Bucket;
+  medicalDocumentsBucket: s3.Bucket;
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
@@ -61,9 +62,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucketName: string | undefined;
     // ONLY FOR TESTING SHOULD RETHINK LOGIC
-    medicalDocumentsBucketName: string;
+    medicalDocumentsBucket: s3.Bucket;
+    cqTrustBundleBucket: s3.Bucket;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -76,9 +77,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
-      cqTrustBundleBucketName,
       // ONLY FOR TESTING SHOULD RETHINK LOGIC
-      medicalDocumentsBucketName,
+      medicalDocumentsBucket,
+      cqTrustBundleBucket,
       apiURL,
       envType,
       sentryDsn,
@@ -98,12 +99,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
         }),
-        ...(cqTrustBundleBucketName !== undefined && {
-          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
+        ...(cqTrustBundleBucket !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucket.bucketName,
         }),
         API_URL: apiURL,
         // ONLY FOR TESTING SHOULD RETHINK LOGIC
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
@@ -119,6 +120,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
+    medicalDocumentsBucket.grantRead(patientDiscoveryLambda);
+    cqTrustBundleBucket.grantRead(patientDiscoveryLambda);
     return patientDiscoveryLambda;
   }
 
@@ -130,8 +133,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucketName: string | undefined;
-    medicalDocumentsBucketName: string;
+    cqTrustBundleBucket: s3.Bucket;
+    medicalDocumentsBucket: s3.Bucket;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -144,8 +147,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
-      cqTrustBundleBucketName,
-      medicalDocumentsBucketName,
+      cqTrustBundleBucket,
+      medicalDocumentsBucket,
       apiURL,
       envType,
       sentryDsn,
@@ -165,12 +168,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
         }),
-        ...(cqTrustBundleBucketName !== undefined && {
-          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
+        ...(cqTrustBundleBucket !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucket.bucketName,
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
@@ -185,6 +188,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
+    medicalDocumentsBucket.grantRead(documentQueryLambda);
+    cqTrustBundleBucket.grantRead(documentQueryLambda);
+
     return documentQueryLambda;
   }
 
@@ -196,8 +202,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    cqTrustBundleBucketName: string | undefined;
-    medicalDocumentsBucketName: string;
+    cqTrustBundleBucket: s3.Bucket;
+    medicalDocumentsBucket: s3.Bucket;
     apiURL: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -210,8 +216,8 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
-      cqTrustBundleBucketName,
-      medicalDocumentsBucketName,
+      cqTrustBundleBucket,
+      medicalDocumentsBucket,
       apiURL,
       envType,
       sentryDsn,
@@ -231,12 +237,12 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(cqOrgPrivateKeyPassword !== undefined && {
           CQ_ORG_PRIVATE_KEY_PASSWORD: cqOrgPrivateKeyPassword,
         }),
-        ...(cqTrustBundleBucketName !== undefined && {
-          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucketName,
+        ...(cqTrustBundleBucket !== undefined && {
+          CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucket.bucketName,
         }),
         API_URL: apiURL,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
       },
       layers: [lambdaLayers.shared],
       memory: 1024,
@@ -250,6 +256,9 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY",
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
+
+    medicalDocumentsBucket.grantRead(documentRetrievalLambda);
+    cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;
   }
