@@ -2,6 +2,7 @@
 var http = $('responseStatusLine');
 http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
 channelMap.put('HTTP', http.toString());
+channelMap.put('RESPONSE_TIME', getCurrentDate());
 
 // Decode and parse XCA ITI-38 (Cross Gateway Query Response) message
 var xml = null;
