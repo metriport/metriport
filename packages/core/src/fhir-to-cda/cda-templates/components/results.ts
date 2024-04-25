@@ -87,7 +87,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
           displayName: "Diagnostic Results",
         }),
         title: "Diagnostic Results",
-        text,
+        text: text.map(t => t && t.item),
         entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
       },
     },
