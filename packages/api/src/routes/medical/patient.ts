@@ -1,4 +1,4 @@
-import { patientCreateSchema } from "@metriport/api-sdk";
+import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
@@ -22,7 +22,12 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
+import {
+  getPatientOrFail,
+  getPatients,
+  searchPatient,
+  PatientSearchCmd,
+} from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -49,6 +54,7 @@ import {
   patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
+  schemaSearchForPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -475,6 +481,34 @@ router.get(
         dateTo,
       },
     });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/search
+ *
+ * Searches for a patient based on a demographic paylaod and returns the matched patient if exists.
+ * If no patient exists, return 404.
+ *
+ * @return The matched patient.
+ */
+router.post(
+  "/search",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const payload = demographicsSchema.parse(req.body);
+
+    const patientSearch: PatientSearchCmd = {
+      ...schemaSearchForPatient(payload, cxId),
+    };
+
+    const patient = await searchPatient(patientSearch);
+
+    if (patient) {
+      return res.status(status.FOUND).json(dtoFromModel(patient));
+    }
+    return res.status(status.NOT_FOUND);
   })
 );
 

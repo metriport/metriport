@@ -10,6 +10,14 @@ import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
+import { sanitize, validate } from "./shared";
+
+type Identifier = Pick<Patient, "cxId">;
+type DemographicData = Pick<
+  PatientData,
+  "firstName" | "lastName" | "dob" | "genderAtBirth" | "personalIdentifiers" | "address" | "contact"
+>;
+export type PatientSearchCmd = DemographicData & Identifier;
 
 export const getPatients = async ({
   facilityId,
@@ -58,6 +66,20 @@ export const getPatientIds = async ({
     },
   });
   return patients.map(p => p.id);
+};
+
+export const searchPatient = async (patient: PatientSearchCmd): Promise<Patient | undefined> => {
+  const { cxId } = patient;
+
+  const sanitized = sanitize(patient);
+  validate(sanitized);
+  const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
+    sanitized;
+
+  return await getPatientByDemo({
+    cxId,
+    demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+  });
 };
 
 /**

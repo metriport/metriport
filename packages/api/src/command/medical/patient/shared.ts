@@ -4,14 +4,19 @@ import { cloneDeep } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientUpdateCmd } from "./update-patient";
+import { PatientSearchCmd } from "./get-patient";
 
-export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): T {
+export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientSearchCmd>(
+  patient: T
+): T {
   const result = cloneDeep(patient);
   result.personalIdentifiers = result.personalIdentifiers?.filter(id => id.value.trim().length > 0);
   return result;
 }
 
-export function validate<T extends PatientCreateCmd | PatientUpdateCmd>(patient: T): boolean {
+export function validate<T extends PatientCreateCmd | PatientUpdateCmd | PatientSearchCmd>(
+  patient: T
+): boolean {
   if (!patient.address || patient.address.length < 1) return false;
   patient.personalIdentifiers?.forEach(pid => pid.period && validatePeriod(pid.period));
   return true;
