@@ -100,7 +100,7 @@ function handlePatientMatchResponse({
   } catch (error) {
     capture.error("Failed to validate outboundPatientDiscoveryRespSuccessfulSchema", {
       extra: {
-        context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+        context: `ihe-gateway-v2-outbound-patient-discovery`,
         response,
         error,
       },
@@ -127,7 +127,7 @@ function handlePatientErrorResponse({
   const msg = "An AbortedError (AE) was received from the responding gateway";
   capture.error(msg, {
     extra: {
-      context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+      context: `ihe-gateway-v2-outbound-patient-discovery`,
       outboundRequest,
       gateway,
       patientId,
@@ -165,7 +165,7 @@ function handlePatientErrorResponse({
   } catch (error) {
     capture.error("Failed to validate outboundPatientDiscoveryRespFaultSchema", {
       extra: {
-        context: `lambda.iheGatewayV2-outbound-patient-discovery`,
+        context: `ihe-gateway-v2-outbound-patient-discovery`,
         response,
         error,
       },

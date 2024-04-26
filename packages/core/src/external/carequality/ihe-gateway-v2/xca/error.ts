@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
@@ -25,17 +26,17 @@ export function processRegistryErrorList(
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     registryErrors.forEach((entry: any) => {
       const issue = {
-        severity: entry?._severity?.toString().toLowerCase().split(":").pop() || "",
-        code: entry?._errorCode?.toString() || "",
+        severity: entry?._severity?.toString().toLowerCase().split(":").pop(),
+        code: entry?._errorCode?.toString(),
         details: {
-          text: entry?._codeContext?.toString() || "",
+          text: entry?._codeContext?.toString(),
         },
       };
 
       operationOutcome.issue.push(issue);
     });
   } catch (ex) {
-    console.error("Error processing RegistryErrorList: ", ex);
+    console.error(`Error processing RegistryErrorList: ${ex}`);
   }
 
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;
@@ -56,7 +57,7 @@ export function handleRegistryErrorResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
   };
@@ -87,7 +88,7 @@ export function handleHTTPErrorResponse({
   return {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway: gateway,
     patientId: outboundRequest.patientId,
     operationOutcome: operationOutcome,
@@ -118,7 +119,7 @@ export function handleEmptyResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
   };
@@ -134,9 +135,9 @@ export function handleSOAPFaultResponse({
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
-  const faultCode = soapFault?.Code?.Value?.toString() || "unknown_fault";
+  const faultCode = soapFault?.Code?.Value?.toString() ?? "unknown_fault";
   const faultReason =
-    soapFault?.Reason?.Text?._text.toString().trim() || "An unknown error occurred";
+    soapFault?.Reason?.Text?._text.toString().trim() ?? "An unknown error occurred";
 
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -156,7 +157,7 @@ export function handleSOAPFaultResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway,
     operationOutcome,
   };

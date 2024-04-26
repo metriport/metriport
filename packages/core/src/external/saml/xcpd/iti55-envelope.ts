@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
 import { SamlCertsAndKeys } from "../security/types";
-import { namespaces } from "../namespaces";
+import { namespaces, expiresIn } from "../constants";
 import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
@@ -13,7 +13,6 @@ import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway
 import { wrapIdInUrnUuid, timestampToSoapBody } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
-const expiresIn = 5;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
 export type BulkSignedXCPD = {

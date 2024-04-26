@@ -13,3 +13,5 @@ export const namespaces = {
   urnihe: "urn:ihe:iti:xds-b:2007",
   urn2: "urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0",
 };
+
+export const expiresIn = 5;

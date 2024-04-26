@@ -3,7 +3,7 @@ import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../util/mime";
 import { XMLParser } from "fast-xml-parser";
 import { out } from "../../../../util/log";
 
-const { log } = out("parse-file-from-string");
+const { log } = out("[parseFileFromString] ");
 
 type ParsedFile = {
   extension: string;
@@ -17,14 +17,12 @@ export function parseFileFromString(fileAsString: string): ParsedFile {
   try {
     decodedBytes = Buffer.from(fileAsString, "base64");
   } catch (ex) {
-    log(
-      "[parseFileFromString] Got a non-base64 document! Using original fileAsString content for decodedBytes"
-    );
+    log("Got a non-base64 document! Using original fileAsString content for decodedBytes");
     decodedBytes = Buffer.from(fileAsString.trim());
   }
 
   if (!decodedBytes) {
-    const msg = "[parseFileFromString] Error decoding file content - missing decodedBytes";
+    const msg = "Error decoding file content - missing decodedBytes";
     log(msg);
     throw new Error(msg);
   }
@@ -55,7 +53,7 @@ function extractNonXmlBody(
     decodedString = fileAsString.trim();
   }
   if (!decodedString) {
-    const msg = "[parseFileFromString] Error decoding file content - missing decodedString";
+    const msg = "Error decoding file content - missing decodedString";
     console.error(msg);
     throw new Error(msg);
   }

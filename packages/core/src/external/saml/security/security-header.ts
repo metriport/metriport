@@ -2,7 +2,7 @@ import * as pkijs from "pkijs";
 import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
 import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../carequality/shared";
-import { namespaces } from "../namespaces";
+import { namespaces } from "../constants";
 
 const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
 const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;

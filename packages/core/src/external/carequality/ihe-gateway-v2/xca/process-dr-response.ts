@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import dayjs from "dayjs";
 import {
   OutboundDocumentRetrievalReq,
   OutboundDocumentRetrievalResp,
@@ -135,7 +136,7 @@ async function handleSuccessResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
   };

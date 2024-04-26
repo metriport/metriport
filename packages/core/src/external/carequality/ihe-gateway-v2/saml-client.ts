@@ -17,7 +17,7 @@ import { verifySaml } from "../../saml/security/verify";
 import { SamlCertsAndKeys } from "../../saml/security/types";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
-const { log } = out("Saml Client:");
+const { log } = out("Saml Client");
 
 export type SamlClientResponse = {
   response: string;
@@ -56,8 +56,8 @@ async function getTrustedKeyStore(): Promise<string> {
     const trustBundle = response.Body.toString();
     return trustBundle;
   } catch (error) {
-    log("Error getting trust bundle.");
-    throw new Error(`Error getting trust bundle for ${Config.getEnvType()} environment.`);
+    log(`Error getting trust bundle. Error: ${error}`);
+    throw new Error(`Error getting trust bundle`);
   }
 }
 

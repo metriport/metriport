@@ -1,4 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
+import dayjs from "dayjs";
 import {
   OutboundDocumentQueryReq,
   OutboundDocumentQueryResp,
@@ -35,7 +36,7 @@ function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
 ): DocumentReference {
-  const slots = extrinsicObject?.Slot || [];
+  const slots = extrinsicObject?.Slot;
   const externalIdentifiers = extrinsicObject?.ExternalIdentifier;
   const classifications = extrinsicObject?.Classification;
 
@@ -115,7 +116,7 @@ function handleSuccessResponse({
     id: outboundRequest.id,
     patientId: outboundRequest.patientId,
     timestamp: outboundRequest.timestamp,
-    responseTimestamp: new Date().toISOString(),
+    responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
   };

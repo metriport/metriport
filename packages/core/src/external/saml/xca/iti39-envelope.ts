@@ -3,7 +3,7 @@ import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
 import { SamlCertsAndKeys } from "../security/types";
-import { namespaces } from "../namespaces";
+import { namespaces, expiresIn } from "../constants";
 import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   replyTo,
@@ -41,7 +41,7 @@ export function createITI39SoapEnvelope({
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
+  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
 
   const securityHeader = createSecurityHeader({
     publicCert,

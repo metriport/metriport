@@ -6,7 +6,7 @@ export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female
   if (gender === undefined) {
     return undefined;
   }
-  return genderMapping[gender] || undefined;
+  return genderMapping[gender] ?? undefined;
 }
 
 export function stripUrnPrefix(urn: string | number): string {
@@ -35,8 +35,8 @@ export function constructFilePath({
   patientId,
   fileName,
 }: {
-  cxId?: string | undefined;
-  patientId?: string | undefined;
+  cxId: string;
+  patientId: string;
   fileName: string;
 }): string {
   return `${cxId}/${patientId}/${fileName}`;

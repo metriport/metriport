@@ -57,7 +57,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     dqRequestsGatewayV2: OutboundDocumentQueryReq[];
     patientId: string;
     cxId: string;
-    requestId: string;
   }): Promise<void> {
     await createSignSendProcessDQRequests({
       dqResponseUrl: this.dqResponseUrl,
@@ -76,7 +75,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
     patientId: string;
     cxId: string;
-    requestId: string;
   }): Promise<void> {
     await createSignSendProcessDRRequests({
       drResponseUrl: this.drResponseUrl,
