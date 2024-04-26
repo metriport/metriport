@@ -3,20 +3,20 @@ import NotFoundError from "../../util/error/not-found";
 import { splitBundleByCompositions } from "../composition-splitter";
 
 describe("splitBundleByCompositions", () => {
-  it("returns an empty array for an empty input bundle", () => {
+  it("throws NotFoundError for an empty input bundle", () => {
     const emptyBundle: Bundle = {
       resourceType: "Bundle",
       entry: [],
     };
-    expect(splitBundleByCompositions(emptyBundle)).toEqual([]);
+    expect(() => splitBundleByCompositions(emptyBundle)).toThrow(NotFoundError);
   });
 
-  it("returns an empty array when no Composition resources are present", () => {
+  it("throws NotFoundError when no Composition resources are present", () => {
     const bundleWithNoCompositions: Bundle = {
       resourceType: "Bundle",
       entry: [{ resource: { resourceType: "Patient" } }],
     };
-    expect(splitBundleByCompositions(bundleWithNoCompositions)).toEqual([]);
+    expect(() => splitBundleByCompositions(bundleWithNoCompositions)).toThrow(NotFoundError);
   });
 
   it("throws NotFoundError if the patient resource is missing", () => {
