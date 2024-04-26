@@ -332,4 +332,7 @@ export class Config {
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
   }
+  static getCQOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
 }

@@ -3,12 +3,15 @@ import * as uuid from "uuid";
 export const iti55BodyData = {
   id: uuid.v4(),
   cxId: uuid.v4(),
+  patientId: uuid.v4(),
   timestamp: "2024-03-03T08:44:00Z",
-  gateway: {
-    id: uuid.v4(),
-    oid: "2.16.840.1.113883.3.9801.2.1",
-    url: "http://localhost:9091/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery",
-  },
+  gateways: [
+    {
+      id: uuid.v4(),
+      oid: "2.16.840.1.113883.3.9801.2.1",
+      url: "http://localhost:9091/Gateway/PatientDiscovery/1_0/NhinService/NhinPatientDiscovery",
+    },
+  ],
   principalCareProviderIds: ["1234567890"],
   samlAttributes: {
     subjectId: "America Inc",

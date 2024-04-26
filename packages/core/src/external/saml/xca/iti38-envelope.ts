@@ -231,9 +231,10 @@ export function createITI38SoapEnvelope({
 export function createAndSignDQRequest(
   bodyData: DQBodyData,
   publicCert: string,
-  privateKey: string
+  privateKey: string,
+  privateKeyPassword: string
 ): string {
   const xmlString = createITI38SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
+  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
   return fullySignedSaml;
 }

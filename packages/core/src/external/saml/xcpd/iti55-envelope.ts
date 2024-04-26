@@ -8,58 +8,32 @@ import {
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
 } from "../../carequality/shared";
-import { wrapIdInUrnUuid } from "../utils";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { wrapIdInUrnUuid, timestampToSoapBody } from "../utils";
 
 const DATE_DASHES_REGEX = /-/g;
-
+const expiresIn = 5;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 
-type XCPDBodyData = {
-  id: string;
-  gateway: {
-    oid: string;
-    url: string;
-  };
-  principalCareProviderIds: string[];
-  samlAttributes: {
-    subjectRole: {
-      display: string;
-    };
-    organization: string;
-    organizationId: string;
-    homeCommunityId: string;
-    purposeOfUse: string;
-  };
-  patientResource: {
-    gender: string;
-    birthDate: string;
-    name: Array<{
-      family: string;
-      given: string[];
-    }>;
-    address: Array<{
-      line: string[];
-      city: string;
-      state: string;
-      postalCode: string;
-      country: string;
-    }>;
-    telecom?: Array<{
-      value: string;
-    }>;
-  };
+export type BulkSignedXCPD = {
+  gateway: XCPDGateway;
+  signedRequest: string;
 };
 
 function createSoapBody({
   bodyData,
   createdTimestamp,
 }: {
-  bodyData: XCPDBodyData;
+  bodyData: OutboundPatientDiscoveryReq;
   createdTimestamp: string;
 }): object {
-  const messageId = wrapIdInUrnUuid(bodyData.id);
-  const receiverDeviceId = bodyData.gateway.oid;
-  const toUrl = bodyData.gateway.url;
+  const gateway = bodyData.gateways?.[0];
+  if (!gateway) {
+    throw new Error("Gateway is required to build ITI-55 Request body");
+  }
+  const messageId = `urn:uuid:${bodyData.id}`;
+  const receiverDeviceId = gateway.oid;
+  const toUrl = gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
@@ -71,7 +45,7 @@ function createSoapBody({
 
   const soapBody = {
     "soap:Body": {
-      "@_xmlns:urn": namespaces.urn,
+      "@_xmlns:urn": namespaces.hl7,
       "urn:PRPA_IN201305UV02": {
         "@_ITSVersion": "XML_1.0",
         "urn:id": {
@@ -79,7 +53,7 @@ function createSoapBody({
           "@_root": homeCommunityId,
         },
         "urn:creationTime": {
-          "@_value": createdTimestamp,
+          "@_value": timestampToSoapBody(createdTimestamp),
         },
         "urn:interactionId": {
           "@_extension": "PRPA_IN201305UV02",
@@ -194,7 +168,10 @@ function createSoapBody({
                 : {},
               "urn:patientTelecom": patientTelecom
                 ? {
-                    "urn:value": patientTelecom,
+                    "urn:value": {
+                      "@_use": "HP",
+                      "@_value": patientTelecom,
+                    },
                     "urn:semanticsText": "Patient.telecom",
                   }
                 : {},
@@ -203,6 +180,7 @@ function createSoapBody({
                   "@_extension": providerId,
                   "@_root": "2.16.840.1.113883.4.6",
                 },
+                "urn:semanticsText": "AssignedProvider.id",
               },
             },
           },
@@ -217,18 +195,21 @@ export function createITI5SoapEnvelope({
   bodyData,
   publicCert,
 }: {
-  bodyData: XCPDBodyData;
+  bodyData: OutboundPatientDiscoveryReq;
   publicCert: string;
 }): string {
+  const gateway = bodyData.gateways?.[0];
+  if (!gateway) {
+    throw new Error("Gateway is required to build ITI-55 Request body");
+  }
   const messageId = wrapIdInUrnUuid(bodyData.id);
-  const toUrl = bodyData.gateway.url;
+  const toUrl = gateway.url;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
-  const expiresTimestamp = dayjs(createdTimestamp).add(1, "hour").toISOString();
-
+  const expiresTimestamp = dayjs(createdTimestamp).add(expiresIn, "minute").toISOString();
   const securityHeader = createSecurityHeader({
     publicCert,
     createdTimestamp,
@@ -281,12 +262,24 @@ export function createITI5SoapEnvelope({
   return xmlContent;
 }
 
-export function createAndSignXCPDRequest(
-  bodyData: XCPDBodyData,
+export function createAndSignBulkXCPDRequests(
+  bulkBodyData: OutboundPatientDiscoveryReq,
   publicCert: string,
-  privateKey: string
-): string {
-  const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey });
-  return fullySignedSaml;
+  privateKey: string,
+  privateKeyPassword: string
+): BulkSignedXCPD[] {
+  const signedRequests: BulkSignedXCPD[] = [];
+
+  for (const gateway of bulkBodyData.gateways) {
+    const bodyData: OutboundPatientDiscoveryReq = {
+      ...bulkBodyData,
+      gateways: [gateway],
+    };
+
+    const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
+    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
+    signedRequests.push({ gateway, signedRequest });
+  }
+
+  return signedRequests;
 }
