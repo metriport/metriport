@@ -2,6 +2,7 @@
 var http = $('responseStatusLine');
 http = String(http).replace('HTTP/1.1 ', '').replace(/\D/g, '');
 channelMap.put('HTTP', http.toString());
+channelMap.put('RESPONSE_TIME', getCurrentDate());
 
 // https://docs.nextgen.com/bundle/Mirth_User_Guide_4_4_2/page/connect/connect/topics/c_Common_Scenarios_connect_ug.html
 //if (responseStatus == QUEUED && connectorMessage.getSendAttempts() >= 2) {
