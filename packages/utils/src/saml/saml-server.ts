@@ -20,10 +20,10 @@ const port = 8043;
 app.use(json());
 
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("IHE_STAGING_CERT"),
-  privateKey: getEnvVarOrFail("IHE_STAGING_KEY_ENCRYPTED"),
-  privateKeyPassword: getEnvVarOrFail("IHE_STAGING_KEY_PASSWORD"),
-  certChain: getEnvVarOrFail("IHE_STAGING_CERT_CHAIN"),
+  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
+  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
+  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
+  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
 };
 
 app.post("/xcpd", async (req: Request, res: Response) => {
