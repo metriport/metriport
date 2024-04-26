@@ -7,6 +7,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
 import { SamlClientResponse } from "../saml-client";
+import { stripUrnPrefix } from "../utils";
 
 export type GirthDQRequestParams = {
   patientId: string;
@@ -46,7 +47,11 @@ function parseDocumentReference(
 
   const findSlotValue = (name: string): string => {
     const slot = slots.find((slot: Slot) => slot._name === name);
-    return slot ? slot?.ValueList?.Value : undefined;
+    return slot
+      ? Array.isArray(slot.ValueList.Value)
+        ? slot.ValueList.Value.join(", ")
+        : slot.ValueList.Value
+      : undefined;
   };
 
   const findExternalIdentifierValue = (scheme: string) => {
@@ -54,6 +59,22 @@ function parseDocumentReference(
       (identifier: Identifier) => identifier._identificationScheme === scheme
     );
     return identifier ? identifier._value : undefined;
+  };
+
+  const findClassificationSlotValue = (
+    classificationScheme: string,
+    slotName: string
+  ): string | undefined => {
+    const classification = classifications.find(
+      (c: Classification) => c._classificationScheme === classificationScheme
+    );
+    if (!classification) return undefined;
+    const slot = classification.Slot?.find((s: Slot) => s._name === slotName);
+    return slot
+      ? Array.isArray(slot.ValueList.Value)
+        ? slot.ValueList.Value.join(", ")
+        : slot.ValueList.Value
+      : undefined;
   };
 
   const findClassificationName = (scheme: string) => {
@@ -66,15 +87,18 @@ function parseDocumentReference(
   };
 
   const documentReference: DocumentReference = {
-    homeCommunityId: extrinsicObject?._home.replace("urn:oid:", ""),
+    homeCommunityId: stripUrnPrefix(extrinsicObject._home),
     repositoryUniqueId: findSlotValue("repositoryUniqueId"),
     docUniqueId: findExternalIdentifierValue("urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab"),
-    contentType: extrinsicObject?.["@_mimeType"],
+    contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: parseInt(findSlotValue("size")),
     title: findClassificationName("urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a"),
     creation: findSlotValue("creationTime"),
-    authorInstitution: findSlotValue("authorInstitution"),
+    authorInstitution: findClassificationSlotValue(
+      "urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d",
+      "authorInstitution"
+    ),
   };
   return documentReference;
 }

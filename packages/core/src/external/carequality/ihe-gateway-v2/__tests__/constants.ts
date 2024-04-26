@@ -133,6 +133,31 @@ export const outboundDQRequest = {
   },
 };
 
+export const expectedDQDocumentReference = [
+  {
+    homeCommunityId: "2.16.840.1.113883.3.9621",
+    repositoryUniqueId: "2.16.840.1.113883.3.9621",
+    docUniqueId: "123456789",
+    contentType: "application/pdf",
+    language: "en-US",
+    size: 141255,
+    title: "Continuity of Care Document",
+    creation: "2024-03-27T21:43:04.878Z",
+    authorInstitution: "Metriport^^^^^^^^^2.16.840.1.113883.3.9621",
+  },
+  {
+    homeCommunityId: "2.16.840.1.113883.3.9621",
+    repositoryUniqueId: "2.16.840.1.113883.3.9621",
+    docUniqueId: "987654321",
+    contentType: "application/pdf",
+    language: "en-US",
+    size: 163264,
+    title: "Continuity of Care Document",
+    creation: "2024-03-29T16:31:46.171Z",
+    authorInstitution: "Metriport^^^^^^^^^2.16.840.1.113883.3.9621",
+  },
+];
+
 export const outboundDRRequest = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",

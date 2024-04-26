@@ -34,7 +34,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
     );
     const response = await sendSignedRequests({
       signedRequests: xmlResponses,
-      certChain: x509CertPem,
+      certChain,
       publicCert: x509CertPem,
       privateKey,
       privateKeyPassword,

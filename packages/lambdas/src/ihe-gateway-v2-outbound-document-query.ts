@@ -67,12 +67,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         cxId,
       });
     } catch (error) {
-      const msg = `An error occurred in the iheGatewayV2-outbound-document-query lambda`;
+      const msg = `An error occurred in the ihe-gateway-v2-outbound-document-query lambda`;
       capture.error(msg, {
         extra: {
-          context: `lambda.iheGatewayV2-outbound-document-query`,
+          context: `lambda.ihe-gateway-v2-outbound-document-query`,
           error,
-          event,
+          requestId,
+          patientId,
+          cxId,
+          dqRequestsGatewayV2,
         },
       });
     }

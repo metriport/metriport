@@ -163,9 +163,9 @@ export async function processOutboundDocumentQueryResps({
     for (const doc of docsToDownload) {
       if (v2GatewayOIDs.includes(doc.homeCommunityId)) {
         docsWithDqUrlV2Gateway.push(doc);
+      } else {
+        docsWithDqUrlV1Gateway.push(doc);
       }
-
-      docsWithDqUrlV1Gateway.push(doc);
     }
 
     const initiator = await getCqInitiator(patient);
@@ -182,7 +182,7 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       patient,
       initiator,
-      documentReferences: docsToDownload,
+      documentReferences: docsWithDqUrlV2Gateway,
       outboundDocumentQueryResps: respWithDRUrl,
     });
 

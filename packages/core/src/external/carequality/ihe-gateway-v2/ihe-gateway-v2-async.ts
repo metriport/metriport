@@ -37,9 +37,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
         Payload: JSON.stringify(params),
       })
       .promise()
-      .catch(
-        processAsyncError("Failed to invoke lambda to poll outbound patient discovery responses")
-      );
+      .catch(processAsyncError("Failed to invoke iheGatewayV2 lambda for patient discovery"));
   }
 
   async startDocumentQueryGatewayV2({
@@ -63,7 +61,7 @@ export class IHEGatewayV2Async extends IHEGatewayV2 {
         Payload: JSON.stringify(params),
       })
       .promise()
-      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document retrieval"));
+      .catch(processAsyncError("Failed to invoke iheGWV2 lambda for document query"));
   }
   async startDocumentRetrievalGatewayV2({
     drRequestsGatewayV2,

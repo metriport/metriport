@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { processDQResponse } from "../xca/process-dq-response";
-import { outboundDQRequest } from "./constants";
+import { outboundDQRequest, expectedDQDocumentReference } from "./constants";
 
 describe("processDQResponse", () => {
   it("should process the successful DQ response correctly", async () => {
@@ -18,8 +18,7 @@ describe("processDQResponse", () => {
     if (!response.documentReference) {
       throw new Error("No DocumentReferences found");
     }
-    expect(response.documentReference[0]?.docUniqueId).toEqual("123456789");
-    expect(response.documentReference[1]?.docUniqueId).toEqual("987654321");
+    expect(response.documentReference).toEqual(expectedDQDocumentReference);
   });
   it("should process the empty DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_empty.xml"), "utf8");

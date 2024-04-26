@@ -31,7 +31,7 @@ export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string().optional(),
+  cxId: z.string(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
   patientId: z.string(),

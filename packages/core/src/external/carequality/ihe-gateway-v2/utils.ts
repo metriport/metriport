@@ -1,5 +1,7 @@
 import { genderMapping } from "../../fhir/patient";
 
+const urnRegex = /^urn:oid:/;
+
 export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
     return undefined;
@@ -25,7 +27,7 @@ export function stripUrnPrefix(urn: string | number): string {
   if (typeof urn === "number") {
     return urn.toString();
   }
-  return urn.replace("urn:oid:", "");
+  return urn.replace(urnRegex, "");
 }
 
 export function constructFileName({
@@ -34,8 +36,8 @@ export function constructFileName({
   metriportId,
   extension,
 }: {
-  cxId?: string | undefined;
-  patientId?: string | undefined;
+  cxId: string;
+  patientId: string;
   metriportId: string;
   extension: string;
 }): string {

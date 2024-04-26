@@ -62,10 +62,12 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     dqRequestsGatewayV2,
     patientId,
     cxId,
+    requestId,
   }: {
     dqRequestsGatewayV2: OutboundDocumentQueryReq[];
     patientId: string;
     cxId: string;
+    requestId: string;
   }): Promise<void> {
     // MAKE REUSABLE
     const privateKey = Config.getCQOrgPrivateKey();
@@ -83,6 +85,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       !certChain ||
       typeof certChain !== "string"
     ) {
+      console.log(`RequestId: ${requestId} Erroring due to missing secrets`);
       throw new Error("One or more required secrets are undefined.");
     }
 
@@ -101,6 +104,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     drRequestsGatewayV2,
     patientId,
     cxId,
+    requestId,
   }: {
     drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
     patientId: string;
@@ -122,6 +126,7 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       !certChain ||
       typeof certChain !== "string"
     ) {
+      console.log(`RequestId: ${requestId} Erroring due to missing secrets`);
       throw new Error("One or more required secrets are undefined.");
     }
 

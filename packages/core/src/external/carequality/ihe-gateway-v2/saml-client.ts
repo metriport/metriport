@@ -37,7 +37,7 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<string> {
   const agent = new https.Agent({
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
     cert: certChain,
     key: key,
     passphrase,

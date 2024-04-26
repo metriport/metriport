@@ -72,7 +72,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         extra: {
           context: `lambda.iheGatewayV2-outbound-document-retrieval`,
           error,
-          event,
+          drRequestsGatewayV2,
+          requestId,
+          patientId,
+          cxId,
         },
       });
     }

@@ -89,7 +89,7 @@ async function parseDocumentReference({
     repositoryUniqueId: documentResponse?.RepositoryUniqueId,
     newDocumentUniqueId: documentResponse?.NewDocumentUniqueId,
     newRepositoryUniqueId: documentResponse?.NewRepositoryUniqueId,
-    isNew: fileInfo.exists,
+    isNew: !fileInfo.exists,
   };
 }
 
