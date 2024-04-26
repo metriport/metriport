@@ -42,7 +42,7 @@ export async function createSignSendProcessXCPDRequest({
     });
   });
   for (const result of results) {
-    axios.post(pdResponseUrl, result);
+    await axios.post(pdResponseUrl, result);
   }
 }
 

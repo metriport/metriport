@@ -269,7 +269,7 @@ export async function sendSignedDRRequests({
         outboundRequest: request.outboundRequest,
       };
     } catch (error) {
-      const msg = "HTTP/SSL Failure Sending Signed DQ SAML Request";
+      const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
       console.log(`${msg}, error: ${error}`);
 
       const errorString: string = errorToString(error);
