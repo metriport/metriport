@@ -2,16 +2,14 @@
 // npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 import * as dotenv from "dotenv";
 dotenv.config();
+import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
-import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
+import { createAndSignBulkDQRequests } from "@metriport/core/external/saml/xca/iti38-envelope";
+import { createAndSignBulkDRRequests } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import {
-  sendSignedRequests,
-  sendSignedXml,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
+import { sendSignedRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
 
 const app = express();
 const port = 8043;
@@ -28,20 +26,20 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponse = createAndSignBulkXCPDRequests(
+    const xmlResponses = createAndSignBulkXCPDRequests(
       req.body,
       x509CertPem,
       privateKey,
       privateKeyPassword
     );
     const response = await sendSignedRequests({
-      signedRequests: xmlResponse,
-      certChain,
+      signedRequests: xmlResponses,
+      certChain: x509CertPem,
       publicCert: x509CertPem,
       privateKey,
       privateKeyPassword,
-      patientId: "patientId",
-      cxId: "cxId",
+      patientId: uuidv4(),
+      cxId: uuidv4(),
     });
 
     res.type("application/xml").send(response);
@@ -61,14 +59,20 @@ app.post("/xcadq", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = createAndSignDQRequest(req.body, x509CertPem, privateKey, privateKeyPassword);
-    const response = await sendSignedXml({
-      signedXml: xmlString,
-      url: req.body.gateway.url,
+    const xmlResponses = createAndSignBulkDQRequests({
+      bulkBodyData: req.body,
+      publicCert: x509CertPem,
+      privateKey,
+      privateKeyPassword,
+    });
+    const response = await sendSignedRequests({
+      signedRequests: xmlResponses,
       certChain,
       publicCert: x509CertPem,
-      key: privateKey,
-      passphrase: privateKeyPassword,
+      privateKey,
+      privateKeyPassword,
+      patientId: uuidv4(),
+      cxId: uuidv4(),
     });
 
     res.type("application/xml").send(response);
@@ -83,14 +87,20 @@ app.post("/xcadr", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlString = createAndSignDRRequest(req.body, x509CertPem, privateKey, privateKeyPassword);
-    const response = await sendSignedXml({
-      signedXml: xmlString,
-      url: req.body.gateway.url,
+    const xmlResponses = createAndSignBulkDRRequests({
+      bulkBodyData: req.body,
+      publicCert: x509CertPem,
+      privateKey,
+      privateKeyPassword,
+    });
+    const response = await sendSignedRequests({
+      signedRequests: xmlResponses,
       certChain,
       publicCert: x509CertPem,
-      key: privateKey,
-      passphrase: privateKeyPassword,
+      privateKey,
+      privateKeyPassword,
+      patientId: uuidv4(),
+      cxId: uuidv4(),
     });
 
     res.type("application/xml").send(response);

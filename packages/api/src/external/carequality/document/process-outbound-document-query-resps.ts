@@ -23,6 +23,7 @@ import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
+import { Config } from "../../../shared/config";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -155,7 +156,9 @@ export async function processOutboundDocumentQueryResps({
     const docsWithDqUrlV1Gateway: DocumentReferenceWithMetriportId[] = [];
     const docsWithDqUrlV2Gateway: DocumentReferenceWithMetriportId[] = [];
 
-    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = Config.isDev()
+      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
+      : await getOidsWithIHEGatewayV2Enabled();
 
     for (const doc of docsToDownload) {
       if (v2GatewayOIDs.includes(doc.homeCommunityId)) {

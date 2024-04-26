@@ -335,4 +335,7 @@ export class Config {
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
   }
+  static getOidsWithIHEGatewayV2Enabled(): string {
+    return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
+  }
 }

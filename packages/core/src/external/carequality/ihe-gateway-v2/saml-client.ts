@@ -26,6 +26,7 @@ export async function sendSignedXml({
   publicCert,
   key,
   passphrase,
+  trustedKeyStore,
 }: {
   signedXml: string;
   url: string;
@@ -33,40 +34,29 @@ export async function sendSignedXml({
   publicCert: string;
   key: string;
   passphrase: string;
+  trustedKeyStore: string;
 }): Promise<string> {
-  try {
-    const trustedKeyStore = await getTrustedKeyStore();
-    console.log("Trusted key store: ", trustedKeyStore);
+  const agent = new https.Agent({
+    rejectUnauthorized: false,
+    cert: certChain,
+    key: key,
+    passphrase,
+    ca: trustedKeyStore,
+  });
 
-    const agent = new https.Agent({
-      rejectUnauthorized: true,
-      cert: certChain,
-      key: key,
-      passphrase,
-      ca: trustedKeyStore,
-    });
-
-    const verified = verifySaml({ xmlString: signedXml, publicCert });
-    if (!verified) {
-      console.log("Signature verification failed.");
-      throw new Error("Signature verification failed.");
-    }
-    const response = await axios.post(url, signedXml, {
-      headers: {
-        "Content-Type": "application/soap+xml;charset=UTF-8",
-        "Cache-Control": "no-cache",
-      },
-      httpsAgent: agent,
-    });
-
-    // TEMP
-    console.log("Response from gateway: ", response.data);
-
-    return response.data;
-  } catch (error) {
-    console.log("Error sending signed XML: ", error);
-    throw error;
+  const verified = verifySaml({ xmlString: signedXml, publicCert });
+  if (!verified) {
+    throw new Error("Signature verification failed.");
   }
+  const response = await axios.post(url, signedXml, {
+    headers: {
+      "Content-Type": "application/soap+xml;charset=UTF-8",
+      "Cache-Control": "no-cache",
+    },
+    httpsAgent: agent,
+  });
+
+  return response.data;
 }
 
 export async function sendSignedRequests({
@@ -86,6 +76,7 @@ export async function sendSignedRequests({
   patientId: string;
   cxId: string;
 }): Promise<SamlClientResponse[]> {
+  const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
       const response = await sendSignedXml({
@@ -95,6 +86,7 @@ export async function sendSignedRequests({
         publicCert,
         key: privateKey,
         passphrase: privateKeyPassword,
+        trustedKeyStore,
       });
       console.log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
@@ -113,7 +105,8 @@ export async function sendSignedRequests({
       } + oid: ${
         isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
       }`;
-      console.log(msg, error);
+      console.log(requestDetails);
+      console.log(error);
 
       const errorString: string = errorToString(error);
       const extra = {
@@ -151,14 +144,23 @@ export async function sendSignedRequests({
 }
 
 async function getTrustedKeyStore(): Promise<string> {
-  const s3 = new AWS.S3({ region: Config.getAWSRegion() });
-  const trustBundleBucketName = Config.getCqTrustBundleBucketName();
-  const key = `trust_store_${Config.getEnvType()}_aws.pem`;
-  const response = await s3.getObject({ Bucket: trustBundleBucketName, Key: key }).promise();
-  if (!response.Body) {
-    log("Trust bundle not found.");
-    throw new Error("Trust bundle not found.");
+  try {
+    const s3 = new AWS.S3({ region: Config.getAWSRegion() });
+    const trustBundleBucketName = Config.getCqTrustBundleBucketName();
+    const envType =
+      Config.getEnvType() === Config.DEV_ENV || Config.getEnvType() === Config.STAGING_ENV
+        ? Config.STAGING_ENV
+        : Config.PROD_ENV;
+    const key = `trust_store_${envType}_aws.pem`;
+    const response = await s3.getObject({ Bucket: trustBundleBucketName, Key: key }).promise();
+    if (!response.Body) {
+      log("Trust bundle not found.");
+      throw new Error("Trust bundle not found.");
+    }
+    const trustBundle = response.Body.toString();
+    return trustBundle;
+  } catch (error) {
+    log("Error getting trust bundle.");
+    throw new Error(`Error getting trust bundle for ${Config.getEnvType()} environment.`);
   }
-  const trustBundle = response.Body.toString();
-  return trustBundle;
 }

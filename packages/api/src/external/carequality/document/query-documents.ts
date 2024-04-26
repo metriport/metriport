@@ -18,6 +18,7 @@ import { createOutboundDocumentQueryRequests } from "./create-outbound-document-
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
+import { Config } from "../../../shared/config";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
@@ -91,7 +92,9 @@ export async function getDocumentsFromCQ({
 
     const linksWithDqUrlV1Gateway: CQLink[] = [];
     const linksWithDqUrlV2Gateway: CQLink[] = [];
-    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = (await Config.isDev())
+      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
+      : await getOidsWithIHEGatewayV2Enabled();
     for (const link of linksWithDqUrl) {
       if (v2GatewayOIDs.includes(link.oid)) {
         linksWithDqUrlV2Gateway.push(link);

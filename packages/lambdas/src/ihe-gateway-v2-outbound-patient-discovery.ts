@@ -1,4 +1,3 @@
-import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { outboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
@@ -9,7 +8,7 @@ import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
-const patientDiscoveryUrl = `http://${apiUrl}/internal/carequality/patient-discovery/response`;
+const pdResponseUrl = `http://${apiUrl}/internal/carequality/patient-discovery/response`;
 
 // get secrets
 const privateKeySecretName = Config.getCQOrgPrivateKey();
@@ -57,7 +56,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         throw new Error(msg);
       }
 
-      const results = await createSignSendProcessXCPDRequest({
+      await createSignSendProcessXCPDRequest({
+        pdResponseUrl,
         xcpdRequest: xcpdRequest.data,
         publicCert,
         privateKey,
@@ -66,13 +66,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         patientId,
         cxId,
       });
-
-      console.log(`Results: ${JSON.stringify(results, null, 2)}`);
-
-      // send results to internal endpoint
-      for (const result of results) {
-        await axios.post(patientDiscoveryUrl, result);
-      }
     } catch (error) {
       const msg = `An error occurred in the iheGatewayV2-outbound-patient-discovery lambda`;
       capture.error(msg, {

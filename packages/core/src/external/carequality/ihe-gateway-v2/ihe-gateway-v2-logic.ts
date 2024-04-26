@@ -1,10 +1,9 @@
+import axios from "axios";
 import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
-  OutboundDocumentQueryResp,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
-  OutboundDocumentRetrievalResp,
   XCPDGateway,
 } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "../../saml/xcpd/iti55-envelope";
@@ -16,6 +15,7 @@ import { processDRResponse } from "./xca/process-dr-response";
 import { sendSignedRequests } from "./saml-client";
 
 export async function createSignSendProcessXCPDRequest({
+  pdResponseUrl,
   xcpdRequest,
   publicCert,
   privateKey,
@@ -24,6 +24,7 @@ export async function createSignSendProcessXCPDRequest({
   patientId,
   cxId,
 }: {
+  pdResponseUrl: string;
   xcpdRequest: OutboundPatientDiscoveryReq;
   publicCert: string;
   privateKey: string;
@@ -31,14 +32,13 @@ export async function createSignSendProcessXCPDRequest({
   certChain: string;
   patientId: string;
   cxId: string;
-}): Promise<OutboundPatientDiscoveryResp[]> {
+}): Promise<void> {
   const signedRequests = createAndSignBulkXCPDRequests(
     xcpdRequest,
     publicCert,
     privateKey,
     privateKeyPassword
   );
-  console.log("Signed requests: ", JSON.stringify(signedRequests, null, 2));
   const responses = await sendSignedRequests({
     signedRequests,
     certChain,
@@ -48,7 +48,6 @@ export async function createSignSendProcessXCPDRequest({
     patientId,
     cxId,
   });
-  console.log("Responses: ", JSON.stringify(responses, null, 2));
   const results: OutboundPatientDiscoveryResp[] = responses.map(response => {
     const gateway = response.gateway;
     if (!gateway) {
@@ -62,10 +61,13 @@ export async function createSignSendProcessXCPDRequest({
       cxId,
     });
   });
-  return results;
+  for (const result of results) {
+    axios.post(pdResponseUrl, result);
+  }
 }
 
 export async function createSignSendProcessDQRequests({
+  dqResponseUrl,
   dqRequestsGatewayV2,
   publicCert,
   privateKey,
@@ -74,6 +76,7 @@ export async function createSignSendProcessDQRequests({
   patientId,
   cxId,
 }: {
+  dqResponseUrl: string;
   dqRequestsGatewayV2: OutboundDocumentQueryReq[];
   publicCert: string;
   privateKey: string;
@@ -81,7 +84,7 @@ export async function createSignSendProcessDQRequests({
   certChain: string;
   patientId: string;
   cxId: string;
-}): Promise<OutboundDocumentQueryResp[]> {
+}): Promise<void> {
   const signedRequests = createAndSignBulkDQRequests({
     bulkBodyData: dqRequestsGatewayV2,
     publicCert,
@@ -112,10 +115,13 @@ export async function createSignSendProcessDQRequests({
       gateway,
     });
   });
-  return results;
+  for (const result of results) {
+    await axios.post(dqResponseUrl, result);
+  }
 }
 
 export async function createSignSendProcessDRRequests({
+  drResponseUrl,
   drRequestsGatewayV2,
   publicCert,
   privateKey,
@@ -124,6 +130,7 @@ export async function createSignSendProcessDRRequests({
   patientId,
   cxId,
 }: {
+  drResponseUrl: string;
   drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
   publicCert: string;
   privateKey: string;
@@ -131,7 +138,7 @@ export async function createSignSendProcessDRRequests({
   certChain: string;
   patientId: string;
   cxId: string;
-}): Promise<OutboundDocumentRetrievalResp[]> {
+}): Promise<void> {
   const signedRequests = createAndSignBulkDRRequests({
     bulkBodyData: drRequestsGatewayV2,
     publicCert,
@@ -164,5 +171,7 @@ export async function createSignSendProcessDRRequests({
       });
     })
   );
-  return results;
+  for (const result of results) {
+    await axios.post(drResponseUrl, result);
+  }
 }

@@ -1,4 +1,3 @@
-import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { outboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
@@ -57,7 +56,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         }
       }
 
-      const results = await createSignSendProcessDQRequests({
+      await createSignSendProcessDQRequests({
+        dqResponseUrl: documentQueryResponseUrl,
         dqRequestsGatewayV2,
         publicCert,
         privateKey,
@@ -66,10 +66,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         patientId,
         cxId,
       });
-
-      for (const result of results) {
-        await axios.post(documentQueryResponseUrl, result);
-      }
     } catch (error) {
       const msg = `An error occurred in the iheGatewayV2-outbound-document-query lambda`;
       capture.error(msg, {

@@ -1,4 +1,3 @@
-import axios from "axios";
 import * as Sentry from "@sentry/serverless";
 import { getSecret } from "@aws-lambda-powertools/parameters/secrets";
 import { outboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
@@ -9,7 +8,7 @@ import { Config } from "@metriport/core/util/config";
 import { capture } from "./shared/capture";
 
 const apiUrl = getEnvVarOrFail("API_URL");
-const documentRetrievalResponseUrl = `http://${apiUrl}/internal/carequality/document-retrieval/response`;
+const drResponseUrl = `http://${apiUrl}/internal/carequality/document-retrieval/response`;
 
 const privateKeySecretName = Config.getCQOrgPrivateKey();
 const privateKeyPasswordSecretName = Config.getCQOrgPrivateKeyPassword();
@@ -57,7 +56,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         }
       }
 
-      const results = await createSignSendProcessDRRequests({
+      await createSignSendProcessDRRequests({
+        drResponseUrl,
         drRequestsGatewayV2,
         publicCert,
         privateKey,
@@ -66,10 +66,6 @@ export const handler = Sentry.AWSLambda.wrapHandler(
         patientId,
         cxId,
       });
-
-      for (const result of results) {
-        await axios.post(documentRetrievalResponseUrl, result);
-      }
     } catch (error) {
       const msg = `An error occurred in the iheGatewayV2-outbound-document-retrieval lambda`;
       capture.error(msg, {
