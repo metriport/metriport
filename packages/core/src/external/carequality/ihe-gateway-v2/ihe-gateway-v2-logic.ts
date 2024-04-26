@@ -1,7 +1,6 @@
 import { createAndSignBulkXCPDRequests } from "../../saml/xcpd/iti55-envelope";
 import { processXCPDResponse } from "./process-xcpd-response";
 import { sendSignedRequests } from "./saml-client";
-// import { MetriportError } from "../../../util/error/metriport-error";
 import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryResp,
