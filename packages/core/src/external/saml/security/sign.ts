@@ -1,6 +1,7 @@
 import { SignedXml } from "xml-crypto";
 import * as crypto from "crypto";
 import { insertKeyInfo } from "./insert-key-info";
+import { SamlCertsAndKeys } from "./types";
 import { verifySaml } from "./verify";
 import { out } from "../../../util/log";
 
@@ -72,18 +73,14 @@ export function signEnvelope({
 
 export function signFullSaml({
   xmlString,
-  publicCert,
-  privateKey,
-  privateKeyPassword,
+  samlCertsAndKeys,
 }: {
   xmlString: string;
-  publicCert: string;
-  privateKey: string;
-  privateKeyPassword: string;
+  samlCertsAndKeys: SamlCertsAndKeys;
 }): string {
   const decryptedPrivateKey = crypto.createPrivateKey({
-    key: privateKey,
-    passphrase: privateKeyPassword,
+    key: samlCertsAndKeys.privateKey,
+    passphrase: samlCertsAndKeys.privateKeyPassword,
     format: "pem",
   });
 
@@ -92,8 +89,14 @@ export function signFullSaml({
     xml: signedTimestamp,
     privateKey: decryptedPrivateKey,
   });
-  const insertedKeyInfo = insertKeyInfo({ xmlContent: signedTimestampAndEnvelope, publicCert });
-  const verified = verifySaml({ xmlString: insertedKeyInfo, publicCert });
+  const insertedKeyInfo = insertKeyInfo({
+    xmlContent: signedTimestampAndEnvelope,
+    publicCert: samlCertsAndKeys.publicCert,
+  });
+  const verified = verifySaml({
+    xmlString: insertedKeyInfo,
+    publicCert: samlCertsAndKeys.publicCert,
+  });
   if (!verified) {
     log("Signature verification failed.");
     throw new Error("Signature verification failed.");

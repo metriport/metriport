@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
+import { SamlCertsAndKeys } from "../security/types";
 import { namespaces } from "../namespaces";
 import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
@@ -19,6 +20,7 @@ const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
 export type BulkSignedDQ = {
   gateway: XCAGateway;
   signedRequest: string;
+  outboundRequest: OutboundDocumentQueryReq;
 };
 
 function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
@@ -204,36 +206,25 @@ export function createITI38SoapEnvelope({
 
 export function createAndSignDQRequest(
   bodyData: OutboundDocumentQueryReq,
-  publicCert: string,
-  privateKey: string,
-  privateKeyPassword: string
+  samlCertsAndKeys: SamlCertsAndKeys
 ): string {
-  const xmlString = createITI38SoapEnvelope({ bodyData, publicCert });
-  const fullySignedSaml = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
+  const xmlString = createITI38SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+  const fullySignedSaml = signFullSaml({ xmlString, samlCertsAndKeys });
   return fullySignedSaml;
 }
 
 export function createAndSignBulkDQRequests({
   bulkBodyData,
-  publicCert,
-  privateKey,
-  privateKeyPassword,
+  samlCertsAndKeys,
 }: {
   bulkBodyData: OutboundDocumentQueryReq[];
-  publicCert: string;
-  privateKey: string;
-  privateKeyPassword: string;
+  samlCertsAndKeys: SamlCertsAndKeys;
 }): BulkSignedDQ[] {
   const signedRequests: BulkSignedDQ[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDQRequest(
-      bodyData,
-      publicCert,
-      privateKey,
-      privateKeyPassword
-    );
-    signedRequests.push({ gateway: bodyData.gateway, signedRequest });
+    const signedRequest = createAndSignDQRequest(bodyData, samlCertsAndKeys);
+    signedRequests.push({ gateway: bodyData.gateway, signedRequest, outboundRequest: bodyData });
   }
 
   return signedRequests;

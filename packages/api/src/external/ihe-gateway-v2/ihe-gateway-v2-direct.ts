@@ -9,16 +9,28 @@ import {
   createSignSendProcessDQRequests,
   createSignSendProcessDRRequests,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { SamlCertsAndKeys } from "@metriport/core/external/saml/security/types";
 import { Config } from "../../shared/config";
 
-const pdResponseUrl = Config.getApiUrl() + "/internal/carequality/patient-discovery/response";
-const dqResponseUrl = Config.getApiUrl() + "/internal/carequality/document-query/response";
-const drResponseUrl = Config.getApiUrl() + "/internal/carequality/document-retrieval/response";
-
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
+  private samlCertsAndKeys: SamlCertsAndKeys;
+  private pdResponseUrl: string;
+  private dqResponseUrl: string;
+  private drResponseUrl: string;
+
   constructor() {
     super();
+    this.samlCertsAndKeys = {
+      certChain: Config.getCQOrgCertificateIntermediate(),
+      publicCert: Config.getCQOrgCertificate(),
+      privateKey: Config.getCQOrgPrivateKey(),
+      privateKeyPassword: Config.getCQOrgPrivateKeyPassword(),
+    };
+    this.pdResponseUrl = Config.getApiUrl() + "/internal/carequality/patient-discovery/response";
+    this.dqResponseUrl = Config.getApiUrl() + "/internal/carequality/document-query/response";
+    this.drResponseUrl = Config.getApiUrl() + "/internal/carequality/document-retrieval/response";
   }
+
   async startPatientDiscovery({
     pdRequestGatewayV2,
     patientId,
@@ -28,31 +40,10 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    const privateKey = Config.getCQOrgPrivateKey();
-    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-    const publicCert = Config.getCQOrgCertificate();
-    const certChain = Config.getCQOrgCertificateIntermediate();
-
-    if (
-      !privateKey ||
-      typeof privateKey !== "string" ||
-      !privateKeyPassword ||
-      typeof privateKeyPassword !== "string" ||
-      !publicCert ||
-      typeof publicCert !== "string" ||
-      !certChain ||
-      typeof certChain !== "string"
-    ) {
-      throw new Error("Failed to get secrets or one of the secrets is not a string.");
-    }
-
     await createSignSendProcessXCPDRequest({
-      pdResponseUrl,
+      pdResponseUrl: this.pdResponseUrl,
       xcpdRequest: pdRequestGatewayV2,
-      publicCert,
-      privateKey,
-      privateKeyPassword,
-      certChain,
+      samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
     });
@@ -62,80 +53,35 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     dqRequestsGatewayV2,
     patientId,
     cxId,
-    requestId,
   }: {
     dqRequestsGatewayV2: OutboundDocumentQueryReq[];
     patientId: string;
     cxId: string;
     requestId: string;
   }): Promise<void> {
-    const privateKey = Config.getCQOrgPrivateKey();
-    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-    const publicCert = Config.getCQOrgCertificate();
-    const certChain = Config.getCQOrgCertificateIntermediate();
-
-    if (
-      !privateKey ||
-      typeof privateKey !== "string" ||
-      !privateKeyPassword ||
-      typeof privateKeyPassword !== "string" ||
-      !publicCert ||
-      typeof publicCert !== "string" ||
-      !certChain ||
-      typeof certChain !== "string"
-    ) {
-      console.log(`RequestId: ${requestId} Erroring due to missing secrets`);
-      throw new Error("One or more required secrets are undefined.");
-    }
-
     await createSignSendProcessDQRequests({
-      dqResponseUrl,
+      dqResponseUrl: this.dqResponseUrl,
       dqRequestsGatewayV2,
-      publicCert: publicCert,
-      privateKey: privateKey,
-      privateKeyPassword: privateKeyPassword,
-      certChain: certChain,
+      samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
     });
   }
+
   async startDocumentRetrievalGatewayV2({
     drRequestsGatewayV2,
     patientId,
     cxId,
-    requestId,
   }: {
     drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
     patientId: string;
     cxId: string;
     requestId: string;
   }): Promise<void> {
-    const privateKey = Config.getCQOrgPrivateKey();
-    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-    const publicCert = Config.getCQOrgCertificate();
-    const certChain = Config.getCQOrgCertificateIntermediate();
-
-    if (
-      !privateKey ||
-      typeof privateKey !== "string" ||
-      !privateKeyPassword ||
-      typeof privateKeyPassword !== "string" ||
-      !publicCert ||
-      typeof publicCert !== "string" ||
-      !certChain ||
-      typeof certChain !== "string"
-    ) {
-      console.log(`RequestId: ${requestId} Erroring due to missing secrets`);
-      throw new Error("One or more required secrets are undefined.");
-    }
-
     await createSignSendProcessDRRequests({
-      drResponseUrl,
+      drResponseUrl: this.drResponseUrl,
       drRequestsGatewayV2,
-      publicCert: publicCert,
-      privateKey: privateKey,
-      privateKeyPassword: privateKeyPassword,
-      certChain: certChain,
+      samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
     });

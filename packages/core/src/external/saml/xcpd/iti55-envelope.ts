@@ -2,6 +2,7 @@ import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
 import { createSecurityHeader } from "../security/security-header";
 import { signFullSaml } from "../security/sign";
+import { SamlCertsAndKeys } from "../security/types";
 import { namespaces } from "../namespaces";
 import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
@@ -18,6 +19,7 @@ const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
 export type BulkSignedXCPD = {
   gateway: XCPDGateway;
   signedRequest: string;
+  outboundRequest: OutboundPatientDiscoveryReq;
 };
 
 function createSoapBody({
@@ -264,9 +266,7 @@ export function createITI5SoapEnvelope({
 
 export function createAndSignBulkXCPDRequests(
   bulkBodyData: OutboundPatientDiscoveryReq,
-  publicCert: string,
-  privateKey: string,
-  privateKeyPassword: string
+  samlCertsAndKeys: SamlCertsAndKeys
 ): BulkSignedXCPD[] {
   const signedRequests: BulkSignedXCPD[] = [];
 
@@ -276,9 +276,9 @@ export function createAndSignBulkXCPDRequests(
       gateways: [gateway],
     };
 
-    const xmlString = createITI5SoapEnvelope({ bodyData, publicCert });
-    const signedRequest = signFullSaml({ xmlString, publicCert, privateKey, privateKeyPassword });
-    signedRequests.push({ gateway, signedRequest });
+    const xmlString = createITI5SoapEnvelope({ bodyData, publicCert: samlCertsAndKeys.publicCert });
+    const signedRequest = signFullSaml({ xmlString, samlCertsAndKeys });
+    signedRequests.push({ gateway, signedRequest, outboundRequest: bodyData });
   }
 
   return signedRequests;

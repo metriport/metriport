@@ -13,14 +13,14 @@ export type PDRequestGatewayV2Params = {
 export type DQRequestGatewayV2Params = {
   patientId: string;
   cxId: string;
-  requestId: string;
+  requestId?: string;
   dqRequestsGatewayV2: OutboundDocumentQueryReq[];
 };
 
 export type DRRequestGatewayV2Params = {
   patientId: string;
   cxId: string;
-  requestId: string;
+  requestId?: string;
   drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
 };
 

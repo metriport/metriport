@@ -1,147 +1,43 @@
 import https from "https";
 import axios from "axios";
 import * as AWS from "aws-sdk";
-import { XCPDGateway, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import {
+  XCPDGateway,
+  XCAGateway,
+  OutboundDocumentQueryReq,
+  OutboundDocumentRetrievalReq,
+  OutboundPatientDiscoveryReq,
+} from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "../../../util/error/shared";
 import { BulkSignedXCPD } from "../../saml/xcpd/iti55-envelope";
 import { BulkSignedDQ } from "../../saml/xca/iti38-envelope";
 import { BulkSignedDR } from "../../saml/xca/iti39-envelope";
-import { isGatewayWithOid } from "./utils";
 import { capture } from "../../../util/notifications";
 import { verifySaml } from "../../saml/security/verify";
+import { SamlCertsAndKeys } from "../../saml/security/types";
 import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 const { log } = out("Saml Client:");
 
 export type SamlClientResponse = {
-  gateway: XCPDGateway | XCAGateway;
   response: string;
   success: boolean;
 };
 
-export async function sendSignedXml({
-  signedXml,
-  url,
-  certChain,
-  publicCert,
-  key,
-  passphrase,
-  trustedKeyStore,
-}: {
-  signedXml: string;
-  url: string;
-  certChain: string;
-  publicCert: string;
-  key: string;
-  passphrase: string;
-  trustedKeyStore: string;
-}): Promise<string> {
-  const agent = new https.Agent({
-    rejectUnauthorized: true,
-    cert: certChain,
-    key: key,
-    passphrase,
-    ca: trustedKeyStore,
-  });
+export type XCPDSamlClientResponse = SamlClientResponse & {
+  gateway: XCPDGateway;
+  outboundRequest: OutboundPatientDiscoveryReq;
+};
 
-  const verified = verifySaml({ xmlString: signedXml, publicCert });
-  if (!verified) {
-    throw new Error("Signature verification failed.");
-  }
-  const response = await axios.post(url, signedXml, {
-    headers: {
-      "Content-Type": "application/soap+xml;charset=UTF-8",
-      "Cache-Control": "no-cache",
-    },
-    httpsAgent: agent,
-  });
+export type DQSamlClientResponse = SamlClientResponse & {
+  gateway: XCAGateway;
+  outboundRequest: OutboundDocumentQueryReq;
+};
 
-  return response.data;
-}
-
-export async function sendSignedRequests({
-  signedRequests,
-  certChain,
-  publicCert,
-  privateKey,
-  privateKeyPassword,
-  patientId,
-  cxId,
-}: {
-  signedRequests: BulkSignedXCPD[] | BulkSignedDQ[] | BulkSignedDR[];
-  certChain: string;
-  publicCert: string;
-  privateKey: string;
-  privateKeyPassword: string;
-  patientId: string;
-  cxId: string;
-}): Promise<SamlClientResponse[]> {
-  const trustedKeyStore = await getTrustedKeyStore();
-  const requestPromises = signedRequests.map(async (request, index) => {
-    try {
-      const response = await sendSignedXml({
-        signedXml: request.signedRequest,
-        url: request.gateway.url,
-        certChain,
-        publicCert,
-        key: privateKey,
-        passphrase: privateKeyPassword,
-        trustedKeyStore,
-      });
-      console.log(
-        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
-          isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
-        }`
-      );
-      return {
-        gateway: request.gateway,
-        response,
-        success: true,
-      };
-    } catch (error) {
-      const msg = "HTTP/SSL Failure Sending Signed SAML Request";
-      const requestDetails = `Request ${index + 1} ERRORs for gateway: ${
-        request.gateway.url
-      } + oid: ${
-        isGatewayWithOid(request.gateway) ? request.gateway.oid : request.gateway.homeCommunityId
-      }`;
-      console.log(requestDetails);
-      console.log(error);
-
-      const errorString: string = errorToString(error);
-      const extra = {
-        errorString,
-        requestDetails,
-        patientId,
-        cxId,
-      };
-      capture.error(msg, {
-        extra: {
-          context: `lambda.iheGatewayV2-outbound-patient-discovery`,
-          extra,
-        },
-      });
-      return {
-        gateway: request.gateway,
-        response: errorString,
-        success: false,
-      };
-    }
-  });
-
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses: SamlClientResponse[] = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        return undefined;
-      }
-    })
-    .filter((response): response is SamlClientResponse => response !== undefined);
-
-  return processedResponses;
-}
+export type DRSamlClientResponse = SamlClientResponse & {
+  gateway: XCAGateway;
+  outboundRequest: OutboundDocumentRetrievalReq;
+};
 
 async function getTrustedKeyStore(): Promise<string> {
   try {
@@ -163,4 +59,251 @@ async function getTrustedKeyStore(): Promise<string> {
     log("Error getting trust bundle.");
     throw new Error(`Error getting trust bundle for ${Config.getEnvType()} environment.`);
   }
+}
+
+export async function sendSignedXml({
+  signedXml,
+  url,
+  samlCertsAndKeys,
+  trustedKeyStore,
+}: {
+  signedXml: string;
+  url: string;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  trustedKeyStore: string;
+}): Promise<string> {
+  const agent = new https.Agent({
+    rejectUnauthorized: true,
+    cert: samlCertsAndKeys.certChain,
+    key: samlCertsAndKeys.privateKey,
+    passphrase: samlCertsAndKeys.privateKeyPassword,
+    ca: trustedKeyStore,
+  });
+
+  const verified = verifySaml({ xmlString: signedXml, publicCert: samlCertsAndKeys.publicCert });
+  if (!verified) {
+    throw new Error("Signature verification failed.");
+  }
+  const response = await axios.post(url, signedXml, {
+    headers: {
+      "Content-Type": "application/soap+xml;charset=UTF-8",
+      "Cache-Control": "no-cache",
+    },
+    httpsAgent: agent,
+  });
+
+  return response.data;
+}
+
+export async function sendSignedXCPDRequests({
+  signedRequests,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+}: {
+  signedRequests: BulkSignedXCPD[];
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+}): Promise<XCPDSamlClientResponse[]> {
+  const trustedKeyStore = await getTrustedKeyStore();
+  const requestPromises = signedRequests.map(async (request, index) => {
+    try {
+      const response = await sendSignedXml({
+        signedXml: request.signedRequest,
+        url: request.gateway.url,
+        samlCertsAndKeys,
+        trustedKeyStore,
+      });
+      console.log(
+        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
+          request.gateway.oid
+        }`
+      );
+      return {
+        gateway: request.gateway,
+        response,
+        success: true,
+        outboundRequest: request.outboundRequest,
+      };
+    } catch (error) {
+      const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
+      console.log(`${msg}, error: ${error}`);
+
+      const errorString: string = errorToString(error);
+      const extra = {
+        errorString,
+        request,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, {
+        extra: {
+          context: `lambda.ihe-gateway-v2-saml-client`,
+          extra,
+        },
+      });
+      return {
+        gateway: request.gateway,
+        outboundRequest: request.outboundRequest,
+        response: errorString,
+        success: false,
+      };
+    }
+  });
+
+  const responses = await Promise.allSettled(requestPromises);
+  const processedResponses: XCPDSamlClientResponse[] = responses
+    .map(result => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      } else {
+        return undefined;
+      }
+    })
+    .filter((response): response is XCPDSamlClientResponse => response !== undefined);
+
+  return processedResponses;
+}
+
+export async function sendSignedDQRequests({
+  signedRequests,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+}: {
+  signedRequests: BulkSignedDQ[];
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+}): Promise<DQSamlClientResponse[]> {
+  const trustedKeyStore = await getTrustedKeyStore();
+  const requestPromises = signedRequests.map(async (request, index) => {
+    try {
+      const response = await sendSignedXml({
+        signedXml: request.signedRequest,
+        url: request.gateway.url,
+        samlCertsAndKeys,
+        trustedKeyStore,
+      });
+      console.log(
+        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
+          request.gateway.homeCommunityId
+        }`
+      );
+      return {
+        gateway: request.gateway,
+        response,
+        success: true,
+        outboundRequest: request.outboundRequest,
+      };
+    } catch (error) {
+      const msg = "HTTP/SSL Failure Sending Signed DQ SAML Request";
+      console.log(`${msg}, error: ${error}`);
+
+      const errorString: string = errorToString(error);
+      const extra = {
+        errorString,
+        request,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, {
+        extra: {
+          context: `lambda.ihe-gateway-v2-saml-client`,
+          extra,
+        },
+      });
+      return {
+        gateway: request.gateway,
+        outboundRequest: request.outboundRequest,
+        response: errorString,
+        success: false,
+      };
+    }
+  });
+
+  const responses = await Promise.allSettled(requestPromises);
+  const processedResponses = responses
+    .map(result => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      } else {
+        return undefined;
+      }
+    })
+    .filter((response): response is DQSamlClientResponse => response !== undefined);
+
+  return processedResponses;
+}
+
+export async function sendSignedDRRequests({
+  signedRequests,
+  samlCertsAndKeys,
+  patientId,
+  cxId,
+}: {
+  signedRequests: BulkSignedDR[];
+  samlCertsAndKeys: SamlCertsAndKeys;
+  patientId: string;
+  cxId: string;
+}): Promise<DRSamlClientResponse[]> {
+  const trustedKeyStore = await getTrustedKeyStore();
+  const requestPromises = signedRequests.map(async (request, index) => {
+    try {
+      const response = await sendSignedXml({
+        signedXml: request.signedRequest,
+        url: request.gateway.url,
+        samlCertsAndKeys,
+        trustedKeyStore,
+      });
+      console.log(
+        `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
+          request.gateway.homeCommunityId
+        }`
+      );
+      return {
+        gateway: request.gateway,
+        response,
+        success: true,
+        outboundRequest: request.outboundRequest,
+      };
+    } catch (error) {
+      const msg = "HTTP/SSL Failure Sending Signed DQ SAML Request";
+      console.log(`${msg}, error: ${error}`);
+
+      const errorString: string = errorToString(error);
+      const extra = {
+        errorString,
+        request,
+        patientId,
+        cxId,
+      };
+      capture.error(msg, {
+        extra: {
+          context: `lambda.ihe-gateway-v2-saml-client`,
+          extra,
+        },
+      });
+      return {
+        gateway: request.gateway,
+        outboundRequest: request.outboundRequest,
+        response: errorString,
+        success: false,
+      };
+    }
+  });
+
+  const responses = await Promise.allSettled(requestPromises);
+  const processedResponses = responses
+    .map(result => {
+      if (result.status === "fulfilled") {
+        return result.value;
+      } else {
+        return undefined;
+      }
+    })
+    .filter((response): response is DRSamlClientResponse => response !== undefined);
+
+  return processedResponses;
 }

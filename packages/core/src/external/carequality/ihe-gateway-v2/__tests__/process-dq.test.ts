@@ -11,9 +11,8 @@ describe("processDQResponse", () => {
         response: xmlString,
         success: true,
         gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
-      outboundRequest: outboundDQRequest,
-      gateway: outboundDQRequest.gateway,
     });
     if (!response.documentReference) {
       throw new Error("No DocumentReferences found");
@@ -27,9 +26,8 @@ describe("processDQResponse", () => {
         response: xmlString,
         success: true,
         gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
-      outboundRequest: outboundDQRequest,
-      gateway: outboundDQRequest.gateway,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
   });
@@ -41,9 +39,8 @@ describe("processDQResponse", () => {
         response: xmlString,
         success: true,
         gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
-      outboundRequest: outboundDQRequest,
-      gateway: outboundDQRequest.gateway,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
   });

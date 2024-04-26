@@ -15,7 +15,7 @@ import { parseFileFromString } from "./parse-file-from-string";
 import { S3Utils } from "../../../aws/s3";
 import { Config } from "../../../../util/config";
 import { stripUrnPrefix, constructFileName, constructFilePath } from "../utils";
-import { SamlClientResponse } from "../saml-client";
+import { DRSamlClientResponse } from "../saml-client";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -143,17 +143,14 @@ async function handleSuccessResponse({
 }
 
 export async function processDRResponse({
-  drResponse,
-  outboundRequest,
-  gateway,
+  drResponse: { response, success, gateway, outboundRequest },
 }: {
-  drResponse: SamlClientResponse;
-  outboundRequest: OutboundDocumentRetrievalReq;
-  gateway: XCAGateway;
+  drResponse: DRSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
-  if (drResponse.success === false) {
+  if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
+  if (success === false) {
     return handleHTTPErrorResponse({
-      httpError: drResponse.response,
+      httpError: response,
       outboundRequest,
       gateway,
     });
@@ -165,7 +162,7 @@ export async function processDRResponse({
       parseAttributeValue: false,
       removeNSPrefix: true,
     });
-    const jsonObj = parser.parse(drResponse.response);
+    const jsonObj = parser.parse(response);
 
     const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
       ?.split(":")

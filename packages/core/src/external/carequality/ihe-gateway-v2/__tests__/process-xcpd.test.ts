@@ -19,9 +19,8 @@ describe("processXCPDResponse", () => {
         success: true,
         response: xmlMatchString,
         gateway,
+        outboundRequest: outboundXCPDRequest,
       },
-      outboundRequest: outboundXCPDRequest,
-      gateway,
     });
 
     expect(response).toEqual({
@@ -35,9 +34,8 @@ describe("processXCPDResponse", () => {
         success: true,
         response: xmlNoMatchString,
         gateway,
+        outboundRequest: outboundXCPDRequest,
       },
-      outboundRequest: outboundXCPDRequest,
-      gateway,
     });
 
     expect(response.patientMatch).toBeFalsy();
@@ -48,9 +46,8 @@ describe("processXCPDResponse", () => {
         success: false,
         response: xmlErrorString,
         gateway,
+        outboundRequest: outboundXCPDRequest,
       },
-      outboundRequest: outboundXCPDRequest,
-      gateway,
     });
 
     expect(response.patientMatch).toBeNull();
@@ -63,9 +60,8 @@ describe("processXCPDResponse", () => {
         success: false,
         response: httpError.error,
         gateway,
+        outboundRequest: outboundXCPDRequest,
       },
-      outboundRequest: outboundXCPDRequest,
-      gateway,
     });
 
     expect(response.operationOutcome).toBeDefined();

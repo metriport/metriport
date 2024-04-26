@@ -59,10 +59,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       await createSignSendProcessDQRequests({
         dqResponseUrl: documentQueryResponseUrl,
         dqRequestsGatewayV2,
-        publicCert,
-        privateKey,
-        privateKeyPassword,
-        certChain,
+        samlCertsAndKeys: {
+          publicCert,
+          privateKey,
+          privateKeyPassword,
+          certChain,
+        },
         patientId,
         cxId,
       });

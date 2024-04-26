@@ -59,10 +59,12 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       await createSignSendProcessXCPDRequest({
         pdResponseUrl,
         xcpdRequest: xcpdRequest.data,
-        publicCert,
-        privateKey,
-        privateKeyPassword,
-        certChain,
+        samlCertsAndKeys: {
+          publicCert,
+          privateKey,
+          privateKeyPassword,
+          certChain,
+        },
         patientId,
         cxId,
       });

@@ -10,7 +10,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../utils";
 import { capture } from "../../../../util/notifications";
-import { SamlClientResponse } from "../saml-client";
+import { XCPDSamlClientResponse } from "../saml-client";
 
 function handleHTTPErrorResponse({
   httpError,
@@ -206,21 +206,17 @@ function handlePatientNoMatchResponse({
 }
 
 export function processXCPDResponse({
-  xcpdResponse,
-  outboundRequest,
-  gateway,
+  xcpdResponse: { response, success, outboundRequest, gateway },
   patientId,
   cxId,
 }: {
-  xcpdResponse: SamlClientResponse;
-  outboundRequest: OutboundPatientDiscoveryReq;
-  gateway: XCPDGateway;
+  xcpdResponse: XCPDSamlClientResponse;
   patientId?: string;
   cxId?: string;
 }): OutboundPatientDiscoveryResp {
-  if (xcpdResponse.success === false) {
+  if (success === false) {
     return handleHTTPErrorResponse({
-      httpError: xcpdResponse.response,
+      httpError: response,
       outboundRequest,
       gateway,
     });
@@ -234,7 +230,7 @@ export function processXCPDResponse({
     removeNSPrefix: true,
   });
 
-  const jsonObj = parser.parse(xcpdResponse.response);
+  const jsonObj = parser.parse(response);
   const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
 
   if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {

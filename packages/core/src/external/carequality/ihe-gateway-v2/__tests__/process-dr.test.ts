@@ -30,9 +30,8 @@ describe("processDRResponse", () => {
         success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
-      outboundRequest: outboundDRRequest,
-      gateway: outboundDRRequest.gateway,
     });
     expect(response.documentReference?.length).toBe(2);
     expect(response?.documentReference?.[0]?.contentType).toEqual("application/octet-stream");
@@ -61,9 +60,8 @@ describe("processDRResponse", () => {
         success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
-      outboundRequest: outboundDRRequest,
-      gateway: outboundDRRequest.gateway,
     });
 
     expect(response?.operationOutcome?.issue[0]?.code).toBe("soap:Sender");
@@ -76,9 +74,8 @@ describe("processDRResponse", () => {
         success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
-      outboundRequest: outboundDRRequest,
-      gateway: outboundDRRequest.gateway,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
   });
@@ -90,9 +87,8 @@ describe("processDRResponse", () => {
         success: true,
         response: xmlString,
         gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
-      outboundRequest: outboundDRRequest,
-      gateway: outboundDRRequest.gateway,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
   });
@@ -134,15 +130,14 @@ describe.skip("processDRResponse for various file types and verify successful up
               success: true,
               response: this.modifiedXml,
               gateway: outboundDRRequest.gateway,
+              outboundRequest: {
+                ...outboundDRRequest,
+                documentReference: outboundDRRequest.documentReference.map(docRef => ({
+                  ...docRef,
+                  metriportId: uuidv4(),
+                })),
+              },
             },
-            outboundRequest: {
-              ...outboundDRRequest,
-              documentReference: outboundDRRequest.documentReference.map(docRef => ({
-                ...docRef,
-                metriportId: uuidv4(),
-              })),
-            },
-            gateway: outboundDRRequest.gateway,
           });
 
           this.key = `${outboundDRRequest.cxId}/${outboundDRRequest.patientId}/${this.response.documentReference?.[0]?.fileName}`;
