@@ -69,7 +69,6 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     cxId: string;
     requestId: string;
   }): Promise<void> {
-    // MAKE REUSABLE
     const privateKey = Config.getCQOrgPrivateKey();
     const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
     const publicCert = Config.getCQOrgCertificate();

@@ -62,7 +62,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     cqOrgPrivateKey: string | undefined;
     cqOrgPrivateKeyPassword: string | undefined;
     cqOrgCertificateIntermediate: string | undefined;
-    // ONLY FOR TESTING SHOULD RETHINK LOGIC
     medicalDocumentsBucket: s3.Bucket;
     cqTrustBundleBucket: s3.IBucket;
     apiURL: string;
@@ -77,7 +76,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       cqOrgPrivateKey,
       cqOrgPrivateKeyPassword,
       cqOrgCertificateIntermediate,
-      // ONLY FOR TESTING SHOULD RETHINK LOGIC
       medicalDocumentsBucket,
       cqTrustBundleBucket,
       apiURL,
@@ -103,7 +101,6 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
           CQ_TRUST_BUNDLE_BUCKET_NAME: cqTrustBundleBucket.bucketName,
         }),
         API_URL: apiURL,
-        // ONLY FOR TESTING SHOULD RETHINK LOGIC
         MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
