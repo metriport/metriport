@@ -1,4 +1,3 @@
-import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { makeFhirToCdaConverter } from "../../../external/fhir-to-cda-converter/converter-factory";
@@ -6,18 +5,18 @@ import { toFHIR as toFHIROrganization } from "../../../external/fhir/organizatio
 import { Bundle } from "../../../routes/medical/schemas/fhir";
 import { getOrganizationOrFail } from "../organization/get-organization";
 
-export async function convertFhirToCdaAndUpload(
+export async function convertFhirToCda(
   cxId: string,
   patientId: string,
   validatedBundle: Bundle
-): Promise<void> {
+): Promise<string[]> {
   const { log } = out(`convertFhirToCda - cxId: ${cxId}, patientId: ${patientId}`);
   const cdaConverter = makeFhirToCdaConverter();
   const organization = await getOrganizationOrFail({ cxId });
 
   try {
     const fhirOrganization = toFHIROrganization(organization);
-    await cdaConverter.requestConvert({
+    return await cdaConverter.requestConvert({
       cxId,
       patientId,
       bundle: validatedBundle,
@@ -27,6 +26,6 @@ export async function convertFhirToCdaAndUpload(
     const msg = `Error converting FHIR to CDA`;
     log(`${msg} - error: ${error}`);
     capture.error(msg, { extra: { error, cxId, patientId } });
-    throw new MetriportError(msg, error, { patientId });
+    throw error;
   }
 }

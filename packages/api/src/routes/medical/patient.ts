@@ -4,20 +4,23 @@ import {
   consolidationConversionType,
   mrFormat,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
-import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
+import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
-import { convertFhirToCdaAndUpload } from "../../command/medical/patient/convert-fhir-to-cda";
+import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -30,6 +33,7 @@ import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-li
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
+import { toFHIR as toFHIROrganization } from "../../external/fhir/organization";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -404,15 +408,39 @@ async function putConsolidated(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const patient = await getPatientOrFail({ id: patientId, cxId });
-
+  const organization = await getOrganizationOrFail({ cxId });
   const fhirBundle = bundleSchema.parse(req.body);
   const validatedBundle = validateFhirEntries(fhirBundle);
   const incomingAmount = validatedBundle.entry.length;
 
-  // Limit the amount of resources per patient
+  await checkResourceLimit(incomingAmount, patient);
+
+  const docId = uuidv7();
+  await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
+  const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
+  const fhirOrganization = toFHIROrganization(organization);
+
+  await Promise.all([
+    await createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    }),
+    await uploadCdaDocuments({
+      cxId,
+      patientId,
+      cdaBundles: converted,
+      organization: fhirOrganization,
+      docId,
+    }),
+  ]);
+  return res.sendStatus(status.OK);
+}
+
+async function checkResourceLimit(incomingAmount: number, patient: Patient) {
   if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
-      patient: { id: patientId, cxId },
+      patient: { id: patient.id, cxId: patient.cxId },
     });
     if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
       throw new BadRequestError(
@@ -428,15 +456,6 @@ async function putConsolidated(req: Request, res: Response) {
       );
     }
   }
-  const [data] = await Promise.all([
-    await createOrUpdateConsolidatedPatientData({
-      cxId,
-      patientId: patient.id,
-      fhirBundle: validatedBundle,
-    }),
-    await convertFhirToCdaAndUpload(cxId, patientId, validatedBundle),
-  ]);
-  return res.json(data);
 }
 
 /** ---------------------------------------------------------------------------

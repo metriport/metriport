@@ -13,7 +13,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
     [];
 
   if (compositions.length === 0) {
-    return [];
+    throw new NotFoundError("No compositions found in the bundle");
   }
 
   const bundles: Bundle[] = compositions.map(composition => {

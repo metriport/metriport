@@ -7,7 +7,6 @@ import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
 import { capture } from "../util/notifications";
 import { sizeInBytes } from "../util/string";
-import { uuidv7 } from "../util/uuid-v7";
 import { createAndUploadDocumentMetadataFile } from "./create-and-upload-extrinsic-object";
 
 export async function cdaDocumentUploaderHandler({
@@ -17,6 +16,7 @@ export async function cdaDocumentUploaderHandler({
   medicalDocumentsBucket,
   region,
   organization,
+  docId,
 }: {
   cxId: string;
   patientId: string;
@@ -24,13 +24,13 @@ export async function cdaDocumentUploaderHandler({
   medicalDocumentsBucket: string;
   region: string;
   organization: Organization;
+  docId: string;
 }): Promise<void> {
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
   const fileSize = sizeInBytes(cdaBundle);
   checkFileSizeRestrictions(fileSize, log);
 
   const s3Utils = new S3Utils(region);
-  const docId = uuidv7();
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
