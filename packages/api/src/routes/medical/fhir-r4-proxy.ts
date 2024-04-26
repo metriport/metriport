@@ -17,8 +17,7 @@ const fhirRouter = (fhirServerUrl: string) =>
       log(`Proxying to FHIR server: ${updatedURL}`);
       return updatedURL;
     },
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    userResDecorator: function (proxyRes, proxyResData, userReq, userRes) {
+    userResDecorator: function (proxyRes, proxyResData, userReq) {
       const data: string = proxyResData.toString("utf8");
       const apiUrl = Config.getApiUrl();
       return data.replaceAll(`${apiUrl}/oauth/fhir/${userReq.cxId}`, `${apiUrl}${userReq.baseUrl}`);
