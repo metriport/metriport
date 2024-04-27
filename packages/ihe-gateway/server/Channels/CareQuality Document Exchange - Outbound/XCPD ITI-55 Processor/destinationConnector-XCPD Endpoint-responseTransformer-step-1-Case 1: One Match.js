@@ -5,7 +5,7 @@
 
 if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 
-	if (xml.*::controlActProcess.*::subject.*::registrationEvent) {
+	if (xml.*::controlActProcess.*::subject.*::registrationEvent.length() > 0) {
 
 		// A globally unique identifier for a community
 		homeCommunityId = xml.*::controlActProcess.*::subject.*::registrationEvent.*::custodian.*::assignedEntity.*::id.@root.toString();
@@ -36,6 +36,8 @@ if ('AA' == ack.toString() && 'OK' == queryResponseCode.toString()) try {
 		
 		// Send the response back to the app
 		var result = router.routeMessageByChannelId(globalMap.get('XCPDAPPINTERFACE'), JSON.stringify(_response));
+	} else {
+		responseStatus = ERROR;
 	}
 	
 	// Stop further processing
