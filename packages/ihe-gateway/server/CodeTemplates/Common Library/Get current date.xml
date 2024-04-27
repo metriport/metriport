@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><codeTemplate version="4.4.2">
+  <id>a12fba56-00c8-413b-8510-098d8c6b6caa</id>
+  <name>Get current date</name>
+  <revision>1</revision>
+  <lastModified>
+    <time>1713889923066</time>
+    <timezone>GMT</timezone>
+  </lastModified>
+  <contextSet>
+    <delegate>
+      <contextType>CHANNEL_ATTACHMENT</contextType>
+      <contextType>DESTINATION_DISPATCHER</contextType>
+      <contextType>CHANNEL_UNDEPLOY</contextType>
+      <contextType>CHANNEL_BATCH</contextType>
+      <contextType>CHANNEL_POSTPROCESSOR</contextType>
+      <contextType>SOURCE_RECEIVER</contextType>
+      <contextType>CHANNEL_DEPLOY</contextType>
+      <contextType>DESTINATION_FILTER_TRANSFORMER</contextType>
+      <contextType>CHANNEL_PREPROCESSOR</contextType>
+      <contextType>DESTINATION_RESPONSE_TRANSFORMER</contextType>
+      <contextType>SOURCE_FILTER_TRANSFORMER</contextType>
+    </delegate>
+  </contextSet>
+  <properties class="com.mirth.connect.model.codetemplates.BasicCodeTemplateProperties">
+    <type>FUNCTION</type>
+    <code msync-fileref="Get current date.js"/>
+  </properties>
+</codeTemplate>
