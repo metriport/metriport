@@ -1,79 +1,104 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
-  <id>5c4c6ab2-26a7-4878-933d-ae04c2bdeea7</id>
-  <name>XCA Library - Outbound</name>
-  <revision>80</revision>
+  <id>c209459e-8282-4ac7-88cb-42cdeec33805</id>
+  <name>Common Library</name>
+  <revision>826</revision>
   <lastModified>
-    <time>1710013973242</time>
+    <time>1714170781770</time>
     <timezone>GMT</timezone>
   </lastModified>
-  <description>Cross-Community Access (XCA) library
-IHE ITI-38 [Cross Gateway Query] related functions
-IHE ITI-39 [Cross Gateway Retrieve] related functions
-
-Last updated: Dec 07 2023</description>
+  <description>Common library for all channels
+Last updated: Dec 27 2023</description>
   <includeNewChannels>false</includeNewChannels>
   <enabledChannelIds>
     <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
-    <string>c7b1fb54-6dce-410c-a16a-e3ba6b6c6722</string>
-  </enabledChannelIds>
-  <disabledChannelIds>
-    <string>2c8dca0f-5798-481b-8598-4547e319e031</string>
     <string>c1b69481-12ef-4e81-9a4d-e7b362cf6c5d</string>
     <string>c240418b-26ef-4836-a857-01c74fb07963</string>
     <string>a3f9140d-1f4c-41b8-a414-d1a793c6054b</string>
     <string>cbd49d4a-24fa-40b6-aa12-d59d64168dd1</string>
+    <string>c7b1fb54-6dce-410c-a16a-e3ba6b6c6722</string>
     <string>6cdb6776-3488-47c6-8c90-2015ea051f93</string>
     <string>f6899f98-6671-44f9-a764-d5f7c1858f02</string>
     <string>cbdd09d8-af65-4cc6-869a-8c1617a29881</string>
     <string>279057c4-65eb-4cbd-ae23-6d9d66de14a0</string>
-    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a1</string>
     <string>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</string>
-    <string>bd17ccd3-bad0-4214-a034-6cda769113f6</string>
-    <string>10379c95-0f8f-4c0e-8e63-de0f307f7ccc</string>
+    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a1</string>
     <string>1f09811d-57b1-4219-9427-09f0d63a77a6</string>
     <string>574e7271-1b21-4b79-82c3-fead249fc450</string>
     <string>ce8aa1cf-5df6-4825-82c9-b51d5b2dfcfa</string>
     <string>ed739638-6120-4aee-bcb2-acc661f2b12b</string>
+  </enabledChannelIds>
+  <disabledChannelIds>
+    <string>8240f77a-19d4-4225-90fc-ed1c232286c3</string>
   </disabledChannelIds>
   <codeTemplates>
     <codeTemplate version="4.4.2">
-      <id>582e19ac-bc69-46f4-bd02-c4f74bf4a30c</id>
+      <id>a42647cc-bc46-4ea0-9ff9-2a2796f386e2</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>0bdba2ea-7155-4963-abae-46b28d322119</id>
+      <id>dd5052fa-e683-4ae9-9ff0-dafda0079bda</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>1dd46381-64c0-4d5c-88b2-9d78c634b23e</id>
+      <id>018d432c-4aa6-7e03-9f49-3e81bb958908</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>5ad26df2-2902-4710-ad58-65306400cceb</id>
+      <id>476ce6dd-1ae0-43c8-b6fa-a3d887c9edd5</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>f3cb147d-50db-4032-b355-d8f693c0da38</id>
+      <id>e55a3d2d-bafe-4225-8194-b2a876e6e67a</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>97c31212-1d89-43fc-a8e4-2233d56c94a9</id>
+      <id>a12fba56-00c8-413b-8510-098d8c6b6caa</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>b33a12b1-fbf1-4bdf-8bb3-0e7fe686fe4f</id>
+      <id>d455b692-51d1-45bb-ab95-ccec79c3290c</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>46c7f4ca-1148-4de2-ac9c-b44a2203aad1</id>
+      <id>8888071d-0759-44fa-b489-229e4669aaf7</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>a21f967a-f891-4c59-b7df-2fe0f5bb7297</id>
+      <id>5501992d-a439-4278-b045-a1d40ac62a0a</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>737ea998-0aec-4323-b6c4-d09ab1a70dc6</id>
+      <id>89616855-fabf-43a1-af2f-85af3f4dfa8a</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>683a3246-5a5b-4b31-ade5-2c881bad5a88</id>
+      <id>c7938c31-8309-4dae-b6d6-329e81e307e5</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>67a185ba-f074-4cd5-9e4d-4cc0a829a4ff</id>
+      <id>0dbb568c-4c8b-40cc-8a95-2012fac9ed4d</id>
     </codeTemplate>
     <codeTemplate version="4.4.2">
-      <id>a0dc9cf4-d1f8-47d5-acde-7f241f5d955a</id>
+      <id>0ad796be-24b6-4519-94f9-61449d4a7703</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>34300954-fc44-4e15-82c7-ed96ac02f8c2</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>9f662a05-8a40-4419-8b19-3ad5593952e1</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>8ea54297-2fbb-4766-b396-fdda473d9035</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>bca8155d-5506-43e8-ae34-63d50714dd0e</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>c53ae4ba-023d-42f7-a9a9-20d875536b39</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>8fc64a0f-98d9-41c4-a370-20e247476631</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>d7a315bb-35ce-4d66-a1c6-559716b4ea6a</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>be68f08b-fecf-4c1d-bd75-e7c2ec79cb14</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>b9697713-d517-4288-a2a8-bd6923b0bf6d</id>
+    </codeTemplate>
+    <codeTemplate version="4.4.2">
+      <id>00903944-3070-4bc2-8324-a13c4124295d</id>
     </codeTemplate>
   </codeTemplates>
 </codeTemplateLibrary>
