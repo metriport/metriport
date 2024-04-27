@@ -3,6 +3,7 @@ import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
 import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../carequality/shared";
 import { namespaces } from "../constants";
+import { wrapIdInUrnOid } from "../utils";
 
 const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
 const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;
@@ -112,12 +113,12 @@ export function createSecurityHeader({
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:organization-id",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": homeCommunityId,
+              "saml2:AttributeValue": wrapIdInUrnOid(homeCommunityId),
             },
             {
               "@_Name": "urn:nhin:names:saml:homeCommunityId",
               "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": homeCommunityId,
+              "saml2:AttributeValue": wrapIdInUrnOid(homeCommunityId),
             },
             {
               "@_Name": "urn:oasis:names:tc:xacml:2.0:subject:role",
