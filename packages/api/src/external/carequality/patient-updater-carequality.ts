@@ -44,7 +44,7 @@ export class PatientUpdaterCarequality extends PatientUpdater {
         const facilityId = getFacilityIdOrFail(patient);
         const facility = await getFacilityOrFail({ cxId, id: facilityId });
         const requestId = uuidv7();
-        await cqCommands.patient.discover(patient, facility.data.npi, requestId);
+        await cqCommands.patient.discover(patient, facility.id, requestId);
         await this.isPatientDiscoveryComplete(patient);
       } catch (error) {
         failedUpdateCount++;

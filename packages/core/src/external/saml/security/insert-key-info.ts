@@ -64,8 +64,8 @@ export function insertKeyInfo({
     const keyInfoStructure = {
       "ds:KeyInfo": {
         "wsse:SecurityTokenReference": {
-          "@_xmlns:ns0": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
-          "@_ns0:TokenType":
+          "@_xmlns:wsse11": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
+          "@_wsse11:TokenType":
             "http://docs.oasis-open.org/wss/oasis-wss-saml-token-profile-1.1#SAMLV2.0",
           "@_wsu:Id": referenceId,
           "wsse:KeyIdentifier": {
