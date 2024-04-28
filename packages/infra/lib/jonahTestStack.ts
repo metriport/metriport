@@ -10,13 +10,15 @@ import { Duration } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 
 import { createLambda } from "./shared/lambda";
-import { setupLambdasLayers } from "./shared/lambda-layers";
+import { LambdaLayers } from "./shared/lambda-layers";
 import { EnvConfig } from "../config/env-config";
 import { NestedStack, NestedStackProps } from "aws-cdk-lib";
 
 // express workflows
 interface JonahTestStackProps extends NestedStackProps {
   config: EnvConfig;
+  lambdaLayers: LambdaLayers;
+  vpc: ec2.IVpc;
   version: string | undefined;
 }
 
@@ -24,30 +26,31 @@ export class JonahTestStack extends NestedStack {
   constructor(scope: Construct, id: string, props?: JonahTestStackProps) {
     super(scope, id, props);
 
-    const vpcId = props?.config.iheGateway?.vpcId;
-    if (!vpcId) throw new Error("Missing VPC ID for IHE stack");
-    const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
-
-    const lambdaLayers = setupLambdasLayers(this, true);
+    if (!props?.lambdaLayers) {
+      throw new Error("Lambda layers are required");
+    }
 
     // QUEUE
     const queue = new sqs.Queue(this, "JonahTestQueue");
 
-    // DYNAMODB
+    // DYNAMOD
     const requestTable = new dynamodb.Table(this, "RequestTable", {
       partitionKey: { name: "requestId", type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST, // Use on-demand billing mode
     });
+    console.log("Request Table Name: ", requestTable.tableName);
 
     // Message Processor Lambda Function
     const processQueueMessageLambda = createLambda({
       stack: this,
       name: "ProcessQueueMessage",
       entry: "jonah-test-lambda-2",
-      layers: [lambdaLayers.shared],
-      envType: props.config.environmentType,
+      layers: [props?.lambdaLayers.shared],
+      envType: props?.config.environmentType,
+      envVars: {
+        REQUEST_TABLE_NAME: requestTable.tableName,
+      },
       memory: 1024,
-      vpc,
+      vpc: props?.vpc,
     });
     processQueueMessageLambda.addToRolePolicy(
       new iam.PolicyStatement({
@@ -55,7 +58,6 @@ export class JonahTestStack extends NestedStack {
         resources: [requestTable.tableArn],
       })
     );
-    processQueueMessageLambda.addEnvironment("REQUEST_TABLE_NAME", requestTable.tableName);
 
     // State Machine
     const lambdaInvokeTask = new LambdaInvoke(this, "InvokeLambdaTask", {
@@ -68,22 +70,23 @@ export class JonahTestStack extends NestedStack {
 
     const stateMachine = new StateMachine(this, "QueueProcessingStateMachine", {
       definition,
-      timeout: Duration.hours(1), // Adjust based on expected execution time
+      timeout: Duration.hours(1),
     });
+    console.log("State Machine ARN: ", stateMachine.stateMachineArn);
 
     // Lambda to trigger the state machine via the queue
     const triggerStateMachineLambda = createLambda({
       stack: this,
-      name: "JonahTestLambda",
+      name: "TriggerStateMachine",
       entry: "jonah-test-lambda-1",
       envType: props.config.environmentType,
       envVars: {
         STATE_MACHINE_ARN: stateMachine.stateMachineArn,
       },
-      layers: [lambdaLayers.shared],
+      layers: [props.lambdaLayers.shared],
       memory: 1024,
       timeout: Duration.minutes(1),
-      vpc,
+      vpc: props.vpc,
     });
     triggerStateMachineLambda.addEventSource(
       new SqsEventSource(queue, {

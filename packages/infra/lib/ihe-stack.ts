@@ -142,7 +142,12 @@ export class IHEStack extends Stack {
       alarmAction: alarmSnsAction,
     });
 
-    new JonahTestStack(this, "JonahTestStack", { config: props.config, version: props.version });
+    new JonahTestStack(this, "JonahTestStack", {
+      config: props.config,
+      version: props.version,
+      lambdaLayers,
+      vpc,
+    });
 
     //-------------------------------------------
     // Output
