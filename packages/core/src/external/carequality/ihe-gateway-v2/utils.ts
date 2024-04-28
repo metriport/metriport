@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { genderMapping } from "../../fhir/patient";
 
 const urnRegex = /^urn:oid:/;
@@ -40,4 +41,12 @@ export function constructFilePath({
   fileName: string;
 }): string {
   return `${cxId}/${patientId}/${fileName}`;
+}
+
+export function wrapIdInUrnUuid(id: string): string {
+  return `urn:uuid:${id}`;
+}
+
+export function timestampToSoapBody(createdTimestamp: string): string {
+  return dayjs(createdTimestamp).toISOString();
 }

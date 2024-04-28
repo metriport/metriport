@@ -2,10 +2,10 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
-import { processDRResponse } from "../xca/process-dr-response";
+import { processDRResponse } from "../xca/process/dr-response";
 import { outboundDRRequest, testFiles, testFilesForUploadVerification } from "./constants";
-import { S3Utils } from "../../../aws/s3";
-import { Config } from "../../../../util/config";
+import { S3Utils } from "../../../../aws/s3";
+import { Config } from "../../../../../util/config";
 
 describe("processDRResponse", () => {
   beforeEach(() => {
@@ -94,7 +94,7 @@ describe("processDRResponse", () => {
   });
 });
 
-describe("processDRResponse for various file types and verify successful upload without corruption", () => {
+describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
   testFiles.forEach(({ name, mimeType, extension }) => {

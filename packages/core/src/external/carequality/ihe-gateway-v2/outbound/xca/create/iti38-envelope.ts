@@ -1,15 +1,12 @@
 import dayjs from "dayjs";
 import { XMLBuilder } from "fast-xml-parser";
-import { createSecurityHeader } from "../security/security-header";
-import { signFullSaml } from "../security/sign";
-import { SamlCertsAndKeys } from "../security/types";
-import { namespaces, expiresIn } from "../constants";
-import {
-  ORGANIZATION_NAME_DEFAULT as metriportOrganization,
-  replyTo,
-} from "../../carequality/shared";
+import { createSecurityHeader } from "../../../saml/security/security-header";
+import { signFullSaml } from "../../../saml/security/sign";
+import { SamlCertsAndKeys } from "../../../saml/security/types";
+import { namespaces, expiresIn } from "../../../constants";
+import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid } from "../utils";
+import { wrapIdInUrnUuid } from "../../../utils";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";

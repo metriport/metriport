@@ -5,15 +5,13 @@ dotenv.config();
 import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/saml/xcpd/iti55-envelope";
-import { createAndSignBulkDQRequests } from "@metriport/core/external/saml/xca/iti38-envelope";
-import { createAndSignBulkDRRequests } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import {
-  sendSignedXCPDRequests,
-  sendSignedDQRequests,
-  sendSignedDRRequests,
-} from "@metriport/core/external/carequality/ihe-gateway-v2/saml-client";
+import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
+import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
+import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
+import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
+import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 
 const app = express();
 const port = 8043;

@@ -5,14 +5,16 @@ import {
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
 } from "@metriport/ihe-gateway-sdk";
-import { SamlCertsAndKeys } from "../../saml/security/types";
-import { createAndSignBulkXCPDRequests } from "../../saml/xcpd/iti55-envelope";
-import { createAndSignBulkDQRequests } from "../../saml/xca/iti38-envelope";
-import { createAndSignBulkDRRequests } from "../../saml/xca/iti39-envelope";
-import { processXCPDResponse } from "./xcpd/process-xcpd-response";
-import { processDQResponse } from "./xca/process-dq-response";
-import { processDRResponse } from "./xca/process-dr-response";
-import { sendSignedXCPDRequests, sendSignedDQRequests, sendSignedDRRequests } from "./saml-client";
+import { SamlCertsAndKeys } from "./saml/security/types";
+import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
+import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";
+import { createAndSignBulkDRRequests } from "./outbound/xca/create/iti39-envelope";
+import { sendSignedXCPDRequests } from "./outbound/xcpd/send/xcpd-requests";
+import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
+import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
+import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
+import { processDQResponse } from "./outbound/xca/process/dq-response";
+import { processDRResponse } from "./outbound/xca/process/dr-response";
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,

@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { detectFileType } from "../../../../util/file-type";
-import { parseFileFromString } from "../xca/parse-file-from-string";
+import { detectFileType } from "../../../../../util/file-type";
+import { parseFileFromString } from "../xca/process/parse-file-from-string";
 import { testFiles } from "./constants";
 
 describe("detectFileType for all file types with non-xml body flow", () => {

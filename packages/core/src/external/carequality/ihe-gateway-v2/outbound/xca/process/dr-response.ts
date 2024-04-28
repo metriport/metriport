@@ -13,10 +13,11 @@ import {
   handleSOAPFaultResponse,
 } from "./error";
 import { parseFileFromString } from "./parse-file-from-string";
-import { S3Utils } from "../../../aws/s3";
-import { Config } from "../../../../util/config";
-import { stripUrnPrefix, constructFileName, constructFilePath } from "../utils";
-import { DRSamlClientResponse } from "../saml-client";
+import { stripUrnPrefix, constructFileName, constructFilePath } from "../../../utils";
+import { DRSamlClientResponse } from "../send/dr-requests";
+import { successStatus, partialSuccessStatus } from "./constants";
+import { S3Utils } from "../../../../../aws/s3";
+import { Config } from "../../../../../../util/config";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -76,7 +77,7 @@ async function parseDocumentReference({
   }
 
   return {
-    url: "https://" + bucket + ".s3." + region + ".amazonaws.com/" + filePath,
+    url: s3Utils.buildFileUrl(bucket, filePath),
     size: documentResponse?.size ? parseInt(documentResponse?.size) : undefined,
     title: documentResponse?.title,
     fileName: fileName,
@@ -174,7 +175,7 @@ export async function processDRResponse({
       jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse;
     const soapFault = jsonObj?.Envelope?.Body?.Fault;
 
-    if ((status === "Success" || status === "PartialSuccess") && documentResponses) {
+    if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
       return handleSuccessResponse({
         documentResponses,
         outboundRequest,

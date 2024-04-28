@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { processXCPDResponse } from "../xcpd/process-xcpd-response";
+import { processXCPDResponse } from "../xcpd/process/xcpd-response";
 import { outboundXCPDRequest, expectedXCPDResponse } from "./constants";
 
 const gateway = outboundXCPDRequest.gateways[0];

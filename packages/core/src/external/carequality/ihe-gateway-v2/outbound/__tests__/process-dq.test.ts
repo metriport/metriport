@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { processDQResponse } from "../xca/process-dq-response";
+import { processDQResponse } from "../xca/process/dq-response";
 import { outboundDQRequest, expectedDQDocumentReference } from "./constants";
 
 describe("processDQResponse", () => {

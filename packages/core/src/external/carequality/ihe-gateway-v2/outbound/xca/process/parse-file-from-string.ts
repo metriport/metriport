@@ -1,7 +1,7 @@
-import { detectFileType } from "../../../../util/file-type";
-import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../util/mime";
+import { detectFileType } from "../../../../../../util/file-type";
+import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
 import { XMLParser } from "fast-xml-parser";
-import { out } from "../../../../util/log";
+import { out } from "../../../../../../util/log";
 
 const { log } = out("[parseFileFromString] ");
 

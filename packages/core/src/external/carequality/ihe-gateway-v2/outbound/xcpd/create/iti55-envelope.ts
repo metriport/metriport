@@ -1,16 +1,16 @@
 import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
-import { createSecurityHeader } from "../security/security-header";
-import { signFullSaml } from "../security/sign";
-import { SamlCertsAndKeys } from "../security/types";
-import { namespaces, expiresIn } from "../constants";
+import { createSecurityHeader } from "../../../saml/security/security-header";
+import { signFullSaml } from "../../../saml/security/sign";
+import { SamlCertsAndKeys } from "../../../saml/security/types";
+import { namespaces, expiresIn } from "../../../constants";
 import {
   ORGANIZATION_NAME_DEFAULT as metriportOrganization,
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
-} from "../../carequality/shared";
+} from "../../../../shared";
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid, timestampToSoapBody } from "../utils";
+import { wrapIdInUrnUuid, timestampToSoapBody } from "../../../utils";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";

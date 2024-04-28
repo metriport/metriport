@@ -244,6 +244,7 @@ export class S3Utils {
           console.error("Error during upload:", err);
           reject(err);
         } else {
+          console.log("Upload successful");
           resolve(data);
         }
       });

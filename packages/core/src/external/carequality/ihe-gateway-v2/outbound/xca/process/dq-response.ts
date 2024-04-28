@@ -7,8 +7,13 @@ import {
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
-import { DQSamlClientResponse } from "../saml-client";
-import { stripUrnPrefix } from "../utils";
+import { DQSamlClientResponse } from "../send/dq-requests";
+import { stripUrnPrefix } from "../../../utils";
+import {
+  XDSDocumentEntryAuthor,
+  XDSDocumentEntryClassCode,
+  XDSDocumentEntryUniqueId,
+} from "../../../../shared";
 
 type Identifier = {
   _identificationScheme: string;
@@ -84,16 +89,13 @@ function parseDocumentReference(
   const documentReference: DocumentReference = {
     homeCommunityId: stripUrnPrefix(extrinsicObject._home),
     repositoryUniqueId: findSlotValue("repositoryUniqueId"),
-    docUniqueId: findExternalIdentifierValue("urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab"),
+    docUniqueId: findExternalIdentifierValue(XDSDocumentEntryUniqueId),
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: parseInt(findSlotValue("size")),
-    title: findClassificationName("urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a"),
+    title: findClassificationName(XDSDocumentEntryClassCode),
     creation: findSlotValue("creationTime"),
-    authorInstitution: findClassificationSlotValue(
-      "urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d",
-      "authorInstitution"
-    ),
+    authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
 }

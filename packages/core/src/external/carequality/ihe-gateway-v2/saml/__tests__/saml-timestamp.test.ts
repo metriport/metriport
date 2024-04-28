@@ -1,6 +1,6 @@
-import { createITI5SoapEnvelope } from "../xcpd/iti55-envelope";
-import { createITI38SoapEnvelope } from "../xca/iti38-envelope";
-import { createITI39SoapEnvelope } from "../xca/iti39-envelope";
+import { createITI5SoapEnvelope } from "../../outbound/xcpd/create/iti55-envelope";
+import { createITI38SoapEnvelope } from "../../outbound/xca/create/iti38-envelope";
+import { createITI39SoapEnvelope } from "../../outbound/xca/create/iti39-envelope";
 import { verifySaml } from "../security/verify";
 import { signTimestamp } from "../security/sign";
 import { iti55BodyData, iti38BodyData, iti39BodyData, TEST_CERT, TEST_KEY } from "./constants";

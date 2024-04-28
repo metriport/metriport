@@ -8,9 +8,9 @@ import {
   XCPDGateway,
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
-import { normalizeGender } from "../utils";
-import { capture } from "../../../../util/notifications";
-import { XCPDSamlClientResponse } from "../saml-client";
+import { normalizeGender } from "../../../utils";
+import { capture } from "../../../../../../util/notifications";
+import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 
 function handleHTTPErrorResponse({
   httpError,

@@ -3,7 +3,7 @@ import * as crypto from "crypto";
 import { insertKeyInfo } from "./insert-key-info";
 import { SamlCertsAndKeys } from "./types";
 import { verifySaml } from "./verify";
-import { out } from "../../../util/log";
+import { out } from "../../../../../util/log";
 
 const { log } = out("Saml Signing");
 

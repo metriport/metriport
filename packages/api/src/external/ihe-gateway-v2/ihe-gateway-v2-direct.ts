@@ -9,8 +9,10 @@ import {
   createSignSendProcessDQRequests,
   createSignSendProcessDRRequests,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
-import { SamlCertsAndKeys } from "@metriport/core/external/saml/security/types";
+import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
 import { Config } from "../../shared/config";
+
+const cqPath = "/internal/carequality";
 
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
   private samlCertsAndKeys: SamlCertsAndKeys;
@@ -26,9 +28,9 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
       privateKey: Config.getCQOrgPrivateKey(),
       privateKeyPassword: Config.getCQOrgPrivateKeyPassword(),
     };
-    this.pdResponseUrl = Config.getApiUrl() + "/internal/carequality/patient-discovery/response";
-    this.dqResponseUrl = Config.getApiUrl() + "/internal/carequality/document-query/response";
-    this.drResponseUrl = Config.getApiUrl() + "/internal/carequality/document-retrieval/response";
+    this.pdResponseUrl = Config.getApiUrl() + cqPath + "/patient-discovery/response";
+    this.dqResponseUrl = Config.getApiUrl() + cqPath + "/document-query/response";
+    this.drResponseUrl = Config.getApiUrl() + cqPath + "/document-retrieval/response";
   }
 
   async startPatientDiscovery({
