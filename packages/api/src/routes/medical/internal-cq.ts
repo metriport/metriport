@@ -48,6 +48,8 @@ import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { requestLogger } from "../helpers/request-logger";
 
+import { sendTestToQueue } from "../../external/ihe-gateway-v2/ihe-gateway-v2-JonahTest";
+
 dayjs.extend(duration);
 const router = Router();
 const upload = multer();
@@ -352,6 +354,24 @@ router.post(
     processOutboundDocumentRetrievalResps(req.body);
 
     return res.sendStatus(httpStatus.OK);
+  })
+);
+
+router.post(
+  "/send-url-to-queue",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { url, queueUrl } = req.body;
+    if (!url || !queueUrl) {
+      throw new BadRequestError("URL and Queue URL must be provided");
+    }
+
+    try {
+      await sendTestToQueue(url, queueUrl);
+      res.sendStatus(httpStatus.OK);
+    } catch (error) {
+      console.error("Failed to send URL to queue", error);
+      res.status(httpStatus.INTERNAL_SERVER_ERROR).send("Failed to send URL to queue");
+    }
   })
 );
 
