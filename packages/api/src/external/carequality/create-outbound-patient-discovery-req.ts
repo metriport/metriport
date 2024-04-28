@@ -7,17 +7,17 @@ import { createPurposeOfUse, getSystemUserName } from "./shared";
 export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
+  patientId,
   xcpdGateways,
   initiator,
   requestId,
-  patientId,
 }: {
   patient: FHIRPatient;
   cxId: string;
+  patientId: string;
   xcpdGateways: XCPDGateway[];
   initiator: HieInitiator;
   requestId: string;
-  patientId: string;
 }): OutboundPatientDiscoveryReq {
   const user = getSystemUserName(initiator.orgName);
   const id = requestId;

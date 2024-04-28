@@ -10,6 +10,7 @@ export class Config {
   static readonly PROD_ENV = "production";
   static readonly DEV_ENV = "dev";
   static readonly SANDBOX_ENV = "sandbox";
+  static readonly STAGING_ENV = "staging";
 
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
@@ -76,5 +77,8 @@ export class Config {
 
   static getCQOrgCertificateIntermediate(): string {
     return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+  static getCqTrustBundleBucketName(): string {
+    return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
 }

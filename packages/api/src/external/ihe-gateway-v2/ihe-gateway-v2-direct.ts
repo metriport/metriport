@@ -1,17 +1,38 @@
-import { OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import {
+  OutboundPatientDiscoveryReq,
+  OutboundDocumentQueryReq,
+  OutboundDocumentRetrievalReq,
+} from "@metriport/ihe-gateway-sdk";
 import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
-import { createSignSendProcessXCPDRequest } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
-import { emptyFunction } from "@metriport/shared";
-import { createOutboundPatientDiscoveryResp } from "../carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
-import { processPostRespOutboundPatientDiscoveryResps } from "../carequality/process-subsequent-outbound-patient-discovery-resps";
-import { getPDResultStatus } from "../carequality/ihe-result";
+import {
+  createSignSendProcessXCPDRequest,
+  createSignSendProcessDQRequests,
+  createSignSendProcessDRRequests,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2-logic";
+import { SamlCertsAndKeys } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/security/types";
 import { Config } from "../../shared/config";
 
+const cqPath = "/internal/carequality";
+
 export class IHEGatewayV2Direct extends IHEGatewayV2 {
+  private samlCertsAndKeys: SamlCertsAndKeys;
+  private pdResponseUrl: string;
+  private dqResponseUrl: string;
+  private drResponseUrl: string;
+
   constructor() {
     super();
+    this.samlCertsAndKeys = {
+      certChain: Config.getCQOrgCertificateIntermediate(),
+      publicCert: Config.getCQOrgCertificate(),
+      privateKey: Config.getCQOrgPrivateKey(),
+      privateKeyPassword: Config.getCQOrgPrivateKeyPassword(),
+    };
+    this.pdResponseUrl = Config.getApiUrl() + cqPath + "/patient-discovery/response";
+    this.dqResponseUrl = Config.getApiUrl() + cqPath + "/document-query/response";
+    this.drResponseUrl = Config.getApiUrl() + cqPath + "/document-retrieval/response";
   }
+
   async startPatientDiscovery({
     pdRequestGatewayV2,
     patientId,
@@ -21,49 +42,48 @@ export class IHEGatewayV2Direct extends IHEGatewayV2 {
     patientId: string;
     cxId: string;
   }): Promise<void> {
-    const privateKey = Config.getCQOrgPrivateKey();
-    const privateKeyPassword = Config.getCQOrgPrivateKeyPassword();
-    const publicCert = Config.getCQOrgCertificate();
-    const certChain = Config.getCQOrgCertificateIntermediate();
-
-    if (
-      !privateKey ||
-      typeof privateKey !== "string" ||
-      !privateKeyPassword ||
-      typeof privateKeyPassword !== "string" ||
-      !publicCert ||
-      typeof publicCert !== "string" ||
-      !certChain ||
-      typeof certChain !== "string"
-    ) {
-      throw new Error("Failed to get secrets or one of the secrets is not a string.");
-    }
-
-    const results = await createSignSendProcessXCPDRequest({
+    await createSignSendProcessXCPDRequest({
+      pdResponseUrl: this.pdResponseUrl,
       xcpdRequest: pdRequestGatewayV2,
-      publicCert,
-      privateKey,
-      privateKeyPassword,
-      certChain,
+      samlCertsAndKeys: this.samlCertsAndKeys,
       patientId,
       cxId,
     });
+  }
 
-    for (const result of results) {
-      await createOutboundPatientDiscoveryResp({
-        id: uuidv7(),
-        requestId: result.id,
-        patientId: result.patientId,
-        status: getPDResultStatus(result),
-        response: result,
-      });
-      if (result.patientId && result.cxId) {
-        processPostRespOutboundPatientDiscoveryResps({
-          requestId: result.id,
-          patientId: result.patientId,
-          cxId: result.cxId,
-        }).catch(emptyFunction);
-      }
-    }
+  async startDocumentQueryGatewayV2({
+    dqRequestsGatewayV2,
+    patientId,
+    cxId,
+  }: {
+    dqRequestsGatewayV2: OutboundDocumentQueryReq[];
+    patientId: string;
+    cxId: string;
+  }): Promise<void> {
+    await createSignSendProcessDQRequests({
+      dqResponseUrl: this.dqResponseUrl,
+      dqRequestsGatewayV2,
+      samlCertsAndKeys: this.samlCertsAndKeys,
+      patientId,
+      cxId,
+    });
+  }
+
+  async startDocumentRetrievalGatewayV2({
+    drRequestsGatewayV2,
+    patientId,
+    cxId,
+  }: {
+    drRequestsGatewayV2: OutboundDocumentRetrievalReq[];
+    patientId: string;
+    cxId: string;
+  }): Promise<void> {
+    await createSignSendProcessDRRequests({
+      drResponseUrl: this.drResponseUrl,
+      drRequestsGatewayV2,
+      samlCertsAndKeys: this.samlCertsAndKeys,
+      patientId,
+      cxId,
+    });
   }
 }

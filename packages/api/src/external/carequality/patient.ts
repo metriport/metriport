@@ -63,6 +63,7 @@ async function prepareAndTriggerPD(
       requestId
     );
     const numGatewaysV1 = pdRequestGatewayV1.gateways.length;
+    const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
     const { log } = out(
       `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
@@ -84,7 +85,7 @@ async function prepareAndTriggerPD(
       requestId: pdRequestGatewayV1.id,
       patientId: patient.id,
       cxId: patient.cxId,
-      numOfGateways: numGatewaysV1,
+      numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
@@ -118,18 +119,18 @@ async function prepareForPatientDiscovery(
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
+    patientId: patient.id,
     xcpdGateways: v1Gateways,
     requestId: requestId,
-    patientId: patient.id,
     initiator,
   });
 
   const pdRequestGatewayV2 = createOutboundPatientDiscoveryReq({
     patient: fhirPatient,
     cxId: patient.cxId,
+    patientId: patient.id,
     xcpdGateways: v2Gateways,
     requestId: requestId,
-    patientId: patient.id,
     initiator,
   });
 
