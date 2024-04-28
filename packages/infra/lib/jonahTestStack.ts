@@ -31,7 +31,9 @@ export class JonahTestStack extends NestedStack {
     }
 
     // QUEUE
-    const queue = new sqs.Queue(this, "JonahTestQueue");
+    const queue = new sqs.Queue(this, "JonahTestQueue", {
+      visibilityTimeout: Duration.seconds(60),
+    });
 
     // DYNAMOD
     const requestTable = new dynamodb.Table(this, "RequestTable", {
