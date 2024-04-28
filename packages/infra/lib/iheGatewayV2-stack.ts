@@ -254,7 +254,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
       "CQ_ORG_PRIVATE_KEY_PASSWORD",
     ]);
 
-    medicalDocumentsBucket.grantRead(documentRetrievalLambda);
+    medicalDocumentsBucket.grantReadWrite(documentRetrievalLambda);
     cqTrustBundleBucket.grantRead(documentRetrievalLambda);
 
     return documentRetrievalLambda;
