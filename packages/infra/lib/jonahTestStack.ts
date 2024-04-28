@@ -1,4 +1,4 @@
-import { CfnOutput, Stack, StackProps } from "aws-cdk-lib";
+import { CfnOutput } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -12,14 +12,15 @@ import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 import { createLambda } from "./shared/lambda";
 import { setupLambdasLayers } from "./shared/lambda-layers";
 import { EnvConfig } from "../config/env-config";
+import { NestedStack, NestedStackProps } from "aws-cdk-lib";
 
 // express workflows
-interface JonahTestStackProps extends StackProps {
+interface JonahTestStackProps extends NestedStackProps {
   config: EnvConfig;
   version: string | undefined;
 }
 
-export class JonahTestStack extends Stack {
+export class JonahTestStack extends NestedStack {
   constructor(scope: Construct, id: string, props?: JonahTestStackProps) {
     super(scope, id, props);
 

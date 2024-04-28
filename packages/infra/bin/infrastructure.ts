@@ -10,7 +10,6 @@ import { LocationServicesStack } from "../lib/location-services-stack";
 import { SecretsStack } from "../lib/secrets-stack";
 import { initConfig } from "../lib/shared/config";
 import { getEnvVar, isSandbox } from "../lib/shared/util";
-import { JonahTestStack } from "../lib/jonahTestStack";
 
 const app = new cdk.App();
 
@@ -42,9 +41,6 @@ async function deploy(config: EnvConfig) {
       config,
     });
   }
-
-  new JonahTestStack(app, "JonahTestStack", { env, config, version });
-
   //---------------------------------------------------------------------------------
   // 3. Deploy the API stack once all secrets are defined.
   //---------------------------------------------------------------------------------
