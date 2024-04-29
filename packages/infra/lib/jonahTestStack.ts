@@ -6,6 +6,7 @@ import * as iam from "aws-cdk-lib/aws-iam";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { StateMachine, Chain } from "aws-cdk-lib/aws-stepfunctions";
 import { LambdaInvocationType, LambdaInvoke } from "aws-cdk-lib/aws-stepfunctions-tasks";
+import { NetworkLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
 import { Duration } from "aws-cdk-lib";
 import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
 
@@ -13,6 +14,7 @@ import { createLambda } from "./shared/lambda";
 import { LambdaLayers } from "./shared/lambda-layers";
 import { EnvConfig } from "../config/env-config";
 import { NestedStack, NestedStackProps } from "aws-cdk-lib";
+import { provideAccessToQueue } from "./shared/sqs";
 
 // express workflows
 interface JonahTestStackProps extends NestedStackProps {
@@ -20,6 +22,7 @@ interface JonahTestStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
   vpc: ec2.IVpc;
   version: string | undefined;
+  apiService: NetworkLoadBalancedFargateService;
 }
 
 export class JonahTestStack extends NestedStack {
@@ -33,6 +36,11 @@ export class JonahTestStack extends NestedStack {
     // QUEUE
     const queue = new sqs.Queue(this, "JonahTestQueue", {
       visibilityTimeout: Duration.seconds(60),
+    });
+    provideAccessToQueue({
+      accessType: "send",
+      queue: queue,
+      resource: props.apiService.service.taskDefinition.taskRole,
     });
 
     // DYNAMOD

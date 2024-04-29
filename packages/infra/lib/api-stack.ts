@@ -52,6 +52,7 @@ import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
+import { JonahTestStack } from "./jonahTestStack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -465,6 +466,15 @@ export class APIStack extends Stack {
       },
       cookieStore,
     });
+
+    new JonahTestStack(this, "JonahTestStack", {
+      config: props.config,
+      version: props.version,
+      lambdaLayers,
+      vpc: this.vpc,
+      apiService,
+    });
+
     new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
       lambdaLayers,
       vpc: this.vpc,

@@ -13,7 +13,6 @@ import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
-import { JonahTestStack } from "./jonahTestStack";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -140,13 +139,6 @@ export class IHEStack extends Stack {
       patientDiscoveryLambda,
       medicalDocumentsBucket,
       alarmAction: alarmSnsAction,
-    });
-
-    new JonahTestStack(this, "JonahTestStack", {
-      config: props.config,
-      version: props.version,
-      lambdaLayers,
-      vpc,
     });
 
     //-------------------------------------------
