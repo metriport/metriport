@@ -31,3 +31,4 @@ workspaceConfiguration/
 packages/utils/opensearch-root-ca.pem
 packages/utils/cq-org-builder.failed
 JSON.json
+scratch/

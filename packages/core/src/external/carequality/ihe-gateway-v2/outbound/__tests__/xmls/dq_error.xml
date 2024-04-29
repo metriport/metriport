@@ -1,0 +1,16 @@
+<soap:Envelope xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+    <soap:Header xmlns="http://www.w3.org/2005/08/addressing">
+        <Action>urn:ihe:iti:2007:CrossGatewayQueryResponse</Action>
+        <MessageID>urn:uuid:9a9af618-9f98-40de-9f98-49ffbd6f863f</MessageID>
+        <To>http://www.w3.org/2005/08/addressing/anonymous</To>
+        <RelatesTo>urn:uuid:018eca5f-e666-79b8-9baf-93ae9f6a886c</RelatesTo>
+    </soap:Header>
+    <soap:Body xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0" xmlns:ns2="urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0" xmlns:ns3="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" xmlns:ns4="urn:oasis:names:tc:ebxml-regrep:xsd:lcm:3.0">
+        <ns3:AdhocQueryResponse status="urn:ihe:iti:2007:ResponseStatusType:PartialSuccess" totalResultCount="0">
+            <ns2:RegistryErrorList highestSeverity="urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error">
+                <ns2:RegistryError codeContext="Error retrieving from repository" errorCode="XDSRegistryError" severity="urn:oasis:names:tc:ebxml-regrep:ErrorSeverityType:Error"/>
+            </ns2:RegistryErrorList>
+            <RegistryObjectList/>
+        </ns3:AdhocQueryResponse>
+    </soap:Body>
+</soap:Envelope>
