@@ -100,23 +100,22 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const documentBuffer = Buffer.from(downloadedDocument);
-    const { mimeType, extension } = detectFileType(documentBuffer);
+    const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
 
     // If the file type has not changed
-    if (mimeType === document.mimeType || old_extension === extension) {
+    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
     console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${extension}`
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
       downloadResult.key,
-      mimeType,
-      extension
+      detectedFileType,
+      detectedExtension
     );
     const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
     const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);

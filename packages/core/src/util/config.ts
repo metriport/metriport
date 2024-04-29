@@ -10,7 +10,6 @@ export class Config {
   static readonly PROD_ENV = "production";
   static readonly DEV_ENV = "dev";
   static readonly SANDBOX_ENV = "sandbox";
-  static readonly STAGING_ENV = "staging";
 
   static isCloudEnv(): boolean {
     return process.env.NODE_ENV === this.PROD_ENV;
@@ -61,24 +60,5 @@ export class Config {
 
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
-  }
-
-  static getCQOrgPrivateKey(): string {
-    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY");
-  }
-
-  static getCQOrgPrivateKeyPassword(): string {
-    return getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD");
-  }
-
-  static getCQOrgCertificate(): string {
-    return getEnvVarOrFail("CQ_ORG_CERTIFICATE");
-  }
-
-  static getCQOrgCertificateIntermediate(): string {
-    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
-  }
-  static getCqTrustBundleBucketName(): string {
-    return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
 }

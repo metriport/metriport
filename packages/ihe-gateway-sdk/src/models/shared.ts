@@ -31,10 +31,10 @@ export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string(),
+  cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
-  patientId: z.string(),
+  patientId: z.string().optional(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -84,7 +84,7 @@ export const baseResponseSchema = z.object({
   duration: z.number().optional(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string(),
+  patientId: z.string().optional(),
   operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
@@ -107,10 +107,12 @@ export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
 export const XCPDGatewaySchema = z.object({
   oid: z.string(),
-  url: z.string(),
-  id: z.string(),
+  url: z.string().optional(),
+  id: z.string().optional(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
+
+export type XCPDGateways = XCPDGateway[];
 
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),
