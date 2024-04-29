@@ -55,6 +55,8 @@ export {
   Patient,
   PatientCreate,
   patientCreateSchema,
+  PatientSearch,
+  patientSearchSchema,
   patientListSchema,
   patientSchema,
   PatientUpdate,

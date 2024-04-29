@@ -1,6 +1,6 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { Organization } from "@metriport/core/domain/organization";
-import { getStatesFromAddresses, Patient, PatientData } from "@metriport/core/domain/patient";
+import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
@@ -12,12 +12,27 @@ import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
 
-type Identifier = Pick<Patient, "cxId">;
-type DemographicData = Pick<
-  PatientData,
-  "firstName" | "lastName" | "dob" | "genderAtBirth" | "personalIdentifiers" | "address" | "contact"
->;
-export type PatientSearchCmd = DemographicData & Identifier;
+export type PatientSearchCmd = PatientDemoData & { cxId: string };
+
+export const searchPatient = async (patient: PatientSearchCmd): Promise<Patient | undefined> => {
+  const { cxId } = patient;
+
+  const sanitized = sanitize(patient);
+  validate(sanitized);
+  const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
+    sanitized;
+  const demo: PatientDemoData = {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    personalIdentifiers,
+    address,
+    contact,
+  };
+
+  return await getPatientByDemo({ cxId, demo });
+};
 
 export const getPatients = async ({
   facilityId,
@@ -68,20 +83,6 @@ export const getPatientIds = async ({
   return patients.map(p => p.id);
 };
 
-export const searchPatient = async (patient: PatientSearchCmd): Promise<Patient | undefined> => {
-  const { cxId } = patient;
-
-  const sanitized = sanitize(patient);
-  validate(sanitized);
-  const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
-    sanitized;
-
-  return await getPatientByDemo({
-    cxId,
-    demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
-  });
-};
-
 /**
  * Retrieves a patient based on their demographic information. Utilizes functions
  * imported from the MPI core module: normalization, finding(blocking), matching, merging
@@ -94,7 +95,7 @@ export const getPatientByDemo = async ({
   demo,
 }: {
   cxId: string;
-  demo: PatientData;
+  demo: PatientDemoData;
 }): Promise<Patient | undefined> => {
   const patientLoader = new PatientLoaderLocal();
   return getPatientByDemoMPI({ cxId, demo, patientLoader });
