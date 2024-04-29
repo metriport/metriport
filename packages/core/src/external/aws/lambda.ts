@@ -55,7 +55,7 @@ export function getLambdaError(
  *
  * @param result The result of the lambda invocation
  * @param lambdaName The name of the lambda that was invoked, used on error reporting (optional)
- * @param failGracefuly If true, the function will return `undefined` instead of throwing an
+ * @param failGracefully If true, the function will return `undefined` instead of throwing an
  *        error (optional, defaults to `false` - throw an error on failure)
  * @param log A function to log errors (optional, defaults to `console.log`)
  * @returns The payload of the lambda invocation
@@ -63,13 +63,13 @@ export function getLambdaError(
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly?: boolean | false;
+  failGracefully?: boolean | false;
   log?: typeof console.log;
 }): string;
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly: true;
+  failGracefully: true;
   log?: typeof console.log;
 }): string | undefined;
 export function getLambdaResultPayload({
