@@ -23,7 +23,7 @@ import {
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
+import { PatientCreate, PatientUpdate, PatientSearch, QueryProgress } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 
 const NO_DATA_MESSAGE = "No data returned from API";
@@ -206,6 +206,17 @@ export class MetriportMedicalApi {
    */
   async getPatient(id: string): Promise<PatientDTO> {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);
+    if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+    return resp.data as PatientDTO;
+  }
+
+  /**
+   * Searches for a patient.
+   *
+   * @return The patient if found.
+   */
+  async searchPatient(data: PatientSearch): Promise<PatientDTO> {
+    const resp = await this.api.post(`${PATIENT_URL}/search`, data);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
   }
