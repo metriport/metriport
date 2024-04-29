@@ -122,11 +122,9 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
-    console.log(id);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
-    console.log("here");
     const payload = patientUpdateSchema.parse(req.body);
 
     const patient = await getPatientOrFail({ id, cxId });
