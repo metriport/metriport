@@ -744,9 +744,8 @@ function filterEncounterSections(encounterSections: EncounterSection): Encounter
   return Object.entries(encounterSections).reduce((acc, [key, value]) => {
     const documentation = value.documentation?.filter(doc => {
       const note = doc.presentedForm?.[0]?.data ?? "";
-      const noNote = !note || note.length === 0;
 
-      return noNote ? false : true;
+      return note || note.length > 0;
     });
 
     acc[key] = {
