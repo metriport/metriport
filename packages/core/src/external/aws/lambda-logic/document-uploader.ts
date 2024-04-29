@@ -171,10 +171,5 @@ async function createAndUploadMetadataFile({
   });
 
   console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
-  await s3Utils.uploadFile({
-    bucket: destinationBucket,
-    key: metadataFileName,
-    file: Buffer.from(extrinsicObjectXml),
-    contentType: "application/xml",
-  });
+  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
 }
