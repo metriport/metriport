@@ -33,7 +33,6 @@ const facilityOboDetailsSchemaBase = z
   .object({
     id: z.string().optional(),
     nameInMetriport: z.string(),
-    nameInCw: z.string().optional(),
     npi: z.string(),
     lat: z.string(),
     lon: z.string(),
@@ -43,6 +42,7 @@ const facilityOboDetailsSchemaBase = z
     // CW
     cwActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),
+    cwFacilityName: z.string().optional(),
   })
   .merge(AddressStrictSchema);
 type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
@@ -105,6 +105,9 @@ router.put(
       type: FacilityType.initiatorOnly,
     };
 
+    // We keep this here to avoid creating a facility if the organization does not exist in CQ (for orgs that are CQ active)
+    const cqOboData = await getCqOboData(facilityInput.cqActive, facilityInput.cqOboOid);
+
     let facility;
     if (id) {
       await getFacilityStrictOrFail({ cxId, id, npi: facilityInput.npi });
@@ -119,7 +122,7 @@ router.put(
     const cxOrg = await getOrganizationOrFail({ cxId });
     const vendorName = cxOrg.dataValues.data?.name;
     // CAREQUALITY
-    await createOrUpdateInCq(facilityInput, facility, cxOrg, vendorName); // TODO: test properly
+    await createOrUpdateInCq(facilityInput, facility, cxOrg, vendorName, cqOboData);
 
     // COMMONWELL
     await createInCw(facilityInput, facility, cxOrg, cxId, vendorName);
@@ -164,9 +167,9 @@ async function createOrUpdateInCq(
   facilityInput: FacilityOboDetails,
   facility: FacilityModel,
   cxOrg: OrganizationModel,
-  vendorName: string
+  vendorName: string,
+  cqOboData: CqOboDetails
 ) {
-  const cqOboData = await getCqOboData(facilityInput.cqActive, facilityInput.cqOboOid);
   if (cqOboData.enabled) {
     const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
     const addressLine = facilityInput.addressLine2
@@ -200,7 +203,7 @@ async function createInCw(
   vendorName: string
 ) {
   if (facilityInput.cwActive && facilityInput.cwOboOid) {
-    const cwFacilityName = facilityInput.nameInCw ?? facility.data.name;
+    const cwFacilityName = facilityInput.cwFacilityName ?? facility.data.name;
     // TODO 1706: lookup CW org name from specified OID in DB
     const cwOboOrgName = buildCwOboOrgName(vendorName, cwFacilityName, facilityInput.cwOboOid);
     await cwCommands.organization.create(
