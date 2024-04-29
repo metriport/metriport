@@ -29,6 +29,15 @@ export interface FacilityCreate extends BaseDomainCreate {
   type: FacilityType;
   data: FacilityData;
 }
+
+export interface FacilityUpdate {
+  data: FacilityData;
+  cqOboActive?: boolean;
+  cwOboActive?: boolean;
+  cqOboOid?: string;
+  cwOboOid?: string;
+}
+
 export interface Facility extends BaseDomain, FacilityCreate {}
 
 export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
