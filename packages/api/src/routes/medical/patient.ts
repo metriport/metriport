@@ -509,7 +509,7 @@ router.post(
       return res.status(status.FOUND).json(dtoFromModel(patient));
     }
     return res.status(status.NOT_FOUND).json({
-      message: `Cannot find patient`,
+      message: "Cannot find patient",
     });
   })
 );
