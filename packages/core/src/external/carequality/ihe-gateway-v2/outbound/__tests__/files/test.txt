@@ -1,8 +1,0 @@
-Best-in-Class Care
-Tono Health is a specialty clinic that delivers virtual-first care for medical dermatology and endocrinology. We make best-in-class care from leading doctors accessible to patients across the country, from the convenience of their home. We’re on a mission to expand access to specialty care, and for it to be covered by insurance.
-
-Real-Time Access to Comprehensive Data
-Given the specialized nature of our services, timely access to comprehensive patient records that are updated in real-time is paramount. Our priority was securing key patient information regarding current and prior medical conditions, lab and imaging results, as well as physician notes. This led us to partner with Metriport, as their robust infrastructure provided us with an immediate solution to our patients’ data across health systems with varying EHRs. We were looking for an API that we could integrate directly with our EHR. Metriport’s agile approach and close collaboration with our developers made the decision an easy one.
-
-Medical Record Summaries
-Beyond providing comprehensive clinical information for our patients, Metriport’s innovative tools, such as their medical record summaries, gives our doctors the ability to provide cutting-edge treatments and specialized care at scale. Furthermore, Metriport’s depth of coverage, data quality, and standardized data formats have empowered our physicians to provide exceptional care efficiently, by minimizing unnecessary administrative burdens.
