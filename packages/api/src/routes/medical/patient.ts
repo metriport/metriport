@@ -1,4 +1,4 @@
-import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { patientCreateSchema, patientUpdateSchema, patientSearchSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
@@ -51,7 +51,6 @@ import {
 import { dtoFromModel } from "./dtos/patientDTO";
 import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
-  patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
   schemaSearchForPatient,
@@ -497,7 +496,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const payload = demographicsSchema.parse(req.body);
+    const payload = patientSearchSchema.parse(req.body);
 
     const patientSearch: PatientSearchCmd = {
       ...schemaSearchForPatient(payload, cxId),
@@ -508,7 +507,9 @@ router.post(
     if (patient) {
       return res.status(status.FOUND).json(dtoFromModel(patient));
     }
-    return res.status(status.NOT_FOUND);
+    return res.status(status.NOT_FOUND).json({
+      message: `Cannot find patient`,
+    });
   })
 );
 

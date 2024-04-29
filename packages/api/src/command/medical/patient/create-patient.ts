@@ -1,4 +1,9 @@
-import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
+import {
+  Patient,
+  PatientCreate,
+  PatientData,
+  PatientDemoData,
+} from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
@@ -24,11 +29,17 @@ export const createPatient = async (
   validate(sanitized);
   const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
     sanitized;
+  const demo: PatientDemoData = {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    personalIdentifiers,
+    address,
+    contact,
+  };
 
-  const patientExists = await getPatientByDemo({
-    cxId,
-    demo: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
-  });
+  const patientExists = await getPatientByDemo({ cxId, demo });
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
