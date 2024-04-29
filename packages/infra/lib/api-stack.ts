@@ -245,6 +245,15 @@ export class APIStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
+    }
+    const mtlsBucketName = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
+
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
     //-------------------------------------------
@@ -476,6 +485,8 @@ export class APIStack extends Stack {
       cqOrgCertificateIntermediate:
         props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
       cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      cqTrustBundleBucket: mtlsBucketName,
+      medicalDocumentsBucket: medicalDocumentsBucket,
       apiURL: apiService.loadBalancer.loadBalancerDnsName,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
