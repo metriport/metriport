@@ -35,7 +35,11 @@ export async function cdaDocumentUploaderHandler({
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
-    await s3Utils.uploadFile(medicalDocumentsBucket, destinationKey, Buffer.from(cdaBundle));
+    await s3Utils.uploadFile({
+      bucket: medicalDocumentsBucket,
+      key: destinationKey,
+      file: Buffer.from(cdaBundle),
+    });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
     const msg = "Error uploading file to medical documents bucket";

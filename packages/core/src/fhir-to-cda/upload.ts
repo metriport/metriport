@@ -65,11 +65,11 @@ export async function uploadFhirBundleToS3({
   const s3Utils = new S3Utils(region);
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}_FHIR_BUNDLE.json`);
   try {
-    await s3Utils.uploadFile(
-      Config.getMedicalDocumentsBucketName(),
-      destinationKey,
-      Buffer.from(JSON.stringify(fhirBundle))
-    );
+    await s3Utils.uploadFile({
+      bucket: Config.getMedicalDocumentsBucketName(),
+      key: destinationKey,
+      file: Buffer.from(JSON.stringify(fhirBundle)),
+    });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
     const msg = "Error uploading file to medical documents bucket";
