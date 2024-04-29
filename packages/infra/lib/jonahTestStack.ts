@@ -2,7 +2,6 @@ import { CfnOutput } from "aws-cdk-lib";
 import { Construct } from "constructs";
 import * as sqs from "aws-cdk-lib/aws-sqs";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
-import * as iam from "aws-cdk-lib/aws-iam";
 import { SqsEventSource } from "aws-cdk-lib/aws-lambda-event-sources";
 import { StateMachine, Chain } from "aws-cdk-lib/aws-stepfunctions";
 import { LambdaInvocationType, LambdaInvoke } from "aws-cdk-lib/aws-stepfunctions-tasks";
@@ -62,12 +61,7 @@ export class JonahTestStack extends NestedStack {
       memory: 1024,
       vpc: props?.vpc,
     });
-    processQueueMessageLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        actions: ["dynamodb:PutItem"],
-        resources: [requestTable.tableArn],
-      })
-    );
+    requestTable.grantReadWriteData(processQueueMessageLambda);
 
     // State Machine
     const lambdaInvokeTask = new LambdaInvoke(this, "InvokeLambdaTask", {
