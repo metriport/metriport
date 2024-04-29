@@ -716,9 +716,11 @@ function buildEncounterSections(
               const reportInsideTime =
                 reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
-              const isDuplicate = reportInsideDate === reportDate;
+              const isDuplicateDate = reportInsideDate === reportDate;
+              const hasSamePresentedForm =
+                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
 
-              return isDuplicate;
+              return isDuplicateDate && hasSamePresentedForm;
             }
           );
 
