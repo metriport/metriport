@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
-  <id>c209459e-8282-4ac7-88cb-42cdeec33805</id>
-  <name>Common Library</name>
-  <revision>826</revision>
+  <id>5c4c6ab2-26a7-4878-933d-ae04c2bdeea7</id>
+  <name>XCA Library - Outbound</name>
+  <revision>602</revision>
   <lastModified>
     <time>1710294950517</time>
     <timezone>GMT</timezone>
   </lastModified>
-  <description>Common library for all channels
-Last updated: Dec 27 2023</description>
+  <description>Cross-Community Access (XCA) library
+IHE ITI-38 [Cross Gateway Query] related functions
+IHE ITI-39 [Cross Gateway Retrieve] related functions
+
+Last updated: Dec 07 2023</description>
   <includeNewChannels>false</includeNewChannels>
   <enabledChannelIds>
     <string>3f38affa-7132-4c4d-8597-2679b2651a13</string>
