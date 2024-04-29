@@ -6,10 +6,10 @@ import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import NotFoundError from "../../errors/not-found";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/facilityDTO";
 import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
-import { requestLogger } from "../helpers/request-logger";
 
 const router = Router();
 
@@ -56,12 +56,14 @@ router.put(
     const facilityData = facilityUpdateSchema.parse(req.body);
 
     const facility = await updateFacility({
-      ...facilityData,
+      data: {
+        ...facilityData,
+        tin: facilityData.tin ?? undefined,
+        active: facilityData.active ?? undefined,
+      },
       ...getETag(req),
       id: facilityId,
       cxId,
-      tin: facilityData.tin ?? undefined,
-      active: facilityData.active ?? undefined,
     });
 
     return res.status(status.OK).json(dtoFromModel(facility));
