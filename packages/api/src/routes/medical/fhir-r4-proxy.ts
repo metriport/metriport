@@ -19,7 +19,7 @@ const fhirRouter = (fhirServerUrl: string) =>
     },
     userResDecorator: function (proxyRes, proxyResData, userReq) {
       const data: string = proxyResData.toString("utf8");
-      const apiUrl = Config.getApiUrl();
+      const apiUrl: string = Config.getApiUrl();
       return data.replaceAll(`${apiUrl}/oauth/fhir/${userReq.cxId}`, `${apiUrl}${userReq.baseUrl}`);
     },
   });
