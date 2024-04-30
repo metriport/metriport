@@ -2,6 +2,7 @@ import { AddressStrict } from "@metriport/core/domain/location-address";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { out } from "@metriport/core/util/log";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -97,7 +98,6 @@ router.put(
     if (!vendorName) throw new Error("Organization name is missing");
     const addressStrict = removeCoordinates(address);
 
-    // const facility = await createFacility({
     const id = facilityInput.id;
     const facilityDetails = {
       cxId,
@@ -219,13 +219,14 @@ async function createOrUpdateInCq(
   cqOboData: CqOboDetails,
   address: AddressWithCoordinates
 ) {
+  const { log } = out("createOrUpdateInCq");
   if (cqOboData.enabled) {
     const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
     const addressLine = facilityInput.addressLine2
       ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
       : facilityInput.addressLine1;
 
-    console.log("Creating/Updating a CQ entry with this OID:", facility.oid);
+    log(`Creating/Updating a CQ entry with this OID ${facility.oid} and name ${orgName}`);
     await createOrUpdateCQOrganization({
       name: orgName,
       addressLine1: addressLine,
@@ -251,10 +252,12 @@ async function createInCw(
   cxId: string,
   vendorName: string
 ) {
+  const { log } = out("createInCw");
   if (facilityInput.cwOboActive && facilityInput.cwOboOid) {
     const cwFacilityName = facilityInput.cwFacilityName ?? facility.data.name;
     // TODO 1706: lookup CW org name from specified OID in DB
     const cwOboOrgName = buildCwOboOrgName(vendorName, cwFacilityName, facilityInput.cwOboOid);
+    log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${cwOboOrgName}`);
     await cwCommands.organization.create(
       {
         cxId,
