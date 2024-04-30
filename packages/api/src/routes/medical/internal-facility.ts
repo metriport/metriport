@@ -1,4 +1,5 @@
 import { AddressStrict } from "@metriport/core/domain/location-address";
+import { Organization } from "@metriport/core/domain/organization";
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
@@ -13,15 +14,13 @@ import { getFacilityStrictOrFail } from "../../command/medical/facility/get-faci
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { addCoordinatesToAddresses } from "../../command/medical/patient/add-coordinates";
-import { FacilityType } from "../../domain/medical/facility";
+import { Facility, FacilityType } from "../../domain/medical/facility";
 import {
   createOrUpdateCQOrganization,
   getCqOrganization,
 } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import cwCommands from "../../external/commonwell";
-import { FacilityModel } from "../../models/medical/facility";
-import { OrganizationModel } from "../../models/medical/organization";
 import { requestLogger } from "../helpers/request-logger";
 import { required } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -113,8 +112,9 @@ router.put(
       cwOboOid: facilityInput.cwOboOid,
     };
 
-    let facility;
+    let facility: Facility;
     if (id) {
+      // Minimize the chance to update the wrong facility by checking IDs and NPI
       await getFacilityStrictOrFail({ cxId, id, npi: facilityInput.npi });
       facility = await updateFacility({
         id,
@@ -130,7 +130,7 @@ router.put(
     // COMMONWELL
     await createInCw(facilityInput, facility, cxOrg, cxId, vendorName);
 
-    return res.status(httpStatus.OK).json(facility.dataValues);
+    return res.status(httpStatus.OK).json(facility);
   })
 );
 
@@ -213,8 +213,8 @@ function buildCqOboOrgName(vendorName: string, orgName: string, oboOid: string) 
 
 async function createOrUpdateInCq(
   facilityInput: FacilityOboDetails,
-  facility: FacilityModel,
-  cxOrg: OrganizationModel,
+  facility: Facility,
+  cxOrg: Organization,
   vendorName: string,
   cqOboData: CqOboDetails,
   address: AddressWithCoordinates
@@ -247,8 +247,8 @@ async function createOrUpdateInCq(
 
 async function createInCw(
   facilityInput: FacilityOboDetails,
-  facility: FacilityModel,
-  cxOrg: OrganizationModel,
+  facility: Facility,
+  cxOrg: Organization,
   cxId: string,
   vendorName: string
 ) {
