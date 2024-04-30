@@ -8,7 +8,7 @@ export async function updatePatientDiscoveryStatus({
   status,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status: "processing" | "completed" | "failed";
+  status: "processing" | "completed" | "failed" | "re-run";
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,

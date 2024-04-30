@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData } from "./patient";
+import { getCQData, discover } from "./patient";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 
 /**
@@ -18,12 +18,29 @@ export async function processPatientDiscoveryProgress({
   status,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status: "processing" | "completed" | "failed";
+  status: "processing" | "completed" | "failed" | "re-run";
 }): Promise<void> {
   const { log } = out(`CQ Process PD Status - patient ${patient.id}`);
 
   try {
     const updatedPatient = await updatePatientDiscoveryStatus({ patient, status });
+
+    if (status === "re-run") {
+      const requestId = updatedPatient.data.patientDiscovery?.requestId;
+      const facilityId = updatedPatient.facilityIds[0];
+      if (!requestId || !facilityId) {
+        log(
+          `Cannot trigger re-run of patient discovery with missing requestId or facilityId - patient ${patient.id}`
+        );
+      } else {
+        log(
+          `Triggering re-run of patient discovery with requestId ${requestId} and facilityId ${facilityId}`
+        );
+
+        discover(updatedPatient, facilityId, requestId, true);
+      }
+      return;
+    }
 
     const scheduledDocQueryRequestId = getCQData(
       updatedPatient.data.externalData

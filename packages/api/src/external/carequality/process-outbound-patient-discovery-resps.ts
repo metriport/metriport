@@ -4,11 +4,12 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryResp, InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
+import { testAndUpdatePatientDemographics } from "./command/test-and-update-patient-demographics";
 import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { analytics, EventTypes } from "../../shared/analytics";
@@ -36,6 +37,15 @@ export async function processOutboundPatientDiscoveryResps({
       return;
     }
 
+    log(`Updating patient demographics`);
+    const patientDemoAugmented: boolean = await augmentPatientDemographics(
+      {
+        id: patientId,
+        cxId,
+      },
+      results
+    );
+
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
       {
@@ -45,7 +55,10 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
-    await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
+    await processPatientDiscoveryProgress({
+      patient: patientIds,
+      status: patientDemoAugmented ? "re-run" : "completed",
+    });
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const startedAt = patient.data.patientDiscovery?.startedAt;
@@ -103,5 +116,33 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
       url,
       id: pd.gateway.id,
     };
+  });
+}
+
+async function augmentPatientDemographics(
+  patient: Pick<Patient, "id" | "cxId">,
+  pdResults: OutboundPatientDiscoveryResp[]
+): Promise<boolean> {
+  const patientResources = fetchPatientResources(pdResults);
+  const successfulAugmentations = await Promise.all(
+    patientResources.map(async patientResource => {
+      return await testAndUpdatePatientDemographics({
+        patient,
+        patientResource,
+      });
+    })
+  );
+  return successfulAugmentations.some(isAugmented => isAugmented === true);
+}
+
+function fetchPatientResources(
+  pdResults: OutboundPatientDiscoveryResp[]
+): InboundPatientResource[] {
+  return pdResults.flatMap(pd => {
+    const match = pd.patientMatch;
+    if (!match) return [];
+    const patientResource = pd.patientResource;
+    if (!patientResource) return [];
+    return patientResource;
   });
 }
