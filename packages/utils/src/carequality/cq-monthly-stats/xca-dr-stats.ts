@@ -21,10 +21,10 @@ export async function xcaDRStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
-}: RequestParams): Promise<ImplementerStats> {
+}: RequestParams): Promise<ImplementerStats[]> {
   const xcaDRGWStats: GWWithStats = await aggregateXcaDRGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDRStats: ImplementerStats = await associateGWToImplementer(xcaDRGWStats, cqDirectory);
+  const xcaDRStats: ImplementerStats[] = await associateGWToImplementer(xcaDRGWStats, cqDirectory);
 
   return xcaDRStats;
 }

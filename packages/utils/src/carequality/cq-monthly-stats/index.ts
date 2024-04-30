@@ -21,7 +21,7 @@ async function main() {
 
   console.log("cqDirectory:", cqDirectory.length);
 
-  const previousMonth = dayjs();
+  const previousMonth = dayjs().subtract(1, "month");
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
 

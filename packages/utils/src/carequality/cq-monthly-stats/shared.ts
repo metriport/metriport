@@ -28,7 +28,11 @@ export type GWWithStats = {
 };
 
 export type ImplementerStats = {
-  [implementer: string]: [GWWithStats];
+  implementer?: string;
+  gw?: string;
+  avgResponseTimeMs?: number;
+  nonErroredResponses?: string;
+  totalDocRetrieved?: string;
 };
 
 export type CountPerGW = { [key: string]: [number] };
@@ -91,13 +95,13 @@ export function getDurationsPerGW(results: any[]): GWWithStats {
 }
 
 export function associateGWToImplementer(
-  xcpdGWStats: GWWithStats,
+  gwStats: GWWithStats,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cqDirectory: any[]
-): ImplementerStats {
-  const xcpdStats: ImplementerStats = {};
+): ImplementerStats[] {
+  const implementerStats: ImplementerStats[] = [];
 
-  for (const [gateway, stats] of Object.entries(xcpdGWStats)) {
+  for (const [gateway, stats] of Object.entries(gwStats)) {
     const implementer = findGWImplementer(gateway, stats, cqDirectory);
 
     if (!implementer) {
@@ -105,14 +109,10 @@ export function associateGWToImplementer(
       continue;
     }
 
-    if (xcpdStats[implementer]) {
-      xcpdStats[implementer].push({ [gateway]: stats });
-    } else {
-      xcpdStats[implementer] = [{ [gateway]: stats }];
-    }
+    implementerStats.push({ implementer, gw: gateway, ...stats });
   }
 
-  return xcpdStats;
+  return implementerStats;
 }
 
 function findGWImplementer(

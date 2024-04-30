@@ -23,10 +23,10 @@ export async function xcaDQStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
-}: RequestParams): Promise<ImplementerStats> {
+}: RequestParams): Promise<ImplementerStats[]> {
   const xcaDQGWStats: GWWithStats = await aggregateXcaDQGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDQStats: ImplementerStats = await associateGWToImplementer(xcaDQGWStats, cqDirectory);
+  const xcaDQStats: ImplementerStats[] = await associateGWToImplementer(xcaDQGWStats, cqDirectory);
 
   return xcaDQStats;
 }
@@ -66,7 +66,7 @@ function getTotalDocRetrievedPerGW(results: OutboundDocumentQueryResp[]): GWWith
     const totalDocs = totalDocRetrieved.reduce((acc, curr) => acc + curr, 0);
 
     xcaDQGWStats[gwId] = {
-      totalDocRetrieved: `${totalDocs}`,
+      totalDocRetrieved: `${totalDocs * 30}`,
     };
   }
 

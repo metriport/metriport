@@ -24,10 +24,10 @@ export async function xcpdStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
-}: RequestParams): Promise<ImplementerStats> {
+}: RequestParams): Promise<ImplementerStats[]> {
   const xcpdGWStats: GWWithStats = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcpdStats: ImplementerStats = await associateGWToImplementer(xcpdGWStats, cqDirectory);
+  const xcpdStats: ImplementerStats[] = await associateGWToImplementer(xcpdGWStats, cqDirectory);
 
   return xcpdStats;
 }
@@ -68,7 +68,7 @@ function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): G
 
     xcpdGWStats[gwId] = {
       ...xcpdGWStats[gwId],
-      nonErroredResponses: `${totalNonErroredResponses} / ${nonErroredResponses.length}`,
+      nonErroredResponses: `${totalNonErroredResponses * 30} / ${nonErroredResponses.length * 30}`,
     };
   }
 
