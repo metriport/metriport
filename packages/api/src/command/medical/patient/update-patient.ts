@@ -71,7 +71,7 @@ export async function updatePatientWithoutHIEs(
 
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientUpdate.address,
-    patient: patientUpdate,
+    cxId: patientUpdate.cxId,
     reportRelevance: true,
   });
   if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
