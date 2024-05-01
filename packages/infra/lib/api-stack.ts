@@ -183,6 +183,9 @@ export class APIStack extends Stack {
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
+      cloudwatchLogsExports: ["postgresql"],
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
     const minDBCap = this.isProd(props) ? 2 : 0.5;
     const maxDBCap = this.isProd(props) ? 16 : 2;
