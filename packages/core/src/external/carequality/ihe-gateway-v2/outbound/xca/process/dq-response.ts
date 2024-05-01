@@ -15,6 +15,7 @@ import {
   XDSDocumentEntryUniqueId,
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
+import { capture } from "../../../../../../util/notifications";
 
 type Identifier = {
   _identificationScheme: string;
@@ -41,12 +42,12 @@ type Slot = {
 function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
-): DocumentReference {
+): DocumentReference | undefined {
   const slots = extrinsicObject?.Slot;
   const externalIdentifiers = extrinsicObject?.ExternalIdentifier;
   const classifications = extrinsicObject?.Classification;
 
-  const findSlotValue = (name: string): string => {
+  const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
     return slot
       ? Array.isArray(slot.ValueList.Value)
@@ -55,7 +56,7 @@ function parseDocumentReference(
       : undefined;
   };
 
-  const findExternalIdentifierValue = (scheme: string) => {
+  const findExternalIdentifierValue = (scheme: string): string | undefined => {
     const identifier = externalIdentifiers?.find(
       (identifier: Identifier) => identifier._identificationScheme === scheme
     );
@@ -78,7 +79,7 @@ function parseDocumentReference(
       : undefined;
   };
 
-  const findClassificationName = (scheme: string) => {
+  const findClassificationName = (scheme: string): string | undefined => {
     const classification = classifications?.find(
       (classification: Classification) => classification?._classificationScheme === scheme
     );
@@ -87,13 +88,27 @@ function parseDocumentReference(
     return title;
   };
 
+  const sizeValue = findSlotValue("size");
+  const repositoryUniqueId = findSlotValue("repositoryUniqueId");
+  const docUniqueId = findExternalIdentifierValue(XDSDocumentEntryUniqueId);
+
+  if (!repositoryUniqueId || !docUniqueId) {
+    const msg = "Document Reference is missing repositoryUniqueId or docUniqueId";
+    capture.error(msg, {
+      extra: {
+        extrinsicObject,
+      },
+    });
+    return undefined;
+  }
+
   const documentReference: DocumentReference = {
     homeCommunityId: stripUrnPrefix(extrinsicObject._home),
-    repositoryUniqueId: findSlotValue("repositoryUniqueId"),
-    docUniqueId: findExternalIdentifierValue(XDSDocumentEntryUniqueId),
+    repositoryUniqueId,
+    docUniqueId,
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
-    size: parseInt(findSlotValue("size")),
+    size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
     creation: findSlotValue("creationTime"),
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
@@ -112,8 +127,8 @@ function handleSuccessResponse({
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
   const documentReferences = Array.isArray(extrinsicObjects)
-    ? extrinsicObjects.map(extrinsicObject => parseDocumentReference(extrinsicObject))
-    : [parseDocumentReference(extrinsicObjects)];
+    ? extrinsicObjects.flatMap(extrinsicObject => parseDocumentReference(extrinsicObject) ?? [])
+    : [parseDocumentReference(extrinsicObjects) ?? []].flat();
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,
