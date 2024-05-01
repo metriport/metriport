@@ -44,6 +44,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
@@ -143,15 +144,14 @@ export class APIStack extends Stack {
     // Aurora Database for backend data
     //-------------------------------------------
 
-    // create database credentials
-    const dbUsername = props.config.dbUsername;
-    const dbName = props.config.dbName;
+    const dbConfig = props.config.apiDatabase;
     const dbClusterName = "api-cluster";
+    // create database credentials
     const dbCredsSecret = new secret.Secret(this, "DBCreds", {
       secretName: `DBCreds`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          username: dbUsername,
+          username: dbConfig.username,
         }),
         excludePunctuation: true,
         includeSpace: false,
@@ -165,8 +165,11 @@ export class APIStack extends Stack {
     const parameterGroup = new rds.ParameterGroup(this, "APIDB_Params", {
       engine: dbEngine,
       parameters: {
-        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
-        log_min_duration_statement: "3000", // TODO move this and other parameters to env config
+        ...(dbConfig.minSlowLogDurationInMs
+          ? {
+              log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
+            }
+          : undefined),
       },
     });
 
@@ -178,20 +181,20 @@ export class APIStack extends Stack {
         enablePerformanceInsights: true,
         parameterGroup,
       },
+      preferredMaintenanceWindow: dbConfig.maintenanceWindow,
       credentials: dbCreds,
-      defaultDatabaseName: dbName,
+      defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
+      cloudwatchLogsExports: ["postgresql"],
     });
-    const minDBCap = this.isProd(props) ? 2 : 0.5;
-    const maxDBCap = this.isProd(props) ? 16 : 2;
     Aspects.of(dbCluster).add({
       visit(node) {
         if (node instanceof rds.CfnDBCluster) {
           node.serverlessV2ScalingConfiguration = {
-            minCapacity: minDBCap,
-            maxCapacity: maxDBCap,
+            minCapacity: dbConfig.minCapacity,
+            maxCapacity: dbConfig.maxCapacity,
           };
         }
       },
