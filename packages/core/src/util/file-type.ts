@@ -1,26 +1,26 @@
 import {
-  JSON_APP_MIME_TYPE,
-  JSON_TXT_MIME_TYPE,
-  XML_APP_MIME_TYPE,
-  XML_TXT_MIME_TYPE,
-  PDF_MIME_TYPE,
-  TIFF_MIME_TYPE,
-  TIF_MIME_TYPE,
-  PNG_MIME_TYPE,
+  BMP_FILE_EXTENSION,
+  BMP_MIME_TYPE,
+  HTML_MIME_TYPE,
+  JPEG_FILE_EXTENSION,
   JPEG_MIME_TYPE,
   JPG_MIME_TYPE,
-  BMP_MIME_TYPE,
-  TXT_MIME_TYPE,
-  OCTET_MIME_TYPE,
-  HTML_MIME_TYPE,
-  XML_FILE_EXTENSION,
-  PDF_FILE_EXTENSION,
-  TIFF_FILE_EXTENSION,
-  PNG_FILE_EXTENSION,
-  JPEG_FILE_EXTENSION,
-  BMP_FILE_EXTENSION,
-  TXT_FILE_EXTENSION,
+  JSON_APP_MIME_TYPE,
+  JSON_TXT_MIME_TYPE,
   OCTET_FILE_EXTENSION,
+  OCTET_MIME_TYPE,
+  PDF_FILE_EXTENSION,
+  PDF_MIME_TYPE,
+  PNG_FILE_EXTENSION,
+  PNG_MIME_TYPE,
+  TIFF_FILE_EXTENSION,
+  TIFF_MIME_TYPE,
+  TIF_MIME_TYPE,
+  TXT_FILE_EXTENSION,
+  TXT_MIME_TYPE,
+  XML_APP_MIME_TYPE,
+  XML_FILE_EXTENSION,
+  XML_TXT_MIME_TYPE,
 } from "./mime";
 
 const TIFF_MAGIC_NUMBER_1 = 0x49;
@@ -85,20 +85,41 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
   return readableChars / totalChars > threshold;
 }
 
+export type DetectedFileType = {
+  mimeType: string;
+  fileExtension: string;
+};
+
 /**
  * The function `detectFileType` uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
+ *
+ * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
+ * matches it against known file type headers.
+ *
+ * @param document - A string that represents the contents of a file. It will be converted to a
+ * Buffer in order to be processed. Prefer `detectFileTypeBuf` if you already have a Buffer object.
+ * @returns a string representing the detected file type.
+ */
+export function detectFileType(document: string): DetectedFileType {
+  const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
+  const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
+  return detectFileTypeBuf(fileBuffer);
+}
+
+/**
+ * The function `detectFileTypeBuf` uses magic numbers to determine the file type of a given file.
+ * Magic numbers are unique sequences of bytes that identify the file format or protocol.
+ *
  * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
  * matches it against known file type headers.
  *
  * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
  * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
  * identify the file type.
- * @returns The function `detectFileType` returns a string representing the detected file type.
+ * @returns a string representing the detected file type.
  */
-export function detectFileType(document: string): [string, string] {
-  const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
-  const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
+export function detectFileTypeBuf(fileBuffer: Buffer): DetectedFileType {
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -109,7 +130,7 @@ export function detectFileType(document: string): [string, string] {
       fileBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
       fileBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
-    return [TIFF_MIME_TYPE, TIFF_FILE_EXTENSION];
+    return { mimeType: TIFF_MIME_TYPE, fileExtension: TIFF_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PDF_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PDF_MAGIC_NUMBER_2 &&
@@ -117,7 +138,7 @@ export function detectFileType(document: string): [string, string] {
     fileBuffer[3] === PDF_MAGIC_NUMBER_4 &&
     fileBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
-    return [PDF_MIME_TYPE, PDF_FILE_EXTENSION];
+    return { mimeType: PDF_MIME_TYPE, fileExtension: PDF_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
     fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
@@ -126,26 +147,26 @@ export function detectFileType(document: string): [string, string] {
     fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
     fileBuffer[5] === XML_MAGIC_NUMBER_6
   ) {
-    return [XML_APP_MIME_TYPE, XML_FILE_EXTENSION];
+    return { mimeType: XML_APP_MIME_TYPE, fileExtension: XML_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === PNG_MAGIC_NUMBER_3 &&
     fileBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
-    return [PNG_MIME_TYPE, PNG_FILE_EXTENSION];
+    return { mimeType: PNG_MIME_TYPE, fileExtension: PNG_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
-    return [JPEG_MIME_TYPE, JPEG_FILE_EXTENSION];
+    return { mimeType: JPEG_MIME_TYPE, fileExtension: JPEG_FILE_EXTENSION };
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
-    return [BMP_MIME_TYPE, BMP_FILE_EXTENSION];
-  } else if (isLikelyTextFile(Buffer.from(document))) {
-    return [TXT_MIME_TYPE, TXT_FILE_EXTENSION];
+    return { mimeType: BMP_MIME_TYPE, fileExtension: BMP_FILE_EXTENSION };
+  } else if (isLikelyTextFile(fileBuffer)) {
+    return { mimeType: TXT_MIME_TYPE, fileExtension: TXT_FILE_EXTENSION };
   } else {
-    return [OCTET_MIME_TYPE, OCTET_FILE_EXTENSION];
+    return { mimeType: OCTET_MIME_TYPE, fileExtension: OCTET_FILE_EXTENSION };
   }
 }
 /**
