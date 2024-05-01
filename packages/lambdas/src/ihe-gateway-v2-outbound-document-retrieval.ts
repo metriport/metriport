@@ -13,33 +13,19 @@ const drResponseUrl = `http://${apiUrl}/internal/carequality/document-retrieval/
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ patientId, cxId, requestId, drRequestsGatewayV2 }: DRRequestGatewayV2Params) => {
-    try {
-      log(
-        `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
-          `numOfGateways: ${drRequestsGatewayV2.length} cxId: ${cxId} patientId: ${patientId}`
-      );
+    log(
+      `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
+        `numOfGateways: ${drRequestsGatewayV2.length} cxId: ${cxId} patientId: ${patientId}`
+    );
 
-      const samlCertsAndKeys = await getSamlCertsAndKeys();
+    const samlCertsAndKeys = await getSamlCertsAndKeys();
 
-      await createSignSendProcessDRRequests({
-        drResponseUrl,
-        drRequestsGatewayV2,
-        samlCertsAndKeys,
-        patientId,
-        cxId,
-      });
-    } catch (error) {
-      const msg = `An error occurred in the iheGatewayV2-outbound-document-retrieval lambda`;
-      capture.error(msg, {
-        extra: {
-          context: `lambda.iheGatewayV2-outbound-document-retrieval`,
-          error,
-          drRequestsGatewayV2,
-          requestId,
-          patientId,
-          cxId,
-        },
-      });
-    }
+    await createSignSendProcessDRRequests({
+      drResponseUrl,
+      drRequestsGatewayV2,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+    });
   }
 );

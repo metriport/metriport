@@ -13,32 +13,18 @@ const documentQueryResponseUrl = `http://${apiUrl}/internal/carequality/document
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ patientId, cxId, requestId, dqRequestsGatewayV2 }: DQRequestGatewayV2Params) => {
-    try {
-      log(
-        `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
-          `numOfGateways: ${dqRequestsGatewayV2.length} cxId: ${cxId} patientId: ${patientId}`
-      );
+    log(
+      `Running with envType: ${getEnvType()}, requestId: ${requestId}, ` +
+        `numOfGateways: ${dqRequestsGatewayV2.length} cxId: ${cxId} patientId: ${patientId}`
+    );
 
-      const samlCertsAndKeys = await getSamlCertsAndKeys();
-      await createSignSendProcessDQRequests({
-        dqResponseUrl: documentQueryResponseUrl,
-        dqRequestsGatewayV2,
-        samlCertsAndKeys,
-        patientId,
-        cxId,
-      });
-    } catch (error) {
-      const msg = `An error occurred in the ihe-gateway-v2-outbound-document-query lambda`;
-      capture.error(msg, {
-        extra: {
-          context: `lambda.ihe-gateway-v2-outbound-document-query`,
-          error,
-          requestId,
-          patientId,
-          cxId,
-          dqRequestsGatewayV2,
-        },
-      });
-    }
+    const samlCertsAndKeys = await getSamlCertsAndKeys();
+    await createSignSendProcessDQRequests({
+      dqResponseUrl: documentQueryResponseUrl,
+      dqRequestsGatewayV2,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+    });
   }
 );

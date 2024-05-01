@@ -13,31 +13,18 @@ const pdResponseUrl = `http://${apiUrl}/internal/carequality/patient-discovery/r
 
 export const handler = Sentry.AWSLambda.wrapHandler(
   async ({ cxId, patientId, pdRequestGatewayV2 }: PDRequestGatewayV2Params) => {
-    try {
-      log(
-        `Running with envType: ${getEnvType()}, requestId: ${pdRequestGatewayV2.id}, ` +
-          `numOfGateways: ${pdRequestGatewayV2.gateways.length} cxId: ${cxId} patientId: ${patientId}`
-      );
+    log(
+      `Running with envType: ${getEnvType()}, requestId: ${pdRequestGatewayV2.id}, ` +
+        `numOfGateways: ${pdRequestGatewayV2.gateways.length} cxId: ${cxId} patientId: ${patientId}`
+    );
 
-      const samlCertsAndKeys = await getSamlCertsAndKeys();
-      await createSignSendProcessXCPDRequest({
-        pdResponseUrl,
-        xcpdRequest: pdRequestGatewayV2,
-        samlCertsAndKeys,
-        patientId,
-        cxId,
-      });
-    } catch (error) {
-      const msg = `An error occurred in the iheGatewayV2-outbound-patient-discovery lambda`;
-      capture.error(msg, {
-        extra: {
-          context: `lambda.ihe-gateway-v2-outbound-patient-discovery`,
-          error,
-          patientId,
-          cxId,
-          pdRequestGatewayV2,
-        },
-      });
-    }
+    const samlCertsAndKeys = await getSamlCertsAndKeys();
+    await createSignSendProcessXCPDRequest({
+      pdResponseUrl,
+      xcpdRequest: pdRequestGatewayV2,
+      samlCertsAndKeys,
+      patientId,
+      cxId,
+    });
   }
 );

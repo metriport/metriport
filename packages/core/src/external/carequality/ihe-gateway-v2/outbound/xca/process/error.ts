@@ -39,6 +39,14 @@ export function processRegistryErrorList(
 
       operationOutcome.issue.push(issue);
     });
+
+    const msg = "RegistryErrorList is present in response";
+    capture.error(msg, {
+      extra: {
+        outboundRequest,
+        registryErrorList,
+      },
+    });
   } catch (error) {
     const msg = "Error processing RegistryErrorList";
     log(`${msg}: ${error}`);

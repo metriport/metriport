@@ -3,8 +3,6 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespFaultSchema,
   OutboundPatientDiscoveryReq,
-  outboundPatientDiscoveryRespSuccessfulSchema,
-  outboundPatientDiscoveryRespFaultSchema,
   XCPDGateway,
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
@@ -95,18 +93,6 @@ function handlePatientMatchResponse({
     patientResource: patientResource,
   };
 
-  try {
-    outboundPatientDiscoveryRespSuccessfulSchema.parse(response);
-  } catch (error) {
-    capture.error("Failed to validate outboundPatientDiscoveryRespSuccessfulSchema", {
-      extra: {
-        context: `ihe-gateway-v2-outbound-patient-discovery`,
-        response,
-        error,
-      },
-    });
-  }
-
   return response;
 }
 
@@ -160,18 +146,6 @@ function handlePatientErrorResponse({
     patientMatch: null,
     operationOutcome: operationOutcome,
   };
-
-  try {
-    outboundPatientDiscoveryRespFaultSchema.parse(response);
-  } catch (error) {
-    capture.error("Failed to validate outboundPatientDiscoveryRespFaultSchema", {
-      extra: {
-        context: `ihe-gateway-v2-outbound-patient-discovery`,
-        response,
-        error,
-      },
-    });
-  }
   return response;
 }
 

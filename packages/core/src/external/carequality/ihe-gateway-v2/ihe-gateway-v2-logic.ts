@@ -15,6 +15,7 @@ import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "./outbound/xca/process/dq-response";
 import { processDRResponse } from "./outbound/xca/process/dr-response";
+import { capture } from "../../../util/notifications";
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -44,7 +45,16 @@ export async function createSignSendProcessXCPDRequest({
     });
   });
   for (const result of results) {
-    await axios.post(pdResponseUrl, result);
+    try {
+      await axios.post(pdResponseUrl, result);
+    } catch (error) {
+      capture.error("Failed to send PD response to Internal Carequality Endpoint", {
+        extra: {
+          error,
+          result,
+        },
+      });
+    }
   }
 }
 
@@ -77,7 +87,16 @@ export async function createSignSendProcessDQRequests({
     });
   });
   for (const result of results) {
-    await axios.post(dqResponseUrl, result);
+    try {
+      await axios.post(dqResponseUrl, result);
+    } catch (error) {
+      capture.error("Failed to send DQ response to Internal Carequality Endpoint", {
+        extra: {
+          error,
+          result,
+        },
+      });
+    }
   }
 }
 
@@ -112,6 +131,15 @@ export async function createSignSendProcessDRRequests({
     })
   );
   for (const result of results) {
-    await axios.post(drResponseUrl, result);
+    try {
+      await axios.post(drResponseUrl, result);
+    } catch (error) {
+      capture.error("Failed to send DR response to Internal Carequality Endpoint", {
+        extra: {
+          error,
+          result,
+        },
+      });
+    }
   }
 }
