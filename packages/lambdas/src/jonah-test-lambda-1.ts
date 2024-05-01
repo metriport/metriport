@@ -22,7 +22,7 @@ export const handler = async (event: any) => {
     };
 
     try {
-      const data = await stepfunctions.startExecution(params).promise();
+      const data = await stepfunctions.startSyncExecution(params).promise();
       console.log("Success:", data);
     } catch (error) {
       console.error("Error starting state machine:", error);
