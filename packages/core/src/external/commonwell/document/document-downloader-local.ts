@@ -5,7 +5,7 @@ import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
 import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, detectFileTypeBuf, isContentTypeAccepted } from "../../../util/file-type";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -190,17 +190,16 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
 
     // Alternativelly we can use the provided mediaType and calculate the extension from it
     // const providedContentType = xmlBodyTexts[0]?.attributes?.getNamedItem("mediaType")?.value;
-    const { mimeType: detectedFileType, fileExtension: detectedExtension } =
-      detectFileTypeBuf(b64Buff);
+    const { mimeType, fileExtension } = detectFileType(b64Buff);
 
-    const newFileName = this.getNewFileName(requestedFileInfo.name, detectedExtension);
+    const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
     const b64Upload = await this.s3client
       .upload({
         Bucket: this.config.bucketName,
         Key: newFileName,
         Body: b64Buff,
-        ContentType: detectedFileType,
+        ContentType: mimeType,
       })
       .promise();
     const b64FileInfo = await this.s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket);

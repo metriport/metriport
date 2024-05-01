@@ -91,35 +91,44 @@ export type DetectedFileType = {
 };
 
 /**
- * The function `detectFileType` uses magic numbers to determine the file type of a given file.
+ * It uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
  *
- * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
- * matches it against known file type headers.
+ * The function converts the string to a Buffer, reads the first 5 bytes (the magic number), and
+ * matches it against known file type headers. If it can't identify the file with magic numbers,
+ * it tries to determine if the file is a text file by checking if the majority of the first chars
+ * are ASCII characters.
  *
- * @param document - A string that represents the contents of a file. It will be converted to a
- * Buffer in order to be processed. Prefer `detectFileTypeBuf` if you already have a Buffer object.
- * @returns a string representing the detected file type.
+ * Otherwise, it returns the default file type `application/octet-stream`.
+ *
+ * @param document - The `docuent` parameter is a string representing the
+ * contents of a file.
+ * @returns an object containing the detected file type and extension.
  */
-export function detectFileType(document: string): DetectedFileType {
-  const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
-  const fileBuffer = Buffer.from(document.slice(0, maxBytesNeeded));
-  return detectFileTypeBuf(fileBuffer);
-}
-
+export function detectFileType(document: string): DetectedFileType;
 /**
- * The function `detectFileTypeBuf` uses magic numbers to determine the file type of a given file.
+ * It uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
  *
- * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
- * matches it against known file type headers.
+ * The function reads the first 5 bytes (the magic number) of the file buffer and
+ * matches it against known file type headers. If it can't identify the file with magic numbers,
+ * it tries to determine if the file is a text file by checking if the majority of the first chars
+ * are ASCII characters.
+ *
+ * Otherwise, it returns the default file type `application/octet-stream`.
  *
  * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
- * contents of a file. The first 5 bytes of this buffer, which generally contain the magic number, are used to
- * identify the file type.
- * @returns a string representing the detected file type.
+ * contents of a file.
+ * @returns an object containing the detected file type and extension.
  */
-export function detectFileTypeBuf(fileBuffer: Buffer): DetectedFileType {
+export function detectFileType(fileBuffer: Buffer): DetectedFileType;
+export function detectFileType(param: Buffer | string): DetectedFileType {
+  let fileBuffer: Buffer;
+  if (Buffer.isBuffer(param)) {
+    fileBuffer = param;
+  } else {
+    fileBuffer = Buffer.from(param);
+  }
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&

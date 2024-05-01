@@ -1,3 +1,49 @@
+export function getCdaWithEmptyNonXmlBody(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithTwoNonXmlBodyTags(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/tiff" representation="B64">
+            ${getEncodedTiff()}
+          </text>
+        </nonXMLBody>
+        <nonXMLBody>
+          <text mediaType="text/plain" representation="B64"></text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithTwoTextTagsUnderNonXmlBodyTag(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/tiff" representation="B64">
+            ${getEncodedTiff()}
+          </text>
+          <text mediaType="text/plain" representation="B64"></text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
 export function getCdaWithB64EncodedText(): string {
   return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
     <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
@@ -36,7 +82,7 @@ export function getCdaWithB64EncodedTiff(): string {
       <component>
         <nonXMLBody>
           <text mediaType="image/tiff" representation="B64">
-            SUkqADQBAACysrKtra2YmJjGxsbGxsampqasrKyioqKjo6PExMShoaG8vLynp6e2tra4uLijo6OPj4+dnZ2lpaWnp6e/v7/IyMi7u7vPvr7dvb3ImprYs7OdnJyAgICRkZGxsbGbm5uknp7409Pzt7f83d38xsbBpqa5ubmpqamqqqqmpqbTx8f2wcH/2tr/tbX/0tLntbW+vr6urq68vLy9vb3NxcXtp6f/tbX/vr7/ysrWpaWwsLCXl5eUlJSVlZWOjo7awMDfvb33ycnitLTDv7+1tbWysrLCwsKbm5ucnJy8vLy5t7e+u7vW1tabm5uWlpagoKCsrKyampqzs7OUlJSjo6Orq6uenp6dnZ2ZmZm8vLzJycmhoaGNjY23t7ebm5ukpKSdnZ2cnJyrq6u2trYRAAABAwABAAAACgAAAAEBAwABAAAACgAAAAIBAwADAAAAFgIAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAAA4BAgASAAAAIgIAABEBBAABAAAACAAAABIBAwABAAAAAQAAABUBAwABAAAAAwAAABYBAwABAAAAgAAAABcBBAABAAAALAEAABoBBQABAAAABgIAABsBBQABAAAADgIAABwBAwABAAAAAQAAAB0BAgAIAAAANAIAACgBAwABAAAAAgAAAFMBAwADAAAAHAIAAAAAAAAsAQAAAQAAACwBAAABAAAACAAIAAgAAQABAAEAQ3JlYXRlZCB3aXRoIEdJTVAAYXJ0LnRpZgA=
+            ${getEncodedTiff()}
           </text>
         </nonXMLBody>
       </component>
@@ -71,4 +117,23 @@ export function getCdaWithB64EncodedJpeg(): string {
         </nonXMLBody>
       </component>
     </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedOctet(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="application/octet-stream" representation="B64">
+          UEsDBBQACAAIAGKonlgAAAAAAAAAALYFAAAIACAAeHB0by5qcGdVVA0AB9iiMWacZjJmmmYyZnV4CwABBPUBAAAEFAAAAJWTbWxTZRTH/89z7127tR33dndjInN34S1xm4IomV/sts4uxU26OpJNSWZ7u1fa0rRFMCF8UBPInHELMeoIcQiBGIxRE4VEBoSXRHxJeEl0E2M2v7gPflB0fFDxep62Y+3iTDy9N/31nPM/Pec891pT1gzUrT6/D4ysjtUB1t8o8yZ7Q+neiLFnMD1gtPrbA9aP/EO/19sTCG7z+duepGyAT0TNWEreCMTi6WSwtdno6n7WsM1BAaNPLYpDZirRFAi0YVm78w1lkt2sF7WWz/tXc0V6UybADOJGM5FMEz9PvGVPOiH4LWLdHAhFiN8nrktSg8RTwh/O8s+C+zPMRU092Rn0EuvERn8eh/PYHEjGiB8lXhuJxak+78pyRPA+wbHobjPXp5jQ2Rvf/ozw070arfCjHQEYCGM3BhFFGvX0HSdPCkGKNy+jX5XRB0gVJtUgTFK0YBdiCGX0EGewdLepvs2PZCs5mwHlB8v6bR1gOwTcHbWsP49a1t13Ael74EJ8Ub9rAmiYJ//oom/tO8CKV4BPLy/6wm8Cpw8AldOJUDKUcUl0874+4PZJOqZuoOwaUPJcdm+5OI59C3TSrtq+Bt4eB9b3U+0dy8xtz9/bf+bk9mfdghcS5+Iik+lS7Ioiy0qJzVZkd5Y4nY4Sh8NV6lZdpVqpw6FWqFqZXl5e7lyxsrJCr3Tr5boowiTSyEqxohTrLodL/99mXYRmhw5dYhq4xiSNWZdxH21IYvmPs6wwXmQTIbY0RL8pan0HJ/m5Kqk0+Nxfe5+qPX4i+fTteucnI6+iccZD2tUqOE2cJ2USl91l0GpIbqf3lim8Uz48dPjFlZPhydfisbETwa/OmtFDN84eIH0VtcjkAj3XIMlu1cgWkBjzsO1TV7Y8zvd+PLuq/YmtO3/qIeH9QqgUNM24qrlzMi5k+zYff+PaxLzIVsWIjBX+j7tJ6sh1WeThwyMfmL/Pdh9r+PIP//RQX8MX2sJ8UqFQ21TTEWoaW5jPU/M6u/jw1Y98J1+OnjpS2jI/l/q1Wrlwas3VDe4Hu+uqF9aYeQpVtbalWuxcY1hSllamGvdmVofGutIzGz8fb76135MVUHrBojSoedOqHYmKxOhjD8xnuhap+cciqm/qaJr95V7Xao8UG/afrx55afyzh9Z4fQf3H219r2rsSvDO9YOTl87M7Rw+94K9sWqbNf0PUEsHCHafUyOGAwAAtgUAAFBLAwQUAAgACABiqJ5YAAAAAAAAAADcAAAAEwAgAF9fTUFDT1NYLy5feHB0by5qcGdVVA0AB9iiMWacZjJmnmYyZnV4CwABBPUBAAAEFAAAAGNgFWNnYGJg8E1MVvAPVohQgAKQGAMnEBsB8SogBvHvMBAFHENCgqBMkI4pQOyBpoQRIc6fnJ+rl1hQkJOql5uYnAMUZGOo+MHU3jHNvXXfUdmE8lN7JxJnLzoAAFBLBwixEw4wXQAAANwAAABQSwECFAMUAAgACABiqJ5Ydp9TI4YDAAC2BQAACAAgAAAAAAAAAAAApIEAAAAAeHB0by5qcGdVVA0AB9iiMWacZjJmmmYyZnV4CwABBPUBAAAEFAAAAFBLAQIUAxQACAAIAGKonlixEw4wXQAAANwAAAATACAAAAAAAAAAAACkgdwDAABfX01BQ09TWC8uX3hwdG8uanBnVVQNAAfYojFmnGYyZp5mMmZ1eAsAAQT1AQAABBQAAABQSwUGAAAAAAIAAgC3AAAAmgQAAAAA
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+function getEncodedTiff(): string {
+  return `SUkqADQBAACysrKtra2YmJjGxsbGxsampqasrKyioqKjo6PExMShoaG8vLynp6e2tra4uLijo6OPj4+dnZ2lpaWnp6e/v7/IyMi7u7vPvr7dvb3ImprYs7OdnJyAgICRkZGxsbGbm5uknp7409Pzt7f83d38xsbBpqa5ubmpqamqqqqmpqbTx8f2wcH/2tr/tbX/0tLntbW+vr6urq68vLy9vb3NxcXtp6f/tbX/vr7/ysrWpaWwsLCXl5eUlJSVlZWOjo7awMDfvb33ycnitLTDv7+1tbWysrLCwsKbm5ucnJy8vLy5t7e+u7vW1tabm5uWlpagoKCsrKyampqzs7OUlJSjo6Orq6uenp6dnZ2ZmZm8vLzJycmhoaGNjY23t7ebm5ukpKSdnZ2cnJyrq6u2trYRAAABAwABAAAACgAAAAEBAwABAAAACgAAAAIBAwADAAAAFgIAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAAA4BAgASAAAAIgIAABEBBAABAAAACAAAABIBAwABAAAAAQAAABUBAwABAAAAAwAAABYBAwABAAAAgAAAABcBBAABAAAALAEAABoBBQABAAAABgIAABsBBQABAAAADgIAABwBAwABAAAAAQAAAB0BAgAIAAAANAIAACgBAwABAAAAAgAAAFMBAwADAAAAHAIAAAAAAAAsAQAAAQAAACwBAAABAAAACAAIAAgAAQABAAEAQ3JlYXRlZCB3aXRoIEdJTVAAYXJ0LnRpZgA=`;
 }

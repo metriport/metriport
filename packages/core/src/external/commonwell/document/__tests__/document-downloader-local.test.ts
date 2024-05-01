@@ -4,18 +4,24 @@ import * as AWS from "aws-sdk";
 import { ManagedUpload } from "aws-sdk/clients/s3";
 import {
   JPEG_MIME_TYPE,
+  OCTET_MIME_TYPE,
   PDF_MIME_TYPE,
   PNG_MIME_TYPE,
   TIFF_MIME_TYPE,
   TXT_MIME_TYPE,
 } from "../../../../util/mime";
+import { mockCapture } from "../../../../util/__tests__/capture";
 import { S3Utils } from "../../../aws/s3";
 import {
   getCdaWithB64EncodedJpeg,
+  getCdaWithB64EncodedOctet,
   getCdaWithB64EncodedPdf,
   getCdaWithB64EncodedPng,
   getCdaWithB64EncodedText,
   getCdaWithB64EncodedTiff,
+  getCdaWithEmptyNonXmlBody,
+  getCdaWithTwoNonXmlBodyTags,
+  getCdaWithTwoTextTagsUnderNonXmlBodyTag,
 } from "../../../cda/__tests__/examples";
 import { FileInfo } from "../document-downloader";
 import { DocumentDownloaderLocal } from "../document-downloader-local";
@@ -23,6 +29,7 @@ import { DocumentDownloaderLocal } from "../document-downloader-local";
 describe("document-downloader-local", () => {
   describe("parseXmlFile", () => {
     let s3Upload_mock: jest.SpyInstance;
+    const capture = mockCapture();
     beforeEach(() => {
       s3Upload_mock = jest.spyOn(AWS.S3.prototype, "upload").mockReturnValue({
         promise: jest.fn().mockResolvedValue({
@@ -41,6 +48,9 @@ describe("document-downloader-local", () => {
         contentType: faker.system.mimeType(),
         createdAt: undefined,
       });
+      const mockedCapture = mockCapture();
+      capture.error = mockedCapture.error;
+      capture.message = mockedCapture.message;
     });
     afterEach(() => {
       jest.resetAllMocks();
@@ -59,6 +69,7 @@ describe("document-downloader-local", () => {
         api: {} as CommonWellAPI,
         queryMeta,
       },
+      capture,
     });
     const downloadedFile = {
       bucket: faker.lorem.word(),
@@ -71,6 +82,62 @@ describe("document-downloader-local", () => {
       name: faker.lorem.word(),
       location: faker.internet.url(),
     };
+
+    it("uses the first nonXmlBody tag when more than one nonXmlBody", async () => {
+      const res = await downloader.parseXmlFile({
+        contents: getCdaWithTwoNonXmlBodyTags(),
+        ...downloadedFile,
+        requestedFileInfo,
+      });
+      expect(res).toBeTruthy();
+      expect(s3Upload_mock).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentType: TIFF_MIME_TYPE })
+      );
+      expect(capture.message).toHaveBeenCalledWith(
+        `Multiple nonXmlBody inside CDA`,
+        expect.objectContaining({
+          extra: expect.anything(),
+          level: "warning",
+        })
+      );
+    });
+
+    it("uses the first text tag when more than one under nonXmlBody", async () => {
+      const res = await downloader.parseXmlFile({
+        contents: getCdaWithTwoTextTagsUnderNonXmlBodyTag(),
+        ...downloadedFile,
+        requestedFileInfo,
+      });
+      expect(res).toBeTruthy();
+      expect(s3Upload_mock).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentType: TIFF_MIME_TYPE })
+      );
+      expect(capture.message).toHaveBeenCalledWith(
+        `Multiple text inside CDA.nonXmlBody`,
+        expect.objectContaining({
+          extra: expect.anything(),
+          level: "warning",
+        })
+      );
+    });
+
+    it("returns original file when gets empty nonXmlBody", async () => {
+      const res = await downloader.parseXmlFile({
+        contents: getCdaWithEmptyNonXmlBody(),
+        ...downloadedFile,
+        requestedFileInfo,
+      });
+      expect(res).toBeTruthy();
+      expect(res).toEqual(downloadedFile);
+      expect(s3Upload_mock).not.toHaveBeenCalled();
+      expect(capture.message).toHaveBeenCalledWith(
+        `No b64 found in xml`,
+        expect.objectContaining({
+          extra: expect.anything(),
+          level: "warning",
+        })
+      );
+    });
 
     it("parses b64 encoded txt and returns txt content type", async () => {
       const res = await downloader.parseXmlFile({
@@ -129,6 +196,18 @@ describe("document-downloader-local", () => {
       expect(res).toBeTruthy();
       expect(s3Upload_mock).toHaveBeenCalledWith(
         expect.objectContaining({ ContentType: JPEG_MIME_TYPE })
+      );
+    });
+
+    it("parses b64 encoded octet and returns octet content type", async () => {
+      const res = await downloader.parseXmlFile({
+        contents: getCdaWithB64EncodedOctet(),
+        ...downloadedFile,
+        requestedFileInfo,
+      });
+      expect(res).toBeTruthy();
+      expect(s3Upload_mock).toHaveBeenCalledWith(
+        expect.objectContaining({ ContentType: OCTET_MIME_TYPE })
       );
     });
   });
