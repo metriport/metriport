@@ -379,7 +379,7 @@ router.get(
  * POST /patient/:id/consolidated
  * @deprecated use the PUT version of this endpoint
  */
-router.post("/:id/consolidated", asyncHandler(putConsolidated));
+router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 /** ---------------------------------------------------------------------------
  * PUT /patient/:id/consolidated
  *
@@ -390,7 +390,7 @@ router.post("/:id/consolidated", asyncHandler(putConsolidated));
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
  */
-router.put("/:id/consolidated", asyncHandler(putConsolidated));
+router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];

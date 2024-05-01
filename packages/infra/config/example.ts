@@ -10,8 +10,13 @@ export const config: EnvConfigNonSandbox = {
   domain: "myhealthapp.com",
   subdomain: "api",
   authSubdomain: "auth",
-  dbName: "my_db",
-  dbUsername: "my_db_user",
+  apiDatabase: {
+    name: "my_db",
+    username: "my_db_user",
+    maintenanceWindow: "Sun:02:00-Sun:02:30",
+    minCapacity: 0.5,
+    maxCapacity: 1,
+  },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
   fhirToMedicalLambda: {
     nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",

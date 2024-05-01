@@ -136,6 +136,7 @@ export const findCurrentLink = async (
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
         commonwellStatus: "failed",
+        cqLinkStatus: undefined,
       });
       return;
     }
@@ -149,6 +150,7 @@ export const findCurrentLink = async (
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
         commonwellStatus: "failed",
+        cqLinkStatus: undefined,
       });
 
       return;
