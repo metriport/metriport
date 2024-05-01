@@ -39,7 +39,7 @@ export async function updatePatient(
 
   const patientUpdateWithPD: PatientUpdateCmd = {
     ...patientUpdate,
-    patientDiscovery: { requestId, startedAt: new Date() },
+    patientDiscovery: { requestId, startedAt: new Date(), facilityId: facility.id },
   };
 
   const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
@@ -51,7 +51,7 @@ export async function updatePatient(
 
   await cwCommands.patient.update(
     patient,
-    facilityId,
+    facility.id,
     getCqOrgIdsToDenyOnCw,
     requestId,
     forceCommonwell

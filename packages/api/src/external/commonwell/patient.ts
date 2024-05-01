@@ -8,9 +8,15 @@ import {
   Person,
   RequestMetadata,
   StrongId,
+  PatientNetworkLink,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
-import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import {
+  Patient,
+  PatientExternalData,
+  PatientDemographicsDiff,
+} from "@metriport/core/domain/patient";
+import { Address } from "@metriport/core/domain/address";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -47,6 +53,16 @@ import { getCwInitiator } from "./shared";
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
 const deleteContext = "cw.patient.delete";
+
+export type PatientNetworkLinkAddress = PatientNetworkLink["details"]["address"][number];
+export type ValidPatientNetworkLinkAddress = Omit<
+  PatientNetworkLinkAddress,
+  "line" | "city" | "state"
+> & {
+  line: [string, ...string[]];
+  city: string;
+  state: string;
+};
 
 export function getCWData(
   data: PatientExternalData | undefined
@@ -182,6 +198,16 @@ export async function registerAndLinkPatientInCW(
       storeIdsAndStatus,
       getOrgIdExcludeList,
     });
+
+    if (networkLinks) {
+      const patientDemographicsDiff = createPatientDemographicsDiff(patient, networkLinks);
+      setPatientDiscoveryStatus({
+        patientId: patient.id,
+        cxId: patient.cxId,
+        status: "processing",
+        patientDemographicsDiff,
+      });
+    }
 
     if (requestId) {
       const startedAt = patient.data.patientDiscovery?.startedAt;
@@ -752,4 +778,84 @@ async function getLinkInfo({
         .includes(linkToPatient.assuranceLevel)
     : false;
   return { hasLink, isLinkLola3Plus, strongIds };
+}
+
+function createPatientDemographicsDiff(
+  patient: Patient,
+  pdResults: NetworkLink[]
+): PatientDemographicsDiff | undefined {
+  const patientNetworkLinks: PatientNetworkLink[] = getPatientNetworkLinks(pdResults);
+  const newAddresses: Address[] = patientNetworkLinks
+    .flatMap((pnl: PatientNetworkLink) => {
+      return pnl.details.address.flatMap((newAddress: PatientNetworkLinkAddress) => {
+        const validNlAddress: ValidPatientNetworkLinkAddress | undefined =
+          checkAndReturnValidNlAddress(newAddress);
+        if (!validNlAddress) return [];
+        const isNew = patient.data.address.every((existingAddress: Address) =>
+          checkNonMatchingAddress(validNlAddress, existingAddress)
+        );
+        if (!isNew) return [];
+        return validNlAddress;
+      });
+    })
+    .map(convertNlAddress);
+  if (newAddresses.length > 0) {
+    return {
+      address: newAddresses,
+    };
+  }
+  return;
+}
+
+function getPatientNetworkLinks(pdResults: NetworkLink[]): PatientNetworkLink[] {
+  return pdResults.flatMap(pd => {
+    const patientNewtorkLink = pd.patient;
+    if (!patientNewtorkLink) return [];
+    return patientNewtorkLink;
+  });
+}
+
+function checkAndReturnValidNlAddress(
+  address: PatientNetworkLinkAddress
+): ValidPatientNetworkLinkAddress | undefined {
+  if (
+    address.line !== undefined &&
+    address.line != null &&
+    address.line.length > 0 &&
+    address.city !== undefined &&
+    address.city != null &&
+    address.state !== undefined &&
+    address.state !== null
+  ) {
+    return {
+      ...address,
+      line: address.line as [string, ...string[]],
+      city: address.city,
+      state: address.state,
+    };
+  }
+  return;
+}
+
+function checkNonMatchingAddress(
+  address1: ValidPatientNetworkLinkAddress,
+  address2: Address
+): boolean {
+  return (
+    address1.line[0] !== address2.addressLine1 ||
+    address1.city !== address2.city ||
+    address1.state !== address2.state ||
+    address1.zip !== address2.zip
+  );
+}
+
+function convertNlAddress(address: ValidPatientNetworkLinkAddress): Address {
+  return {
+    addressLine1: address.line[0],
+    addressLine2: address.line[1],
+    city: address.city,
+    state: address.state as Address["state"],
+    zip: address.zip,
+    country: address.country ?? undefined,
+  };
 }

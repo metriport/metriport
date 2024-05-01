@@ -9,4 +9,5 @@ export type QueryProgress = {
 export type PatientDiscovery = {
   startedAt: Date;
   requestId: string;
+  facilityId: string;
 };

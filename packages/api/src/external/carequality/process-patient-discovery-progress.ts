@@ -1,14 +1,13 @@
 import { errorToString } from "@metriport/shared/common/error";
 import { capture } from "@metriport/core/util/notifications";
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData, discover } from "./patient";
+import { getCQData } from "./patient";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-
 /**
  * Updates the patient discovery status for patient.
  * It also checks whether there's a scheduled document query and triggers it if so.
@@ -16,31 +15,20 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 export async function processPatientDiscoveryProgress({
   patient,
   status,
+  patientDemographicsDiff,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status: "processing" | "completed" | "failed" | "re-run";
+  status: "processing" | "completed" | "failed";
+  patientDemographicsDiff?: PatientDemographicsDiff;
 }): Promise<void> {
   const { log } = out(`CQ Process PD Status - patient ${patient.id}`);
 
   try {
-    const updatedPatient = await updatePatientDiscoveryStatus({ patient, status });
-
-    if (status === "re-run") {
-      const requestId = updatedPatient.data.patientDiscovery?.requestId;
-      const facilityId = updatedPatient.facilityIds[0];
-      if (!requestId || !facilityId) {
-        log(
-          `Cannot trigger re-run of patient discovery with missing requestId or facilityId - patient ${patient.id}`
-        );
-      } else {
-        log(
-          `Triggering re-run of patient discovery with requestId ${requestId} and facilityId ${facilityId}`
-        );
-
-        discover(updatedPatient, facilityId, requestId, true);
-      }
-      return;
-    }
+    const updatedPatient = await updatePatientDiscoveryStatus({
+      patient,
+      status,
+      patientDemographicsDiff,
+    });
 
     const scheduledDocQueryRequestId = getCQData(
       updatedPatient.data.externalData

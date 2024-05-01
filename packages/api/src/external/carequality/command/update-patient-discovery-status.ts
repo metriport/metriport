@@ -1,4 +1,4 @@
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
@@ -6,9 +6,11 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 export async function updatePatientDiscoveryStatus({
   patient,
   status,
+  patientDemographicsDiff,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status: "processing" | "completed" | "failed" | "re-run";
+  status: "processing" | "completed" | "failed";
+  patientDemographicsDiff?: PatientDemographicsDiff;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -29,6 +31,7 @@ export async function updatePatientDiscoveryStatus({
       CAREQUALITY: {
         ...externalData.CAREQUALITY,
         discoveryStatus: status,
+        patientDemographicsDiff,
       },
     };
 

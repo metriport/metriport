@@ -48,7 +48,7 @@ export const createPatient = async (
       personalIdentifiers,
       address,
       contact,
-      patientDiscovery: { requestId, startedAt: new Date() },
+      patientDiscovery: { requestId, startedAt: new Date(), facilityId },
     },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({

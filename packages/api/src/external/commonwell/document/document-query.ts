@@ -51,7 +51,11 @@ import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
 import { getCWData, linkPatientToCW } from "../patient";
-import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
+import {
+  getPatientWithCWData,
+  PatientWithCWData,
+  setPatientDiscoveryStatus,
+} from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
 import { sandboxGetDocRefsAndUpsert } from "./document-query-sandbox";
@@ -61,6 +65,7 @@ import {
   DocumentWithMetriportId,
   getFileName,
 } from "./shared";
+import { updatePatient } from "../../../command/medical/patient/update-patient";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -207,6 +212,23 @@ export async function queryAndProcessDocuments({
     });
 
     log(`Finished processing ${fhirDocRefs.length} documents.`);
+
+    if (facilityId && cwData.status === "completed" && cwData.patientDiscoveryDemographicsDiff) {
+      setPatientDiscoveryStatus({
+        patientId,
+        cxId,
+        status: cwData.status,
+        patientDemographicsDiff: undefined,
+      });
+
+      updatePatient({
+        id: patientId,
+        cxId,
+        facilityId,
+        ...patient.data,
+        address: [...patient.data.address, ...cwData.patientDiscoveryDemographicsDiff.address],
+      });
+    }
   } catch (error) {
     const msg = `Failed to query and process documents - CommonWell`;
     log(`${msg}. Error: ${errorToString(error)}`);

@@ -1,4 +1,5 @@
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
+import { Address } from "@metriport/core/domain/address";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -9,7 +10,6 @@ import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
-import { testAndUpdatePatientDemographics } from "./command/test-and-update-patient-demographics";
 import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { analytics, EventTypes } from "../../shared/analytics";
@@ -18,6 +18,16 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
+export type PatientResourceAddress = InboundPatientResource["address"][number];
+export type ValidPatientResourceAddress = Omit<
+  PatientResourceAddress,
+  "line" | "city" | "state" | "postalCode"
+> & {
+  line: [string, ...string[]];
+  city: string;
+  state: string;
+  postalCode: string;
+};
 
 export async function processOutboundPatientDiscoveryResps({
   requestId,
@@ -37,14 +47,9 @@ export async function processOutboundPatientDiscoveryResps({
       return;
     }
 
-    log(`Updating patient demographics`);
-    const patientDemoAugmented: boolean = await augmentPatientDemographics(
-      {
-        id: patientId,
-        cxId,
-      },
-      results
-    );
+    const patient = await getPatientOrFail(patientIds);
+    const patientDemographicsDiff: PatientDemographicsDiff | undefined =
+      createPatientDemographicsDiff(patient, results);
 
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
@@ -57,10 +62,10 @@ export async function processOutboundPatientDiscoveryResps({
 
     await processPatientDiscoveryProgress({
       patient: patientIds,
-      status: patientDemoAugmented ? "re-run" : "completed",
+      status: "completed",
+      patientDemographicsDiff,
     });
 
-    const patient = await getPatientOrFail({ id: patientId, cxId });
     const startedAt = patient.data.patientDiscovery?.startedAt;
 
     analytics({
@@ -119,25 +124,34 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
   });
 }
 
-async function augmentPatientDemographics(
-  patient: Pick<Patient, "id" | "cxId">,
+function createPatientDemographicsDiff(
+  patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
-): Promise<boolean> {
-  const patientResources = fetchPatientResources(pdResults);
-  const successfulAugmentations = await Promise.all(
-    patientResources.map(async patientResource => {
-      return await testAndUpdatePatientDemographics({
-        patient,
-        patientResource,
+): PatientDemographicsDiff | undefined {
+  const patientResources = getPatientResources(pdResults);
+  const newAddresses: Address[] = patientResources
+    .flatMap(pr => {
+      return pr.address.flatMap((prAddress: PatientResourceAddress) => {
+        const validPrAddress: ValidPatientResourceAddress | undefined =
+          checkAndReturnValidPrAddress(prAddress);
+        if (!validPrAddress) return [];
+        const isNew = patient.data.address.every((existingAddress: Address) =>
+          checkNonMatchingPrAddress(validPrAddress, existingAddress)
+        );
+        if (!isNew) return [];
+        return validPrAddress;
       });
     })
-  );
-  return successfulAugmentations.some(isAugmented => isAugmented === true);
+    .map(convertPrAddress);
+  if (newAddresses.length > 0) {
+    return {
+      address: newAddresses,
+    };
+  }
+  return;
 }
 
-function fetchPatientResources(
-  pdResults: OutboundPatientDiscoveryResp[]
-): InboundPatientResource[] {
+function getPatientResources(pdResults: OutboundPatientDiscoveryResp[]): InboundPatientResource[] {
   return pdResults.flatMap(pd => {
     const match = pd.patientMatch;
     if (!match) return [];
@@ -145,4 +159,48 @@ function fetchPatientResources(
     if (!patientResource) return [];
     return patientResource;
   });
+}
+
+function checkAndReturnValidPrAddress(
+  address: PatientResourceAddress
+): ValidPatientResourceAddress | undefined {
+  if (
+    address.line !== undefined &&
+    address.line.length > 0 &&
+    address.city !== undefined &&
+    address.state !== undefined &&
+    address.postalCode !== undefined
+  ) {
+    return {
+      ...address,
+      line: address.line as [string, ...string[]],
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+    };
+  }
+  return;
+}
+
+function checkNonMatchingPrAddress(
+  address1: ValidPatientResourceAddress,
+  address2: Address
+): boolean {
+  return (
+    address1.line[0] !== address2.addressLine1 ||
+    address1.city !== address2.city ||
+    address1.state !== address2.state ||
+    address1.postalCode !== address2.zip
+  );
+}
+
+function convertPrAddress(address: ValidPatientResourceAddress): Address {
+  return {
+    addressLine1: address.line[0],
+    addressLine2: address.line[1],
+    city: address.city,
+    state: address.state as Address["state"],
+    zip: address.postalCode,
+    country: address.country,
+  };
 }

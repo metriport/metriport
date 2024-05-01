@@ -3,7 +3,7 @@ import { executeWithRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -128,10 +128,12 @@ export const setPatientDiscoveryStatus = async ({
   patientId,
   cxId,
   status,
+  patientDemographicsDiff,
 }: {
   patientId: string;
   cxId: string;
   status: LinkStatus;
+  patientDemographicsDiff?: PatientDemographicsDiff;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patientId,
@@ -152,6 +154,7 @@ export const setPatientDiscoveryStatus = async ({
       COMMONWELL: {
         ...externalData.COMMONWELL,
         status,
+        patientDemographicsDiff,
       },
     };
 
