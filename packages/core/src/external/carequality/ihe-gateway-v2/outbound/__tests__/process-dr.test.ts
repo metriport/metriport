@@ -92,6 +92,19 @@ describe("processDRResponse", () => {
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
   });
+  it("should process response that is not a string correctly", async () => {
+    const randomResponse = "This is a bad response and is not xml";
+
+    const response = await processDRResponse({
+      drResponse: {
+        success: true,
+        response: randomResponse,
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
+      },
+    });
+    expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
+  });
 });
 
 describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {

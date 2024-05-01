@@ -71,16 +71,5 @@ export async function sendSignedDRRequests({
     }
   });
 
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        return undefined;
-      }
-    })
-    .filter((response): response is DRSamlClientResponse => response !== undefined);
-
-  return processedResponses;
+  return await Promise.all(requestPromises);
 }

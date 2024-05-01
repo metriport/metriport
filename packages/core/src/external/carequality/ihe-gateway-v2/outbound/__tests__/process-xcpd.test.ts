@@ -67,4 +67,18 @@ describe("processXCPDResponse", () => {
     expect(response.operationOutcome).toBeDefined();
     expect(response.patientMatch).toBeNull();
   });
+  it("should process response that is not a string correctly", async () => {
+    const randomResponse = "This is a bad response and is not xml";
+
+    const response = processXCPDResponse({
+      xcpdResponse: {
+        success: true,
+        response: randomResponse,
+        gateway,
+        outboundRequest: outboundXCPDRequest,
+      },
+    });
+    expect(response.operationOutcome).toBeDefined();
+    expect(response.patientMatch).toBeNull();
+  });
 });

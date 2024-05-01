@@ -67,20 +67,10 @@ export async function sendSignedDQRequests({
         outboundRequest: request.outboundRequest,
         response: errorString,
         success: false,
+        bad: "Jonah",
       };
     }
   });
 
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        return undefined;
-      }
-    })
-    .filter((response): response is DQSamlClientResponse => response !== undefined);
-
-  return processedResponses;
+  return await Promise.all(requestPromises);
 }

@@ -71,16 +71,5 @@ export async function sendSignedXCPDRequests({
     }
   });
 
-  const responses = await Promise.allSettled(requestPromises);
-  const processedResponses: XCPDSamlClientResponse[] = responses
-    .map(result => {
-      if (result.status === "fulfilled") {
-        return result.value;
-      } else {
-        return undefined;
-      }
-    })
-    .filter((response): response is XCPDSamlClientResponse => response !== undefined);
-
-  return processedResponses;
+  return await Promise.all(requestPromises);
 }

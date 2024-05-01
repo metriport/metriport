@@ -129,6 +129,7 @@ function handlePatientErrorResponse({
     extra: {
       context: `ihe-gateway-v2-outbound-patient-discovery`,
       outboundRequest,
+      jsonObj,
       gateway,
       patientId,
       cxId,

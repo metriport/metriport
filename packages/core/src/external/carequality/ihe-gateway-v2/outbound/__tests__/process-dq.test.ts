@@ -44,4 +44,19 @@ describe("processDQResponse", () => {
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
   });
+
+  it("should process response that is not a string correctly", async () => {
+    const randomResponse = "This is a bad response and is not xml";
+
+    const response = processDQResponse({
+      dqResponse: {
+        success: true,
+        response: randomResponse,
+        gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
+      },
+    });
+    expect(response.operationOutcome).toBeDefined();
+    expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
+  });
 });
