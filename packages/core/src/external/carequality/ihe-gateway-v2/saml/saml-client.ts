@@ -4,6 +4,7 @@ import * as AWS from "aws-sdk";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
+import { MetriportError } from "../../../../util/error/metriport-error";
 const { log } = out("Saml Client");
 
 export type SamlClientResponse = {
@@ -15,10 +16,7 @@ export async function getTrustedKeyStore(): Promise<string> {
   try {
     const s3 = new AWS.S3({ region: Config.getAWSRegion() });
     const trustBundleBucketName = Config.getCqTrustBundleBucketName();
-    const envType =
-      Config.getEnvType() === Config.DEV_ENV || Config.getEnvType() === Config.STAGING_ENV
-        ? Config.STAGING_ENV
-        : Config.PROD_ENV;
+    const envType = Config.isDev() || Config.isStaging() ? Config.STAGING_ENV : Config.PROD_ENV;
     const key = `trust_store_${envType}_aws.pem`;
     const response = await s3.getObject({ Bucket: trustBundleBucketName, Key: key }).promise();
     if (!response.Body) {
@@ -28,8 +26,9 @@ export async function getTrustedKeyStore(): Promise<string> {
     const trustBundle = response.Body.toString();
     return trustBundle;
   } catch (error) {
-    log(`Error getting trust bundle. Error: ${error}`);
-    throw new Error(`Error getting trust bundle`);
+    const msg = `Error getting trust bundle`;
+    log(`${msg}. Error: ${error}`);
+    throw new MetriportError(msg, error);
   }
 }
 

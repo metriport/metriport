@@ -8,12 +8,13 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
-import { stripUrnPrefix } from "../../../utils";
+import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
   XDSDocumentEntryUniqueId,
 } from "../../../../shared";
+import { successStatus, partialSuccessStatus } from "./constants";
 
 type Identifier = {
   _identificationScheme: string;
@@ -136,38 +137,37 @@ export function processDQResponse({
       outboundRequest,
       gateway: gateway,
     });
-  } else {
-    const parser = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "_",
-      textNodeName: "_text",
-      parseAttributeValue: false,
-      removeNSPrefix: true,
+  }
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
+    parseAttributeValue: false,
+    removeNSPrefix: true,
+  });
+
+  const jsonObj = parser.parse(response);
+  const status = jsonObj?.Envelope?.Body?.AdhocQueryResponse?._status?.split(":").pop();
+  const extrinsicObjects =
+    jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryObjectList?.ExtrinsicObject;
+  const registryErrorList = jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryErrorList;
+
+  if ((status === successStatus || status === partialSuccessStatus) && extrinsicObjects) {
+    return handleSuccessResponse({
+      extrinsicObjects,
+      outboundRequest,
+      gateway,
     });
-
-    const jsonObj = parser.parse(response);
-    const status = jsonObj?.Envelope?.Body?.AdhocQueryResponse?._status?.split(":").pop();
-    const extrinsicObjects =
-      jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryObjectList?.ExtrinsicObject;
-    const registryErrorList = jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryErrorList;
-
-    if ((status === "Success" || status === "PartialSuccess") && extrinsicObjects) {
-      return handleSuccessResponse({
-        extrinsicObjects,
-        outboundRequest,
-        gateway,
-      });
-    } else if (registryErrorList) {
-      return handleRegistryErrorResponse({
-        registryErrorList,
-        outboundRequest,
-        gateway,
-      });
-    } else {
-      return handleEmptyResponse({
-        outboundRequest,
-        gateway,
-      });
-    }
+  } else if (registryErrorList) {
+    return handleRegistryErrorResponse({
+      registryErrorList,
+      outboundRequest,
+      gateway,
+    });
+  } else {
+    return handleEmptyResponse({
+      outboundRequest,
+      gateway,
+    });
   }
 }

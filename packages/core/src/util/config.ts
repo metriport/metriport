@@ -24,6 +24,10 @@ export class Config {
     return Config.getEnvType() === this.DEV_ENV;
   }
 
+  static isStaging(): boolean {
+    return Config.getEnvType() === this.STAGING_ENV;
+  }
+
   static getEnvType(): string {
     return getEnvVarOrFail("ENV_TYPE");
   }

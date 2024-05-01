@@ -7,6 +7,10 @@ import {
   OperationOutcome,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
+import { capture } from "../../../../../../util/notifications";
+import { out } from "../../../../../../util/log";
+
+const { log } = out("XCA Error Handling");
 
 export function processRegistryErrorList(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -35,8 +39,16 @@ export function processRegistryErrorList(
 
       operationOutcome.issue.push(issue);
     });
-  } catch (ex) {
-    console.error(`Error processing RegistryErrorList: ${ex}`);
+  } catch (error) {
+    const msg = "Error processing RegistryErrorList";
+    log(`${msg}: ${error}`);
+    capture.error(msg, {
+      extra: {
+        error,
+        outboundRequest,
+        registryErrorList,
+      },
+    });
   }
 
   return operationOutcome.issue.length > 0 ? operationOutcome : undefined;

@@ -3,7 +3,7 @@ import * as asn1js from "asn1js";
 import { arrayBufferToString, toBase64 } from "pvutils";
 import { SNOMED_CODE, NHIN_PURPOSE_CODE_SYSTEM } from "../../../shared";
 import { namespaces } from "../../constants";
-import { wrapIdInUrnOid } from "./utils";
+import { wrapIdInUrnOid } from "../../../../../util/urn";
 
 const BEGIN_CERTIFICATE_REGEX = /-----BEGIN CERTIFICATE-----\r?\n/;
 const END_CERTIFICATE_REGEX = /-----END CERTIFICATE-----\r?\n?$/;

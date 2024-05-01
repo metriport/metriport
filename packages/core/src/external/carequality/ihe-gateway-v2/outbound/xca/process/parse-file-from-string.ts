@@ -49,12 +49,13 @@ function extractNonXmlBody(
   try {
     decodedString = decodedBytes.toString();
   } catch (ex) {
-    log("Got a non-base64 document! Using original fileAsString content for decodedString");
+    const msg = "Got a non-base64 document! Using original fileAsString content for decodedString";
+    log(msg);
     decodedString = fileAsString.trim();
   }
   if (!decodedString) {
     const msg = "Error decoding file content - missing decodedString";
-    console.error(msg);
+    log(msg);
     throw new Error(msg);
   }
   const parser = new XMLParser({

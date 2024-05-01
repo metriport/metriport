@@ -8,10 +8,12 @@ export async function getSamlCertsAndKeys(): Promise<SamlCertsAndKeys> {
   const publicCertSecretName = Config.getCQOrgCertificate();
   const certChainSecretName = Config.getCQOrgCertificateIntermediate();
 
-  const privateKey = await getSecret(privateKeySecretName);
-  const privateKeyPassword = await getSecret(privateKeyPasswordSecretName);
-  const publicCert = await getSecret(publicCertSecretName);
-  const certChain = await getSecret(certChainSecretName);
+  const [privateKey, privateKeyPassword, publicCert, certChain] = await Promise.all([
+    getSecret(privateKeySecretName),
+    getSecret(privateKeyPasswordSecretName),
+    getSecret(publicCertSecretName),
+    getSecret(certChainSecretName),
+  ]);
   if (
     !privateKey ||
     typeof privateKey !== "string" ||

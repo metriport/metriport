@@ -10,7 +10,8 @@ import {
   replyTo,
 } from "../../../../shared";
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
-import { wrapIdInUrnUuid, timestampToSoapBody } from "../../../utils";
+import { timestampToSoapBody } from "../../../utils";
+import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";

@@ -4,7 +4,9 @@ import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedXCPD } from "../create/iti55-envelope";
+import { out } from "../../../../../../util/log";
 
+const { log } = out("Sending XCPD Requests");
 const context = "ihe-gateway-v2-xcpd-saml-client";
 
 export type XCPDSamlClientResponse = SamlClientResponse & {
@@ -32,7 +34,7 @@ export async function sendSignedXCPDRequests({
         samlCertsAndKeys,
         trustedKeyStore,
       });
-      console.log(
+      log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
           request.gateway.oid
         }`
@@ -45,7 +47,7 @@ export async function sendSignedXCPDRequests({
       };
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
-      console.log(`${msg}, error: ${error}`);
+      log(`${msg}, error: ${error}`);
 
       const errorString: string = errorToString(error);
       const extra = {

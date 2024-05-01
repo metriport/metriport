@@ -4,7 +4,9 @@ import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedDR } from "../create/iti39-envelope";
+import { out } from "../../../../../../util/log";
 
+const { log } = out("Sending DR Requests");
 const context = "ihe-gateway-v2-dr-saml-client";
 
 export type DRSamlClientResponse = SamlClientResponse & {
@@ -32,7 +34,7 @@ export async function sendSignedDRRequests({
         samlCertsAndKeys,
         trustedKeyStore,
       });
-      console.log(
+      log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
           request.gateway.homeCommunityId
         }`
@@ -45,7 +47,7 @@ export async function sendSignedDRRequests({
       };
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
-      console.log(`${msg}, error: ${error}`);
+      log(`${msg}, error: ${error}`);
 
       const errorString: string = errorToString(error);
       const extra = {

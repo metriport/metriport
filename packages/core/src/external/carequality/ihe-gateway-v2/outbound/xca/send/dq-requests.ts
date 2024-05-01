@@ -4,7 +4,9 @@ import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
 import { BulkSignedDQ } from "../create/iti38-envelope";
+import { out } from "../../../../../../util/log";
 
+const { log } = out("Sending DQ Requests");
 const context = "ihe-gateway-v2-dq-saml-client";
 
 export type DQSamlClientResponse = SamlClientResponse & {
@@ -32,7 +34,7 @@ export async function sendSignedDQRequests({
         samlCertsAndKeys,
         trustedKeyStore,
       });
-      console.log(
+      log(
         `Request ${index + 1} sent successfully to: ${request.gateway.url} + oid: ${
           request.gateway.homeCommunityId
         }`
@@ -45,7 +47,7 @@ export async function sendSignedDQRequests({
       };
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed DQ SAML Request";
-      console.log(`${msg}, error: ${error}`);
+      log(`${msg}, error: ${error}`);
 
       const errorString: string = errorToString(error);
       const extra = {
