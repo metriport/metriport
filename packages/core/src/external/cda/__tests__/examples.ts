@@ -1,0 +1,139 @@
+export function getCdaWithEmptyNonXmlBody(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithTwoNonXmlBodyTags(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/tiff" representation="B64">
+            ${getEncodedTiff()}
+          </text>
+        </nonXMLBody>
+        <nonXMLBody>
+          <text mediaType="text/plain" representation="B64"></text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithTwoTextTagsUnderNonXmlBodyTag(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/tiff" representation="B64">
+            ${getEncodedTiff()}
+          </text>
+          <text mediaType="text/plain" representation="B64"></text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedText(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="text/plain" representation="B64">
+            TWV0cmlwb3J0IHJvY2tzIQ==
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedPdf(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="application/pdf" representation="B64">
+            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188UW1w1tSrhP+Onm/yP+BN+3S/6rVyVVq5KK79JrUWmixcpPv5Mquk4PgVFU+YiNV28SE18Ley3UAZWezZ1f5oo//0cZasxzfWNezzgCefBJzvpnZc+2FKXKtNXQ33qMuWH2S8qdpvDRg1G2SBLsmBQRGsAbLIzAIDHrqRkB4Yq2DO/mmuzGPVZ6cSjxo7iVEYLDdt/e/Xj8xTLoMV53YIF900f/Pbg7A3zqnvo/RcG7p0ya8GiPbtpLXsM4j2QStf+7yTq/39LQiiVRANPQyxJLxlGDCPGOabrzGGL1cD+QncJ0FpI/P8Ehqfhwf9NEHug7VIgP4fdl8DtGcC2FoRdDDAS2CkCNOD6CrF8O/9/Icn3cF/i4PByR/2/5IDM/w/osT8Xl7D8yPzph84dvHCNArIVi6bMfxz9H7TJNocKZW5kc3RyZWFtCmVuZG9iagoyIDAgb2JqCjw8Ci9Qcm9jU2V0IFsvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQyAvSW1hZ2VJXQovRm9udCA8PAo+PgovWE9iamVjdCA8PAovVFBMMSA1IDAgUgo+Pgo+PgplbmRvYmoKMTQgMCBvYmoKPDwKL0NyZWF0b3IgKE9ubGluZTJQREYuY29tKQovUHJvZHVjZXIgKE9ubGluZTJQREYuY29tKQovQ3JlYXRpb25EYXRlIChEOjIwMjQwNTAxMDM1MzAyKzAyJzAwJykKPj4KZW5kb2JqCjE1IDAgb2JqCjw8Ci9UeXBlIC9DYXRhbG9nCi9QYWdlcyAxIDAgUgovT3BlbkFjdGlvbiBbMyAwIFIgL0ZpdEggbnVsbF0KL1BhZ2VMYXlvdXQgL09uZUNvbHVtbgo+PgplbmRvYmoKeHJlZgowIDE2CjAwMDAwMDAwMDAgNjU1MzUgZiAKMDAwMDAwMDI1NyAwMDAwMCBuIAowMDAwMDEwMjM4IDAwMDAwIG4gCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDExNyAwMDAwMCBuIAowMDAwMDAwMzQ0IDAwMDAwIG4gCjAwMDAwMDA3ODMgMDAwMDAgbiAKMDAwMDAwMDgxMyAwMDAwMCBuIAowMDAwMDAwOTUyIDAwMDAwIG4gCjAwMDAwMDEyNDYgMDAwMDAgbiAKMDAwMDAwMTQ3MCAwMDAwMCBuIAowMDAwMDAxNjg3IDAwMDAwIG4gCjAwMDAwMDE3NTkgMDAwMDAgbiAKMDAwMDAwMTg0NiAwMDAwMCBuIAowMDAwMDEwMzQ0IDAwMDAwIG4gCjAwMDAwMTA0NTkgMDAwMDAgbiAKdHJhaWxlcgo8PAovU2l6ZSAxNgovUm9vdCAxNSAwIFIKL0luZm8gMTQgMCBSCi9JRCBbPDNCQTBENzUzNzRENENCQUI0REZERTAzMEIxQUE2MTgwPjwzQkEwRDc1Mzc0RDRDQkFCNERGREUwMzBCMUFBNjE4MD5dCj4+CnN0YXJ0eHJlZgoxMDU2MwolJUVPRg==
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedTiff(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/tiff" representation="B64">
+            ${getEncodedTiff()}
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedPng(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/png" representation="B64">
+          iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAIAAAACUFjqAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAACqADAAQAAAABAAAACgAAAAA7eLj1AAABFElEQVQYGR2PzWqDUBCF1Ws0V9NapQuJPyUxFLKxEHCRRVd5Y9/Bd7iJQqWGgEqjmODfjdohZzUwc858h/V9n1Ka57nrugzDxHEsCEJd1yzLrlYrrigK5amyLKuqGoYhSRIwcBwHA2/bNsZ4mqZ3hF6n6a1pvM0mSNMwDFVV5cERRRFG6Nvz6Pn8cTgwaZrebuZ+D3lc13WyLH9tt+P1unAcRAhaLD4VZfYUr2kaUPTj2Fwu+H5nMGbatgAOSiGFJ4TAGjJedjsA02U5z7K/5XJW14Zh8NDneDyKovj7eAyU/lSVvl6TIAB4SZL4LMsAW9d1iIGC8/k8ThJohRAyTZOzLAusp9PJcZy2beELXIOAqe/7fzDXm4VfqDTPAAAAAElFTkSuQmCC
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedJpeg(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="image/jpeg" representation="B64">
+          /9j/4AAQSkZJRgABAQEBLAEsAAD//gATQ3JlYXRlZCB3aXRoIEdJTVD/4gKwSUNDX1BST0ZJTEUAAQEAAAKgbGNtcwQwAABtbnRyUkdCIFhZWiAH6AAFAAEAAQArAAlhY3NwQVBQTAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9tYAAQAAAADTLWxjbXMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1kZXNjAAABIAAAAEBjcHJ0AAABYAAAADZ3dHB0AAABmAAAABRjaGFkAAABrAAAACxyWFlaAAAB2AAAABRiWFlaAAAB7AAAABRnWFlaAAACAAAAABRyVFJDAAACFAAAACBnVFJDAAACFAAAACBiVFJDAAACFAAAACBjaHJtAAACNAAAACRkbW5kAAACWAAAACRkbWRkAAACfAAAACRtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACQAAAAcAEcASQBNAFAAIABiAHUAaQBsAHQALQBpAG4AIABzAFIARwBCbWx1YwAAAAAAAAABAAAADGVuVVMAAAAaAAAAHABQAHUAYgBsAGkAYwAgAEQAbwBtAGEAaQBuAABYWVogAAAAAAAA9tYAAQAAAADTLXNmMzIAAAAAAAEMQgAABd7///MlAAAHkwAA/ZD///uh///9ogAAA9wAAMBuWFlaIAAAAAAAAG+gAAA49QAAA5BYWVogAAAAAAAAJJ8AAA+EAAC2xFhZWiAAAAAAAABilwAAt4cAABjZcGFyYQAAAAAAAwAAAAJmZgAA8qcAAA1ZAAAT0AAACltjaHJtAAAAAAADAAAAAKPXAABUfAAATM0AAJmaAAAmZwAAD1xtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAEcASQBNAFBtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEL/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wgARCAAUABQDAREAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABAUBAgYH/8QAGQEAAgMBAAAAAAAAAAAAAAAAAAIDBAUB/9oADAMBAAIQAxAAAAHo/HhLK6Smck7yLQy1jIsAQOA//8QAHBAAAgICAwAAAAAAAAAAAAAAAQMCBBITABEh/9oACAEBAAEFAlQEm2qbeRe9Yr2Nbm2RplLMvGNsk9K8h//EAB0RAAIBBAMAAAAAAAAAAAAAAAECEQADBBIQICH/2gAIAQMBAT8BVdjFNjkCeLLhGk0+SmvnX//EABsRAAIBBQAAAAAAAAAAAAAAAAABAhAREiAh/9oACAECAQE/AXwzpJXQoPX/xAAbEAACAwEBAQAAAAAAAAAAAAAAAQIREkEDUf/aAAgBAQAGPwKKjK5j9OFZozjL+knZamY4yhH/xAAcEAACAgMBAQAAAAAAAAAAAAAAARExIVFhQZH/2gAIAQEAAT8hjwHCL8mxRqeDbKudDkT16HPxHwXAqyPJJxIqWSwf/9oADAMBAAIAAwAAABAQK0Qf/8QAGREBAAMBAQAAAAAAAAAAAAAAAQARIRAg/9oACAEDAQE/EGqRWHTgMMiaQtt+P//EABkRAQEBAAMAAAAAAAAAAAAAAAERABAgIf/aAAgBAgEBPxBRcBZwkDUe9f/EABwQAQADAAIDAAAAAAAAAAAAAAEAESExUUHh8P/aAAgBAQABPxBfA22KSb8fjIKauy4jQ0aIfqFHqR2RxVL20Yi9w7joa4q+dghAHU//2Q==
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+export function getCdaWithB64EncodedOctet(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="cda.xsl"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:hl7-org:v3 http://xreg2.nist.gov:11080/hitspValidation/schema/cdar2/infrastructure/cda/CDA.xsd">
+      <component>
+        <nonXMLBody>
+          <text mediaType="application/octet-stream" representation="B64">
+          UEsDBBQACAAIAGKonlgAAAAAAAAAALYFAAAIACAAeHB0by5qcGdVVA0AB9iiMWacZjJmmmYyZnV4CwABBPUBAAAEFAAAAJWTbWxTZRTH/89z7127tR33dndjInN34S1xm4IomV/sts4uxU26OpJNSWZ7u1fa0rRFMCF8UBPInHELMeoIcQiBGIxRE4VEBoSXRHxJeEl0E2M2v7gPflB0fFDxep62Y+3iTDy9N/31nPM/Pec891pT1gzUrT6/D4ysjtUB1t8o8yZ7Q+neiLFnMD1gtPrbA9aP/EO/19sTCG7z+duepGyAT0TNWEreCMTi6WSwtdno6n7WsM1BAaNPLYpDZirRFAi0YVm78w1lkt2sF7WWz/tXc0V6UybADOJGM5FMEz9PvGVPOiH4LWLdHAhFiN8nrktSg8RTwh/O8s+C+zPMRU092Rn0EuvERn8eh/PYHEjGiB8lXhuJxak+78pyRPA+wbHobjPXp5jQ2Rvf/ozw070arfCjHQEYCGM3BhFFGvX0HSdPCkGKNy+jX5XRB0gVJtUgTFK0YBdiCGX0EGewdLepvs2PZCs5mwHlB8v6bR1gOwTcHbWsP49a1t13Ael74EJ8Ub9rAmiYJ//oom/tO8CKV4BPLy/6wm8Cpw8AldOJUDKUcUl0874+4PZJOqZuoOwaUPJcdm+5OI59C3TSrtq+Bt4eB9b3U+0dy8xtz9/bf+bk9mfdghcS5+Iik+lS7Ioiy0qJzVZkd5Y4nY4Sh8NV6lZdpVqpw6FWqFqZXl5e7lyxsrJCr3Tr5boowiTSyEqxohTrLodL/99mXYRmhw5dYhq4xiSNWZdxH21IYvmPs6wwXmQTIbY0RL8pan0HJ/m5Kqk0+Nxfe5+qPX4i+fTteucnI6+iccZD2tUqOE2cJ2USl91l0GpIbqf3lim8Uz48dPjFlZPhydfisbETwa/OmtFDN84eIH0VtcjkAj3XIMlu1cgWkBjzsO1TV7Y8zvd+PLuq/YmtO3/qIeH9QqgUNM24qrlzMi5k+zYff+PaxLzIVsWIjBX+j7tJ6sh1WeThwyMfmL/Pdh9r+PIP//RQX8MX2sJ8UqFQ21TTEWoaW5jPU/M6u/jw1Y98J1+OnjpS2jI/l/q1Wrlwas3VDe4Hu+uqF9aYeQpVtbalWuxcY1hSllamGvdmVofGutIzGz8fb76135MVUHrBojSoedOqHYmKxOhjD8xnuhap+cciqm/qaJr95V7Xao8UG/afrx55afyzh9Z4fQf3H219r2rsSvDO9YOTl87M7Rw+94K9sWqbNf0PUEsHCHafUyOGAwAAtgUAAFBLAwQUAAgACABiqJ5YAAAAAAAAAADcAAAAEwAgAF9fTUFDT1NYLy5feHB0by5qcGdVVA0AB9iiMWacZjJmnmYyZnV4CwABBPUBAAAEFAAAAGNgFWNnYGJg8E1MVvAPVohQgAKQGAMnEBsB8SogBvHvMBAFHENCgqBMkI4pQOyBpoQRIc6fnJ+rl1hQkJOql5uYnAMUZGOo+MHU3jHNvXXfUdmE8lN7JxJnLzoAAFBLBwixEw4wXQAAANwAAABQSwECFAMUAAgACABiqJ5Ydp9TI4YDAAC2BQAACAAgAAAAAAAAAAAApIEAAAAAeHB0by5qcGdVVA0AB9iiMWacZjJmmmYyZnV4CwABBPUBAAAEFAAAAFBLAQIUAxQACAAIAGKonlixEw4wXQAAANwAAAATACAAAAAAAAAAAACkgdwDAABfX01BQ09TWC8uX3hwdG8uanBnVVQNAAfYojFmnGYyZp5mMmZ1eAsAAQT1AQAABBQAAABQSwUGAAAAAAIAAgC3AAAAmgQAAAAA
+          </text>
+        </nonXMLBody>
+      </component>
+    </ClinicalDocument>`;
+}
+
+function getEncodedTiff(): string {
+  return `SUkqADQBAACysrKtra2YmJjGxsbGxsampqasrKyioqKjo6PExMShoaG8vLynp6e2tra4uLijo6OPj4+dnZ2lpaWnp6e/v7/IyMi7u7vPvr7dvb3ImprYs7OdnJyAgICRkZGxsbGbm5uknp7409Pzt7f83d38xsbBpqa5ubmpqamqqqqmpqbTx8f2wcH/2tr/tbX/0tLntbW+vr6urq68vLy9vb3NxcXtp6f/tbX/vr7/ysrWpaWwsLCXl5eUlJSVlZWOjo7awMDfvb33ycnitLTDv7+1tbWysrLCwsKbm5ucnJy8vLy5t7e+u7vW1tabm5uWlpagoKCsrKyampqzs7OUlJSjo6Orq6uenp6dnZ2ZmZm8vLzJycmhoaGNjY23t7ebm5ukpKSdnZ2cnJyrq6u2trYRAAABAwABAAAACgAAAAEBAwABAAAACgAAAAIBAwADAAAAFgIAAAMBAwABAAAAAQAAAAYBAwABAAAAAgAAAA4BAgASAAAAIgIAABEBBAABAAAACAAAABIBAwABAAAAAQAAABUBAwABAAAAAwAAABYBAwABAAAAgAAAABcBBAABAAAALAEAABoBBQABAAAABgIAABsBBQABAAAADgIAABwBAwABAAAAAQAAAB0BAgAIAAAANAIAACgBAwABAAAAAgAAAFMBAwADAAAAHAIAAAAAAAAsAQAAAQAAACwBAAABAAAACAAIAAgAAQABAAEAQ3JlYXRlZCB3aXRoIEdJTVAAYXJ0LnRpZgA=`;
+}
