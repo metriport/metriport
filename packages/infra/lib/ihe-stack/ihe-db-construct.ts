@@ -66,6 +66,7 @@ export default class IHEDBConstruct extends Construct {
         enablePerformanceInsights: true,
         parameterGroup,
       },
+      preferredMaintenanceWindow: config.rds.maintenanceWindow,
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
