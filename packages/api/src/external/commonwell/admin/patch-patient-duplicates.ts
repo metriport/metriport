@@ -76,6 +76,7 @@ export async function patchDuplicatedPersonsForPatient(
       commonwellPatientId: cwPatientId,
       commonwellPersonId: chosenPersonId,
       commonwellStatus: "completed",
+      cqLinkStatus: undefined,
     });
 
     if (unenrollByDemographics) {
