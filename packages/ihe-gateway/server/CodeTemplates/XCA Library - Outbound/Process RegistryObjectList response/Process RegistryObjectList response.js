@@ -54,7 +54,24 @@ function processRegistryObjectList(list) {
 	
 				var created = entry.*::Slot.("creationTime" == @name).*::ValueList.*::Value.toString();
 				if (created) try {
-					attachment.creation = DateUtil.convertDate('yyyyMMddhhmmss', "yyyy-MM-dd'T'hh:mm:ss", created);
+					var timestampLength = created.length;
+					if (timestampLength === 8) {
+						attachment.creation = DateUtil.convertDate('yyyyMMdd', "yyyy-MM-dd", created);
+					}
+					if (timestampLength === 14) {
+						attachment.creation = DateUtil.convertDate('yyyyMMddhhmmss', "yyyy-MM-dd'T'hh:mm:ss", created);
+					}
+				} catch(ex) {}
+
+				var serviced = entry.*::Slot.("serviceStartTime" == @name).*::ValueList.*::Value.toString();
+				if (serviced) try {
+					var timestampLength = serviced.length;
+					if (timestampLength === 8) {
+						attachment.creation = DateUtil.convertDate('yyyyMMdd', "yyyy-MM-dd", serviced);
+					}
+					if (timestampLength === 14) {
+						attachment.creation = DateUtil.convertDate('yyyyMMddhhmmss', "yyyy-MM-dd'T'hh:mm:ss", serviced);
+					}
 				} catch(ex) {}
 
 				var authorInstitution = entry.*::Classification.*::Slot.("authorInstitution" == @name).*::ValueList.*::Value.toString();
