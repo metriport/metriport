@@ -6,10 +6,15 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { sleep } from "@metriport/shared";
-import { xcpdStats } from "./xcpd-stats";
+import { xcpdStats, aggregateNonXcpdErrRespByMonth } from "./xcpd-stats";
 import { xcaDQStats } from "./xca-dq-stats";
-import { xcaDRStats } from "./xca-dr-stats";
-import { readOnlyDBPool } from "./shared";
+import { xcaDRStats, aggregateDocRetrievedByMonth } from "./xca-dr-stats";
+import {
+  readOnlyDBPool,
+  ImplementerStatsByDay,
+  MonthlyImplementerStats,
+  aggregateDurationAvgByMonth,
+} from "./shared";
 
 dayjs.extend(duration);
 
@@ -25,6 +30,10 @@ async function main() {
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
 
+  const xcpdByDate: ImplementerStatsByDay = {};
+  const xcaDQByDate: ImplementerStatsByDay = {};
+  const xcaDRByDate: ImplementerStatsByDay = {};
+
   for (let i = 0; i < daysInPreviousMonth; i++) {
     const day = dayjs().subtract(i, "day").format("YYYY-MM-DD");
     const baseDir = `./runs`;
@@ -39,14 +48,66 @@ async function main() {
     const xcaDQ = await xcaDQStats(params);
     const xcaDR = await xcaDRStats(params);
 
-    fs.writeFileSync(`${baseDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
-    fs.writeFileSync(`${baseDirDay}/xcaDQ.json`, JSON.stringify(xcaDQ, null, 2));
-    fs.writeFileSync(`${baseDirDay}/xcaDR.json`, JSON.stringify(xcaDR, null, 2));
+    xcpdByDate[day] = xcpd;
+    xcaDQByDate[day] = xcaDQ;
+    xcaDRByDate[day] = xcaDR;
 
     await sleep(60000);
   }
 
+  const xcpdMonthlyStats = aggregateNonXcpdErrRespByMonth(xcpdByDate);
+  createXcpdNonErrRespCsv(xcpdMonthlyStats);
+
+  const xcaDRMonthlyStats = aggregateDocRetrievedByMonth(xcaDRByDate);
+  createDocRetrievedCsv(xcaDRMonthlyStats);
+
+  const xcpdAvgResponseTime = aggregateDurationAvgByMonth(xcpdByDate, xcaDQByDate, xcaDRByDate);
+  createAvgCsv(xcpdAvgResponseTime);
+
   process.exit(0);
+}
+
+function createXcpdNonErrRespCsv(monthlyStats: MonthlyImplementerStats[]) {
+  let csv =
+    "Year,Month,Implementer Id,Implementer Name,Number of Non-errored XCPD query responses received\n";
+
+  monthlyStats.forEach(stat => {
+    const { year, month, implementerId, implementerName, nonErroredResponses } = stat;
+    csv += `${year},${month},${implementerId},${implementerName},${nonErroredResponses}\n`;
+  });
+
+  fs.writeFileSync("./runs/xcpd-non-err-resp.csv", csv);
+}
+
+function createDocRetrievedCsv(monthlyStats: MonthlyImplementerStats[]) {
+  let csv = "Year,Month,Implementer Id,Implementer Name,Number of Documents Retrieved\n";
+
+  monthlyStats.forEach(stat => {
+    const { year, month, implementerId, implementerName, totalDocRetrieved } = stat;
+    csv += `${year},${month},${implementerId},${implementerName},${totalDocRetrieved}\n`;
+  });
+
+  fs.writeFileSync("./runs/xca-doc-retrieved.csv", csv);
+}
+
+function createAvgCsv(monthlyStats: MonthlyImplementerStats[]) {
+  let csv =
+    "Year,Month,Implementer Id,Implementer Name,Median XCPD (in ms),Median XCA Query (in ms),Median XCA Retrieve (in ms)\n";
+
+  monthlyStats.forEach(stat => {
+    const {
+      year,
+      month,
+      implementerId,
+      implementerName,
+      xcpdAvgResponseTimeMs,
+      xcaDQAvgResponseTimeMs,
+      xcaDRAvgResponseTimeMs,
+    } = stat;
+    csv += `${year},${month},${implementerId},${implementerName},${xcpdAvgResponseTimeMs},${xcaDQAvgResponseTimeMs},${xcaDRAvgResponseTimeMs}\n`;
+  });
+
+  fs.writeFileSync("./runs/durations.csv", csv);
 }
 
 main();

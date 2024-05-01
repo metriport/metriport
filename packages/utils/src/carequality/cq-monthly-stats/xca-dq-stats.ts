@@ -3,15 +3,13 @@ dotenv.config();
 // keep that ^ on top
 import { OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
-import { merge } from "lodash";
 import duration from "dayjs/plugin/duration";
 import {
   GWWithStats,
-  ImplementerStats,
+  ImplementerWithGwStats,
   associateGWToImplementer,
   queryResultsTable,
   getDurationsPerGW,
-  CountPerGW,
   RequestParams,
 } from "./shared";
 
@@ -23,10 +21,13 @@ export async function xcaDQStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
-}: RequestParams): Promise<ImplementerStats[]> {
-  const xcaDQGWStats: GWWithStats = await aggregateXcaDQGWStats(endOfPreviousMonth, dayIndex);
+}: RequestParams): Promise<ImplementerWithGwStats[]> {
+  const xcaDQGWStats: GWWithStats[] = await aggregateXcaDQGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcaDQStats: ImplementerStats[] = await associateGWToImplementer(xcaDQGWStats, cqDirectory);
+  const xcaDQStats: ImplementerWithGwStats[] = await associateGWToImplementer(
+    xcaDQGWStats,
+    cqDirectory
+  );
 
   return xcaDQStats;
 }
@@ -34,41 +35,14 @@ export async function xcaDQStats({
 async function aggregateXcaDQGWStats(
   endOfPreviousMonth: string,
   dayIndex: number
-): Promise<GWWithStats> {
+): Promise<GWWithStats[]> {
   const tableResults = await queryResultsTable<OutboundDocumentQueryResp>(
     documentQueryResultTableName,
     endOfPreviousMonth,
     dayIndex
   );
 
-  const durationsPerGW: GWWithStats = getDurationsPerGW(tableResults);
-  const totalDocRetrievedPerGW: GWWithStats = getTotalDocRetrievedPerGW(tableResults);
+  const durationsPerGW: GWWithStats[] = getDurationsPerGW(tableResults);
 
-  return merge(durationsPerGW, totalDocRetrievedPerGW);
-}
-
-function getTotalDocRetrievedPerGW(results: OutboundDocumentQueryResp[]): GWWithStats {
-  const totalDocRetrievedPerGW: CountPerGW = {};
-  const xcaDQGWStats: GWWithStats = {};
-
-  results.forEach(result => {
-    const gwId = result.gateway.homeCommunityId;
-    const totalDocRetrieved = result.documentReference?.length ?? 0;
-
-    if (!totalDocRetrievedPerGW[gwId]) {
-      totalDocRetrievedPerGW[gwId] = [totalDocRetrieved];
-    }
-
-    totalDocRetrievedPerGW[gwId].push(totalDocRetrieved);
-  });
-
-  for (const [gwId, totalDocRetrieved] of Object.entries(totalDocRetrievedPerGW)) {
-    const totalDocs = totalDocRetrieved.reduce((acc, curr) => acc + curr, 0);
-
-    xcaDQGWStats[gwId] = {
-      totalDocRetrieved: `${totalDocs * 30}`,
-    };
-  }
-
-  return xcaDQGWStats;
+  return durationsPerGW;
 }

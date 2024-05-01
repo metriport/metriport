@@ -18,22 +18,38 @@ export type RequestParams = {
 };
 
 export type GWStats = {
-  nonErroredResponses?: string;
-  totalDocRetrieved?: string;
+  nonErroredResponses?: number;
+  totalDocRetrieved?: number;
   avgResponseTimeMs?: number;
 };
 
 export type GWWithStats = {
-  [gw: string]: GWStats;
+  gwId: string;
+} & GWStats;
+
+export type ImplementerWithGwStats = {
+  implementerId: string;
+  implementerName: string;
+  gwStats: GWWithStats[];
 };
 
 export type ImplementerStats = {
-  implementer?: string;
-  gw?: string;
-  avgResponseTimeMs?: number;
-  nonErroredResponses?: string;
-  totalDocRetrieved?: string;
+  implementerId: string;
+  implementerName: string;
+} & GWStats;
+
+export type ImplementerStatsByDay = {
+  [day: string]: ImplementerWithGwStats[];
 };
+
+export type MonthlyImplementerStats = {
+  year: number;
+  month: number;
+} & ImplementerStats & {
+    xcpdAvgResponseTimeMs?: number;
+    xcaDQAvgResponseTimeMs?: number;
+    xcaDRAvgResponseTimeMs?: number;
+  };
 
 export type CountPerGW = { [key: string]: [number] };
 
@@ -65,9 +81,9 @@ export async function queryResultsTable<TableResults>(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getDurationsPerGW(results: any[]): GWWithStats {
+export function getDurationsPerGW(results: any[]): GWWithStats[] {
   const durationsPerGW: CountPerGW = {};
-  const xcpdGWStats: GWWithStats = {};
+  const gwStats: GWWithStats[] = [];
 
   results.forEach(result => {
     const gwId = result.gateway.oid || result.gateway.homeCommunityId;
@@ -86,30 +102,43 @@ export function getDurationsPerGW(results: any[]): GWWithStats {
     const totalDuration = durations.reduce((acc, curr) => acc + curr, 0);
     const avgDuration = totalDuration / durations.length;
 
-    xcpdGWStats[gwId] = {
+    gwStats.push({
+      gwId,
       avgResponseTimeMs: avgDuration,
-    };
+    });
   }
 
-  return xcpdGWStats;
+  return gwStats;
 }
 
 export function associateGWToImplementer(
-  gwStats: GWWithStats,
+  xcpdGWStats: GWWithStats[],
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cqDirectory: any[]
-): ImplementerStats[] {
-  const implementerStats: ImplementerStats[] = [];
+): ImplementerWithGwStats[] {
+  const implementerStats: ImplementerWithGwStats[] = [];
 
-  for (const [gateway, stats] of Object.entries(gwStats)) {
-    const implementer = findGWImplementer(gateway, stats, cqDirectory);
+  for (const gwStats of xcpdGWStats) {
+    const implementer = findGWImplementer(gwStats.gwId, gwStats, cqDirectory);
 
     if (!implementer) {
-      console.log(`Could not find implementer for gateway ${gateway}`);
+      console.log(`Could not find implementer for gateway ${gwStats.gwId}`);
       continue;
     }
 
-    implementerStats.push({ implementer, gw: gateway, ...stats });
+    const implementerStatsEntry = implementerStats.find(
+      entry => entry.implementerId === implementer.oid
+    );
+
+    if (implementerStatsEntry) {
+      implementerStatsEntry.gwStats.push(gwStats);
+    } else {
+      implementerStats.push({
+        implementerId: implementer.oid,
+        implementerName: implementer.name,
+        gwStats: [gwStats],
+      });
+    }
   }
 
   return implementerStats;
@@ -120,7 +149,7 @@ function findGWImplementer(
   stats: GWStats,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cqDirectory: any[]
-): string | undefined {
+): { name: string; oid: string } | undefined {
   const cqDirectoryGW = cqDirectory.find(entry => entry.id === gateway);
 
   if (cqDirectoryGW) {
@@ -128,13 +157,70 @@ function findGWImplementer(
     const isItself = managingOrganizationId === cqDirectoryGW.id;
 
     if (!managingOrganizationId) {
-      return cqDirectoryGW.name;
+      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
     } else if (isItself && managingOrganizationId) {
-      return cqDirectoryGW.name;
+      return { name: cqDirectoryGW.name, oid: cqDirectoryGW.id };
     }
 
     return findGWImplementer(managingOrganizationId, stats, cqDirectory);
   }
 
   return undefined;
+}
+
+export function aggregateDurationAvgByMonth(
+  xcpdStatsByDay: ImplementerStatsByDay,
+  xcaDQStatsByDay: ImplementerStatsByDay,
+  xcaDRStatsByDay: ImplementerStatsByDay
+): MonthlyImplementerStats[] {
+  const monthlyStats: MonthlyImplementerStats[] = [];
+
+  Object.entries(xcpdStatsByDay).forEach(([day, stats]) => {
+    stats.forEach(stat => {
+      const { implementerId, implementerName } = stat;
+      const { gwStats } = stat;
+
+      const xcpdAvgResponseTimeMs = aggregateGwAvgResponseTime(gwStats);
+      const xcaDQAvgResponseTimeMs = aggregateGwAvgResponseTime(
+        xcaDQStatsByDay[day].find(s => s.implementerId === implementerId)?.gwStats ?? []
+      );
+      const xcaDRAvgResponseTimeMs = aggregateGwAvgResponseTime(
+        xcaDRStatsByDay[day].find(s => s.implementerId === implementerId)?.gwStats ?? []
+      );
+
+      const year = new Date(day).getFullYear();
+      const month = new Date(day).getMonth() + 1;
+
+      const existingStat = monthlyStats.find(
+        s => s.year === year && s.month === month && s.implementerId === implementerId
+      );
+
+      if (existingStat) {
+        existingStat.xcpdAvgResponseTimeMs = xcpdAvgResponseTimeMs;
+        existingStat.xcaDQAvgResponseTimeMs = xcaDQAvgResponseTimeMs;
+        existingStat.xcaDRAvgResponseTimeMs = xcaDRAvgResponseTimeMs;
+      } else {
+        monthlyStats.push({
+          year,
+          month,
+          implementerId,
+          implementerName,
+          xcpdAvgResponseTimeMs,
+          xcaDQAvgResponseTimeMs,
+          xcaDRAvgResponseTimeMs,
+        });
+      }
+    });
+  });
+
+  return monthlyStats;
+}
+
+export function aggregateGwAvgResponseTime(gwWithStats: GWWithStats[]): number {
+  const totalAvgResponseTime = gwWithStats.reduce((acc, curr) => {
+    const gwStat = curr.avgResponseTimeMs ?? 0;
+    return acc + gwStat;
+  }, 0);
+
+  return totalAvgResponseTime / gwWithStats.length;
 }

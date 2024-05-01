@@ -9,10 +9,12 @@ import {
   queryResultsTable,
   associateGWToImplementer,
   GWWithStats,
-  ImplementerStats,
+  ImplementerWithGwStats,
   getDurationsPerGW,
   CountPerGW,
   RequestParams,
+  ImplementerStatsByDay,
+  MonthlyImplementerStats,
 } from "./shared";
 
 dayjs.extend(duration);
@@ -24,10 +26,13 @@ export async function xcpdStats({
   cqDirectory,
   endOfPreviousMonth,
   dayIndex,
-}: RequestParams): Promise<ImplementerStats[]> {
-  const xcpdGWStats: GWWithStats = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
+}: RequestParams): Promise<ImplementerWithGwStats[]> {
+  const xcpdGWStats: GWWithStats[] = await aggregateXCPDGWStats(endOfPreviousMonth, dayIndex);
 
-  const xcpdStats: ImplementerStats[] = await associateGWToImplementer(xcpdGWStats, cqDirectory);
+  const xcpdStats: ImplementerWithGwStats[] = await associateGWToImplementer(
+    xcpdGWStats,
+    cqDirectory
+  );
 
   return xcpdStats;
 }
@@ -35,22 +40,22 @@ export async function xcpdStats({
 async function aggregateXCPDGWStats(
   endOfPreviousMonth: string,
   dayIndex: number
-): Promise<GWWithStats> {
+): Promise<GWWithStats[]> {
   const tableResults = await queryResultsTable<OutboundPatientDiscoveryResp>(
     patientDiscoveryResultTableName,
     endOfPreviousMonth,
     dayIndex
   );
 
-  const durationsPerGW: GWWithStats = getDurationsPerGW(tableResults);
-  const nonErroredResponsesPerGW: GWWithStats = getNonErroredResponsesPerGW(tableResults);
+  const durationsPerGW: GWWithStats[] = getDurationsPerGW(tableResults);
+  const nonErroredResponsesPerGW: GWWithStats[] = getNonErroredResponsesPerGW(tableResults);
 
   return merge(durationsPerGW, nonErroredResponsesPerGW);
 }
 
-function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): GWWithStats {
+function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): GWWithStats[] {
   const nonErroredResponsesPerGW: CountPerGW = {};
-  const xcpdGWStats: GWWithStats = {};
+  const xcpdGWStats: GWWithStats[] = [];
 
   results.forEach(result => {
     const gwId = result.gateway.oid;
@@ -66,11 +71,54 @@ function getNonErroredResponsesPerGW(results: OutboundPatientDiscoveryResp[]): G
   for (const [gwId, nonErroredResponses] of Object.entries(nonErroredResponsesPerGW)) {
     const totalNonErroredResponses = nonErroredResponses.reduce((acc, curr) => acc + curr, 0);
 
-    xcpdGWStats[gwId] = {
-      ...xcpdGWStats[gwId],
-      nonErroredResponses: `${totalNonErroredResponses * 30} / ${nonErroredResponses.length * 30}`,
-    };
+    xcpdGWStats.push({
+      gwId,
+      nonErroredResponses: totalNonErroredResponses,
+    });
   }
 
   return xcpdGWStats;
+}
+
+export function aggregateNonXcpdErrRespByMonth(
+  statsByDay: ImplementerStatsByDay
+): MonthlyImplementerStats[] {
+  const monthlyStats: MonthlyImplementerStats[] = [];
+
+  Object.entries(statsByDay).forEach(([day, stats]) => {
+    stats.forEach(stat => {
+      const { implementerId, implementerName } = stat;
+      const { gwStats } = stat;
+
+      const year = dayjs(day).year();
+      const month = dayjs(day).month() + 1;
+
+      const existingStat = monthlyStats.find(
+        s => s.year === year && s.month === month && s.implementerId === implementerId
+      );
+
+      const nonErroredResponses = aggregateGwNonErroredResponses(gwStats);
+
+      if (existingStat && existingStat.nonErroredResponses) {
+        existingStat.nonErroredResponses += nonErroredResponses;
+      } else {
+        monthlyStats.push({
+          year,
+          month,
+          implementerId,
+          implementerName,
+          nonErroredResponses: nonErroredResponses * 30,
+        });
+      }
+    });
+  });
+
+  return monthlyStats;
+}
+
+export function aggregateGwNonErroredResponses(gwWithStats: GWWithStats[]): number {
+  return gwWithStats.reduce((acc, curr) => {
+    const gwStat = curr.nonErroredResponses ?? 0;
+    return acc + gwStat;
+  }, 0);
 }
