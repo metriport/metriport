@@ -60,6 +60,7 @@ export async function sendSignedDQRequests({
         extra: {
           context,
           extra,
+          error,
         },
       });
       return {

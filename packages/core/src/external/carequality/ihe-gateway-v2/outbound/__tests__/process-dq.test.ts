@@ -56,7 +56,7 @@ describe("processDQResponse", () => {
         outboundRequest: outboundDQRequest,
       },
     });
-    expect(response.operationOutcome).toBeDefined();
+    expect(response.operationOutcome).toBeTruthy();
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
   });
 });

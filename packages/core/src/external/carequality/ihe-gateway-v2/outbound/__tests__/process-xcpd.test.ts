@@ -64,7 +64,7 @@ describe("processXCPDResponse", () => {
       },
     });
 
-    expect(response.operationOutcome).toBeDefined();
+    expect(response.operationOutcome).toBeTruthy();
     expect(response.patientMatch).toBeNull();
   });
   it("should process response that is not a string correctly", async () => {
@@ -78,7 +78,7 @@ describe("processXCPDResponse", () => {
         outboundRequest: outboundXCPDRequest,
       },
     });
-    expect(response.operationOutcome).toBeDefined();
+    expect(response.operationOutcome).toBeTruthy();
     expect(response.patientMatch).toBeNull();
   });
 });
