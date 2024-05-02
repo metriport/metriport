@@ -1,3 +1,4 @@
+import { DocumentReference } from "@medplum/fhirtypes";
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
 import axios from "axios";
 import {
@@ -5,15 +6,14 @@ import {
   createUploadMetadataFilePath,
 } from "../../../domain/document/upload";
 import { Config } from "../../../util/config";
+import { out } from "../../../util/log";
+import { capture } from "../../../util/notifications";
 import { sizeInBytes } from "../../../util/string";
 import { uuidv7 } from "../../../util/uuid-v7";
+import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
 import { S3Utils } from "../../aws/s3";
 import { IHEGatewayError, XDSRegistryError, constructDQErrorResponse } from "../error";
 import { findDocumentReferences } from "./find-document-reference";
-import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
-import { DocumentReference } from "@medplum/fhirtypes";
-import { out } from "@metriport/core/util/log";
-import { capture } from "../../../util/notifications";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
