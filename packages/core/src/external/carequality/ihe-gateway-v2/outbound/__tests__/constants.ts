@@ -205,22 +205,22 @@ export const outboundDRRequest = {
 };
 
 export const testFiles = [
-  { name: "test.pdf", mimeType: "application/pdf", extension: ".pdf" },
-  { name: "test-little-endian.tiff", mimeType: "image/tiff", extension: ".tiff" },
-  { name: "test-big-endian.tiff", mimeType: "image/tiff", extension: ".tiff" },
-  { name: "test-with-declaration.xml", mimeType: "application/xml", extension: ".xml" },
-  { name: "test-no-declaration.xml", mimeType: "application/xml", extension: ".xml" },
-  { name: "test.txt", mimeType: "text/plain", extension: ".txt" },
-  { name: "test.jpeg", mimeType: "image/jpeg", extension: ".jpeg" },
-  { name: "test.png", mimeType: "image/png", extension: ".png" },
-  { name: "test.bmp", mimeType: "image/bmp", extension: ".bmp" },
-  { name: "test.webp", mimeType: "application/octet-stream", extension: ".bin" },
+  { name: "test.pdf", mimeType: "application/pdf", fileExtension: ".pdf" },
+  { name: "test-little-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
+  { name: "test-big-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
+  { name: "test-with-declaration.xml", mimeType: "application/xml", fileExtension: ".xml" },
+  { name: "test-no-declaration.xml", mimeType: "application/xml", fileExtension: ".xml" },
+  { name: "test.txt", mimeType: "text/plain", fileExtension: ".txt" },
+  { name: "test.jpeg", mimeType: "image/jpeg", fileExtension: ".jpeg" },
+  { name: "test.png", mimeType: "image/png", fileExtension: ".png" },
+  { name: "test.bmp", mimeType: "image/bmp", fileExtension: ".bmp" },
+  { name: "test.webp", mimeType: "application/octet-stream", fileExtension: ".bin" },
 ];
 
 export const testFilesForUploadVerification = [
-  { name: "test.pdf", mimeType: "application/pdf", extension: ".pdf" },
-  { name: "test-little-endian.tiff", mimeType: "image/tiff", extension: ".tiff" },
-  { name: "test-with-declaration.xml", mimeType: "application/xml", extension: ".xml" },
-  { name: "test.txt", mimeType: "text/plain", extension: ".txt" },
-  { name: "test.jpeg", mimeType: "image/jpeg", extension: ".jpeg" },
+  { name: "test.pdf", mimeType: "application/pdf", fileExtension: ".pdf" },
+  { name: "test-little-endian.tiff", mimeType: "image/tiff", fileExtension: ".tiff" },
+  { name: "test-with-declaration.xml", mimeType: "application/xml", fileExtension: ".xml" },
+  { name: "test.txt", mimeType: "text/plain", fileExtension: ".txt" },
+  { name: "test.jpeg", mimeType: "image/jpeg", fileExtension: ".jpeg" },
 ];
