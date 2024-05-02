@@ -1,7 +1,11 @@
 export type RDSAlarmThresholds = {
   acuUtilizationPct: number;
   cpuUtilizationPct: number;
-  freeableMemoryMB: number;
-  volumeReadIOPs: number;
-  volumeWriteIOPs: number;
+  freeableMemoryMb: number;
+  volumeReadIops: number;
+  volumeWriteIops: number;
+  /**
+   * The amount of available storage in MB. Defaults to 10GB.
+   */
+  freeLocalStorageMb?: number;
 };

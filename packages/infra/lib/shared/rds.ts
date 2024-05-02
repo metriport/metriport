@@ -5,6 +5,8 @@ import { Construct } from "constructs";
 import { RDSAlarmThresholds } from "../../config/aws/rds";
 import { mbToBytes } from "../shared/util";
 
+const DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM = 10_000;
+
 export function addDBClusterPerformanceAlarms(
   scope: Construct,
   dbCluster: rds.DatabaseCluster,
@@ -42,7 +44,7 @@ export function addDBClusterPerformanceAlarms(
   createAlarm({
     metric: dbCluster.metricFreeableMemory(),
     name: "FreeableMemoryAlarm",
-    threshold: mbToBytes(thresholds.freeableMemoryMB),
+    threshold: mbToBytes(thresholds.freeableMemoryMb),
     evaluationPeriods: 1,
     comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
@@ -59,7 +61,7 @@ export function addDBClusterPerformanceAlarms(
   createAlarm({
     metric: dbCluster.metricVolumeReadIOPs(),
     name: "VolumeReadIOPsAlarm",
-    threshold: thresholds.volumeReadIOPs,
+    threshold: thresholds.volumeReadIops,
     evaluationPeriods: 1,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
@@ -67,7 +69,7 @@ export function addDBClusterPerformanceAlarms(
   createAlarm({
     metric: dbCluster.metricVolumeWriteIOPs(),
     name: "VolumeWriteIOPsAlarm",
-    threshold: thresholds.volumeWriteIOPs,
+    threshold: thresholds.volumeWriteIops,
     evaluationPeriods: 1,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
@@ -77,6 +79,20 @@ export function addDBClusterPerformanceAlarms(
     name: "ACUUtilizationAlarm",
     threshold: thresholds.acuUtilizationPct,
     evaluationPeriods: 1,
+    treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+  });
+
+  /**
+   * For Aurora Serverless, this alarm is not important as it auto-scales. However, we always
+   * create this alarm because of compliance controls (SOC2).
+   * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.Overview.StorageReliability.html#aurora-storage-growth
+   */
+  createAlarm({
+    metric: dbCluster.metricFreeLocalStorage(),
+    name: "FreeLocalStorageAlarm",
+    threshold: mbToBytes(thresholds.freeLocalStorageMb ?? DEFAULT_MIN_LOCAL_STORAGE_MB_ALARM),
+    evaluationPeriods: 1,
+    comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
     treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
   });
 }

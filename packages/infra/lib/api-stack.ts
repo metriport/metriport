@@ -47,9 +47,10 @@ import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
 import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
@@ -199,7 +200,13 @@ export class APIStack extends Stack {
         }
       },
     });
-    this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
+    addDBClusterPerformanceAlarms(
+      this,
+      dbCluster,
+      dbClusterName,
+      dbConfig.alarmThresholds,
+      slackNotification?.alarmAction
+    );
 
     //----------------------------------------------------------
     // DynamoDB
@@ -1701,79 +1708,6 @@ export class APIStack extends Stack {
       authorizationScopes: oauthScopes.map(s => s.scopeName),
     });
     return oauthResource;
-  }
-
-  private addDBClusterPerformanceAlarms(
-    dbCluster: rds.DatabaseCluster,
-    dbClusterName: string,
-    alarmAction?: SnsAction
-  ) {
-    const createAlarm = ({
-      name,
-      metric,
-      threshold,
-      evaluationPeriods,
-      comparisonOperator,
-      treatMissingData,
-    }: {
-      name: string;
-      metric: cloudwatch.Metric;
-      threshold: number;
-      evaluationPeriods: number;
-      comparisonOperator?: cloudwatch.ComparisonOperator;
-      treatMissingData?: cloudwatch.TreatMissingData;
-    }) => {
-      const alarm = metric.createAlarm(this, `${dbClusterName}${name}`, {
-        threshold,
-        evaluationPeriods,
-        comparisonOperator,
-        treatMissingData,
-      });
-      alarmAction && alarm.addAlarmAction(alarmAction);
-      alarmAction && alarm.addOkAction(alarmAction);
-      return alarm;
-    };
-
-    createAlarm({
-      metric: dbCluster.metricFreeableMemory(),
-      name: "FreeableMemoryAlarm",
-      threshold: mbToBytes(150),
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricCPUUtilization(),
-      name: "CPUUtilizationAlarm",
-      threshold: 90, // percentage
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricVolumeReadIOPs(),
-      name: "VolumeReadIOPsAlarm",
-      threshold: 300_000, // IOPS
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricVolumeWriteIOPs(),
-      name: "VolumeWriteIOPsAlarm",
-      threshold: 60_000, // IOPS
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricACUUtilization(),
-      name: "ACUUtilizationAlarm",
-      threshold: 80, // pct
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
   }
 
   private addDynamoPerformanceAlarms(
