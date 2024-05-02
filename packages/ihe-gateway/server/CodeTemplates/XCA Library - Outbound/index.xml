@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?><codeTemplateLibrary version="4.4.2">
   <id>5c4c6ab2-26a7-4878-933d-ae04c2bdeea7</id>
   <name>XCA Library - Outbound</name>
-  <revision>80</revision>
+  <revision>602</revision>
   <lastModified>
-    <time>1710013973242</time>
+    <time>1710294950517</time>
     <timezone>GMT</timezone>
   </lastModified>
   <description>Cross-Community Access (XCA) library
@@ -26,8 +26,8 @@ Last updated: Dec 07 2023</description>
     <string>f6899f98-6671-44f9-a764-d5f7c1858f02</string>
     <string>cbdd09d8-af65-4cc6-869a-8c1617a29881</string>
     <string>279057c4-65eb-4cbd-ae23-6d9d66de14a0</string>
-    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a1</string>
     <string>79208c1b-3cbb-4d6e-aeb3-a8387cee4f93</string>
+    <string>279057c4-65eb-4cbd-ae23-6d9d66de14a1</string>
     <string>bd17ccd3-bad0-4214-a034-6cda769113f6</string>
     <string>10379c95-0f8f-4c0e-8e63-de0f307f7ccc</string>
     <string>1f09811d-57b1-4219-9427-09f0d63a77a6</string>

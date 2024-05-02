@@ -28,6 +28,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     consolidatedQuery: data.consolidatedQuery,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
     cxConsolidatedRequestMetadata: data.cxConsolidatedRequestMetadata,
+    externalData: data.externalData,
   };
 }
 
