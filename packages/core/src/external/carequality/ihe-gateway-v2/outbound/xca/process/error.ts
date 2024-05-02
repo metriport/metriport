@@ -45,6 +45,7 @@ export function processRegistryErrorList(
       extra: {
         outboundRequest,
         registryErrorList,
+        outboundRequestId: outboundRequest.id,
       },
     });
   } catch (error) {
