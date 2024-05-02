@@ -3,6 +3,7 @@ import Router from "express-promise-router";
 import { asyncHandler } from "../../../routes/util";
 import { processRequest } from "./cw-process-request";
 import { fhirServerUrl } from "./shared";
+import { requestLogger } from "../../../routes/helpers/request-logger";
 
 /**
  * Endpoints to process CW's Document Query (DQ) requests.
@@ -23,6 +24,7 @@ import { fhirServerUrl } from "./shared";
 const fhirRouter = Router();
 fhirRouter.get(
   "/DocumentReference",
+  requestLogger,
   asyncHandler(async (req, res) => {
     const bundle = await processRequest(req);
     return res.status(200).json(bundle);
@@ -38,6 +40,7 @@ fhirRouter.all(
 const dummyRouter = Router();
 dummyRouter.all(
   "/*",
+  requestLogger,
   asyncHandler(async () => {
     throw new NotFoundError(`FHIR server for CW is disabled`);
   })

@@ -27,7 +27,7 @@ type CWOrganizationWithOrgId = Omit<CWOrganization, "organizationId"> &
   Required<Pick<CWOrganization, "organizationId">>;
 
 export async function organizationToCommonwell(
-  org: Omit<Organization, "type">,
+  org: Omit<Organization, "type" | "eTag">,
   isObo = false
 ): Promise<CWOrganizationWithOrgId> {
   const cwId = OID_PREFIX.concat(org.oid);
@@ -76,7 +76,10 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export const create = async (org: Omit<Organization, "type">, isObo = false): Promise<void> => {
+export const create = async (
+  org: Omit<Organization, "type" | "eTag">,
+  isObo = false
+): Promise<void> => {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {

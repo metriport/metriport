@@ -1,28 +1,23 @@
-// This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to the gateway specified in the request body.
+// This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to to the gateway specified in the request body.
 // npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 import * as dotenv from "dotenv";
 dotenv.config();
-import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
+import axios from "axios";
+import fs from "fs";
+import https from "https";
+import { createAndSignXCPDRequest } from "@metriport/core/external/saml/xcpd/iti55-envelope";
+import { createAndSignDQRequest } from "@metriport/core/external/saml/xca/iti38-envelope";
+import { createAndSignDRRequest } from "@metriport/core/external/saml/xca/iti39-envelope";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
-import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
-import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
-import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
-import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
-import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 
 const app = express();
 const port = 8043;
 app.use(json());
 
-const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
-};
+const privateKey = getEnvVarOrFail("IHE_STAGING_KEY");
+const x509CertPem = getEnvVarOrFail("IHE_STAGING_CERT");
 
 app.post("/xcpd", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
@@ -30,13 +25,8 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponses = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
-    const response = await sendSignedXCPDRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
-    });
+    const xmlString = createAndSignXCPDRequest(req.body, x509CertPem, privateKey);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
@@ -45,31 +35,23 @@ app.post("/xcpd", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
-
 app.post("/xcadq", async (req: Request, res: Response) => {
   if (!req.is("application/json")) {
     return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
   }
 
   try {
-    const xmlResponses = createAndSignBulkDQRequests({
-      bulkBodyData: req.body,
-      samlCertsAndKeys,
-    });
-    const response = await sendSignedDQRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
-    });
+    const xmlString = createAndSignDQRequest(req.body, x509CertPem, privateKey);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
   }
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
 });
 
 app.post("/xcadr", async (req: Request, res: Response) => {
@@ -78,19 +60,39 @@ app.post("/xcadr", async (req: Request, res: Response) => {
   }
 
   try {
-    const xmlResponses = createAndSignBulkDRRequests({
-      bulkBodyData: req.body,
-      samlCertsAndKeys,
-    });
-    const response = await sendSignedDRRequests({
-      signedRequests: xmlResponses,
-      samlCertsAndKeys,
-      patientId: uuidv4(),
-      cxId: uuidv4(),
-    });
+    const xmlString = createAndSignDRRequest(req.body, x509CertPem, privateKey);
+    const response = await sendSignedXml(xmlString, req.body.gateway.url);
 
     res.type("application/xml").send(response);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
   }
 });
+
+async function sendSignedXml(signedXml: string, url: string): Promise<string> {
+  const certFilePath = "./tempCert.pem";
+  const keyFilePath = "./tempKey.pem";
+  fs.writeFileSync(certFilePath, x509CertPem);
+  fs.writeFileSync(keyFilePath, privateKey);
+
+  try {
+    const agent = new https.Agent({
+      rejectUnauthorized: false,
+      cert: fs.readFileSync(certFilePath),
+      key: fs.readFileSync(keyFilePath),
+    });
+
+    const response = await axios.post(url, signedXml, {
+      headers: {
+        "Content-Type": "application/soap+xml;charset=UTF-8",
+        "Cache-Control": "no-cache",
+      },
+      httpsAgent: agent,
+    });
+
+    return response.data;
+  } finally {
+    fs.unlinkSync(certFilePath);
+    fs.unlinkSync(keyFilePath);
+  }
+}

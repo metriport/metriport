@@ -1,13 +1,14 @@
-import { FacilityData } from "../../../domain/medical/facility";
-import { FacilityModel } from "../../../models/medical/facility";
+import { FacilityUpdate } from "../../../domain/medical/facility";
 import { validateVersionForUpdate } from "../../../models/_default";
+import { FacilityModel } from "../../../models/medical/facility";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "./get-facility";
 
-export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & FacilityData;
+export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer & FacilityUpdate;
 
 export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise<FacilityModel> => {
-  const { id, cxId, eTag, name, npi, tin, active, address } = facilityUpdate;
+  const { id, cxId, eTag, data, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facilityUpdate;
+  const { name, npi, tin, active, address } = data;
 
   const facility = await getFacilityOrFail({ id, cxId });
   validateVersionForUpdate(facility, eTag);
@@ -20,5 +21,9 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
       active,
       address,
     },
+    cqOboActive: cqOboActive ?? false,
+    cwOboActive: cwOboActive ?? false,
+    cqOboOid,
+    cwOboOid,
   });
 };

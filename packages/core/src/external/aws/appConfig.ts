@@ -25,7 +25,6 @@ export type FeatureFlagDatastore = {
   cxsWithADHDMRFeatureFlag: StringValuesFF;
   cxsWithNoWebhookPongFeatureFlag: StringValuesFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: StringValuesFF;
-  oidsWithIHEGatewayV2Enabled: StringValuesFF;
   commonwellFeatureFlag: BooleanFF;
   carequalityFeatureFlag: BooleanFF;
 };

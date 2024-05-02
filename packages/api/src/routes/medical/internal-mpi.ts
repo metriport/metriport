@@ -31,6 +31,7 @@ const patientLoader = new PatientLoaderLocal();
  */
 router.get(
   "/patient",
+  // no requestLogger here because we get too many requests (inbound CQ)
   asyncHandler(async (req: Request, res: Response) => {
     const dob = getFrom("query").orFail("dob", req);
     const genderAtBirth = genderAtBirthSchema.parse(getFrom("query").orFail("genderAtBirth", req));

@@ -70,10 +70,16 @@ To open Administrator windows connected to each task on the cloud, run one of th
 depending to which type of instance you want to connect to:
 
 ```shell
-$ npm run admin -- outbound
-$ npm run admin -- inbound
-$ npm run admin -- all
+$ npm run admin -- <env> outbound
+$ npm run admin -- <env> inbound
+$ npm run admin -- <env> all
 ```
+
+With `<env>` being the cloud environment to which you want to connect to (required), one of:
+
+- `production`
+- `staging`
+- `dev`
 
 ### Development
 

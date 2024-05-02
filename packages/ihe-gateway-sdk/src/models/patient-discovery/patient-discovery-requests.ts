@@ -10,7 +10,7 @@ const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
 // TO EXTERNAL GATEWAY
 export const outboundPatientDiscoveryReqSchema = patientDiscoveryDefaultSchema.extend({
   gateways: z.array(XCPDGatewaySchema),
-  principalCareProviderIds: z.array(z.string()),
+  principalCareProviderIds: z.array(z.string()).optional(),
 });
 
 export type OutboundPatientDiscoveryReq = z.infer<typeof outboundPatientDiscoveryReqSchema>;

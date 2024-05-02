@@ -1,26 +1,26 @@
 import {
-  JSON_APP_MIME_TYPE,
-  JSON_TXT_MIME_TYPE,
-  XML_APP_MIME_TYPE,
-  XML_TXT_MIME_TYPE,
-  PDF_MIME_TYPE,
-  TIFF_MIME_TYPE,
-  TIF_MIME_TYPE,
-  PNG_MIME_TYPE,
+  BMP_FILE_EXTENSION,
+  BMP_MIME_TYPE,
+  HTML_MIME_TYPE,
+  JPEG_FILE_EXTENSION,
   JPEG_MIME_TYPE,
   JPG_MIME_TYPE,
-  BMP_MIME_TYPE,
-  TXT_MIME_TYPE,
-  OCTET_MIME_TYPE,
-  HTML_MIME_TYPE,
-  XML_FILE_EXTENSION,
-  PDF_FILE_EXTENSION,
-  TIFF_FILE_EXTENSION,
-  PNG_FILE_EXTENSION,
-  JPEG_FILE_EXTENSION,
-  BMP_FILE_EXTENSION,
-  TXT_FILE_EXTENSION,
+  JSON_APP_MIME_TYPE,
+  JSON_TXT_MIME_TYPE,
   OCTET_FILE_EXTENSION,
+  OCTET_MIME_TYPE,
+  PDF_FILE_EXTENSION,
+  PDF_MIME_TYPE,
+  PNG_FILE_EXTENSION,
+  PNG_MIME_TYPE,
+  TIFF_FILE_EXTENSION,
+  TIFF_MIME_TYPE,
+  TIF_MIME_TYPE,
+  TXT_FILE_EXTENSION,
+  TXT_MIME_TYPE,
+  XML_APP_MIME_TYPE,
+  XML_FILE_EXTENSION,
+  XML_TXT_MIME_TYPE,
 } from "./mime";
 
 const TIFF_MAGIC_NUMBER_1 = 0x49;
@@ -42,12 +42,6 @@ const XML_MAGIC_NUMBER_3 = 0x78;
 const XML_MAGIC_NUMBER_4 = 0x6d;
 const XML_MAGIC_NUMBER_5 = 0x6c;
 const XML_MAGIC_NUMBER_6 = 0x20;
-const XML_MAGIC_NUMBER_7 = 0x3c;
-const XML_MAGIC_NUMBER_8 = 0x43;
-const XML_MAGIC_NUMBER_9 = 0x6c;
-const XML_MAGIC_NUMBER_10 = 0x69;
-const XML_MAGIC_NUMBER_11 = 0x6e;
-const XML_MAGIC_NUMBER_12 = 0x69;
 const PNG_MAGIC_NUMBER_1 = 0x89;
 const PNG_MAGIC_NUMBER_2 = 0x50;
 const PNG_MAGIC_NUMBER_3 = 0x4e;
@@ -91,20 +85,50 @@ export function isLikelyTextFile(fileBuffer: Buffer): boolean {
   return readableChars / totalChars > threshold;
 }
 
+export type DetectedFileType = {
+  mimeType: string;
+  fileExtension: string;
+};
+
 /**
- * The function `detectFileType` uses magic numbers to determine the file type of a given file.
+ * It uses magic numbers to determine the file type of a given file.
  * Magic numbers are unique sequences of bytes that identify the file format or protocol.
- * In this case, the function reads the first 5 bytes (the magic number) of the file buffer and
- * matches it against known file type headers.
+ *
+ * The function converts the string to a Buffer, reads the first 5 bytes (the magic number), and
+ * matches it against known file type headers. If it can't identify the file with magic numbers,
+ * it tries to determine if the file is a text file by checking if the majority of the first chars
+ * are ASCII characters.
+ *
+ * Otherwise, it returns the default file type `application/octet-stream`.
+ *
+ * @param document - The `docuent` parameter is a string representing the
+ * contents of a file.
+ * @returns an object containing the detected file type and extension.
+ */
+export function detectFileType(document: string): DetectedFileType;
+/**
+ * It uses magic numbers to determine the file type of a given file.
+ * Magic numbers are unique sequences of bytes that identify the file format or protocol.
+ *
+ * The function reads the first 5 bytes (the magic number) of the file buffer and
+ * matches it against known file type headers. If it can't identify the file with magic numbers,
+ * it tries to determine if the file is a text file by checking if the majority of the first chars
+ * are ASCII characters.
+ *
+ * Otherwise, it returns the default file type `application/octet-stream`.
  *
  * @param fileBuffer - The `fileBuffer` parameter is a `Buffer` object that represents the
- * contents of a file. The first 6 bytes of this buffer, which generally contain the magic number, are used to
- * identify the file type.
- * @returns The function `detectFileType` returns a string representing the detected file type.
+ * contents of a file.
+ * @returns an object containing the detected file type and extension.
  */
-export function detectFileType(document: Buffer): { mimeType: string; extension: string } {
-  const maxBytesNeeded = 6; //NOTE: if you update detectFileType, you might need to update this number
-  const fileBuffer = document.slice(0, maxBytesNeeded);
+export function detectFileType(fileBuffer: Buffer): DetectedFileType;
+export function detectFileType(param: Buffer | string): DetectedFileType {
+  let fileBuffer: Buffer;
+  if (Buffer.isBuffer(param)) {
+    fileBuffer = param;
+  } else {
+    fileBuffer = Buffer.from(param);
+  }
   if (
     (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
       fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
@@ -115,7 +139,7 @@ export function detectFileType(document: Buffer): { mimeType: string; extension:
       fileBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
       fileBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
-    return { mimeType: TIFF_MIME_TYPE, extension: TIFF_FILE_EXTENSION };
+    return { mimeType: TIFF_MIME_TYPE, fileExtension: TIFF_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PDF_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PDF_MAGIC_NUMBER_2 &&
@@ -123,41 +147,35 @@ export function detectFileType(document: Buffer): { mimeType: string; extension:
     fileBuffer[3] === PDF_MAGIC_NUMBER_4 &&
     fileBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
-    return { mimeType: PDF_MIME_TYPE, extension: PDF_FILE_EXTENSION };
+    return { mimeType: PDF_MIME_TYPE, fileExtension: PDF_FILE_EXTENSION };
   } else if (
-    (fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
-      fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
-      fileBuffer[2] === XML_MAGIC_NUMBER_3 &&
-      fileBuffer[3] === XML_MAGIC_NUMBER_4 &&
-      fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
-      fileBuffer[5] === XML_MAGIC_NUMBER_6) ||
-    (fileBuffer[0] === XML_MAGIC_NUMBER_7 &&
-      fileBuffer[1] === XML_MAGIC_NUMBER_8 &&
-      fileBuffer[2] === XML_MAGIC_NUMBER_9 &&
-      fileBuffer[3] === XML_MAGIC_NUMBER_10 &&
-      fileBuffer[4] === XML_MAGIC_NUMBER_11 &&
-      fileBuffer[5] === XML_MAGIC_NUMBER_12)
+    fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
+    fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
+    fileBuffer[2] === XML_MAGIC_NUMBER_3 &&
+    fileBuffer[3] === XML_MAGIC_NUMBER_4 &&
+    fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
+    fileBuffer[5] === XML_MAGIC_NUMBER_6
   ) {
-    return { mimeType: XML_APP_MIME_TYPE, extension: XML_FILE_EXTENSION };
+    return { mimeType: XML_APP_MIME_TYPE, fileExtension: XML_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === PNG_MAGIC_NUMBER_3 &&
     fileBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
-    return { mimeType: PNG_MIME_TYPE, extension: PNG_FILE_EXTENSION };
+    return { mimeType: PNG_MIME_TYPE, fileExtension: PNG_FILE_EXTENSION };
   } else if (
     fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
     fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
     fileBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
-    return { mimeType: JPEG_MIME_TYPE, extension: JPEG_FILE_EXTENSION };
+    return { mimeType: JPEG_MIME_TYPE, fileExtension: JPEG_FILE_EXTENSION };
   } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
-    return { mimeType: BMP_MIME_TYPE, extension: BMP_FILE_EXTENSION };
-  } else if (isLikelyTextFile(document)) {
-    return { mimeType: TXT_MIME_TYPE, extension: TXT_FILE_EXTENSION };
+    return { mimeType: BMP_MIME_TYPE, fileExtension: BMP_FILE_EXTENSION };
+  } else if (isLikelyTextFile(fileBuffer)) {
+    return { mimeType: TXT_MIME_TYPE, fileExtension: TXT_FILE_EXTENSION };
   } else {
-    return { mimeType: OCTET_MIME_TYPE, extension: OCTET_FILE_EXTENSION };
+    return { mimeType: OCTET_MIME_TYPE, fileExtension: OCTET_FILE_EXTENSION };
   }
 }
 /**

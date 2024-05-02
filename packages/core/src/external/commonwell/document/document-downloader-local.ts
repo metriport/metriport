@@ -4,6 +4,8 @@ import path from "path";
 import * as stream from "stream";
 import { DOMParser } from "xmldom";
 import { MetriportError } from "../../../util/error/metriport-error";
+import NotFoundError from "../../../util/error/not-found";
+import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 import { isMimeTypeXML } from "../../../util/mime";
 import { makeS3Client, S3Utils } from "../../aws/s3";
 import {
@@ -13,8 +15,6 @@ import {
   DownloadResult,
   FileInfo,
 } from "./document-downloader";
-import NotFoundError from "../../../util/error/not-found";
-import { detectFileType, isContentTypeAccepted } from "../../../util/file-type";
 
 export type DocumentDownloaderLocalConfig = DocumentDownloaderConfig & {
   commonWell: {
@@ -100,23 +100,23 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const documentBuffer = Buffer.from(downloadedDocument);
-    const { mimeType, extension } = detectFileType(documentBuffer);
+    const { mimeType: detectedFileType, fileExtension: detectedExtension } =
+      detectFileType(downloadedDocument);
 
     // If the file type has not changed
-    if (mimeType === document.mimeType || old_extension === extension) {
+    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
     console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${extension}`
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
       downloadResult.key,
-      mimeType,
-      extension
+      detectedFileType,
+      detectedExtension
     );
     const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
     const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
@@ -186,16 +186,20 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
         });
       return downloadedFile;
     }
-
     const b64Buff = Buffer.from(b64, "base64");
-    const newFileName = this.getNewFileName(requestedFileInfo.name, "pdf");
+
+    // Alternativelly we can use the provided mediaType and calculate the extension from it
+    // const providedContentType = xmlBodyTexts[0]?.attributes?.getNamedItem("mediaType")?.value;
+    const { mimeType, fileExtension } = detectFileType(b64Buff);
+
+    const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
     const b64Upload = await this.s3client
       .upload({
         Bucket: this.config.bucketName,
         Key: newFileName,
         Body: b64Buff,
-        ContentType: "application/pdf",
+        ContentType: mimeType,
       })
       .promise();
     const b64FileInfo = await this.s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket);

@@ -12,6 +12,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -24,7 +25,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import NotFoundError from "../../../errors/not-found";
 import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -578,26 +578,23 @@ async function downloadDocsAndUpsertFHIR({
             if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
 
             const isZeroLength = doc.content.size === 0;
-            if (isZeroLength && error instanceof NotFoundError) {
-              // we don't want to report errors when the file was originally flagged as empty
+            if (isZeroLength || error instanceof NotFoundError) {
+              // we don't want to report errors when the file was originally flagged as empty or not found
               errorReported = true;
               throw error;
             }
             const msg = `Error downloading from CW and upserting to FHIR`;
-            const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
-            log(`${msg}: ${zeroLengthDetailsStr}, (docId ${doc.id}): ${error}`);
-            capture.message(msg, {
+            log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
+            capture.error(msg, {
               extra: {
                 context: `s3.documentUpload`,
                 patientId: patient.id,
                 documentReference: doc,
-                isZeroLength,
                 requestId,
                 error,
               },
               level: "error",
             });
-            errorReported = true;
             throw error;
           }
 
@@ -779,7 +776,10 @@ async function triggerDownloadDocument({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.status === httpStatus.NOT_FOUND) {
-      console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
+      console.log(
+        `Document not found on CW, skipping - requestId: ${requestId}. ` +
+          `Error: ${errorToString(error)}`
+      );
       throw new NotFoundError("Document not found on CW", error, { requestId });
     } else {
       throw error;
