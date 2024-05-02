@@ -37,9 +37,13 @@ export async function processInboundDocumentQuery(
     }
     const { cxId, id: patientId } = id_pair;
 
-    const endpointUrl = `${apiUrl}/internal/docs/ccd`;
-    await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
-    const documentContents = await findDocumentReferences(payload);
+    let documentContents;
+    documentContents = await findDocumentReferences(payload);
+    if (!documentContents) {
+      const endpointUrl = `${apiUrl}/internal/docs/ccd`;
+      await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
+      documentContents = await findDocumentReferences(payload);
+    }
 
     const response: InboundDocumentQueryResp = {
       id: payload.id,
@@ -77,7 +81,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, en
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
     await s3Utils.uploadFile(bucket, fileName, Buffer.from(ccd));
-    log(`Empty CCD uploaded into ${bucket} under this name: ${fileName}`);
+    log(`CCD uploaded into ${bucket} under this name: ${fileName}`);
 
     const docRef: DocumentReference = {
       resourceType: "DocumentReference",

@@ -20,7 +20,9 @@ export function decodePatientId(patientIdB64: string): { cxId: string; id: strin
   }
 }
 
-export async function findDocumentReferences(payload: InboundDocumentQueryReq): Promise<string[]> {
+export async function findDocumentReferences(
+  payload: InboundDocumentQueryReq
+): Promise<string[] | undefined> {
   validateBasePayload(payload);
   const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
@@ -35,9 +37,5 @@ export async function findDocumentReferences(payload: InboundDocumentQueryReq): 
     id,
     medicalDocumentsBucketName
   );
-
-  if (!documentContents) {
-    throw new XDSUnknownPatientId("Patient ID is not valid");
-  }
   return documentContents;
 }

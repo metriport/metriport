@@ -9,7 +9,8 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Config } from "../../../shared/config";
 
 const metriportOid = Config.getSystemRootOID();
-export async function generateEmptyCcd({
+
+export async function generateCcd({
   patientId,
   cxId,
 }: {

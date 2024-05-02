@@ -25,7 +25,7 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
-import { generateEmptyCcd } from "../../command/medical/document/generate-ccd";
+import { generateCcd } from "../../command/medical/document/generate-ccd";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -424,7 +424,7 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
-    const ccd = await generateEmptyCcd({ patientId, cxId });
+    const ccd = await generateCcd({ patientId, cxId });
 
     return res.type("application/xml").status(httpStatus.OK).send(ccd);
   })
