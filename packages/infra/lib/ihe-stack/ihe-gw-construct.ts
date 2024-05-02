@@ -195,9 +195,11 @@ export default class IHEGatewayConstruct extends Construct {
       protocol: Protocol.HTTP,
       timeout: Duration.seconds(5),
     };
+
     const addPortToLB = (
       port: number,
       theLB: ApplicationLoadBalancer,
+      idx: number,
       healthcheckInterval?: Duration
     ) => {
       const existingListener = portToListener[port];
@@ -220,30 +222,29 @@ export default class IHEGatewayConstruct extends Construct {
       // don't create a new TG if this listener was already created on the same port
       if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
-      service.registerLoadBalancerTargets({
-        containerName,
-        containerPort: port,
-        protocol: ecs.Protocol.TCP,
-        newTargetGroupId: targetGroupId,
-        listener: ecs.ListenerConfig.applicationListener(listener, {
-          protocol: ApplicationProtocol.HTTP,
-          port,
-          targetGroupName: targetGroupId,
-          healthCheck: {
-            ...healthCheck,
-            ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
-          },
-          // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-          deregistrationDelay: Duration.minutes(10),
-        }),
-      });
-    };
-    defaultPorts.forEach(port => addPortToLB(port, alb));
-    httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
 
-    alb.listeners.forEach((listener, idx) => {
-      addMetricsToTargetGroupsOfAlb(listener, scope, idx, props.alarmAction);
-    });
+      const target = listener.addTargets(targetGroupId, {
+        protocol: ApplicationProtocol.HTTP,
+        port,
+        targetGroupName: targetGroupId,
+        targets: [
+          service.loadBalancerTarget({
+            containerName,
+            containerPort: port,
+          }),
+        ],
+        healthCheck: {
+          ...healthCheck,
+          ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
+        },
+        // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+        deregistrationDelay: Duration.minutes(10),
+      });
+      addMetricsToTargetGroup(target, scope, id, idx, props.alarmAction);
+    };
+    let albIdx = 0;
+    defaultPorts.forEach(port => addPortToLB(port, alb, albIdx++));
+    httpPorts.forEach(port => addPortToLB(port, alb, albIdx++, healthcheckIntervalAdditionalPorts));
 
     this.server = fargateService.service;
     if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
@@ -404,16 +405,14 @@ export default class IHEGatewayConstruct extends Construct {
   // }
 }
 
-function addMetricsToTargetGroupsOfAlb(
-  listener: ApplicationListener,
+function addMetricsToTargetGroup(
+  tg: ApplicationTargetGroup,
   scope: Construct,
+  id: string,
   idx: number,
   alarmAction?: SnsAction
 ) {
-  const name = `IheGw_TargetGroup${idx}`;
-  const tg = ApplicationTargetGroup.fromTargetGroupAttributes(scope, name, {
-    targetGroupArn: listener.listenerArn,
-  });
+  const name = `${id}_TargetGroup${idx}`;
   addAlarmToMetric({
     scope,
     metric: tg.metrics.unhealthyHostCount(),
