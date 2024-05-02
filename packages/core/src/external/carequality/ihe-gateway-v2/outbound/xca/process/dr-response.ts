@@ -48,7 +48,7 @@ async function parseDocumentReference({
   s3Utils: S3Utils;
   idMapping: Record<string, string>;
 }): Promise<DocumentReference> {
-  const { mimeType, extension, decodedBytes } = parseFileFromString(documentResponse.Document);
+  const { mimeType, fileExtension, decodedBytes } = parseFileFromString(documentResponse.Document);
   const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
   const metriportId = idMapping[strippedDocUniqueId];
   if (!metriportId) {
@@ -58,7 +58,7 @@ async function parseDocumentReference({
     outboundRequest.cxId,
     outboundRequest.patientId,
     metriportId
-  )}${extension}`;
+  )}${fileExtension}`;
   const filePath = createFilePath(outboundRequest.cxId, outboundRequest.patientId, fileName);
   const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 

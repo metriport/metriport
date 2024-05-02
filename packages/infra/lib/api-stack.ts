@@ -145,14 +145,13 @@ export class APIStack extends Stack {
     //-------------------------------------------
 
     // create database credentials
-    const dbUsername = props.config.dbUsername;
-    const dbName = props.config.dbName;
+    const dbConfig = props.config.apiDatabase;
     const dbClusterName = "api-cluster";
     const dbCredsSecret = new secret.Secret(this, "DBCreds", {
       secretName: `DBCreds`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          username: dbUsername,
+          username: dbConfig.username,
         }),
         excludePunctuation: true,
         includeSpace: false,
@@ -180,7 +179,7 @@ export class APIStack extends Stack {
         parameterGroup,
       },
       credentials: dbCreds,
-      defaultDatabaseName: dbName,
+      defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,

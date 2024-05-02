@@ -6,7 +6,7 @@ import { out } from "../../../../../../util/log";
 const { log } = out("[parseFileFromString] ");
 
 type ParsedFile = {
-  extension: string;
+  fileExtension: string;
   mimeType: string;
   decodedBytes: Buffer;
 };
@@ -27,21 +27,21 @@ export function parseFileFromString(fileAsString: string): ParsedFile {
     throw new Error(msg);
   }
 
-  const { mimeType, extension } = detectFileType(decodedBytes);
+  const { mimeType, fileExtension } = detectFileType(decodedBytes);
   if (mimeType === XML_TXT_MIME_TYPE || mimeType === XML_APP_MIME_TYPE) {
-    return extractNonXmlBody(mimeType, extension, decodedBytes, fileAsString);
+    return extractNonXmlBody(mimeType, fileExtension, decodedBytes, fileAsString);
   }
 
   return {
     mimeType,
-    extension,
+    fileExtension,
     decodedBytes,
   };
 }
 
 function extractNonXmlBody(
   mimeType: string,
-  extension: string,
+  fileExtension: string,
   decodedBytes: Buffer,
   fileAsString: string
 ): ParsedFile {
@@ -73,7 +73,7 @@ function extractNonXmlBody(
   } else {
     return {
       mimeType,
-      extension,
+      fileExtension,
       decodedBytes,
     };
   }
