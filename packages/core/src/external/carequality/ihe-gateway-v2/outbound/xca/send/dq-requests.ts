@@ -67,7 +67,6 @@ export async function sendSignedDQRequests({
         outboundRequest: request.outboundRequest,
         response: errorString,
         success: false,
-        bad: "Jonah",
       };
     }
   });

@@ -144,9 +144,9 @@ export class APIStack extends Stack {
     // Aurora Database for backend data
     //-------------------------------------------
 
-    // create database credentials
     const dbConfig = props.config.apiDatabase;
     const dbClusterName = "api-cluster";
+    // create database credentials
     const dbCredsSecret = new secret.Secret(this, "DBCreds", {
       secretName: `DBCreds`,
       generateSecretString: {
