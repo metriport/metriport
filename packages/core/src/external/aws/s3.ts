@@ -217,11 +217,15 @@ export class S3Utils {
 
     return newKey;
   }
-  async uploadFile(
-    bucket: string,
-    key: string,
-    file: Buffer
-  ): Promise<AWS.S3.ManagedUpload.SendData> {
+  async uploadFile({
+    bucket,
+    key,
+    file,
+  }: {
+    bucket: string;
+    key: string;
+    file: Buffer;
+  }): Promise<AWS.S3.ManagedUpload.SendData> {
     return new Promise((resolve, reject) => {
       this._s3.upload(
         {
