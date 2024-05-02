@@ -110,7 +110,7 @@ describe("processDRResponse", () => {
 describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
-  testFiles.forEach(({ name, mimeType, extension }) => {
+  testFiles.forEach(({ name, mimeType, fileExtension }) => {
     const xmlTemplatePath = path.join(__dirname, "./xmls/dr-no-mime-type.xml");
     const xmlTemplate = fs.readFileSync(xmlTemplatePath, "utf8");
 
@@ -181,11 +181,11 @@ describe.skip("processDRResponse for various file types and verify successful up
         await testContext.processDRResponse();
       }, 20000);
 
-      it(`should process the ${extension} DR response correctly`, () => {
+      it(`should process the ${fileExtension} DR response correctly`, () => {
         expect(testContext.response?.documentReference?.[0]?.contentType).toEqual(mimeType);
       });
 
-      it(`should verify the ${extension} file upload to S3 without corruption if applicable`, async () => {
+      it(`should verify the ${fileExtension} file upload to S3 without corruption if applicable`, async () => {
         await testContext.verifyUpload();
       }, 20000);
     });
