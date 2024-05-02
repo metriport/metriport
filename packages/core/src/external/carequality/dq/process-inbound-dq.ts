@@ -1,11 +1,35 @@
 import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
-import { constructDQErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
+import axios from "axios";
+import {
+  createUploadFilePath,
+  createUploadMetadataFilePath,
+} from "../../../domain/document/upload";
+import { Config } from "../../../util/config";
+import { sizeInBytes } from "../../../util/string";
+import { uuidv7 } from "../../../util/uuid-v7";
+import { S3Utils } from "../../aws/s3";
+import { IHEGatewayError, XDSRegistryError, constructDQErrorResponse } from "../error";
 import { findDocumentReferences } from "./find-document-reference";
+import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
+import { DocumentReference } from "@medplum/fhirtypes";
+import { out } from "@metriport/core/util/log";
+import { capture } from "../../../util/notifications";
+
+const region = Config.getAWSRegion();
+const s3Utils = new S3Utils(region);
+const api = axios.create();
+const bucket = Config.getMedicalDocumentsBucketName();
 
 export async function processInboundDocumentQuery(
-  payload: InboundDocumentQueryReq
+  payload: InboundDocumentQueryReq,
+  apiUrl: string
 ): Promise<InboundDocumentQueryResp> {
   try {
+    const { patientId, cxId } = payload;
+    if (!patientId || !cxId) throw new Error("patientId and cxId are required");
+
+    const endpointUrl = `${apiUrl}/internal/docs/ccd`;
+    await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
     const documentContents = await findDocumentReferences(payload);
 
     const response: InboundDocumentQueryResp = {
@@ -24,5 +48,62 @@ export async function processInboundDocumentQuery(
         new XDSRegistryError("Internal Server Error", error)
       );
     }
+  }
+}
+
+async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, endpointUrl: string) {
+  const { log } = out(`Inbound DQ - Create/Upload CCD for ${cxId}/${patientId}`);
+  const queryParams = {
+    cxId,
+    patientId,
+  };
+  const params = new URLSearchParams(queryParams).toString();
+  const url = `${endpointUrl}?${params}`;
+
+  const docId = uuidv7();
+  const fileName = createUploadFilePath(cxId, patientId, `${docId}.xml`);
+
+  try {
+    const resp = await api.post(url);
+    const ccd = resp.data as string;
+    const ccdSize = sizeInBytes(ccd);
+    await s3Utils.uploadFile(bucket, fileName, Buffer.from(ccd));
+    log(`Empty CCD uploaded into ${bucket} under this name: ${fileName}`);
+
+    const docRef: DocumentReference = {
+      resourceType: "DocumentReference",
+      status: "current",
+      subject: {
+        reference: `Patient/${patientId}`,
+      },
+      type: {
+        coding: [
+          {
+            code: "34133-9",
+            display: "SUMMARIZATION OF EPISODE NOTE",
+            system: "http://loinc.org",
+          },
+        ],
+      },
+      description: "Continuity of Care Document (C-CDA)",
+    };
+
+    const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
+    await createAndUploadMetadataFile({
+      s3Utils,
+      cxId,
+      patientId,
+      docId: fileName,
+      size: ccdSize.toString(),
+      docRef,
+      metadataFileName,
+      destinationBucket: bucket,
+      mimeType: "xml",
+    });
+  } catch (error) {
+    const msg = `Error creating and uploading CCD for ${cxId}/${patientId}`;
+    log(`${msg}: error - ${error}`);
+    capture.error(msg, { extra: { error, cxId, patientId, fileName, url } });
+    throw error;
   }
 }
