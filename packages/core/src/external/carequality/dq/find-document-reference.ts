@@ -6,7 +6,7 @@ import { extractPatientUniqueId, validateBasePayload } from "../shared";
 const medicalDocumentsBucketName = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
 
-function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
+export function decodePatientId(patientIdB64: string): { cxId: string; id: string } | undefined {
   try {
     const decodedString = extractPatientUniqueId(patientIdB64);
     const [cxId, id] = decodedString.split("/");

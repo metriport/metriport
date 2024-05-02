@@ -12,8 +12,13 @@ import { sizeInBytes } from "../../../util/string";
 import { uuidv7 } from "../../../util/uuid-v7";
 import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
 import { S3Utils } from "../../aws/s3";
-import { IHEGatewayError, XDSRegistryError, constructDQErrorResponse } from "../error";
-import { findDocumentReferences } from "./find-document-reference";
+import {
+  IHEGatewayError,
+  XDSRegistryError,
+  XDSUnknownPatientId,
+  constructDQErrorResponse,
+} from "../error";
+import { decodePatientId, findDocumentReferences } from "./find-document-reference";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -25,8 +30,12 @@ export async function processInboundDocumentQuery(
   apiUrl: string
 ): Promise<InboundDocumentQueryResp> {
   try {
-    const { patientId, cxId } = payload;
-    if (!patientId || !cxId) throw new Error("patientId and cxId are required");
+    const id_pair = decodePatientId(payload.externalGatewayPatient.id);
+
+    if (!id_pair) {
+      throw new XDSUnknownPatientId("Patient ID is not valid");
+    }
+    const { cxId, id: patientId } = id_pair;
 
     const endpointUrl = `${apiUrl}/internal/docs/ccd`;
     await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);

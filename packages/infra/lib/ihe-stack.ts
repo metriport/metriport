@@ -169,7 +169,7 @@ export class IHEStack extends Stack {
       envType: props.config.environmentType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
-        API_URL: `http://${props.config.loadBalancerDnsName}`,
+        API_URL: props.config.loadBalancerDnsName,
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
