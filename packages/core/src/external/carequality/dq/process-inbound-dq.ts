@@ -65,7 +65,7 @@ export async function processInboundDocumentQuery(
 }
 
 async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, endpointUrl: string) {
-  const { log } = out(`Inbound DQ - Create/Upload CCD for ${cxId}/${patientId}`);
+  const { log } = out(`Generate CCD cxId: ${cxId}, patientId: ${patientId}`);
   const queryParams = {
     cxId,
     patientId,
@@ -77,7 +77,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, en
   const fileName = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
-    const resp = await api.post(url);
+    const resp = await api.get(url);
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
     await s3Utils.uploadFile(bucket, fileName, Buffer.from(ccd));

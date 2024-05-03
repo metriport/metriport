@@ -3,10 +3,10 @@ import { AddressStrict } from "@metriport/core/domain/location-address";
 import { Address } from "@metriport/core/src/domain/address";
 import { Contact } from "@metriport/core/src/domain/contact";
 import { metriportOrganization } from "@metriport/shared/common/metriport-organization";
-import { OrganizationModel } from "../../../models/medical/organization";
-import { getOrganizationOrFail } from "../organization/get-organization";
-import { getPatientOrFail } from "../patient/get-patient";
-import { Config } from "../../../shared/config";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { OrganizationModel } from "../../models/medical/organization";
+import { Config } from "../../shared/config";
 
 const metriportOid = Config.getSystemRootOID();
 

@@ -25,11 +25,11 @@ import {
   MAPIWebhookStatus,
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
-import { generateCcd } from "../../command/medical/document/generate-ccd";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
+import { generateCcd } from "../../external/cda/generate-ccd";
 import { parseJobId } from "../../external/fhir/connector/connector";
 import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
@@ -411,14 +411,14 @@ router.post(
 );
 
 /**
- * POST /internal/docs/ccd
+ * GET /internal/docs/ccd
  *
- * Creates a CCD document for the specified patient.
+ * Generates a CCD document for the specified patient.
  * @param req.query.cxId - The customer/account's ID.
  * @param req.query.patientId - The patient's ID.
- * @return The CCD document string.
+ * @return The CCD document string in XML format.
  */
-router.post(
+router.get(
   "/ccd",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
