@@ -36,7 +36,6 @@ import { createOutboundDocumentRetrievalResp } from "../../external/carequality/
 import { createOutboundPatientDiscoveryResp } from "../../external/carequality/command/outbound-resp/create-outbound-patient-discovery-resp";
 import { processOutboundDocumentQueryResps } from "../../external/carequality/document/process-outbound-document-query-resps";
 import { processOutboundDocumentRetrievalResps } from "../../external/carequality/document/process-outbound-document-retrieval-resps";
-
 import {
   getDQResultStatus,
   getDRResultStatus,
