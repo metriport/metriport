@@ -43,7 +43,7 @@ export async function generateCcd({
 	<languageCode code="en-US"/>
 	<recordTarget>
 		<patientRole>
-			<id root="${cxId}" extension="${patientId}"/>
+			<id root="${patientId}"/>
 			${addresses}
 			${patientTelecom}
 			<patient>
@@ -192,13 +192,12 @@ function buildStructuredBody(): string {
         <templateId root="2.16.840.1.113883.10.20.22.2.6" extension="2015-08-01" />
         <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
         <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
-        <id root="89FA1B96-5F57-11EE-9453-0705AF1720AE" />
         <code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Allergies and adverse reactions Document" />
         <title>
           Allergies
         </title>
         <text>
-          <content ID="nof2">
+          <content ID="nof1">
             Not on File
           </content>
         </text>
@@ -210,13 +209,12 @@ function buildStructuredBody(): string {
         <templateId root="2.16.840.1.113883.10.20.22.2.1" extension="2014-06-09" />
         <templateId root="2.16.840.1.113883.10.20.22.2.1.1" />
         <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09" />
-        <id root="89FB8850-5F57-11EE-9453-0705AF1720AE" />
         <code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Medication use Narrative" />
         <title>
           Medications
         </title>
         <text>
-          <content ID="nof4">
+          <content ID="nof2">
             Not on file
           </content>
         </text>
@@ -228,13 +226,12 @@ function buildStructuredBody(): string {
         <templateId root="2.16.840.1.113883.10.20.22.2.5" extension="2015-08-01" />
         <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
         <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
-        <id root="89FBDFDA-5F57-11EE-9453-0705AF1720AE" />
         <code code="11450-4" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Problem list - Reported" />
         <title>
           Active Problems
         </title>
         <text>
-          <paragraph ID="nof6">
+          <paragraph ID="nof3">
             Not on file
           </paragraph>
         </text>
@@ -249,166 +246,10 @@ function buildStructuredBody(): string {
           Social History
         </title>
         <text>
-          <table ID="sochist10">
-            <colgroup>
-              <col span="2" width="25%" />
-              <col width="13%" />
-              <col width="12%" />
-              <col width="25%" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>
-                  Tobacco Use
-                </th>
-                <th>
-                  Types
-                </th>
-                <th>
-                  Packs/Day
-                </th>
-                <th>
-                  Years Used
-                </th>
-                <th>
-                  Date
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  Smoking Tobacco: Never Assessed
-                </td>
-                <td />
-                <td ID="sochist10packsperday" />
-                <td />
-                <td />
-              </tr>
-            </tbody>
-          </table>
-          <table>
-            <colgroup>
-              <col width="50%" />
-              <col span="2" width="25%" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>
-                  Sex and Gender Information
-                </th>
-                <th>
-                  Value
-                </th>
-                <th>
-                  Date Recorded
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr ID="BirthSex13">
-                <td>
-                  Sex Assigned at Birth
-                </td>
-                <td ID="BirthSex13Value">
-                  Not on file
-                </td>
-                <td />
-              </tr>
-              <tr ID="GenderIdentity11">
-                <td>
-                  Gender Identity
-                </td>
-                <td ID="GenderIdentity11Value">
-                  Not on file
-                </td>
-                <td />
-              </tr>
-              <tr ID="SexualOrientation12">
-                <td>
-                  Sexual Orientation
-                </td>
-                <td ID="SexualOrientation12Value">
-                  Not on file
-                </td>
-                <td />
-              </tr>
-            </tbody>
-          </table>
+          <content ID="nof4">
+            Not on File
+          </content>
         </text>
-        <entry>
-          <observation classCode="OBS" moodCode="EVN">
-            <templateId root="2.16.840.1.113883.10.20.22.4.78" />
-            <templateId root="2.16.840.1.113883.10.20.22.4.78" extension="2014-06-09" />
-            <id root="1.2.840.114350.1.13.551.2.7.1.1040.1" extension="Z16594545^^72166-2" />
-            <code code="72166-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Tobacco smoking status NHIS" />
-            <text>
-              <reference value="#sochist10" />
-            </text>
-            <statusCode code="completed" />
-            <effectiveTime nullFlavor="UNK" />
-            <value code="266927001" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Tobacco smoking consumption unknown" xsi:type="CD" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" />
-          </observation>
-        </entry>
-        <entry>
-          <observation classCode="OBS" moodCode="EVN">
-            <templateId root="2.16.840.1.113883.10.20.22.4.200" extension="2016-06-01" />
-            <id root="1.2.840.114350.1.13.551.2.7.1.1040.20" extension="Z16594545" />
-            <code code="76689-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Sex Assigned At Birth" />
-            <text>
-              <reference value="#BirthSex13" />
-            </text>
-            <statusCode code="completed" />
-            <effectiveTime value="19950901" />
-            <value codeSystem="2.16.840.1.113883.5.1" xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <originalText>
-                <reference value="#BirthSex13Value" />
-              </originalText>
-            </value>
-          </observation>
-        </entry>
-        <entry>
-          <observation classCode="OBS" moodCode="EVN">
-            <templateId root="2.16.840.1.113883.10.20.34.3.45" extension="2022-06-01" />
-            <templateId root="2.16.840.1.113883.10.20.22.4.38" />
-            <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01" />
-            <id nullFlavor="UNK" />
-            <code code="76691-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Gender identity" />
-            <text>
-              <reference value="#GenderIdentity11" />
-            </text>
-            <statusCode code="completed" />
-            <effectiveTime>
-              <low nullFlavor="UNK" />
-            </effectiveTime>
-            <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <originalText>
-                <reference value="#GenderIdentity11Value" />
-              </originalText>
-            </value>
-          </observation>
-        </entry>
-        <entry>
-          <observation classCode="OBS" moodCode="EVN">
-            <templateId root="2.16.840.1.113883.10.20.22.4.501" extension="2022-06-01" />
-            <templateId root="2.16.840.1.113883.10.20.22.4.38" />
-            <templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01" />
-            <id nullFlavor="UNK" />
-            <code code="76690-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Sexual orientation" />
-            <text>
-              <reference value="#SexualOrientation12" />
-            </text>
-            <statusCode code="completed" />
-            <effectiveTime>
-              <low nullFlavor="UNK" />
-            </effectiveTime>
-            <value xsi:type="CD" nullFlavor="UNK" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-              <originalText>
-                <reference value="#SexualOrientation12Value" />
-              </originalText>
-            </value>
-          </observation>
-        </entry>
       </section>
     </component>
     <component>
@@ -432,13 +273,12 @@ function buildStructuredBody(): string {
         <templateId root="2.16.840.1.113883.10.20.22.2.3" extension="2015-08-01" />
         <templateId root="2.16.840.1.113883.10.20.22.2.3.1" />
         <templateId root="2.16.840.1.113883.10.20.22.2.3.1" extension="2015-08-01" />
-        <id root="89FED6E0-5F57-11EE-9453-0705AF1720AE" />
         <code code="30954-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Relevant diagnostic tests/laboratory data Narrative" />
         <title>
           Results
         </title>
         <text>
-          <content ID="nof21">
+          <content ID="nof5">
             Not on file
           </content>
           <footnote ID="subTitle20" styleCode="xSectionSubTitle">
