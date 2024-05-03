@@ -51,6 +51,7 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -164,11 +165,8 @@ export class APIStack extends Stack {
     const parameterGroup = new rds.ParameterGroup(this, "APIDB_Params", {
       engine: dbEngine,
       parameters: {
-        ...(dbConfig.minSlowLogDurationInMs
-          ? {
-              log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
-            }
-          : undefined),
+        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
+        log_min_duration_statement: "3000", // TODO move this and other parameters to env config
       },
     });
 
@@ -180,20 +178,20 @@ export class APIStack extends Stack {
         enablePerformanceInsights: true,
         parameterGroup,
       },
-      preferredMaintenanceWindow: dbConfig.maintenanceWindow,
       credentials: dbCreds,
       defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
-      cloudwatchLogsExports: ["postgresql"],
     });
+    const minDBCap = this.isProd(props) ? 2 : 0.5;
+    const maxDBCap = this.isProd(props) ? 16 : 2;
     Aspects.of(dbCluster).add({
       visit(node) {
         if (node instanceof rds.CfnDBCluster) {
           node.serverlessV2ScalingConfiguration = {
-            minCapacity: dbConfig.minCapacity,
-            maxCapacity: dbConfig.maxCapacity,
+            minCapacity: minDBCap,
+            maxCapacity: maxDBCap,
           };
         }
       },
@@ -245,6 +243,15 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
+    }
+    const mtlsBucketName = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
 
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
@@ -456,6 +463,22 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
       },
       cookieStore,
+    });
+    new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
+      lambdaLayers,
+      vpc: this.vpc,
+      apiService: apiService,
+      secrets,
+      cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      cqTrustBundleBucket: mtlsBucketName,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      apiURL: apiService.loadBalancer.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     // Access grant for Aurora DB
