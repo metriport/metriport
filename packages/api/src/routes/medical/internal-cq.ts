@@ -44,7 +44,6 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { patientAugmentation } from "../../external/carequality/patient-augmentation";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
@@ -358,7 +357,6 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentRetrievalRespSchema
     processOutboundDocumentRetrievalResps(req.body);
-    patientAugmentation(req.body);
 
     return res.sendStatus(httpStatus.OK);
   })

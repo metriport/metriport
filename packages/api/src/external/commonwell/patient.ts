@@ -826,16 +826,16 @@ async function updateDemographics(
       cxId: patient.cxId,
       facilityId,
       ...patient.data,
-      address: patientDemographicsDiff?.address,
+      address: patientDemographicsDiff.address,
     });
   }
 }
 
 function createPatientDemographicsDiff(
   patient: Patient,
-  pdResults: NetworkLink[]
+  netLinkResults: NetworkLink[]
 ): PatientDemographicsDiff | undefined {
-  const patientNetworkLinks: PatientNetworkLink[] = getPatientNetworkLinks(pdResults);
+  const patientNetworkLinks: PatientNetworkLink[] = getPatientNetworkLinks(netLinkResults);
   const newAddresses: Address[] = patientNetworkLinks
     .flatMap((pnl: PatientNetworkLink) => {
       return pnl.details.address.flatMap((newAddress: PatientNetworkLinkAddress) => {
@@ -858,8 +858,8 @@ function createPatientDemographicsDiff(
   return;
 }
 
-function getPatientNetworkLinks(pdResults: NetworkLink[]): PatientNetworkLink[] {
-  return pdResults.flatMap(pd => {
+function getPatientNetworkLinks(netLinkResults: NetworkLink[]): PatientNetworkLink[] {
+  return netLinkResults.flatMap(pd => {
     const patientNewtorkLink = pd.patient;
     if (!patientNewtorkLink) return [];
     return patientNewtorkLink;

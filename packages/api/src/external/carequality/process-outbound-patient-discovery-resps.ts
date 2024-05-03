@@ -49,17 +49,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     const patient = await getPatientOrFail(patientIds);
-    const patientDemographicsDiff: PatientDemographicsDiff | undefined =
-      createPatientDemographicsDiff(patient, results);
-
-    if (patient.data.patientDiscovery?.facilityId && patientDemographicsDiff) {
-      updatePatient({
-        ...patientIds,
-        ...patient.data,
-        address: patientDemographicsDiff.address,
-        facilityId: patient.data.patientDiscovery.facilityId,
-      });
-    }
+    await updateDemographics(patient, results);
 
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
@@ -128,6 +118,20 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
       id: pd.gateway.id,
     };
   });
+}
+
+async function updateDemographics(patient: Patient, pdResults: OutboundPatientDiscoveryResp[]) {
+  const patientDemographicsDiff = createPatientDemographicsDiff(patient, pdResults);
+  const facilityId = patient.data.patientDiscovery?.facilityId;
+  if (facilityId && patientDemographicsDiff) {
+    updatePatient({
+      id: patient.id,
+      cxId: patient.cxId,
+      facilityId,
+      ...patient.data,
+      address: patientDemographicsDiff.address,
+    });
+  }
 }
 
 function createPatientDemographicsDiff(
