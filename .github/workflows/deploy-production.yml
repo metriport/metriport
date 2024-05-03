@@ -12,7 +12,6 @@ on:
       - "packages/core/**"
       - "packages/fhir-converter/**"
       - "packages/ihe-gateway/**"
-      - "packages/ihe-gateway-sdk/**"
       - "packages/carequality-sdk/**"
       - "packages/infra/**"
       - "packages/lambdas/**"
@@ -48,7 +47,6 @@ jobs:
               - "packages/api/**"
               - "packages/api-sdk/**"
               - "packages/commonwell-sdk/**"
-              - "packages/ihe-gateway-sdk/**"
               - "packages/core/**"
               - "package*.json"
             ihe-gw-server:

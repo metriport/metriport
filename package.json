@@ -37,7 +37,6 @@
   "workspaces": [
     "packages/shared",
     "packages/api-sdk",
-    "packages/ihe-gateway-sdk",
     "packages/commonwell-sdk",
     "packages/carequality-sdk",
     "packages/core",
