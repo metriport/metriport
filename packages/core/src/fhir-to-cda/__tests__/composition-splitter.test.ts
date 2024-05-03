@@ -1,30 +1,30 @@
 import { Bundle } from "@medplum/fhirtypes";
-import NotFoundError from "../../util/error/not-found";
+import BadRequestError from "../../util/error/bad-request";
 import { splitBundleByCompositions } from "../composition-splitter";
 
 describe("splitBundleByCompositions", () => {
-  it("throws NotFoundError for an empty input bundle", () => {
+  it("throws BadRequestError for an empty input bundle", () => {
     const emptyBundle: Bundle = {
       resourceType: "Bundle",
       entry: [],
     };
-    expect(() => splitBundleByCompositions(emptyBundle)).toThrow(NotFoundError);
+    expect(() => splitBundleByCompositions(emptyBundle)).toThrow(BadRequestError);
   });
 
-  it("throws NotFoundError when no Composition resources are present", () => {
+  it("throws BadRequestError when no Composition resources are present", () => {
     const bundleWithNoCompositions: Bundle = {
       resourceType: "Bundle",
       entry: [{ resource: { resourceType: "Patient" } }],
     };
-    expect(() => splitBundleByCompositions(bundleWithNoCompositions)).toThrow(NotFoundError);
+    expect(() => splitBundleByCompositions(bundleWithNoCompositions)).toThrow(BadRequestError);
   });
 
-  it("throws NotFoundError if the patient resource is missing", () => {
+  it("throws BadRequestError if the patient resource is missing", () => {
     const bundleWithMissingPatient: Bundle = {
       resourceType: "Bundle",
       entry: [{ resource: { resourceType: "Composition", subject: { reference: "Patient/123" } } }],
     };
-    expect(() => splitBundleByCompositions(bundleWithMissingPatient)).toThrow(NotFoundError);
+    expect(() => splitBundleByCompositions(bundleWithMissingPatient)).toThrow(BadRequestError);
   });
 
   it("successfully splits bundle with valid Composition and all required references", () => {
