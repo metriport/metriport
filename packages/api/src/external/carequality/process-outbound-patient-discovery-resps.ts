@@ -14,6 +14,7 @@ import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { updatePatient } from "../../command/medical/patient/update-patient";
 
 dayjs.extend(duration);
 
@@ -51,6 +52,15 @@ export async function processOutboundPatientDiscoveryResps({
     const patientDemographicsDiff: PatientDemographicsDiff | undefined =
       createPatientDemographicsDiff(patient, results);
 
+    if (patient.data.patientDiscovery?.facilityId && patientDemographicsDiff) {
+      updatePatient({
+        ...patientIds,
+        ...patient.data,
+        address: patientDemographicsDiff.address,
+        facilityId: patient.data.patientDiscovery.facilityId,
+      });
+    }
+
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
       {
@@ -60,11 +70,7 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
-    await processPatientDiscoveryProgress({
-      patient: patientIds,
-      status: "completed",
-      patientDemographicsDiff,
-    });
+    await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
 
     const startedAt = patient.data.patientDiscovery?.startedAt;
 

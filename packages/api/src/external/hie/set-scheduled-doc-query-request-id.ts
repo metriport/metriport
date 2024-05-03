@@ -1,14 +1,15 @@
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
-import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { PatientModel } from "../../../models/medical/patient";
-import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { PatientModel } from "../../models/medical/patient";
+import { executeOnDBTx } from "../../models/transaction-wrapper";
 
-export async function updatePatientDiscoveryStatus({
+export async function resetPatientScheduledDocQueryRequestId({
   patient,
-  status,
+  source,
 }: {
-  patient: Pick<Patient, "id" | "cxId">;
-  status: "processing" | "completed" | "failed";
+  patient: Patient;
+  source: MedicalDataSource;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -24,11 +25,11 @@ export async function updatePatientDiscoveryStatus({
 
     const externalData = existingPatient.data.externalData ?? {};
 
-    const updatePatientDiscoveryStatus = {
+    const updatedExternalData = {
       ...externalData,
-      CAREQUALITY: {
-        ...externalData.CAREQUALITY,
-        discoveryStatus: status,
+      [source]: {
+        ...externalData[source],
+        scheduledDocQueryRequestId: undefined,
       },
     };
 
@@ -36,7 +37,7 @@ export async function updatePatientDiscoveryStatus({
       ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
-        externalData: updatePatientDiscoveryStatus,
+        externalData: updatedExternalData,
       },
     };
 

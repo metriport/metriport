@@ -23,6 +23,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { updatePatient } from "../../command/medical/patient/update-patient";
 import MetriportError from "../../errors/metriport-error";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { Config } from "../../shared/config";
@@ -35,6 +36,7 @@ import {
 } from "../aws/appConfig";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
@@ -199,15 +201,15 @@ export async function registerAndLinkPatientInCW(
       getOrgIdExcludeList,
     });
 
-    if (networkLinks) {
-      const patientDemographicsDiff = createPatientDemographicsDiff(patient, networkLinks);
-      setPatientDiscoveryStatus({
-        patientId: patient.id,
-        cxId: patient.cxId,
-        status: "processing",
-        patientDemographicsDiff,
-      });
-    }
+    if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
+
+    setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "completed",
+    });
+
+    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList);
 
     if (requestId) {
       const startedAt = patient.data.patientDiscovery?.startedAt;
@@ -306,7 +308,7 @@ async function updatePatientAndLinksInCw(
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
     commonWell = updateData.commonWell;
 
-    const { patientRefLink } = await updatePatient({
+    const { patientRefLink } = await updatePatientCW({
       commonWell,
       queryMeta,
       commonwellPatient,
@@ -316,7 +318,7 @@ async function updatePatientAndLinksInCw(
     // No person yet, try to find/create with new patient demographics
 
     if (!personId) {
-      await findOrCreatePersonAndLink({
+      const { networkLinks } = await findOrCreatePersonAndLink({
         commonWell,
         queryMeta,
         commonwellPatient,
@@ -325,6 +327,9 @@ async function updatePatientAndLinksInCw(
         storeIdsAndStatus: getStoreIdsAndStatusFn(patient.id, patient.cxId),
         getOrgIdExcludeList,
       });
+
+      if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
+
       return;
     }
 
@@ -352,7 +357,7 @@ async function updatePatientAndLinksInCw(
             context: updateContext,
           },
         });
-        await findOrCreatePersonAndLink({
+        const { networkLinks } = await findOrCreatePersonAndLink({
           commonWell,
           queryMeta,
           commonwellPatient,
@@ -361,6 +366,9 @@ async function updatePatientAndLinksInCw(
           storeIdsAndStatus: getStoreIdsAndStatusFn(patient.id, patient.cxId),
           getOrgIdExcludeList,
         });
+
+        if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
+
         return;
       }
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -411,11 +419,15 @@ async function updatePatientAndLinksInCw(
       getOrgIdExcludeList
     );
 
+    if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
+
     setPatientDiscoveryStatus({
       patientId: patient.id,
       cxId: patient.cxId,
       status: "completed",
     });
+
+    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList);
 
     const startedAt = patient.data.patientDiscovery?.startedAt;
 
@@ -519,6 +531,28 @@ async function queryDocsIfScheduled(
       requestId: scheduledDocQueryRequestId,
       getOrgIdExcludeList,
     });
+  }
+}
+
+async function patientDiscoveryIfScheduled(
+  patient: Patient,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<void> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledPdRequestId = getCWData(updatedPatient.data.externalData)?.scheduledPdRequestId;
+
+  if (scheduledPdRequestId) {
+    const resetPatient = await resetPatientScheduledPatientDiscoveryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    const facilityId = resetPatient.data.patientDiscovery?.facilityId;
+    const requestId = resetPatient.data.patientDiscovery?.requestId;
+    if (facilityId && requestId) {
+      await update(resetPatient, facilityId, getOrgIdExcludeList, requestId);
+    }
   }
 }
 
@@ -713,7 +747,7 @@ async function registerPatient({
   return { commonwellPatientId, patientRefLink };
 }
 
-async function updatePatient({
+async function updatePatientCW({
   commonWell,
   queryMeta,
   commonwellPatient,
@@ -778,6 +812,23 @@ async function getLinkInfo({
         .includes(linkToPatient.assuranceLevel)
     : false;
   return { hasLink, isLinkLola3Plus, strongIds };
+}
+
+async function updateDemographics(
+  patient: Patient,
+  networkLinks: NetworkLink[],
+  facilityId: string
+) {
+  const patientDemographicsDiff = createPatientDemographicsDiff(patient, networkLinks);
+  if (patientDemographicsDiff) {
+    updatePatient({
+      id: patient.id,
+      cxId: patient.cxId,
+      facilityId,
+      ...patient.data,
+      address: patientDemographicsDiff?.address,
+    });
+  }
 }
 
 function createPatientDemographicsDiff(

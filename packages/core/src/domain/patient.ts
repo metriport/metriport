@@ -52,7 +52,6 @@ export type PatientDemographicsDiff = {
 
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
-  patientDiscoveryDemographicsDiff?: PatientDemographicsDiff;
 }
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;

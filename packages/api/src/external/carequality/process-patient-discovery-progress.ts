@@ -1,12 +1,13 @@
 import { errorToString } from "@metriport/shared/common/error";
 import { capture } from "@metriport/core/util/notifications";
-import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { out } from "@metriport/core/util/log";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData } from "./patient";
+import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
+import { getCQData, discover } from "./patient";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 /**
  * Updates the patient discovery status for patient.
@@ -15,24 +16,18 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 export async function processPatientDiscoveryProgress({
   patient,
   status,
-  patientDemographicsDiff,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: "processing" | "completed" | "failed";
-  patientDemographicsDiff?: PatientDemographicsDiff;
 }): Promise<void> {
   const { log } = out(`CQ Process PD Status - patient ${patient.id}`);
 
   try {
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status,
-      patientDemographicsDiff,
-    });
+    const updatedPatient = await updatePatientDiscoveryStatus({ patient, status });
 
-    const scheduledDocQueryRequestId = getCQData(
-      updatedPatient.data.externalData
-    )?.scheduledDocQueryRequestId;
+    const cqData = getCQData(updatedPatient.data.externalData);
+
+    const scheduledDocQueryRequestId = cqData?.scheduledDocQueryRequestId;
 
     if (scheduledDocQueryRequestId) {
       if (status === "completed") {
@@ -54,6 +49,28 @@ export async function processPatientDiscoveryProgress({
       if (cleanUpScheduledDocQuery) {
         log(`Cleaning up scheduled document query`);
         await resetPatientScheduledDocQueryRequestId({
+          patient: updatedPatient,
+          source: MedicalDataSource.CAREQUALITY,
+        });
+      }
+    }
+
+    const scheduledPdRequestId = cqData?.scheduledPdRequestId;
+
+    if (scheduledPdRequestId) {
+      if (status === "completed") {
+        log(`Triggering new patient discovery with requestId ${scheduledPdRequestId}`);
+
+        await discover(updatedPatient, "", scheduledPdRequestId);
+      } else if (status === "failed") {
+        // Skip next patient discvoery if current one failed
+      }
+
+      const cleanUpScheduledPd = status !== "processing";
+
+      if (cleanUpScheduledPd) {
+        log(`Cleaning up scheduled patient discovery`);
+        await resetPatientScheduledPatientDiscoveryRequestId({
           patient: updatedPatient,
           source: MedicalDataSource.CAREQUALITY,
         });

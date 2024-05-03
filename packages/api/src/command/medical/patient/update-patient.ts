@@ -47,15 +47,37 @@ export async function updatePatient(
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
+  const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 
-  await cwCommands.patient.update(
-    patient,
-    facility.id,
-    getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCommonwell
-  );
+  const discoveryStatusCq = cqData?.discoveryStatus;
+  const scheduledPdRequestIdCq = cqData?.scheduledPdRequestId;
+
+  if (discoveryStatusCq === "processing" && scheduledPdRequestIdCq) {
+    // do nothing
+  } else if (discoveryStatusCq === "processing" && !scheduledPdRequestIdCq) {
+    // set scheduledPdRequestIdCq
+  } else {
+    await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
+  }
+
+  const cwData = cwCommands.patient.getCWData(patient.data.externalData);
+
+  const statusCw = cwData?.status;
+  const scheduledPdRequestIdCw = cqData?.scheduledPdRequestId;
+
+  if (statusCw === "processing" && scheduledPdRequestIdCw) {
+    // do nothing
+  } else if (statusCw === "processing" && !scheduledPdRequestIdCw) {
+    // set scheduledPdRequestIdCw
+  } else {
+    await cwCommands.patient.update(
+      patient,
+      facility.id,
+      getCqOrgIdsToDenyOnCw,
+      requestId,
+      forceCommonwell
+    );
+  }
 
   return patient;
 }
