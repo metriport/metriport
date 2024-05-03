@@ -55,12 +55,7 @@ async function parseDocumentReference({
   if (!metriportId) {
     throw new MetriportError("MetriportId not found for document");
   }
-  if (!outboundRequest.patientId) {
-    throw new MetriportError("PatientId not found in outboundRequest");
-  }
-  if (!outboundRequest.cxId) {
-    throw new MetriportError("CxId not found in outboundRequest");
-  }
+
   const fileName = `${createFileName(
     outboundRequest.cxId,
     outboundRequest.patientId,

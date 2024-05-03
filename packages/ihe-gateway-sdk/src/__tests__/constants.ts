@@ -1,6 +1,5 @@
 export const testInboundXCPD = {
   id: "1234",
-  cxId: "2.16.840.1.113883.3.9621",
   timestamp: "2024-02-29T07:16:49",
   samlAttributes: {
     subjectId: "Pharmacist",
@@ -13,16 +12,6 @@ export const testInboundXCPD = {
     homeCommunityId: "urn:oid:2.16.840.1.113883.3.8391",
     purposeOfUse: "TREATMENT",
   },
-  principalCareProviderIds: [
-    {
-      id: "1234",
-      system: "2.16.840.1.113883.4.6",
-    },
-    {
-      id: "1234",
-      system: "2.16.840.1.113883.4.6",
-    },
-  ],
   patientResource: {
     resourceType: "Patient",
     identifier: [
@@ -70,9 +59,6 @@ export const testInboundDQ = {
     organizationId: "9.8.765.4321.1.23.456.7.8.9.1011.12",
     homeCommunityId: "9.8.765.4321.1.23.456.7.8.9.1011.12",
     purposeOfUse: "HEALTHCARE OPERATIONS",
-  },
-  gateway: {
-    homeCommunityId: "",
   },
   externalGatewayPatient: {
     id: "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
