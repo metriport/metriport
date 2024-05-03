@@ -1,6 +1,6 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
 import { findResourceInBundle, isComposition } from "../external/fhir/shared";
-import NotFoundError from "../util/error/not-found";
+import BadRequestError from "../util/error/bad-request";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.
@@ -13,7 +13,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
     [];
 
   if (compositions.length === 0) {
-    throw new NotFoundError("No compositions found in the bundle");
+    throw new BadRequestError("No compositions found in the bundle");
   }
 
   const bundles: Bundle[] = compositions.map(composition => {
@@ -26,13 +26,13 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, patientReference)
       : undefined;
     if (!patientResource) {
-      throw new NotFoundError("Patient resource not found");
+      throw new BadRequestError("Patient resource not found");
     }
     const organizationResource = organizationReference
       ? findResourceInBundle(fhirBundle, organizationReference)
       : undefined;
     if (!organizationResource) {
-      throw new NotFoundError("Organization resource not found");
+      throw new BadRequestError("Organization resource not found");
     }
 
     const bundle: Bundle = {
