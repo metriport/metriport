@@ -26,6 +26,9 @@ import z from "zod";
 
 dayjs.extend(duration);
 
+const confirmationTime = dayjs.duration(10, "seconds");
+const delayTime = confirmationTime.asMilliseconds();
+
 const apiKey = getEnvVarOrFail("API_KEY");
 const apiUrl = getEnvVarOrFail("API_URL");
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS"); // Must use the read replica
@@ -67,6 +70,7 @@ async function main() {
 
   try {
     const facilities = await metriportAPI.listFacilities();
+    await displayInitialWarningAndConfirmation(facilities.length);
     const patientCQLinks = await getPatientCqLinks(sequelize, cxId);
 
     let totalFacilities = 0;
@@ -78,6 +82,7 @@ async function main() {
       totalFacilities++;
       const patientsList = await metriportAPI.listPatients(facility.id);
 
+      await displayWarningAndConfirmation(facilities.length);
       const patientsCreatedAfter = patientsList.filter(
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         patient => new Date(patient.dateCreated!) > targetDate
@@ -163,6 +168,25 @@ async function updatePatient(patient: PatientDTO, address: Address, facilityId: 
     },
     facilityId
   );
+}
+
+async function displayInitialWarningAndConfirmation(numberFacilities: number) {
+  const org = await metriportAPI.getOrganization();
+  if (!org) {
+    throw new Error("Organization not found");
+  }
+  console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+  console.log(
+    `Updating patients created after ${patientCreatedDate} for organization ${org.name} (${org.id}).\nThere's ${numberFacilities} different facilities. Sleeping ${delayTime} ms before starting.`
+  );
+  await sleep(delayTime);
+}
+
+async function displayWarningAndConfirmation(numberPatients: number) {
+  console.log(
+    `There are a total of ${numberPatients} patients created after ${patientCreatedDate}.\nUpdating patients without links. Sleeping ${delayTime} ms before starting..`
+  );
+  await sleep(delayTime);
 }
 
 main();
