@@ -2,7 +2,7 @@ import {
   OutboundPatientDiscoveryResp as IHEOutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp as IHEOutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp as IHEOutboundDocumentRetrievalResp,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 
 export interface BaseResultDomain {
   requestId: string;

@@ -1,5 +1,5 @@
 import { Bundle, BundleEntry, DocumentReference, Resource } from "@medplum/fhirtypes";
-import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { OutboundDocRetrievalRespParam } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller-direct";
 import { metriportDataSourceExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";

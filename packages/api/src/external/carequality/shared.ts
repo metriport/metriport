@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { PurposeOfUse } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";

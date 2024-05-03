@@ -1,5 +1,8 @@
 import { Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import {
+  OutboundPatientDiscoveryReq,
+  XCPDGateway,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import dayjs from "dayjs";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { createPurposeOfUse, getSystemUserName } from "./shared";

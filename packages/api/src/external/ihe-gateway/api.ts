@@ -1,4 +1,4 @@
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { Config } from "../../shared/config";
 
 /**

@@ -1,4 +1,4 @@
-import { OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryResp } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { OutboundDocumentQueryRespModel } from "../../models/outbound-document-query-resp";
 import { DefaultPayload } from "./shared";
 

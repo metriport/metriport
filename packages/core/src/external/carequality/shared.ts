@@ -1,4 +1,4 @@
-import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq, InboundDocumentRetrievalReq } from "./ihe-gateway-types";
 import { XDSMissingHomeCommunityId, XDSRegistryError } from "./error";
 import { USState } from "../../domain/geographic-locations";
 import { base64ToString, stringToBase64 } from "../../util/base64";

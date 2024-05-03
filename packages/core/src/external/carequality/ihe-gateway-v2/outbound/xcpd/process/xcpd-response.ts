@@ -5,7 +5,7 @@ import {
   OutboundPatientDiscoveryReq,
   XCPDGateway,
   OperationOutcome,
-} from "@metriport/ihe-gateway-sdk";
+} from "../../../../ihe-gateway-types";
 import { normalizeGender } from "../../../utils";
 import { capture } from "../../../../../../util/notifications";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";

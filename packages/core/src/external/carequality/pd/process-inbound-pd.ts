@@ -1,8 +1,5 @@
-import {
-  InboundPatientDiscoveryReq,
-  InboundPatientDiscoveryResp,
-} from "@metriport/ihe-gateway-sdk";
-import { InboundPatientResource } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient-discovery-responses";
+import { InboundPatientDiscoveryReq, InboundPatientDiscoveryResp } from "../ihe-gateway-types";
+import { InboundPatientResource } from "../ihe-gateway-types";
 import { Address } from "../../../domain/address";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";

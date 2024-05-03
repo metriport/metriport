@@ -1,5 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateway } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
 import { Config } from "../../shared/config";

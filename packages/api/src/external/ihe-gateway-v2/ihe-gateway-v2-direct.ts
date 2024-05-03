@@ -2,7 +2,7 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { IHEGatewayV2 } from "@metriport/core/external/carequality/ihe-gateway-v2/ihe-gateway-v2";
 import {
   createSignSendProcessXCPDRequest,

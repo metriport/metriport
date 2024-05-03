@@ -4,7 +4,7 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 import { SamlCertsAndKeys } from "./saml/security/types";
 import { createAndSignBulkXCPDRequests } from "./outbound/xcpd/create/iti55-envelope";
 import { createAndSignBulkDQRequests } from "./outbound/xca/create/iti38-envelope";

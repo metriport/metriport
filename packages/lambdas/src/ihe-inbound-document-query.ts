@@ -1,4 +1,4 @@
-import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundDocumentQueryReqSchema } from "@metriport/core/external/carequality/ihe-gateway-types";
 import * as Sentry from "@sentry/serverless";
 import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
 

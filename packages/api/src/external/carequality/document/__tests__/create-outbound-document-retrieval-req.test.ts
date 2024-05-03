@@ -5,7 +5,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import { makeOrganization } from "../../../../domain/medical/__tests__/organization";
 import { makePatient } from "../../../../domain/medical/__tests__/patient";

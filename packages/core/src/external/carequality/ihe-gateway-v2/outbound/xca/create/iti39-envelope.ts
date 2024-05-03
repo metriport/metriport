@@ -6,7 +6,7 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
-import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentRetrievalReq, XCAGateway } from "../../../../ihe-gateway-types";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 

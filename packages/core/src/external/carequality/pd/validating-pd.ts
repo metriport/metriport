@@ -1,5 +1,5 @@
 import { Address as FHIRAddress, ContactPoint, Identifier } from "@medplum/fhirtypes";
-import { InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { InboundPatientDiscoveryReq } from "../ihe-gateway-types";
 import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";

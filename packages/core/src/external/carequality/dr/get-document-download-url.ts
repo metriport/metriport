@@ -1,4 +1,4 @@
-import { InboundDocumentRetrievalReq, DocumentReference } from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentRetrievalReq, DocumentReference } from "../ihe-gateway-types";
 import {
   METRIPORT_HOME_COMMUNITY_ID,
   METRIPORT_REPOSITORY_UNIQUE_ID,

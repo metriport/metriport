@@ -1,7 +1,7 @@
 import { processInboundPatientDiscovery } from "@metriport/core/external/carequality/pd/process-inbound-pd";
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundPatientDiscoveryReqSchema } from "@metriport/core/external/carequality/ihe-gateway-types";
 import * as Sentry from "@sentry/serverless";
 
 const apiUrl = getEnvVarOrFail("API_URL");

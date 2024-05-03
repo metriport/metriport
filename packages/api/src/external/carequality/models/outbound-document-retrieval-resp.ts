@@ -1,5 +1,5 @@
 import { Sequelize, DataTypes } from "sequelize";
-import { OutboundDocumentRetrievalResp as IHEOutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentRetrievalResp as IHEOutboundDocumentRetrievalResp } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { OutboundDocumentRetrievalResp } from "../outbound-document-retrieval-resp";
 import { ModelSetup } from "../../../models/_default";
 import { BaseOutboundRespModel } from "../../../models/medical/outbound-resp";

@@ -1,4 +1,4 @@
-import { InboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq } from "../ihe-gateway-types";
 import { Config } from "../../../util/config";
 import { S3Utils } from "../../aws/s3";
 import { XDSUnknownPatientId } from "../error";

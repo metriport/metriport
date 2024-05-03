@@ -7,7 +7,7 @@ import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
   BaseErrorResponse,
-} from "@metriport/ihe-gateway-sdk";
+} from "./ihe-gateway-types";
 import { METRIPORT_HOME_COMMUNITY_ID, CODE_SYSTEM_ERROR } from "./shared";
 import { MetriportError } from "../../util/error/metriport-error";
 import status from "http-status";

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { IHEGateway } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import * as dotenv from "dotenv";
 import { Command } from "commander";

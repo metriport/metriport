@@ -6,7 +6,7 @@ import {
   OutboundDocumentRetrievalResp,
   OperationOutcome,
   XCAGateway,
-} from "@metriport/ihe-gateway-sdk";
+} from "../../../../ihe-gateway-types";
 import { capture } from "../../../../../../util/notifications";
 import { out } from "../../../../../../util/log";
 

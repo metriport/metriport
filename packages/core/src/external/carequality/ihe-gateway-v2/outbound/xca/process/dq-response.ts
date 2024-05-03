@@ -5,7 +5,7 @@ import {
   OutboundDocumentQueryResp,
   DocumentReference,
   XCAGateway,
-} from "@metriport/ihe-gateway-sdk";
+} from "../../../../ihe-gateway-types";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
 import { stripUrnPrefix } from "../../../../../../util/urn";

@@ -3,7 +3,7 @@ import { capture } from "@metriport/core/util/notifications";
 import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { HieInitiator } from "../../hie/get-hie-initiator";

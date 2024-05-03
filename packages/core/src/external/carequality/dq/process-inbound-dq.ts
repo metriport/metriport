@@ -1,4 +1,4 @@
-import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentQueryReq, InboundDocumentQueryResp } from "../ihe-gateway-types";
 import { constructDQErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
 import { findDocumentReferences } from "./find-document-reference";
 

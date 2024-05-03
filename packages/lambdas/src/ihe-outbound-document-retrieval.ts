@@ -1,5 +1,5 @@
-import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
-import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { PollOutboundResults } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller";
+import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller-direct";
 import { getEnvType, getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { getSecretValueOrFail } from "@metriport/core/external/aws/secret-manager";

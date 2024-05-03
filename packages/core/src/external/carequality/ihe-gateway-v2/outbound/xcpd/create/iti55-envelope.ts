@@ -9,7 +9,7 @@ import {
   METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
   replyTo,
 } from "../../../../shared";
-import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryReq, XCPDGateway } from "../../../../ihe-gateway-types";
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 

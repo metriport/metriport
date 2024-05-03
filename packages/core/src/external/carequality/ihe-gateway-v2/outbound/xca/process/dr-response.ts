@@ -5,7 +5,7 @@ import {
   OutboundDocumentRetrievalResp,
   XCAGateway,
   DocumentReference,
-} from "@metriport/ihe-gateway-sdk";
+} from "../../../../ihe-gateway-types";
 import {
   handleRegistryErrorResponse,
   handleHTTPErrorResponse,

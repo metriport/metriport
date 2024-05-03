@@ -1,6 +1,6 @@
-import { OutboundResultPoller } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller";
-import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
-import { OutboundResultPollerLambda } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-lambda";
+import { OutboundResultPoller } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller";
+import { OutboundResultPollerDirect } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller-direct";
+import { OutboundResultPollerLambda } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller-lambda";
 import { Config } from "../../shared/config";
 
 export function makeOutboundResultPoller(): OutboundResultPoller {

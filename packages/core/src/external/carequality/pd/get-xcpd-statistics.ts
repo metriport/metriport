@@ -1,7 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
-import { inboundPatientResourceSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundPatientResourceSchema } from "../ihe-gateway-types";
 import { QueryTypes } from "sequelize";
 import z from "zod";
 import { MPIMetriportAPI } from "../../../mpi/patient-mpi-metriport-api";

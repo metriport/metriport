@@ -5,7 +5,7 @@ import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
-import { OutboundDocumentQueryReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryReq, XCAGateway } from "../../../../ihe-gateway-types";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
