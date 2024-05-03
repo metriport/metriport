@@ -1,26 +1,26 @@
 import {
-  BMP_FILE_EXTENSION,
-  BMP_MIME_TYPE,
-  HTML_MIME_TYPE,
-  JPEG_FILE_EXTENSION,
-  JPEG_MIME_TYPE,
-  JPG_MIME_TYPE,
   JSON_APP_MIME_TYPE,
   JSON_TXT_MIME_TYPE,
-  OCTET_FILE_EXTENSION,
-  OCTET_MIME_TYPE,
-  PDF_FILE_EXTENSION,
+  XML_APP_MIME_TYPE,
+  XML_TXT_MIME_TYPE,
   PDF_MIME_TYPE,
-  PNG_FILE_EXTENSION,
-  PNG_MIME_TYPE,
-  TIFF_FILE_EXTENSION,
   TIFF_MIME_TYPE,
   TIF_MIME_TYPE,
-  TXT_FILE_EXTENSION,
+  PNG_MIME_TYPE,
+  JPEG_MIME_TYPE,
+  JPG_MIME_TYPE,
+  BMP_MIME_TYPE,
   TXT_MIME_TYPE,
-  XML_APP_MIME_TYPE,
+  OCTET_MIME_TYPE,
+  HTML_MIME_TYPE,
   XML_FILE_EXTENSION,
-  XML_TXT_MIME_TYPE,
+  PDF_FILE_EXTENSION,
+  TIFF_FILE_EXTENSION,
+  PNG_FILE_EXTENSION,
+  JPEG_FILE_EXTENSION,
+  BMP_FILE_EXTENSION,
+  TXT_FILE_EXTENSION,
+  OCTET_FILE_EXTENSION,
 } from "./mime";
 
 const TIFF_MAGIC_NUMBER_1 = 0x49;
@@ -42,6 +42,12 @@ const XML_MAGIC_NUMBER_3 = 0x78;
 const XML_MAGIC_NUMBER_4 = 0x6d;
 const XML_MAGIC_NUMBER_5 = 0x6c;
 const XML_MAGIC_NUMBER_6 = 0x20;
+const XML_MAGIC_NUMBER_7 = 0x3c;
+const XML_MAGIC_NUMBER_8 = 0x43;
+const XML_MAGIC_NUMBER_9 = 0x6c;
+const XML_MAGIC_NUMBER_10 = 0x69;
+const XML_MAGIC_NUMBER_11 = 0x6e;
+const XML_MAGIC_NUMBER_12 = 0x69;
 const PNG_MAGIC_NUMBER_1 = 0x89;
 const PNG_MAGIC_NUMBER_2 = 0x50;
 const PNG_MAGIC_NUMBER_3 = 0x4e;
@@ -123,56 +129,64 @@ export function detectFileType(document: string): DetectedFileType;
  */
 export function detectFileType(fileBuffer: Buffer): DetectedFileType;
 export function detectFileType(param: Buffer | string): DetectedFileType {
-  let fileBuffer: Buffer;
+  let documentBuffer: Buffer;
   if (Buffer.isBuffer(param)) {
-    fileBuffer = param;
+    documentBuffer = param;
   } else {
-    fileBuffer = Buffer.from(param);
+    documentBuffer = Buffer.from(param);
   }
+  const maxBytesNeeded = 6;
+  const bytesBuffer = documentBuffer.slice(0, maxBytesNeeded);
   if (
-    (fileBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
-      fileBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
-      fileBuffer[2] === TIFF_MAGIC_NUMBER_3 &&
-      fileBuffer[3] === TIFF_MAGIC_NUMBER_4) ||
-    (fileBuffer[0] === TIFF_MAGIC_NUMBER_5 &&
-      fileBuffer[1] === TIFF_MAGIC_NUMBER_6 &&
-      fileBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
-      fileBuffer[3] === TIFF_MAGIC_NUMBER_8)
+    (bytesBuffer[0] === TIFF_MAGIC_NUMBER_1 &&
+      bytesBuffer[1] === TIFF_MAGIC_NUMBER_2 &&
+      bytesBuffer[2] === TIFF_MAGIC_NUMBER_3 &&
+      bytesBuffer[3] === TIFF_MAGIC_NUMBER_4) ||
+    (bytesBuffer[0] === TIFF_MAGIC_NUMBER_5 &&
+      bytesBuffer[1] === TIFF_MAGIC_NUMBER_6 &&
+      bytesBuffer[2] === TIFF_MAGIC_NUMBER_7 &&
+      bytesBuffer[3] === TIFF_MAGIC_NUMBER_8)
   ) {
     return { mimeType: TIFF_MIME_TYPE, fileExtension: TIFF_FILE_EXTENSION };
   } else if (
-    fileBuffer[0] === PDF_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === PDF_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === PDF_MAGIC_NUMBER_3 &&
-    fileBuffer[3] === PDF_MAGIC_NUMBER_4 &&
-    fileBuffer[4] === PDF_MAGIC_NUMBER_5
+    bytesBuffer[0] === PDF_MAGIC_NUMBER_1 &&
+    bytesBuffer[1] === PDF_MAGIC_NUMBER_2 &&
+    bytesBuffer[2] === PDF_MAGIC_NUMBER_3 &&
+    bytesBuffer[3] === PDF_MAGIC_NUMBER_4 &&
+    bytesBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
     return { mimeType: PDF_MIME_TYPE, fileExtension: PDF_FILE_EXTENSION };
   } else if (
-    fileBuffer[0] === XML_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === XML_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === XML_MAGIC_NUMBER_3 &&
-    fileBuffer[3] === XML_MAGIC_NUMBER_4 &&
-    fileBuffer[4] === XML_MAGIC_NUMBER_5 &&
-    fileBuffer[5] === XML_MAGIC_NUMBER_6
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
+      bytesBuffer[1] === XML_MAGIC_NUMBER_2 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_3 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_4 &&
+      bytesBuffer[4] === XML_MAGIC_NUMBER_5 &&
+      bytesBuffer[5] === XML_MAGIC_NUMBER_6) ||
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_7 &&
+      bytesBuffer[1] === XML_MAGIC_NUMBER_8 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_9 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_10 &&
+      bytesBuffer[4] === XML_MAGIC_NUMBER_11 &&
+      bytesBuffer[5] === XML_MAGIC_NUMBER_12)
   ) {
     return { mimeType: XML_APP_MIME_TYPE, fileExtension: XML_FILE_EXTENSION };
   } else if (
-    fileBuffer[0] === PNG_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === PNG_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === PNG_MAGIC_NUMBER_3 &&
-    fileBuffer[3] === PNG_MAGIC_NUMBER_4
+    bytesBuffer[0] === PNG_MAGIC_NUMBER_1 &&
+    bytesBuffer[1] === PNG_MAGIC_NUMBER_2 &&
+    bytesBuffer[2] === PNG_MAGIC_NUMBER_3 &&
+    bytesBuffer[3] === PNG_MAGIC_NUMBER_4
   ) {
     return { mimeType: PNG_MIME_TYPE, fileExtension: PNG_FILE_EXTENSION };
   } else if (
-    fileBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
-    fileBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
-    fileBuffer[2] === JPEG_MAGIC_NUMBER_1
+    bytesBuffer[0] === JPEG_MAGIC_NUMBER_1 &&
+    bytesBuffer[1] === JPEG_MAGIC_NUMBER_2 &&
+    bytesBuffer[2] === JPEG_MAGIC_NUMBER_1
   ) {
     return { mimeType: JPEG_MIME_TYPE, fileExtension: JPEG_FILE_EXTENSION };
-  } else if (fileBuffer[0] === BMP_MAGIC_NUMBER_1 && fileBuffer[1] === BMP_MAGIC_NUMBER_2) {
+  } else if (bytesBuffer[0] === BMP_MAGIC_NUMBER_1 && bytesBuffer[1] === BMP_MAGIC_NUMBER_2) {
     return { mimeType: BMP_MIME_TYPE, fileExtension: BMP_FILE_EXTENSION };
-  } else if (isLikelyTextFile(fileBuffer)) {
+  } else if (isLikelyTextFile(bytesBuffer)) {
     return { mimeType: TXT_MIME_TYPE, fileExtension: TXT_FILE_EXTENSION };
   } else {
     return { mimeType: OCTET_MIME_TYPE, fileExtension: OCTET_FILE_EXTENSION };

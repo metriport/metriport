@@ -13,6 +13,7 @@ export async function processInboundDocumentRetrieval(
 
     const response: InboundDocumentRetrievalResp = {
       id: payload.id,
+      patientId: payload.patientId,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       documentReference: documents,
