@@ -55,13 +55,14 @@ export async function processPatientDiscoveryProgress({
       }
     }
 
+    const facilityId = updatedPatient.data.patientDiscovery?.facilityId;
     const scheduledPdRequestId = cqData?.scheduledPdRequestId;
 
-    if (scheduledPdRequestId) {
+    if (facilityId && scheduledPdRequestId) {
       if (status === "completed") {
         log(`Triggering new patient discovery with requestId ${scheduledPdRequestId}`);
 
-        await discover(updatedPatient, "", scheduledPdRequestId);
+        await discover(updatedPatient, facilityId, scheduledPdRequestId);
       } else if (status === "failed") {
         // Skip next patient discvoery if current one failed
       }

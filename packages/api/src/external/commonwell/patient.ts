@@ -209,7 +209,7 @@ export async function registerAndLinkPatientInCW(
       status: "completed",
     });
 
-    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList);
+    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
 
     if (requestId) {
       const startedAt = patient.data.patientDiscovery?.startedAt;
@@ -427,7 +427,7 @@ async function updatePatientAndLinksInCw(
       status: "completed",
     });
 
-    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList);
+    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
 
     const startedAt = patient.data.patientDiscovery?.startedAt;
 
@@ -536,7 +536,8 @@ async function queryDocsIfScheduled(
 
 async function patientDiscoveryIfScheduled(
   patient: Patient,
-  getOrgIdExcludeList: () => Promise<string[]>
+  getOrgIdExcludeList: () => Promise<string[]>,
+  facilityId: string
 ): Promise<void> {
   const updatedPatient = await getPatientOrFail(patient);
 
@@ -548,11 +549,7 @@ async function patientDiscoveryIfScheduled(
       source: MedicalDataSource.COMMONWELL,
     });
 
-    const facilityId = resetPatient.data.patientDiscovery?.facilityId;
-    const requestId = resetPatient.data.patientDiscovery?.requestId;
-    if (facilityId && requestId) {
-      await update(resetPatient, facilityId, getOrgIdExcludeList, requestId);
-    }
+    await update(resetPatient, facilityId, getOrgIdExcludeList, scheduledPdRequestId);
   }
 }
 
