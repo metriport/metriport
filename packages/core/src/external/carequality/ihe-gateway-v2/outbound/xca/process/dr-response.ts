@@ -19,6 +19,7 @@ import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createFileName, createFilePath } from "../../../../../../domain/filename";
+import { MetriportError } from "../../../../../../util/error/metriport-error";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -52,7 +53,10 @@ async function parseDocumentReference({
   const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
   const metriportId = idMapping[strippedDocUniqueId];
   if (!metriportId) {
-    throw new Error("MetriportId not found for document");
+    throw new MetriportError("MetriportId not found for document");
+  }
+  if (!outboundRequest.patientId) {
+    throw new MetriportError("PatientId not found in outboundRequest");
   }
   const fileName = `${createFileName(
     outboundRequest.cxId,

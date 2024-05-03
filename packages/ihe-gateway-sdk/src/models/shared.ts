@@ -34,7 +34,7 @@ export const baseRequestSchema = z.object({
   cxId: z.string(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
-  patientId: z.string(),
+  patientId: z.string().nullish(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -84,7 +84,7 @@ export const baseResponseSchema = z.object({
   duration: z.number().optional(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string(),
+  patientId: z.string().nullish(),
   operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
