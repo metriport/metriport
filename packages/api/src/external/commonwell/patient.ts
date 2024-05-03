@@ -823,7 +823,7 @@ async function updateDemographics(
       cxId: patient.cxId,
       facilityId,
       ...patient.data,
-      address: patientDemographicsDiff.address,
+      address: [...patient.data.address, ...patientDemographicsDiff.address],
     });
   }
 }

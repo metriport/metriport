@@ -129,7 +129,7 @@ async function updateDemographics(patient: Patient, pdResults: OutboundPatientDi
       cxId: patient.cxId,
       facilityId,
       ...patient.data,
-      address: patientDemographicsDiff.address,
+      address: [...patient.data.address, ...patientDemographicsDiff.address],
     });
   }
 }
