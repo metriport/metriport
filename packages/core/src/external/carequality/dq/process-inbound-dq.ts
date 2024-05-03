@@ -9,7 +9,6 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { sizeInBytes } from "../../../util/string";
-import { uuidv7 } from "../../../util/uuid-v7";
 import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
 import { S3Utils } from "../../aws/s3";
 import {
@@ -19,7 +18,9 @@ import {
   constructDQErrorResponse,
 } from "../error";
 import { validateBasePayload } from "../shared";
-import { decodePatientId, findDocumentReferences } from "./find-document-reference";
+import { decodePatientId } from "./decode-patient-id";
+
+const CCD_NAME = "ccd";
 
 const region = Config.getAWSRegion();
 const s3Utils = new S3Utils(region);
@@ -39,7 +40,8 @@ export async function processInboundDocumentQuery(
     }
     const { cxId, id: patientId } = id_pair;
 
-    const documentContents = await getDocumentContents(payload, apiUrl, cxId, patientId);
+    await createAndUploadCcdAndMetadata(cxId, patientId, apiUrl);
+    const documentContents = await getDocumentContents(cxId, patientId);
 
     const response: InboundDocumentQueryResp = {
       id: payload.id,
@@ -60,18 +62,9 @@ export async function processInboundDocumentQuery(
   }
 }
 
-async function getDocumentContents(
-  payload: InboundDocumentQueryReq,
-  apiUrl: string,
-  cxId: string,
-  patientId: string
-): Promise<string[]> {
-  let documentContents = await findDocumentReferences(cxId, patientId);
-  if (!documentContents.length) {
-    const endpointUrl = `${apiUrl}/internal/docs/ccd`;
-    await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
-    documentContents = await findDocumentReferences(cxId, patientId);
-  }
+async function getDocumentContents(cxId: string, patientId: string): Promise<string[]> {
+  const documentContents = await s3Utils.retrieveDocumentIdsFromS3(cxId, patientId, bucket);
+
   if (!documentContents.length) {
     const msg = `Error getting document contents`;
     capture.error(msg, { extra: { cxId, patientId } });
@@ -80,17 +73,16 @@ async function getDocumentContents(
   return documentContents;
 }
 
-async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, endpointUrl: string) {
+async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, apiUrl: string) {
   const { log } = out(`Generate CCD cxId: ${cxId}, patientId: ${patientId}`);
   const queryParams = {
     cxId,
     patientId,
   };
   const params = new URLSearchParams(queryParams).toString();
+  const endpointUrl = `${apiUrl}/internal/docs/ccd`;
   const url = `${endpointUrl}?${params}`;
-
-  const docId = uuidv7();
-  const fileName = createUploadFilePath(cxId, patientId, `${docId}.xml`);
+  const fileName = createUploadFilePath(cxId, patientId, `${CCD_NAME}.xml`);
 
   try {
     log(`Calling internal route to create the CCD`);
@@ -118,7 +110,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, en
       description: "Continuity of Care Document (C-CDA)",
     };
 
-    const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
+    const metadataFileName = createUploadMetadataFilePath(cxId, patientId, CCD_NAME);
     await createAndUploadMetadataFile({
       s3Utils,
       cxId,
