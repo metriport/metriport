@@ -37,17 +37,13 @@ export async function updatePatient(
   // validate facility exists and cx has access to it
   const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
-
-  const patientUpdateWithPD: PatientUpdateCmd = {
-    ...patientUpdate,
-    patientDiscovery: { requestId, startedAt: new Date(), facilityId: facility.id },
-  };
-
-  const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
+  const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
+
+  // PD Flow
+  const requestId = uuidv7();
 
   const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 

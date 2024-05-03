@@ -5,9 +5,3 @@ export type QueryProgress = {
   status: QueryStatus | undefined;
   startedAt?: Date;
 };
-
-export type PatientDiscovery = {
-  startedAt: Date;
-  requestId: string;
-  facilityId?: string;
-};

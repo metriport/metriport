@@ -52,25 +52,18 @@ export async function getPatientWithCWData(
  * @param cxId The customer ID @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
- * @param commonwellStatus The status of integrating/synchronizing the patient @ CommonWell.
- * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
- *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
-export const setCommonwellIdsAndStatus = async ({
+export const setCommonwellIds = async ({
   patientId,
   cxId,
   commonwellPatientId,
   commonwellPersonId,
-  commonwellStatus,
-  cqLinkStatus,
 }: {
   patientId: string;
   cxId: string;
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-  commonwellStatus?: LinkStatus | undefined;
-  cqLinkStatus?: CQLinkStatus | undefined;
+  commonwellPatientId?: string;
+  commonwellPersonId?: string;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patientId,
@@ -84,8 +77,6 @@ export const setCommonwellIdsAndStatus = async ({
       transaction,
     });
 
-    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
-
     const externalData = existingPatient.data.externalData ?? {};
 
     const updateCWExternalData = {
@@ -94,8 +85,6 @@ export const setCommonwellIdsAndStatus = async ({
         ...externalData.COMMONWELL,
         ...(commonwellPatientId && { patientId: commonwellPatientId }),
         ...(commonwellPersonId && { personId: commonwellPersonId }),
-        ...(commonwellStatus && { status: commonwellStatus }),
-        ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
       },
     };
 
@@ -104,6 +93,64 @@ export const setCommonwellIdsAndStatus = async ({
       data: {
         ...existingPatient.data,
         externalData: updateCWExternalData,
+      },
+    };
+
+    await PatientModel.update(updatedPatient, {
+      where: patientFilter,
+      transaction,
+    });
+
+    return updatedPatient;
+  });
+};
+
+/**
+ * Sets the CQLink CommonWell (CW) integration status on the patient.
+ *
+ * @param patientId The patient ID @ Metriport.
+ * @param cxId The customer ID @ Metriport.
+ * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
+ * @returns
+ */
+export const setCommenwellCqLinkStatus = async ({
+  patientId,
+  cxId,
+  cqLinkStatus,
+}: {
+  patientId: string;
+  cxId: string;
+  cqLinkStatus?: CQLinkStatus;
+}): Promise<Patient> => {
+  const patientFilter = {
+    id: patientId,
+    cxId,
+  };
+
+  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+    const existingPatient = await getPatientOrFail({
+      ...patientFilter,
+      lock: true,
+      transaction,
+    });
+
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
+
+    const externalData = existingPatient.data.externalData ?? {};
+
+    const updateCqLinkStatus = {
+      ...externalData,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
+      },
+    };
+
+    const updatedPatient = {
+      ...existingPatient.dataValues,
+      data: {
+        ...existingPatient.data,
+        externalData: updateCqLinkStatus,
       },
     };
 
@@ -128,10 +175,16 @@ export const setPatientDiscoveryStatus = async ({
   patientId,
   cxId,
   status,
+  requestId,
+  facilityId,
+  startedAt,
 }: {
   patientId: string;
   cxId: string;
   status: LinkStatus;
+  requestId?: string;
+  facilityId?: string;
+  startedAt?: Date;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patientId,
@@ -152,6 +205,9 @@ export const setPatientDiscoveryStatus = async ({
       COMMONWELL: {
         ...externalData.COMMONWELL,
         status,
+        ...(requestId && { pdRequestId: requestId }),
+        ...(facilityId && { pdFacilityId: facilityId }),
+        ...(startedAt && { pdStartedAt: startedAt }),
       },
     };
 

@@ -6,9 +6,15 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 export async function updatePatientDiscoveryStatus({
   patient,
   status,
+  requestId,
+  facilityId,
+  startedAt,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: "processing" | "completed" | "failed";
+  requestId?: string;
+  facilityId?: string;
+  startedAt?: Date;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -29,6 +35,9 @@ export async function updatePatientDiscoveryStatus({
       CAREQUALITY: {
         ...externalData.CAREQUALITY,
         discoveryStatus: status,
+        ...(requestId && { pdRequestId: requestId }),
+        ...(facilityId && { pdFacilityId: facilityId }),
+        ...(startedAt && { pdStartedAt: startedAt }),
       },
     };
 

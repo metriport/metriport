@@ -3,6 +3,18 @@ import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
 export class PatientDataCarequality extends PatientExternalDataEntry {
   constructor(
     /**
+     * The start of the patient discovery.
+     */
+    public pdStartedAt?: Date,
+    /**
+     * The facility ID used for the patient discovery.
+     */
+    public pdFacilityId?: string,
+    /**
+     * The request Id the patient discovery.
+     */
+    public pdRequestId?: string,
+    /**
      * The status of the patient discovery.
      */
     public discoveryStatus?: "processing" | "completed" | "failed",
@@ -13,7 +25,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
     /**
      * The request ID for the next patient discovery while the current patient discovery was processing.
      */
-    public forceDocQuery?: boolean | undefined,
+    public scheduledPdRequestForceDocQuery?: boolean | undefined,
     /**
      * The request ID for the document query triggered while the patient discovery was processing.
      */

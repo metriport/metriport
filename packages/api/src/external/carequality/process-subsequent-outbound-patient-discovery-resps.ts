@@ -4,7 +4,7 @@ import { errorToString } from "@metriport/shared/common/error";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCQData } from "./patient";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
@@ -32,7 +32,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      await processPatientDiscoveryProgress({ patient, status: "processing" });
+      await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
@@ -44,7 +44,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   } catch (error) {
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
-    await processPatientDiscoveryProgress({ patient: { id: patientId, cxId }, status: "failed" });
+    await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     capture.error(msg, {
       extra: {
         patientId,

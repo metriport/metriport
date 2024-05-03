@@ -24,7 +24,7 @@ import { filterTruthy } from "../../../shared/filter-map-utils";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import { setCommonwellIdsAndStatus } from "../patient-external-data";
+import { setCommonwellIds, setPatientDiscoveryStatus } from "../patient-external-data";
 import {
   getPersonalIdentifiersFromPatient,
   PatientDataCommonwell,
@@ -130,12 +130,16 @@ export const findCurrentLink = async (
       log(msg);
       captureExtra.cwReference = commonWell.lastReferenceHeader;
       capture.message(msg, { extra: captureExtra });
-      await setCommonwellIdsAndStatus({
+      await setCommonwellIds({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        commonwellStatus: "failed",
+      });
+      await setPatientDiscoveryStatus({
+        patientId: patient.id,
+        cxId: patient.cxId,
+        status: "failed",
       });
       return;
     }
@@ -143,12 +147,16 @@ export const findCurrentLink = async (
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       log(`No patient linked to person`, patientLinkToPerson);
 
-      await setCommonwellIdsAndStatus({
+      await setCommonwellIds({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
-        commonwellStatus: "failed",
+      });
+      await setPatientDiscoveryStatus({
+        patientId: patient.id,
+        cxId: patient.cxId,
+        status: "failed",
       });
 
       return;

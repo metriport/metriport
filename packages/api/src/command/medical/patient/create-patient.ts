@@ -34,7 +34,6 @@ export const createPatient = async (
   // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
@@ -48,7 +47,6 @@ export const createPatient = async (
       personalIdentifiers,
       address,
       contact,
-      patientDiscovery: { requestId, startedAt: new Date(), facilityId },
     },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
@@ -59,6 +57,9 @@ export const createPatient = async (
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
+
+  // PD Flow
+  const requestId = uuidv7();
 
   await cwCommands.patient.create(
     newPatient,

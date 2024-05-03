@@ -18,7 +18,7 @@ import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways, generateIdsForGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 
 dayjs.extend(duration);
@@ -39,7 +39,12 @@ export async function discover(
   const enabledIHEGW = await validateCQEnabledAndInitGW(cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
-    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    await updatePatientDiscoveryStatus({
+      patient,
+      status: "processing",
+      requestId,
+      startedAt: new Date(),
+    });
 
     // Intentionally asynchronous
     prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
@@ -72,7 +77,7 @@ async function prepareAndTriggerPD(
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
-    await processPatientDiscoveryProgress({ patient, status: "failed" });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
         facilityId,
