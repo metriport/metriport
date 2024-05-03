@@ -18,6 +18,7 @@ import {
   XDSUnknownPatientId,
   constructDQErrorResponse,
 } from "../error";
+import { validateBasePayload } from "../shared";
 import { decodePatientId, findDocumentReferences } from "./find-document-reference";
 
 const region = Config.getAWSRegion();
@@ -30,6 +31,7 @@ export async function processInboundDocumentQuery(
   apiUrl: string
 ): Promise<InboundDocumentQueryResp> {
   try {
+    validateBasePayload(payload);
     const id_pair = decodePatientId(payload.externalGatewayPatient.id);
 
     if (!id_pair) {
@@ -64,13 +66,13 @@ async function getDocumentContents(
   cxId: string,
   patientId: string
 ): Promise<string[]> {
-  let documentContents = await findDocumentReferences(payload);
-  if (!documentContents) {
+  let documentContents = await findDocumentReferences(cxId, patientId);
+  if (!documentContents.length) {
     const endpointUrl = `${apiUrl}/internal/docs/ccd`;
     await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
-    documentContents = await findDocumentReferences(payload);
+    documentContents = await findDocumentReferences(cxId, patientId);
   }
-  if (!documentContents) {
+  if (!documentContents.length) {
     const msg = `Error getting document contents`;
     capture.error(msg, { extra: { cxId, patientId } });
     throw new XDSRegistryError("Internal Server Error");
@@ -91,6 +93,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, en
   const fileName = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
+    log(`Calling internal route to create the CCD`);
     const resp = await api.get(url);
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
