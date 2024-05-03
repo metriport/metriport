@@ -10,7 +10,7 @@ import duration from "dayjs/plugin/duration";
 import {
   pollOutboundDocQueryResults,
   pollOutboundDocRetrievalResults,
-} from "@metriport/core/external/carequality/ihe-gateway/poll-outbound-results";
+} from "@metriport/core/external/carequality/ihe-gateway-v1/poll-outbound-results";
 import axios from "axios";
 
 dayjs.extend(duration);
