@@ -10,6 +10,20 @@ import { chunk } from "lodash";
 import { QueryTypes, Sequelize } from "sequelize";
 import z from "zod";
 
+/**
+ * This script looks at all of the patients created after a certain date and triggers the UPDATE PATIENT
+ * for those patients, who do not have a link in the cq_patient_data table.
+ *
+ * To run:
+ * 1. Set the env vars:
+ *  -CX_ID
+ *  -API_KEY
+ *  -API_URL
+ *  -DB_CREDS - Must use the read replica
+ * 2. Set the patientCreatedDate string in the format YYYY-MM-DD
+ * 3. Run the script with `ts-node src/bulk-update-patients.ts`
+ */
+
 dayjs.extend(duration);
 
 const apiKey = getEnvVarOrFail("API_KEY");
@@ -19,7 +33,7 @@ const cxId = getEnvVarOrFail("CX_ID");
 const CHUNK_DELAY_MAX_MS = dayjs.duration({ minutes: 1 }).asMilliseconds();
 const PATIENT_CHUNK_SIZE = 5;
 
-const dateString = ""; // YYYY-MM-DD format
+const patientCreatedDate = ""; // YYYY-MM-DD format
 
 const metriportAPI = new MetriportMedicalApi(apiKey, {
   baseAddress: apiUrl,
@@ -37,26 +51,13 @@ const cqPatientDataResultSchema = z.array(
 );
 type CqPatientDataResult = z.infer<typeof cqPatientDataResultSchema>;
 
-/**
- * This script looks at all of the patients created after a certain date and triggers the UPDATE PATIENT
- * for those patients, who do not have a link in the cq_patient_data table.
- *
- * To run:
- * 1. Set the env vars:
- *  -CX_ID
- *  -API_KEY
- *  -API_URL
- *  -DB_CREDS - Must use the read replica
- * 2. Set the date string in the format YYYY-MM-DD
- * 3. Run the script with `ts-node src/bulk-update-patients.ts`
- */
 async function main() {
   const dbCreds = JSON.parse(sqlDBCreds);
-  if (!dateString) {
+  if (!patientCreatedDate) {
     console.log("Please provide a date string in the format YYYY-MM-DD");
     return;
   }
-  const targetDate = new Date(dateString);
+  const targetDate = new Date(patientCreatedDate);
 
   const sequelize = new Sequelize(dbCreds.dbname, dbCreds.username, dbCreds.password, {
     host: dbCreds.host,
@@ -99,8 +100,8 @@ async function main() {
       const patientChunks = chunk(patientsWithNoLinks, PATIENT_CHUNK_SIZE);
       console.log(`Facility ${facility.id} has ${patientsWithNoLinks.length} patients`);
 
-      for (const [i, patients] of patientChunks.entries()) {
-        console.log(`Chunk ${i + 1} of ${patientChunks.length}`);
+      for (const [j, patients] of patientChunks.entries()) {
+        console.log(`Chunk ${j + 1} of ${patientChunks.length}`);
         console.log(`# of patients ${patients.length}`);
 
         for (const patient of patients) {
@@ -111,7 +112,7 @@ async function main() {
           const address = addressObject as Address;
           await updatePatient(patient, address, facility.id);
         }
-        if (i < patientChunks.length - 1) {
+        if (j < patientChunks.length - 1) {
           await sleep(CHUNK_DELAY_MAX_MS * patients.length);
         }
       }
@@ -129,8 +130,6 @@ async function main() {
     sequelize.close();
   }
 }
-
-main();
 
 async function getPatientCqLinks(sequelize: Sequelize, cxId: string): Promise<CqPatientDataResult> {
   const query = `SELECT * FROM cq_patient_data WHERE cx_id=:cxId`;
@@ -165,3 +164,5 @@ async function updatePatient(patient: PatientDTO, address: Address, facilityId: 
     facilityId
   );
 }
+
+main();
