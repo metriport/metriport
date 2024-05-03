@@ -1,10 +1,12 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { patientEvents } from "../../../event/medical/patient-event";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
+import { schedulePatientDiscovery } from "../../../external/hie/schedule-patient-discovery";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
@@ -55,7 +57,11 @@ export async function updatePatient(
   if (discoveryStatusCq === "processing" && scheduledPdRequestIdCq) {
     // do nothing
   } else if (discoveryStatusCq === "processing" && !scheduledPdRequestIdCq) {
-    // set scheduledPdRequestIdCq
+    schedulePatientDiscovery({
+      requestId,
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
   } else {
     await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
   }
@@ -68,7 +74,11 @@ export async function updatePatient(
   if (statusCw === "processing" && scheduledPdRequestIdCw) {
     // do nothing
   } else if (statusCw === "processing" && !scheduledPdRequestIdCw) {
-    // set scheduledPdRequestIdCw
+    schedulePatientDiscovery({
+      requestId,
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
   } else {
     await cwCommands.patient.update(
       patient,

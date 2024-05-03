@@ -1,22 +1,33 @@
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
-export async function resetPatientScheduledDocQueryRequestId({
+/**
+ * Stores the requestId as the scheduled patient discov ery to be executed when the patient discovery
+ * is completed.
+ */
+export async function schedulePatientDiscovery({
+  requestId,
   patient,
   source,
 }: {
-  patient: Patient;
+  requestId: string;
+  patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
-}): Promise<Patient> {
+}): Promise<void> {
+  const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
+
+  log(`Scheduling document query to be executed`);
+
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
   };
 
-  return await executeOnDBTx(PatientModel.prototype, async transaction => {
+  await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -29,7 +40,7 @@ export async function resetPatientScheduledDocQueryRequestId({
       ...externalData,
       [source]: {
         ...externalData[source],
-        scheduledDocQueryRequestId: undefined,
+        scheduledPdRequestId: requestId,
       },
     };
 
@@ -45,7 +56,5 @@ export async function resetPatientScheduledDocQueryRequestId({
       where: patientFilter,
       transaction,
     });
-
-    return updatedPatient;
   });
 }
