@@ -17,8 +17,10 @@ export async function generateCcd({
   patientId: string;
   cxId: string;
 }): Promise<string> {
-  const organization = await getOrganizationOrFail({ cxId });
-  const patient = await getPatientOrFail({ cxId, id: patientId });
+  const [organization, patient] = await Promise.all([
+    getOrganizationOrFail({ cxId }),
+    getPatientOrFail({ cxId, id: patientId }),
+  ]);
   const data = patient.data;
   const address = data.address;
   const addresses = buildAddresses(address);

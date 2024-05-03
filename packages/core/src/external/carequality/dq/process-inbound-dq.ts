@@ -37,13 +37,7 @@ export async function processInboundDocumentQuery(
     }
     const { cxId, id: patientId } = id_pair;
 
-    let documentContents;
-    documentContents = await findDocumentReferences(payload);
-    if (!documentContents) {
-      const endpointUrl = `${apiUrl}/internal/docs/ccd`;
-      await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
-      documentContents = await findDocumentReferences(payload);
-    }
+    const documentContents = await getDocumentContents(payload, apiUrl, cxId, patientId);
 
     const response: InboundDocumentQueryResp = {
       id: payload.id,
@@ -62,6 +56,26 @@ export async function processInboundDocumentQuery(
       );
     }
   }
+}
+
+async function getDocumentContents(
+  payload: InboundDocumentQueryReq,
+  apiUrl: string,
+  cxId: string,
+  patientId: string
+): Promise<string[]> {
+  let documentContents = await findDocumentReferences(payload);
+  if (!documentContents) {
+    const endpointUrl = `${apiUrl}/internal/docs/ccd`;
+    await createAndUploadCcdAndMetadata(cxId, patientId, endpointUrl);
+    documentContents = await findDocumentReferences(payload);
+  }
+  if (!documentContents) {
+    const msg = `Error getting document contents`;
+    capture.error(msg, { extra: { cxId, patientId } });
+    throw new XDSRegistryError("Internal Server Error");
+  }
+  return documentContents;
 }
 
 async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, endpointUrl: string) {
@@ -114,7 +128,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, en
       mimeType: "xml",
     });
   } catch (error) {
-    const msg = `Error creating and uploading CCD for ${cxId}/${patientId}`;
+    const msg = `Error creating and uploading CCD`;
     log(`${msg}: error - ${error}`);
     capture.error(msg, { extra: { error, cxId, patientId, fileName, url } });
     throw error;
