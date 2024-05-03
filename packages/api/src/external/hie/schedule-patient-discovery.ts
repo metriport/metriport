@@ -20,7 +20,7 @@ export async function schedulePatientDiscovery({
 }): Promise<void> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
-  log(`Scheduling document query to be executed`);
+  log(`Scheduling patient discovery to be executed`);
 
   const patientFilter = {
     id: patient.id,
