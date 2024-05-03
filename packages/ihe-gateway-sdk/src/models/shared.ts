@@ -31,10 +31,10 @@ export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string(),
+  cxId: z.string().optional(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
-  patientId: z.string(),
+  patientId: z.string().nullish(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -84,7 +84,7 @@ export const baseResponseSchema = z.object({
   duration: z.number().optional(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string(),
+  patientId: z.string().nullish(),
   operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
