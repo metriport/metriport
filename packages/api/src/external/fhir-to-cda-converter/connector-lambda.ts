@@ -12,7 +12,6 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
       throw new Error("FHIR to CDA Converter Lambda Name is undefined");
     }
 
-    console.log("Invoking the lambda. We will not fail gracefully.");
     const result = await lambdaClient
       .invoke({
         FunctionName: fhirToCdaConverterLambdaName,
@@ -20,13 +19,11 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
         Payload: JSON.stringify({ cxId, patientId, bundle }),
       })
       .promise();
-    console.log("Connector got the result. Let's not fail gracefully");
     const resultPayload = getLambdaResultPayload({
       result,
       lambdaName: fhirToCdaConverterLambdaName,
       failGracefully: false,
     });
-    console.log("resultPayload", JSON.stringify(resultPayload));
     const cdaDocuments = JSON.parse(resultPayload) as string[];
     return cdaDocuments;
   }
