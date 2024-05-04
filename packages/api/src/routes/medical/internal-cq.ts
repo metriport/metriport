@@ -63,7 +63,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
-    await rebuildCQDirectory();
+    rebuildCQDirectory();
     return res.sendStatus(httpStatus.OK);
   })
 );
