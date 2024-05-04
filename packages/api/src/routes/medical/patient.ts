@@ -1,3 +1,4 @@
+import { Bundle, Resource } from "@medplum/fhirtypes";
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
@@ -50,7 +51,7 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
+import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
   schemaCreateToPatient,
@@ -417,23 +418,31 @@ async function putConsolidated(req: Request, res: Response) {
 
   const docId = uuidv7();
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
-  const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
-  const fhirOrganization = toFHIROrganization(organization);
 
-  await Promise.all([
-    await createOrUpdateConsolidatedPatientData({
+  const fhirOrganization = toFHIROrganization(organization);
+  const promises: Promise<Bundle<Resource> | undefined | void>[] = [
+    createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
       fhirBundle: validatedBundle,
     }),
-    await uploadCdaDocuments({
-      cxId,
-      patientId,
-      cdaBundles: converted,
-      organization: fhirOrganization,
-      docId,
-    }),
-  ]);
+  ];
+
+  const isValidForCdaConversion = hasCompositionResource(validatedBundle);
+  if (isValidForCdaConversion) {
+    const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
+    promises.push(
+      uploadCdaDocuments({
+        cxId,
+        patientId,
+        cdaBundles: converted,
+        organization: fhirOrganization,
+        docId,
+      })
+    );
+  }
+
+  await Promise.all(promises);
   return res.sendStatus(status.OK);
 }
 
@@ -456,6 +465,10 @@ async function checkResourceLimit(incomingAmount: number, patient: Patient) {
       );
     }
   }
+}
+
+function hasCompositionResource(bundle: ValidBundle): boolean {
+  return bundle.entry.some(entry => entry.resource?.resourceType === "Composition");
 }
 
 /** ---------------------------------------------------------------------------
