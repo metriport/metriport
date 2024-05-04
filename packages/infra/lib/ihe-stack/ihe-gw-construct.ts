@@ -1,4 +1,5 @@
 import { CfnOutput, Duration } from "aws-cdk-lib";
+import { ComparisonOperator, TreatMissingData } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { SecurityGroup } from "aws-cdk-lib/aws-ec2";
@@ -10,7 +11,9 @@ import {
   ApplicationListener,
   ApplicationLoadBalancer,
   ApplicationProtocol,
+  ApplicationTargetGroup,
   HealthCheck,
+  HttpCodeTarget,
   Protocol,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -24,6 +27,7 @@ import {
   IHEGatewayProps,
 } from "../../config/ihe-gateway-config";
 import { ecrRepoName } from "../ihe-prereq-stack";
+import { addAlarmToMetric } from "../shared/cloudwatch-metric";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
 import IHEDBConstruct from "./ihe-db-construct";
@@ -191,9 +195,11 @@ export default class IHEGatewayConstruct extends Construct {
       protocol: Protocol.HTTP,
       timeout: Duration.seconds(5),
     };
+
     const addPortToLB = (
       port: number,
       theLB: ApplicationLoadBalancer,
+      idx: number,
       healthcheckInterval?: Duration
     ) => {
       const existingListener = portToListener[port];
@@ -216,26 +222,29 @@ export default class IHEGatewayConstruct extends Construct {
       // don't create a new TG if this listener was already created on the same port
       if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
-      service.registerLoadBalancerTargets({
-        containerName,
-        containerPort: port,
-        protocol: ecs.Protocol.TCP,
-        newTargetGroupId: targetGroupId,
-        listener: ecs.ListenerConfig.applicationListener(listener, {
-          protocol: ApplicationProtocol.HTTP,
-          port,
-          targetGroupName: targetGroupId,
-          healthCheck: {
-            ...healthCheck,
-            ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
-          },
-          // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-          deregistrationDelay: Duration.minutes(10),
-        }),
+
+      const target = listener.addTargets(targetGroupId, {
+        protocol: ApplicationProtocol.HTTP,
+        port,
+        targetGroupName: targetGroupId,
+        targets: [
+          service.loadBalancerTarget({
+            containerName,
+            containerPort: port,
+          }),
+        ],
+        healthCheck: {
+          ...healthCheck,
+          ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
+        },
+        // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+        deregistrationDelay: Duration.minutes(10),
       });
+      addMetricsToTargetGroup(target, scope, id, idx, props.alarmAction);
     };
-    defaultPorts.forEach(port => addPortToLB(port, alb));
-    httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
+    let albIdx = 0;
+    defaultPorts.forEach(port => addPortToLB(port, alb, albIdx++));
+    httpPorts.forEach(port => addPortToLB(port, alb, albIdx++, healthcheckIntervalAdditionalPorts));
 
     this.server = fargateService.service;
     if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
@@ -394,4 +403,44 @@ export default class IHEGatewayConstruct extends Construct {
   //     evaluationPeriods: 1,
   //   });
   // }
+}
+
+function addMetricsToTargetGroup(
+  tg: ApplicationTargetGroup,
+  scope: Construct,
+  id: string,
+  idx: number,
+  alarmAction?: SnsAction
+) {
+  const name = `${id}_TargetGroup${idx}`;
+  addAlarmToMetric({
+    scope,
+    metric: tg.metrics.unhealthyHostCount(),
+    alarmName: `${name}_UnhealthyRequestCount`,
+    threshold: 1,
+    evaluationPeriods: 1,
+    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
+  addAlarmToMetric({
+    scope,
+    metric: tg.metrics.targetResponseTime(),
+    alarmName: `${name}_TargetResponseTime`,
+    threshold: Duration.seconds(29).toSeconds(),
+    evaluationPeriods: 1,
+    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
+  addAlarmToMetric({
+    scope,
+    metric: tg.metrics.httpCodeTarget(HttpCodeTarget.TARGET_5XX_COUNT),
+    alarmName: `${name}_Target5xxCount`,
+    threshold: 5,
+    evaluationPeriods: 1,
+    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+    treatMissingData: TreatMissingData.NOT_BREACHING,
+    alarmAction,
+  });
 }

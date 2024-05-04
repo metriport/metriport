@@ -73,6 +73,7 @@ export function createQueueAndBucket({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
+    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
   });
 
   const dlq = queue.deadLetterQueue;

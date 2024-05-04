@@ -49,7 +49,7 @@ export class AlarmSlackBot {
       notificationTopics: [...topics],
       role,
       loggingLevel: LoggingLevel.INFO,
-      logRetention: RetentionDays.ONE_MONTH,
+      logRetention: RetentionDays.ONE_YEAR,
     });
   }
 }
