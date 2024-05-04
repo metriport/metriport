@@ -217,30 +217,70 @@ export class S3Utils {
 
     return newKey;
   }
-  async uploadFile(
-    bucket: string,
-    key: string,
-    file: Buffer
-  ): Promise<AWS.S3.ManagedUpload.SendData> {
+  async uploadFile({
+    bucket,
+    key,
+    file,
+    contentType,
+  }: {
+    bucket: string;
+    key: string;
+    file: Buffer;
+    contentType?: string;
+  }): Promise<AWS.S3.ManagedUpload.SendData> {
     return new Promise((resolve, reject) => {
-      this._s3.upload(
-        {
-          Bucket: bucket,
-          Key: key,
-          Body: file,
-        },
-        (err, data) => {
-          if (err) {
-            console.error("Error during upload:", err);
-            reject(err);
-          } else {
-            console.log("Upload successful");
-            resolve(data);
-          }
+      const uploadParams: AWS.S3.PutObjectRequest = {
+        Bucket: bucket,
+        Key: key,
+        Body: file,
+      };
+
+      if (contentType) {
+        uploadParams.ContentType = contentType;
+      }
+
+      this._s3.upload(uploadParams, (err, data) => {
+        if (err) {
+          console.error("Error during upload:", err);
+          reject(err);
+        } else {
+          console.log("Upload successful");
+          resolve(data);
         }
-      );
+      });
     });
   }
+
+  async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const params = {
+        Bucket: bucket,
+        Key: key,
+      };
+      this._s3.getObject(params, (err, data) => {
+        if (err) {
+          console.error("Error during download:", err);
+          reject(err);
+        } else {
+          resolve(data.Body as Buffer);
+        }
+      });
+    });
+  }
+
+  async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
+    const deleteParams = {
+      Bucket: bucket,
+      Key: key,
+    };
+    this._s3.deleteObject(deleteParams, err => {
+      if (err) {
+        console.error("Error during file deletion:", err);
+        throw err;
+      }
+    });
+  }
+
   async retrieveDocumentIdsFromS3(
     cxId: string,
     patientId: string,

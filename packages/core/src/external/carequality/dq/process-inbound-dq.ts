@@ -45,6 +45,7 @@ export async function processInboundDocumentQuery(
 
     const response: InboundDocumentQueryResp = {
       id: payload.id,
+      patientId: payload.patientId,
       timestamp: payload.timestamp,
       responseTimestamp: new Date().toISOString(),
       extrinsicObjectXmls: documentContents,
