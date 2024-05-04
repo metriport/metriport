@@ -86,6 +86,8 @@ export function createConnector({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
+    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
+    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
   });
 
   const dlq = queue.deadLetterQueue;
