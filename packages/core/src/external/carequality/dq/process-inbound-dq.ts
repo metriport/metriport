@@ -90,7 +90,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
     const resp = await api.get(url);
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
-    await s3Utils.uploadFile(bucket, fileName, Buffer.from(ccd));
+    await s3Utils.uploadFile({ bucket, key: fileName, file: Buffer.from(ccd) });
     log(`CCD uploaded into ${bucket} under this name: ${fileName}`);
 
     const docRef: DocumentReference = {
