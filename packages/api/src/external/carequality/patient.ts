@@ -43,6 +43,7 @@ export async function discover(
       patient,
       status: "processing",
       requestId,
+      facilityId,
       startedAt: new Date(),
     });
 

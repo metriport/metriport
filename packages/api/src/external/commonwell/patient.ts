@@ -117,6 +117,7 @@ export async function create(
       cxId: patient.cxId,
       status: "processing",
       requestId,
+      facilityId,
       startedAt: new Date(),
     });
 
@@ -269,6 +270,7 @@ export async function update(
       cxId: patient.cxId,
       status: "processing",
       requestId,
+      facilityId,
       startedAt: new Date(),
     });
 
