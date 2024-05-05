@@ -41,6 +41,6 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/core": "^1.11.0",
+    "@metriport/core": "^1.11.0"
   }
 }
