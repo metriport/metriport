@@ -67,8 +67,17 @@ export const processPatientDocumentRequest = async (
       ],
     };
 
+    const metadata =
+      whType === "medical.document-download" || whType === "medical.document-conversion"
+        ? patient.data.cxDocumentRequestMetadata
+        : whType === "medical.consolidated-data"
+        ? patient.data.cxConsolidatedRequestMetadata
+        : whType === "medical.document-bulk-download-urls"
+        ? patient.data.cxDownloadRequestMetadata
+        : undefined;
+
     // send it to the customer and update the request status
-    if (!isWebhookDisabled(patient.data.cxDocumentRequestMetadata)) {
+    if (!isWebhookDisabled(metadata)) {
       const webhookRequest = await createWebhookRequest({
         cxId,
         type: whType,
@@ -80,7 +89,7 @@ export const processPatientDocumentRequest = async (
         webhookRequest,
         settings,
         requestId ? { requestId } : undefined,
-        patient.data.cxDocumentRequestMetadata
+        metadata
       );
     } else {
       // TODO 858 indicate this was not really sent to the customer
