@@ -56,6 +56,8 @@ _[Add and remove items below accordingly]_
 - [ ] Upstream dependencies are met/released
 - [ ] Release NPM packages
 - [ ] Fern Definition Updated
+- [ ] Sandbox, Staging, Production FFs have been set.
+- [ ] No dependencies between API and Infra that will cause errors during deployment
 - [ ] Release Fern SDKs
 - [ ] _[action n-1]_
 - [ ] _[action n]_
