@@ -7,7 +7,7 @@ import {
   DocumentReference as IHEGWDocumentReference,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
-} from "@metriport/ihe-gateway-sdk";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { DocumentReferenceWithId, createDocReferenceContent } from "../../fhir/document";
 import { formatDate } from "../shared";
 

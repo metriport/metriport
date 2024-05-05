@@ -59,7 +59,6 @@
   "devDependencies": {
     "@metriport/shared": "file:packages/shared",
     "@metriport/core": "file:packages/core",
-    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@sparticuz/chromium": "106.0.2",
     "@tsconfig/node18": "^1.0.1",
     "@types/aws-serverless-express": "^3.3.9",

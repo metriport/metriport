@@ -9,7 +9,7 @@ import {
   outboundDocumentQueryRespSchema,
   outboundDocumentRetrievalRespSchema,
   outboundPatientDiscoveryRespSchema,
-} from "@metriport/ihe-gateway-sdk";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { emptyFunction } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";

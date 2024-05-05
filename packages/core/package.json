@@ -62,7 +62,6 @@
     "@aws-sdk/s3-request-presigner": "^3.435.0",
     "@metriport/api-sdk": "file:packages/api-sdk",
     "@metriport/commonwell-sdk": "file:packages/commonwell-sdk",
-    "@metriport/ihe-gateway-sdk": "file:packages/ihe-gateway-sdk",
     "@opensearch-project/opensearch": "^2.3.1",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1243.0",

@@ -5,8 +5,8 @@ import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import {
   OutboundPatientDiscoveryResp,
   OutboundPatientDiscoveryRespSuccessfulSchema,
-} from "@metriport/ihe-gateway-sdk";
-import { OutboundPatientDiscoveryRespFaultSchema } from "@metriport/ihe-gateway-sdk/models/patient-discovery/patient-discovery-responses";
+  OutboundPatientDiscoveryRespFaultSchema,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { formatNumber } from "@metriport/shared/common/numbers";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";

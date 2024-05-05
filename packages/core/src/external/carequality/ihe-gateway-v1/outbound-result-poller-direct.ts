@@ -3,7 +3,7 @@ import {
   OutboundPatientDiscoveryResp,
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 import { OutboundResultPoller, PollOutboundResults } from "./outbound-result-poller";
 import {
   pollOutboundDocQueryResults,

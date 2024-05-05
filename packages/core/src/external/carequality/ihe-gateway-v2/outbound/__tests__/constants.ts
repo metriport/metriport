@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import {
   OutboundPatientDiscoveryReq,
   OutboundPatientDiscoveryRespSuccessfulSchema,
-} from "@metriport/ihe-gateway-sdk";
+} from "../../../ihe-gateway-types";
 
 export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
   id: uuidv4(),

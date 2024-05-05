@@ -1,4 +1,7 @@
-import { XCPDGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import {
+  XCPDGateway,
+  OutboundPatientDiscoveryReq,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 
 export const generatePatient = (
   xcpdGateways: XCPDGateway[],

@@ -19,7 +19,6 @@ main() {
 
    addPackageToLayer "shared"
    addPackageToLayer "core"
-   addPackageToLayer "ihe-gateway-sdk"
 
    pushd ./layers/shared
 

@@ -2,7 +2,7 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 
 export type PDRequestGatewayV2Params = {
   patientId: string;

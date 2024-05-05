@@ -1,4 +1,4 @@
-import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway-sdk";
+import { XCAGateway, OutboundDocumentRetrievalReq } from "../../../../ihe-gateway-types";
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";

@@ -1,4 +1,4 @@
-import { XCPDGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { XCPDGateway, OutboundPatientDiscoveryReq } from "../../../../ihe-gateway-types";
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";

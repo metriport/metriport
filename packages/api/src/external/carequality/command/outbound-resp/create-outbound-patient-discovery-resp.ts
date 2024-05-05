@@ -1,4 +1,4 @@
-import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundPatientDiscoveryResp } from "@metriport/core/external/carequality/ihe-gateway-types";
 import { OutboundPatientDiscoveryRespModel } from "../../models/outbound-patient-discovery-resp";
 import { DefaultPayload } from "./shared";
 

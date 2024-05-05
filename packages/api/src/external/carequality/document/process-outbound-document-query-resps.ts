@@ -1,11 +1,14 @@
 import { cqExtension } from "@metriport/core/external/carequality/extension";
-import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
+import { OutboundDocQueryRespParam } from "@metriport/core/external/carequality/ihe-gateway-v1/outbound-result-poller-direct";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import {
+  DocumentReference,
+  OutboundDocumentQueryResp,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { EventTypes, analytics } from "../../../shared/analytics";

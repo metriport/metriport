@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentQueryReq } from "@metriport/core/external/carequality/ihe-gateway-types";
 import dayjs from "dayjs";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { CQLink } from "../cq-patient-data";

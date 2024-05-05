@@ -2,7 +2,7 @@ import {
   OutboundPatientDiscoveryReq,
   OutboundDocumentQueryReq,
   OutboundDocumentRetrievalReq,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 import { makeLambdaClient } from "../../aws/lambda";
 import { Config } from "../../../util/config";
 import { processAsyncError } from "../../../util/error/shared";

@@ -1,4 +1,4 @@
-import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
+import { inboundDocumentRetrievalReqSchema } from "@metriport/core/external/carequality/ihe-gateway-types";
 import * as Sentry from "@sentry/serverless";
 import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
 

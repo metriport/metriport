@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
-import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
+import { OutboundDocumentRetrievalResp } from "../../../ihe-gateway-types";
 import { processDRResponse } from "../xca/process/dr-response";
 import { outboundDRRequest, testFiles, testFilesForUploadVerification } from "./constants";
 import { S3Utils } from "../../../../aws/s3";

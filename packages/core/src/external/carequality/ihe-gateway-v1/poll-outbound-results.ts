@@ -2,7 +2,7 @@ import {
   OutboundDocumentQueryResp,
   OutboundDocumentRetrievalResp,
   OutboundPatientDiscoveryResp,
-} from "@metriport/ihe-gateway-sdk";
+} from "../ihe-gateway-types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { QueryTypes, Sequelize } from "sequelize";

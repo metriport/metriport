@@ -1,7 +1,4 @@
-import {
-  InboundDocumentRetrievalReq,
-  InboundDocumentRetrievalResp,
-} from "@metriport/ihe-gateway-sdk";
+import { InboundDocumentRetrievalReq, InboundDocumentRetrievalResp } from "../ihe-gateway-types";
 import { constructDRErrorResponse, IHEGatewayError, XDSRegistryError } from "../error";
 import { buildDocumentReferences } from "./get-document-download-url";
 

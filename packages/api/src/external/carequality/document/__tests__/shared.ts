@@ -1,5 +1,8 @@
 import { faker } from "@faker-js/faker";
-import { OperationOutcome, OutboundDocumentQueryResp } from "@metriport/ihe-gateway-sdk";
+import {
+  OperationOutcome,
+  OutboundDocumentQueryResp,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import {
   BaseErrorResponse,
   BaseRequest,
@@ -11,7 +14,7 @@ import {
   XCAGateway,
   XCPDGateway,
   XCPDPatientId,
-} from "@metriport/ihe-gateway-sdk/models/shared";
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-with-metriport-id";
 
 export type IdSystem = { id: string; system: string };

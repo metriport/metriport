@@ -4,7 +4,11 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import {
+  IHEGateway,
+  OutboundPatientDiscoveryReq,
+  XCPDGateway,
+} from "@metriport/core/external/carequality/ihe-gateway-types";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
