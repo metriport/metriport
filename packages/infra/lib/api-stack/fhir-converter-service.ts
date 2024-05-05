@@ -11,6 +11,7 @@ import { EnvConfig } from "../../config/env-config";
 import { getConfig } from "../shared/config";
 import { vCPU } from "../shared/fargate";
 import { MAXIMUM_LAMBDA_TIMEOUT } from "../shared/lambda";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import { isProd } from "../shared/util";
 
 export function settings() {
@@ -134,6 +135,14 @@ export function createFHIRConverterService(
     targetUtilizationPercent: 80,
     scaleInCooldown: Duration.minutes(2),
     scaleOutCooldown: Duration.seconds(30),
+  });
+
+  const targetGroup = fargateService.targetGroup;
+  addDefaultMetricsToTargetGroup({
+    targetGroup,
+    scope: stack,
+    id: "FhirConverter",
+    alarmAction,
   });
 
   return { service: fargateService.service, address: serverAddress };
