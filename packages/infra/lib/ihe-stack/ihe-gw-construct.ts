@@ -1,5 +1,4 @@
 import { CfnOutput, Duration } from "aws-cdk-lib";
-import { ComparisonOperator, TreatMissingData } from "aws-cdk-lib/aws-cloudwatch";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { SecurityGroup } from "aws-cdk-lib/aws-ec2";
@@ -11,9 +10,7 @@ import {
   ApplicationListener,
   ApplicationLoadBalancer,
   ApplicationProtocol,
-  ApplicationTargetGroup,
   HealthCheck,
-  HttpCodeTarget,
   Protocol,
 } from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import { Function as Lambda } from "aws-cdk-lib/aws-lambda";
@@ -27,9 +24,9 @@ import {
   IHEGatewayProps,
 } from "../../config/ihe-gateway-config";
 import { ecrRepoName } from "../ihe-prereq-stack";
-import { addAlarmToMetric } from "../shared/cloudwatch-metric";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import IHEDBConstruct from "./ihe-db-construct";
 
 export interface IHEGatewayConstructProps {
@@ -223,7 +220,7 @@ export default class IHEGatewayConstruct extends Construct {
       if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
 
-      const target = listener.addTargets(targetGroupId, {
+      const targetGroup = listener.addTargets(targetGroupId, {
         protocol: ApplicationProtocol.HTTP,
         port,
         targetGroupName: targetGroupId,
@@ -240,7 +237,13 @@ export default class IHEGatewayConstruct extends Construct {
         // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
         deregistrationDelay: Duration.minutes(10),
       });
-      addMetricsToTargetGroup(target, scope, id, idx, props.alarmAction);
+      addDefaultMetricsToTargetGroup({
+        targetGroup,
+        scope,
+        id,
+        idx,
+        alarmAction: props.alarmAction,
+      });
     };
     let albIdx = 0;
     defaultPorts.forEach(port => addPortToLB(port, alb, albIdx++));
@@ -403,44 +406,4 @@ export default class IHEGatewayConstruct extends Construct {
   //     evaluationPeriods: 1,
   //   });
   // }
-}
-
-function addMetricsToTargetGroup(
-  tg: ApplicationTargetGroup,
-  scope: Construct,
-  id: string,
-  idx: number,
-  alarmAction?: SnsAction
-) {
-  const name = `${id}_TargetGroup${idx}`;
-  addAlarmToMetric({
-    scope,
-    metric: tg.metrics.unhealthyHostCount(),
-    alarmName: `${name}_UnhealthyRequestCount`,
-    threshold: 1,
-    evaluationPeriods: 1,
-    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: TreatMissingData.NOT_BREACHING,
-    alarmAction,
-  });
-  addAlarmToMetric({
-    scope,
-    metric: tg.metrics.targetResponseTime(),
-    alarmName: `${name}_TargetResponseTime`,
-    threshold: Duration.seconds(29).toSeconds(),
-    evaluationPeriods: 1,
-    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: TreatMissingData.NOT_BREACHING,
-    alarmAction,
-  });
-  addAlarmToMetric({
-    scope,
-    metric: tg.metrics.httpCodeTarget(HttpCodeTarget.TARGET_5XX_COUNT),
-    alarmName: `${name}_Target5xxCount`,
-    threshold: 5,
-    evaluationPeriods: 1,
-    comparisonOperator: ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
-    treatMissingData: TreatMissingData.NOT_BREACHING,
-    alarmAction,
-  });
 }
