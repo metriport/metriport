@@ -1,4 +1,4 @@
-import { Aspects, CfnOutput } from "aws-cdk-lib";
+import { Aspects, CfnOutput, RemovalPolicy } from "aws-cdk-lib";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -73,6 +73,8 @@ export default class IHEDBConstruct extends Construct {
       storageEncrypted: true,
       parameterGroup,
       cloudwatchLogsExports: ["postgresql"],
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
     this.server = dbCluster;
 
