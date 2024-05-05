@@ -18,7 +18,7 @@ import { DRSamlClientResponse } from "../send/dr-requests";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
-import { createFileName, createFilePath } from "../../../../../../domain/filename";
+import { createFileName, createFolderName } from "../../../../../../domain/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -61,7 +61,10 @@ async function parseDocumentReference({
     outboundRequest.patientId,
     metriportId
   )}${fileExtension}`;
-  const filePath = createFilePath(outboundRequest.cxId, outboundRequest.patientId, fileName);
+  const filePath = `${createFolderName(
+    outboundRequest.cxId,
+    outboundRequest.patientId
+  )}/${fileName}`;
   const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
   if (!fileInfo.exists) {
