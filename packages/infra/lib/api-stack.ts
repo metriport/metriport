@@ -256,15 +256,6 @@ export class APIStack extends Stack {
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    if (!props.config.iheGateway) {
-      throw new Error("Must define IHE properties!");
-    }
-    const mtlsBucketName = s3.Bucket.fromBucketName(
-      this,
-      "TruststoreBucket",
-      props.config.iheGateway.trustStoreBucketName
-    );
-
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
     //-------------------------------------------
@@ -476,22 +467,30 @@ export class APIStack extends Stack {
       },
       cookieStore,
     });
-    new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
-      lambdaLayers,
-      vpc: this.vpc,
-      apiService: apiService,
-      secrets,
-      cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
-      cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
-      cqOrgCertificateIntermediate:
-        props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
-      cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
-      cqTrustBundleBucket: mtlsBucketName,
-      medicalDocumentsBucket: medicalDocumentsBucket,
-      apiURL: apiService.loadBalancer.loadBalancerDnsName,
-      envType: props.config.environmentType,
-      sentryDsn: props.config.lambdasSentryDSN,
-    });
+
+    if (props.config.iheGateway) {
+      const mtlsBucketName = s3.Bucket.fromBucketName(
+        this,
+        "TruststoreBucket",
+        props.config.iheGateway.trustStoreBucketName
+      );
+      new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
+        lambdaLayers,
+        vpc: this.vpc,
+        apiService: apiService,
+        secrets,
+        cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
+        cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
+        cqOrgCertificateIntermediate:
+          props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+        cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+        cqTrustBundleBucket: mtlsBucketName,
+        medicalDocumentsBucket: medicalDocumentsBucket,
+        apiURL: apiService.loadBalancer.loadBalancerDnsName,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+      });
+    }
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);
