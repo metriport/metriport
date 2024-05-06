@@ -119,6 +119,7 @@ export class LambdasNestedStack extends NestedStack {
     const cdaToVisualizationLambda = createLambda({
       stack: this,
       name: "CdaToVisualization",
+      nameSuffix: "v2",
       runtime: lambda.Runtime.NODEJS_16_X,
       entry: "cda-to-visualization",
       envType,
@@ -171,6 +172,7 @@ export class LambdasNestedStack extends NestedStack {
     const documentDownloaderLambda = createLambda({
       stack: this,
       name: "DocumentDownloader",
+      nameSuffix: "v2",
       runtime: lambda.Runtime.NODEJS_18_X,
       entry: "document-downloader",
       envType,
@@ -229,6 +231,7 @@ export class LambdasNestedStack extends NestedStack {
     const outboundPatientDiscoveryLambda = createLambda({
       stack: this,
       name: "OutboundPatientDiscovery",
+      nameSuffix: "v2",
       entry: "ihe-outbound-patient-discovery",
       envType,
       envVars: {
@@ -276,6 +279,7 @@ export class LambdasNestedStack extends NestedStack {
     const outboundDocumentQueryLambda = createLambda({
       stack: this,
       name: "OutboundDocumentQuery",
+      nameSuffix: "v2",
       entry: "ihe-outbound-document-query",
       envType,
       envVars: {
@@ -323,6 +327,7 @@ export class LambdasNestedStack extends NestedStack {
     const outboundDocumentRetrievalLambda = createLambda({
       stack: this,
       name: "OutboundDocumentRetrieval",
+      nameSuffix: "v2",
       entry: "ihe-outbound-document-retrieval",
       envType,
       envVars: {
