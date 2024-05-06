@@ -5,10 +5,16 @@ import {
   Reference,
   DocumentReference,
 } from "@medplum/fhirtypes";
-import { driversLicenseURIs } from "../../../domain/oid";
+import { driversLicenseURIs, ssnURI, passportURI, medicareURI } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
+import {
+  GenderAtBirth,
+  Patient,
+  PersonalIdentifier,
+  splitName,
+  generalTypes,
+} from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
@@ -16,12 +22,18 @@ export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   M: "male",
 };
 
+export const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+  ssn: ssnURI,
+  passport: passportURI,
+  medicare: medicareURI,
+};
+
 export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   return {
     resourceType: "Patient",
     id: patient.id,
     identifier: patient.data.personalIdentifiers
-      ? convertDriversLicenseToIdentifier(patient.data.personalIdentifiers)
+      ? convertPIToIdentifier(patient.data.personalIdentifiers)
       : [],
     name: [
       {
@@ -63,14 +75,19 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   };
 };
 
-const convertDriversLicenseToIdentifier = (
-  personalIdentifiers: PersonalIdentifier[]
-): Identifier[] => {
+const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[]): Identifier[] => {
   return personalIdentifiers.map(identifier => {
-    return {
-      system: driversLicenseURIs[identifier.state],
-      value: identifier.value,
-    };
+    if (identifier.type === "driversLicense") {
+      return {
+        system: driversLicenseURIs[identifier.state],
+        value: identifier.value,
+      };
+    } else {
+      return {
+        system: identifierSytemByType[identifier.type],
+        value: identifier.value,
+      };
+    }
   });
 };
 

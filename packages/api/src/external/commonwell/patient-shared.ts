@@ -17,6 +17,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
+import { identifierSytemByType } from "./patient-conversion";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -252,8 +253,10 @@ export async function searchPersons({
 
 export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
   return (patient.data.personalIdentifiers ?? []).flatMap(id =>
-    id.value !== undefined && id.state !== undefined
+    id.value !== undefined && id.type === "driversLicense" && id.state !== undefined
       ? { key: id.value, system: driversLicenseURIs[id.state] }
+      : id.value !== undefined && id.type !== "driversLicense"
+      ? { key: id.value, system: identifierSytemByType[id.type] }
       : []
   );
 }

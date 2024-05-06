@@ -27,7 +27,7 @@ export const genderMapping: { [k in GenderAtBirth]: string } = {
   M: "M",
 };
 
-const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+export const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
   ssn: ssnURI,
   passport: passportURI,
   medicare: medicareURI,

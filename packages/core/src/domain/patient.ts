@@ -8,6 +8,7 @@ import { Address, getState } from "./address";
 import { Contact } from "./contact";
 
 export const generalTypes = ["passport", "ssn", "medicare"] as const;
+//export const generalTypes = ["ssn"] as const;
 export const driversLicenseType = ["driversLicense"] as const;
 export type GeneralTypes = (typeof generalTypes)[number];
 export type DriverLicenseType = (typeof driversLicenseType)[number];
@@ -26,17 +27,12 @@ export type BaseIdentifier = {
   period?: Period;
   assigner?: string;
 };
-// TODO #425 reenable this when we manage to work with diff systems @ CW
-// export type PersonalIdentifier = BaseIdentifier &
-//   (
-//     | { type: GeneralTypes; value: string; state?: never }
-//     | { type: DriverLicenseType; value: string; state: USState }
-//   );
-export type PersonalIdentifier = BaseIdentifier & {
-  type: DriverLicenseType;
-  value: string;
-  state: USState;
-};
+
+export type PersonalIdentifier = BaseIdentifier &
+  (
+    | { type: GeneralTypes; value: string }
+    | { type: DriverLicenseType; value: string; state: USState }
+  );
 
 export type DriversLicense = {
   value: string;

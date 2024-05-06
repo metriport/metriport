@@ -30,9 +30,14 @@ export const driverLicenseIdentifierSchema = z.object({
   state: usStateSchema,
 });
 
-export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
-  driverLicenseIdentifierSchema
-);
+export const generalTypeIdentifierSchema = z.object({
+  type: z.literal("ssn"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
+  state: usStateSchema,
+});
+
+export const personalIdentifierSchema = basePersonalIdentifierSchema
+  .merge(driverLicenseIdentifierSchema)
+  .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
 export const genderAtBirthSchema = z.enum(["F", "M"]);

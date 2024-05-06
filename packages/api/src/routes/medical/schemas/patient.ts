@@ -27,11 +27,9 @@ export const driverLicenseIdentifierSchema = z.object({
 export const generalTypeIdentifierSchema = z.object({
   type: z.enum(generalTypes),
 });
-export const personalIdentifierSchema = basePersonalIdentifierSchema.merge(
-  driverLicenseIdentifierSchema
-);
-// TODO #369 reenable this when we manage to work with diff systems @ CW
-// .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
+export const personalIdentifierSchema = basePersonalIdentifierSchema
+  .merge(driverLicenseIdentifierSchema)
+  .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
