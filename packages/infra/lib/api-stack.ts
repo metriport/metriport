@@ -166,8 +166,11 @@ export class APIStack extends Stack {
     const parameterGroup = new rds.ParameterGroup(this, "APIDB_Params", {
       engine: dbEngine,
       parameters: {
-        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
-        log_min_duration_statement: "3000", // TODO move this and other parameters to env config
+        ...(dbConfig.minSlowLogDurationInMs
+          ? {
+              log_min_duration_statement: dbConfig.minSlowLogDurationInMs.toString(),
+            }
+          : undefined),
       },
     });
 
@@ -179,6 +182,7 @@ export class APIStack extends Stack {
         enablePerformanceInsights: true,
         parameterGroup,
       },
+      preferredMaintenanceWindow: dbConfig.maintenanceWindow,
       credentials: dbCreds,
       defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
@@ -188,14 +192,12 @@ export class APIStack extends Stack {
       deletionProtection: true,
       removalPolicy: RemovalPolicy.RETAIN,
     });
-    const minDBCap = this.isProd(props) ? 2 : 0.5;
-    const maxDBCap = this.isProd(props) ? 16 : 2;
     Aspects.of(dbCluster).add({
       visit(node) {
         if (node instanceof rds.CfnDBCluster) {
           node.serverlessV2ScalingConfiguration = {
-            minCapacity: minDBCap,
-            maxCapacity: maxDBCap,
+            minCapacity: dbConfig.minCapacity,
+            maxCapacity: dbConfig.maxCapacity,
           };
         }
       },
