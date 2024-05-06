@@ -92,7 +92,7 @@ export function buildClinicalDocumentXML(
       ),
       id: buildInstanceIdentifier({
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
-        root: clinicalDocumentConstants.idRoot,
+        root: clinicalDocumentConstants.rootOid,
       }),
       code: buildCodeCE({
         code: "NOTE-TYPE", // TODO: Make this dynamic. IMPORTANT
@@ -115,8 +115,7 @@ export function buildClinicalDocumentXML(
       }),
       setId: buildInstanceIdentifier({
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
-        extension: "OUR-EXTENSION", // TODO: What is our extension?
-        root: clinicalDocumentConstants.idRoot,
+        root: clinicalDocumentConstants.rootOid,
       }),
       versionNumber: withoutNullFlavorObject(
         clinicalDocumentConstants.versionNumber,

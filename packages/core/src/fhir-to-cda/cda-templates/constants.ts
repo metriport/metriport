@@ -37,7 +37,7 @@ export const clinicalDocumentConstants = {
     { root: "2.16.840.1.113883.10.20.22.1.9", extension: extensionValue2015 },
   ],
   assigningAuthorityName: "METRIPORT",
-  idRoot: metriportOid,
+  rootOid: metriportOid,
   code: {
     codeSystem: "2.16.840.1.113883.6.1",
     codeSystemName: "LOINC",

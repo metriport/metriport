@@ -11,6 +11,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildMentalStatus(fhirBundle),
     buildMedications(fhirBundle),
   ];
+
   const structuredBody = {
     structuredBody: {
       component: structuredBodySections.map(comp => ({
