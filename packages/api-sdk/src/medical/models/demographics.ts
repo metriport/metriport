@@ -8,6 +8,11 @@ import {
   stripNonNumericChars,
 } from "../../shared";
 
+export const generalTypes = ["passport", "ssn", "medicare"] as const;
+export const driversLicenseType = ["driversLicense"] as const;
+export type GeneralTypes = (typeof generalTypes)[number];
+export type DriverLicenseType = (typeof driversLicenseType)[number];
+
 const basePersonalIdentifierSchema = z.object({
   value: z.string(),
   period: z
@@ -26,12 +31,12 @@ const basePersonalIdentifierSchema = z.object({
 });
 
 export const driverLicenseIdentifierSchema = z.object({
-  type: z.literal("driversLicense"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
+  type: z.enum(driversLicenseType),
   state: usStateSchema,
 });
 
 export const generalTypeIdentifierSchema = z.object({
-  type: z.literal("ssn").or(z.literal("passport")).or(z.literal("medicare")), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
+  type: z.enum(generalTypes),
 });
 
 export const personalIdentifierSchema = basePersonalIdentifierSchema

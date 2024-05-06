@@ -3,7 +3,7 @@ dotenv.config();
 // Keep dotenv import and config before everything else
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
-import { PersonalIdentifier } from "@metriport/api-sdk";
+import { PersonalIdentifier, generalTypes } from "@metriport/api-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { Sequelize } from "sequelize";
 
@@ -81,7 +81,7 @@ const toFHIRPatient = (patient: any): FHIRPatient => {
   return {
     resourceType: "Patient",
     id: patient.id,
-    identifier: convertDriversLicenseToIdentifier(patient.data.personalIdentifiers),
+    identifier: convertPIToIdentifier(patient.data.personalIdentifiers),
     name: [
       {
         family: patient.data.lastName,
@@ -118,17 +118,6 @@ const toFHIRPatient = (patient: any): FHIRPatient => {
 type Identifier = {
   system: string;
   value: string;
-};
-
-const convertDriversLicenseToIdentifier = (
-  personalIdentifiers: PersonalIdentifier[]
-): Identifier[] => {
-  return personalIdentifiers.map(identifier => {
-    return {
-      system: driversLicenseURIs[identifier.state],
-      value: identifier.value,
-    };
-  });
 };
 
 const OID_PREFIX = "urn:oid:";
@@ -185,6 +174,35 @@ const driversLicenseURIs = {
   WI: `${OID_PREFIX}2.16.840.1.113883.4.3.55`,
   WV: `${OID_PREFIX}2.16.840.1.113883.4.3.54`,
   WY: `${OID_PREFIX}2.16.840.1.113883.4.3.56`,
+};
+
+const ssnURI = `${OID_PREFIX}2.16.840.1.113883.4.1`;
+
+const medicareURI = `${OID_PREFIX}2.16.840.1.113883.4.572`;
+
+// There is one OID for each country: https://terminology.hl7.org/artifacts.html
+const passportURI = `${OID_PREFIX}2.16.840.1.113883.4.330`;
+
+const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+  ssn: ssnURI,
+  passport: passportURI,
+  medicare: medicareURI,
+};
+
+const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[]): Identifier[] => {
+  return personalIdentifiers.map(identifier => {
+    if (identifier.type === "driversLicense") {
+      return {
+        system: driversLicenseURIs[identifier.state],
+        value: identifier.value,
+      };
+    } else {
+      return {
+        system: identifierSytemByType[identifier.type],
+        value: identifier.value,
+      };
+    }
+  });
 };
 
 main();

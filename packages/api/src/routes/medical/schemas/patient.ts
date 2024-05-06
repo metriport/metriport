@@ -30,7 +30,7 @@ export const generalTypeIdentifierSchema = z.object({
 export const personalIdentifierSchema = basePersonalIdentifierSchema
   .merge(driverLicenseIdentifierSchema)
   .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
-export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
+//export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 

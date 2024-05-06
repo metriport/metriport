@@ -8,7 +8,6 @@ import { Address, getState } from "./address";
 import { Contact } from "./contact";
 
 export const generalTypes = ["passport", "ssn", "medicare"] as const;
-//export const generalTypes = ["ssn"] as const;
 export const driversLicenseType = ["driversLicense"] as const;
 export type GeneralTypes = (typeof generalTypes)[number];
 export type DriverLicenseType = (typeof driversLicenseType)[number];
@@ -24,15 +23,13 @@ export type Period =
     };
 
 export type BaseIdentifier = {
+  value: string;
   period?: Period;
   assigner?: string;
 };
 
 export type PersonalIdentifier = BaseIdentifier &
-  (
-    | { type: GeneralTypes; value: string }
-    | { type: DriverLicenseType; value: string; state: USState }
-  );
+  ({ type: GeneralTypes } | { type: DriverLicenseType; state: USState });
 
 export type DriversLicense = {
   value: string;
