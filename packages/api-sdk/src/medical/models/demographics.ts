@@ -31,8 +31,7 @@ export const driverLicenseIdentifierSchema = z.object({
 });
 
 export const generalTypeIdentifierSchema = z.object({
-  type: z.literal("ssn"), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
-  state: usStateSchema,
+  type: z.literal("ssn").or(z.literal("passport")).or(z.literal("medicare")), // If another type is added, the UI forms for patient creation/updates will need to be updated to support these types
 });
 
 export const personalIdentifierSchema = basePersonalIdentifierSchema
