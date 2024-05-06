@@ -13,6 +13,7 @@ export const namespaces = {
   urn: "urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0",
   urnihe: "urn:ihe:iti:xds-b:2007",
   urn2: "urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0",
+  xsiType: "xsd:string",
 };
 
 export const expiresIn = 5;

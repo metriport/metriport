@@ -77,8 +77,8 @@ function analyzeResponsesByVendor(filePath: string): void {
     { success: number; total: number; errors: Record<string, { count: number; details: any[] }> }
   > = {
     // "Surescripts": { success: 0, total: 0, errors: {} },
-    // "Epic": { success: 0, total: 0, errors: {} },
-    ehealthexchange: { success: 0, total: 0, errors: {} },
+    Epic: { success: 0, total: 0, errors: {} },
+    //ehealthexchange: { success: 0, total: 0, errors: {} },
     // "Athena": { success: 0, total: 0, errors: {} },
     // "Kno2": { success: 0, total: 0, errors: {} },
     // "Ntst": { success: 0, total: 0, errors: {} },
@@ -143,6 +143,6 @@ function analyzeResponsesByVendor(filePath: string): void {
 
 // Usage
 const filePath =
-  "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bulk-responses-ehex-fix.json";
+  "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bulk-responses-post-ehex.json";
 analyzeResponsesByVendor(filePath);
 analyzeResponses(filePath);

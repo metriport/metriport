@@ -355,6 +355,7 @@ export function createITI5SoapEnvelope({
   }
   const messageId = wrapIdInUrnUuid(bodyData.id);
   const toUrl = gateway.url;
+  const gatewayOid = gateway.oid;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
   const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
@@ -370,6 +371,7 @@ export function createITI5SoapEnvelope({
     metriportOrganization,
     homeCommunityId,
     purposeOfUse,
+    gatewayOid,
   });
 
   const soapBody = createSoapBody({ bodyData, createdTimestamp });

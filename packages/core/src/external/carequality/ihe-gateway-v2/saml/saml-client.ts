@@ -55,7 +55,7 @@ export async function sendSignedXml({
   });
 
   const response = await axios.post(url, signedXml, {
-    // timeout: 30000,
+    timeout: 120000,
     headers: {
       "Content-Type": "application/soap+xml;charset=UTF-8",
       "Cache-Control": "no-cache",

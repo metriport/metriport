@@ -14,7 +14,7 @@ const samlCertsAndKeys = {
   publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
   privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
   privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION_INTERMEDIATE"),
+  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
 };
 
 const patientId = uuidv4();
@@ -26,7 +26,8 @@ async function main() {
 
   body.gateways = body.gateways.filter(
     (gateway: XCPDGateway) =>
-      !gateway.url.includes("https://rle.surescripts.net/IHE/PatientDiscovery")
+      !gateway.url.includes("https://rle.surescripts.net/IHE/PatientDiscovery") &&
+      !gateway.url.includes("https://patientdiscovery.api.commonwellalliance.org")
   );
   // const epicGateways = [
   //   "https://careeverywhereprd.uhnj.org:14430/Interconnect-CE/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/ceq",
@@ -51,7 +52,8 @@ async function main() {
   //   "https://careeverywhere.ohiohealth.com:14430/Interconnect-prd/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/ceq",
   //   "https://careeverywhere.osumc.edu:14430/Interconnect-CareEverywhere/wcf/epic.community.hie/xcpdrespondinggatewaysync.svc/Ceq"
   // ]
-  // body.gateways = body.gateways.filter((gateway: XCPDGateway) => epicGateways.includes(gateway.url));
+
+  // body.gateways = body.gateways.filter((gateway: XCPDGateway) => gateway.url.includes("ehealthexchange"));
   body.timestamp = new Date().toISOString();
 
   console.log("signing bulk requests...", body.gateways.length);
@@ -73,7 +75,7 @@ async function main() {
   });
 
   console.log("writing bulk responses to file...");
-  fs.writeFileSync("../../scratch/bulk-responses-ehex-fix.json", JSON.stringify(results, null, 2));
+  fs.writeFileSync("../../scratch/bulk-responses-post-ehex.json", JSON.stringify(results, null, 2));
 }
 
 main();

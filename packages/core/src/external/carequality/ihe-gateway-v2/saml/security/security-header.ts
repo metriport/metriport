@@ -21,6 +21,7 @@ export function createSecurityHeader({
   metriportOrganization,
   homeCommunityId,
   purposeOfUse,
+  gatewayOid,
 }: {
   publicCert: string;
   createdTimestamp: string;
@@ -30,10 +31,17 @@ export function createSecurityHeader({
   metriportOrganization: string;
   homeCommunityId: string;
   purposeOfUse: string;
+  gatewayOid?: string;
 }): object {
   const certPemStripped = stripPemCertificate(publicCert);
   const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
   const saml2NameID = `CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+
+  // MUTEX. One ehex endpoint will fail if the subjectIdNameFormat is not set to basic, while the other 2.16.840.1.113883.3.7732.100 will fail if it is not set to uri.
+  const subjectIdNameFormat =
+    gatewayOid && gatewayOid === "1.3.6.1.4.1.41800.100"
+      ? "urn:oasis:names:tc:SAML:2.0:attrname-format:basic"
+      : "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
   const securityHeader = {
     "wsse:Security": {
@@ -103,12 +111,14 @@ export function createSecurityHeader({
           },
         },
         "saml2:AttributeStatement": {
-          "@_xmlns:hl7": namespaces.hl7,
           "saml2:Attribute": [
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:subject-id",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": subjectRole,
+              "@_NameFormat": subjectIdNameFormat,
+              "saml2:AttributeValue": {
+                "@_xsi:type": namespaces.xsiType,
+                "#text": subjectRole,
+              },
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:organization",
@@ -127,12 +137,10 @@ export function createSecurityHeader({
             },
             {
               "@_Name": "urn:oasis:names:tc:xacml:2.0:subject:role",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
-                "@_xsi:type": namespaces.ce,
                 "hl7:Role": {
-                  "@_xsi:type": namespaces.ce,
-                  "@_code": "106331006",
+                  "@_xmlns:hl7": namespaces.hl7,
+                  "@_code": "224608005",
                   "@_codeSystem": SNOMED_CODE,
                   "@_codeSystemName": "SNOMED_CT",
                   "@_displayName": "Administrative AND/OR managerial worker",
@@ -141,11 +149,11 @@ export function createSecurityHeader({
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
                 "@_xmlns:xsi": namespaces.xsi,
-                "@_xsi:type": namespaces.ce,
                 "hl7:PurposeOfUse": {
+                  "@_xmlns:hl7": namespaces.hl7,
+                  "@_xsi:type": namespaces.ce,
                   "@_code": purposeOfUse,
                   "@_codeSystem": NHIN_PURPOSE_CODE_SYSTEM,
                   "@_codeSystemName": "nhin-purpose",
