@@ -21,6 +21,14 @@ The status of the process is returned in the response. Initially, it will be `pr
   The ID of the patient for which to initiate the bulk URL generation.
 </ParamField>
 
+## Body
+
+<Snippet file="webhook-request-metadata.mdx" />
+
+
+<Snippet file="webhook-metadata-post-example.mdx" />
+
+
 ## Response
 
 <ResponseField name="status" type="string" required>
@@ -41,9 +49,14 @@ import { MetriportMedicalApi } from "@metriport/api-sdk";
 
 const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
 
+const metadata = {
+  youCan: "putAny",
+  stringKeyValue: "pairsHere",
+};
 
 const status = await api.startBulkGetDocumentUrl(
   "<your-patient-id>",
+  metadata
 );
 
 ```

@@ -194,6 +194,11 @@ service:
           patientId:
             docs: The ID of the patient for which to initiate the bulk URL generation.
             type: string
+        body:
+          docs: |
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            This metadata will be returned in the webhook response.
+          type: optional<map<string, string>>
       response:
         type: BulkGetDocumentUrlQuery
         docs: The status of the URL generation process and the request ID.
@@ -201,6 +206,7 @@ service:
         - name: Example1
           query-parameters:
             patientId: "12345678"
+          request: {"youCan": "putAny", "stringKeyValue": "pairsHere"}
           response:
             body: $BulkGetDocumentUrlQuery.Example1
 
