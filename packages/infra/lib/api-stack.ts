@@ -31,12 +31,12 @@ import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
 import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
-import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
+// import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
 import * as ccdaSearch from "./api-stack/ccda-search-connector";
 import { createCqDirectoryRebuilder } from "./api-stack/cq-directory-rebuilder";
 import * as cwEnhancedCoverageConnector from "./api-stack/cw-enhanced-coverage-connector";
-import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
+// import { createScheduledDBMaintenance } from "./api-stack/db-maintenance";
 import { createDocQueryChecker } from "./api-stack/doc-query-checker";
 import * as documentUploader from "./api-stack/document-upload";
 import * as fhirConverterConnector from "./api-stack/fhir-converter-connector";
@@ -841,18 +841,19 @@ export class APIStack extends Stack {
       },
     });
 
-    createScheduledAPIQuotaChecker({
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
-    });
-    createScheduledDBMaintenance({
-      stack: this,
-      lambdaLayers,
-      vpc: this.vpc,
-      apiAddress: apiLoadBalancerAddress,
-    });
+    // TODO 1040 temporarily remove these
+    // createScheduledAPIQuotaChecker({
+    //   stack: this,
+    //   lambdaLayers,
+    //   vpc: this.vpc,
+    //   apiAddress: apiLoadBalancerAddress,
+    // });
+    // createScheduledDBMaintenance({
+    //   stack: this,
+    //   lambdaLayers,
+    //   vpc: this.vpc,
+    //   apiAddress: apiLoadBalancerAddress,
+    // });
 
     //-------------------------------------------
     // Backups
