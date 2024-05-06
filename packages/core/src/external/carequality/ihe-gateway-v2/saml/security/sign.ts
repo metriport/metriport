@@ -13,18 +13,16 @@ function createSignature({
   xpath,
   locationReference,
   action,
+  transforms,
 }: {
   xml: string;
   privateKey: crypto.KeyLike;
   xpath: string;
   locationReference: string;
   action: "append" | "prepend" | "before" | "after";
+  transforms: string[];
 }): SignedXml {
   const sig = new SignedXml({ privateKey });
-  const transforms = [
-    "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
-    "http://www.w3.org/2001/10/xml-exc-c14n#",
-  ];
   sig.addReference({
     xpath: xpath,
     digestAlgorithm: "http://www.w3.org/2000/09/xmldsig#sha1",
@@ -46,12 +44,14 @@ export function signTimestamp({
   xml: string;
   privateKey: crypto.KeyLike;
 }): string {
+  const transforms = ["http://www.w3.org/2001/10/xml-exc-c14n#"];
   return createSignature({
     xml,
     privateKey,
     xpath: "//*[local-name(.)='Timestamp']",
-    locationReference: "//*[local-name(.)='Timestamp']",
-    action: "before",
+    locationReference: "//*[local-name(.)='Assertion']",
+    action: "after",
+    transforms,
   }).getSignedXml();
 }
 
@@ -62,12 +62,17 @@ export function signEnvelope({
   xml: string;
   privateKey: crypto.KeyLike;
 }): string {
+  const transforms = [
+    "http://www.w3.org/2000/09/xmldsig#enveloped-signature",
+    "http://www.w3.org/2001/10/xml-exc-c14n#",
+  ];
   return createSignature({
     xml,
     privateKey,
     xpath: "//*[local-name(.)='Assertion']",
     locationReference: "//*[local-name(.)='Issuer']",
     action: "after",
+    transforms,
   }).getSignedXml();
 }
 

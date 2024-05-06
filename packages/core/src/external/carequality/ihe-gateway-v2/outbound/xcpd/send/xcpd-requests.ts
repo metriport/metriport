@@ -45,9 +45,12 @@ export async function sendSignedXCPDRequests({
         success: true,
         outboundRequest: request.outboundRequest,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
+      log(`Request ${index + 1} FAILED to: ${request.gateway.url} + oid: ${request.gateway.oid}`);
       log(`${msg}, error: ${error}`);
+      console.log(error.response?.data);
 
       const errorString: string = errorToString(error);
       const extra = {

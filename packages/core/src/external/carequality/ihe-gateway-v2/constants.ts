@@ -6,6 +6,7 @@ export const namespaces = {
   ds: "http://www.w3.org/2000/09/xmldsig#",
   wsu: "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
   xsi: "http://www.w3.org/2001/XMLSchema-instance",
+  xsd: "http://www.w3.org/2001/XMLSchema-instance",
   hl7: "urn:hl7-org:v3",
   xs: "http://www.w3.org/2001/XMLSchema",
   ce: "hl7:CE",

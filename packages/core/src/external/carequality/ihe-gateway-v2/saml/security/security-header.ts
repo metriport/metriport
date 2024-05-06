@@ -33,22 +33,26 @@ export function createSecurityHeader({
 }): object {
   const certPemStripped = stripPemCertificate(publicCert);
   const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
-  const saml2NameID = `CN=ihe."metriport.com",OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+  const saml2NameID = `CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
 
   const securityHeader = {
     "wsse:Security": {
       "@_xmlns:wsse": namespaces.wsse,
-      "@_xmlns:saml2": namespaces.saml2,
       "@_xmlns:ds": namespaces.ds,
       "@_xmlns:wsu": namespaces.wsu,
-      "@_xmlns:xsi": namespaces.xsi,
-      "@_xmlns:hl7": namespaces.hl7,
-      "@_xmlns:xs": namespaces.xs,
+      "wsu:Timestamp": {
+        "@_wsu:Id": securityHeaderTimestampId,
+        "wsu:Created": createdTimestamp,
+        "wsu:Expires": expiresTimestamp,
+      },
       "saml2:Assertion": {
-        "@_xsi:type": "saml2:AssertionType",
+        "@_xmlns:saml2": namespaces.saml2,
+        "@_xmlns:xsd": namespaces.xsd,
+        "@_xmlns:xsi": namespaces.xsi,
         "@_ID": securityHeaderEnvelopedId,
         "@_IssueInstant": createdTimestamp,
         "@_Version": "2.0",
+        "@_xsi:type": "saml2:AssertionType",
         "saml2:Issuer": {
           "@_Format": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
           "#text": "support@metriport.com",
@@ -99,6 +103,7 @@ export function createSecurityHeader({
           },
         },
         "saml2:AttributeStatement": {
+          "@_xmlns:hl7": namespaces.hl7,
           "saml2:Attribute": [
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:subject-id",
@@ -150,11 +155,6 @@ export function createSecurityHeader({
             },
           ],
         },
-      },
-      "wsu:Timestamp": {
-        "@_wsu:Id": securityHeaderTimestampId,
-        "wsu:Created": createdTimestamp,
-        "wsu:Expires": expiresTimestamp,
       },
     },
   };

@@ -3,6 +3,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import { v4 as uuidv4 } from "uuid";
+import fs from "fs";
 import express from "express";
 import { json, Request, Response } from "express";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -18,10 +19,10 @@ const port = 8043;
 app.use(json());
 
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
+  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
+  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
+  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
+  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
 };
 
 app.post("/xcpd", async (req: Request, res: Response) => {
@@ -31,6 +32,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 
   try {
     const xmlResponses = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
+    fs.writeFileSync("../../scratch/xcpd/ehex-fail.xml", xmlResponses[0].signedRequest);
     const response = await sendSignedXCPDRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,

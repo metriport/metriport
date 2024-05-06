@@ -1,4 +1,5 @@
 import https from "https";
+import { constants } from "crypto";
 import axios from "axios";
 import * as AWS from "aws-sdk";
 import { SamlCertsAndKeys } from "./security/types";
@@ -44,14 +45,17 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<string> {
   const agent = new https.Agent({
-    rejectUnauthorized: true,
+    rejectUnauthorized: false,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
     ca: trustedKeyStore,
+    ciphers: "DEFAULT:!DH",
+    secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
   const response = await axios.post(url, signedXml, {
+    // timeout: 30000,
     headers: {
       "Content-Type": "application/soap+xml;charset=UTF-8",
       "Cache-Control": "no-cache",
