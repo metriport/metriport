@@ -355,3 +355,9 @@ export function createTableHeader(tableHeaders: string[]) {
     ],
   };
 }
+
+export function getTextFromCode(code: CodeableConcept | undefined): string {
+  if (!code) return "Unknown";
+  const primaryCoding = code.coding?.[0];
+  return primaryCoding?.display ?? code.text ?? "Unknown";
+}

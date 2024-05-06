@@ -1,12 +1,22 @@
-import { Observation, MedicationStatement, Medication } from "@medplum/fhirtypes";
+import {
+  Observation,
+  MedicationStatement,
+  Medication,
+  Condition,
+  Resource,
+} from "@medplum/fhirtypes";
 
 export interface AugmentedResource {
   typeOid: string;
   sectionName: string;
-  resource: Observation | MedicationStatement;
+  resource: Resource;
 }
 export class AugmentedObservation implements AugmentedResource {
   constructor(public typeOid: string, public sectionName: string, public resource: Observation) {}
+}
+
+export class AugmentedCondition implements AugmentedResource {
+  constructor(public typeOid: string, public sectionName: string, public resource: Condition) {}
 }
 
 export class AugmentedMedicationStatement implements AugmentedResource {
