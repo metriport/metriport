@@ -44,11 +44,9 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
-import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
-import { LambdaLayers } from "./shared/lambda-layers";
+import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -57,6 +55,7 @@ import { wafRules } from "./shared/waf-rules";
 import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
+const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -237,7 +236,7 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // S3 buckets
+    // Multi-purpose bucket
     //-------------------------------------------
     const generalBucket = new s3.Bucket(this, "GeneralBucket", {
       bucketName: props.config.generalBucketName,
@@ -246,38 +245,14 @@ export class APIStack extends Stack {
       versioned: true,
     });
 
+    //-------------------------------------------
+    // S3 bucket for Medical Documents
+    //-------------------------------------------
     const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
       bucketName: props.config.medicalDocumentsBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
-
-    const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
-      bucketName: props.config.medicalDocumentsUploadBucketName,
-      publicReadAccess: false,
-      encryption: s3.BucketEncryption.S3_MANAGED,
-    });
-
-    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
-      const seedBucketCfnName = "APISandboxSeedDataBucket";
-      try {
-        return s3.Bucket.fromBucketName(
-          this,
-          seedBucketCfnName,
-          sandboxConfig.sandboxSeedDataBucketName
-        );
-      } catch (error) {
-        return new s3.Bucket(this, seedBucketCfnName, {
-          bucketName: sandboxConfig.sandboxSeedDataBucketName,
-          publicReadAccess: false,
-          encryption: s3.BucketEncryption.S3_MANAGED,
-        });
-      }
-    };
-
-    const sandboxSeedDataBucket = isSandbox(props.config)
-      ? getSandboxSeedDataBucket(props.config)
-      : undefined;
 
     if (!props.config.iheGateway) {
       throw new Error("Must define IHE properties!");
@@ -289,25 +264,28 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // General lambdas
+    // S3 bucket for Medical Document Uploads
     //-------------------------------------------
-    const {
-      lambdaLayers,
-      cdaToVisualizationLambda,
-      documentDownloaderLambda,
-      outboundPatientDiscoveryLambda,
-      outboundDocumentQueryLambda,
-      outboundDocumentRetrievalLambda,
-    } = new LambdasNestedStack(this, "LambdasNestedStack", {
-      config: props.config,
-      vpc: this.vpc,
-      dbCluster,
-      dbCredsSecret,
-      secrets,
-      medicalDocumentsBucket,
-      sandboxSeedDataBucket,
-      alarmAction: slackNotification?.alarmAction,
+    const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
+      bucketName: props.config.medicalDocumentsUploadBucketName,
+      publicReadAccess: false,
+      encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    //-------------------------------------------
+    // FHIR Converter Service
+    //-------------------------------------------
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
+    if (!isSandbox(props.config)) {
+      fhirConverter = createFHIRConverterService(
+        this,
+        props,
+        this.vpc,
+        slackNotification?.alarmAction
+      );
+    }
+
+    const lambdaLayers = setupLambdasLayers(this);
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -329,19 +307,6 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
-    // FHIR Converter Service
-    //-------------------------------------------
-    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
-    if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        props,
-        this.vpc,
-        slackNotification?.alarmAction
-      );
-    }
-
-    //-------------------------------------------
     // FHIR CONNECTORS, initalize
     //-------------------------------------------
     const {
@@ -355,6 +320,26 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
+    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
+      const seedBucketCfnName = "APISandboxSeedDataBucket";
+      try {
+        return s3.Bucket.fromBucketName(
+          this,
+          seedBucketCfnName,
+          sandboxConfig.sandboxSeedDataBucketName
+        );
+      } catch (error) {
+        return new s3.Bucket(this, seedBucketCfnName, {
+          bucketName: sandboxConfig.sandboxSeedDataBucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+        });
+      }
+    };
+    const sandboxSeedDataBucket = isSandbox(props.config)
+      ? getSandboxSeedDataBucket(props.config)
+      : undefined;
+
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
       stack: this,
@@ -362,6 +347,63 @@ export class APIStack extends Stack {
       fhirConverterBucket: sandboxSeedDataBucket ?? fhirConverterBucket,
       lambdaLayers,
       alarmSnsAction: slackNotification?.alarmAction,
+    });
+
+    const cdaToVisualizationLambda = this.setupCdaToVisualization({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+    });
+
+    const documentDownloaderLambda = this.setupDocumentDownloader({
+      lambdaLayers,
+      vpc: this.vpc,
+      secrets,
+      cwOrgCertificate: props.config.cwSecretNames.CW_ORG_CERTIFICATE,
+      cwOrgPrivateKey: props.config.cwSecretNames.CW_ORG_PRIVATE_KEY,
+      bucketName: medicalDocumentsBucket.bucketName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+
+    const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(11),
+    });
+
+    const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(15),
+    });
+
+    const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+      lambdaLayers,
+      vpc: this.vpc,
+      envType: props.config.environmentType,
+      dbCredsSecret,
+      sentryDsn: props.config.lambdasSentryDSN,
+      alarmAction: slackNotification?.alarmAction,
+      dbCluster,
+      // TODO move this to a config
+      maxPollingDuration: Duration.minutes(15),
     });
 
     let fhirToMedicalRecordLambda: Lambda | undefined = undefined;
@@ -1083,6 +1125,255 @@ export class APIStack extends Stack {
 
     const tenoviResource = baseResource.addResource("tenovi");
     tenoviResource.addMethod("POST", new apig.LambdaIntegration(tenoviAuthLambda));
+  }
+
+  private setupCdaToVisualization(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    medicalDocumentsBucket: s3.Bucket;
+    sandboxSeedDataBucket: s3.IBucket | undefined;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+    } = ownProps;
+
+    const cdaToVisualizationLambda = createLambda({
+      stack: this,
+      name: "CdaToVisualization",
+      runtime: lambda.Runtime.NODEJS_16_X,
+      entry: "cda-to-visualization",
+      envType,
+      envVars: {
+        CDA_TO_VIS_TIMEOUT_MS: CDA_TO_VIS_TIMEOUT.toMilliseconds().toString(),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared, lambdaLayers.chromium],
+      memory: 1024,
+      timeout: CDA_TO_VIS_TIMEOUT,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    medicalDocumentsBucket.grantReadWrite(cdaToVisualizationLambda);
+
+    if (sandboxSeedDataBucket) {
+      sandboxSeedDataBucket.grantReadWrite(cdaToVisualizationLambda);
+    }
+
+    return cdaToVisualizationLambda;
+  }
+
+  /**
+   * We are intentionally not setting an alarm action for this lambda, as many issues
+   * may be caused outside of our system. To eliminate noise, we will not alarm on this
+   * lambda.
+   */
+  private setupDocumentDownloader(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    cwOrgCertificate: string;
+    cwOrgPrivateKey: string;
+    bucketName: string | undefined;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      vpc,
+      secrets,
+      cwOrgCertificate,
+      cwOrgPrivateKey,
+      bucketName,
+      envType,
+      sentryDsn,
+    } = ownProps;
+
+    const documentDownloaderLambda = createLambda({
+      stack: this,
+      name: "DocumentDownloader",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "document-downloader",
+      envType,
+      envVars: {
+        TEST_ENV: "TEST",
+        CW_ORG_CERTIFICATE: cwOrgCertificate,
+        CW_ORG_PRIVATE_KEY: cwOrgPrivateKey,
+        ...(bucketName && {
+          MEDICAL_DOCUMENTS_BUCKET_NAME: bucketName,
+        }),
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    // granting secrets read access to lambda
+    const cwOrgCertificateKey = "CW_ORG_CERTIFICATE";
+    if (!secrets[cwOrgCertificateKey]) {
+      throw new Error(`${cwOrgCertificateKey} is not defined in config`);
+    }
+    secrets[cwOrgCertificateKey].grantRead(documentDownloaderLambda);
+
+    const cwOrgPrivateKeyKey = "CW_ORG_PRIVATE_KEY";
+    if (!secrets[cwOrgPrivateKeyKey]) {
+      throw new Error(`${cwOrgPrivateKeyKey} is not defined in config`);
+    }
+    secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
+
+    return documentDownloaderLambda;
+  }
+
+  private setupOutboundPatientDiscovery(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundPatientDiscoveryLambda = createLambda({
+      stack: this,
+      name: "OutboundPatientDiscovery",
+      entry: "ihe-outbound-patient-discovery",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.minutes(1))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundPatientDiscoveryLambda);
+    dbCredsSecret.grantRead(outboundPatientDiscoveryLambda);
+
+    return outboundPatientDiscoveryLambda;
+  }
+
+  private setupOutboundDocumentQuery(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundDocumentQueryLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentQuery",
+      entry: "ihe-outbound-document-query",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.minutes(1))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentQueryLambda);
+    dbCredsSecret.grantRead(outboundDocumentQueryLambda);
+
+    return outboundDocumentQueryLambda;
+  }
+
+  private setupOutboundDocumentRetrieval(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    envType: EnvType;
+    dbCredsSecret: secret.ISecret;
+    dbCluster: rds.DatabaseCluster;
+    maxPollingDuration: Duration;
+    sentryDsn: string | undefined;
+    alarmAction: SnsAction | undefined;
+  }): Lambda {
+    const {
+      lambdaLayers,
+      dbCredsSecret,
+      vpc,
+      sentryDsn,
+      envType,
+      alarmAction,
+      dbCluster,
+      maxPollingDuration,
+    } = ownProps;
+
+    const outboundDocumentRetrievalLambda = createLambda({
+      stack: this,
+      name: "OutboundDocumentRetrieval",
+      entry: "ihe-outbound-document-retrieval",
+      envType,
+      envVars: {
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+        DB_CREDS: dbCredsSecret.secretArn,
+        MAX_POLLING_DURATION: maxPollingDuration
+          .minus(Duration.minutes(1))
+          .toMilliseconds()
+          .toString(),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 512,
+      timeout: maxPollingDuration,
+      vpc,
+      alarmSnsAction: alarmAction,
+    });
+
+    dbCluster.connections.allowDefaultPortFrom(outboundDocumentRetrievalLambda);
+    dbCredsSecret.grantRead(outboundDocumentRetrievalLambda);
+
+    return outboundDocumentRetrievalLambda;
   }
 
   private setupBulkUrlSigningLambda(ownProps: {
