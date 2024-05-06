@@ -8,6 +8,8 @@ const documentRetrievalReqDefaultSchema = baseRequestSchema.extend({
 // TO EXTERNAL GATEWAY
 export const outboundDocumentRetrievalReqSchema = documentRetrievalReqDefaultSchema.extend({
   gateway: xcaGatewaySchema,
+  patientId: z.string(),
+  cxId: z.string(),
 });
 
 export type OutboundDocumentRetrievalReq = z.infer<typeof outboundDocumentRetrievalReqSchema>;

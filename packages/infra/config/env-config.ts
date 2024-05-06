@@ -1,4 +1,5 @@
 import { EnvType } from "../lib/env-type";
+import { RDSAlarmThresholds } from "./aws/rds";
 import { IHEGatewayProps } from "./ihe-gateway-config";
 
 export type ConnectWidgetConfig = {
@@ -69,6 +70,10 @@ type EnvConfigBase = {
      * @see: https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
      */
     minSlowLogDurationInMs?: number;
+    /**
+     * The thresholds for the RDS alarms.
+     */
+    alarmThresholds: RDSAlarmThresholds;
   };
   loadBalancerDnsName: string;
   apiGatewayUsagePlanId?: string; // optional since we need to create the stack first, then update this and redeploy
@@ -90,7 +95,7 @@ type EnvConfigBase = {
     placeIndexRegion: string;
   };
   carequality?: {
-    secretNames?: {
+    secretNames: {
       CQ_MANAGEMENT_API_KEY: string;
       CQ_ORG_PRIVATE_KEY: string;
       CQ_ORG_CERTIFICATE: string;
