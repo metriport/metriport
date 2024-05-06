@@ -13,9 +13,7 @@ export type InitConsolidatedQueryCmd = {
 };
 
 export type InitDocumentQueryCmd = {
-  documentQueryProgress: Required<
-    Pick<DocumentQueryProgress, "download" | "requestId" | "startedAt">
-  >;
+  documentQueryProgress: Required<Pick<DocumentQueryProgress, "download" | "requestId">>;
   cxDocumentRequestMetadata?: unknown;
   consolidatedQuery?: never;
   patientDiscovery?: never;

@@ -56,6 +56,13 @@ export async function getDocumentsFromCQ({
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
 
+    await setDocQueryProgress({
+      patient: { id: patient.id, cxId: patient.cxId },
+      requestId,
+      source: MedicalDataSource.CAREQUALITY,
+      startedAt: new Date(),
+    });
+
     const linksWithDqUrl: CQLink[] = [];
     const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
       const gateway = await getCQDirectoryEntry(patientLink.oid);
