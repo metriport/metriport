@@ -158,7 +158,6 @@ export async function getConsolidated({
       dateFrom,
       dateTo,
     });
-
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
     const startedAt = patient.data.consolidatedQuery?.startedAt;
@@ -235,7 +234,6 @@ async function uploadConsolidatedJsonAndReturnUrl({
 }> {
   {
     const fileName = createMRSummaryFileName(patient.cxId, patient.id, "json");
-
     await uploadJsonBundleToS3({
       bundle,
       fileName,
@@ -253,9 +251,7 @@ async function uploadConsolidatedJsonAndReturnUrl({
       bucketName: Config.getMedicalDocumentsBucketName(),
       fileName,
     });
-
     const newBundle = buildDocRefBundleWithAttachment(patient.id, signedUrl, "json");
-
     return { bundle: newBundle, filters };
   }
 }
