@@ -8,6 +8,7 @@ import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
@@ -56,9 +57,8 @@ export async function getDocumentsFromCQ({
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
 
-    await setDocQueryProgress({
+    await setDocQueryStartAt({
       patient: { id: patient.id, cxId: patient.cxId },
-      requestId,
       source: MedicalDataSource.CAREQUALITY,
       startedAt: new Date(),
     });
