@@ -1,5 +1,6 @@
 // Decode and parse XCA ITI-38 (Cross Gateway Query Response) message
 var xml = null;
+channelMap.put('RESPONSE_TIME', getCurrentDate());
 
 var 	queryResponseCode = '',
 	homeCommunityId = null,

@@ -16,13 +16,13 @@ import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../externa
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
+import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { getPatientOrFail } from "../patient/get-patient";
 import { storeQueryInit } from "../patient/query-init";
 import { areDocumentsProcessing } from "./document-status";
-import { getCqOrgIdsToDenyOnCw } from "../hie";
-import { analytics, EventTypes } from "../../../shared/analytics";
 
 export function isProgressEqual(a?: Progress, b?: Progress): boolean {
   return (

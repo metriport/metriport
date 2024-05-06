@@ -1,29 +1,28 @@
-import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { OutboundDocumentQueryReq } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
+import { HieInitiator } from "../../hie/get-hie-initiator";
 import { CQLink } from "../cq-patient-data";
-import { createPurposeOfUse } from "../shared";
+import { createPurposeOfUse, getSystemUserName } from "../shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
 
 export function createOutboundDocumentQueryRequests({
   requestId,
-  patientId,
+  patient,
+  initiator,
   cxId,
-  organization,
   cqLinks,
 }: {
   requestId: string;
-  patientId: string;
+  patient: Patient;
+  initiator: HieInitiator;
   cxId: string;
-  organization: Organization;
   cqLinks: CQLink[];
 }): OutboundDocumentQueryReq[] {
-  const orgOid = organization.oid;
-  const orgName = organization.data.name;
-  const user = `${orgName} System User`;
   const now = dayjs().toISOString();
+  const user = getSystemUserName(initiator.orgName);
 
   return cqLinks.map(externalGateway => {
     return {
@@ -36,9 +35,9 @@ export function createOutboundDocumentQueryRequests({
           code: SUBJECT_ROLE_CODE,
           display: SUBJECT_ROLE_DISPLAY,
         },
-        organization: orgName,
-        organizationId: orgOid,
-        homeCommunityId: orgOid,
+        organization: initiator.name,
+        organizationId: initiator.oid,
+        homeCommunityId: initiator.oid,
         purposeOfUse: createPurposeOfUse(),
       },
       gateway: {
@@ -49,7 +48,7 @@ export function createOutboundDocumentQueryRequests({
         id: externalGateway.patientId,
         system: externalGateway.systemId,
       },
-      patientId: patientId,
+      patientId: patient.id,
     };
   });
 }

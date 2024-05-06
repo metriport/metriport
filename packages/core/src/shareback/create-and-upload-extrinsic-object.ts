@@ -7,7 +7,7 @@ import { out } from "../util/log";
 
 const { log } = out("Core Create and Upload Extrinsic Object");
 
-export async function createAndUploadDocumentdMetadataFile({
+export async function createAndUploadDocumentMetadataFile({
   s3Utils,
   cxId,
   patientId,
@@ -54,5 +54,9 @@ export async function createAndUploadDocumentdMetadataFile({
   });
 
   log(`Uploading metadata to S3 with key: ${metadataFileName}`);
-  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
+  await s3Utils.uploadFile({
+    bucket: destinationBucket,
+    key: metadataFileName,
+    file: Buffer.from(extrinsicObjectXml),
+  });
 }

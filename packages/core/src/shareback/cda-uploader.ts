@@ -7,8 +7,7 @@ import { MetriportError } from "../util/error/metriport-error";
 import { out } from "../util/log";
 import { capture } from "../util/notifications";
 import { sizeInBytes } from "../util/string";
-import { uuidv7 } from "../util/uuid-v7";
-import { createAndUploadDocumentdMetadataFile } from "./create-and-upload-extrinsic-object";
+import { createAndUploadDocumentMetadataFile } from "./create-and-upload-extrinsic-object";
 
 export async function cdaDocumentUploaderHandler({
   cxId,
@@ -17,6 +16,7 @@ export async function cdaDocumentUploaderHandler({
   medicalDocumentsBucket,
   region,
   organization,
+  docId,
 }: {
   cxId: string;
   patientId: string;
@@ -24,18 +24,22 @@ export async function cdaDocumentUploaderHandler({
   medicalDocumentsBucket: string;
   region: string;
   organization: Organization;
+  docId: string;
 }): Promise<void> {
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
   const fileSize = sizeInBytes(cdaBundle);
   checkFileSizeRestrictions(fileSize, log);
 
   const s3Utils = new S3Utils(region);
-  const docId = uuidv7();
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
-    await s3Utils.uploadFile(medicalDocumentsBucket, destinationKey, Buffer.from(cdaBundle));
+    await s3Utils.uploadFile({
+      bucket: medicalDocumentsBucket,
+      key: destinationKey,
+      file: Buffer.from(cdaBundle),
+    });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
     const msg = "Error uploading file to medical documents bucket";
@@ -48,7 +52,7 @@ export async function cdaDocumentUploaderHandler({
 
   try {
     const stringSize = fileSize ? fileSize.toString() : "";
-    await createAndUploadDocumentdMetadataFile({
+    await createAndUploadDocumentMetadataFile({
       s3Utils,
       cxId,
       patientId,

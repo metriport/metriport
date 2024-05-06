@@ -13,7 +13,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie";
+import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -46,6 +46,7 @@ import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -63,7 +64,6 @@ import { dtoFromCW, PatientLinksDTO } from "./dtos/linkDTO";
 import { dtoFromModel } from "./dtos/patientDTO";
 import { getResourcesQueryParam } from "./schemas/fhir";
 import { linkCreateSchema } from "./schemas/link";
-import { requestLogger } from "../helpers/request-logger";
 
 dayjs.extend(duration);
 

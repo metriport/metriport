@@ -31,10 +31,10 @@ export type SamlAttributes = z.infer<typeof SamlAttributesSchema>;
 
 export const baseRequestSchema = z.object({
   id: z.string(),
-  cxId: z.string().optional(),
+  cxId: z.string(),
   timestamp: z.string(),
   samlAttributes: SamlAttributesSchema,
-  patientId: z.string().optional(),
+  patientId: z.string(),
 });
 
 export type BaseRequest = z.infer<typeof baseRequestSchema>;
@@ -76,10 +76,15 @@ export type XCPDPatientId = z.infer<typeof externalGatewayPatientSchema>;
 export const baseResponseSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
+  /** timestamp right after external gateway response */
   responseTimestamp: z.string(),
+  /** timestamp right before external gateway request */
+  requestTimestamp: z.string().optional(),
+  /** duration of the request to the external gateway */
+  duration: z.number().optional(),
   cxId: z.string().optional(),
   externalGatewayPatient: externalGatewayPatientSchema.optional(),
-  patientId: z.string().optional(),
+  patientId: z.string(),
   operationOutcome: operationOutcomeSchema.optional(),
 });
 export type BaseResponse = z.infer<typeof baseResponseSchema>;
@@ -102,12 +107,10 @@ export type XCAGateway = z.infer<typeof xcaGatewaySchema>;
 
 export const XCPDGatewaySchema = z.object({
   oid: z.string(),
-  url: z.string().optional(),
-  id: z.string().optional(),
+  url: z.string(),
+  id: z.string(),
 });
 export type XCPDGateway = z.infer<typeof XCPDGatewaySchema>;
-
-export type XCPDGateways = XCPDGateway[];
 
 export const documentReferenceSchema = z.object({
   homeCommunityId: z.string(),

@@ -8,10 +8,17 @@
 function getXCPD55ResponseTemplate(request, operationOutcome) {
 	
 	var result = request;
+  var requestTime = channelMap.get("REQUEST_TIME");
+  var responseTime = channelMap.get("RESPONSE_TIME");
+
+  if (!responseTime) {
+    responseTime = getCurrentDate();
+  }
 	// Dec 20: patientResourceId to patientId
 	result.patientId = channelMap.get('PATIENT_ID');
 	result.patientMatch = false;
-	result.responseTimestamp = DateUtil.getCurrentDate("yyyy-MM-dd'T'hh:mm:ss.sssZ");
+  result.requestTimestamp = requestTime;
+	result.responseTimestamp = responseTime;
 	if (operationOutcome) result.operationOutcome = operationOutcome;
 	
 	delete result.principalCareProviderIds;

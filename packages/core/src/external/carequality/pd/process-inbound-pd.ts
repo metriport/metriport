@@ -26,6 +26,7 @@ function constructMatchResponse(
 ): InboundPatientDiscoveryResp {
   return {
     id: payload.id,
+    patientId: payload.patientId,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
     patientMatch: true,

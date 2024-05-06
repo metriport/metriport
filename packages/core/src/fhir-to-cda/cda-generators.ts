@@ -1,6 +1,6 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { findOrganizationResource, findPatientResource } from "../external/fhir/shared";
-import NotFoundError from "../util/error/not-found";
+import BadRequestError from "../util/error/bad-request";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXML } from "./cda-templates/clinical-document/clinical-document";
 import { buildCustodian } from "./cda-templates/clinical-document/custodian";
@@ -19,7 +19,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
     if (!organizationResources) {
       missing.push("Organization");
     }
-    throw new NotFoundError(`${missing.join(", ")} resource(s) not found`);
+    throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
   }
 
   const recordTarget = buildRecordTargetFromFhirPatient(patientResource);
@@ -42,7 +42,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
       missing.push("structuredBody");
     }
 
-    throw new NotFoundError(`${missing.join(", ")} resource(s) not found`);
+    throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
   }
 
   const clinicalDocument = buildClinicalDocumentXML(

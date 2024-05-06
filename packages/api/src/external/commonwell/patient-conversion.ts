@@ -10,7 +10,7 @@ import {
 import {
   driversLicenseURIs,
   medicareURI,
-  oid,
+  addOidPrefix,
   passportURI,
   ssnURI,
 } from "@metriport/core/domain/oid";
@@ -51,7 +51,7 @@ export function patientToCommonwell({
   const identifier: Identifier = {
     use: "usual",
     label: orgName,
-    system: oid(orgOID),
+    system: addOidPrefix(orgOID),
     key: patient.id,
     assigner: orgName,
   };

@@ -1,0 +1,245 @@
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" xmlns:wsa="http://www.w3.org/2005/08/addressing">
+    <soap:Header>
+        <wsa:To soap:mustUnderstand="true">http://www.w3.org/2005/08/addressing/anonymous</wsa:To>
+        <wsa:Action soap:mustUnderstand="true">urn:ihe:iti:2007:CrossGatewayQueryResponse</wsa:Action>
+        <wsa:MessageID soap:mustUnderstand="true">urn:uuid:c2edbc79-a3e8-46ea-86a6-08b650e3f7f2</wsa:MessageID>
+        <wsa:RelatesTo soap:mustUnderstand="true">urn:uuid:0357bea4-617b-4a95-b631-03373250e78b</wsa:RelatesTo>
+        <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
+            <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" wsu:Id="TS-e1af8e7f-25c2-4196-be55-8d801b5cb6c1">
+                <wsu:Created>2024-04-03T17:08:01.419Z</wsu:Created>
+                <wsu:Expires>2024-04-03T17:11:21.419Z</wsu:Expires>
+            </wsu:Timestamp>
+            <wsse11:SignatureConfirmation xmlns:wsse11="http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd" Value="Zwd3EG/eDZkzCbcZvQMgyLFxNjNBjANZgf8hAXUA/ROzp1fCc1kzA1yQ4UcfuCN1rQRuDMyj9eRgYIuXoKv714d3mBkRXUGlwfuLDzNQ5u2astyyAjcs/K2xho+7EAY+pwfWOp4Ah0ok9WcCQn5B3zZplxDFW8sJt+OBw5+TPqY1Fdk+Q8BzWKwThXAZxkMW5j4ok98o3sazG+250WhCYu7wtsgr4oiCO+4HfsrSaZ1pa9Hlef7e2ruoJLGpnml6q/b+iVPy4vtEgaCbV6CyFauyxRr930KPwdcpQkAWbbJ5OqaKieAA/roAbi30VHK12cR3jO2exIgmlAW0UiQTOg==" wsu:Id="SC-daee07d4-088f-48a2-890b-ca42830cf98f"/>
+        </wsse:Security>
+    </soap:Header>
+    <soap:Body>
+        <query:AdhocQueryResponse xmlns:query="urn:oasis:names:tc:ebxml-regrep:xsd:query:3.0" status="urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success">
+            <RegistryObjectList xmlns="urn:oasis:names:tc:ebxml-regrep:xsd:rim:3.0">
+                <ExtrinsicObject home="urn:oid:2.16.840.1.113883.3.9621" id="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" isOpaque="false" mimeType="application/pdf" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+                    <Slot name="creationTime">
+                        <ValueList>
+                            <Value>2024-03-27T21:43:04.878Z</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="languageCode">
+                        <ValueList>
+                            <Value>en-US</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="repositoryUniqueId">
+                        <ValueList>
+                            <Value>2.16.840.1.113883.3.9621</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="size">
+                        <ValueList>
+                            <Value>141255</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="sourcePatientId">
+                        <ValueList>
+                            <Value>ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMQ==^^^&amp;2.16.840.1.113883.3.9621&amp;ISO</Value>
+                        </ValueList>
+                    </Slot>
+                    <Name>
+                        <LocalizedString charset="UTF-8" value="Fourth degree wrist burn treatment"/>
+                    </Name>
+                    <Classification classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="authorPerson">
+                            <ValueList>
+                                <Value>Jonah Inc^^^^^^^&amp;018b64e2-beae-76e1-9c2a-c40de9276cf7&amp;ISO</Value>
+                            </ValueList>
+                        </Slot>
+                        <Slot name="authorInstitution">
+                            <ValueList>
+                                <Value>Metriport^^^^^^^^^2.16.840.1.113883.3.9621</Value>
+                            </ValueList>
+                        </Slot>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66a75fc9b2ab" nodeRepresentation="34133-9" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.1</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f4f85eac-e6cb-4883-b524-f2705394840f" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66a87d0413e8" nodeRepresentation="N" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.5.25</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Normal"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:a09d5840-386c-46f2-b5ad-9c3699a4309d" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66a9dabffcd6" nodeRepresentation="urn:ihe:pcc:xphr:2007" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>1.3.6.1.4.1.19376.1.2.3</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66aa47763282" nodeRepresentation="394612005" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.96</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Urology"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f33fb8ac-18af-42cc-ae0e-ed0b0bdb91e1" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66ab86cb534d" nodeRepresentation="418518002" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.96</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Health Encounter Site"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f0306f51-975f-434e-a61c-c59651d33983" classifiedObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" id="018e81dd-ddb1-7b58-8843-66ac4151f679" nodeRepresentation="100556-0" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.1</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ad0e7ecd26" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="123456789^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
+                        </Name>
+                    </ExternalIdentifier>
+                    <ExternalIdentifier id="018e81dd-ddb1-7b58-8843-66ae5d6b73d7" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e81dd-ddaf-7d7c-b02c-d8a145ebb0c8" value="123456789">
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
+                        </Name>
+                    </ExternalIdentifier>
+                </ExtrinsicObject>
+                <ExtrinsicObject home="urn:oid:2.16.840.1.113883.3.9621" id="018e8b0d-91fb-732b-b9a1-f476a940642c" isOpaque="false" mimeType="application/pdf" objectType="urn:uuid:34268e47-fdf5-41a6-ba33-82133c465248" status="urn:oasis:names:tc:ebxml-regrep:StatusType:Approved">
+                    <Slot name="creationTime">
+                        <ValueList>
+                            <Value>2024-03-29T16:31:46.171Z</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="languageCode">
+                        <ValueList>
+                            <Value>en-US</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="repositoryUniqueId">
+                        <ValueList>
+                            <Value>2.16.840.1.113883.3.9621</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="size">
+                        <ValueList>
+                            <Value>163264</Value>
+                        </ValueList>
+                    </Slot>
+                    <Slot name="sourcePatientId">
+                        <ValueList>
+                            <Value>ODFmMmVjNGUtYzcxYy00MDkwLWJmMWMtOWQ4NTI5ZjY1YjVhLzAxOGU4MWQ3LTBlOWYtNzllYy1hYTllLTFkYjg3MDk5ZDBjMQ==^^^&amp;2.16.840.1.113883.3.9621&amp;ISO</Value>
+                        </ValueList>
+                    </Slot>
+                    <Name>
+                        <LocalizedString charset="UTF-8" value="Fifth degree wrist burn treatment"/>
+                    </Name>
+                    <Classification classificationScheme="urn:uuid:93606bcf-9494-43ec-9b4e-a7748d1a838d" classifiedObject="urn:uuid:00000000-0000-d6ba-5161-4e497785491d" id="urn:uuid:953e825d-3907-497c-8a95-bc3761e2a642" nodeRepresentation="" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="authorPerson">
+                            <ValueList>
+                                <Value>Jonah Inc^^^^^^^&amp;018b64e2-beae-76e1-9c2a-c40de9276cf7&amp;ISO</Value>
+                            </ValueList>
+                        </Slot>
+                        <Slot name="authorInstitution">
+                            <ValueList>
+                                <Value>Metriport^^^^^^^^^2.16.840.1.113883.3.9621</Value>
+                            </ValueList>
+                        </Slot>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:41a5887f-8865-4c09-adf7-e362475b143a" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9235-7e0e-9a96-2ba628cc2c52" nodeRepresentation="34133-9" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.1</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f4f85eac-e6cb-4883-b524-f2705394840f" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9235-7e0e-9a96-2ba7b118b190" nodeRepresentation="N" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.5.25</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Normal"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:a09d5840-386c-46f2-b5ad-9c3699a4309d" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9235-7e0e-9a96-2ba8da8405d1" nodeRepresentation="urn:ihe:pcc:xphr:2007" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>1.3.6.1.4.1.19376.1.2.3</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:cccf5598-8b07-4b77-a05e-ae952c785ead" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9235-7e0e-9a96-2ba9a48b7d66" nodeRepresentation="394612005" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.96</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Urology"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f33fb8ac-18af-42cc-ae0e-ed0b0bdb91e1" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9236-7fe6-925b-9475038a6c90" nodeRepresentation="418518002" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.96</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Health Encounter Site"/>
+                        </Name>
+                    </Classification>
+                    <Classification classificationScheme="urn:uuid:f0306f51-975f-434e-a61c-c59651d33983" classifiedObject="018e8b0d-91fb-732b-b9a1-f476a940642c" id="018e8b0d-9236-7fe6-925b-947665cf6706" nodeRepresentation="100556-0" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:Classification">
+                        <Slot name="codingScheme">
+                            <ValueList>
+                                <Value>2.16.840.1.113883.6.1</Value>
+                            </ValueList>
+                        </Slot>
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="Continuity of Care Document"/>
+                        </Name>
+                    </Classification>
+                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-9477cf662f35" identificationScheme="urn:uuid:58a6f841-87b3-4a3e-92fd-a8ffeff98427" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="987654321^^^&amp;2.16.840.1.113883.3.9621&amp;ISO">
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="XDSDocumentEntry.patientId"/>
+                        </Name>
+                    </ExternalIdentifier>
+                    <ExternalIdentifier id="018e8b0d-9236-7fe6-925b-94783c9fa72f" identificationScheme="urn:uuid:2e82c1f6-a085-4c72-9da3-8640a32e42ab" objectType="urn:oasis:names:tc:ebxml-regrep:ObjectType:RegistryObject:ExternalIdentifier" registryObject="018e8b0d-91fb-732b-b9a1-f476a940642c" value="987654321">
+                        <Name>
+                            <LocalizedString charset="UTF-8" value="XDSDocumentEntry.uniqueId"/>
+                        </Name>
+                    </ExternalIdentifier>
+                </ExtrinsicObject>
+            </RegistryObjectList>
+        </query:AdhocQueryResponse>
+    </soap:Body>
+</soap:Envelope>

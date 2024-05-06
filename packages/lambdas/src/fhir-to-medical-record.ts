@@ -83,7 +83,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     } catch (error: any) {
       const msg = `Error converting FHIR to MR Summary`;
       log(`${msg} - error: ${error.message}`);
-      capture.error(error, {
+      capture.error(msg, {
         extra: {
           error,
           patientId,

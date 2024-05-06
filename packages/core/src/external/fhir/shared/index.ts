@@ -155,11 +155,7 @@ export function isDiagnosticReport(resource: Resource | undefined): resource is 
 }
 
 export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {
-  const organizationEntry = fhirBundle.entry?.find(entry => isOrganization(entry.resource));
-  if (organizationEntry && isOrganization(organizationEntry.resource)) {
-    return organizationEntry.resource;
-  }
-  return undefined;
+  return fhirBundle.entry?.map(e => e.resource).find(isOrganization);
 }
 
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {

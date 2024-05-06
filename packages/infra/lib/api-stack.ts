@@ -51,6 +51,7 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox, mbToBytes } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -143,15 +144,14 @@ export class APIStack extends Stack {
     // Aurora Database for backend data
     //-------------------------------------------
 
-    // create database credentials
-    const dbUsername = props.config.dbUsername;
-    const dbName = props.config.dbName;
+    const dbConfig = props.config.apiDatabase;
     const dbClusterName = "api-cluster";
+    // create database credentials
     const dbCredsSecret = new secret.Secret(this, "DBCreds", {
       secretName: `DBCreds`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          username: dbUsername,
+          username: dbConfig.username,
         }),
         excludePunctuation: true,
         includeSpace: false,
@@ -179,7 +179,7 @@ export class APIStack extends Stack {
         parameterGroup,
       },
       credentials: dbCreds,
-      defaultDatabaseName: dbName,
+      defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
@@ -243,6 +243,15 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
+    }
+    const mtlsBucketName = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
 
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
@@ -464,6 +473,22 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
       },
       cookieStore,
+    });
+    new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
+      lambdaLayers,
+      vpc: this.vpc,
+      apiService: apiService,
+      secrets,
+      cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      cqTrustBundleBucket: mtlsBucketName,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      apiURL: apiService.loadBalancer.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     // Access grant for Aurora DB

@@ -1,18 +1,27 @@
+import { AddressStrict } from "@metriport/core/domain/location-address";
 import BadRequestError from "@metriport/core/util/error/bad-request";
+import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import NotFoundError from "@metriport/core/util/error/not-found";
+import { out } from "@metriport/core/util/log";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { z } from "zod";
 import { createFacility } from "../../command/medical/facility/create-facility";
+import { getFacilityStrictOrFail } from "../../command/medical/facility/get-facility";
+import { updateFacility } from "../../command/medical/facility/update-facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import { addCoordinatesToAddresses } from "../../command/medical/patient/add-coordinates";
+import { FacilityType } from "../../domain/medical/facility";
 import {
   createOrUpdateCQOrganization,
   getCqOrganization,
 } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import cwCommands from "../../external/commonwell";
+import { FacilityModel } from "../../models/medical/facility";
+import { OrganizationModel } from "../../models/medical/organization";
 import { requestLogger } from "../helpers/request-logger";
 import { required } from "../schemas/shared";
 import { getUUIDFrom } from "../schemas/uuid";
@@ -21,34 +30,34 @@ import { AddressStrictSchema } from "./schemas/address";
 
 const router = Router();
 
-export const cqOboOrgDetailsSchema = z.object({});
-export type CqOboOrgDetails = z.infer<typeof cqOboOrgDetailsSchema>;
-
 const facilityOboDetailsSchemaBase = z
   .object({
-    name: z.string(),
+    id: z.string().optional(),
+    nameInMetriport: z.string(),
     npi: z.string(),
-    lat: z.string(),
-    lon: z.string(),
+    type: z.nativeEnum(FacilityType),
     // CQ
-    cqActive: z.boolean().optional(),
+    cqOboActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
     // CW
-    cwActive: z.boolean().optional(),
+    cwOboActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),
+    cwFacilityName: z.string().optional(),
   })
   .merge(AddressStrictSchema);
 type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
 
 const facilityOboDetailsSchema = facilityOboDetailsSchemaBase
-  .refine(required<FacilityOboDetails>("cqOboOid").when("cqActive"), {
-    message: "cqObOid is required and can't be empty when cqActive is true",
+  .refine(required<FacilityOboDetails>("cqOboOid").when("cqOboActive"), {
+    message: "cqObOid is required and can't be empty when cqOboActive is true",
     path: ["cqObOid"],
   })
-  .refine(required<FacilityOboDetails>("cwOboOid").when("cwActive"), {
-    message: "cwOboOid is required and can't be empty when cwActive is true",
+  .refine(required<FacilityOboDetails>("cwOboOid").when("cwOboActive"), {
+    message: "cwOboOid is required and can't be empty when cwOboActive is true",
     path: ["cwOboOid"],
   });
+
+type AddressWithCoordinates = AddressStrict & { lat: string; lon: string };
 
 type CqOboDetails =
   | {
@@ -64,11 +73,13 @@ type CqOboDetails =
  *
  * PUT /internal/facility/
  *
- * Creates a new facility and registers it with HIEs the facility is enabled at.
+ * Creates a new facility and registers it with HIEs.
  *
- * WIP: This endpoint is a work in progress and is not yet fully implemented.
+ * TODO: Move code to each respective HIE's command/folder.
+ * TODO: Add unit tests.
+ * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
  *
- * @return {FacilityDTO} The updated facility.
+ * @return The updated facility.
  */
 router.put(
   "/",
@@ -76,87 +87,97 @@ router.put(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
-    // TODO 1706 search existing facility by NPI, cqOboOid, and cwOboOid (individually), and update if exists
 
-    const cqOboData = await getCqOboData(facilityInput.cqActive, facilityInput.cqOboOid);
+    const [address, cqOboData, cxOrg] = await Promise.all([
+      getAddress(getAddressFromInput(facilityInput), cxId),
+      // We keep this here to avoid creating a facility if the organization does not exist in CQ (for orgs that are CQ active)
+      getCqOboData(facilityInput.cqOboActive, facilityInput.cqOboOid),
+      getOrganizationOrFail({ cxId }),
+    ]);
+    const vendorName = cxOrg.dataValues.data?.name;
+    if (!vendorName) throw new Error("Organization name is missing");
+    const addressStrict = removeCoordinates(address);
 
-    const facility = await createFacility({
+    const id = facilityInput.id;
+    const facilityDetails = {
       cxId,
       data: {
-        name: facilityInput.name,
+        name: facilityInput.nameInMetriport,
         npi: facilityInput.npi,
-        address: {
-          addressLine1: facilityInput.addressLine1,
-          addressLine2: facilityInput.addressLine2,
-          city: facilityInput.city,
-          state: facilityInput.state,
-          zip: facilityInput.zip,
-          country: facilityInput.country,
-        },
+        address: addressStrict,
       },
-      cqOboActive: facilityInput.cqActive,
+      type: facilityInput.type,
+      cqOboActive: facilityInput.cqOboActive,
       cqOboOid: facilityInput.cqOboOid,
-      cwOboActive: facilityInput.cwActive,
+      cwOboActive: facilityInput.cwOboActive,
       cwOboOid: facilityInput.cwOboOid,
-    });
+    };
 
-    const cxOrg = await getOrganizationOrFail({ cxId });
-
-    // TODO 1706: prob want to move these to a separate commands/functions
-
-    const vendorName = cxOrg.dataValues.data?.name;
+    let facility;
+    if (id) {
+      await getFacilityStrictOrFail({ cxId, id, npi: facilityInput.npi });
+      facility = await updateFacility({
+        id,
+        ...facilityDetails,
+      });
+    } else {
+      facility = await createFacility(facilityDetails);
+    }
 
     // CAREQUALITY
-    if (cqOboData.enabled) {
-      const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
-      const addressLine = facilityInput.addressLine2
-        ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
-        : facilityInput.addressLine1;
-
-      console.log("Creating a CQ entry with this OID:", facility.oid);
-      await createOrUpdateCQOrganization({
-        name: orgName,
-        addressLine1: addressLine,
-        lat: facilityInput.lat,
-        lon: facilityInput.lon,
-        city: facilityInput.city,
-        state: facilityInput.state,
-        postalCode: facilityInput.zip,
-        oid: facility.oid,
-        contactName: metriportCompanyDetails.name,
-        phone: metriportCompanyDetails.phone,
-        email: metriportEmailForCq,
-        parentOrgOid: cxOrg.oid,
-        role: "Connection" as const,
-      });
-    }
+    await createOrUpdateInCq(facilityInput, facility, cxOrg, vendorName, cqOboData, address);
 
     // COMMONWELL
-    if (facilityInput.cwActive && facilityInput.cwOboOid) {
-      // TODO 1706: lookup CW org name from specified OID in DB
-      const cwOboOrgName = buildCwOboOrgName(
-        vendorName,
-        facility.data.name,
-        facilityInput.cwOboOid
-      );
-      await cwCommands.organization.create(
-        {
-          cxId,
-          id: facility.id,
-          oid: facility.oid,
-          data: { name: cwOboOrgName, type: cxOrg.data.type, location: facility.data.address },
-          organizationNumber: facility.facilityNumber,
-          eTag: "",
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-        true
-      );
-    }
+    await createInCw(facilityInput, facility, cxOrg, cxId, vendorName);
 
-    return res.sendStatus(httpStatus.OK);
+    return res.status(httpStatus.OK).json(facility.dataValues);
   })
 );
+
+function getAddressFromInput(input: FacilityOboDetails): AddressStrict {
+  return {
+    addressLine1: input.addressLine1,
+    addressLine2: input.addressLine2,
+    city: input.city,
+    state: input.state,
+    zip: input.zip,
+    country: input.country,
+  };
+}
+
+function removeCoordinates(address: AddressWithCoordinates): AddressStrict {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { lat, lon, ...rest } = address;
+  return rest;
+}
+
+async function getAddress(
+  inputAddress: AddressStrict,
+  cxId: string
+): Promise<AddressWithCoordinates> {
+  const addresses = await addCoordinatesToAddresses({
+    addresses: [inputAddress],
+    cxId,
+  });
+  const address = (addresses ?? [])[0];
+  if (!address) throw new Error("Failed to geocode the address");
+  if (!address.coordinates) {
+    throw new MetriportError(`Missing coordinates for address`, undefined, {
+      address: JSON.stringify(address),
+    });
+  }
+  const { lat, lon } = address.coordinates;
+  return {
+    addressLine1: address.addressLine1,
+    addressLine2: address.addressLine2,
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    country: address.country ?? "USA",
+    lat: lat.toString(),
+    lon: lon.toString(),
+  };
+}
 
 async function getCqOboData(
   cqActive: boolean | undefined,
@@ -188,6 +209,72 @@ function buildCwOboOrgName(vendorName: string, orgName: string, oboOid: string) 
 }
 function buildCqOboOrgName(vendorName: string, orgName: string, oboOid: string) {
   return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
+}
+
+async function createOrUpdateInCq(
+  facilityInput: FacilityOboDetails,
+  facility: FacilityModel,
+  cxOrg: OrganizationModel,
+  vendorName: string,
+  cqOboData: CqOboDetails,
+  address: AddressWithCoordinates
+) {
+  const { log } = out("createOrUpdateInCq");
+  if (cqOboData.enabled) {
+    const orgName = buildCqOboOrgName(vendorName, cqOboData.cqFacilityName, cqOboData.cqOboOid);
+    const addressLine = facilityInput.addressLine2
+      ? `${facilityInput.addressLine1}, ${facilityInput.addressLine2}`
+      : facilityInput.addressLine1;
+
+    log(`Creating/Updating a CQ entry with this OID ${facility.oid} and name ${orgName}`);
+    await createOrUpdateCQOrganization({
+      name: orgName,
+      addressLine1: addressLine,
+      lat: address.lat,
+      lon: address.lon,
+      city: facilityInput.city,
+      state: facilityInput.state,
+      postalCode: facilityInput.zip,
+      oid: facility.oid,
+      contactName: metriportCompanyDetails.name,
+      phone: metriportCompanyDetails.phone,
+      email: metriportEmailForCq,
+      parentOrgOid: cxOrg.oid,
+      role: "Connection" as const,
+    });
+  }
+}
+
+async function createInCw(
+  facilityInput: FacilityOboDetails,
+  facility: FacilityModel,
+  cxOrg: OrganizationModel,
+  cxId: string,
+  vendorName: string
+) {
+  const { log } = out("createInCw");
+  if (facilityInput.cwOboActive && facilityInput.cwOboOid) {
+    const cwFacilityName = facilityInput.cwFacilityName ?? facility.data.name;
+    // TODO 1706: lookup CW org name from specified OID in DB
+    const cwOboOrgName = buildCwOboOrgName(vendorName, cwFacilityName, facilityInput.cwOboOid);
+    log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${cwOboOrgName}`);
+    await cwCommands.organization.create(
+      {
+        cxId,
+        id: facility.id,
+        oid: facility.oid,
+        data: {
+          name: cwOboOrgName,
+          type: cxOrg.data.type,
+          location: facility.data.address,
+        },
+        organizationNumber: facility.facilityNumber,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      true
+    );
+  }
 }
 
 export default router;

@@ -9,5 +9,5 @@ export type FhirToCdaConverterRequest = {
 };
 
 export interface FhirToCdaConverter {
-  requestConvert(req: FhirToCdaConverterRequest): Promise<void>;
+  requestConvert(req: FhirToCdaConverterRequest): Promise<string[]>;
 }
