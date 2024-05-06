@@ -143,8 +143,6 @@ export const getSignedURL = async ({
     Expires: urlExpirationSeconds,
   });
 
-  console.log(`Generated signed URL for ${fileName} in ${bucket}`, url);
-
   // TODO try to remove this, moved here b/c this was being done upstream
   return url.replace(/['"]+/g, "");
 };
