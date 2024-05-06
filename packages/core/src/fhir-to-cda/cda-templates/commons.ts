@@ -4,24 +4,13 @@ import {
   Coding,
   ContactPoint,
   Identifier,
-  Observation,
-  ObservationComponent,
   Organization,
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
-import { AugmentedObservation } from "./components/augmented-observation";
 import {
   assigningAuthorityNameAttribute,
-  codeAttribute,
-  codeSystemAttribute,
-  codeSystemNameAttribute,
-  displayNameAttribute,
   extensionAttribute,
-  extensionValue2015,
-  idAttribute,
   inlineTextAttribute,
-  loincCodeSystem,
-  loincSystemName,
   namespaceXsiAttribute,
   namespaceXsiValue,
   nullFlavorAttribute,
@@ -37,57 +26,12 @@ import {
   CDACodeCV,
   CDAInstanceIdentifier,
   CDAOrganization,
+  CDAOriginalText,
   CDATelecom,
   CDAValueST,
   Entry,
   EntryObject,
 } from "./types";
-
-export type TableRowsAndEntriesResult = {
-  trs: ObservationTableRow[];
-  entries: ObservationEntry[];
-};
-
-export type ObservationTableRow = {
-  tr: {
-    ["@_ID"]: string;
-    td: {
-      ["#text"]?: string | undefined;
-    }[];
-  };
-};
-
-export type ObservationEntry = {
-  observation: {
-    ["@_classCode"]: string;
-    ["@_moodCode"]: string;
-    templateId?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
-    };
-    id?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
-    };
-    code?: {
-      [codeAttribute]?: string | undefined;
-      [codeSystemAttribute]?: string | undefined;
-      [codeSystemNameAttribute]?: string | undefined;
-      [displayNameAttribute]?: string | undefined;
-    };
-    text: {
-      reference: {
-        [valueAttribute]: string;
-      };
-    };
-    statusCode: {
-      [codeAttribute]: string;
-    };
-    effectiveTime?: {
-      [valueAttribute]?: string | undefined;
-    };
-  };
-};
 
 const CODING_MAP = new Map<string, string>();
 CODING_MAP.set("http://loinc.org", "2.16.840.1.113883.6.1");
@@ -142,9 +86,20 @@ export function buildCodeCE({
   return codeObject;
 }
 
+export function buildOriginalTextReference(value: string): CDAOriginalText {
+  return {
+    originalText: {
+      reference: {
+        [valueAttribute]: value,
+      },
+    },
+  };
+}
+
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
 export function buildCodeCVFromCodeableConcept(
-  codeableConcept: CodeableConcept | undefined
+  codeableConcept: CodeableConcept | undefined,
+  textReference?: string
 ): CDACodeCV | Entry {
   if (!codeableConcept) {
     return withoutNullFlavorString(codeableConcept);
@@ -172,7 +127,7 @@ export function buildCodeCVFromCodeableConcept(
 
   const codeCV: CDACodeCV = {
     ...baseCE,
-    originalText: codeableConcept.text,
+    originalText: textReference ? buildOriginalTextReference(textReference) : codeableConcept.text,
     translation: translations?.length ? translations : undefined,
   };
 
@@ -391,171 +346,11 @@ export function isLoinc(system: string | undefined): boolean {
   return false;
 }
 
-export function createTableRowsAndEntriesFromObservations(
-  augObs: AugmentedObservation[]
-): TableRowsAndEntriesResult {
-  const result: TableRowsAndEntriesResult = {
-    trs: [],
-    entries: [],
-  };
-
-  augObs.map((aug, index) => {
-    const sectionPrefix = `${aug.sectionName}${index + 1}`;
-    const date = formatDateToCDATimeStamp(aug.observation.effectiveDateTime);
-    result.trs.push(...createTableRowsFromObservation(aug.observation, sectionPrefix, date));
-    result.entries.push(...createEntriesFromObservation(aug, sectionPrefix, date));
-  });
-  return result;
-}
-
-function createTableRowsFromObservation(
-  observation: Observation,
-  socHistPrefix: string,
-  date: string | undefined
-): ObservationTableRow[] {
-  const trs: ObservationTableRow[] = [];
-  const formattedDate = formatDateToHumanReadableFormat(date);
-  let pairNumber = 0;
-  if (observation.component && observation.component.length > 0) {
-    const componentTrs = observation.component.flatMap(pair => {
-      pairNumber++;
-      return createTableRowFromObservation(
-        pair,
-        buildReferenceId(socHistPrefix, pairNumber),
-        formattedDate
-      );
-    });
-    trs.push(...componentTrs);
-  }
-  if (hasObservationInCode(observation)) {
-    pairNumber++;
-    trs.push(
-      createTableRowFromObservation(
-        observation,
-        buildReferenceId(socHistPrefix, pairNumber),
-        formattedDate
-      )
-    );
-  }
-  return trs;
-}
-
-export function createTableRowFromObservation(
-  observation: Observation | ObservationComponent,
-  referenceId: string,
-  date: string | undefined
-): ObservationTableRow {
-  const display = observation.valueCodeableConcept?.coding?.[0]?.display;
-  const intValue = display ? parseInt(display) : undefined;
-  const scoreValue = intValue != undefined && !isNaN(intValue) ? intValue.toString() : "N/A";
-
-  return {
-    tr: {
-      [idAttribute]: referenceId,
-      ["td"]: [
-        {
-          [inlineTextAttribute]: observation.code?.coding?.[0]?.display ?? observation.code?.text,
-        },
-        {
-          [inlineTextAttribute]: observation.valueCodeableConcept?.text,
-        },
-        {
-          [inlineTextAttribute]: scoreValue,
-        },
-        {
-          [inlineTextAttribute]: date ?? "Unknown",
-        },
-      ],
-    },
-  };
-}
-
-function hasObservationInCode(observation: Observation): boolean {
-  return (
-    (observation.code?.coding &&
-      observation.code.coding.length > 0 &&
-      observation.valueCodeableConcept?.coding &&
-      observation.valueCodeableConcept.coding.length > 0) ??
-    false
-  );
-}
-
-function createEntriesFromObservation(
-  aug: AugmentedObservation,
-  socHistNumber: string,
-  date: string | undefined
-): ObservationEntry[] {
-  const entries: ObservationEntry[] = [];
-  let pairNumber = 0;
-  if (aug.observation.component && aug.observation.component.length > 0) {
-    aug.observation.component.map(pair => {
-      pairNumber++;
-      entries.push(
-        createEntryFromObservation(pair, aug, buildReferenceId(socHistNumber, pairNumber), date)
-      );
-    });
-  }
-  if (hasObservationInCode(aug.observation)) {
-    pairNumber++;
-    entries.push(
-      createEntryFromObservation(
-        aug.observation,
-        aug,
-        buildReferenceId(socHistNumber, pairNumber),
-        date
-      )
-    );
-  }
-
-  return entries;
-}
-
-function createEntryFromObservation(
-  observation: Observation | ObservationComponent,
-  augObs: AugmentedObservation,
-  referenceId: string,
-  date?: string
-): ObservationEntry {
-  const codeSystem = observation.code?.coding?.[0]?.system;
-  const systemIsLoinc = isLoinc(codeSystem);
-  const entry = {
-    observation: {
-      ["@_classCode"]: "OBS",
-      ["@_moodCode"]: "EVN",
-      templateId: buildInstanceIdentifier({
-        root: augObs.typeOid,
-        extension: extensionValue2015,
-      }),
-      id: buildInstanceIdentifier({
-        root: placeholderOrgOid,
-        extension: observation.id ?? augObs.observation.id,
-      }),
-
-      code: buildCodeCE({
-        code: observation.code?.coding?.[0]?.code,
-        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
-        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
-        displayName: observation.code?.coding?.[0]?.display,
-      }),
-      text: {
-        reference: {
-          [valueAttribute]: referenceId,
-        },
-      },
-      statusCode: {
-        [codeAttribute]: "completed",
-      },
-      effectiveTime: withoutNullFlavorObject(date, valueAttribute),
-    },
-  };
-  return entry;
-}
-
-export function createTableHeader() {
+export function createTableHeader(tableHeaders: string[]) {
   return {
     tr: [
       {
-        th: ["Question / Observation", "Answer / Status", "Score", "Date Recorded"],
+        th: tableHeaders,
       },
     ],
   };

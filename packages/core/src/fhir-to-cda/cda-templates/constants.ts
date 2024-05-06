@@ -4,6 +4,7 @@ const metriportOid = Config.getSystemRootOID();
 export const nullFlavorAttribute = "@_nullFlavor";
 export const rootAttribute = "@_root";
 export const extensionAttribute = "@_extension";
+export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const assigningAuthorityNameAttribute = "@_assigningAuthorityName";
 export const valueAttribute = "@_value";

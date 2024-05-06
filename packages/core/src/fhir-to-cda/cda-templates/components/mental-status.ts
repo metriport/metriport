@@ -1,15 +1,17 @@
 import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
-import {
-  buildCodeCE,
-  buildInstanceIdentifier,
-  createTableRowsAndEntriesFromObservations,
-  createTableHeader,
-} from "../commons";
+import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
 import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
-import { AugmentedObservation } from "./augmented-observation";
+import {
+  createEntriesFromObservation,
+  createTableRowsAndEntriesFromObservations,
+  createTableRowsFromObservation,
+} from "../table-rows-and-entries";
+import { AugmentedObservation } from "./augmented-resources";
 
 const sectionName = "mentalstatus";
+const mentalHealthSurveyCodes = ["44249-1"];
+const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
 
 export function buildMentalStatus(fhirBundle: Bundle) {
   const mentalStatusObservations: Observation[] =
@@ -25,10 +27,14 @@ export function buildMentalStatus(fhirBundle: Bundle) {
     obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.74", sectionName, obs)
   );
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(augmentedObservations);
+  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+    augmentedObservations,
+    createTableRowsFromObservation,
+    createEntriesFromObservation
+  );
   const table = {
     [idAttribute]: sectionName,
-    thead: createTableHeader(),
+    thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
         [idAttribute]: row.tr[idAttribute],
@@ -63,7 +69,7 @@ function isMentalSurveyObservation(resource: Resource | undefined): resource is 
     return false;
   }
 
-  const hasSurveyCategory = resource.category?.[0]?.coding?.[0]?.code === "survey";
-  const hasPHQDisplay = resource.code?.coding?.[0]?.display?.toLowerCase().includes("phq") ?? false;
-  return hasSurveyCategory || hasPHQDisplay;
+  return resource?.code?.coding?.[0]?.code
+    ? mentalHealthSurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
+    : false;
 }

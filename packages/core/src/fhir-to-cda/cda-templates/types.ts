@@ -1,13 +1,17 @@
 import {
   assigningAuthorityNameAttribute,
+  classCodeAttribute,
   codeAttribute,
   codeSystemAttribute,
   codeSystemNameAttribute,
   displayNameAttribute,
   extensionAttribute,
   inlineTextAttribute,
+  moodCodeAttribute,
   namespaceXsiAttribute,
   rootAttribute,
+  typeCodeAttribute,
+  valueAttribute,
   xsiTypeAttribute,
 } from "./constants";
 
@@ -49,12 +53,12 @@ export type CDAAssignedAuthor = {
 
 export type CDAPatientRole = {
   name?: CDAName[] | undefined;
-  administrativeGenderCode?: EntryObject;
+  administrativeGenderCode?: EntryObject | CDACodeCE;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
-  maritalStatusCode?: EntryObject;
+  maritalStatusCode?: EntryObject | CDACodeCE;
   languageCommunication?: {
-    languageCode: EntryObject;
+    languageCode: EntryObject | CDACodeCE;
   };
 };
 
@@ -65,11 +69,18 @@ export type CDAName = {
   validTime: CDAPeriod;
 };
 
+export type CDAOriginalText = {
+  originalText: {
+    reference: {
+      [valueAttribute]: string;
+    };
+  };
+};
 export type CDACodeCE = {
-  [codeAttribute]?: string;
-  [codeSystemAttribute]?: string;
-  [codeSystemNameAttribute]?: string;
-  [displayNameAttribute]?: string;
+  [codeAttribute]?: string | undefined;
+  [codeSystemAttribute]?: string | undefined;
+  [codeSystemNameAttribute]?: string | undefined;
+  [displayNameAttribute]?: string | undefined;
 };
 
 export type CDAValueST = {
@@ -78,7 +89,7 @@ export type CDAValueST = {
   [inlineTextAttribute]?: string;
 };
 export interface CDACodeCV extends CDACodeCE {
-  originalText?: string | undefined;
+  originalText?: CDAOriginalText | string | undefined;
   translation?: CDACodeCE[] | undefined;
 }
 
@@ -107,5 +118,110 @@ export type CDARecordTarget = {
     addr?: CDAAddress[] | undefined;
     telecom?: CDATelecom[] | undefined;
     patient: CDAPatientRole;
+  };
+};
+
+export type CreateTableRowsCallback<T> = (
+  observation: T,
+  sectionPrefix: string,
+  date: string | undefined
+) => ObservationTableRow[];
+
+export type CreateEntriesCallback<T> = (
+  aug: T,
+  sectionPrefix: string,
+  date: string | undefined
+) => (ObservationEntry | SubstanceAdministationEntry)[];
+
+export type TableRowsAndEntriesResult = {
+  trs: ObservationTableRow[];
+  entries: (ObservationEntry | SubstanceAdministationEntry)[];
+};
+
+export type ObservationTableRow = {
+  tr: {
+    ["@_ID"]: string;
+    td: {
+      ["#text"]?: string | undefined;
+    }[];
+  };
+};
+
+export type ObservationEntry = {
+  observation: {
+    [classCodeAttribute]: string;
+    [moodCodeAttribute]: string;
+    templateId?: {
+      [rootAttribute]?: string;
+      [extensionAttribute]?: string;
+    };
+    id?: {
+      [rootAttribute]?: string;
+      [extensionAttribute]?: string;
+    };
+    code?: {
+      [codeAttribute]?: string | undefined;
+      [codeSystemAttribute]?: string | undefined;
+      [codeSystemNameAttribute]?: string | undefined;
+      [displayNameAttribute]?: string | undefined;
+    };
+    text: {
+      reference: {
+        [valueAttribute]: string;
+      };
+    };
+    statusCode: {
+      [codeAttribute]: string;
+    };
+    effectiveTime?: {
+      [valueAttribute]?: string | undefined;
+    };
+    entryRelationship?: ObservationEntry[];
+    interpretationCode?: CDACodeCE;
+  };
+};
+
+export type SubstanceAdministationEntry = {
+  substanceAdministration: {
+    [classCodeAttribute]: string;
+    [moodCodeAttribute]: string;
+    templateId?: {
+      [rootAttribute]?: string;
+      [extensionAttribute]?: string;
+    };
+    id?: {
+      [rootAttribute]?: string;
+      [extensionAttribute]?: string;
+    };
+    statusCode: {
+      [codeAttribute]?: string | undefined;
+    };
+    effectiveTime: {
+      low: {
+        [valueAttribute]?: string | undefined;
+      };
+      high: {
+        [valueAttribute]?: string | undefined;
+      };
+    };
+    consumable: {
+      [typeCodeAttribute]: string;
+      manufacturedProduct: {
+        [codeAttribute]: string;
+        templateId?: {
+          [rootAttribute]?: string;
+          [extensionAttribute]?: string;
+        };
+        manufacturedMaterial: {
+          code: CDACodeCV | Entry;
+        };
+      };
+    };
+    entryRelationship?: {
+      supply?: {
+        [classCodeAttribute]: string;
+        [moodCodeAttribute]: string;
+      };
+    };
   };
 };

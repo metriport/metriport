@@ -2,12 +2,14 @@ import { Bundle } from "@medplum/fhirtypes";
 import { buildMentalStatus } from "../components/mental-status";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
+import { buildMedications } from "../components/medications";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBodySections = [
     buildResult(fhirBundle),
     buildSocialHistory(fhirBundle),
     buildMentalStatus(fhirBundle),
+    buildMedications(fhirBundle),
   ];
   const structuredBody = {
     structuredBody: {
