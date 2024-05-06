@@ -27,22 +27,10 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle): string {
   const custodian = buildCustodian();
   const structuredBody = buildStructuredBody(fhirBundle);
 
-  if (!recordTarget || !author || !custodian || !structuredBody) {
-    const missing = [];
-    if (!recordTarget) {
-      missing.push("recordTarget");
-    }
-    if (!author) {
-      missing.push("author");
-    }
-    if (!custodian) {
-      missing.push("custodian");
-    }
-    if (!structuredBody) {
-      missing.push("structuredBody");
-    }
-
-    throw new BadRequestError(`${missing.join(", ")} resource(s) not found`);
+  if (!structuredBody) {
+    throw new BadRequestError(
+      `The FHIR bundle is missing meaningful data to generate a CDA document.`
+    );
   }
 
   const clinicalDocument = buildClinicalDocumentXML(
