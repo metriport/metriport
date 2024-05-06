@@ -76,13 +76,14 @@ function analyzeResponsesByVendor(filePath: string): void {
     //eslint-disable-next-line
     { success: number; total: number; errors: Record<string, { count: number; details: any[] }> }
   > = {
-    // "Surescripts": { success: 0, total: 0, errors: {} },
+    Surescripts: { success: 0, total: 0, errors: {} },
     Epic: { success: 0, total: 0, errors: {} },
-    //ehealthexchange: { success: 0, total: 0, errors: {} },
-    // "Athena": { success: 0, total: 0, errors: {} },
-    // "Kno2": { success: 0, total: 0, errors: {} },
-    // "Ntst": { success: 0, total: 0, errors: {} },
-    // "Medent": { success: 0, total: 0, errors: {} },
+    ehealthexchange: { success: 0, total: 0, errors: {} },
+    Athena: { success: 0, total: 0, errors: {} },
+    Kno2: { success: 0, total: 0, errors: {} },
+    Ntst: { success: 0, total: 0, errors: {} },
+    Medent: { success: 0, total: 0, errors: {} },
+    commonwellalliance: { success: 0, total: 0, errors: {} },
   };
 
   data.forEach(item => {
@@ -141,8 +142,110 @@ function analyzeResponsesByVendor(filePath: string): void {
   console.log("Statistics by Vendor:", JSON.stringify(stats, null, 2));
 }
 
+function analyzeResponsesWithExclusions(filePath: string, excludeList: string[]): void {
+  const fileContent = readFileSync(filePath, "utf8");
+  const data: Response[] = JSON.parse(fileContent);
+
+  const stats: Record<
+    string,
+    //eslint-disable-next-line
+    { success: number; total: number; errors: Record<string, { count: number; details: any[] }> }
+  > = {
+    CatchAll: { success: 0, total: 0, errors: {} }, // Added catch-all category
+  };
+
+  data.forEach(item => {
+    const { patientMatch, operationOutcome, gateway } = item;
+    const url = gateway.url.toLowerCase();
+
+    // Check if the current gateway should be excluded
+    if (excludeList.some(exclude => url.includes(exclude.toLowerCase()))) {
+      return; // Skip this gateway if it matches any exclude string
+    }
+
+    let matched = false;
+
+    // Increment total for each keyword found in the URL and track errors
+    Object.keys(stats).forEach(key => {
+      if (key !== "CatchAll" && url.includes(key.toLowerCase())) {
+        matched = true;
+        stats[key].total++;
+        if (patientMatch !== null) {
+          stats[key].success++;
+        } else {
+          recordError(stats, key, operationOutcome, item);
+        }
+      }
+    });
+
+    // If no specific vendor matched, use the catch-all
+    if (!matched) {
+      stats.CatchAll.total++;
+      if (patientMatch !== null) {
+        stats.CatchAll.success++;
+      } else {
+        recordError(stats, "CatchAll", operationOutcome, item);
+      }
+    }
+  });
+
+  console.log("Statistics by Vendor with Exclusions:", JSON.stringify(stats, null, 2));
+}
+
+//eslint-disable-next-line
+function recordError(stats: any, key: string, operationOutcome: any, item: any) {
+  if (
+    operationOutcome.issue.length > 0 &&
+    operationOutcome.issue[0].details &&
+    "text" in operationOutcome.issue[0].details
+  ) {
+    const errorText = operationOutcome.issue[0].details.text;
+    const errorDetail = {
+      gatewayUrl: item.gateway.url,
+      gatewayOid: item.gateway.oid,
+      gatewayId: item.gateway.id,
+      timestamp: item.timestamp,
+      responseTimestamp: item.responseTimestamp,
+      requestId: item.id,
+    };
+    if (stats[key].errors[errorText]) {
+      stats[key].errors[errorText].count++;
+      stats[key].errors[errorText].details.push(errorDetail);
+    } else {
+      stats[key].errors[errorText] = { count: 1, details: [errorDetail] };
+    }
+  } else {
+    // still increment and track errors if no error text is found
+    const errorText = "No error text";
+    const errorDetail = {
+      gatewayUrl: item.gateway.url,
+      gatewayOid: item.gateway.oid,
+      gatewayId: item.gateway.id,
+      timestamp: item.timestamp,
+      responseTimestamp: item.responseTimestamp,
+      requestId: item.id,
+    };
+    if (stats[key].errors[errorText]) {
+      stats[key].errors[errorText].count++;
+      stats[key].errors[errorText].details.push(errorDetail);
+    } else {
+      stats[key].errors[errorText] = { count: 1, details: [errorDetail] };
+    }
+  }
+}
+
 // Usage
 const filePath =
   "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bulk-responses-post-ehex.json";
 analyzeResponsesByVendor(filePath);
+analyzeResponsesWithExclusions(filePath, [
+  "surescripts",
+  "ehealthexchange",
+  "commonwellalliance",
+  "epic",
+  "athena",
+  "kno2",
+  "ntst",
+  "medent",
+]);
 analyzeResponses(filePath);

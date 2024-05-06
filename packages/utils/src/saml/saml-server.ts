@@ -32,7 +32,7 @@ app.post("/xcpd", async (req: Request, res: Response) => {
 
   try {
     const xmlResponses = createAndSignBulkXCPDRequests(req.body, samlCertsAndKeys);
-    fs.writeFileSync("../../scratch/xcpd/ehex-fail.xml", xmlResponses[0].signedRequest);
+    fs.writeFileSync("../../scratch/xcpd/cpchieprd-may6.xml", xmlResponses[0].signedRequest);
     const response = await sendSignedXCPDRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,
