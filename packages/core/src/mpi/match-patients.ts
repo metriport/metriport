@@ -168,6 +168,6 @@ function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): b
   return (
     a?.value === b?.value &&
     a?.type === b?.type &&
-    (a?.type !== "driversLicense" || b?.type !== "driversLicense" || a.state === b?.state)
+    (a?.type !== "driversLicense" || b?.type !== "driversLicense" || a.state === b.state)
   );
 }
