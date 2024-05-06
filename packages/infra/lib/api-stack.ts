@@ -52,7 +52,7 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
+import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
