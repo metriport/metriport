@@ -44,6 +44,8 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
+import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
@@ -52,10 +54,8 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
-import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
-const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
 
 interface APIStackProps extends StackProps {
   config: EnvConfig;
@@ -238,7 +238,7 @@ export class APIStack extends Stack {
     );
 
     //-------------------------------------------
-    // Multi-purpose bucket
+    // S3 buckets
     //-------------------------------------------
     const generalBucket = new s3.Bucket(this, "GeneralBucket", {
       bucketName: props.config.generalBucketName,
@@ -247,38 +247,65 @@ export class APIStack extends Stack {
       versioned: true,
     });
 
-    //-------------------------------------------
-    // S3 bucket for Medical Documents
-    //-------------------------------------------
     const medicalDocumentsBucket = new s3.Bucket(this, "APIMedicalDocumentsBucket", {
       bucketName: props.config.medicalDocumentsBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    //-------------------------------------------
-    // S3 bucket for Medical Document Uploads
-    //-------------------------------------------
     const medicalDocumentsUploadBucket = new s3.Bucket(this, "APIMedicalDocumentsUploadBucket", {
       bucketName: props.config.medicalDocumentsUploadBucketName,
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
 
-    //-------------------------------------------
-    // FHIR Converter Service
-    //-------------------------------------------
-    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
-    if (!isSandbox(props.config)) {
-      fhirConverter = createFHIRConverterService(
-        this,
-        props,
-        this.vpc,
-        slackNotification?.alarmAction
-      );
-    }
+    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
+      const seedBucketCfnName = "APISandboxSeedDataBucket";
+      try {
+        return s3.Bucket.fromBucketName(
+          this,
+          seedBucketCfnName,
+          sandboxConfig.sandboxSeedDataBucketName
+        );
+      } catch (error) {
+        return new s3.Bucket(this, seedBucketCfnName, {
+          bucketName: sandboxConfig.sandboxSeedDataBucketName,
+          publicReadAccess: false,
+          encryption: s3.BucketEncryption.S3_MANAGED,
+        });
+      }
+    };
 
+    const sandboxSeedDataBucket = isSandbox(props.config)
+      ? getSandboxSeedDataBucket(props.config)
+      : undefined;
+
+    //-------------------------------------------
+    // General lambdas
+    //-------------------------------------------
+
+    // TODO 1040 - remove this
     const lambdaLayers = setupLambdasLayers(this);
+
+    // TODO 1040 - uncomment this and remove the line immediately below
+    // const {
+    //   lambdaLayers,
+    //   cdaToVisualizationLambda,
+    //   documentDownloaderLambda,
+    //   outboundPatientDiscoveryLambda,
+    //   outboundDocumentQueryLambda,
+    //   outboundDocumentRetrievalLambda,
+    // } = new LambdasNestedStack(this, "LambdasNestedStack", {
+    new LambdasNestedStack(this, "LambdasNestedStack", {
+      config: props.config,
+      vpc: this.vpc,
+      dbCluster,
+      dbCredsSecret,
+      secrets,
+      medicalDocumentsBucket,
+      sandboxSeedDataBucket,
+      alarmAction: slackNotification?.alarmAction,
+    });
 
     //-------------------------------------------
     // OPEN SEARCH Domains
@@ -300,6 +327,19 @@ export class APIStack extends Stack {
     });
 
     //-------------------------------------------
+    // FHIR Converter Service
+    //-------------------------------------------
+    let fhirConverter: ReturnType<typeof createFHIRConverterService> | undefined;
+    if (!isSandbox(props.config)) {
+      fhirConverter = createFHIRConverterService(
+        this,
+        props,
+        this.vpc,
+        slackNotification?.alarmAction
+      );
+    }
+
+    //-------------------------------------------
     // FHIR CONNECTORS, initalize
     //-------------------------------------------
     const {
@@ -312,26 +352,6 @@ export class APIStack extends Stack {
       envType: props.config.environmentType,
       alarmSnsAction: slackNotification?.alarmAction,
     });
-
-    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
-      const seedBucketCfnName = "APISandboxSeedDataBucket";
-      try {
-        return s3.Bucket.fromBucketName(
-          this,
-          seedBucketCfnName,
-          sandboxConfig.sandboxSeedDataBucketName
-        );
-      } catch (error) {
-        return new s3.Bucket(this, seedBucketCfnName, {
-          bucketName: sandboxConfig.sandboxSeedDataBucketName,
-          publicReadAccess: false,
-          encryption: s3.BucketEncryption.S3_MANAGED,
-        });
-      }
-    };
-    const sandboxSeedDataBucket = isSandbox(props.config)
-      ? getSandboxSeedDataBucket(props.config)
-      : undefined;
 
     const fhirServerQueue = fhirServerConnector.createConnector({
       envType: props.config.environmentType,
