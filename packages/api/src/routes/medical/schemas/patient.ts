@@ -30,7 +30,8 @@ export const generalTypeIdentifierSchema = z.object({
 export const personalIdentifierSchema = basePersonalIdentifierSchema
   .merge(driverLicenseIdentifierSchema)
   .or(basePersonalIdentifierSchema.merge(generalTypeIdentifierSchema));
-//export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
+// TODO: Why is this type rebuilt in the api? It exists in both core and api-sdk
+export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 
