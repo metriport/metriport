@@ -2,12 +2,9 @@ import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
 import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
 import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
-import {
-  createEntriesFromObservation,
-  createTableRowsAndEntriesFromObservations,
-  createTableRowsFromObservation,
-} from "../table-rows-and-entries";
+import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
+import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
 
 const sectionName = "socialhistory";
 const mentalHealthSurveyCodes = ["lg51306-5"];
@@ -27,7 +24,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.38", sectionName, obs)
   );
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+  const { trs, entries } = createTableRowsAndEntries(
     augmentedObservations,
     createTableRowsFromObservation,
     createEntriesFromObservation

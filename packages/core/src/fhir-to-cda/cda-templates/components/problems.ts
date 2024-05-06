@@ -21,11 +21,11 @@ import {
   placeholderOrgOid,
   valueAttribute,
 } from "../constants";
-import { createTableRowsAndEntriesFromObservations } from "../table-rows-and-entries";
+import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { ObservationTableRow } from "../types";
 import { AugmentedCondition } from "./augmented-resources";
 
-const sectionName = "problems";
+export const problemsSectionName = "problems";
 const tableHeaders = [
   "ICD Code",
   "Diagnosis",
@@ -44,17 +44,17 @@ export function buildProblems(fhirBundle: Bundle) {
   }
 
   const augmentedConditions = conditions.map(condition => {
-    return new AugmentedCondition("2.16.840.1.113883.10.20.22.4.3", sectionName, condition);
+    return new AugmentedCondition(condition);
   });
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+  const { trs, entries } = createTableRowsAndEntries(
     augmentedConditions,
-    createTableRowsFromConditions,
-    createEntryFromStatement
+    createTableRowsFromCondition,
+    createEntryFromCondition
   );
 
   const table = {
-    [idAttribute]: sectionName,
+    [idAttribute]: problemsSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
@@ -86,15 +86,13 @@ export function buildProblems(fhirBundle: Bundle) {
   return problemsSection;
 }
 
-function createTableRowsFromConditions(
-  conditions: AugmentedCondition[],
+function createTableRowsFromCondition(
+  condition: AugmentedCondition,
   medicationsPrefix: string
 ): ObservationTableRow[] {
   const trs: ObservationTableRow[] = [];
-  conditions.forEach(condition => {
-    const tableRow = createTableRowFromCondition(condition, medicationsPrefix);
-    if (tableRow) trs.push(tableRow);
-  });
+  const tableRow = createTableRowFromCondition(condition, medicationsPrefix);
+  if (tableRow) trs.push(tableRow);
   return trs;
 }
 
@@ -130,7 +128,7 @@ function createTableRowFromCondition(
   };
 }
 
-function createEntryFromStatement(condition: AugmentedCondition, referenceId: string) {
+function createEntryFromCondition(condition: AugmentedCondition, referenceId: string) {
   return [
     {
       act: {

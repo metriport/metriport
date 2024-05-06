@@ -22,7 +22,7 @@ import {
   typeCodeAttribute,
   valueAttribute,
 } from "../constants";
-import { createTableRowsAndEntriesFromObservations } from "../table-rows-and-entries";
+import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { ObservationTableRow, SubstanceAdministationEntry } from "../types";
 import { AugmentedMedicationStatement } from "./augmented-resources";
 
@@ -43,15 +43,10 @@ export function buildMedications(fhirBundle: Bundle) {
     const ref = statement.medicationReference?.reference;
     const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
     const medication = isMedication(refResource) ? refResource : undefined;
-    return new AugmentedMedicationStatement(
-      "2.16.840.1.113883.10.20.22.4.16",
-      sectionName,
-      statement,
-      medication
-    );
+    return new AugmentedMedicationStatement(statement, medication);
   });
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+  const { trs, entries } = createTableRowsAndEntries(
     augmentedMedStatements,
     createTableRowsFromMedicationStatements,
     createEntryFromStatement

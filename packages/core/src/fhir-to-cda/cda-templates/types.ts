@@ -123,19 +123,19 @@ export type CDARecordTarget = {
 
 export type CreateTableRowsCallback<T> = (
   observation: T,
-  sectionPrefix: string,
-  date: string | undefined
+  sectionPrefix: string
 ) => ObservationTableRow[];
 
 export type CreateEntriesCallback<T> = (
   aug: T,
-  sectionPrefix: string,
-  date: string | undefined
-) => (ObservationEntry | SubstanceAdministationEntry)[];
+  sectionPrefix: string
+  // ) => (ObservationEntry | SubstanceAdministationEntry)[];
+) => unknown[];
 
 export type TableRowsAndEntriesResult = {
   trs: ObservationTableRow[];
-  entries: (ObservationEntry | SubstanceAdministationEntry)[];
+  // entries: (ObservationEntry | SubstanceAdministationEntry)[];
+  entries: unknown[];
 };
 
 export type ObservationTableRow = {

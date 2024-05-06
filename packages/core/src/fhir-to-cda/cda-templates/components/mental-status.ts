@@ -2,14 +2,11 @@ import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
 import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
 import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
-import {
-  createEntriesFromObservation,
-  createTableRowsAndEntriesFromObservations,
-  createTableRowsFromObservation,
-} from "../table-rows-and-entries";
+import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
+import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
 
-const sectionName = "mentalstatus";
+const mentalStatusSectionName = "mentalstatus";
 const mentalHealthSurveyCodes = ["44249-1"];
 const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
 
@@ -24,16 +21,16 @@ export function buildMentalStatus(fhirBundle: Bundle) {
   }
 
   const augmentedObservations = mentalStatusObservations.map(
-    obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.74", sectionName, obs)
+    obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.74", mentalStatusSectionName, obs)
   );
 
-  const { trs, entries } = createTableRowsAndEntriesFromObservations(
+  const { trs, entries } = createTableRowsAndEntries(
     augmentedObservations,
     createTableRowsFromObservation,
     createEntriesFromObservation
   );
   const table = {
-    [idAttribute]: sectionName,
+    [idAttribute]: mentalStatusSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
