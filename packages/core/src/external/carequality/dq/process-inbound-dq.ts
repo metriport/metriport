@@ -121,7 +121,7 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
       docRef,
       metadataFileName,
       destinationBucket: bucket,
-      mimeType: "xml",
+      mimeType: "application/xml",
     });
   } catch (error) {
     const msg = `Error creating and uploading CCD`;
