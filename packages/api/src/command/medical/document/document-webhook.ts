@@ -11,6 +11,7 @@ import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../..
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { DOWNLOAD_WEBHOOK_TYPE, CONVERSION_WEBHOOK_TYPE } from "./process-doc-query-webhook";
 import { updateProgressWebhookSent } from "../patient/append-doc-query-progress";
+import { PatientData } from "@metriport/core/domain/patient";
 
 const log = Util.log(`Document Webhook`);
 
@@ -67,14 +68,7 @@ export const processPatientDocumentRequest = async (
       ],
     };
 
-    const metadata =
-      whType === "medical.document-download" || whType === "medical.document-conversion"
-        ? patient.data.cxDocumentRequestMetadata
-        : whType === "medical.consolidated-data"
-        ? patient.data.cxConsolidatedRequestMetadata
-        : whType === "medical.document-bulk-download-urls"
-        ? patient.data.cxDownloadRequestMetadata
-        : undefined;
+    const metadata = getMetadata(whType, patient.data);
 
     // send it to the customer and update the request status
     if (!isWebhookDisabled(metadata)) {
@@ -130,3 +124,15 @@ export const processPatientDocumentRequest = async (
     });
   }
 };
+
+function getMetadata(whType: MAPIWebhookType, patientData: PatientData) {
+  if (whType === "medical.document-download" || whType === "medical.document-conversion") {
+    return patientData.cxDocumentRequestMetadata;
+  } else if (whType === "medical.consolidated-data") {
+    return patientData.cxConsolidatedRequestMetadata;
+  } else if (whType === "medical.document-bulk-download-urls") {
+    return patientData.cxDownloadRequestMetadata;
+  } else {
+    return undefined;
+  }
+}

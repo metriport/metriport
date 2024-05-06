@@ -7,13 +7,6 @@ export class DocumentBulkSignerLocal extends DocumentBulkSigner {
   }
 
   async sign({ patientId, cxId, requestId }: DocumentBulkSignerRequest): Promise<void> {
-    return await getSignedUrls(
-      cxId,
-      patientId,
-      requestId,
-      this.bucketName,
-      this.region,
-      this.apiURL
-    );
+    await getSignedUrls(cxId, patientId, requestId, this.bucketName, this.region, this.apiURL);
   }
 }
