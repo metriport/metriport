@@ -48,7 +48,7 @@ import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
-import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { LambdaLayers } from "./shared/lambda-layers";
 import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
@@ -283,20 +283,14 @@ export class APIStack extends Stack {
     //-------------------------------------------
     // General lambdas
     //-------------------------------------------
-
-    // TODO 1040 - remove this
-    const lambdaLayers = setupLambdasLayers(this);
-
-    // TODO 1040 - uncomment this and remove the line immediately below
-    // const {
-    //   lambdaLayers,
-    //   cdaToVisualizationLambda,
-    //   documentDownloaderLambda,
-    //   outboundPatientDiscoveryLambda,
-    //   outboundDocumentQueryLambda,
-    //   outboundDocumentRetrievalLambda,
-    // } = new LambdasNestedStack(this, "LambdasNestedStack", {
-    new LambdasNestedStack(this, "LambdasNestedStack", {
+    const {
+      lambdaLayers,
+      cdaToVisualizationLambda,
+      documentDownloaderLambda,
+      outboundPatientDiscoveryLambda,
+      outboundDocumentQueryLambda,
+      outboundDocumentRetrievalLambda,
+    } = new LambdasNestedStack(this, "LambdasNestedStack", {
       config: props.config,
       vpc: this.vpc,
       dbCluster,
@@ -362,7 +356,7 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    const cdaToVisualizationLambda = this.setupCdaToVisualization({
+    this.setupCdaToVisualization({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -372,7 +366,7 @@ export class APIStack extends Stack {
       alarmAction: slackNotification?.alarmAction,
     });
 
-    const documentDownloaderLambda = this.setupDocumentDownloader({
+    this.setupDocumentDownloader({
       lambdaLayers,
       vpc: this.vpc,
       secrets,
@@ -383,7 +377,7 @@ export class APIStack extends Stack {
       sentryDsn: props.config.lambdasSentryDSN,
     });
 
-    const outboundPatientDiscoveryLambda = this.setupOutboundPatientDiscovery({
+    this.setupOutboundPatientDiscovery({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -395,7 +389,7 @@ export class APIStack extends Stack {
       maxPollingDuration: Duration.minutes(11),
     });
 
-    const outboundDocumentQueryLambda = this.setupOutboundDocumentQuery({
+    this.setupOutboundDocumentQuery({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
@@ -407,7 +401,7 @@ export class APIStack extends Stack {
       maxPollingDuration: Duration.minutes(15),
     });
 
-    const outboundDocumentRetrievalLambda = this.setupOutboundDocumentRetrieval({
+    this.setupOutboundDocumentRetrieval({
       lambdaLayers,
       vpc: this.vpc,
       envType: props.config.environmentType,
