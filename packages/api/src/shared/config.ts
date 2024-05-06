@@ -122,6 +122,10 @@ export class Config {
     return getEnvVarOrFail("DB_CREDS");
   }
 
+  static getDbReadReplicaEndpoint(): string {
+    return getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
+  }
+
   static getCronometerClientId(): string {
     return getEnvVarOrFail("CRONOMETER_CLIENT_ID");
   }
@@ -327,5 +331,11 @@ export class Config {
   }
   static getAppConfigConfigId(): string {
     return getEnvVarOrFail("APPCONFIG_CONFIGURATION_ID");
+  }
+  static getCQOrgCertificateIntermediate(): string {
+    return getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE");
+  }
+  static getOidsWithIHEGatewayV2Enabled(): string {
+    return getEnvVarOrFail("OIDS_WITH_IHE_GATEWAY_V2_ENABLED");
   }
 }

@@ -2,37 +2,47 @@ import {
   CommonWellAPI,
   getIdTrailingSlash,
   LOLA,
+  NetworkLink,
   organizationQueryMeta,
   Patient as CommonwellPatient,
   Person,
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
-import { Organization } from "@metriport/core/domain/organization";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { processAsyncError } from "@metriport/core/util/error/shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
-import { Facility } from "../../domain/medical/facility";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
+import { analytics, EventTypes } from "../../shared/analytics";
+import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
-import { isEnhancedCoverageEnabledForCx, isCWEnabledForCx } from "../aws/appConfig";
+import {
+  isCommonwellEnabled,
+  isCWEnabledForCx,
+  isEnhancedCoverageEnabledForCx,
+} from "../aws/appConfig";
+import { HieInitiator } from "../hie/get-hie-initiator";
+import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
+import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import { queryAndProcessDocuments } from "./document/document-query";
-import { setCommonwellId } from "./patient-external-data";
-import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { setCommonwellIdsAndStatus, setPatientDiscoveryStatus } from "./patient-external-data";
 import {
   CQLinkStatus,
   findOrCreatePerson,
   FindOrCreatePersonResponse,
   getMatchingStrongIds,
-  getPatientData,
   PatientDataCommonwell,
 } from "./patient-shared";
+import { getCwInitiator } from "./shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -64,17 +74,17 @@ export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkSt
   return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
-type StoreIdsFunction = (params: {
+type StoreIdsAndStatusFunction = (params: {
   commonwellPatientId: string;
   personId?: string;
   status?: LinkStatus;
 }) => Promise<void>;
 
-function getStoreIdsFn(
+function getStoreIdsAndStatusFn(
   patientId: string,
   cxId: string,
   cqLinkStatus?: CQLinkStatus
-): StoreIdsFunction {
+): StoreIdsAndStatusFunction {
   return async ({
     commonwellPatientId,
     personId,
@@ -84,7 +94,7 @@ function getStoreIdsFn(
     personId?: string;
     status?: LinkStatus;
   }): Promise<void> => {
-    await setCommonwellId({
+    await setCommonwellIdsAndStatus({
       patientId,
       cxId,
       commonwellPatientId,
@@ -99,56 +109,106 @@ export async function create(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
-  patientData?: {
-    organization: Organization;
-    facility: Facility;
+  requestId?: string,
+  forceCWCreate = false
+): Promise<void> {
+  const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+
+  const cwCreateEnabled = await validateCWEnabled({
+    cxId: patient.cxId,
+    forceCW: forceCWCreate,
+    debug,
+  });
+
+  if (cwCreateEnabled) {
+    await setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "processing",
+    });
+
+    // intentionally async
+    registerAndLinkPatientInCW(patient, facilityId, getOrgIdExcludeList, debug, requestId).catch(
+      processAsyncError(createContext)
+    );
   }
+}
+
+export async function registerAndLinkPatientInCW(
+  patient: Patient,
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>,
+  debug: typeof console.log,
+  requestId?: string,
+  initiator?: HieInitiator
 ): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
+
   try {
-    const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
-
-    if (!(await isCWEnabledForCx(patient.cxId))) {
-      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return undefined;
-    }
-
-    const { organization, facility } = patientData ?? (await getPatientData(patient, facilityId));
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+    const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
+    const initiatorName = _initiator.name;
+    const initiatorOid = _initiator.oid;
+    const initiatorNpi = _initiator.npi;
 
     // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
     // when we enable it
     const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
       ? "unlinked"
       : undefined;
-    const storeIds = getStoreIdsFn(patient.id, patient.cxId, cqLinkStatus);
+    const storeIdsAndStatus = getStoreIdsAndStatusFn(patient.id, patient.cxId, cqLinkStatus);
 
-    commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-    const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
+    commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
+    const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
+    const commonwellPatient = patientToCommonwell({
+      patient,
+      orgName: initiatorName,
+      orgOID: initiatorOid,
+    });
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
       commonWell,
       queryMeta,
       commonwellPatient,
-      storeIds,
+      storeIdsAndStatus,
     });
 
-    const personId = await findOrCreatePersonAndLink({
+    const { personId, networkLinks } = await findOrCreatePersonAndLink({
       commonWell,
       queryMeta,
       commonwellPatient,
       commonwellPatientId,
       patientRefLink,
-      storeIds,
+      storeIdsAndStatus,
       getOrgIdExcludeList,
     });
 
+    if (requestId) {
+      const startedAt = patient.data.patientDiscovery?.startedAt;
+
+      analytics({
+        distinctId: patient.cxId,
+        event: EventTypes.patientDiscovery,
+        properties: {
+          hie: MedicalDataSource.COMMONWELL,
+          patientId: patient.id,
+          requestId,
+          pdLinks: networkLinks?.length ?? 0,
+          duration: elapsedTimeFromNow(startedAt),
+        },
+      });
+    }
+
+    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
+
     return { commonwellPatientId, personId };
   } catch (error) {
+    setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "failed",
+    });
+
     const msg = `Failure while creating patient @ CW`;
     console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
     capture.message(msg, {
@@ -168,23 +228,53 @@ export async function create(
 export async function update(
   patient: Patient,
   facilityId: string,
-  getOrgIdExcludeList: () => Promise<string[]>
+  getOrgIdExcludeList: () => Promise<string[]>,
+  requestId: string,
+  forceCWUpdate = false
 ): Promise<void> {
+  const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
+
+  const cwUpdateEnabled = await validateCWEnabled({
+    cxId: patient.cxId,
+    forceCW: forceCWUpdate,
+    debug,
+  });
+
+  if (cwUpdateEnabled) {
+    await setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "processing",
+    });
+
+    // intentionally async
+    updatePatientAndLinksInCw(
+      patient,
+      facilityId,
+      getOrgIdExcludeList,
+      requestId,
+      log,
+      debug
+    ).catch(processAsyncError(updateContext));
+  }
+}
+
+async function updatePatientAndLinksInCw(
+  patient: Patient,
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>,
+  requestId: string,
+  log: typeof console.log,
+  debug: typeof console.log
+) {
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
-
-    if (!(await isCWEnabledForCx(patient.cxId))) {
-      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return undefined;
-    }
-
     const updateData = await setupUpdate(patient, facilityId);
     if (!updateData) {
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      await create(patient, facilityId, getOrgIdExcludeList);
+      await create(patient, facilityId, getOrgIdExcludeList, undefined);
       return;
     }
     const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
@@ -206,7 +296,7 @@ export async function update(
         commonwellPatient,
         commonwellPatientId,
         patientRefLink,
-        storeIds: getStoreIdsFn(patient.id, patient.cxId),
+        storeIdsAndStatus: getStoreIdsAndStatusFn(patient.id, patient.cxId),
         getOrgIdExcludeList,
       });
       return;
@@ -242,7 +332,7 @@ export async function update(
           commonwellPatient,
           commonwellPatientId,
           patientRefLink,
-          storeIds: getStoreIdsFn(patient.id, patient.cxId),
+          storeIdsAndStatus: getStoreIdsAndStatusFn(patient.id, patient.cxId),
           getOrgIdExcludeList,
         });
         return;
@@ -286,7 +376,7 @@ export async function update(
       throw err;
     }
 
-    await autoUpgradeNetworkLinks(
+    const networkLinks = await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
       commonwellPatientId,
@@ -295,23 +385,33 @@ export async function update(
       getOrgIdExcludeList
     );
 
-    const scheduledDocQueryRequestId = getCWData(
-      patient.data.externalData
-    )?.scheduledDocQueryRequestId;
+    setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "completed",
+    });
 
-    if (scheduledDocQueryRequestId) {
-      const resetPatient = await resetPatientScheduledDocQueryRequestId({
-        patient,
-        source: MedicalDataSource.COMMONWELL,
-      });
+    const startedAt = patient.data.patientDiscovery?.startedAt;
 
-      await queryAndProcessDocuments({
-        patient: resetPatient,
-        requestId: scheduledDocQueryRequestId,
-        getOrgIdExcludeList,
-      });
-    }
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.patientDiscovery,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: patient.id,
+        requestId,
+        pdLinks: networkLinks?.length ?? 0,
+        duration: elapsedTimeFromNow(startedAt),
+      },
+    });
+
+    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
   } catch (error) {
+    setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "failed",
+    });
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
     capture.error(error, {
       extra: {
@@ -323,6 +423,76 @@ export async function update(
       },
     });
     throw error;
+  }
+}
+
+async function validateCWEnabled({
+  cxId,
+  forceCW,
+  debug,
+}: {
+  cxId: string;
+  forceCW: boolean;
+  debug: typeof console.log;
+}): Promise<boolean> {
+  const isSandbox = Config.isSandbox();
+
+  if (forceCW || isSandbox) {
+    debug(`CW forced, proceeding...`);
+    return true;
+  }
+
+  try {
+    const isCWEnabled = await isCommonwellEnabled();
+    const isEnabledForCx = await isCWEnabledForCx(cxId);
+
+    const cwIsDisabled = !isCWEnabled;
+    const cwIsDisabledForCx = !isEnabledForCx;
+
+    if (cwIsDisabledForCx) {
+      debug(`CW disabled for cx ${cxId}, skipping...`);
+      return false;
+    } else if (cwIsDisabled) {
+      debug(`CW not enabled, skipping...`);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    const msg = `Error validating CW create enabled`;
+    debug(`${msg} - ${errorToString(error)}`);
+    capture.error(msg, {
+      extra: {
+        cxId,
+        error,
+      },
+    });
+
+    return false;
+  }
+}
+
+async function queryDocsIfScheduled(
+  patient: Patient,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<void> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledDocQueryRequestId = getCWData(
+    updatedPatient.data.externalData
+  )?.scheduledDocQueryRequestId;
+
+  if (scheduledDocQueryRequestId) {
+    const resetPatient = await resetPatientScheduledDocQueryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    await queryAndProcessDocuments({
+      patient: resetPatient,
+      requestId: scheduledDocQueryRequestId,
+      getOrgIdExcludeList,
+    });
   }
 }
 
@@ -365,7 +535,9 @@ export async function linkPatientToCW(
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<void> {
-  await update(patient, facilityId, getOrgIdExcludeList);
+  const requestId = uuidv7();
+
+  await update(patient, facilityId, getOrgIdExcludeList, requestId);
 }
 
 async function setupUpdate(
@@ -390,14 +562,17 @@ async function setupUpdate(
 
   if (!commonwellPatientId || !personId) return undefined;
 
-  const { organization, facility } = await getPatientData(patient, facilityId);
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
+  const initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = initiator.name;
+  const initiatorOid = initiator.oid;
 
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
-  const commonwellPatient = patientToCommonwell({ patient, orgName, orgOID });
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiator.npi });
+  const commonwellPatient = patientToCommonwell({
+    patient,
+    orgName: initiatorName,
+    orgOID: initiatorOid,
+  });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
 
   return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
 }
@@ -408,7 +583,7 @@ async function findOrCreatePersonAndLink({
   commonwellPatient,
   commonwellPatientId,
   patientRefLink,
-  storeIds,
+  storeIdsAndStatus,
   getOrgIdExcludeList,
 }: {
   commonWell: CommonWellAPI;
@@ -416,9 +591,9 @@ async function findOrCreatePersonAndLink({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
   patientRefLink: string;
-  storeIds: StoreIdsFunction;
+  storeIdsAndStatus: StoreIdsAndStatusFunction;
   getOrgIdExcludeList: () => Promise<string[]>;
-}): Promise<string> {
+}): Promise<{ personId: string; networkLinks: NetworkLink[] | undefined }> {
   const { log, debug } = Util.out(
     `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
   );
@@ -432,13 +607,13 @@ async function findOrCreatePersonAndLink({
     });
   } catch (err) {
     log(`Error calling findOrCreatePerson @ CW`);
-    await storeIds({ commonwellPatientId, status: "failed" });
+    await storeIdsAndStatus({ commonwellPatientId, status: "failed" });
     throw err;
   }
   if (!findOrCreateResponse) throw new MetriportError("Programming error: unexpected state");
   const { personId, person } = findOrCreateResponse;
 
-  await storeIds({ commonwellPatientId, personId, status: "completed" });
+  await storeIdsAndStatus({ commonwellPatientId, personId, status: "completed" });
 
   // Link Person to Patient
   try {
@@ -457,7 +632,7 @@ async function findOrCreatePersonAndLink({
     throw err;
   }
 
-  await autoUpgradeNetworkLinks(
+  const networkLinks = await autoUpgradeNetworkLinks(
     commonWell,
     queryMeta,
     commonwellPatientId,
@@ -466,19 +641,19 @@ async function findOrCreatePersonAndLink({
     getOrgIdExcludeList
   );
 
-  return personId;
+  return { personId, networkLinks };
 }
 
 async function registerPatient({
   commonWell,
   queryMeta,
   commonwellPatient,
-  storeIds,
+  storeIdsAndStatus,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
-  storeIds: StoreIdsFunction;
+  storeIdsAndStatus: StoreIdsAndStatusFunction;
 }): Promise<{ commonwellPatientId: string; patientRefLink: string }> {
   const fnName = `CW registerPatient`;
   const debug = Util.debug(fnName);
@@ -497,7 +672,7 @@ async function registerPatient({
     throw new Error(msg);
   }
 
-  await storeIds({ commonwellPatientId });
+  await storeIdsAndStatus({ commonwellPatientId });
 
   const patientRefLink = respPatient._links?.self?.href;
   if (!patientRefLink) {
@@ -506,7 +681,7 @@ async function registerPatient({
       `ERR - ${msg} - Patient created @ CW but not the Person - ` +
         `Patient @ Commonwell: ${JSON.stringify(respPatient)}`
     );
-    await storeIds({ commonwellPatientId, status: "failed" });
+    await storeIdsAndStatus({ commonwellPatientId, status: "failed" });
     throw new Error(msg);
   }
   return { commonwellPatientId, patientRefLink };

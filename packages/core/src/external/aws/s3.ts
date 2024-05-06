@@ -9,11 +9,13 @@ import * as AWS from "aws-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import * as stream from "stream";
+import * as util from "util";
 import { capture } from "../../util/notifications";
 
 dayjs.extend(duration);
 
 const DEFAULT_SIGNED_URL_DURATION = dayjs.duration({ minutes: 3 }).asSeconds();
+const pipeline = util.promisify(stream.pipeline);
 
 /**
  * @deprecated Use S3Utils instead, adding functions as needed
@@ -60,9 +62,22 @@ export class S3Utils {
     return this._s3Client;
   }
 
+  async getFileContentsIntoStream(
+    s3BucketName: string,
+    s3FileName: string,
+    writeStream: stream.Writable
+  ): Promise<void> {
+    const readStream = this.getReadStream(s3BucketName, s3FileName);
+    return await pipeline(readStream, writeStream);
+  }
+
   getFileContentsAsString(s3BucketName: string, s3FileName: string): Promise<string> {
-    const stream = this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
+    const stream = this.getReadStream(s3BucketName, s3FileName);
     return this.streamToString(stream);
+  }
+
+  private getReadStream(s3BucketName: string, s3FileName: string): stream.Readable {
+    return this.s3.getObject({ Bucket: s3BucketName, Key: s3FileName }).createReadStream();
   }
 
   streamToString(stream: stream.Readable): Promise<string> {
@@ -202,30 +217,70 @@ export class S3Utils {
 
     return newKey;
   }
-  async uploadFile(
-    bucket: string,
-    key: string,
-    file: Buffer
-  ): Promise<AWS.S3.ManagedUpload.SendData> {
+  async uploadFile({
+    bucket,
+    key,
+    file,
+    contentType,
+  }: {
+    bucket: string;
+    key: string;
+    file: Buffer;
+    contentType?: string;
+  }): Promise<AWS.S3.ManagedUpload.SendData> {
     return new Promise((resolve, reject) => {
-      this._s3.upload(
-        {
-          Bucket: bucket,
-          Key: key,
-          Body: file,
-        },
-        (err, data) => {
-          if (err) {
-            console.error("Error during upload:", err);
-            reject(err);
-          } else {
-            console.log("Upload successful");
-            resolve(data);
-          }
+      const uploadParams: AWS.S3.PutObjectRequest = {
+        Bucket: bucket,
+        Key: key,
+        Body: file,
+      };
+
+      if (contentType) {
+        uploadParams.ContentType = contentType;
+      }
+
+      this._s3.upload(uploadParams, (err, data) => {
+        if (err) {
+          console.error("Error during upload:", err);
+          reject(err);
+        } else {
+          console.log("Upload successful");
+          resolve(data);
         }
-      );
+      });
     });
   }
+
+  async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const params = {
+        Bucket: bucket,
+        Key: key,
+      };
+      this._s3.getObject(params, (err, data) => {
+        if (err) {
+          console.error("Error during download:", err);
+          reject(err);
+        } else {
+          resolve(data.Body as Buffer);
+        }
+      });
+    });
+  }
+
+  async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
+    const deleteParams = {
+      Bucket: bucket,
+      Key: key,
+    };
+    this._s3.deleteObject(deleteParams, err => {
+      if (err) {
+        console.error("Error during file deletion:", err);
+        throw err;
+      }
+    });
+  }
+
   async retrieveDocumentIdsFromS3(
     cxId: string,
     patientId: string,
@@ -264,5 +319,10 @@ export class S3Utils {
       console.error(`Error retrieving document IDs from S3: ${error}`);
       return undefined;
     }
+  }
+
+  async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
+    const res = await this._s3.listObjectsV2({ Bucket: bucket, Prefix: prefix }).promise();
+    return res.Contents;
   }
 }

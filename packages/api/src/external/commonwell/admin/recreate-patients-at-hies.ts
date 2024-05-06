@@ -1,15 +1,15 @@
-import { organizationQueryMeta } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { CommonWellAPI, organizationQueryMeta } from "@metriport/commonwell-sdk";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
-import { capture } from "../../../shared/notifications";
-import { Util } from "../../../shared/util";
 import { isCWEnabledForCx } from "../../aws/appConfig";
+import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { create, getCWData } from "../patient";
-import { getPatientData } from "../patient-shared";
-import { getCqOrgIdsToDenyOnCw } from "../../../command/medical/hie";
+import { getCWData, registerAndLinkPatientInCW } from "../patient";
+import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -29,7 +29,7 @@ export type RecreateResult = {
  * This should never be called within the application flow, this is an admin-only command.
  */
 export async function recreatePatientsAtCW(cxId?: string): Promise<RecreateResult> {
-  const { log } = Util.out(`recreatePatientsAtCW`);
+  const { log } = out(`recreatePatientsAtCW`);
   log(cxId ? `Querying patients of cxId ${cxId}...` : `Querying all patients...`);
 
   // TODO paginate this
@@ -63,13 +63,14 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { log } = Util.out(`recreatePatientAtCW - ${patient.id}`);
+  const { log } = out(`recreatePatientAtCW - ${patient.id}`);
 
   if (!(await isCWEnabledForCx(patient.cxId))) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
     return undefined;
   }
 
+  let commonWell: CommonWellAPI | undefined;
   try {
     const facilityId = patient.facilityIds[0];
     if (!facilityId) {
@@ -95,21 +96,20 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    // Get Org info to setup API access
-    const { organization, facility } = await getPatientData(patient, facilityId);
-    const orgName = organization.data.name;
-    const orgOID = organization.oid;
-    const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-
-    const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-    const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+    const initiator = await getCwInitiator(patient, facilityId);
+    commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+    const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await create(patient, facilityId, getOrgIdExcludeList, {
-      organization,
-      facility,
-    });
+    const cwIds = await registerAndLinkPatientInCW(
+      patient,
+      facilityId,
+      getOrgIdExcludeList,
+      log,
+      undefined,
+      initiator
+    );
 
     if (!cwIds) {
       log(`Missing CW IDs while recreating patient at CW`);
@@ -155,9 +155,13 @@ export async function recreatePatientAtCW(
   } catch (error) {
     const msg = `Error while recreating patient at CW`;
     log(`${msg}. Error: ${error}`);
-    capture.message(msg, {
-      extra: { patientId: patient.id, cxId: patient.cxId, error },
-      level: "error",
+    capture.error(msg, {
+      extra: {
+        patientId: patient.id,
+        cxId: patient.cxId,
+        cwReference: commonWell?.lastReferenceHeader,
+        error,
+      },
     });
     return undefined;
   }

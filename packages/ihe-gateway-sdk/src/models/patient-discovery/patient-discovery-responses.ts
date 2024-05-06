@@ -1,9 +1,9 @@
 import * as z from "zod";
 import {
-  XCPDGatewaySchema,
   baseErrorResponseSchema,
   baseResponseSchema,
   externalGatewayPatientSchema,
+  XCPDGatewaySchema,
 } from "../shared";
 
 export const inboundPatientResourceSchema = z.object({
@@ -15,7 +15,7 @@ export const inboundPatientResourceSchema = z.object({
       })
     )
     .optional(),
-  gender: z.enum(["male", "female", "unknown"]).optional(),
+  gender: z.enum(["male", "female", "undifferentiated"]).optional(),
   birthDate: z.string().optional(),
   address: z.array(
     z.object({
@@ -64,18 +64,27 @@ export type InboundPatientDiscoveryResp = z.infer<typeof inboundPatientDiscovery
 // FROM EXTERNAL GATEWAY
 const outboundPatientDiscoveryRespDefaultSchema = baseResponseSchema.extend({
   gateway: XCPDGatewaySchema,
-  patientId: z.string(),
 });
 
-const outboundPatientDiscoveryRespSuccessfulSchema = outboundPatientDiscoveryRespDefaultSchema
-  .merge(patientDiscoveryRespSuccessfulDefaultSchema)
-  .extend({
-    patientResource: inboundPatientResourceSchema.optional(),
+export const outboundPatientDiscoveryRespSuccessfulSchema =
+  outboundPatientDiscoveryRespDefaultSchema
+    .merge(patientDiscoveryRespSuccessfulDefaultSchema)
+    .extend({
+      patientResource: inboundPatientResourceSchema.optional(),
+    });
+
+export const outboundPatientDiscoveryRespFaultSchema =
+  outboundPatientDiscoveryRespDefaultSchema.extend({
+    patientMatch: z.literal(false).or(z.literal(null)),
   });
 
-const outboundPatientDiscoveryRespFaultSchema = outboundPatientDiscoveryRespDefaultSchema.extend({
-  patientMatch: z.literal(false).or(z.literal(null)),
-});
+export type OutboundPatientDiscoveryRespSuccessfulSchema = z.infer<
+  typeof outboundPatientDiscoveryRespSuccessfulSchema
+>;
+
+export type OutboundPatientDiscoveryRespFaultSchema = z.infer<
+  typeof outboundPatientDiscoveryRespFaultSchema
+>;
 
 export const outboundPatientDiscoveryRespSchema = z.union([
   outboundPatientDiscoveryRespSuccessfulSchema,

@@ -1,6 +1,6 @@
+import { OrganizationData, OrganizationType } from "@metriport/core/domain/organization";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
-import { OrganizationData } from "@metriport/core/domain/organization";
 import BadRequestError from "../../../errors/bad-request";
 import { createTenantIfNotExists } from "../../../external/fhir/admin";
 import { OrganizationModel } from "../../../models/medical/organization";
@@ -34,6 +34,7 @@ export const createOrganization = async (
 
 async function createOrganizationInternal(
   orgData: OrganizationCreateCmd,
+  orgType = OrganizationType.healthcareProvider,
   attempt = 1
 ): Promise<OrganizationModel> {
   try {
@@ -44,6 +45,7 @@ async function createOrganizationInternal(
     const org = await OrganizationModel.create({
       id: uuidv7(),
       oid,
+      type: orgType,
       organizationNumber,
       cxId,
       data: { name, type, location },
@@ -63,7 +65,7 @@ async function createOrganizationInternal(
           });
         }
         await Util.sleep(50);
-        return createOrganizationInternal(orgData, ++attempt);
+        return createOrganizationInternal(orgData, orgType, ++attempt);
       }
       console.log(`${msg}, NOT RETRYING!`);
       capture.message(msg + " - NOT RETRYING", {

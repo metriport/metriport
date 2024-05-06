@@ -1,18 +1,16 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { processAsyncError } from "../../../errors";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { patientEvents } from "../../../event/medical/patient-event";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { upsertPatientToFHIRServer } from "../../../external/fhir/patient/upsert-patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { validateVersionForUpdate } from "../../../models/_default";
-import { Config } from "../../../shared/config";
 import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -37,32 +35,29 @@ export async function updatePatient(
   // validate facility exists and cx has access to it
   const facility = await getFacilityOrFail({ cxId, id: facilityId });
 
-  const result = await updatePatientWithoutHIEs(patientUpdate, emit);
+  const requestId = uuidv7();
 
-  const fhirPatient = toFHIR(result);
+  const patientUpdateWithPD: PatientUpdateCmd = {
+    ...patientUpdate,
+    patientDiscovery: { requestId, startedAt: new Date() },
+  };
+
+  const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
+
+  const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  // TODO move these to the respective "commands" files so this is fully async
-  const [commonwellEnabled, carequalityEnabled] = await Promise.all([
-    isCommonwellEnabled(),
-    isCarequalityEnabled(),
-  ]);
+  await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
 
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // Intentionally asynchronous
-    cwCommands.patient
-      .update(result, facilityId, getCqOrgIdsToDenyOnCw)
-      .catch(processAsyncError(`cw.patient.update`));
-  }
+  await cwCommands.patient.update(
+    patient,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
 
-  if (carequalityEnabled || forceCarequality) {
-    // Intentionally asynchronous
-    cqCommands.patient
-      .discover(result, facility.data.npi)
-      .catch(processAsyncError(`cq.patient.update`));
-  }
-
-  return result;
+  return patient;
 }
 
 export async function updatePatientWithoutHIEs(
@@ -76,7 +71,7 @@ export async function updatePatientWithoutHIEs(
 
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientUpdate.address,
-    patient: patientUpdate,
+    cxId: patientUpdate.cxId,
     reportRelevance: true,
   });
   if (addressWithCoordinates) patientUpdate.address = addressWithCoordinates;
@@ -102,6 +97,7 @@ export async function updatePatientWithoutHIEs(
           personalIdentifiers: sanitized.personalIdentifiers,
           address: patientUpdate.address,
           contact: sanitized.contact,
+          patientDiscovery: sanitized.patientDiscovery,
         },
         externalId: sanitized.externalId,
       },

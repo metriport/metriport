@@ -9,3 +9,4 @@ export { validateNPI } from "./common/validate-npi";
 export { MetriportOrganization } from "./common/metriport-organization";
 export { limitStringLength } from "./common/string";
 export { errorToString } from "./common/error";
+export { metriportCompanyDetails } from "./domain/metriport";

@@ -1,4 +1,4 @@
-import { Organization } from "@metriport/core/domain/organization";
+import { Patient } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import {
   OutboundDocumentQueryResp,
@@ -6,7 +6,8 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import { chunk } from "lodash";
-import { createPurposeOfUse, isGWValid } from "../shared";
+import { HieInitiator } from "../../hie/get-hie-initiator";
+import { createPurposeOfUse, getSystemUserName, isGWValid } from "../shared";
 import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
@@ -15,21 +16,19 @@ export const maxDocRefsPerDocRetrievalRequest = 5;
 
 export function createOutboundDocumentRetrievalReqs({
   requestId,
-  cxId,
-  organization,
+  patient,
+  initiator,
   documentReferences,
   outboundDocumentQueryResps,
 }: {
   requestId: string;
-  cxId: string;
-  organization: Organization;
+  patient: Patient;
+  initiator: HieInitiator;
   documentReferences: DocumentReferenceWithMetriportId[];
   outboundDocumentQueryResps: OutboundDocumentQueryResp[];
 }): OutboundDocumentRetrievalReq[] {
-  const orgOid = organization.oid;
-  const orgName = organization.data.name;
-  const user = `${orgName} System User`;
   const now = dayjs().toISOString();
+  const user = getSystemUserName(initiator.orgName);
 
   const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
     documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
@@ -47,8 +46,8 @@ export function createOutboundDocumentRetrievalReqs({
 
       const baseRequest: Omit<OutboundDocumentRetrievalReq, "documentReference"> = {
         id: requestId,
-        cxId: cxId,
-        patientId: patientId,
+        cxId: patient.cxId,
+        patientId: patient.id,
         timestamp: now,
         samlAttributes: {
           subjectId: user,
@@ -56,9 +55,9 @@ export function createOutboundDocumentRetrievalReqs({
             code: SUBJECT_ROLE_CODE,
             display: SUBJECT_ROLE_DISPLAY,
           },
-          organization: orgName,
-          organizationId: orgOid,
-          homeCommunityId: orgOid,
+          organization: initiator.name,
+          organizationId: initiator.oid,
+          homeCommunityId: initiator.oid,
           purposeOfUse: createPurposeOfUse(),
         },
         gateway: {
@@ -89,7 +88,7 @@ export function createOutboundDocumentRetrievalReqs({
       extra: {
         requestId,
         patientIds: patientsWithInvalidGW,
-        cxId,
+        cxId: patient.cxId,
       },
     });
   }

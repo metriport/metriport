@@ -1,6 +1,9 @@
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
-import { consolidationConversionType } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import {
+  consolidationConversionType,
+  mrFormat,
+} from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { convertFhirBundleToCda } from "@metriport/core/fhir-to-cda/fhir-to-cda";
 import { cdaDocumentUploaderHandler } from "@metriport/core/shareback/cda-uploader";
@@ -35,6 +38,7 @@ import { PatientModel as Patient } from "../../models/medical/patient";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import {
   asyncHandler,
   getCxIdOrFail,
@@ -67,6 +71,7 @@ const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
@@ -110,6 +115,7 @@ router.post(
  */
 router.put(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -153,6 +159,7 @@ router.put(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFromParamsOrFail("id", req);
@@ -173,6 +180,7 @@ router.get(
  */
 router.delete(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
@@ -201,6 +209,7 @@ router.delete(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFrom("query").optional("facilityId", req);
@@ -228,6 +237,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -259,6 +269,7 @@ router.get(
  */
 router.get(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -273,6 +284,7 @@ router.get(
 );
 
 const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
+const medicalRecordFormatSchema = z.enum(mrFormat);
 
 /** ---------------------------------------------------------------------------
  * POST /patient/:id/consolidated/query
@@ -285,13 +297,15 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.conversionType Optional to indicate how the medical record should be rendered.
- *        Accepts "pdf" or "html". Defaults to no conversion.
+ * @param req.query.docType Optional to indicate the file format you get the document back in.
+ *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
+ *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
  * @return status of querying for the Patient's consolidated data.
  */
 router.post(
   "/:id/consolidated/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -331,11 +345,12 @@ router.post(
  */
 router.get(
   "/:id/medical-record",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const type = getFrom("query").orFail("conversionType", req);
-    const conversionType = consolidationConversionTypeSchema.parse(type);
+    const conversionType = medicalRecordFormatSchema.parse(type);
 
     const url = await getMedicalRecordSummary({ patientId, cxId, conversionType });
     if (!url) throw new NotFoundError("Medical record summary not found");
@@ -354,6 +369,7 @@ router.get(
  */
 router.get(
   "/:id/medical-record-status",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
@@ -366,7 +382,7 @@ router.get(
  * POST /patient/:id/consolidated
  * @deprecated use the PUT version of this endpoint
  */
-router.post("/:id/consolidated", asyncHandler(putConsolidated));
+router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 /** ---------------------------------------------------------------------------
  * PUT /patient/:id/consolidated
  *
@@ -377,7 +393,7 @@ router.post("/:id/consolidated", asyncHandler(putConsolidated));
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
  */
-router.put("/:id/consolidated", asyncHandler(putConsolidated));
+router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];
@@ -452,6 +468,7 @@ async function putConsolidated(req: Request, res: Response) {
  */
 router.get(
   "/:id/consolidated/count",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);

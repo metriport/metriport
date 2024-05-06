@@ -13,7 +13,7 @@ import stringify from "json-stringify-safe";
 import { chunk } from "lodash";
 import { z } from "zod";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../command/medical/hie";
+import { getCqOrgIdsToDenyOnCw } from "../../external/hie/cross-hie-ids";
 import { getConsolidated } from "../../command/medical/patient/consolidated-get";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
@@ -46,6 +46,7 @@ import { cqLinkStatus } from "../../external/commonwell/patient-shared";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import {
   nonEmptyStringListFromQuerySchema,
   stringIntegerSchema,
@@ -81,6 +82,7 @@ const patientLoader = new PatientLoaderLocal();
  */
 router.get(
   "/ids",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityId = getFrom("query").optional("facilityId", req);
@@ -101,6 +103,7 @@ router.get(
  */
 router.get(
   "/states",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
@@ -126,6 +129,7 @@ const updateAllSchema = z.object({
  */
 router.post(
   "/update-all/commonwell",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
@@ -151,6 +155,7 @@ router.post(
  */
 router.post(
   "/update-all/carequality",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const { patientIds } = updateAllSchema.parse(req.body);
@@ -172,6 +177,7 @@ router.post(
  */
 router.delete(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);
@@ -202,6 +208,7 @@ router.delete(
  */
 router.post(
   "/:patientId/link/:source",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
@@ -239,6 +246,7 @@ router.post(
  */
 router.delete(
   "/:patientId/link/:source",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
@@ -267,6 +275,7 @@ router.delete(
  */
 router.get(
   "/:patientId/link",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFromParamsOrFail("patientId", req);
@@ -301,6 +310,7 @@ router.get(
  */
 router.get(
   "/duplicates",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const result = await findDuplicatedPersons(cxId);
@@ -339,6 +349,7 @@ const patchDuplicatesSchema = z.record(
  */
 router.patch(
   "/duplicates",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const unenrollByDemographics = stringToBoolean(
       getFrom("query").optional("unenrollByDemographics", req)
@@ -388,6 +399,7 @@ router.patch(
  */
 router.post(
   "/recreate-at-hies",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").optional();
     const resultCW = await recreatePatientsAtCW(cxId);
@@ -419,6 +431,7 @@ const initEnhancedCoverageSchema = z.object({
  */
 router.post(
   "/enhance-coverage",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { cxId, patientIds, fromOrgPos } = initEnhancedCoverageSchema.parse(req.query);
 
@@ -475,6 +488,7 @@ const cqLinkStatusSchema = z.enum(cqLinkStatus);
  */
 router.post(
   "/enhance-coverage/set-cq-link-statuses",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArrayOrFail("patientIds", req);
@@ -502,6 +516,7 @@ const updateECAfterIncludeListSchema = z.object({
  */
 router.post(
   "/enhance-coverage/after-include-list",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { ecId, cxId, patientIds, cqOrgIds } = updateECAfterIncludeListSchema.parse(req.query);
     if (patientIds && !patientIds.length) throw new BadRequestError(`Patient IDs are required`);
@@ -533,6 +548,7 @@ const updateECAfterDocQuerySchema = z.object({
  */
 router.post(
   "/enhance-coverage/after-doc-query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const { ecId, cxId, patientId, docsFound } = updateECAfterDocQuerySchema.parse(req.query);
     if (docsFound < 0) {
@@ -572,6 +588,7 @@ const consolidationConversionTypeSchema = z.enum(consolidationConversionType);
  */
 router.get(
   "/consolidated",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
@@ -607,6 +624,7 @@ router.get(
  */
 router.post(
   "/trigger-update",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patients = await getPatients({ cxId });
@@ -661,6 +679,7 @@ router.post(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const dob = getFrom("query").orFail("dob", req);
@@ -693,6 +712,7 @@ router.get(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const id = getFromParamsOrFail("id", req);

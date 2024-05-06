@@ -4,8 +4,10 @@ import status from "http-status";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
+import { verifyCxAccess } from "../../command/medical/facility/verify-access";
 import NotFoundError from "../../errors/not-found";
 import { getETag } from "../../shared/http";
+import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/facilityDTO";
 import { facilityCreateSchema, facilityUpdateSchema } from "./schemas/facility";
@@ -21,8 +23,11 @@ const router = Router();
  */
 router.post(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    await verifyCxAccess(cxId);
+
     const facilityData = facilityCreateSchema.parse(req.body);
 
     const facility = await createFacility({
@@ -47,18 +52,23 @@ router.post(
  */
 router.put(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
+    await verifyCxAccess(cxId);
+
     const facilityId = getFromParamsOrFail("id", req);
     const facilityData = facilityUpdateSchema.parse(req.body);
 
     const facility = await updateFacility({
-      ...facilityData,
+      data: {
+        ...facilityData,
+        tin: facilityData.tin ?? undefined,
+        active: facilityData.active ?? undefined,
+      },
       ...getETag(req),
       id: facilityId,
       cxId,
-      tin: facilityData.tin ?? undefined,
-      active: facilityData.active ?? undefined,
     });
 
     return res.status(status.OK).json(dtoFromModel(facility));
@@ -74,6 +84,7 @@ router.put(
  */
 router.get(
   "/",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
 
@@ -93,6 +104,7 @@ router.get(
  */
 router.get(
   "/:id",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromParamsOrFail("id", req);

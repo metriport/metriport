@@ -29,7 +29,7 @@ import * as secret from "aws-cdk-lib/aws-secretsmanager";
 import * as sns from "aws-cdk-lib/aws-sns";
 import { ITopic } from "aws-cdk-lib/aws-sns";
 import { Construct } from "constructs";
-import { EnvConfig } from "../config/env-config";
+import { EnvConfig, EnvConfigSandbox } from "../config/env-config";
 import { AlarmSlackBot } from "./api-stack/alarm-slack-chatbot";
 import { createScheduledAPIQuotaChecker } from "./api-stack/api-quota-checker";
 import { createAPIService } from "./api-stack/api-service";
@@ -47,10 +47,12 @@ import { EnvType } from "./env-type";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { addDBClusterPerformanceAlarms } from "./shared/rds";
 import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
-import { isProd, isSandbox, mbToBytes } from "./shared/util";
+import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -143,15 +145,14 @@ export class APIStack extends Stack {
     // Aurora Database for backend data
     //-------------------------------------------
 
-    // create database credentials
-    const dbUsername = props.config.dbUsername;
-    const dbName = props.config.dbName;
+    const dbConfig = props.config.apiDatabase;
     const dbClusterName = "api-cluster";
+    // create database credentials
     const dbCredsSecret = new secret.Secret(this, "DBCreds", {
       secretName: `DBCreds`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({
-          username: dbUsername,
+          username: dbConfig.username,
         }),
         excludePunctuation: true,
         includeSpace: false,
@@ -179,10 +180,13 @@ export class APIStack extends Stack {
         parameterGroup,
       },
       credentials: dbCreds,
-      defaultDatabaseName: dbName,
+      defaultDatabaseName: dbConfig.name,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
+      cloudwatchLogsExports: ["postgresql"],
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
     const minDBCap = this.isProd(props) ? 2 : 0.5;
     const maxDBCap = this.isProd(props) ? 16 : 2;
@@ -196,7 +200,13 @@ export class APIStack extends Stack {
         }
       },
     });
-    this.addDBClusterPerformanceAlarms(dbCluster, dbClusterName, slackNotification?.alarmAction);
+    addDBClusterPerformanceAlarms(
+      this,
+      dbCluster,
+      dbClusterName,
+      dbConfig.alarmThresholds,
+      slackNotification?.alarmAction
+    );
 
     //----------------------------------------------------------
     // DynamoDB
@@ -243,6 +253,15 @@ export class APIStack extends Stack {
       publicReadAccess: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
     });
+
+    if (!props.config.iheGateway) {
+      throw new Error("Must define IHE properties!");
+    }
+    const mtlsBucketName = s3.Bucket.fromBucketName(
+      this,
+      "TruststoreBucket",
+      props.config.iheGateway.trustStoreBucketName
+    );
 
     //-------------------------------------------
     // S3 bucket for Medical Document Uploads
@@ -301,20 +320,24 @@ export class APIStack extends Stack {
       alarmSnsAction: slackNotification?.alarmAction,
     });
 
-    const existingSandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? s3.Bucket.fromBucketName(
+    const getSandboxSeedDataBucket = (sandboxConfig: EnvConfigSandbox) => {
+      const seedBucketCfnName = "APISandboxSeedDataBucket";
+      try {
+        return s3.Bucket.fromBucketName(
           this,
-          "APISandboxSeedDataBucket",
-          props.config.sandboxSeedDataBucketName
-        )
-      : undefined;
-    const sandboxSeedDataBucket = props.config.sandboxSeedDataBucketName
-      ? existingSandboxSeedDataBucket ??
-        new s3.Bucket(this, "APISandboxSeedDataBucket", {
-          bucketName: props.config.sandboxSeedDataBucketName,
+          seedBucketCfnName,
+          sandboxConfig.sandboxSeedDataBucketName
+        );
+      } catch (error) {
+        return new s3.Bucket(this, seedBucketCfnName, {
+          bucketName: sandboxConfig.sandboxSeedDataBucketName,
           publicReadAccess: false,
           encryption: s3.BucketEncryption.S3_MANAGED,
-        })
+        });
+      }
+    };
+    const sandboxSeedDataBucket = isSandbox(props.config)
+      ? getSandboxSeedDataBucket(props.config)
       : undefined;
 
     const fhirServerQueue = fhirServerConnector.createConnector({
@@ -396,6 +419,7 @@ export class APIStack extends Stack {
           appId: appConfigAppId,
           configId: appConfigConfigId,
         },
+        ...props.config.fhirToMedicalLambda,
       });
     }
 
@@ -425,6 +449,7 @@ export class APIStack extends Stack {
       secrets,
       vpc: this.vpc,
       dbCredsSecret,
+      dbReadReplicaEndpoint: dbCluster.clusterReadEndpoint,
       dynamoDBTokenTable,
       alarmAction: slackNotification?.alarmAction,
       dnsZones,
@@ -448,6 +473,22 @@ export class APIStack extends Stack {
         configId: appConfigConfigId,
       },
       cookieStore,
+    });
+    new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
+      lambdaLayers,
+      vpc: this.vpc,
+      apiService: apiService,
+      secrets,
+      cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
+      cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
+      cqOrgCertificateIntermediate:
+        props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+      cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+      cqTrustBundleBucket: mtlsBucketName,
+      medicalDocumentsBucket: medicalDocumentsBucket,
+      apiURL: apiService.loadBalancer.loadBalancerDnsName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
     });
 
     // Access grant for Aurora DB
@@ -1394,6 +1435,7 @@ export class APIStack extends Stack {
   }
 
   private setupFhirToMedicalRecordLambda(ownProps: {
+    nodeRuntimeArn: string;
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
@@ -1406,6 +1448,7 @@ export class APIStack extends Stack {
     };
   }): Lambda {
     const {
+      nodeRuntimeArn,
       lambdaLayers,
       vpc,
       sentryDsn,
@@ -1422,6 +1465,8 @@ export class APIStack extends Stack {
       stack: this,
       name: "FhirToMedicalRecord",
       runtime: lambda.Runtime.NODEJS_16_X,
+      // TODO https://github.com/metriport/metriport-internal/issues/1672
+      runtimeManagementMode: lambda.RuntimeManagementMode.manual(nodeRuntimeArn),
       entry: "fhir-to-medical-record",
       envType,
       envVars: {
@@ -1663,79 +1708,6 @@ export class APIStack extends Stack {
       authorizationScopes: oauthScopes.map(s => s.scopeName),
     });
     return oauthResource;
-  }
-
-  private addDBClusterPerformanceAlarms(
-    dbCluster: rds.DatabaseCluster,
-    dbClusterName: string,
-    alarmAction?: SnsAction
-  ) {
-    const createAlarm = ({
-      name,
-      metric,
-      threshold,
-      evaluationPeriods,
-      comparisonOperator,
-      treatMissingData,
-    }: {
-      name: string;
-      metric: cloudwatch.Metric;
-      threshold: number;
-      evaluationPeriods: number;
-      comparisonOperator?: cloudwatch.ComparisonOperator;
-      treatMissingData?: cloudwatch.TreatMissingData;
-    }) => {
-      const alarm = metric.createAlarm(this, `${dbClusterName}${name}`, {
-        threshold,
-        evaluationPeriods,
-        comparisonOperator,
-        treatMissingData,
-      });
-      alarmAction && alarm.addAlarmAction(alarmAction);
-      alarmAction && alarm.addOkAction(alarmAction);
-      return alarm;
-    };
-
-    createAlarm({
-      metric: dbCluster.metricFreeableMemory(),
-      name: "FreeableMemoryAlarm",
-      threshold: mbToBytes(150),
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricCPUUtilization(),
-      name: "CPUUtilizationAlarm",
-      threshold: 90, // percentage
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricVolumeReadIOPs(),
-      name: "VolumeReadIOPsAlarm",
-      threshold: 300_000, // IOPS
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricVolumeWriteIOPs(),
-      name: "VolumeWriteIOPsAlarm",
-      threshold: 60_000, // IOPS
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-
-    createAlarm({
-      metric: dbCluster.metricACUUtilization(),
-      name: "ACUUtilizationAlarm",
-      threshold: 80, // pct
-      evaluationPeriods: 1,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
   }
 
   private addDynamoPerformanceAlarms(

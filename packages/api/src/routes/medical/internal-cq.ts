@@ -1,7 +1,7 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import NotFoundError from "@metriport/core/util/error/not-found";
 import { capture } from "@metriport/core/util/notifications";
-import { initDBPool } from "@metriport/core/util/sequelize";
+import { initDbPool } from "@metriport/core/util/sequelize";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
   isSuccessfulOutboundDocQueryResponse,
@@ -46,11 +46,12 @@ import { processPostRespOutboundPatientDiscoveryResps } from "../../external/car
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
+import { requestLogger } from "../helpers/request-logger";
 
 dayjs.extend(duration);
 const router = Router();
 const upload = multer();
-const sequelize = initDBPool(Config.getDBCreds());
+const sequelize = initDbPool(Config.getDBCreds());
 
 /**
  * POST /internal/carequality/directory/rebuild
@@ -59,6 +60,7 @@ const sequelize = initDBPool(Config.getDBCreds());
  */
 router.post(
   "/directory/rebuild",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     await rebuildCQDirectory();
@@ -117,6 +119,7 @@ router.post(
  */
 router.get(
   "/directory/organization/:oid",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     if (Config.isSandbox()) return res.sendStatus(httpStatus.NOT_IMPLEMENTED);
     const cq = makeCarequalityManagementAPI();
@@ -147,6 +150,7 @@ router.get(
  */
 router.post(
   "/directory/organization",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
     const orgDetails = cqOrgDetailsSchema.parse(body);
@@ -168,6 +172,7 @@ router.post(
  */
 router.get(
   "/directory/nearby-organizations",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
@@ -196,6 +201,7 @@ router.get(
  */
 router.post(
   "/patient-discovery/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundPatientDiscoveryRespSchema.parse(req.body);
 
@@ -206,6 +212,8 @@ router.post(
     }
 
     const status = getPDResultStatus({ patientMatch: response.patientMatch });
+
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
 
     await createOutboundPatientDiscoveryResp({
       id: uuidv7(),
@@ -234,6 +242,7 @@ router.post(
  */
 router.post(
   "/patient-discovery/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundPatientDiscoveryRespSchema
     processOutboundPatientDiscoveryResps(req.body);
@@ -249,6 +258,7 @@ router.post(
  */
 router.post(
   "/document-query/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentQueryRespSchema.parse(req.body);
 
@@ -265,6 +275,8 @@ router.post(
         docRefLength: response.documentReference?.length,
       });
     }
+
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
 
     await createOutboundDocumentQueryResp({
       id: uuidv7(),
@@ -285,6 +297,7 @@ router.post(
  */
 router.post(
   "/document-query/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentQueryRespSchema
     processOutboundDocumentQueryResps(req.body);
@@ -300,6 +313,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/response",
+  // no requestLogger here because we get too many requests
   asyncHandler(async (req: Request, res: Response) => {
     const response = outboundDocumentRetrievalRespSchema.parse(req.body);
 
@@ -316,6 +330,8 @@ router.post(
         docRefLength: response.documentReference?.length,
       });
     }
+
+    response.duration = dayjs(response.responseTimestamp).diff(response.requestTimestamp);
 
     await createOutboundDocumentRetrievalResp({
       id: uuidv7(),
@@ -336,6 +352,7 @@ router.post(
  */
 router.post(
   "/document-retrieval/results",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     // TODO validate the request with the Zod schema, its mostly based on outboundDocumentRetrievalRespSchema
     processOutboundDocumentRetrievalResps(req.body);

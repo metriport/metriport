@@ -52,9 +52,10 @@ export async function setDocQueryProgress({
       transaction,
     });
 
-    // Set the doc query progress for the given hie
+    const existingExternalData = existingPatient.data.externalData ?? {};
+
     const externalData = setHIEDocProgress(
-      existingPatient,
+      existingExternalData,
       downloadProgress,
       convertProgress,
       source,
@@ -70,7 +71,7 @@ export async function setDocQueryProgress({
     );
 
     const updatedPatient = {
-      ...existingPatient,
+      ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
         externalData,
@@ -87,7 +88,7 @@ export async function setDocQueryProgress({
   });
 
   await processDocQueryProgressWebhook({
-    patient: result.dataValues,
+    patient: result,
     documentQueryProgress: result.data.documentQueryProgress,
     requestId,
   });
@@ -131,15 +132,13 @@ export function aggregateAndSetHIEProgresses(
 }
 
 export function setHIEDocProgress(
-  patient: PatientModel,
+  externalData: PatientExternalData,
   downloadProgress: Progress | undefined,
   convertProgress: Progress | undefined,
   source: MedicalDataSource,
   convertibleDownloadErrors?: number,
   increaseCountConvertible?: number
 ): PatientExternalData {
-  const externalData = patient.data.externalData ?? {};
-
   const sourceData = externalData[source];
 
   const docQueryProgress = aggregateDocQueryProgress(
@@ -208,13 +207,14 @@ export function aggregateDocProgress(
   return tallyResults;
 }
 
-function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
+export function aggregateStatus(docQueryProgress: DocumentQueryStatus[]): DocumentQueryStatus {
   const hasProcessing = docQueryProgress.some(status => status === "processing");
   const hasFailed = docQueryProgress.some(status => status === "failed");
+  const hasCompleted = docQueryProgress.some(status => status === "completed");
 
   if (hasProcessing) return "processing";
+  if (hasCompleted) return "completed";
   if (hasFailed) return "failed";
-
   return "completed";
 }
 

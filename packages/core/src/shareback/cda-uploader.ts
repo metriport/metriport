@@ -24,7 +24,11 @@ export async function cdaDocumentUploaderHandler(
 
   // Make a copy of the file to the general medical documents bucket
   try {
-    await s3Utils.uploadFile(destinationBucket, `${destinationKey}.xml`, Buffer.from(document));
+    await s3Utils.uploadFile({
+      bucket: destinationBucket,
+      key: `${destinationKey}.xml`,
+      file: Buffer.from(document),
+    });
     console.log(
       `Successfully copied the uploaded file to ${destinationBucket} with key ${destinationKey}`
     );

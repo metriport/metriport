@@ -1,13 +1,10 @@
 import { Patient, PatientCreate, PatientData } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import { processAsyncError } from "@metriport/core/util/error/shared";
-import { isCommonwellEnabled } from "../../../external/aws/appConfig";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
-import { Config } from "../../../shared/config";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../hie";
+import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
@@ -35,35 +32,43 @@ export const createPatient = async (
   if (patientExists) return patientExists;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
+  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
     facilityIds: [facilityId],
     externalId,
-    data: { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact },
+    data: {
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth,
+      personalIdentifiers,
+      address,
+      contact,
+      patientDiscovery: { requestId, startedAt: new Date() },
+    },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
-    patient: patientCreate,
+    cxId: patientCreate.cxId,
     reportRelevance: true,
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  // TODO #1661: move these to the respective "commands" files so this is fully async
-  const [commonwellEnabled] = await Promise.all([isCommonwellEnabled()]);
+  await cwCommands.patient.create(
+    newPatient,
+    facilityId,
+    getCqOrgIdsToDenyOnCw,
+    requestId,
+    forceCommonwell
+  );
 
-  if (commonwellEnabled || forceCommonwell || Config.isSandbox()) {
-    // Intentionally asynchronous
-    cwCommands.patient
-      .create(newPatient, facilityId, getCqOrgIdsToDenyOnCw)
-      .catch(processAsyncError(`cw.patient.create`));
-  }
-
-  await cqCommands.patient.discover(newPatient, facility.data.npi, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
 
   return newPatient;
 };

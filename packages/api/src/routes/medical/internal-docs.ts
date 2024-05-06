@@ -18,10 +18,7 @@ import {
   updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
-import {
-  queryDocumentsAcrossHIEs,
-  updateConversionProgress,
-} from "../../command/medical/document/document-query";
+import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import {
   MAPIWebhookStatus,
@@ -33,17 +30,17 @@ import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
 import { parseJobId } from "../../external/fhir/connector/connector";
-import { tallyDocQueryProgress } from "../../external/hie/tally-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
+import { requestLogger } from "../helpers/request-logger";
+import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 
 const router = Router();
 const upload = multer();
@@ -81,6 +78,7 @@ const requestIdEmptyOverride = "empty-override";
  */
 router.post(
   "/re-convert",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
@@ -129,6 +127,7 @@ const convertResultSchema = z.enum(convertResult);
  */
 router.post(
   "/conversion-status",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const patientId = getFrom("query").orFail("patientId", req);
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
@@ -137,51 +136,22 @@ router.post(
     const details = getFrom("query").optional("details", req);
     const jobId = getFrom("query").optional("jobId", req);
     const convertResult = convertResultSchema.parse(status);
-    const { log } = Util.out(`Doc conversion status - patient ${patientId}, job ${jobId}`);
 
     // keeping the old logic for now, but we should avoid having these optional parameters that can
     // lead to empty string or `undefined` being used as IDs
     const decomposed = jobId ? parseJobId(jobId) : { requestId: "", documentId: "" };
     const requestId = decomposed?.requestId ?? requestIdEmptyOverride;
     const docId = decomposed?.documentId ?? "";
-    const hasSource = isMedicalDataSource(source);
 
-    log(
-      `Converted document ${docId} with status ${convertResult}, source: ${source}, ` +
-        `details: ${details}, result: ${JSON.stringify(convertResult)}`
-    );
-
-    const patient = await getPatientOrFail({ id: patientId, cxId });
-    const docQueryProgress = patient.data.documentQueryProgress;
-    log(`Status pre-update: ${JSON.stringify(docQueryProgress)}`);
-
-    if (hasSource) {
-      tallyDocQueryProgress({
-        patient: patient,
-        type: "convert",
-        progress: {
-          ...(status === "success" ? { successful: 1 } : { errors: 1 }),
-        },
-        requestId,
-        source,
-      });
-    } else {
-      const expectedPatient = await updateConversionProgress({
-        patient: { id: patientId, cxId },
-        convertResult,
-      });
-
-      const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
-      if (conversionStatus === "completed") {
-        processPatientDocumentRequest(
-          cxId,
-          patientId,
-          "medical.document-conversion",
-          MAPIWebhookStatus.completed,
-          ""
-        );
-      }
-    }
+    await calculateDocumentConversionStatus({
+      patientId,
+      cxId,
+      requestId,
+      docId,
+      source,
+      convertResult,
+      details,
+    });
 
     return res.sendStatus(httpStatus.OK);
   })
@@ -192,6 +162,7 @@ router.post(
  */
 router.post(
   "/override-progress",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getFrom("query").orFail("patientId", req);
@@ -234,6 +205,7 @@ router.post(
  */
 router.post(
   "/check-doc-queries",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const patientIds = getFromQueryAsArray("patientIds", req) ?? [];
     checkDocumentQueries(patientIds);
@@ -274,6 +246,7 @@ const uploadDocSchema = z.object({
 router.post(
   "/upload",
   upload.single("file"),
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
@@ -326,6 +299,7 @@ router.post(
  */
 router.post(
   "/doc-ref",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     console.log("Updating the DocRef on a CX-uploaded file...");
     const cxId = getFromQueryOrFail("cxId", req);
@@ -352,6 +326,7 @@ router.post(
  */
 router.get(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const patientId = getUUIDFrom("query", req, "patientId").orFail();
@@ -374,6 +349,7 @@ router.get(
  */
 router.post(
   "/query",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);
@@ -406,6 +382,7 @@ export default router;
  */
 router.post(
   "/triggerBulkDownloadWebhook",
+  requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getFrom("query").orFail("cxId", req);
     const patientId = getFrom("query").orFail("patientId", req);

@@ -11,6 +11,7 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import https from "https";
 import { getCxData } from "../shared/get-cx-data";
+import { getFileNameForOrg } from "../shared/folder";
 
 dayjs.extend(duration);
 
@@ -37,8 +38,7 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
-const getDirName = (orgName: string) =>
-  `./runs/MR-Summaries/${orgName?.replaceAll(" ", "-")}_${new Date().toISOString()}`;
+const getDirName = (orgName: string) => `./runs/MR-Summaries/${getFileNameForOrg(orgName)}`;
 
 async function main() {
   console.log(

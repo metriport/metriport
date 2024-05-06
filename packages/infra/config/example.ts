@@ -1,7 +1,7 @@
 import { EnvType } from "../lib/env-type";
-import { EnvConfig } from "./env-config";
+import { EnvConfigNonSandbox } from "./env-config";
 
-export const config: EnvConfig = {
+export const config: EnvConfigNonSandbox = {
   stackName: "MetriportInfraStack",
   secretsStackName: "MetriportSecretsStack",
   environmentType: EnvType.production,
@@ -10,9 +10,24 @@ export const config: EnvConfig = {
   domain: "myhealthapp.com",
   subdomain: "api",
   authSubdomain: "auth",
-  dbName: "my_db",
-  dbUsername: "my_db_user",
+  apiDatabase: {
+    name: "my_db",
+    username: "my_db_user",
+    maintenanceWindow: "Sun:02:00-Sun:02:30",
+    minCapacity: 0.5,
+    maxCapacity: 1,
+    alarmThresholds: {
+      acuUtilizationPct: 80,
+      cpuUtilizationPct: 80,
+      freeableMemoryMb: 1_000,
+      volumeReadIops: 2_000,
+      volumeWriteIops: 2_000,
+    },
+  },
   loadBalancerDnsName: "<your-load-balancer-dns-name>",
+  fhirToMedicalLambda: {
+    nodeRuntimeArn: "arn:aws:lambda:<region>::runtime:<id>",
+  },
   fhirServerUrl: "http://localhost:8888",
   systemRootOID: "2.16.840.1.113883.3.999999",
   systemRootOrgName: "Name of the Organization",
@@ -44,13 +59,6 @@ export const config: EnvConfig = {
     CW_GATEWAY_AUTHORIZATION_CLIENT_ID: "CW_GATEWAY_AUTHORIZATION_CLIENT_ID",
     CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET: "CW_GATEWAY_AUTHORIZATION_CLIENT_SECRET",
   },
-  // TODO 1377 Update this
-  // iheGateway: {
-  //   vpcId: "<your-vpc-id>",
-  //   certArn: "<your-cert-arn>",
-  //   subdomain: "ihe",
-  //   snsTopicArn: "<your-sns-topic-arn>",
-  // },
   connectWidget: {
     stackName: "MetriportConnectInfraStack",
     region: "us-east-1",
@@ -68,6 +76,7 @@ export const config: EnvConfig = {
       CQ_MANAGEMENT_API_KEY: "CQ_MANAGEMENT_API_KEY",
       CQ_ORG_PRIVATE_KEY: "CQ_ORG_PRIVATE_KEY",
       CQ_ORG_CERTIFICATE: "CQ_ORG_CERTIFICATE",
+      CQ_ORG_CERTIFICATE_INTERMEDIATE: "CQ_ORG_CERTIFICATE_INTERMEDIATE",
       CQ_ORG_PRIVATE_KEY_PASSWORD: "CQ_ORG_PRIVATE_KEY_PASSWORD",
     },
     envVars: {

@@ -4,18 +4,11 @@ import {
   documentQueryStatus,
 } from "@metriport/core/domain/document-query";
 import { faker } from "@faker-js/faker";
-import { makeOptionalNumber } from "../../../shared/__tests__/utils";
 
-export const createProgress = ({
-  status,
-  manuelProg,
-}: {
-  status?: DocumentQueryStatus;
-  manuelProg?: Progress;
-}): Progress => {
-  const total = makeOptionalNumber(undefined) ?? 0;
-  const errors = makeOptionalNumber(undefined) ?? 0;
-  const successful = makeOptionalNumber(undefined) ?? 0;
+export const createProgressFromStatus = ({ status }: { status: DocumentQueryStatus }) => {
+  const total = faker.number.int();
+  const errors = faker.number.int();
+  const successful = faker.number.int();
 
   if (status === "completed") {
     return {
@@ -26,14 +19,7 @@ export const createProgress = ({
     };
   } else if (status === "failed") {
     return {
-      total: makeOptionalNumber(undefined) ?? 0,
-      errors,
-      status,
-      successful,
-    };
-  } else if (status === "processing") {
-    return {
-      total: successful + errors + 1,
+      total,
       errors,
       status,
       successful,
@@ -41,10 +27,23 @@ export const createProgress = ({
   }
 
   return {
-    total: manuelProg?.total ?? total,
-    errors: manuelProg?.errors ?? errors,
-    status: manuelProg?.status ?? faker.helpers.arrayElement(documentQueryStatus),
-    successful: manuelProg?.successful ?? successful,
+    total: successful + errors + 1,
+    errors,
+    status,
+    successful,
+  };
+};
+
+export const createProgress = (progress: Progress): Progress => {
+  const total = faker.number.int();
+  const errors = faker.number.int();
+  const successful = faker.number.int();
+
+  return {
+    total: progress?.total ?? total,
+    errors: progress?.errors ?? errors,
+    status: progress?.status ?? faker.helpers.arrayElement(documentQueryStatus),
+    successful: progress?.successful ?? successful,
   };
 };
 

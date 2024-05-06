@@ -10,11 +10,7 @@
             {{/each}}
         ],
         "status":{{>ValueSet/MedicationStatementStatus.hbs code=medicationStatement.statusCode.code}},
-        "effectivePeriod":
-        {
-            "start":"{{formatAsDateTime medicationStatement.effectiveTime.low.value}}",
-            "end":"{{formatAsDateTime medicationStatement.effectiveTime.high.value}}"
-        },
+        "effectivePeriod": {{>Utils/PeriodOrDefaultPeriod.hbs period=medicationStatement.effectiveTime}},
         {{!-- https://www.hl7.org/fhir/R4/dosage.html#Dosage --}}
         "dosage":
         [

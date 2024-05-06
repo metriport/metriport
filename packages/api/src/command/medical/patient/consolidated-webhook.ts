@@ -1,11 +1,9 @@
 import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Patient } from "@metriport/core/domain/patient";
-import { Product } from "../../../domain/product";
 import { errorToString } from "../../../shared/log";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { getSettingsOrFail } from "../../settings/getSettings";
-import { reportUsage as reportUsageCmd } from "../../usage/report-usage";
 import { processRequest, WebhookMetadataPayload, isWebhookDisabled } from "../../webhook/webhook";
 import { createWebhookRequest } from "../../webhook/webhook-request";
 import { updateConsolidatedQueryProgress } from "./append-consolidated-query-progress";
@@ -41,15 +39,16 @@ type PayloadWithoutMeta = Omit<Payload, "meta">;
 export const processConsolidatedDataWebhook = async ({
   patient,
   status,
+  requestId,
   bundle,
   filters,
 }: {
   patient: Pick<Patient, "id" | "cxId" | "externalId">;
   status: ConsolidatedWebhookStatus;
+  requestId?: string;
   bundle?: Bundle<Resource>;
   filters?: Filters;
 }): Promise<void> => {
-  const apiType = Product.medical;
   const { id: patientId, cxId, externalId } = patient;
   try {
     const [settings, currentPatient] = await Promise.all([
@@ -78,14 +77,19 @@ export const processConsolidatedDataWebhook = async ({
         payload,
       });
 
+      const additionalWHRequestMeta: Record<string, string> = {};
+
+      if (requestId) additionalWHRequestMeta.requestId = requestId;
+
+      if (bundle) {
+        additionalWHRequestMeta.bundleLength =
+          optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown";
+      }
+
       await processRequest(
         webhookRequest,
         settings,
-        bundle
-          ? {
-              bundleLength: optionalToString(bundle.entry?.length ?? bundle.total) ?? "unknown",
-            }
-          : undefined,
+        additionalWHRequestMeta,
         currentPatient.data.cxConsolidatedRequestMetadata
       );
     } else {
@@ -100,8 +104,6 @@ export const processConsolidatedDataWebhook = async ({
       patient,
       progress: { status },
     });
-
-    reportUsageCmd({ cxId, entityId: patientId, product: apiType });
   } catch (err) {
     log(`Error on processConsolidatedDataWebhook: ${errorToString(err)}`);
     capture.error(err, {

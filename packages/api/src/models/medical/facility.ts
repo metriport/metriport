@@ -1,11 +1,26 @@
+import { OID_ID_START } from "@metriport/core/domain/oid";
 import { DataTypes, Sequelize } from "sequelize";
-import { Facility, FacilityData } from "../../domain/medical/facility";
+import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
+import {
+  Facility,
+  FacilityData,
+  FacilityType,
+  makeFacilityOid,
+} from "../../domain/medical/facility";
 import { BaseModel, ModelSetup } from "../../models/_default";
+import { executeOnDBTx } from "../transaction-wrapper";
 
 export class FacilityModel extends BaseModel<FacilityModel> implements Facility {
   static NAME = "facility";
   declare cxId: string;
-  declare data: FacilityData; // TODO #414 move to strong type
+  declare oid: string;
+  declare facilityNumber: number;
+  declare cqOboActive: boolean;
+  declare cwOboActive: boolean;
+  declare cqOboOid: string | null;
+  declare cwOboOid: string | null;
+  declare type: FacilityType;
+  declare data: FacilityData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
     FacilityModel.init(
@@ -14,13 +29,56 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         cxId: {
           type: DataTypes.UUID,
         },
+        oid: {
+          type: DataTypes.STRING,
+          unique: true,
+        },
+        facilityNumber: {
+          type: DataTypes.INTEGER,
+        },
         data: {
           type: DataTypes.JSONB,
+        },
+        cqOboActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+        },
+        cwOboActive: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+        },
+        cqOboOid: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        cwOboOid: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        type: {
+          type: DataTypes.ENUM(...Object.values(FacilityType)),
+          defaultValue: FacilityType.initiatorAndResponder,
         },
       },
       {
         ...BaseModel.modelOptions(sequelize),
         tableName: FacilityModel.NAME,
+        hooks: {
+          async beforeCreate(attributes) {
+            const org = await getOrganizationOrFail({ cxId: attributes.cxId });
+            await executeOnDBTx(FacilityModel.prototype, async transaction => {
+              const curMaxNumber = (await FacilityModel.max("facilityNumber", {
+                where: {
+                  cxId: attributes.cxId,
+                },
+                transaction,
+              })) as number;
+              const facilityNumber = curMaxNumber ? curMaxNumber + 1 : OID_ID_START;
+              attributes.oid = makeFacilityOid(org.organizationNumber, facilityNumber);
+              attributes.facilityNumber = facilityNumber;
+            });
+          },
+        },
       }
     );
   };

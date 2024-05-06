@@ -23,6 +23,7 @@ const patientModel = makePatientModel();
 let patient: Patient;
 let settingsModel: Settings;
 let webhookModel: WebhookRequest;
+jest.mock("../../../../models/medical/patient");
 
 beforeEach(() => {
   mockStartTransaction();

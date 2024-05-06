@@ -311,9 +311,12 @@ The format follows:
 
 When querying for a Patient's consolidated data, you can also request this information in PDF or HTML format.
 
-The following is the result of the [previous section](#patient-consolidated-data), but with the `Bundle` containing a document reference to a rendered medical record that represents the resulting FHIR bundle.
+The following is the result of the [previous section](#patient-consolidated-data), but with the `Bundle`
+containing a document reference to a rendered [Medical Record Summary](/medical-api/more-info/medical-record-summary)
+that represents the resulting FHIR bundle.
 
-Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing an attachment with a `url` which can be used to download the rendered medical record.
+Inside the `Bundle` you'll find a `DocumentReference` resource with the first item in the `content` array containing
+an attachment with a `url` which can be used to download the rendered medical record.
 
 Example payload:
 

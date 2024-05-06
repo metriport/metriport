@@ -9,6 +9,7 @@ import * as ecs from "aws-cdk-lib/aws-ecs";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import * as iam from "aws-cdk-lib/aws-iam";
 import { IFunction as ILambda } from "aws-cdk-lib/aws-lambda";
+import * as rds from "aws-cdk-lib/aws-rds";
 import * as r53 from "aws-cdk-lib/aws-route53";
 import * as r53_targets from "aws-cdk-lib/aws-route53-targets";
 import * as s3 from "aws-cdk-lib/aws-s3";
@@ -20,7 +21,7 @@ import { EnvConfig } from "../../config/env-config";
 import { DnsZones } from "../shared/dns";
 import { Secrets, secretsToECS } from "../shared/secrets";
 import { provideAccessToQueue } from "../shared/sqs";
-import { isProd } from "../shared/util";
+import { isProd, isSandbox } from "../shared/util";
 
 interface ApiServiceProps extends StackProps {
   config: EnvConfig;
@@ -33,6 +34,7 @@ export function createAPIService({
   secrets,
   vpc,
   dbCredsSecret,
+  dbReadReplicaEndpoint,
   dynamoDBTokenTable,
   alarmAction,
   dnsZones,
@@ -59,6 +61,7 @@ export function createAPIService({
   secrets: Secrets;
   vpc: ec2.IVpc;
   dbCredsSecret: secret.ISecret;
+  dbReadReplicaEndpoint: rds.Endpoint;
   dynamoDBTokenTable: dynamodb.Table;
   alarmAction: SnsAction | undefined;
   dnsZones: DnsZones;
@@ -100,14 +103,17 @@ export function createAPIService({
     value: ecrRepo.repositoryUri,
   });
 
-  const connectWidgetUrlEnvVar =
-    props.config.connectWidgetUrl != undefined
-      ? props.config.connectWidgetUrl
-      : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
+  const connectWidgetUrlEnvVar = isSandbox(props.config)
+    ? props.config.connectWidgetUrl
+    : `https://${props.config.connectWidget.subdomain}.${props.config.connectWidget.domain}/`;
 
   const iheGateway = props.config.iheGateway;
 
   const coverageEnhancementConfig = props.config.commonwell.coverageEnhancement;
+  const dbReadReplicaEndpointAsString = JSON.stringify({
+    host: dbReadReplicaEndpoint.hostname,
+    port: dbReadReplicaEndpoint.port,
+  });
   // Run some servers on fargate containers
   const fargateService = new ecs_patterns.NetworkLoadBalancedFargateService(
     stack,
@@ -132,6 +138,7 @@ export function createAPIService({
           ENV_TYPE: props.config.environmentType, // staging, production, sandbox
           ...(props.version ? { METRIPORT_VERSION: props.version } : undefined),
           AWS_REGION: props.config.region,
+          DB_READ_REPLICA_ENDPOINT: dbReadReplicaEndpointAsString,
           TOKEN_TABLE_NAME: dynamoDBTokenTable.tableName,
           API_URL: `https://${props.config.subdomain}.${props.config.domain}`,
           ...(props.config.apiGatewayUsagePlanId
@@ -152,7 +159,7 @@ export function createAPIService({
           ...(props.config.medicalDocumentsUploadBucketName && {
             MEDICAL_DOCUMENTS_UPLOADS_BUCKET_NAME: props.config.medicalDocumentsUploadBucketName,
           }),
-          ...(props.config.sandboxSeedDataBucketName && {
+          ...(isSandbox(props.config) && {
             SANDBOX_SEED_DATA_BUCKET_NAME: props.config.sandboxSeedDataBucketName,
           }),
           CONVERT_DOC_LAMBDA_NAME: cdaToVisualizationLambda.functionName,
@@ -203,6 +210,9 @@ export function createAPIService({
           }),
           ...(cookieStore && {
             CW_MANAGEMENT_COOKIE_SECRET_ARN: cookieStore.secretArn,
+          }),
+          ...(props.config.iheGateway?.trustStoreBucketName && {
+            CQ_TRUST_BUNDLE_BUCKET_NAME: props.config.iheGateway.trustStoreBucketName,
           }),
         },
       },

@@ -1,5 +1,6 @@
 import {
   CommonWellAPI,
+  CommonwellError,
   isLOLA1,
   isLOLA2,
   isLOLA3,
@@ -11,23 +12,25 @@ import {
   Person,
   RequestMetadata,
 } from "@metriport/commonwell-sdk";
-import { oid } from "@metriport/core/domain/oid";
+import { AdditionalInfo } from "@metriport/commonwell-sdk/common/commonwell-error";
+import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
+import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { uniqBy } from "lodash";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { filterTruthy } from "../../../shared/filter-map-utils";
-import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
-import { setCommonwellId } from "../patient-external-data";
+import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import {
-  getPatientData,
   getPersonalIdentifiersFromPatient,
   PatientDataCommonwell,
   searchPersons,
 } from "../patient-shared";
+import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
 type NetworkLinks = {
@@ -46,7 +49,8 @@ export async function get(
   cxId: string,
   facilityId: string
 ): Promise<CWPersonLinks> {
-  const { log } = out("cw.link.get");
+  const context = "cw.link.get";
+  const { log } = out(context);
 
   if (!(await isCWEnabledForCx(cxId))) {
     log(`CW is disabled for cxId: ${cxId}`);
@@ -58,28 +62,34 @@ export async function get(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const { organization, facility } = await getPatientData(patient, facilityId);
+  const initiator = await getCwInitiator(patient, facilityId);
 
-  const orgName = organization.data.name;
-  const orgOID = organization.oid;
-  const facilityNPI = facility.data["npi"] as string; // TODO #414 move to strong type - remove `as string`
-  const commonWell = makeCommonWellAPI(orgName, oid(orgOID));
-  const queryMeta = organizationQueryMeta(orgName, { npi: facilityNPI });
+  const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
+  const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 
   const patientCWData = getCWData(patient.data.externalData);
 
-  const cwLink = await findCurrentLink(patient, patientCWData, commonWell, queryMeta);
+  try {
+    const cwLink = await findCurrentLink(patient, patientCWData, commonWell, queryMeta);
 
-  const potentialLinks = await findAllPotentialLinks(patient, commonWell, queryMeta);
+    const potentialLinks = await findAllPotentialLinks(patient, commonWell, queryMeta);
 
-  const networkLinks = await findNetworkLinks(patientCWData, commonWell, queryMeta);
+    const networkLinks = await findNetworkLinks(patientCWData, commonWell, queryMeta);
 
-  const links: CWPersonLinks = {
-    currentLinks: cwLink ? [cwLink] : [],
-    potentialLinks,
-    networkLinks,
-  };
-  return links;
+    const links: CWPersonLinks = {
+      currentLinks: cwLink ? [cwLink] : [],
+      potentialLinks,
+      networkLinks,
+    };
+    return links;
+  } catch (error) {
+    const cwReference = commonWell.lastReferenceHeader;
+    log(`Error getting CW links: ${errorToString(error)}; cwReference ${cwReference}`);
+    throw new CommonwellError("Error getting CommonWell links", error, {
+      cwReference,
+      context,
+    });
+  }
 }
 
 export const findCurrentLink = async (
@@ -101,12 +111,12 @@ export const findCurrentLink = async (
   }
 
   const patientCWId = patientCWData.patientId;
-  const captureExtra = {
+  const captureExtra: AdditionalInfo = {
     patientId: patient.id,
     cwPatientId: patientCWId,
     personId,
-    cwReference: commonWell.lastReferenceHeader,
     context: `cw.findCurrentLink`,
+    cwReference: undefined,
   };
   try {
     let patientLinkToPerson: PatientLinkResp;
@@ -118,13 +128,15 @@ export const findCurrentLink = async (
       const msg =
         "Got 404 when trying to query person's patient links @ CW - Removing person ID from DB.";
       log(msg);
+      captureExtra.cwReference = commonWell.lastReferenceHeader;
       capture.message(msg, { extra: captureExtra });
-      await setCommonwellId({
+      await setCommonwellIdsAndStatus({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
         commonwellStatus: "failed",
+        cqLinkStatus: undefined,
       });
       return;
     }
@@ -132,12 +144,13 @@ export const findCurrentLink = async (
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       log(`No patient linked to person`, patientLinkToPerson);
 
-      await setCommonwellId({
+      await setCommonwellIdsAndStatus({
         patientId: patient.id,
         cxId: patient.cxId,
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
         commonwellStatus: "failed",
+        cqLinkStatus: undefined,
       });
 
       return;
@@ -165,6 +178,7 @@ export const findCurrentLink = async (
   } catch (error) {
     const msg = `Failure retrieving link`;
     log(`${msg} - for person id:`, personId);
+    captureExtra.cwReference = commonWell.lastReferenceHeader;
     capture.error(msg, { extra: { ...captureExtra, error } });
     throw new Error(msg, { cause: error });
   }

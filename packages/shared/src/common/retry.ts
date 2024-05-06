@@ -24,7 +24,7 @@ export async function executeWithRetriesOrFail<K>(
     try {
       return await fn();
     } catch (e) {
-      const msg = `Error on executeWithRetriesOrFail: ${e}, re`;
+      const msg = `Error on executeWithRetriesOrFail: ${e}, `;
       if (count++ < maxRetries) {
         log(`${msg}, retrying...`);
         await sleep(waitTime);
