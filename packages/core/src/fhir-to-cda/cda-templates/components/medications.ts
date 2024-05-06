@@ -41,9 +41,7 @@ export function buildMedications(fhirBundle: Bundle) {
 
   const augmentedMedStatements = medicationStatements.map(statement => {
     const ref = statement.medicationReference?.reference;
-    console.log("REF IS", ref);
     const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
-    console.log("REF RESOURCE", refResource);
     const medication = isMedication(refResource) ? refResource : undefined;
     return new AugmentedMedicationStatement(
       "2.16.840.1.113883.10.20.22.4.16",

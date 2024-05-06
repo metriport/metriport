@@ -1,6 +1,7 @@
 import {
   Bundle,
   Composition,
+  Condition,
   DiagnosticReport,
   Observation,
   Organization,
@@ -14,6 +15,10 @@ function isPatient(resource: Resource | undefined): resource is Patient {
 
 function isOrganization(resource: Resource | undefined): resource is Organization {
   return resource?.resourceType === "Organization";
+}
+
+export function isCondition(resource: Resource | undefined): resource is Condition {
+  return resource?.resourceType === "Condition";
 }
 
 export function isComposition(resource: Resource | undefined): resource is Composition {

@@ -3,6 +3,7 @@ import { buildMentalStatus } from "../components/mental-status";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
 import { buildMedications } from "../components/medications";
+import { buildProblems } from "../components/problems";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBodySections = [
@@ -10,6 +11,7 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildSocialHistory(fhirBundle),
     buildMentalStatus(fhirBundle),
     buildMedications(fhirBundle),
+    buildProblems(fhirBundle),
   ];
 
   const structuredBody = {
