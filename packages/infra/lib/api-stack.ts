@@ -52,6 +52,7 @@ import { getSecrets, Secrets } from "./shared/secrets";
 import { provideAccessToQueue } from "./shared/sqs";
 import { isProd, isSandbox } from "./shared/util";
 import { wafRules } from "./shared/waf-rules";
+import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
 
 const FITBIT_LAMBDA_TIMEOUT = Duration.seconds(60);
 const CDA_TO_VIS_TIMEOUT = Duration.minutes(15);
@@ -466,6 +467,30 @@ export class APIStack extends Stack {
       },
       cookieStore,
     });
+
+    if (props.config.iheGateway) {
+      const mtlsBucketName = s3.Bucket.fromBucketName(
+        this,
+        "TruststoreBucket",
+        props.config.iheGateway.trustStoreBucketName
+      );
+      new IHEGatewayV2LambdasNestedStack(this, "IHEGatewayV2LambdasNestedStack", {
+        lambdaLayers,
+        vpc: this.vpc,
+        apiService: apiService,
+        secrets,
+        cqOrgCertificate: props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE,
+        cqOrgPrivateKey: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY,
+        cqOrgCertificateIntermediate:
+          props.config.carequality?.secretNames.CQ_ORG_CERTIFICATE_INTERMEDIATE,
+        cqOrgPrivateKeyPassword: props.config.carequality?.secretNames.CQ_ORG_PRIVATE_KEY_PASSWORD,
+        cqTrustBundleBucket: mtlsBucketName,
+        medicalDocumentsBucket: medicalDocumentsBucket,
+        apiURL: apiService.loadBalancer.loadBalancerDnsName,
+        envType: props.config.environmentType,
+        sentryDsn: props.config.lambdasSentryDSN,
+      });
+    }
 
     // Access grant for Aurora DB
     dbCluster.connections.allowDefaultPortFrom(apiService.service);

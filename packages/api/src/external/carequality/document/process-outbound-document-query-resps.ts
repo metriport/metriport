@@ -22,6 +22,9 @@ import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
 import { DocumentReferenceWithMetriportId, cqToFHIR, toDocumentReference } from "./shared";
 import { getCQData } from "../patient";
+import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
+import { Config } from "../../../shared/config";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -152,26 +155,61 @@ export async function processOutboundDocumentQueryResps({
       numberOfParallelExecutions: 20,
     });
 
+    const docsWithDqUrlV1Gateway: DocumentReferenceWithMetriportId[] = [];
+    const docsWithDqUrlV2Gateway: DocumentReferenceWithMetriportId[] = [];
+
+    const v2GatewayOIDs = Config.isDev()
+      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
+      : await getOidsWithIHEGatewayV2Enabled();
+
+    for (const doc of docsToDownload) {
+      if (v2GatewayOIDs.includes(doc.homeCommunityId)) {
+        docsWithDqUrlV2Gateway.push(doc);
+      } else {
+        docsWithDqUrlV1Gateway.push(doc);
+      }
+    }
+
     const initiator = await getCqInitiator(patient);
-    const documentRetrievalRequests = createOutboundDocumentRetrievalReqs({
+
+    const documentRetrievalRequestsV1 = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      documentReferences: docsToDownload,
+      documentReferences: docsWithDqUrlV1Gateway,
+      outboundDocumentQueryResps: respWithDRUrl,
+    });
+
+    const documentRetrievalRequestsV2 = createOutboundDocumentRetrievalReqs({
+      requestId,
+      patient,
+      initiator,
+      documentReferences: docsWithDqUrlV2Gateway,
       outboundDocumentQueryResps: respWithDRUrl,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
     log(`Starting document retrieval, ${docsToDownload.length} docs to download`);
+
+    log(`Starting document retrieval - Gateway V1`);
     await iheGateway.startDocumentsRetrieval({
-      outboundDocumentRetrievalReq: documentRetrievalRequests,
+      outboundDocumentRetrievalReq: documentRetrievalRequestsV1,
+    });
+
+    log(`Starting document retrieval - Gateway V2`);
+    const iheGatewayV2 = makeIHEGatewayV2();
+    await iheGatewayV2.startDocumentRetrievalGatewayV2({
+      drRequestsGatewayV2: documentRetrievalRequestsV2,
+      requestId,
+      patientId,
+      cxId,
     });
 
     await resultPoller.pollOutboundDocRetrievalResults({
       requestId,
       patientId: patientId,
       cxId: cxId,
-      numOfGateways: documentRetrievalRequests.length,
+      numOfGateways: documentRetrievalRequestsV1.length + documentRetrievalRequestsV2.length,
     });
   } catch (error) {
     const msg = `Failed to process documents in Carequality.`;

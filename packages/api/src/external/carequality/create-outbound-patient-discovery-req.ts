@@ -7,12 +7,14 @@ import { createPurposeOfUse, getSystemUserName } from "./shared";
 export function createOutboundPatientDiscoveryReq({
   patient,
   cxId,
+  patientId,
   xcpdGateways,
   initiator,
   requestId,
 }: {
   patient: FHIRPatient;
   cxId: string;
+  patientId: string;
   xcpdGateways: XCPDGateway[];
   initiator: HieInitiator;
   requestId: string;
@@ -23,6 +25,7 @@ export function createOutboundPatientDiscoveryReq({
   return {
     id,
     cxId: cxId,
+    patientId,
     timestamp: dayjs().toISOString(),
     gateways: xcpdGateways,
     principalCareProviderIds: [initiator.npi],

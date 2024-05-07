@@ -47,7 +47,7 @@ export function createOutboundDocumentRetrievalReqs({
       const baseRequest: Omit<OutboundDocumentRetrievalReq, "documentReference"> = {
         id: requestId,
         cxId: patient.cxId,
-        patientId: patientId,
+        patientId: patient.id,
         timestamp: now,
         samlAttributes: {
           subjectId: user,
