@@ -85,4 +85,7 @@ export class Config {
   static getCqTrustBundleBucketName(): string {
     return getEnvVarOrFail("CQ_TRUST_BUNDLE_BUCKET_NAME");
   }
+  static getApiUrl(): string {
+    return getEnvVarOrFail("API_URL");
+  }
 }
