@@ -13,7 +13,7 @@ import {
   Patient,
   PersonalIdentifier,
   splitName,
-  generalTypes,
+  generalPersonalIdentifiers,
 } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
@@ -22,7 +22,7 @@ export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   M: "male",
 };
 
-export const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
   ssn: ssnURI,
   passport: passportURI,
   medicare: medicareURI,
@@ -75,7 +75,7 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   };
 };
 
-const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[]): Identifier[] => {
+export const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[]): Identifier[] => {
   return personalIdentifiers.map(identifier => {
     if (identifier.type === "driversLicense") {
       return {

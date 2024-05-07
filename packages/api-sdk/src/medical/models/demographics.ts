@@ -8,10 +8,10 @@ import {
   stripNonNumericChars,
 } from "../../shared";
 
-export const generalTypes = ["passport", "ssn", "medicare"] as const;
-export const driversLicenseType = ["driversLicense"] as const;
-export type GeneralTypes = (typeof generalTypes)[number];
-export type DriverLicenseType = (typeof driversLicenseType)[number];
+export const generalPersonalIdentifiers = ["passport", "ssn", "medicare"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
 const basePersonalIdentifierSchema = z.object({
   value: z.string(),
@@ -31,12 +31,12 @@ const basePersonalIdentifierSchema = z.object({
 });
 
 export const driverLicenseIdentifierSchema = z.object({
-  type: z.enum(driversLicenseType),
+  type: z.enum(driversLicensePersonalIdentifier),
   state: usStateSchema,
 });
 
 export const generalTypeIdentifierSchema = z.object({
-  type: z.enum(generalTypes),
+  type: z.enum(generalPersonalIdentifiers),
 });
 
 export const personalIdentifierSchema = basePersonalIdentifierSchema

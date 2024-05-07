@@ -16,7 +16,7 @@ import {
 } from "@metriport/core/domain/oid";
 import {
   GenderAtBirth,
-  generalTypes,
+  generalPersonalIdentifiers,
   Patient,
   PatientData,
   splitName,
@@ -27,7 +27,7 @@ export const genderMapping: { [k in GenderAtBirth]: string } = {
   M: "M",
 };
 
-export const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
+export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
   ssn: ssnURI,
   passport: passportURI,
   medicare: medicareURI,
@@ -107,14 +107,18 @@ export function patientToCommonwell({
 }
 
 function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
-  return data.personalIdentifiers?.map(id => ({
-    use: "usual",
-    key: id.value,
-    system:
-      id.type === "driversLicense" ? driversLicenseURIs[id.state] : identifierSytemByType[id.type],
-    period: id.period,
-    ...(id.assigner ? { assigner: id.assigner } : undefined),
-  }));
+  return data.personalIdentifiers
+    ?.filter(id => id.type === "driversLicense")
+    .map(id => ({
+      use: "usual",
+      key: id.value,
+      system:
+        id.type === "driversLicense"
+          ? driversLicenseURIs[id.state]
+          : identifierSytemByType[id.type],
+      period: id.period,
+      ...(id.assigner ? { assigner: id.assigner } : undefined),
+    }));
 }
 
 function normalizePhoneNumber(phone: string): string {

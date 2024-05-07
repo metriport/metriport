@@ -24,8 +24,8 @@ export {
   genderAtBirthSchema,
   PersonalIdentifier,
   personalIdentifierSchema,
-  generalTypes,
-  driversLicenseType,
+  generalPersonalIdentifiers,
+  driversLicensePersonalIdentifier,
 } from "./medical/models/demographics";
 export {
   DocumentQuery,

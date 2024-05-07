@@ -17,7 +17,7 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
-import { identifierSytemByType } from "./patient-conversion";
+//import { identifierSytemByType } from "./patient-conversion";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -256,7 +256,7 @@ export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedP
     id.value !== undefined && id.type === "driversLicense" && id.state !== undefined
       ? { key: id.value, system: driversLicenseURIs[id.state] }
       : id.value !== undefined && id.type !== "driversLicense"
-      ? { key: id.value, system: identifierSytemByType[id.type] }
+      ? [] //{ key: id.value, system: identifierSytemByType[id.type] } --- Skip non-driversLicense for CW
       : []
   );
 }

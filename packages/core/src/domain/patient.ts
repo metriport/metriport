@@ -7,10 +7,10 @@ import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
 
-export const generalTypes = ["passport", "ssn", "medicare"] as const;
-export const driversLicenseType = ["driversLicense"] as const;
-export type GeneralTypes = (typeof generalTypes)[number];
-export type DriverLicenseType = (typeof driversLicenseType)[number];
+export const generalPersonalIdentifiers = ["passport", "ssn", "medicare"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
 export type Period =
   | {
@@ -29,7 +29,10 @@ export type BaseIdentifier = {
 };
 
 export type PersonalIdentifier = BaseIdentifier &
-  ({ type: GeneralTypes } | { type: DriverLicenseType; state: USState });
+  (
+    | { type: GeneralPersonalIdentifiers }
+    | { type: DriversLicensePersonalIdentifier; state: USState }
+  );
 
 export type DriversLicense = {
   value: string;
