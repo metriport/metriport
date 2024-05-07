@@ -119,9 +119,11 @@ export function handleHTTPErrorResponse({
 export function handleEmptyResponse({
   outboundRequest,
   gateway,
+  text = "No documents found",
 }: {
   outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  text?: string;
 }): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
@@ -131,7 +133,7 @@ export function handleEmptyResponse({
         severity: "information",
         code: "no-documents-found",
         details: {
-          text: "No documents found",
+          text,
         },
       },
     ],

@@ -16,6 +16,7 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+import { iti38Schema } from "./schema";
 
 type Identifier = {
   _identificationScheme: string;
@@ -162,8 +163,19 @@ export function processDQResponse({
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
-
   const jsonObj = parser.parse(response);
+  console.log(JSON.stringify(jsonObj, null, 2));
+
+  try {
+    iti38Schema.parse(jsonObj);
+  } catch (error) {
+    return handleEmptyResponse({
+      outboundRequest,
+      gateway,
+      text: "Response failed schema validation",
+    });
+  }
+
   const status = jsonObj?.Envelope?.Body?.AdhocQueryResponse?._status?.split(":").pop();
   const extrinsicObjects =
     jsonObj?.Envelope?.Body?.AdhocQueryResponse?.RegistryObjectList?.ExtrinsicObject;
