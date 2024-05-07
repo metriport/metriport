@@ -1,4 +1,5 @@
 import { USState } from "../..";
+import { GeneralPersonalIdentifiers, DriversLicensePersonalIdentifier } from "./demographics";
 
 export type PatientDTO = {
   id: string;
@@ -42,8 +43,8 @@ type PersonalIdentifier = {
         end: string;
       };
   assigner?: string;
-  type: "driversLicense";
-  state: keyof typeof USState;
+  type: GeneralPersonalIdentifiers | DriversLicensePersonalIdentifier;
+  state?: keyof typeof USState;
 };
 
 type Contact = {
