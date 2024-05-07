@@ -1,7 +1,5 @@
 import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
 import { z } from "zod";
-//import { driversLicenseType, generalTypes } from "@metriport/core/domain/patient";
-//import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
 
 export const patientUpdateSchema = patientCreateSchema;
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;

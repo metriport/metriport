@@ -9,7 +9,7 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
+import { driversLicenseURIs, identifierSytemByType } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
@@ -17,7 +17,6 @@ import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
-//import { identifierSytemByType } from "./patient-conversion";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -252,11 +251,13 @@ export async function searchPersons({
 }
 
 export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
-  return (patient.data.personalIdentifiers ?? []).flatMap(id =>
-    id.value !== undefined && id.type === "driversLicense" && id.state !== undefined
-      ? { key: id.value, system: driversLicenseURIs[id.state] }
-      : id.value !== undefined && id.type !== "driversLicense"
-      ? [] //{ key: id.value, system: identifierSytemByType[id.type] } --- Skip non-driversLicense for CW
-      : []
-  );
+  return (patient.data.personalIdentifiers ?? [])
+    .filter(id => id.type === "driversLicense") // Skip non-driversLicense for CW
+    .flatMap(id =>
+      id.value !== undefined && id.type === "driversLicense" && id.state !== undefined
+        ? { key: id.value, system: driversLicenseURIs[id.state] }
+        : id.value !== undefined && id.type !== "driversLicense"
+        ? { key: id.value, system: identifierSytemByType[id.type] }
+        : []
+    );
 }
