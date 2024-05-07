@@ -10,4 +10,4 @@ fern generate --group test
 ( cd packages/sdks/python/tester-local && poetry install && pip install -r requirements.txt && poetry run pytest tests )
 
 # TypeScript tests
-( cd packages/sdks/typescript/tester-local && npm test )
+( cd packages/sdks/typescript/tester-local && npm install && npm test )

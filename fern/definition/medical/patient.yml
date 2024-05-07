@@ -139,6 +139,29 @@ service:
         type: MedicalRecordStatus
         docs: the status of the medical record summary
 
+    search:
+      display-name: Search Patient
+      docs: |
+        Searches for a Patient in Metriport based on demographic information.
+      method: POST
+      path: "/search"
+      request:
+        name: PatientSearch
+        body: Demographics
+      response: Patient
+      examples:
+        - request:
+            firstName: Karen
+            lastName: Lynch
+            dob: 1963-12-30
+            genderAtBirth: F
+            personalIdentifiers:
+              - $PersonalIdentifier.Example1
+            address: 
+              - $commons.Address.Example1
+          response:
+            body: $Patient.Example1
+
 types:
   MedicalRecordStatus:
     properties:
@@ -201,7 +224,7 @@ types:
       - name: Example2
         value: "2.16.840.1.113883.3.666.123"
 
-  BasePatient:
+  Demographics:
     properties:
       firstName:
         type: string
@@ -228,10 +251,14 @@ types:
         type: list<commons.Address>
       contact:
         type: optional<list<Contact>>
+
+  BasePatient:
+    extends: Demographics
+    properties:
       externalId:
         type: optional<string>
         docs: An external Patient ID to associate to a Patient in Metriport.
-    
+
   Patient:
     extends: BasePatient
     properties:
