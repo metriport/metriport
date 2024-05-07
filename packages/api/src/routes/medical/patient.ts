@@ -1,4 +1,3 @@
-import { Bundle, Resource } from "@medplum/fhirtypes";
 import { patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
@@ -60,7 +59,7 @@ import {
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
-const MAX_RESOURCE_POST_COUNT = 50;
+const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
 
 /** ---------------------------------------------------------------------------
@@ -395,6 +394,7 @@ router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
  * @param req.param.id The ID of the patient to associate resources to.
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
+ * TODO: 1603 - Simplify the logic and move the bulk of it into the `command` directory.
  */
 router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
@@ -420,29 +420,28 @@ async function putConsolidated(req: Request, res: Response) {
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
 
   const fhirOrganization = toFHIROrganization(organization);
-  const promises: Promise<Bundle<Resource> | undefined | void>[] = [
+  const patientDataPromise = async () => {
     createOrUpdateConsolidatedPatientData({
       cxId,
       patientId: patient.id,
       fhirBundle: validatedBundle,
-    }),
-  ];
-
-  const isValidForCdaConversion = hasCompositionResource(validatedBundle);
-  if (isValidForCdaConversion) {
-    const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
-    promises.push(
-      uploadCdaDocuments({
+    });
+  };
+  const convertAndUploadCdaPromise = async () => {
+    const isValidForCdaConversion = hasCompositionResource(validatedBundle);
+    if (isValidForCdaConversion) {
+      const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
+      await uploadCdaDocuments({
         cxId,
         patientId,
         cdaBundles: converted,
         organization: fhirOrganization,
         docId,
-      })
-    );
-  }
+      });
+    }
+  };
 
-  await Promise.all(promises);
+  await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
   return res.sendStatus(status.OK);
 }
 
@@ -458,9 +457,9 @@ async function checkResourceLimit(incomingAmount: number, patient: Patient) {
       );
     }
     // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
+    if (incomingAmount > MAX_RESOURCE_COUNT_PER_REQUEST) {
       throw new BadRequestError(
-        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
+        `Cannot create more than ${MAX_RESOURCE_COUNT_PER_REQUEST} resources at a time ` +
           `(incoming: ${incomingAmount})`
       );
     }

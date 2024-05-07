@@ -1525,7 +1525,7 @@ export class APIStack extends Stack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 512,
+      memory: 1024, // TODO: 1603 - Monitor to see if more is required
       timeout: Duration.minutes(5),
       vpc,
       alarmSnsAction: alarmAction,

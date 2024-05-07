@@ -42,7 +42,7 @@ export function createExtrinsicObjectXml({
   mimeType,
 }: {
   createdTime: string;
-  size: string;
+  size: string | undefined;
   patientId: string;
   organization: Organization | undefined;
   classCode?: CodeableConcept | undefined;
@@ -91,12 +91,16 @@ export function createExtrinsicObjectXml({
       </ValueList>
     </Slot>
     
-    <Slot name="size">
+    ${
+      size
+        ? `<Slot name="size">
       <ValueList>
         <Value>${size}</Value>
       </ValueList>
     </Slot>
-    
+    `
+        : ``
+    }
     <Slot name="sourcePatientId">
       <ValueList>
         <Value>${patientId}^^^&amp;${METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX}&amp;ISO</Value>
