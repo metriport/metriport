@@ -5,27 +5,15 @@ import {
   Reference,
   DocumentReference,
 } from "@medplum/fhirtypes";
-import { driversLicenseURIs, ssnURI, passportURI, medicareURI } from "../../../domain/oid";
+import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import {
-  GenderAtBirth,
-  Patient,
-  PersonalIdentifier,
-  splitName,
-  generalPersonalIdentifiers,
-} from "../../../domain/patient";
+import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
-};
-
-export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
-  ssn: ssnURI,
-  passport: passportURI,
-  medicare: medicareURI,
 };
 
 export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {

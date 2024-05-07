@@ -9,29 +9,11 @@ import {
 } from "@metriport/commonwell-sdk";
 import {
   driversLicenseURIs,
-  medicareURI,
+  identifierSytemByType,
   addOidPrefix,
-  passportURI,
-  ssnURI,
 } from "@metriport/core/domain/oid";
-import {
-  GenderAtBirth,
-  generalPersonalIdentifiers,
-  Patient,
-  PatientData,
-  splitName,
-} from "@metriport/core/domain/patient";
-
-export const genderMapping: { [k in GenderAtBirth]: string } = {
-  F: "F",
-  M: "M",
-};
-
-export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
-  ssn: ssnURI,
-  passport: passportURI,
-  medicare: medicareURI,
-};
+import { Patient, PatientData, splitName } from "@metriport/core/domain/patient";
+import { genderMapping } from "@metriport/core/external/fhir/patient/index";
 
 export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPerson {
   return {
@@ -108,7 +90,7 @@ export function patientToCommonwell({
 
 function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
   return data.personalIdentifiers
-    ?.filter(id => id.type === "driversLicense")
+    ?.filter(id => id.type === "driversLicense") // Skip non-driversLicense for CW
     .map(id => ({
       use: "usual",
       key: id.value,
