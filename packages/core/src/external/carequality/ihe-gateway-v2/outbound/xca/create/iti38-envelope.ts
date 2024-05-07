@@ -28,14 +28,18 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   const classCode = bodyData.classCode;
   const practiceSettingCode = bodyData.practiceSettingCode;
   const facilityTypeCode = bodyData.facilityTypeCode;
-  const serviceDateFrom = dayjs(bodyData.serviceDate?.dateFrom).format("YYYYMMDDHHmmss");
-  const serviceDateTo = dayjs(bodyData.serviceDate?.dateTo).format("YYYYMMDDHHmmss");
-  const documentCreationDateFrom = dayjs(bodyData.documentCreationDate?.dateFrom).format(
-    "YYYYMMDDHHmmss"
-  );
-  const documentCreationDateTo = dayjs(bodyData.documentCreationDate?.dateTo).format(
-    "YYYYMMDDHHmmss"
-  );
+  const serviceDateFrom = bodyData.serviceDate?.dateFrom
+    ? dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss")
+    : undefined;
+  const serviceDateTo = bodyData.serviceDate?.dateTo
+    ? dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss")
+    : undefined;
+  const documentCreationDateFrom = bodyData.documentCreationDate?.dateFrom
+    ? dayjs(bodyData.documentCreationDate.dateFrom).format("YYYYMMDDHHmmss")
+    : undefined;
+  const documentCreationDateTo = bodyData.documentCreationDate?.dateTo
+    ? dayjs(bodyData.documentCreationDate.dateTo).format("YYYYMMDDHHmmss")
+    : undefined;
   const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
   const externalGatewayPatientId = bodyData.externalGatewayPatient.id;
   const externalGatewayPatientSystem = bodyData.externalGatewayPatient.system;
@@ -70,48 +74,76 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
                 "urn2:Value": "('urn:oasis:names:tc:ebxml-regrep:StatusType:Approved')",
               },
             },
-            {
-              "@_name": "$XDSDocumentEntryClassCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${classCode?.code}^^${classCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryPracticeSettingCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${practiceSettingCode?.code}^^${practiceSettingCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${facilityTypeCode?.code}^^${facilityTypeCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
-              "urn2:ValueList": {
-                "urn2:Value": serviceDateFrom,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryServiceStartTimeTo",
-              "urn2:ValueList": {
-                "urn2:Value": serviceDateTo,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryCreationTimeFrom",
-              "urn2:ValueList": {
-                "urn2:Value": documentCreationDateFrom,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryCreationTimeTo",
-              "urn2:ValueList": {
-                "urn2:Value": documentCreationDateTo,
-              },
-            },
+            ...(classCode?.code && classCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryClassCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${classCode.code}^^${classCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(practiceSettingCode?.code && practiceSettingCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryPracticeSettingCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${practiceSettingCode.code}^^${practiceSettingCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(facilityTypeCode?.code && facilityTypeCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${facilityTypeCode.code}^^${facilityTypeCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateTo,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateTo,
+                    },
+                  },
+                ]
+              : []),
             {
               "@_name": "$XDSDocumentEntryType",
               "urn2:ValueList": {
