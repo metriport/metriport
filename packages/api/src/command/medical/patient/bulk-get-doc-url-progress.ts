@@ -60,6 +60,7 @@ export async function appendBulkGetDocUrlProgress({
 export type BulkGetDocUrlQueryInitCmd = BaseUpdateCmdWithCustomer & {
   bulkGetDocumentsUrlProgress: Required<Pick<BulkGetDocumentsUrlProgress, "status">>;
   requestId: string;
+  cxDownloadRequestMetadata?: unknown;
 };
 
 /**
@@ -86,6 +87,7 @@ export const storeBulkGetDocumentUrlQueryInit = async (
         ...cmd.bulkGetDocumentsUrlProgress,
         requestId: cmd.requestId,
       },
+      cxDownloadRequestMetadata: cmd.cxDownloadRequestMetadata,
     };
 
     return patient.update(

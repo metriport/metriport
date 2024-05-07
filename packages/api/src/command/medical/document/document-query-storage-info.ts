@@ -109,8 +109,8 @@ export async function getS3Info(
 }
 
 export function getUrl(s3FileName: string, s3FileLocation: string) {
-  return s3Utils.s3.getSignedUrl("getObject", {
-    Bucket: s3FileLocation,
-    Key: s3FileName,
+  return s3Utils.getSignedUrl({
+    bucketName: s3FileLocation,
+    fileName: s3FileName,
   });
 }
