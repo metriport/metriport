@@ -6,7 +6,7 @@ export { executeWithRetries, executeWithRetriesOrFail } from "./common/retry";
 export { sleep } from "./common/sleep";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
-export { MetriportOrganization } from "./common/metriport-organization";
+export { metriportOrganization } from "./common/metriport-organization";
 export { limitStringLength } from "./common/string";
 export { errorToString } from "./common/error";
 export { metriportCompanyDetails } from "./domain/metriport";

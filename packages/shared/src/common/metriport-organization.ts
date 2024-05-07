@@ -1,5 +1,6 @@
 import { Organization } from "@medplum/fhirtypes";
-export const MetriportOrganization: Organization = {
+
+export const metriportOrganization: Organization = {
   resourceType: "Organization",
   name: "Metriport",
   address: [

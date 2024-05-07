@@ -33,7 +33,8 @@ export function buildMentalStatus(fhirBundle: Bundle) {
     [idAttribute]: mentalStatusSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
-      tr: trs.map(row => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
         [idAttribute]: row.tr[idAttribute],
         td: row.tr.td,
       })),

@@ -1,11 +1,12 @@
 import { Bundle, Medication, MedicationStatement, Resource } from "@medplum/fhirtypes";
+import { ObservationTableRow, SubstanceAdministationEntry } from "../../cda-types/shared-types";
 import { findResourceInBundle } from "../../fhir";
 import {
   buildCodeCE,
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
   createTableHeader,
-  formatDateToCDATimeStamp,
+  formatDateToCDATimestamp,
   formatDateToHumanReadableFormat,
   withoutNullFlavorObject,
 } from "../commons";
@@ -23,7 +24,6 @@ import {
   valueAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
-import { ObservationTableRow, SubstanceAdministationEntry } from "../types";
 import { AugmentedMedicationStatement } from "./augmented-resources";
 
 const sectionName = "medications";
@@ -56,7 +56,8 @@ export function buildMedications(fhirBundle: Bundle) {
     [idAttribute]: sectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
-      tr: trs.map(row => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
         [idAttribute]: row.tr[idAttribute],
         td: row.tr.td,
       })),
@@ -174,11 +175,11 @@ function createEntryFromStatement(
         },
         effectiveTime: {
           low: withoutNullFlavorObject(
-            formatDateToCDATimeStamp(statement.resource.effectivePeriod?.start),
+            formatDateToCDATimestamp(statement.resource.effectivePeriod?.start),
             valueAttribute
           ),
           high: withoutNullFlavorObject(
-            formatDateToCDATimeStamp(statement.resource.effectivePeriod?.end),
+            formatDateToCDATimestamp(statement.resource.effectivePeriod?.end),
             valueAttribute
           ),
         },

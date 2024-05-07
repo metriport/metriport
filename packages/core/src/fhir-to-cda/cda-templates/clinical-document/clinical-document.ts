@@ -1,8 +1,16 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
+  CDAAuthor,
+  CDACodeCE,
+  CDACustodian,
+  CDAInstanceIdentifier,
+  CDARecordTarget,
+  Entry,
+} from "../../cda-types/shared-types";
+import {
   buildCodeCE,
   buildInstanceIdentifier,
-  formatDateToCDATimeStamp,
+  formatDateToCDATimestamp,
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
@@ -14,14 +22,6 @@ import {
   namespaceXsiAttribute,
   valueAttribute,
 } from "../constants";
-import {
-  CDAAuthor,
-  CDACodeCE,
-  CDACustodian,
-  CDAInstanceIdentifier,
-  CDARecordTarget,
-  Entry,
-} from "../types";
 
 export type ClinicalDocument = {
   ClinicalDocument: {
@@ -48,15 +48,15 @@ export type ClinicalDocument = {
 };
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-function removeEmptyFields(obj: any): ClinicalDocument {
-  if (typeof obj === "object" && obj !== undefined) {
+export function removeEmptyFields(obj: any): unknown {
+  if (typeof obj === "object" && obj != undefined) {
     Object.keys(obj).forEach(key => {
       const value = obj[key];
-      if (value === undefined || value === "") {
+      if (value == undefined || value === "") {
         delete obj[key];
       } else if (typeof value === "object") {
         const result = removeEmptyFields(value);
-        if (Object.keys(result).length === 0) {
+        if (result && typeof result === "object" && Object.keys(result).length === 0) {
           delete obj[key];
         }
       }
@@ -102,7 +102,7 @@ export function buildClinicalDocumentXML(
       }),
       title: "NOTE-TITLE", // TODO: Make this dynamic. IMPORTANT
       effectiveTime: withNullFlavor(
-        formatDateToCDATimeStamp(new Date().toISOString()),
+        formatDateToCDATimestamp(new Date().toISOString()),
         valueAttribute
       ),
       confidentialityCode: buildCodeCE({

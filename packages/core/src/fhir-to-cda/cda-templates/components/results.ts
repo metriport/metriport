@@ -75,8 +75,32 @@ export function buildResult(fhirBundle: Bundle) {
   if (diagnosticReports.length === 0) {
     return undefined;
   }
-  const items = diagnosticReports
-    .map(report => {
+  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
+
+  const resultsSection = {
+    component: {
+      section: {
+        templateId: buildInstanceIdentifier({
+          root: "2.16.840.1.113883.10.20.22.2.3.1",
+        }),
+        code: buildCodeCE({
+          code: "30954-2",
+          codeSystem: "2.16.840.1.113883.6.1",
+          codeSystemName: "LOINC",
+          displayName: "Diagnostic Results",
+        }),
+        title: "Diagnostic Results",
+        text: text.map(t => t && t.item),
+        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
+      },
+    },
+  };
+  return resultsSection;
+}
+
+function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]) {
+  return (
+    diagnosticReports.flatMap(report => {
       const contentLines = report.presentedForm?.[0]?.data
         ? base64ToString(report.presentedForm[0].data).split(/\n/)
         : [];
@@ -94,28 +118,6 @@ export function buildResult(fhirBundle: Bundle) {
         };
       }
       return undefined;
-    })
-    .filter(item => item !== undefined);
-
-  const text = items.length > 0 ? { text: items.map(item => item?.item) } : undefined;
-
-  const resultsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.3.1",
-        }),
-        code: buildCodeCE({
-          code: "30954-2",
-          codeSystem: "2.16.840.1.113883.6.1",
-          codeSystemName: "LOINC",
-          displayName: "Relevant diagnostic tests/laboratory data Narrative",
-        }),
-        title: "DIAGNOSTIC RESULTS",
-        text,
-        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
-      },
-    },
-  };
-  return resultsSection;
+    }) || []
+  );
 }

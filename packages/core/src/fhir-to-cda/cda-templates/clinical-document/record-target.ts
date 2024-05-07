@@ -6,9 +6,9 @@ import {
   withoutNullFlavorString,
   buildCodeCE,
   buildInstanceIdentifiersFromIdentifier,
-  formatDateToCDATimeStamp,
+  formatDateToCDATimestamp,
 } from "../commons";
-import { CDARecordTarget, CDAPatientRole } from "../types";
+import { CDARecordTarget, CDAPatientRole } from "../../cda-types/shared-types";
 import { useAttribute, valueAttribute } from "../constants";
 
 function buildPatient(patient: Patient): CDAPatientRole {
@@ -18,7 +18,7 @@ function buildPatient(patient: Patient): CDAPatientRole {
       return {
         ...withoutNullFlavorObject(nameUse, useAttribute),
         given: withoutNullFlavorString(name.given?.join(" ")),
-        family: withoutNullFlavorString(name.family),
+        family: name.family,
         validTime: {
           low: withoutNullFlavorObject(undefined, valueAttribute),
           high: withoutNullFlavorObject(undefined, valueAttribute),
@@ -30,7 +30,7 @@ function buildPatient(patient: Patient): CDAPatientRole {
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(formatDateToCDATimeStamp(patient.birthDate), valueAttribute),
+    birthTime: withoutNullFlavorObject(formatDateToCDATimestamp(patient.birthDate), valueAttribute),
     deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
     maritalStatusCode: buildCodeCE({
       code: patient.maritalStatus?.coding?.[0]?.code,

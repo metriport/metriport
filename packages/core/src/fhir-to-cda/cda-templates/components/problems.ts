@@ -1,10 +1,11 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
+import { ObservationTableRow } from "../../cda-types/shared-types";
 import { isCondition } from "../../fhir";
 import {
   buildCodeCE,
   buildInstanceIdentifier,
   createTableHeader,
-  formatDateToCDATimeStamp,
+  formatDateToCDATimestamp,
   getTextFromCode,
   withoutNullFlavorObject,
 } from "../commons";
@@ -22,7 +23,6 @@ import {
   valueAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
-import { ObservationTableRow } from "../types";
 import { AugmentedCondition } from "./augmented-resources";
 
 export const problemsSectionName = "problems";
@@ -57,7 +57,8 @@ export function buildProblems(fhirBundle: Bundle) {
     [idAttribute]: problemsSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
-      tr: trs.map(row => ({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
         [idAttribute]: row.tr[idAttribute],
         td: row.tr.td,
       })),
@@ -157,7 +158,7 @@ function createEntryFromCondition(condition: AugmentedCondition, referenceId: st
         },
         effectiveTime: {
           low: withoutNullFlavorObject(
-            formatDateToCDATimeStamp(condition.resource.recordedDate),
+            formatDateToCDATimestamp(condition.resource.recordedDate),
             valueAttribute
           ),
         },

@@ -1,6 +1,6 @@
 import { Bundle, Composition } from "@medplum/fhirtypes";
-import { isComposition, findResourceInBundle } from "./fhir";
-import { MetriportError } from "../util/error/metriport-error";
+import { findResourceInBundle, isComposition } from "../external/fhir/shared";
+import BadRequestError from "../util/error/bad-request";
 
 /**
  * Splits the incoming FHIR bundle into multiple bundles based on the compositions.
@@ -13,7 +13,7 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
     [];
 
   if (compositions.length === 0) {
-    return [];
+    throw new BadRequestError("No compositions found in the bundle");
   }
 
   const bundles: Bundle[] = compositions.map(composition => {
@@ -26,13 +26,13 @@ export function splitBundleByCompositions(fhirBundle: Bundle): Bundle[] {
       ? findResourceInBundle(fhirBundle, patientReference)
       : undefined;
     if (!patientResource) {
-      throw new MetriportError("Patient resource not found", fhirBundle);
+      throw new BadRequestError("Patient resource not found");
     }
     const organizationResource = organizationReference
       ? findResourceInBundle(fhirBundle, organizationReference)
       : undefined;
     if (!organizationResource) {
-      throw new MetriportError("Organization resource not found", fhirBundle);
+      throw new BadRequestError("Organization resource not found");
     }
 
     const bundle: Bundle = {

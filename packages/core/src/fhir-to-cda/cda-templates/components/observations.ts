@@ -1,12 +1,21 @@
 import { Observation, ObservationComponent } from "@medplum/fhirtypes";
 import {
+  CDACodeCV,
+  CDAInstanceIdentifier,
+  CDAValueST,
+  Entry,
+  EntryObject,
+  ObservationEntry,
+  ObservationTableRow,
+} from "../../cda-types/shared-types";
+import {
   TIMESTAMP_CLEANUP_REGEX,
   buildCodeCE,
   buildCodeCVFromCodeableConcept,
   buildInstanceIdentifier,
   buildReferenceId,
   buildValueST,
-  formatDateToCDATimeStamp,
+  formatDateToCDATimestamp,
   formatDateToHumanReadableFormat,
   isLoinc,
   withoutNullFlavorObject,
@@ -25,15 +34,6 @@ import {
   rootAttribute,
   valueAttribute,
 } from "../constants";
-import {
-  CDACodeCV,
-  CDAInstanceIdentifier,
-  CDAValueST,
-  Entry,
-  EntryObject,
-  ObservationEntry,
-  ObservationTableRow,
-} from "../types";
 import { AugmentedObservation } from "./augmented-resources";
 
 export interface CDAObservation {
@@ -89,7 +89,7 @@ export function createTableRowsFromObservation(
   observation: AugmentedObservation,
   socHistPrefix: string
 ): ObservationTableRow[] {
-  const date = formatDateToCDATimeStamp(observation.resource.effectiveDateTime);
+  const date = formatDateToCDATimestamp(observation.resource.effectiveDateTime);
   const trs: ObservationTableRow[] = [];
   const formattedDate = formatDateToHumanReadableFormat(date);
   let pairNumber = 0;
@@ -166,7 +166,7 @@ export function createEntriesFromObservation(
   socHistNumber: string
 ): ObservationEntry[] {
   let pairNumber = 0;
-  const date = formatDateToCDATimeStamp(observation.resource.effectiveDateTime);
+  const date = formatDateToCDATimestamp(observation.resource.effectiveDateTime);
   const observationEntry = createEntryFromObservation(
     observation.resource,
     observation,

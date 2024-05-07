@@ -53,3 +53,16 @@ See FHIR spec for more info: https://www.hl7.org/fhir/R4/composition.html
 ```
 
 The referenced resources must be provided in the rest of the FHIR bundle. You can include as many composition bundles as you want, but the only resources that will get converted to CDA will be ones included in the section as a reference or in subject, encounter, or author.
+
+As a minimum, a CDA is required to have the following attributes (\* denotes resources that the user has to provide):
+
+- id
+- code
+- effectiveTime
+- configdentialityCode
+- author\*
+- custodian
+- recordTarget\*
+- component\*
+
+Refer to HL7 documentation for clarity: https://build.fhir.org/ig/HL7/CDA-core-sd/index.html

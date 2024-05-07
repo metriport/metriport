@@ -1,5 +1,9 @@
+import {
+  CreateEntriesCallback,
+  CreateTableRowsCallback,
+  TableRowsAndEntriesResult,
+} from "../cda-types/shared-types";
 import { AugmentedResource } from "./components/augmented-resources";
-import { CreateEntriesCallback, CreateTableRowsCallback, TableRowsAndEntriesResult } from "./types";
 
 export function createTableRowsAndEntries<T extends AugmentedResource>(
   augObs: T[],
