@@ -137,7 +137,7 @@ export const getSignedURL = async ({
         Config.getSandboxSeedBucketName()!
       : Config.getMedicalDocumentsBucketName());
 
-  const url = s3client.getSignedUrl("getObject", {
+  const url = await s3client.getSignedUrlPromise("getObject", {
     Bucket: bucket,
     Key: fileName,
     Expires: urlExpirationSeconds,

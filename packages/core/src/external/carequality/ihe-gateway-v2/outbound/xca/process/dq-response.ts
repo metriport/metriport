@@ -43,9 +43,15 @@ function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
 ): DocumentReference | undefined {
-  const slots = extrinsicObject?.Slot;
-  const externalIdentifiers = extrinsicObject?.ExternalIdentifier;
-  const classifications = extrinsicObject?.Classification;
+  const slots = Array.isArray(extrinsicObject?.Slot)
+    ? extrinsicObject?.Slot
+    : [extrinsicObject?.Slot];
+  const externalIdentifiers = Array.isArray(extrinsicObject?.ExternalIdentifier)
+    ? extrinsicObject?.ExternalIdentifier
+    : [extrinsicObject?.ExternalIdentifier];
+  const classifications = Array.isArray(extrinsicObject?.Classification)
+    ? extrinsicObject?.Classification
+    : [extrinsicObject?.Classification];
 
   const findSlotValue = (name: string): string | undefined => {
     const slot = slots.find((slot: Slot) => slot._name === name);
@@ -71,7 +77,11 @@ function parseDocumentReference(
       (c: Classification) => c._classificationScheme === classificationScheme
     );
     if (!classification) return undefined;
-    const slot = classification.Slot?.find((s: Slot) => s._name === slotName);
+    const classificationSlots = Array.isArray(classification.Slot)
+      ? classification.Slot
+      : [classification.Slot];
+
+    const slot = classificationSlots.find((s: Slot) => s._name === slotName);
     return slot
       ? Array.isArray(slot.ValueList.Value)
         ? slot.ValueList.Value.join(", ")

@@ -196,7 +196,6 @@ export default class IHEGatewayConstruct extends Construct {
     const addPortToLB = (
       port: number,
       theLB: ApplicationLoadBalancer,
-      idx: number,
       healthcheckInterval?: Duration
     ) => {
       const existingListener = portToListener[port];
@@ -241,13 +240,12 @@ export default class IHEGatewayConstruct extends Construct {
         targetGroup,
         scope,
         id,
-        idx,
+        idx: port,
         alarmAction: props.alarmAction,
       });
     };
-    let albIdx = 0;
-    defaultPorts.forEach(port => addPortToLB(port, alb, albIdx++));
-    httpPorts.forEach(port => addPortToLB(port, alb, albIdx++, healthcheckIntervalAdditionalPorts));
+    defaultPorts.forEach(port => addPortToLB(port, alb));
+    httpPorts.forEach(port => addPortToLB(port, alb, healthcheckIntervalAdditionalPorts));
 
     this.server = fargateService.service;
     if (!patientDiscoveryListener || !documentQueryListener || !documentRetrievalListener) {
