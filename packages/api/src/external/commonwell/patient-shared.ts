@@ -9,7 +9,7 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs, identifierSytemByType } from "@metriport/core/domain/oid";
+import { driversLicenseURIs } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
@@ -36,7 +36,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
   }
 }
 
-type SimplifiedPersonalId = { key: string; system: string };
+type CwPersonalId = { key: string; system: string };
 
 export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 
@@ -54,7 +54,7 @@ export async function findOrCreatePerson({
   const { log, debug } = Util.out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
   const context = `cw.findOrCreatePerson.strongIds`;
   const person = makePersonForPatient(commonwellPatient);
-  const strongIds = getPersonalIdentifiers(person);
+  const strongIds = getCwPersonalIdsFromCwPatientOrPerson(person);
   if (strongIds.length > 0) {
     // Search by personal ID
     // TODO: we should be returning instances of CommonwellPerson here, so we return what we get from CW on this function, not
@@ -196,7 +196,7 @@ export async function searchPersonIds({
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  personalIds: SimplifiedPersonalId[];
+  personalIds: CwPersonalId[];
 }): Promise<string[]> {
   const { log } = Util.out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
@@ -216,12 +216,20 @@ export async function searchPersonIds({
   return Array.from(new Set(duplicatedPersonIds));
 }
 
-export function getPersonalIdentifiers(
+export function getCwPersonalIdsFromCwPatientOrPerson(
   person: CommonwellPatient | CommonwellPerson
-): SimplifiedPersonalId[] {
-  return (person.details?.identifier ?? []).flatMap(id =>
-    id.key !== undefined && id.system !== undefined ? { key: id.key, system: id.system } : []
-  );
+): CwPersonalId[] {
+  return (person.details?.identifier ?? []).map(id => {
+    return { key: id.key, system: id.system };
+  });
+}
+
+export function getCwPersonalIdsFromPatient(patient: Patient): CwPersonalId[] {
+  return (patient.data.personalIdentifiers ?? []).flatMap(id => {
+    if (id.type === "driversLicense")
+      return { key: id.value, system: driversLicenseURIs[id.state] };
+    return []; // { key: id.value, system: identifierSytemByType[id.type] }
+  });
 }
 
 export async function searchPersons({
@@ -231,7 +239,7 @@ export async function searchPersons({
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  strongIds: SimplifiedPersonalId[];
+  strongIds: CwPersonalId[];
 }): Promise<CommonwellPerson[]> {
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
@@ -248,16 +256,4 @@ export async function searchPersons({
     .flatMap(filterTruthy);
 
   return fulfilled;
-}
-
-export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
-  return (patient.data.personalIdentifiers ?? [])
-    .filter(id => id.type === "driversLicense") // Skip non-driversLicense for CW
-    .flatMap(id =>
-      id.value !== undefined && id.type === "driversLicense" && id.state !== undefined
-        ? { key: id.value, system: driversLicenseURIs[id.state] }
-        : id.value !== undefined && id.type !== "driversLicense"
-        ? { key: id.value, system: identifierSytemByType[id.type] }
-        : []
-    );
 }

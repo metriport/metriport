@@ -1,5 +1,4 @@
 import {
-  Identifier,
   Patient as FHIRPatient,
   ContactPoint,
   Reference,
@@ -11,6 +10,8 @@ import { Address } from "../../../domain/address";
 import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
+export type FhirPersonalId = { value: string; system: string };
+
 export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
@@ -21,7 +22,7 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
     resourceType: "Patient",
     id: patient.id,
     identifier: patient.data.personalIdentifiers
-      ? convertPIToIdentifier(patient.data.personalIdentifiers)
+      ? convertPersonalIdentifierToFhirIdentifier(patient.data.personalIdentifiers)
       : [],
     name: [
       {
@@ -63,7 +64,9 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   };
 };
 
-export const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[]): Identifier[] => {
+export function convertPersonalIdentifierToFhirIdentifier(
+  personalIdentifiers: PersonalIdentifier[]
+): FhirPersonalId[] {
   return personalIdentifiers.map(identifier => {
     if (identifier.type === "driversLicense") {
       return {
@@ -77,7 +80,7 @@ export const convertPIToIdentifier = (personalIdentifiers: PersonalIdentifier[])
       };
     }
   });
-};
+}
 
 export function toFHIRSubject(patientId: string): Reference<FHIRPatient> {
   const subject: Reference<FHIRPatient> = {

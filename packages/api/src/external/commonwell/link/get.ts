@@ -26,7 +26,7 @@ import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import {
-  getPersonalIdentifiersFromPatient,
+  getCwPersonalIdsFromPatient,
   PatientDataCommonwell,
   searchPersons,
 } from "../patient-shared";
@@ -239,7 +239,7 @@ const findAllPersonsStrongId = async (
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
-  const strongIds = getPersonalIdentifiersFromPatient(patient);
+  const strongIds = getCwPersonalIdsFromPatient(patient);
   if (!strongIds.length) {
     return [];
   }
