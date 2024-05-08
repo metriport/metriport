@@ -157,6 +157,8 @@ export async function queryAndProcessDocuments({
       return;
     }
 
+    const startedAt = new Date();
+
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
@@ -189,8 +191,7 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(startedAt);
     const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
