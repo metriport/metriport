@@ -15,6 +15,7 @@ export const dqParams: StoreQueryParams = {
   cmd: {
     documentQueryProgress: {
       requestId,
+      startedAt: new Date(),
       download: makeProgress(),
     },
   },

@@ -79,11 +79,13 @@ export async function queryDocumentsAcrossHIEs({
     patient,
   });
 
+  const startedAt = new Date();
+
   const updatedPatient = await storeQueryInit({
     id: patient.id,
     cxId: patient.cxId,
     cmd: {
-      documentQueryProgress: { requestId, download: { status: "processing" } },
+      documentQueryProgress: { requestId, startedAt, download: { status: "processing" } },
       cxDocumentRequestMetadata,
     },
   });
