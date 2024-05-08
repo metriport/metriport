@@ -25,11 +25,8 @@ import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
-import {
-  getCwPersonalIdsFromPatient,
-  PatientDataCommonwell,
-  searchPersons,
-} from "../patient-shared";
+import { PatientDataCommonwell, searchPersons } from "../patient-shared";
+import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
@@ -239,16 +236,11 @@ const findAllPersonsStrongId = async (
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
-  const strongIds = getCwPersonalIdsFromPatient(patient);
-  if (!strongIds.length) {
-    return [];
-  }
-
   try {
     const persons = await searchPersons({
       commonWell,
       queryMeta,
-      strongIds,
+      strongIds: getCwStrongIdsFromPatient(patient),
     });
 
     if (persons.length) {

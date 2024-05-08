@@ -9,8 +9,7 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
-import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
@@ -36,8 +35,6 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
   }
 }
 
-type CwPersonalId = { key: string; system: string };
-
 export type FindOrCreatePersonResponse = { personId: string; person: CommonwellPerson } | undefined;
 
 export async function findOrCreatePerson({
@@ -54,12 +51,12 @@ export async function findOrCreatePerson({
   const { log, debug } = Util.out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
   const context = `cw.findOrCreatePerson.strongIds`;
   const person = makePersonForPatient(commonwellPatient);
-  const strongIds = getCwPersonalIdsFromCwPatientOrPerson(person);
+  const strongIds: StrongId[] = person.details?.identifier ?? [];
   if (strongIds.length > 0) {
     // Search by personal ID
     // TODO: we should be returning instances of CommonwellPerson here, so we return what we get from CW on this function, not
     // the result of calling `makePersonForPatient()`
-    const personIds = await searchPersonIds({ commonWell, queryMeta, personalIds: strongIds });
+    const personIds = await searchPersonIds({ commonWell, queryMeta, strongIds });
     if (personIds.length === 1) return { personId: personIds[0] as string, person };
     if (personIds.length > 1) {
       const subject = "Found more than one person for patient personal IDs";
@@ -192,15 +189,15 @@ export function getMatchingStrongIds(
 export async function searchPersonIds({
   commonWell,
   queryMeta,
-  personalIds,
+  strongIds,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  personalIds: CwPersonalId[];
+  strongIds: StrongId[];
 }): Promise<string[]> {
   const { log } = Util.out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
-    personalIds.map(id =>
+    strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
         const msg = `Failure searching person @ CW by personal ID`;
         log(`${msg}. Cause: ${error}`);
@@ -216,22 +213,6 @@ export async function searchPersonIds({
   return Array.from(new Set(duplicatedPersonIds));
 }
 
-export function getCwPersonalIdsFromCwPatientOrPerson(
-  person: CommonwellPatient | CommonwellPerson
-): CwPersonalId[] {
-  return (person.details?.identifier ?? []).map(id => {
-    return { key: id.key, system: id.system };
-  });
-}
-
-export function getCwPersonalIdsFromPatient(patient: Patient): CwPersonalId[] {
-  return (patient.data.personalIdentifiers ?? []).flatMap(id => {
-    if (id.type === "driversLicense")
-      return { key: id.value, system: driversLicenseURIs[id.state] };
-    return []; // { key: id.value, system: identifierSytemByType[id.type] }
-  });
-}
-
 export async function searchPersons({
   commonWell,
   queryMeta,
@@ -239,13 +220,14 @@ export async function searchPersons({
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  strongIds: CwPersonalId[];
+  strongIds: StrongId[];
 }): Promise<CommonwellPerson[]> {
+  const { log } = Util.out(`CW searchPersons`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
         const msg = `Failed to search for person with strongId`;
-        console.log(`${msg}. Cause: ${error}`);
+        log(`${msg}. Cause: ${error}`);
         capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
         throw error;
       })

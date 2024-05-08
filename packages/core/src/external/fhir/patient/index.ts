@@ -12,17 +12,17 @@ import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type FhirPersonalId = { value: string; system: string };
 
-export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
+export const FhirGenderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
 };
 
-export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
+export function toFHIR(patient: Pick<Patient, "id" | "data">): FHIRPatient {
   return {
     resourceType: "Patient",
     id: patient.id,
     identifier: patient.data.personalIdentifiers
-      ? convertPersonalIdentifierToFhirIdentifier(patient.data.personalIdentifiers)
+      ? convertPersonalIdentifiersToFhirIdentifiers(patient.data.personalIdentifiers)
       : [],
     name: [
       {
@@ -49,7 +49,7 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
           return telecoms; // Moved return statement outside of the for loop
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: genderMapping[patient.data.genderAtBirth],
+    gender: FhirGenderMapping[patient.data.genderAtBirth],
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
@@ -62,9 +62,9 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
         };
       }) || [],
   };
-};
+}
 
-export function convertPersonalIdentifierToFhirIdentifier(
+export function convertPersonalIdentifiersToFhirIdentifiers(
   personalIdentifiers: PersonalIdentifier[]
 ): FhirPersonalId[] {
   return personalIdentifiers.map(identifier => {
