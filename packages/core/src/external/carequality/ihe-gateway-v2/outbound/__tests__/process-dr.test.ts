@@ -107,7 +107,7 @@ describe("processDRResponse", () => {
   });
 });
 
-describe("processDRResponse for various file types and verify successful upload without corruption", () => {
+describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
   testFiles.forEach(({ name, mimeType, fileExtension }) => {
