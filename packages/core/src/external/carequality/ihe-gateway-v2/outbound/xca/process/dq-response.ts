@@ -78,9 +78,12 @@ function parseDocumentReference(
     );
     if (!classification) return undefined;
     const classificationSlots = Array.isArray(classification.Slot)
-      ? classification.Slot
-      : [classification.Slot];
+      ? classification.Slot.filter((slot: Slot) => slot !== null && slot !== undefined)
+      : classification.Slot
+      ? [classification.Slot]
+      : [];
 
+    if (!classificationSlots) return undefined;
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
     return slot
       ? Array.isArray(slot.ValueList.Value)
@@ -122,7 +125,9 @@ function parseDocumentReference(
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime"),
+    creation: findSlotValue("creationTime")
+      ? dayjs(findSlotValue("creationTime"), "YYYYMMDDHHmmss").format("YYYY-MM-DDTHH:mm:ss")
+      : undefined,
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;

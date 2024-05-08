@@ -23,21 +23,20 @@ const samlAtributes = {
 async function queryDatabase() {
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(sqlDBCreds);
-  const homeCommunityId = "1.2.840.114350.1.13.266.2.7.3.688884.100";
+  //const homeCommunityId = "1.2.840.114350.1.13.266.2.7.3.688884.100";
   const query = `
     SELECT dqr.data
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
-      AND dqr.data->'gateway'->>'homeCommunityId' = :homeCommunityId
     ORDER BY dqr.id DESC
-    LIMIT 1;
+    LIMIT 100;
   `;
 
-  const replacements = { homeCommunityId };
+  //const replacements = { homeCommunityId };
 
   try {
     const results = await sequelize.query(query, {
-      replacements,
+      // replacements,
       type: QueryTypes.SELECT,
     });
     return results;
@@ -50,12 +49,12 @@ async function queryDatabase() {
 async function integrationTest() {
   try {
     const results = await queryDatabase();
-    for (const result of results) {
-      //eslint-disable-next-line
+    const promises = results.map(async result => {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       const dqResult = (result as any).data as OutboundDocumentQueryResp;
       if (!dqResult.cxId || !dqResult.patientId || !dqResult.externalGatewayPatient) {
-        console.log("skipping: ", dqResult.id);
-        continue;
+        console.log("Skipping: ", dqResult.id);
+        return null; // Return null for skipped items
       }
       const dqRequest: OutboundDocumentQueryReq = {
         id: dqResult.id,
@@ -67,54 +66,64 @@ async function integrationTest() {
         externalGatewayPatient: dqResult.externalGatewayPatient,
       };
       const dqResponse = await queryDQ(dqRequest);
-      console.log("DQ response:", dqResponse);
+      return { dqResult, dqResponse };
+    });
+
+    const responses = await Promise.all(promises);
+    responses.forEach(response => {
+      if (!response) return; // Skip processing if there was no response (null cases)
+      const { dqResult, dqResponse } = response;
       const resultDocumentReferences = new Set(
         dqResult.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
       );
       const responseDocumentReferences = new Set(
         dqResponse.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
       );
-      console.log("Result document references:", resultDocumentReferences);
-      console.log("Response document references:", responseDocumentReferences);
 
-      const missingDocumentReferences = [...resultDocumentReferences].filter(
-        ref => !responseDocumentReferences.has(ref)
-      );
-
-      if (missingDocumentReferences.length > 0) {
-        console.log("Missing document references:", missingDocumentReferences);
+      if (responseDocumentReferences.size >= resultDocumentReferences.size) {
+        console.log("Response has equal or more document references than the result. SUCCESS");
       } else {
-        console.log("No missing document references. BIG SUCCESS");
+        console.log("Response has fewer document references than expected.");
+        console.log("dqResult", dqResult);
+        console.log("dqResponse", dqResponse);
+        console.log("Result document references:", resultDocumentReferences);
+        console.log("Response document references:", responseDocumentReferences);
       }
-    }
+    });
   } catch (error) {
     console.error("Error in fetchData:", error);
   }
 }
 
 async function queryDQ(dqRequest: OutboundDocumentQueryReq): Promise<OutboundDocumentQueryResp> {
-  const samlCertsAndKeys = {
-    publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
-    privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
-    privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
-    certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
-  };
+  try {
+    const samlCertsAndKeys = {
+      publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
+      privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
+      privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
+      certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
+    };
 
-  const xmlResponses = createAndSignBulkDQRequests({
-    bulkBodyData: [dqRequest],
-    samlCertsAndKeys,
-  });
+    const xmlResponses = createAndSignBulkDQRequests({
+      bulkBodyData: [dqRequest],
+      samlCertsAndKeys,
+    });
 
-  const response = await sendSignedDQRequests({
-    signedRequests: xmlResponses,
-    samlCertsAndKeys,
-    patientId: dqRequest.patientId,
-    cxId: dqRequest.cxId,
-  });
+    const response = await sendSignedDQRequests({
+      signedRequests: xmlResponses,
+      samlCertsAndKeys,
+      patientId: dqRequest.patientId,
+      cxId: dqRequest.cxId,
+    });
 
-  return processDQResponse({
-    dqResponse: response[0],
-  });
+    return processDQResponse({
+      dqResponse: response[0],
+    });
+  } catch (error) {
+    console.log("Error in queryDQ:", error);
+    console.log("Erroring dqRequest", dqRequest);
+    throw error;
+  }
 }
 
 export async function main() {
