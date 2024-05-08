@@ -1,4 +1,4 @@
-import { Aspects, CfnOutput } from "aws-cdk-lib";
+import { Aspects, CfnOutput, RemovalPolicy } from "aws-cdk-lib";
 import { BackupResource } from "aws-cdk-lib/aws-backup";
 import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
@@ -51,8 +51,11 @@ export default class IHEDBConstruct extends Construct {
     const parameterGroup = new rds.ParameterGroup(this, "IHE_GW_DB_Params", {
       engine: dbEngine,
       parameters: {
-        // https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Cluster
-        log_min_duration_statement: config.rds.minSlowLogDurationInMs.toString(),
+        ...(config.rds.minSlowLogDurationInMs
+          ? {
+              log_min_duration_statement: config.rds.minSlowLogDurationInMs.toString(),
+            }
+          : undefined),
       },
     });
     const dbCluster = new rds.DatabaseCluster(this, `${id}DB`, {
@@ -63,12 +66,15 @@ export default class IHEDBConstruct extends Construct {
         enablePerformanceInsights: true,
         parameterGroup,
       },
+      preferredMaintenanceWindow: config.rds.maintenanceWindow,
       credentials: dbCreds,
       defaultDatabaseName: dbName,
       clusterIdentifier: dbClusterName,
       storageEncrypted: true,
       parameterGroup,
       cloudwatchLogsExports: ["postgresql"],
+      deletionProtection: true,
+      removalPolicy: RemovalPolicy.RETAIN,
     });
     this.server = dbCluster;
 
@@ -76,8 +82,8 @@ export default class IHEDBConstruct extends Construct {
       visit(node) {
         if (node instanceof rds.CfnDBCluster) {
           node.serverlessV2ScalingConfiguration = {
-            minCapacity: config.rds.minDBCap,
-            maxCapacity: config.rds.maxDBCap,
+            minCapacity: config.rds.minCapacity,
+            maxCapacity: config.rds.maxCapacity,
           };
         }
       },

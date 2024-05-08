@@ -26,6 +26,7 @@ import {
 import { ecrRepoName } from "../ihe-prereq-stack";
 import { getLambdaUrl as getLambdaUrlShared } from "../shared/lambda";
 import { buildSecrets, secretsToECS } from "../shared/secrets";
+import { addDefaultMetricsToTargetGroup } from "../shared/target-group";
 import IHEDBConstruct from "./ihe-db-construct";
 
 export interface IHEGatewayConstructProps {
@@ -191,6 +192,7 @@ export default class IHEGatewayConstruct extends Construct {
       protocol: Protocol.HTTP,
       timeout: Duration.seconds(5),
     };
+
     const addPortToLB = (
       port: number,
       theLB: ApplicationLoadBalancer,
@@ -216,22 +218,30 @@ export default class IHEGatewayConstruct extends Construct {
       // don't create a new TG if this listener was already created on the same port
       if (existingListener) return;
       const targetGroupId = `${id}-TG-${port}`;
-      service.registerLoadBalancerTargets({
-        containerName,
-        containerPort: port,
-        protocol: ecs.Protocol.TCP,
-        newTargetGroupId: targetGroupId,
-        listener: ecs.ListenerConfig.applicationListener(listener, {
-          protocol: ApplicationProtocol.HTTP,
-          port,
-          targetGroupName: targetGroupId,
-          healthCheck: {
-            ...healthCheck,
-            ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
-          },
-          // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
-          deregistrationDelay: Duration.minutes(10),
-        }),
+
+      const targetGroup = listener.addTargets(targetGroupId, {
+        protocol: ApplicationProtocol.HTTP,
+        port,
+        targetGroupName: targetGroupId,
+        targets: [
+          service.loadBalancerTarget({
+            containerName,
+            containerPort: port,
+          }),
+        ],
+        healthCheck: {
+          ...healthCheck,
+          ...(healthcheckInterval ? { interval: healthcheckInterval } : undefined),
+        },
+        // See for details: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-target-groups.html#deregistration-delay
+        deregistrationDelay: Duration.minutes(10),
+      });
+      addDefaultMetricsToTargetGroup({
+        targetGroup,
+        scope,
+        id,
+        idx: port,
+        alarmAction: props.alarmAction,
       });
     };
     defaultPorts.forEach(port => addPortToLB(port, alb));

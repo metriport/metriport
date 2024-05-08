@@ -64,7 +64,7 @@ export const createPatient = async (
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
     addresses: patientCreate.data.address,
-    patient: patientCreate,
+    cxId: patientCreate.cxId,
     reportRelevance: true,
   });
   if (addressWithCoordinates) patientCreate.data.address = addressWithCoordinates;

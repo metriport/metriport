@@ -3,6 +3,8 @@ import { faker } from "@faker-js/faker";
 import { executeAsynchronously } from "../concurrency";
 import * as sleepFile from "../sleep";
 
+const anyNumber = expect.any(Number);
+
 beforeEach(() => {
   jest.restoreAllMocks();
 });
@@ -45,8 +47,8 @@ describe("executeAsynchronously", () => {
     ).rejects.toThrow();
   });
 
-  // TODO fix this test, likely need to build a "pop" function so we can mock it (or mock
-  // Array.prototype.pop)
+  // TODO fix this test, likely need to build a "shift" function so we can mock it (or mock
+  // Array.prototype.shift)
   // it("runs splits list and runs it asynchronously", async () => {
   //   const list = ["a", "b", "c", "d", "e"];
   //   const fn = jest.fn(async () => {
@@ -69,6 +71,24 @@ describe("executeAsynchronously", () => {
     const fn = jest.fn();
     await executeAsynchronously(list, fn);
     expect(fn).toHaveBeenCalledTimes(list.length);
+  });
+
+  it("sends correct item ", async () => {
+    const list = [1, 2, 3];
+    const fn = jest.fn();
+    await executeAsynchronously(list, fn);
+    expect(fn).toHaveBeenNthCalledWith(1, list[0], anyNumber, anyNumber, anyNumber);
+    expect(fn).toHaveBeenNthCalledWith(2, list[1], anyNumber, anyNumber, anyNumber);
+    expect(fn).toHaveBeenNthCalledWith(3, list[2], anyNumber, anyNumber, anyNumber);
+  });
+
+  it("sends correct index item ", async () => {
+    const list = [1, 2, 3];
+    const fn = jest.fn();
+    await executeAsynchronously(list, fn);
+    expect(fn).toHaveBeenNthCalledWith(1, anyNumber, 0, anyNumber, anyNumber);
+    expect(fn).toHaveBeenNthCalledWith(2, anyNumber, 1, anyNumber, anyNumber);
+    expect(fn).toHaveBeenNthCalledWith(3, anyNumber, 2, anyNumber, anyNumber);
   });
 
   it("jitters before runs", async () => {

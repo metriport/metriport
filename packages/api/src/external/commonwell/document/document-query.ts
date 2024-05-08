@@ -12,6 +12,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { DownloadResult } from "@metriport/core/external/commonwell/document/document-downloader";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
@@ -24,7 +25,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import NotFoundError from "../../../errors/not-found";
 import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
@@ -60,7 +60,9 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getFileName,
+  getContentTypeOrUnknown,
 } from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -115,7 +117,13 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
   if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
@@ -183,6 +191,8 @@ export async function queryAndProcessDocuments({
 
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +203,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 
@@ -553,7 +564,7 @@ async function downloadDocsAndUpsertFHIR({
             } else {
               // Get info from existing S3 file
               uploadToS3 = async () => {
-                const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
+                const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
                 return {
@@ -578,26 +589,23 @@ async function downloadDocsAndUpsertFHIR({
             if (isConvertibleDoc && !ignoreFhirConversionAndUpsert) errorCountConvertible++;
 
             const isZeroLength = doc.content.size === 0;
-            if (isZeroLength && error instanceof NotFoundError) {
-              // we don't want to report errors when the file was originally flagged as empty
+            if (isZeroLength || error instanceof NotFoundError) {
+              // we don't want to report errors when the file was originally flagged as empty or not found
               errorReported = true;
               throw error;
             }
             const msg = `Error downloading from CW and upserting to FHIR`;
-            const zeroLengthDetailsStr = isZeroLength ? "zero length document" : "";
-            log(`${msg}: ${zeroLengthDetailsStr}, (docId ${doc.id}): ${error}`);
-            capture.message(msg, {
+            log(`${msg}: (docId ${doc.id}): ${errorToString(error)}`);
+            capture.error(msg, {
               extra: {
                 context: `s3.documentUpload`,
                 patientId: patient.id,
                 documentReference: doc,
-                isZeroLength,
                 requestId,
                 error,
               },
               level: "error",
             });
-            errorReported = true;
             throw error;
           }
 
@@ -779,7 +787,10 @@ async function triggerDownloadDocument({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (error.status === httpStatus.NOT_FOUND) {
-      console.log(`Document not found on CW, skipping - requestId: ${requestId}. Error: ${error}`);
+      console.log(
+        `Document not found on CW, skipping - requestId: ${requestId}. ` +
+          `Error: ${errorToString(error)}`
+      );
       throw new NotFoundError("Document not found on CW", error, { requestId });
     } else {
       throw error;

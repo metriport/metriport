@@ -385,6 +385,12 @@ async function updatePatientAndLinksInCw(
       getOrgIdExcludeList
     );
 
+    setPatientDiscoveryStatus({
+      patientId: patient.id,
+      cxId: patient.cxId,
+      status: "completed",
+    });
+
     const startedAt = patient.data.patientDiscovery?.startedAt;
 
     analytics({

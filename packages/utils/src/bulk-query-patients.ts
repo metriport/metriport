@@ -13,6 +13,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
+import path from "path";
+import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 
 dayjs.extend(duration);
@@ -56,19 +58,34 @@ const confirmationTime = dayjs.duration(10, "seconds");
 // csv stuff
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
-const curDateTime = new Date();
-const csvName = (cxName: string): string =>
-  `./runs/${cxName.replaceAll(" ", "").trim()}-DocQuery-${curDateTime.toISOString()}.csv`;
+
+const csvName = (cxName: string): string => `./runs/DocQuery/${getFileNameForOrg(cxName, "csv")}`;
 
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
-function initCsv(cxName: string) {
-  fs.writeFileSync(csvName(cxName), csvHeader);
+function initCsv(fileName: string) {
+  const dirName = path.dirname(fileName);
+  if (!fs.existsSync(dirName)) {
+    fs.mkdirSync(dirName, { recursive: true });
+  }
+  fs.writeFileSync(fileName, csvHeader);
+}
+
+async function getPatientIds(dryRun: boolean, log: typeof console.log): Promise<string[]> {
+  if (patientIds.length > 0) {
+    if (!dryRun) {
+      displayNoDryRunWarning(log);
+      log("Cancel this script now if you're not sure.");
+      await sleep(confirmationTime.asMilliseconds());
+    }
+    return patientIds;
+  }
+  return await getAllPatientIds(dryRun, log);
 }
 
 async function getAllPatientIds(dryRun: boolean, log: typeof console.log): Promise<string[]> {
   if (!dryRun) {
-    log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
+    displayNoDryRunWarning(log);
     log(
       "You are about to trigger a document query for all patients of the CX. This is very expensive!"
     );
@@ -80,9 +97,15 @@ async function getAllPatientIds(dryRun: boolean, log: typeof console.log): Promi
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
+function displayNoDryRunWarning(log: typeof console.log) {
+  // The first chars there are to set color red on the terminal
+  // See: // https://stackoverflow.com/a/41407246/2099911
+  log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
+}
+
 async function queryDocsForPatient(
   patientId: string,
-  cxName: string,
+  fileName: string,
   dryRun: boolean,
   log: typeof console.log
 ) {
@@ -132,7 +155,7 @@ async function queryDocsForPatient(
     // write line to results csv
     const state = Array.isArray(patient.address) ? patient.address[0].state : patient.address.state;
     fs.appendFileSync(
-      csvName(cxName),
+      fileName,
       `${patient.id},${patient.firstName},${
         patient.lastName
       },${state},${docQueryAttempts},${docCount},${totalFhirResourceCount},${JSON.stringify(
@@ -165,11 +188,12 @@ async function main() {
   const startedAt = Date.now();
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
   const { orgName } = await getCxData(cxId, undefined, false);
+  const fileName = csvName(orgName);
 
-  initCsv(orgName);
+  initCsv(fileName);
 
-  const patientIdsToQuery =
-    patientIds.length > 0 ? patientIds : await getAllPatientIds(dryRun, log);
+  const patientIdsToQuery = await getPatientIds(dryRun, log);
+  log(`>>> Running it...`);
   const chunks = chunk(patientIdsToQuery, patientChunkSize);
 
   let count = 0;
@@ -178,7 +202,7 @@ async function main() {
     log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
     const docQueries: Promise<void>[] = [];
     for (const patientId of chunk) {
-      docQueries.push(queryDocsForPatient(patientId, orgName, dryRun, log));
+      docQueries.push(queryDocsForPatient(patientId, fileName, dryRun, log));
       count++;
     }
     await Promise.allSettled(docQueries);

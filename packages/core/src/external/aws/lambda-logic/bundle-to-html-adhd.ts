@@ -716,9 +716,11 @@ function buildEncounterSections(
               const reportInsideTime =
                 reportInside.effectiveDateTime ?? reportInside.effectivePeriod?.start;
               const reportInsideDate = dayjs(reportInsideTime).format(ISO_DATE) ?? "";
-              const isDuplicate = reportInsideDate === reportDate;
+              const isDuplicateDate = reportInsideDate === reportDate;
+              const hasSamePresentedForm =
+                reportInside.presentedForm?.[0]?.data === report.presentedForm?.[0]?.data;
 
-              return isDuplicate;
+              return isDuplicateDate && hasSamePresentedForm;
             }
           );
 
@@ -750,8 +752,10 @@ function buildReports(
   dateFilter?: string,
   conditions?: Condition[]
 ) {
+  const docsWithNotes = filterEncounterSections(encounterSections);
+
   return (
-    Object.entries(encounterSections)
+    Object.entries(docsWithNotes)
       // SORT BY ENCOUNTER DATE DESCENDING
       .sort(([keyA], [keyB]) => {
         return dayjs(keyA).isBefore(dayjs(keyB)) ? 1 : -1;
@@ -763,14 +767,6 @@ function buildReports(
         }
 
         return true;
-      })
-      .filter(([, value]) => {
-        const documentation = value.documentation;
-        const note = documentation?.[0]?.presentedForm?.[0]?.data ?? "";
-
-        const noNote = !note || note.length === 0;
-
-        return noNote ? false : true;
       })
       .map(([key, value]) => {
         const labs = value.labs;
@@ -845,6 +841,23 @@ function buildReports(
       })
       .join("")
   );
+}
+
+function filterEncounterSections(encounterSections: EncounterSection): EncounterSection {
+  return Object.entries(encounterSections).reduce((acc, [key, value]) => {
+    const documentation = value.documentation?.filter(doc => {
+      const note = doc.presentedForm?.[0]?.data ?? "";
+
+      return note || note.length > 0;
+    });
+
+    acc[key] = {
+      ...value,
+      documentation: documentation && documentation.length > 0 ? documentation : [],
+    };
+
+    return acc;
+  }, {} as EncounterSection);
 }
 
 const REMOVE_FROM_NOTE = ["xLabel", "5/5", "Â°F", "â¢", "documented in this encounter"];
