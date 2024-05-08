@@ -20,7 +20,8 @@ import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-en
 import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
+import { DocumentReferenceWithMetriportId, cqToFHIR, toDocumentReference } from "./shared";
+import { getCQData } from "../patient";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
 import { Config } from "../../../shared/config";
@@ -44,7 +45,8 @@ export async function processOutboundDocumentQueryResps({
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
+    const cqData = getCQData(patient.data.externalData);
+    const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
     const docRefs = results.map(toDocumentReference).flat();
