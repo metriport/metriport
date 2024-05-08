@@ -5,7 +5,7 @@ import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
-import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
@@ -58,8 +58,8 @@ export function createITI39SoapEnvelope({
       "@_xmlns:urn": namespaces.urnihe,
       "urn:RetrieveDocumentSetRequest": {
         "urn:DocumentRequest": documentReferences.map(docRef => ({
-          "urn:HomeCommunityId": docRef.homeCommunityId,
-          "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
+          "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
+          "urn:RepositoryUniqueId": wrapIdInUrnOid(docRef.repositoryUniqueId),
           "urn:DocumentUniqueId": docRef.documentUniqueId,
         })),
       },

@@ -99,7 +99,7 @@ async function queryDatabaseForDRs() {
     FROM document_retrieval_result drr
     WHERE drr.status = 'success'
     ORDER BY drr.data DESC
-    LIMIT 1;
+    LIMIT 2;
   `;
 
   try {
@@ -184,7 +184,9 @@ async function DRIntegrationTest() {
   let failureCount = 0;
   let runTimeErrorCount = 0;
 
+  console.log("Querrying DB for DRs...");
   const results = await queryDatabaseForDRs();
+  console.log("Sending DRs...");
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const drResult = (result as any).data as OutboundDocumentRetrievalResp;
@@ -210,6 +212,7 @@ async function DRIntegrationTest() {
     }
   });
 
+  console.log("Processing DRs...");
   const responses = await Promise.allSettled(promises);
   responses.forEach(response => {
     if (response.status === "fulfilled" && response.value) {

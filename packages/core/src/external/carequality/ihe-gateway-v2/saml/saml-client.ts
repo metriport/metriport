@@ -43,7 +43,7 @@ export async function sendSignedXml({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<string> {
+}): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
     rejectUnauthorized: false,
     cert: samlCertsAndKeys.certChain,
@@ -58,10 +58,11 @@ export async function sendSignedXml({
     timeout: 120000,
     headers: {
       "Content-Type": "application/soap+xml;charset=UTF-8",
+      Accept: "application/soap+xml",
       "Cache-Control": "no-cache",
     },
     httpsAgent: agent,
   });
 
-  return response.data;
+  return { response: response.data, contentType: response.headers["content-type"] };
 }

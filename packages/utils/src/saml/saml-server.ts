@@ -14,6 +14,7 @@ import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe
 import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
+import { parseMTOMResponse } from "./mtom-parser";
 
 const app = express();
 const port = 8043;
@@ -91,12 +92,18 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
+    fs.writeFileSync("../../scratch/dr/miami-may-8.xml", xmlResponses[0].signedRequest);
     const response = await sendSignedDRRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,
       patientId: uuidv4(),
       cxId: uuidv4(),
     });
+    if (response[0].contentType?.includes("multipart/related")) {
+      console.log("MTOM Response");
+      const mtom = parseMTOMResponse(response[0].response, response[0].contentType);
+      console.log(mtom);
+    }
 
     res.type("application/xml").send(response);
   } catch (error) {

@@ -12,6 +12,7 @@ const context = "ihe-gateway-v2-dr-saml-client";
 export type DRSamlClientResponse = SamlClientResponse & {
   gateway: XCAGateway;
   outboundRequest: OutboundDocumentRetrievalReq;
+  contentType: string | undefined;
 };
 
 export async function sendSignedDRRequests({
@@ -28,7 +29,7 @@ export async function sendSignedDRRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const response = await sendSignedXml({
+      const { response, contentType } = await sendSignedXml({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -44,6 +45,7 @@ export async function sendSignedDRRequests({
         response,
         success: true,
         outboundRequest: request.outboundRequest,
+        contentType,
       };
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
@@ -67,6 +69,7 @@ export async function sendSignedDRRequests({
         outboundRequest: request.outboundRequest,
         response: errorString,
         success: false,
+        contentType: undefined,
       };
     }
   });

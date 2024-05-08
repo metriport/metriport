@@ -33,6 +33,7 @@ describe("processDRResponse", () => {
         response: xmlString,
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
+        contentType: "application/xml",
       },
       s3Utils,
     });
@@ -64,6 +65,7 @@ describe("processDRResponse", () => {
         response: xmlString,
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
+        contentType: "application/xml",
       },
       s3Utils,
     });
@@ -79,6 +81,7 @@ describe("processDRResponse", () => {
         response: xmlString,
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
+        contentType: "application/xml",
       },
       s3Utils,
     });
@@ -93,6 +96,7 @@ describe("processDRResponse", () => {
         response: xmlString,
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
+        contentType: "application/xml",
       },
       s3Utils,
     });
@@ -107,6 +111,7 @@ describe("processDRResponse", () => {
         response: randomResponse,
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
+        contentType: "application/xml",
       },
       s3Utils,
     });
@@ -157,6 +162,7 @@ describe.skip("processDRResponse for various file types and verify successful up
                   metriportId: uuidv4(),
                 })),
               },
+              contentType: "application/xml",
             },
             s3Utils,
           });

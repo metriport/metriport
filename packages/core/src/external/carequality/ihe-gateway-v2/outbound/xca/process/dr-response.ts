@@ -147,7 +147,7 @@ async function handleSuccessResponse({
 }
 
 export async function processDRResponse({
-  drResponse: { response, success, gateway, outboundRequest },
+  drResponse: { response, success, gateway, outboundRequest, contentType },
   s3Utils,
 }: {
   drResponse: DRSamlClientResponse;
@@ -160,6 +160,9 @@ export async function processDRResponse({
       outboundRequest,
       gateway,
     });
+  }
+  if (contentType?.includes("multipart/related")) {
+    console.log(contentType);
   }
   const parser = new XMLParser({
     ignoreAttributes: false,
