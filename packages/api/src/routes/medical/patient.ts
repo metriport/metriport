@@ -506,7 +506,7 @@ router.post(
     const patient = await searchPatient(patientSearch);
 
     if (patient) {
-      return res.status(status.FOUND).json(dtoFromModel(patient));
+      return res.status(status.OK).json(dtoFromModel(patient));
     }
     return res.status(status.NOT_FOUND).json({
       message: "Cannot find patient",

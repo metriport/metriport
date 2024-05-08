@@ -3,7 +3,7 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import { MetriportClient } from "../src";
-import { BasePatient } from "../src/api/resources/medical/resources/patient/types";
+import { BasePatient, Demographics } from "../src/api/resources/medical/resources/patient/types";
 import { PatientCreate } from "../src/api/resources/medical/resources/patient/client/requests";
 import { UsState, Address } from "../src/api/resources/commons/types";
 
@@ -46,7 +46,28 @@ describe("Patient tests", () => {
         body: patientData
       };
 
-    const response = await client.medical.patient.create(createRequest);
+    await client.medical.patient.create(createRequest);
+    
+    const patientDemoData: Demographics = {
+      firstName: "John",
+      lastName: "Doe",
+      dob: "1980-01-01",
+      genderAtBirth: "M",
+      personalIdentifiers: [{
+          type: "driversLicense",
+          state: UsState.Ca,
+          value: "12345678",
+        }],
+      address: [{
+          addressLine1: "123 Main St",
+          city: "Los Angeles",
+          state: UsState.Ca,
+          zip: "90001",
+          country: "USA",
+        }],
+    };
+
+    const response = await client.medical.patient.search(patientDemoData);
     console.log(`Received patient with ID: ${response.id}`);
   });
 });

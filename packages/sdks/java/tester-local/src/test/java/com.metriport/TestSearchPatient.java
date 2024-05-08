@@ -2,10 +2,10 @@ package com.metriport;
 
 import com.metriport.generated.Metriport;
 import com.metriport.generated.resources.medical.patient.requests.PatientCreate;
-import com.metriport.generated.resources.medical.patient.requests.PatientSearch;
 import com.metriport.generated.resources.medical.patient.types.BasePatient;
 import com.metriport.generated.resources.medical.patient.types.PersonalIdentifier;
 import com.metriport.generated.resources.medical.patient.types.DriversLicense;
+import com.metriport.generated.resources.medical.patient.types.Demographics;
 import com.metriport.generated.resources.commons.types.Address;
 import com.metriport.generated.resources.commons.types.UsState;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -55,9 +55,24 @@ public class TestSearchPatient {
                 .facilityId(facilityId)
                 .body(patientData)
                 .build();
+
         client.medical().patient().create(request1);
-        PatientSearch request2 = PatientSearch.builder()
-                .body(patientData)
+
+        Demographics request2 = Demographics.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .dob("1980-01-01")
+                .genderAtBirth("M")
+                .personalIdentifiers(Collections.singletonList(personalIdentifier))
+                .address(Collections.singletonList(
+                        Address.builder()
+                                .addressLine1("123 Main St")
+                                .city("Los Angeles")
+                                .state(UsState.CA)
+                                .zip("90001")
+                                .country("USA")
+                                .build()
+                ))
                 .build();
 
         var response = client.medical().patient().search(request2);
