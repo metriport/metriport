@@ -107,7 +107,7 @@ describe("processDRResponse", () => {
   });
 });
 
-describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {
+describe("processDRResponse for various file types and verify successful upload without corruption", () => {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
   testFiles.forEach(({ name, mimeType, fileExtension }) => {
@@ -153,7 +153,7 @@ describe.skip("processDRResponse for various file types and verify successful up
             },
           });
 
-          this.key = `${outboundDRRequest.cxId}/${outboundDRRequest.patientId}/${this.response.documentReference?.[0]?.fileName}`;
+          this.key = this.response.documentReference?.[0]?.fileName || "";
           this.bucket = this.response.documentReference?.[0]?.fileLocation;
         }
 
