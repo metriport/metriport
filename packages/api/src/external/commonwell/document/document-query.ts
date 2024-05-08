@@ -115,7 +115,13 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
   if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
