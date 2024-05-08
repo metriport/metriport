@@ -20,7 +20,13 @@ import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-en
 import { getCqInitiator } from "../shared";
 import { createOutboundDocumentRetrievalReqs } from "./create-outbound-document-retrieval-req";
 import { getNonExistentDocRefs } from "./get-non-existent-doc-refs";
-import { cqToFHIR, DocumentReferenceWithMetriportId, toDocumentReference } from "./shared";
+import {
+  cqToFHIR,
+  DocumentReferenceWithMetriportId,
+  toDocumentReference,
+  getContentTypeOrUnknown,
+} from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
 import { Config } from "../../../shared/config";
@@ -48,6 +54,8 @@ export async function processOutboundDocumentQueryResps({
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
     const docRefs = results.map(toDocumentReference).flat();
+    const contentTypes = docRefs.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -58,6 +66,7 @@ export async function processOutboundDocumentQueryResps({
         hie: MedicalDataSource.CAREQUALITY,
         duration,
         documentCount: docRefs.length,
+        ...contentTypeCounts,
       },
     });
 
