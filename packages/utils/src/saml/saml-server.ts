@@ -13,6 +13,7 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
 import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
+import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 
 const app = express();
 const port = 8043;
@@ -61,14 +62,20 @@ app.post("/xcadq", async (req: Request, res: Response) => {
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
-    const response = await sendSignedDQRequests({
+    const responses = await sendSignedDQRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,
       patientId: uuidv4(),
       cxId: uuidv4(),
     });
 
-    res.type("application/xml").send(response);
+    const results = responses.map(response => {
+      return processDQResponse({
+        dqResponse: response,
+      });
+    });
+
+    res.type("application/json").send(results);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
   }
