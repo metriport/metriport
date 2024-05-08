@@ -16,6 +16,10 @@ import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "./outbound/xca/process/dq-response";
 import { processDRResponse } from "./outbound/xca/process/dr-response";
 import { capture } from "../../../util/notifications";
+import { Config } from "../../../util/config";
+import { S3Utils } from "../../aws/s3";
+
+const region = Config.getAWSRegion();
 
 export async function createSignSendProcessXCPDRequest({
   pdResponseUrl,
@@ -123,10 +127,12 @@ export async function createSignSendProcessDRRequests({
     patientId,
     cxId,
   });
+  const s3Utils = new S3Utils(region);
   const results = await Promise.all(
     responses.map(async response => {
       return processDRResponse({
         drResponse: response,
+        s3Utils,
       });
     })
   );

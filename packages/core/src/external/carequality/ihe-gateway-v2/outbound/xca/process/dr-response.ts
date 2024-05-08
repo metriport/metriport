@@ -26,7 +26,6 @@ import {
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 
 const bucket = Config.getMedicalDocumentsBucketName();
-const region = Config.getAWSRegion();
 
 type DocumentResponse = {
   size: string;
@@ -102,14 +101,14 @@ async function handleSuccessResponse({
   documentResponses,
   outboundRequest,
   gateway,
+  s3Utils,
 }: {
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   documentResponses: any;
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
-  const s3Utils = new S3Utils(region);
-
   const idMapping = outboundRequest.documentReference.reduce(
     (acc: Record<string, string>, entry) => {
       if (entry.docUniqueId && entry.metriportId) {
@@ -149,8 +148,10 @@ async function handleSuccessResponse({
 
 export async function processDRResponse({
   drResponse: { response, success, gateway, outboundRequest },
+  s3Utils,
 }: {
   drResponse: DRSamlClientResponse;
+  s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (success === false) {
@@ -182,6 +183,7 @@ export async function processDRResponse({
       documentResponses,
       outboundRequest,
       gateway,
+      s3Utils,
     });
   } else if (registryErrorList) {
     return handleRegistryErrorResponse({

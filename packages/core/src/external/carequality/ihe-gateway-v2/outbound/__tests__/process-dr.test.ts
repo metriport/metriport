@@ -7,6 +7,8 @@ import { outboundDRRequest, testFiles, testFilesForUploadVerification } from "./
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
 
+const s3Utils = new S3Utils(Config.getAWSRegion());
+
 describe("processDRResponse", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() =>
@@ -32,6 +34,7 @@ describe("processDRResponse", () => {
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
       },
+      s3Utils,
     });
     expect(response.documentReference?.length).toBe(2);
     expect(response?.documentReference?.[0]?.contentType).toEqual("application/octet-stream");
@@ -62,6 +65,7 @@ describe("processDRResponse", () => {
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
       },
+      s3Utils,
     });
 
     expect(response?.operationOutcome?.issue[0]?.code).toBe("soap:Sender");
@@ -76,6 +80,7 @@ describe("processDRResponse", () => {
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
       },
+      s3Utils,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
   });
@@ -89,6 +94,7 @@ describe("processDRResponse", () => {
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
       },
+      s3Utils,
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
   });
@@ -102,6 +108,7 @@ describe("processDRResponse", () => {
         gateway: outboundDRRequest.gateway,
         outboundRequest: outboundDRRequest,
       },
+      s3Utils,
     });
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
   });
@@ -151,6 +158,7 @@ describe.skip("processDRResponse for various file types and verify successful up
                 })),
               },
             },
+            s3Utils,
           });
 
           this.key = `${outboundDRRequest.cxId}/${outboundDRRequest.patientId}/${this.response.documentReference?.[0]?.fileName}`;
