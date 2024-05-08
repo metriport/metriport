@@ -155,3 +155,7 @@ export function dedupeContainedResources(combined: Resource[]): Resource[] | und
 
   return deduped;
 }
+
+export function getContentTypeOrUnknown(docRef: DocumentReference) {
+  return docRef.contentType ?? "unknown";
+}
