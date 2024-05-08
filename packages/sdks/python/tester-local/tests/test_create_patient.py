@@ -14,11 +14,7 @@ facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 
 
-def test_get_all_patients() -> None:
-    """
-    The function `get_all_patients` retrieves a list of all patients from a medical API and prints their
-    IDs.
-    """
+def test_create_patient() -> None:
     client = Metriport(api_key=api_key, base_url=base_url)
     patient_data = BasePatient(
         first_name="John",

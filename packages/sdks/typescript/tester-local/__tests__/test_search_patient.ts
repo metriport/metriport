@@ -21,7 +21,7 @@ const client = new MetriportClient({
 });
 
 describe("Patient tests", () => {
-  test("create a patient", async () => {
+  test("search a patient", async () => {
     const patientData: BasePatient = {
       firstName: "John",
       lastName: "Doe",

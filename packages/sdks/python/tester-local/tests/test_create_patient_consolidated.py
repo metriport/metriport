@@ -9,7 +9,7 @@ api_key = os.environ.get("API_KEY")
 patient_id = os.environ.get("PATIENT_ID")
 base_url = os.environ.get("BASE_URL")
 
-def test_start_consolidated_query():
+def test_create_patient_consolidated():
     client = Metriport(api_key=api_key, base_url=base_url)
 
     consolidated_bundle_upload = ConsolidatedBundleUpload(

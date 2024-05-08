@@ -14,7 +14,7 @@ facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 
 
-def test_start_doc_query() -> None:
+def test_create_document_reference() -> None:
     client = Metriport(api_key=api_key, base_url=base_url)
 
 
