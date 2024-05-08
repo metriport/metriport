@@ -7,25 +7,20 @@ import {
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
+import { Patient, splitName, genderAtBirthMapping } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
+export type FhirPatient = Pick<Patient, "id" | "data">;
 export type FhirPersonalId = { value: string; system: string };
 
-export const FhirGenderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
-  F: "female",
-  M: "male",
-};
-
-export function toFHIR(patient: Pick<Patient, "id" | "data">): FHIRPatient {
+export function toFHIR(patient: FhirPatient): FHIRPatient {
   return {
     resourceType: "Patient",
     id: patient.id,
-    identifier: patient.data.personalIdentifiers
-      ? convertPersonalIdentifiersToFhirIdentifiers(patient.data.personalIdentifiers)
-      : [],
+    identifier: getFhirPersonalIdentifiersFromPatient(patient),
     name: [
       {
+        // Why are we not splitting this?
         family: patient.data.lastName,
         given: splitName(patient.data.firstName),
       },
@@ -49,7 +44,7 @@ export function toFHIR(patient: Pick<Patient, "id" | "data">): FHIRPatient {
           return telecoms; // Moved return statement outside of the for loop
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: FhirGenderMapping[patient.data.genderAtBirth],
+    gender: genderAtBirthMapping[patient.data.genderAtBirth],
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {
@@ -64,21 +59,11 @@ export function toFHIR(patient: Pick<Patient, "id" | "data">): FHIRPatient {
   };
 }
 
-export function convertPersonalIdentifiersToFhirIdentifiers(
-  personalIdentifiers: PersonalIdentifier[]
-): FhirPersonalId[] {
-  return personalIdentifiers.map(identifier => {
-    if (identifier.type === "driversLicense") {
-      return {
-        system: driversLicenseURIs[identifier.state],
-        value: identifier.value,
-      };
-    } else {
-      return {
-        system: identifierSytemByType[identifier.type],
-        value: identifier.value,
-      };
-    }
+export function getFhirPersonalIdentifiersFromPatient(patient: FhirPatient): FhirPersonalId[] {
+  return (patient.data.personalIdentifiers ?? []).map(id => {
+    if (id.type === "driversLicense")
+      return { value: id.value, system: driversLicenseURIs[id.state] };
+    return { value: id.value, system: identifierSytemByType[id.type] };
   });
 }
 

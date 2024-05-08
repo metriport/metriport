@@ -1,11 +1,11 @@
 import dayjs from "dayjs";
-import { FhirGenderMapping } from "../../fhir/patient";
+import { genderAtBirthMapping, GenderAtBirth } from "../../../domain/patient";
 
-export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
+export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
     return undefined;
   }
-  return FhirGenderMapping[gender] ?? undefined;
+  return genderAtBirthMapping[gender] ?? undefined;
 }
 
 export function timestampToSoapBody(createdTimestamp: string): string {

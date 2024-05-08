@@ -9,8 +9,7 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
-import { Patient, splitName } from "@metriport/core/domain/patient";
-import { FhirGenderMapping } from "@metriport/core/external/fhir/patient/index";
+import { Patient, splitName, genderAtBirthMapping } from "@metriport/core/domain/patient";
 
 export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPerson {
   return {
@@ -60,7 +59,7 @@ export function patientToCommonwell({
         },
       ],
       gender: {
-        code: FhirGenderMapping[patient.data.genderAtBirth],
+        code: genderAtBirthMapping[patient.data.genderAtBirth],
       },
       telecom: patient.data.contact?.flatMap(contact => {
         const contacts: Contact[] = [];
