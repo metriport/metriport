@@ -458,18 +458,19 @@ export class MetriportMedicalApi {
    * Start a bulk document download for a given patient, with the payload returned to the webhook.
    *
    * @param patientId Patient ID for which to retrieve document URLs.
+   * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The document query request ID, progress, and status indicating whether it's being executed or not.
    */
-  async startBulkGetDocumentUrl(patientId: string): Promise<BulkGetDocumentUrlQuery> {
-    const resp = await this.api.post(
-      `${DOCUMENT_URL}/download-url/bulk`,
-      {},
-      {
-        params: {
-          patientId,
-        },
-      }
-    );
+  async startBulkGetDocumentUrl(
+    patientId: string,
+    metadata?: Record<string, string>
+  ): Promise<BulkGetDocumentUrlQuery> {
+    const whMetadata = { metadata: metadata };
+    const resp = await this.api.post(`${DOCUMENT_URL}/download-url/bulk`, whMetadata, {
+      params: {
+        patientId,
+      },
+    });
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return bulkGetDocumentUrlQuerySchema.parse(resp.data);
   }

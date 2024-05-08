@@ -33,7 +33,13 @@ export async function getDocumentsFromCQ({
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.CAREQUALITY, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    requestId,
+    cxId,
+    source: MedicalDataSource.CAREQUALITY,
+    log,
+  });
   if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);

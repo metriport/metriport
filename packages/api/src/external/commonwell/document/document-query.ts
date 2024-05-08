@@ -60,7 +60,9 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getFileName,
+  getContentTypeOrUnknown,
 } from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -115,7 +117,13 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
   if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
@@ -183,6 +191,8 @@ export async function queryAndProcessDocuments({
 
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +203,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 
@@ -553,7 +564,7 @@ async function downloadDocsAndUpsertFHIR({
             } else {
               // Get info from existing S3 file
               uploadToS3 = async () => {
-                const signedUrl = getUrl(fileInfo.fileName, fileInfo.fileLocation);
+                const signedUrl = await getUrl(fileInfo.fileName, fileInfo.fileLocation);
                 const url = new URL(signedUrl);
                 const s3Location = url.origin + url.pathname;
                 return {

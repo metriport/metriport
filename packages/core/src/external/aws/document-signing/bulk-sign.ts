@@ -5,7 +5,7 @@ import axios from "axios";
 import { capture } from "../../../util/notifications";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
-import { DocumentBulkSignerLambdaResponse } from "../../../domain/document-bulk-signer-response";
+import { DocumentBulkSignerLambdaResponse } from "./document-bulk-signer-response";
 const ossApi = axios.create();
 dayjs.extend(duration);
 
