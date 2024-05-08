@@ -42,5 +42,3 @@ def test_start_consolidated_query():
         id=patient_id,
     )
     print(f"count: {json.dumps(count.dict(), indent=2)}")
-
-

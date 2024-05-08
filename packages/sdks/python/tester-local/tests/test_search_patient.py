@@ -2,7 +2,7 @@ import os
 
 from generated.client import Metriport
 from generated.resources import UsState, Address
-from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense
+from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense, Demographics
 
 import os
 from dotenv import load_dotenv
@@ -41,5 +41,25 @@ def test_get_all_patients() -> None:
         )]
     )
     client.medical.patient.create(facility_id=facility_id, request=patient_data)
-    response = client.medical.patient.search(request=patient_data)
+    patient_demodata = Demographics(
+        first_name="John",
+        last_name="Doe",
+        dob="1980-01-01",
+        gender_at_birth="M",
+        personal_identifiers=[
+            PersonalIdentifier_DriversLicense(
+                type="driversLicense",
+                state=UsState.CA,
+                value="12345678",
+            )
+        ],
+        address=[Address(
+            address_line_1="123 Main St",
+            city="Los Angeles",
+            state=UsState.CA,
+            zip="90001",
+            country="USA"
+        )]
+    )
+    response = client.medical.patient.search(request=patient_demodata)
     print(f"Received patient with ID: {response.id}")

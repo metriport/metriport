@@ -146,7 +146,6 @@ service:
       method: POST
       path: "/search"
       request:
-        name: PatientSearch
         body: Demographics
       response: Patient
       examples:

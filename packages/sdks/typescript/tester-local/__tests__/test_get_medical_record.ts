@@ -31,4 +31,3 @@ describe("Get MR test", () => {
         console.log(`Received medical record status: ${response}`);
     });
 });
-

@@ -30,4 +30,3 @@ def test_get_specific_patient() -> None:
     client = Metriport(api_key=api_key, base_url="http://localhost:8080")
     response = client.medical.patient.get(id=patient_id)
     print(f"Received specific patient with ID: {response.id}")
-
