@@ -60,7 +60,9 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getFileName,
+  getContentTypeOrUnknown,
 } from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -183,6 +185,8 @@ export async function queryAndProcessDocuments({
 
     const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +197,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 
