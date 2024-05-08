@@ -10,10 +10,10 @@ import { Address } from "../../../domain/address";
 import { Patient, splitName, genderAtBirthMapping } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
-export type FhirPatient = Pick<Patient, "id" | "data">;
+export type PatientIdAndData = Pick<Patient, "id" | "data">;
 export type FhirPersonalId = { value: string; system: string };
 
-export function toFHIR(patient: FhirPatient): FHIRPatient {
+export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   return {
     resourceType: "Patient",
     id: patient.id,
@@ -59,7 +59,7 @@ export function toFHIR(patient: FhirPatient): FHIRPatient {
   };
 }
 
-export function getFhirPersonalIdentifiersFromPatient(patient: FhirPatient): FhirPersonalId[] {
+export function getFhirPersonalIdentifiersFromPatient(patient: PatientIdAndData): FhirPersonalId[] {
   return (patient.data.personalIdentifiers ?? []).map(id => {
     if (id.type === "driversLicense")
       return { value: id.value, system: driversLicenseURIs[id.state] };
