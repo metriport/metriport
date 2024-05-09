@@ -31,8 +31,6 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
-      TEST_ACC_ID:
-        required: false
       CW_CERTIFICATE:
         required: false
       CW_PRIVATE_KEY:
@@ -88,7 +86,6 @@ jobs:
         working-directory: "./"
         env:
           TEST_API_KEY: ${{ secrets.TEST_API_KEY }}
-          TEST_ACC_ID: ${{ secrets.TEST_ACC_ID }}
           TEST_PATIENT_ID: ${{ inputs.test_patient_id }}
           CW_CERTIFICATE: ${{ secrets.CW_CERTIFICATE }}
           CW_PRIVATE_KEY: ${{ secrets.CW_PRIVATE_KEY }}

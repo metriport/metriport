@@ -1,6 +1,7 @@
-import { USState, PatientCreate, PatientDTO } from "@metriport/api-sdk";
-import { Patient as FhirPatient } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
+import { Patient as FhirPatient } from "@medplum/fhirtypes";
+import { PatientCreate, PatientDTO, USState } from "@metriport/api-sdk";
+import { Patient } from "@metriport/core/domain/patient";
 
 export const createPatient: PatientCreate = {
   firstName: "John",
@@ -21,21 +22,22 @@ export const createPatient: PatientCreate = {
 };
 
 export const validateLocalPatient = (
-  patient: PatientDTO,
+  patient: PatientDTO | Patient,
   patientToCompare?: PatientCreate | PatientDTO
 ) => {
-  expect(patient.id).toBeTruthy();
+  const pat = "data" in patient ? { ...patient, ...patient.data } : patient;
+  expect(pat.id).toBeTruthy();
 
   if (patientToCompare) {
-    expect(patient.firstName).toEqual(patientToCompare.firstName);
-    expect(patient.lastName).toEqual(patientToCompare.lastName);
-    expect(patient.dob).toEqual(patientToCompare.dob);
-    expect(patient.genderAtBirth).toEqual(patientToCompare.genderAtBirth);
+    expect(pat.firstName).toEqual(patientToCompare.firstName);
+    expect(pat.lastName).toEqual(patientToCompare.lastName);
+    expect(pat.dob).toEqual(patientToCompare.dob + "dummy");
+    expect(pat.genderAtBirth).toEqual(patientToCompare.genderAtBirth);
   } else {
-    expect(patient.firstName).toBeTruthy();
-    expect(patient.lastName).toBeTruthy();
-    expect(patient.dob).toBeTruthy();
-    expect(patient.genderAtBirth).toBeTruthy();
+    expect(pat.firstName).toBeTruthy();
+    expect(pat.lastName).toBeTruthy();
+    expect(pat.dob).toBeTruthy();
+    expect(pat.genderAtBirth).toBeTruthy();
   }
 };
 
