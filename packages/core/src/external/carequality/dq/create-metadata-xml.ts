@@ -78,6 +78,12 @@ export function createExtrinsicObjectXml({
         <Value>${createdTime}</Value>
       </ValueList>
     </Slot>
+
+    <Slot name="serviceStartTime">
+      <ValueList>
+        <Value>${createdTime}</Value>
+      </ValueList>
+    </Slot>
     
     <Slot name="languageCode">
       <ValueList>

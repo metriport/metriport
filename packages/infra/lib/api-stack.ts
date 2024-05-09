@@ -685,6 +685,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc: this.vpc,
       medicalDocumentsBucket: medicalDocumentsBucket,
+      medicalSeedDocumentsBucket: sandboxSeedDataBucket,
       fhirServerUrl: props.config.fhirServerUrl,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
@@ -1091,6 +1092,7 @@ export class APIStack extends Stack {
     lambdaLayers: LambdaLayers;
     vpc: ec2.IVpc;
     medicalDocumentsBucket: s3.Bucket;
+    medicalSeedDocumentsBucket: s3.IBucket | undefined;
     fhirServerUrl: string;
     envType: EnvType;
     sentryDsn: string | undefined;
@@ -1105,6 +1107,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       vpc,
       medicalDocumentsBucket,
+      medicalSeedDocumentsBucket,
       fhirServerUrl,
       sentryDsn,
       alarmAction,
@@ -1116,6 +1119,8 @@ export class APIStack extends Stack {
       apiService,
     } = ownProps;
 
+    const isSandboxSeed = envType === "sandbox" && medicalSeedDocumentsBucket;
+
     const bulkUrlSigningLambda = createLambda({
       stack: this,
       name: "BulkUrlSigning",
@@ -1123,7 +1128,9 @@ export class APIStack extends Stack {
       entry: "document-bulk-signer",
       envType,
       envVars: {
-        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        MEDICAL_DOCUMENTS_BUCKET_NAME: isSandboxSeed
+          ? medicalSeedDocumentsBucket.bucketName
+          : medicalDocumentsBucket.bucketName,
         FHIR_SERVER_URL: fhirServerUrl,
         SEARCH_ENDPOINT: searchEndpoint,
         SEARCH_INDEX: searchIndex,
@@ -1139,6 +1146,7 @@ export class APIStack extends Stack {
       alarmSnsAction: alarmAction,
     });
 
+    isSandboxSeed && medicalSeedDocumentsBucket.grantRead(bulkUrlSigningLambda);
     medicalDocumentsBucket.grantRead(bulkUrlSigningLambda);
     bulkUrlSigningLambda.grantInvoke(apiService.taskDefinition.taskRole);
 
