@@ -1,8 +1,8 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import {
   DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
+  documentBulkSignerLambdaResponseArraySchema,
+} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -388,7 +388,7 @@ router.post(
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
     const dtos: DocumentBulkSignerLambdaResponse[] =
-      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+      documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
