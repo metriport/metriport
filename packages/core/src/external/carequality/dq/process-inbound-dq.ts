@@ -18,7 +18,7 @@ import {
   constructDQErrorResponse,
 } from "../error";
 import { validateBasePayload } from "../shared";
-import { decodePatientId } from "./decode-patient-id";
+import { decodePatientId } from "./utils";
 
 const CCD_NAME = "ccd";
 
