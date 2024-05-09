@@ -9,9 +9,6 @@ export const patientCreateSchema = demographicsSchema.merge(
 );
 export type PatientCreate = z.infer<typeof patientCreateSchema>;
 
-export const patientSearchSchema = demographicsSchema;
-export type PatientSearch = z.infer<typeof patientSearchSchema>;
-
 export const patientUpdateSchema = patientCreateSchema.merge(baseUpdateSchema);
 export type PatientUpdate = z.infer<typeof patientUpdateSchema>;
 

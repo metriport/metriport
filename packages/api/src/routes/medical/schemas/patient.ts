@@ -1,4 +1,4 @@
-import { PatientCreate, patientCreateSchema, PatientSearch } from "@metriport/api-sdk";
+import { PatientCreate, patientCreateSchema, Demographics } from "@metriport/api-sdk";
 import { z } from "zod";
 import { driversLicenseType, generalTypes } from "@metriport/core/domain/patient";
 import { usStateSchema } from "@metriport/api-sdk/medical/models/common/us-data";
@@ -54,6 +54,6 @@ export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }
 
-export function schemaSearchForPatient(input: PatientSearch, cxId: string) {
+export function schemaSearchForPatient(input: Demographics, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }

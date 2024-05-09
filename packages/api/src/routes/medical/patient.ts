@@ -1,4 +1,4 @@
-import { patientCreateSchema, patientSearchSchema } from "@metriport/api-sdk";
+import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
@@ -497,7 +497,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const payload = patientSearchSchema.parse(req.body);
+    const payload = demographicsSchema.parse(req.body);
 
     const patientSearch: PatientSearchCmd = {
       ...schemaSearchForPatient(payload, cxId),
