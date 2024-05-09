@@ -3,6 +3,7 @@ import {
   ContactPoint,
   Reference,
   DocumentReference,
+  Identifier,
 } from "@medplum/fhirtypes";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
@@ -11,13 +12,14 @@ import { Patient, splitName, genderAtBirthMapping } from "../../../domain/patien
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
-export type FhirPersonalId = { value: string; system: string };
+// TODO Better name
+export type StrongId = Omit<Identifier, "value" | "system"> & { value: string; system: string };
 
 export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   return {
     resourceType: "Patient",
     id: patient.id,
-    identifier: getFhirPersonalIdsFromPatient(patient),
+    identifier: getFhirStrongIdsFromPatient(patient),
     name: [
       {
         family: patient.data.lastName,
@@ -58,7 +60,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   };
 }
 
-export function getFhirPersonalIdsFromPatient(patient: PatientIdAndData): FhirPersonalId[] {
+export function getFhirStrongIdsFromPatient(patient: PatientIdAndData): StrongId[] {
   return (patient.data.personalIdentifiers ?? []).map(id => {
     if (id.type === "driversLicense")
       return { value: id.value, system: driversLicenseURIs[id.state] };
