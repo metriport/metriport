@@ -4,7 +4,7 @@ dotenv.config();
 import { MedplumClient } from "@medplum/core";
 import { Organization as FHIROrganization, Patient as FHIRPatient } from "@medplum/fhirtypes";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
-import { getFhirPersonalIdsFromPatient } from "@metriport/core/external/fhir/patient/index";
+import { getFhirStrongIdsFromPatient } from "@metriport/core/external/fhir/patient/index";
 import { Sequelize } from "sequelize";
 
 /**
@@ -81,7 +81,7 @@ const toFHIRPatient = (patient: any): FHIRPatient => {
   return {
     resourceType: "Patient",
     id: patient.id,
-    identifier: getFhirPersonalIdsFromPatient(patient),
+    identifier: getFhirStrongIdsFromPatient(patient),
     name: [
       {
         family: patient.data.lastName,
