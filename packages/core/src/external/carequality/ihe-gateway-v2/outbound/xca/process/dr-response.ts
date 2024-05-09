@@ -27,11 +27,11 @@ import { MetriportError } from "../../../../../../util/error/metriport-error";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 
-type DocumentResponse = {
-  size: string;
-  title: string;
-  creation: string;
-  language: string;
+export type DocumentResponse = {
+  size?: string;
+  title?: string;
+  creation?: string;
+  language?: string;
   mimeType: string;
   DocumentUniqueId: string;
   HomeCommunityId: string;

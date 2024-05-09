@@ -1,0 +1,36 @@
+\r\n--uuid:5ef8425b-44e7-4a4c-8144-b8ddacb300f9+id=34067\r\nContent-ID: 
+<http://tempuri.org/0>\r\nContent-Transfer-Encoding: 8bit\r\nContent-Type: application/xop+xml;charset=utf-8;type=\"application/soap+xml\"\r\n\r\n
+    <s:Envelope xmlns:s=\"http://www.w3.org/2003/05/soap-envelope\" xmlns:a=\"http://www.w3.org/2005/08/addressing\">
+        <s:Header>
+            <a:Action s:mustUnderstand=\"1\">urn:ihe:iti:2007:CrossGatewayRetrieveResponse</a:Action>
+            <a:RelatesTo>urn:uuid:c3734e97-69ba-48e4-a102-03a5e1219fa4</a:RelatesTo>
+            <Security s:mustUnderstand=\"1\" xmlns=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\">
+                <Timestamp b:Id=\"_1\" xmlns=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\" xmlns:b=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">
+                    <b:Created>2024-05-09T13:35:04Z</b:Created>
+                    <b:Expires>2024-05-10T13:35:04Z</b:Expires>
+                </Timestamp>
+                <SignatureConfirmation b:Id=\"_2\" Value=\"yvjq1x51uO0ixA6YKbSwVCA3AxbGqXp5k0mDb5BaM+Ojgjzp+LBV1VR3od26unBtOFHhdAPCMwlKurBuCNF9JTUO+Bg+sLlm79uwu8xBGQWk8tgHosDMPSUDNw/BHt+z3sjaiqsXy5wnyXv1FHoswDQajYpwrH03jSQ7zBeF9o/uVPr97qNVnOWoEQIZJ0+DQQ9P2Y1xaCxDaayrGVLA9WxpC1//KpZZX/vF8jPuNmr8baYUoh7CgxS1vY9ZQYJw1trzTFAKi4CZbyeKqigkCIAXsOXeBiLGqShXydyvm0E6Lw5xYnkmdDfAZ9uglLIlR7yQYSkN5uLQfAtIdHuACQ==\" xmlns=\"http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd\" xmlns:b=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\"/>
+            </Security>
+        </s:Header>
+        <s:Body xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">
+            <RetrieveDocumentSetResponse xmlns=\"urn:ihe:iti:xds-b:2007\">
+                <RegistryResponse status=\"urn:oasis:names:tc:ebxml-regrep:ResponseStatusType:Success\" xmlns=\"urn:oasis:names:tc:ebxml-regrep:xsd:rs:3.0\"/>
+                <DocumentResponse>
+                    <HomeCommunityId>urn:oid:1.2.840.114350.1.13.35.2.7.3.688884.100</HomeCommunityId>
+                    <RepositoryUniqueId>1.2.840.114350.1.13.35.2.7.3.688884.100</RepositoryUniqueId>
+                    <DocumentUniqueId>1.2.840.114350.1.13.35.2.7.8.688883.688787596</DocumentUniqueId>
+                    <NewRepositoryUniqueId>1.2.840.114350.1.13.35.2.7.3.688884.100</NewRepositoryUniqueId>
+                    <NewDocumentUniqueId>1.2.840.114350.1.13.35.2.7.8.688883.689196530</NewDocumentUniqueId>
+                    <mimeType>text/xml</mimeType>
+                    <Document>
+                        <xop:Include href=\"cid:http://tempuri.org/1/638508405048339247\" xmlns:xop=\"http://www.w3.org/2004/08/xop/include\"/>
+                    </Document>
+                </DocumentResponse>
+            </RetrieveDocumentSetResponse>
+        </s:Body>
+    </s:Envelope>\r\n--uuid:5ef8425b-44e7-4a4c-8144-b8ddacb300f9+id=34067\r\nContent-ID:
+    <http://tempuri.org/1/638508405048339247>\r\nContent-Transfer-Encoding: binary\r\nContent-Type: application/octet-stream\r\n\r\n
+        <?xml version=\"1.0\" encoding=\"UTF-8\"?>
+        <ClinicalDocument xmlns=\"urn:hl7-org:v3\">
+            <realmCode code=\"US\" />
+        </ClinicalDocument>\r\n--uuid:5ef8425b-44e7-4a4c-8144-b8ddacb300f9+id=34067--\r\n
