@@ -56,13 +56,19 @@ function handlePatientMatchResponse({
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = subject1?.patient?.patientPerson?.addr;
+  const addressLine1 = addr?.streetAddressLine?._text ?? addr?.streetAddressLine;
+  const city = addr?.city?._text ?? addr?.city;
+  const state = addr?.state?._text ?? addr?.state;
+  const postalCode = addr?.postalCode?._text ?? addr?.postalCode;
+  const country = addr?.country?._text ?? addr?.country;
+
   const addresses = [
     {
-      line: [addr?.streetAddressLine?._text ?? addr?.streetAddressLine],
-      city: addr?.city?._text ?? addr?.city,
-      state: addr?.state?._text ?? addr?.state,
-      postalCode: String(addr?.postalCode?._text ?? addr?.postalCode),
-      country: addr?.country?._text ?? addr?.country,
+      ...(addressLine1 && { line: [addressLine1] }),
+      ...(city && { city }),
+      ...(state && { state }),
+      ...(postalCode && { postalCode: String(postalCode) }),
+      ...(country && { country: country }),
     },
   ];
 
