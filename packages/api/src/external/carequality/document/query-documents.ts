@@ -8,6 +8,7 @@ import { isCQDirectEnabledForCx } from "../../aws/appConfig";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
+import { setDocQueryStartAt } from "../../hie/set-doc-query-start";
 import { makeIheGatewayAPIForDocQuery } from "../../ihe-gateway/api";
 import { makeOutboundResultPoller } from "../../ihe-gateway/outbound-result-poller-factory";
 import { getCQDirectoryEntry } from "../command/cq-directory/get-cq-directory-entry";
@@ -33,7 +34,13 @@ export async function getDocumentsFromCQ({
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
   const { cxId, id: patientId } = patient;
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.CAREQUALITY, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    requestId,
+    cxId,
+    source: MedicalDataSource.CAREQUALITY,
+    log,
+  });
   if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
@@ -58,6 +65,12 @@ export async function getDocumentsFromCQ({
     if (!cqPatientData || cqPatientData.data.links.length <= 0) {
       return interrupt(`Patient has no CQ links, skipping DQ`);
     }
+
+    await setDocQueryStartAt({
+      patient: { id: patient.id, cxId: patient.cxId },
+      source: MedicalDataSource.CAREQUALITY,
+      startedAt: new Date(),
+    });
 
     const linksWithDqUrl: CQLink[] = [];
     const addDqUrlToCqLink = async (patientLink: CQLink): Promise<void> => {
