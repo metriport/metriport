@@ -11,9 +11,6 @@ type Error = {
 };
 
 const ajv = new Ajv({
-  // I need to use strict as an option but its not in the AJV.Options
-  // eslint-disable-next-line
-  // @ts-ignore
   strict: false,
 });
 

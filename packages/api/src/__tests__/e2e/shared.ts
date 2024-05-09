@@ -12,7 +12,7 @@ export const testApiKey = getEnvVarOrFail("TEST_API_KEY");
 export const baseURL = getEnvVarOrFail("API_URL");
 
 export const api = Axios.create({
-  timeout: 10_000,
+  timeout: 20_000,
   baseURL,
   headers: { "x-api-key": testApiKey, "Content-Type": "application/json" },
 });

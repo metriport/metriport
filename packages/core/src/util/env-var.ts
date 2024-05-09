@@ -4,6 +4,7 @@ export enum EnvType {
   production = "production",
   sandbox = "sandbox",
   staging = "staging",
+  development = "dev",
 }
 
 export const getEnvVar = (varName: string): string | undefined => process.env[varName];

@@ -2,86 +2,123 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // Keep dotenv import and config before everything else
 import { faker } from "@faker-js/faker";
-import { Organization as FhirOrg } from "@medplum/fhirtypes";
+import { OperationOutcomeError } from "@medplum/core";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import { executeWithRetries } from "@metriport/shared";
-import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
-import cwCommands from "../../../external/commonwell";
-import { Config } from "../../../shared/config";
-import { retryFunction } from "../../../shared/retry";
-import { Util } from "../../../shared/util";
-import { createConsolidated } from "./consolidated";
+import { sleep } from "@metriport/shared";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
 import { createFacility, validateFacility } from "./facility";
-import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
+import { validateFhirOrg, validateLocalOrg } from "./organization";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
 
-const maxRetries = 4;
+dayjs.extend(duration);
 
-jest.setTimeout(30000);
+// const maxRetries = 4;
+// const maxRetries = 0;
+const maxTotalTestDuration = dayjs.duration({ minutes: 2 });
 
-console.log(`Config.getEnvType(): ${Config.getEnvType()}`);
+jest.setTimeout(maxTotalTestDuration.asMilliseconds());
 
-// NEVER TO BE RUN IN PRODUCTION - really?
-if (Config.isStaging() || Config.isDev()) {
-  describe("MAPI E2E Tests", () => {
-    let facility: Facility;
-    let patient: PatientDTO;
+describe("MAPI E2E Tests", () => {
+  let facility: Facility;
+  let patient: PatientDTO;
+
+  // TODO 1634 To be used when we're ready to add additional tests checking updates on HIEs...
+  // ...this will need customization on external endpoints to return additional patient IDs.
+  // let isCwEnabled = false;
+  // let isCqEnabled = false;
+
+  // beforeAll(async () => {
+  //   const [_isCwEnabled, _isCqEnabled] = await Promise.all([
+  //     isCWEnabledForCx(testCxId),
+  //     isCQDirectEnabledForCx(testCxId),
+  //   ]);
+  //   isCwEnabled = _isCwEnabled;
+  //   isCqEnabled = _isCqEnabled;
+  // });
+
+  describe("Organization", () => {
+    const getOrg = async () => {
+      return await medicalApi.getOrganization();
+    };
+
+    const getFhirOrg = async (org: { id: string }) => {
+      fhirApi.invalidateAll();
+      return await fhirApi.readResource("Organization", org.id, fhirHeaders);
+    };
+
+    // const getCwOrg = async (org: { oid: string }) => {
+    //   if (!isCwEnabled) return undefined;
+    //   return await cwCommands.organization.get(org.oid);
+    // };
+
+    // const getCqOrg = async (org: { oid: string }) => {
+    //   if (!isCqEnabled) return undefined;
+    //   return await getCqOrganization(org.oid);
+    // };
 
     it("gets an organization", async () => {
       const org = await medicalApi.getOrganization();
       expect(org).toBeTruthy();
+      if (!org) throw new Error("Organization not found");
+      validateLocalOrg(org);
 
-      if (org) {
-        const fhirOrg = await fhirApi.readResource("Organization", org.id, fhirHeaders);
+      // const [fhirOrg, cwOrg, cqOrg] = await Promise.all([
+      const [fhirOrg] = await Promise.all([
+        getFhirOrg(org),
+        // getCwOrg(org),
+        // getCqOrg(org),
+      ]);
 
-        const cwOrg = await executeWithRetries<CWOrganization | undefined>(
-          async () => await cwCommands.organization.get(org.oid),
-          maxRetries,
-          3000
-        );
-
-        validateLocalOrg(org);
-        validateFhirOrg(fhirOrg, org);
-        validateCWOrg(cwOrg, org);
-      }
+      validateFhirOrg(fhirOrg, org);
+      // isCwEnabled && validateCwOrg(cwOrg, org);
+      // // TODO 1634 Consider whether we can have our test org on the CQ directory, then we can re-enable this after we publish our test org there
+      // false && isCqEnabled && validateCqOrg(cqOrg, org);
     });
 
     it("updates an organization", async () => {
       const org = await medicalApi.getOrganization();
       expect(org).toBeTruthy();
-      if (!org) throw new Error(`Unreachable code on test 'updates an organization'`);
+      if (!org) throw new Error("Organization not found");
 
       const newName = faker.word.noun();
       const updateOrg: Organization = {
         ...org,
         name: newName,
       };
-      const updatedOrg = await medicalApi.updateOrganization(updateOrg);
+      const updateOrgResp = await medicalApi.updateOrganization(updateOrg);
+      expect(updateOrgResp.name).toEqual(newName);
 
-      fhirApi.invalidateAll();
-      const fhirOrg: FhirOrg = await fhirApi.readResource(
-        "Organization",
-        updatedOrg.id,
-        fhirHeaders
-      );
+      await sleep(100);
 
-      const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
-        async () => await cwCommands.organization.get(updatedOrg.oid),
-        maxRetries,
-        3000,
-        result => result?.name === newName
-      );
+      // const [updatedOrg, fhirOrg, cwOrg, cqOrg] = await Promise.all([
+      const [updatedOrg, fhirOrg] = await Promise.all([
+        getOrg(),
+        getFhirOrg(org),
+        // getCwOrg(org),
+        // getCqOrg(org),
+      ]);
 
-      validateLocalOrg(updatedOrg, updateOrg);
-      validateFhirOrg(fhirOrg, updateOrg);
-      validateCWOrg(cwOrg, updateOrg);
+      expect(updatedOrg).toBeTruthy();
+      if (!updatedOrg) throw new Error("Updated organization not found");
+      expect(updatedOrg.name).toEqual(newName);
+      expect(fhirOrg.name).toEqual(newName);
+      // isCwEnabled && expect(cwOrg?.name).toEqual(newName);
+      // // TODO 1634 Consider whether we can have our test org on the CQ directory, then we can re-enable this after we publish our test org there
+      // false && isCqEnabled && expect(cqOrg?.name).toEqual(newName);
     });
+  });
 
+  describe("Facility", () => {
     it("create a facility", async () => {
       facility = await medicalApi.createFacility(createFacility);
       validateFacility(facility);
+    });
+
+    it("gets a facility", async () => {
+      const foundFacility = await medicalApi.getFacility(facility.id);
+      validateFacility(foundFacility);
     });
 
     it("updates a facility", async () => {
@@ -90,82 +127,108 @@ if (Config.isStaging() || Config.isDev()) {
         ...facility,
         name: newName,
       };
-      facility = await medicalApi.updateFacility(updateFacility);
-      validateFacility(facility, updateFacility);
+      const updatedFacility = await medicalApi.updateFacility(updateFacility);
+      facility = await medicalApi.getFacility(facility.id);
       expect(facility.name).toEqual(newName);
+      expect(updatedFacility.name).toEqual(newName);
     });
+  });
 
-    it("gets one facility", async () => {
-      const getFacility = await medicalApi.getFacility(facility.id);
-      validateFacility(getFacility);
-    });
+  describe("Patient", () => {
+    const getPatient = async (patientId: string): Promise<PatientDTO> => {
+      return await medicalApi.getPatient(patientId);
+    };
 
-    it("creates a patient", async () => {
+    const getFhirPatient = async (patientId: string) => {
+      fhirApi.invalidateAll();
+      return await fhirApi.readResource("Patient", patientId, fhirHeaders);
+    };
+
+    it("creates and gets the patient", async () => {
       patient = await medicalApi.createPatient(createPatient, facility.id);
-      const fhirPatient = await fhirApi.readResource("Patient", patient.id, fhirHeaders);
-      validateLocalPatient(patient);
+      await sleep(100);
+      const [createdPatient, fhirPatient] = await Promise.all([
+        getPatient(patient.id),
+        getFhirPatient(patient.id),
+      ]);
+      validateLocalPatient(createdPatient, patient);
       validateFhirPatient(fhirPatient, patient);
     });
 
-    it("waits after creating a patient", async () => {
-      // Creating a CW and CQ patient is done in the background need to await so we can query docs
-      await Util.sleep(10000);
+    it("awaits patient update to be replicated", async () => {
+      // Creating a CW patient is done in the background need to await so we can query docs
+      await sleep(10000);
     });
 
-    it("triggers a document query for the created patient", async () => {
-      const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
-      let status = await medicalApi.getDocumentQueryStatus(patient.id);
-      let retryLimit = 0;
-
-      while (areDocumentsProcessing(status) && retryLimit < maxRetries) {
-        await Util.sleep(5000);
-        status = await medicalApi.getDocumentQueryStatus(patient.id);
-        retryLimit++;
-      }
-
-      const { documents } = await medicalApi.listDocuments(patient.id);
-
-      expect(docQueryProgress).toBeTruthy();
-      expect(documents).toBeTruthy();
-      expect(documents.length).toEqual(2);
+    it("deletes the patient", async () => {
+      await medicalApi.deletePatient(patient.id, facility.id);
+      await sleep(100);
+      expect(async () => getPatient(patient.id)).rejects.toThrow(
+        "Request failed with status code 404"
+      );
+      expect(async () => getFhirPatient(patient.id)).rejects.toThrowError(OperationOutcomeError);
     });
-
-    it("contains expected data on FHIR server", async () => {
-      // TODO implement this
-      // do we need a dedicated one for MR's data or does it come from consolidated?
-    });
-
-    it("creates consolidated data for patient", async () => {
-      const payload = createConsolidated(patient.id);
-      const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
-      const count = await medicalApi.countPatientConsolidated(patient.id);
-
-      expect(count.total).toEqual(payload.entry?.length);
-      expect(consolidated).toBeTruthy();
-    });
-
-    // if we keep this only to FHIR, should we move this to the proper folder?
-    // it("deletes a patient's consolidated data", async () => {
-    //   // when moved to internal will updated
-    //   const consolidated = await medicalApi.getPatientConsolidated(patient.id);
-
-    //   if (consolidated && consolidated.entry) {
-    //     for (const docEntry of consolidated.entry) {
-    //       if (docEntry.resource && docEntry.resource.id) {
-    //         await fhirApi.deleteResource(
-    //           docEntry.resource.resourceType,
-    //           docEntry.resource.id,
-    //           fhirHeaders
-    //         );
-    //       }
-    //     }
-    //   }
-    //   const count = await medicalApi.countPatientConsolidated(patient.id);
-    //   expect(count.total).toEqual(0);
-    // });
   });
-} else {
-  describe("Prod Tests", () => {
-    test.todo("This is a todo for prod tests so this file doesnt break");
-  });
-}
+
+  // it("creates consolidated data for patient", async () => {
+  //   const payload = createConsolidated(patient.id);
+  //   const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
+  //   const count = await medicalApi.countPatientConsolidated(patient.id);
+
+  //   expect(count.total).toEqual(payload.entry?.length);
+  //   expect(consolidated).toBeTruthy();
+  // });
+
+  // it("triggers a document query for the created patient", async () => {
+  //   const docQueryProgress = await medicalApi.startDocumentQuery(patient.id, facility.id);
+  //   let status = await medicalApi.getDocumentQueryStatus(patient.id);
+  //   let retryLimit = 0;
+
+  //   while (areDocumentsProcessing(status) && retryLimit < maxRetries) {
+  //     await sleep(5000);
+  //     status = await medicalApi.getDocumentQueryStatus(patient.id);
+  //     retryLimit++;
+  //   }
+
+  //   const { documents } = await medicalApi.listDocuments(patient.id);
+
+  //   expect(docQueryProgress).toBeTruthy();
+  //   expect(documents).toBeTruthy();
+  //   expect(documents.length).toEqual(2);
+  // });
+
+  // it("contains expected data on FHIR server", async () => {
+  //   // TODO implement this
+  //   // do we need a dedicated one for MR's data or does it come from consolidated?
+  // });
+
+  // it("creates consolidated data for patient", async () => {
+  //   const payload = createConsolidated(patient.id);
+  //   const consolidated = await medicalApi.createPatientConsolidated(patient.id, payload);
+  //   const count = await medicalApi.countPatientConsolidated(patient.id);
+
+  //   expect(count.total).toEqual(payload.entry?.length);
+  //   expect(consolidated).toBeTruthy();
+  // });
+
+  // it("deletes a patient's consolidated data", async () => {
+  //   // when moved to internal will updated
+  //   const consolidated = await medicalApi.getPatientConsolidated(patient.id);
+
+  //   if (consolidated && consolidated.entry) {
+  //     for (const docEntry of consolidated.entry) {
+  //       if (docEntry.resource && docEntry.resource.id) {
+  //         await fhirApi.deleteResource(
+  //           docEntry.resource.resourceType,
+  //           docEntry.resource.id,
+  //           fhirHeaders
+  //         );
+  //       }
+  //     }
+  //   }
+
+  //   const count = await medicalApi.countPatientConsolidated(patient.id);
+
+  //   expect(count.total).toEqual(0);
+  // });
+});

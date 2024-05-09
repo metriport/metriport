@@ -1,7 +1,8 @@
-import { OrgType, USState, Organization, OrganizationCreate } from "@metriport/api-sdk";
-import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { faker } from "@faker-js/faker";
+import { Organization as FhirOrg } from "@medplum/fhirtypes";
+import { Organization, OrganizationCreate, OrgType, USState } from "@metriport/api-sdk";
+import { Organization as CqOrganization } from "@metriport/carequality-sdk";
+import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
 
 export const createOrg: OrganizationCreate = {
   type: OrgType.postAcuteCare,
@@ -19,6 +20,7 @@ export const validateLocalOrg = (
   org: Organization,
   orgToCompare?: OrganizationCreate | Organization
 ) => {
+  expect(org).toBeTruthy();
   expect(org.id).toBeTruthy();
   expect(org.location).toBeTruthy();
   expect(org.oid).toBeTruthy();
@@ -43,6 +45,7 @@ export const validateLocalOrg = (
 };
 
 export const validateFhirOrg = (org: FhirOrg, orgToCompare?: OrganizationCreate | Organization) => {
+  expect(org).toBeTruthy();
   expect(org.resourceType).toBeTruthy();
   expect(org.resourceType).toEqual("Organization");
   expect(org.id).toBeTruthy();
@@ -66,10 +69,11 @@ export const validateFhirOrg = (org: FhirOrg, orgToCompare?: OrganizationCreate 
   }
 };
 
-export const validateCWOrg = (
+export function validateCwOrg(
   org: CWOrganization | undefined,
   orgToCompare?: OrganizationCreate | Organization
-) => {
+) {
+  expect(org).toBeTruthy();
   expect(org?.organizationId).toBeTruthy();
   expect(org?.locations).toBeTruthy();
   expect(org?.locations?.length).toEqual(1);
@@ -92,4 +96,25 @@ export const validateCWOrg = (
     expect(org?.locations?.[0].postalCode).toBeTruthy();
     expect(org?.locations?.[0].country).toBeTruthy();
   }
-};
+}
+
+export function validateCqOrg(
+  org: CqOrganization | undefined,
+  orgToCompare?: OrganizationCreate | Organization
+) {
+  expect(org).toBeTruthy();
+  expect(org?.identifier.value).toBeTruthy();
+  if (orgToCompare) {
+    expect(org?.name).toEqual(orgToCompare.name);
+    if (`oid` in orgToCompare) {
+      expect(org?.identifier.value).toEqual(orgToCompare.oid);
+    }
+    // TODO 1634 compare addresses
+    // TODO 1634 compare addresses
+    // TODO 1634 compare addresses
+    // TODO 1634 compare addresses
+    // TODO 1634 compare addresses
+  } else {
+    expect(org?.name).toBeTruthy();
+  }
+}
