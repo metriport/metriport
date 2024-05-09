@@ -17,7 +17,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   return {
     resourceType: "Patient",
     id: patient.id,
-    identifier: getFhirPersonalIdentifiersFromPatient(patient),
+    identifier: getFhirPersonalIdsFromPatient(patient),
     name: [
       {
         family: patient.data.lastName,
@@ -58,7 +58,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   };
 }
 
-export function getFhirPersonalIdentifiersFromPatient(patient: PatientIdAndData): FhirPersonalId[] {
+export function getFhirPersonalIdsFromPatient(patient: PatientIdAndData): FhirPersonalId[] {
   return (patient.data.personalIdentifiers ?? []).map(id => {
     if (id.type === "driversLicense")
       return { value: id.value, system: driversLicenseURIs[id.state] };

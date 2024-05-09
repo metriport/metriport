@@ -33,8 +33,8 @@ export function patientToCommonwell({
     key: patient.id,
     assigner: orgName,
   };
-  let addedAddress = false;
   const strongIds = getCwStrongIdsFromPatient(patient);
+  let addedAddress = false;
   return {
     identifier: [identifier],
     details: {
