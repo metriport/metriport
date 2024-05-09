@@ -89,7 +89,7 @@ export function getCwStrongIdsFromPatient(patient: Patient): StrongId[] {
     const base = {
       use: "usual" as StrongId["use"],
       period: id.period,
-      ...(id.assigner ? { assigner: id.assigner } : undefined),
+      assigner: id.assigner,
     };
     if (id.type === "driversLicense")
       return { ...base, key: id.value, system: driversLicenseURIs[id.state] };
