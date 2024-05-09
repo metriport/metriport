@@ -1,17 +1,17 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
-  buildCodeCE,
-  buildInstanceIdentifier,
-  withNullFlavor,
-  withoutNullFlavorObject,
-} from "../commons";
-import { clinicalDocumentConstants, valueAttribute } from "../constants";
-import {
   CDAAuthor,
   CDACustodian,
   CDARecordTarget,
   ClinicalDocument,
 } from "../../cda-types/shared-types";
+import {
+  buildCodeCE,
+  buildInstanceIdentifier,
+  withNullFlavor,
+  withoutNullFlavorObject,
+} from "../commons";
+import { _valueAttribute, clinicalDocumentConstants } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -41,7 +41,7 @@ export function buildClinicalDocumentXML(
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      "@_xmlns": "urn:hl7-org:v3",
+      _namespaceAttribute: "urn:hl7-org:v3",
       realmCode: buildCodeCE({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
@@ -64,7 +64,7 @@ export function buildClinicalDocumentXML(
         displayName: clinicalDocumentConstants.code.displayName,
       }),
       title: clinicalDocumentConstants.title,
-      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, valueAttribute),
+      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, _valueAttribute),
       confidentialityCode: buildCodeCE({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
@@ -80,7 +80,7 @@ export function buildClinicalDocumentXML(
       }),
       versionNumber: withoutNullFlavorObject(
         clinicalDocumentConstants.versionNumber,
-        valueAttribute
+        _valueAttribute
       ),
       recordTarget,
       author,
@@ -91,6 +91,8 @@ export function buildClinicalDocumentXML(
   const cleanedJsonObj = removeEmptyFields(jsonObj);
   const builder = new XMLBuilder({
     format: false,
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
     ignoreAttributes: false,
   });
 

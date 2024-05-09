@@ -9,19 +9,19 @@ import {
   formatDateToCDATimestamp,
 } from "../commons";
 import { CDARecordTarget, CDAPatientRole } from "../../cda-types/shared-types";
-import { useAttribute, valueAttribute } from "../constants";
+import { _useAttribute, _valueAttribute } from "../constants";
 
 function buildPatient(patient: Patient): CDAPatientRole {
   return {
     name: patient.name?.map(name => {
       const nameUse = mapNameUse(name.use);
       return {
-        ...withoutNullFlavorObject(nameUse, useAttribute),
+        ...withoutNullFlavorObject(nameUse, _useAttribute),
         given: withoutNullFlavorString(name.given?.join(" ")),
         family: name.family,
         validTime: {
-          low: withoutNullFlavorObject(undefined, valueAttribute),
-          high: withoutNullFlavorObject(undefined, valueAttribute),
+          low: withoutNullFlavorObject(undefined, _valueAttribute),
+          high: withoutNullFlavorObject(undefined, _valueAttribute),
         },
       };
     }),
@@ -30,8 +30,11 @@ function buildPatient(patient: Patient): CDAPatientRole {
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(formatDateToCDATimestamp(patient.birthDate), valueAttribute),
-    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
+    birthTime: withoutNullFlavorObject(
+      formatDateToCDATimestamp(patient.birthDate),
+      _valueAttribute
+    ),
+    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), _valueAttribute),
     maritalStatusCode: buildCodeCE({
       code: patient.maritalStatus?.coding?.[0]?.code,
       codeSystem: "2.16.840.1.113883.5.2",

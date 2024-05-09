@@ -1,3 +1,28 @@
+export const _nullFlavorAttribute = "_nullFlavor";
+export const _rootAttribute = "_root";
+export const _extensionAttribute = "_extension";
+export const _assigningAuthorityNameAttribute = "_assigningAuthorityName";
+export const _valueAttribute = "_value";
+export const _useAttribute = "_use";
+export const _idAttribute = "_ID";
+export const _styleCodeAttribute = "_styleCode";
+export const _classCodeAttribute = "_classCode";
+export const _moodCodeAttribute = "_moodCode";
+export const _typeCodeAttribute = "_typeCode";
+export const _codeAttribute = "_code";
+export const _codeSystemAttribute = "_codeSystem";
+export const _codeSystemNameAttribute = "_codeSystemName";
+export const _displayNameAttribute = "_displayName";
+export const _namespaceAttribute = "_xmlns";
+export const _xsiTypeAttribute = "_xsi:type";
+export const _xmlnsXsiAttribute = "_xmlns:xsi";
+export const _inlineTextAttribute = "_text";
+export const loincSystemCode = "2.16.840.1.113883.6.1";
+export const snomedSystemCode = "2.16.840.1.113883.6.96";
+export const nlmNihSystemCode = "2.16.840.1.113883.6.88";
+export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
+export const fdasisSystemCode = "2.16.840.1.113883.4.9";
+
 export const clinicalDocumentConstants = {
   realmCode: "US",
   typeIdExtension: "POCD_HD000040",
@@ -11,7 +36,7 @@ export const clinicalDocumentConstants = {
   idRoot: "OUR-ORGANIZATION-ID",
   code: {
     code: "NOTE-TYPE",
-    codeSystem: "2.16.840.1.113883.6.1",
+    codeSystem: loincSystemCode,
     codeSystemName: "LOINC",
     displayName: "NOTE-NAME",
   },
@@ -30,23 +55,3 @@ export const clinicalDocumentConstants = {
   },
   versionNumber: "3",
 };
-
-export const nullFlavorAttribute = "@_nullFlavor";
-export const rootAttribute = "@_root";
-export const extensionAttribute = "@_extension";
-export const assigningAuthorityNameAttribute = "@_assigningAuthorityName";
-export const valueAttribute = "@_value";
-export const useAttribute = "@_use";
-export const idAttribute = "@_ID";
-export const styleCodeAttribute = "@_styleCode";
-export const classCodeAttribute = "@_classCode";
-export const moodCodeAttribute = "@_moodCode";
-export const typeCodeAttribute = "@_typeCode";
-export const codeAttribute = "@_code";
-export const codeSystemAttribute = "@_codeSystem";
-export const codeSystemNameAttribute = "@_codeSystemName";
-export const displayNameAttribute = "@_displayName";
-export const namespaceAttribute = "@_xmlns";
-export const xsiTypeAttribute = "@_xsi:type";
-export const xmlnsXsiAttribute = "@_xmlns:xsi";
-export const inlineTextAttribute = "#text";

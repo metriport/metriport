@@ -8,17 +8,6 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
 import {
-  assigningAuthorityNameAttribute,
-  extensionAttribute,
-  inlineTextAttribute,
-  nullFlavorAttribute,
-  rootAttribute,
-  useAttribute,
-  valueAttribute,
-  xmlnsXsiAttribute,
-  xsiTypeAttribute,
-} from "./constants";
-import {
   CDAAddress,
   CDACodeCE,
   CDACodeCV,
@@ -29,13 +18,23 @@ import {
   Entry,
   EntryObject,
 } from "../cda-types/shared-types";
+import {
+  _rootAttribute,
+  _useAttribute,
+  _valueAttribute,
+  amaAssnSystemCode,
+  fdasisSystemCode,
+  loincSystemCode,
+  nlmNihSystemCode,
+  snomedSystemCode,
+} from "./constants";
 
 const CODING_MAP = new Map<string, string>();
-CODING_MAP.set("http://loinc.org", "2.16.840.1.113883.6.1");
-CODING_MAP.set("http://snomed.info/sct", "2.16.840.1.113883.6.96");
-CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", "2.16.840.1.113883.6.88");
-CODING_MAP.set("http://www.ama-assn.org/go/cpt", "2.16.840.1.113883.6.12");
-CODING_MAP.set("http://fdasis.nlm.nih.gov", "2.16.840.1.113883.4.9");
+CODING_MAP.set("http://loinc.org", loincSystemCode);
+CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
+CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
+CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
+CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
@@ -49,7 +48,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { [nullFlavorAttribute]: "UNK" };
+  if (value == undefined) return { _nullFlavorAttribute: "UNK" };
   return { [key]: value };
 }
 
@@ -66,10 +65,10 @@ export function buildCodeCE({
   displayName?: string | undefined;
 }): CDACodeCE {
   const codeObject: CDACodeCE = {};
-  if (code) codeObject["@_code"] = code;
-  if (codeSystem) codeObject["@_codeSystem"] = codeSystem;
-  if (codeSystemName) codeObject["@_codeSystemName"] = codeSystemName;
-  if (displayName) codeObject["@_displayName"] = displayName;
+  if (code) codeObject._codeAttribute = code;
+  if (codeSystem) codeObject._codeSystemAttribute = codeSystem;
+  if (codeSystemName) codeObject._codeSystemNameAttribute = codeSystemName;
+  if (displayName) codeObject._displayNameAttribute = displayName;
 
   return codeObject;
 }
@@ -121,9 +120,9 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CDAInstanceIdentifier {
   const identifier: CDAInstanceIdentifier = {};
-  if (root) identifier[rootAttribute] = root;
-  if (extension) identifier[extensionAttribute] = extension;
-  if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
+  if (root) identifier._rootAttribute = root;
+  if (extension) identifier._extensionAttribute = extension;
+  if (assigningAuthorityName) identifier._assigningAuthorityNameAttribute = assigningAuthorityName;
 
   return identifier;
 }
@@ -132,7 +131,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
 ): CDAInstanceIdentifier[] | Entry {
   if (!identifiers) {
-    return withNullFlavor(undefined, rootAttribute);
+    return withNullFlavor(undefined, _rootAttribute);
   }
 
   const identifiersArray = Array.isArray(identifiers)
@@ -156,23 +155,23 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
   return telecoms.map(telecom => {
     const telecomUse = mapTelecomUse(telecom.use);
     return {
-      ...withoutNullFlavorObject(telecomUse, useAttribute),
-      ...withoutNullFlavorObject(telecom.value, valueAttribute),
+      ...withoutNullFlavorObject(telecomUse, _useAttribute),
+      ...withoutNullFlavorObject(telecom.value, _valueAttribute),
     };
   });
 }
 
 export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
   return address?.map(addr => ({
-    ...withoutNullFlavorObject(mapAddressUse(addr.use), useAttribute),
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
     state: addr.state,
     postalCode: addr.postalCode,
     country: addr.country,
     useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+      low: withoutNullFlavorObject(addr.period?.start, _valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, _valueAttribute),
     },
   }));
 }
@@ -204,9 +203,9 @@ export function buildValueST(value: string | undefined): CDAValueST | undefined 
   if (!value) return undefined;
 
   const valueObject: CDAValueST = {};
-  valueObject[xsiTypeAttribute] = "ST";
-  valueObject[xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
-  valueObject[inlineTextAttribute] = value;
+  valueObject._xsiTypeAttribute = "ST";
+  valueObject._xmlnsXsiAttribute = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject._inlineTextAttribute = value;
   return valueObject;
 }
 

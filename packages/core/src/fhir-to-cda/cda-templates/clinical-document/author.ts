@@ -6,13 +6,13 @@ import {
   buildTelecom,
 } from "../commons";
 import { CDAAuthor } from "../../cda-types/shared-types";
-import { rootAttribute, valueAttribute } from "../constants";
+import { _rootAttribute, _valueAttribute } from "../constants";
 
 export function buildAuthor(organization: Organization): CDAAuthor {
   const author = {
-    time: withNullFlavor(undefined, valueAttribute),
+    time: withNullFlavor(undefined, _valueAttribute),
     assignedAuthor: {
-      id: withNullFlavor(organization.id, rootAttribute),
+      id: withNullFlavor(organization.id, _rootAttribute),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
       representedOrganization: buildRepresentedOrganization(organization),
