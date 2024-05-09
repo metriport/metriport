@@ -88,7 +88,7 @@ export function getCwStrongIdsFromPatient(patient: Patient): StrongId[] {
   return (patient.data.personalIdentifiers ?? []).flatMap(id => {
     const base = {
       use: "usual" as StrongId["use"],
-      ...(id.period ? { period: id.period } : undefined),
+      period: id.period,
       ...(id.assigner ? { assigner: id.assigner } : undefined),
     };
     if (id.type === "driversLicense")
