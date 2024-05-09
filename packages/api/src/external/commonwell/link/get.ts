@@ -236,11 +236,12 @@ const findAllPersonsStrongId = async (
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
+  const strongIds = getCwStrongIdsFromPatient(patient);
   try {
     const persons = await searchPersons({
       commonWell,
       queryMeta,
-      strongIds: getCwStrongIdsFromPatient(patient),
+      strongIds,
     });
 
     if (persons.length) {

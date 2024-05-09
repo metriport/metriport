@@ -34,6 +34,7 @@ export function patientToCommonwell({
     assigner: orgName,
   };
   let addedAddress = false;
+  const strongIds = getCwStrongIdsFromPatient(patient);
   return {
     identifier: [identifier],
     details: {
@@ -78,7 +79,7 @@ export function patientToCommonwell({
         return contacts;
       }),
       birthDate: patient.data.dob,
-      identifier: getCwStrongIdsFromPatient(patient),
+      identifier: strongIds,
     },
   };
 }

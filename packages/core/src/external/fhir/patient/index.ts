@@ -20,7 +20,6 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
     identifier: getFhirPersonalIdentifiersFromPatient(patient),
     name: [
       {
-        // Why are we not splitting this?
         family: patient.data.lastName,
         given: splitName(patient.data.firstName),
       },
