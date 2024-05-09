@@ -38,11 +38,6 @@
       "url": "medical-api"
     },
     {
-      "name": "Devices API",
-      "icon": "watch-apple",
-      "url": "devices-api"
-    },
-    {
       "name": "Website",
       "icon": "globe",
       "url": "https://metriport.com"
@@ -352,81 +347,6 @@
         "medical-api/more-info/medical-record-summary",
         "medical-api/more-info/sandbox",
         "medical-api/more-info/etag"
-      ]
-    },
-    {
-      "group": "Getting Started",
-      "pages": [
-        "devices-api/getting-started/connect-quickstart",
-        "devices-api/getting-started/connect-widget",
-        "devices-api/getting-started/apple-health",
-        "devices-api/getting-started/tenovi"
-      ]
-    },
-    {
-      "group": "API Reference",
-      "pages": [
-        {
-          "group": "General API",
-          "pages": [
-            {
-              "group": "User",
-              "pages": [
-                "devices-api/api-reference/user/create-user",
-                "devices-api/api-reference/user/create-connect-token",
-                "devices-api/api-reference/user/get-connected-providers",
-                "devices-api/api-reference/user/revoke-provider-access",
-                "devices-api/api-reference/user/disconnect-device",
-                "devices-api/api-reference/user/delete-user"
-              ]
-            },
-            {
-              "group": "Connect",
-              "pages": ["devices-api/api-reference/connect/connect-rpm-device"]
-            }
-          ]
-        },
-        {
-          "group": "Devices API",
-          "pages": [
-            "devices-api/api-reference/get-activity-data",
-            "devices-api/api-reference/get-biometrics-data",
-            "devices-api/api-reference/get-body-data",
-            "devices-api/api-reference/get-nutrition-data",
-            "devices-api/api-reference/get-sleep-data",
-            "devices-api/api-reference/get-user-data",
-            "devices-api/api-reference/get-connected-users"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "SDKs",
-      "pages": [
-        {
-          "group": "API",
-          "pages": ["devices-api/sdks/api/node"]
-        },
-        {
-          "group": "Connect Widget",
-          "pages": [
-            "devices-api/sdks/connect-widget/swift",
-            "devices-api/sdks/connect-widget/react-native",
-            "devices-api/sdks/connect-widget/cordova",
-            "devices-api/sdks/connect-widget/flutter"
-          ]
-        }
-      ]
-    },
-    {
-      "group": "More Info",
-      "pages": [
-        "devices-api/more-info/our-integrations",
-        "devices-api/more-info/webhooks",
-        "devices-api/more-info/react-native",
-        "devices-api/more-info/cordova",
-        "devices-api/more-info/flutter",
-        "devices-api/more-info/models"
       ]
     }
   ],
