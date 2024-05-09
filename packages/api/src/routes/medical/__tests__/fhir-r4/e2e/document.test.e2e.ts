@@ -3,7 +3,7 @@ import { makeBinary } from "@metriport/core/external/fhir/__tests__/binary";
 import { makeDocumentReference } from "@metriport/core/external/fhir/__tests__/document-reference";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
-import { api, baseURL } from "../../../../__tests__/shared";
+import { api, baseURL } from "../../../../../__tests__/e2e/shared";
 
 jest.setTimeout(15000);
 
