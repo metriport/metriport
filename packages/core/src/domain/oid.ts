@@ -87,6 +87,4 @@ export const passportURI = `${OID_PREFIX}2.16.840.1.113883.4.330`;
 
 export const identifierSytemByType: Record<(typeof generalPersonalIdentifiers)[number], string> = {
   ssn: ssnURI,
-  //passport: passportURI,
-  //medicare: medicareURI,
 };

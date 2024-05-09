@@ -7,7 +7,7 @@ import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
 
-export const generalPersonalIdentifiers = ["ssn"] as const; //["passport", "ssn", "medicare"]
+export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
 export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
 export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
