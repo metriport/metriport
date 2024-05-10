@@ -240,6 +240,7 @@ const findAllPersonsStrongId = async (
   if (!strongIds.length) {
     return [];
   }
+
   try {
     const persons = await searchPersons({
       commonWell,
