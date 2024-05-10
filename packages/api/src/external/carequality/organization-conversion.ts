@@ -11,7 +11,7 @@ export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise
   const v1Gateways: XCPDGateway[] = [];
   const v2Gateways: XCPDGateway[] = [];
   const iheGatewayV2OIDs: string[] = Config.isDev()
-    ? await getOidsWithIHEGatewayV2Enabled()
+    ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
     : await getOidsWithIHEGatewayV2Enabled();
 
   for (const org of cqOrgs) {
