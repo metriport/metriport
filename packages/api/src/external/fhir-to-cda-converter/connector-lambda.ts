@@ -26,7 +26,7 @@ export class FhirToCdaConverterLambda implements FhirToCdaConverter {
       })
       .promise();
 
-    // Intentionally not assigned. Used to check for in the lambda result.
+    // Intentionally not assigned. Used to check for errors in the lambda result.
     getLambdaResultPayload({
       result,
       lambdaName: fhirToCdaConverterLambdaName,
