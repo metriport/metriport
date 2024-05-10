@@ -1,6 +1,6 @@
 import { Request } from "express";
 import QueryString from "qs";
-import { analytics, EventTypes } from "../../shared/analytics";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getCxId, getCxIdFromHeaders } from "../util";
 
 const devicesRoutes = [

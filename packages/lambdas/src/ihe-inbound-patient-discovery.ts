@@ -2,6 +2,7 @@ import { processInboundPatientDiscovery } from "@metriport/core/external/carequa
 import { MPIMetriportAPI } from "@metriport/core/mpi/patient-mpi-metriport-api";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { inboundPatientDiscoveryReqSchema } from "@metriport/ihe-gateway-sdk";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import * as Sentry from "@sentry/serverless";
 
 const apiUrl = getEnvVarOrFail("API_URL");
@@ -15,6 +16,17 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   if (!baseRequest.success) return buildResponse(400, baseRequest.error);
 
   const result = await processInboundPatientDiscovery(baseRequest.data, mpi);
+
+  if (result.patientMatch && result.cxId) {
+    analytics({
+      distinctId: result.cxId,
+      event: EventTypes.inboundPatientDiscovery,
+      properties: {
+        patientId: result.patientId,
+        patientMatch: result.patientMatch,
+      },
+    });
+  }
 
   return buildResponse(200, result);
 });

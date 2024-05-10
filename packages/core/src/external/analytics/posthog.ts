@@ -1,5 +1,5 @@
 import { PostHog } from "posthog-node";
-import { Config } from "./config";
+import { Config } from "../../util/config";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
@@ -44,6 +44,9 @@ export enum EventTypes {
   documentQuery = "documentQuery",
   documentConversion = "documentConversion",
   consolidatedQuery = "consolidatedQuery",
+  inboundPatientDiscovery = "inbound.patientDiscovery",
+  inboundDocumentQuery = "inbound.documentQuery",
+  inboundDocumentRetrieval = "inbound.documentRetrieval",
 }
 
 export enum EventErrMessage {

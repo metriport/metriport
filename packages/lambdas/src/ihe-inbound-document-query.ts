@@ -1,6 +1,7 @@
 import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { getEnvOrFail } from "./shared/env";
 
 const apiUrl = getEnvOrFail("API_URL");
@@ -13,6 +14,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   if (!baseRequest.success) return buildResponse(400, baseRequest.error);
 
   const result = await processInboundDocumentQuery(baseRequest.data, apiUrl);
+
+  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 0 && result.cxId) {
+    analytics({
+      distinctId: result.cxId,
+      event: EventTypes.inboundDocumentQuery,
+      properties: {
+        patientId: result.patientId,
+        documentCount: result.extrinsicObjectXmls.length,
+      },
+    });
+  }
+
   return buildResponse(200, result);
 });
 

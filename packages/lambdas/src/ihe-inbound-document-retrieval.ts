@@ -1,6 +1,7 @@
 import { inboundDocumentRetrievalReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   console.log(`Running with: ${event}`);
@@ -9,6 +10,18 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const baseRequest = inboundDocumentRetrievalReqSchema.safeParse(JSON.parse(event));
   if (!baseRequest.success) return buildResponse(400, baseRequest.error);
   const result = await processInboundDocumentRetrieval(baseRequest.data);
+
+  if (result.documentReference && result.documentReference.length > 0 && result.cxId) {
+    analytics({
+      distinctId: result.cxId,
+      event: EventTypes.inboundDocumentRetrieval,
+      properties: {
+        patientId: result.patientId,
+        documentCount: result.documentReference.length,
+      },
+    });
+  }
+
   console.log(`Response: ${result}`);
   return buildResponse(200, result);
 });

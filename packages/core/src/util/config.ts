@@ -88,4 +88,7 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+  static getPostHogApiKey(): string | undefined {
+    return getEnvVar("POSTHOG_API_KEY");
+  }
 }

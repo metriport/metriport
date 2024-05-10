@@ -13,6 +13,7 @@ import { EnvConfig } from "../config/env-config";
 import { createIHEGateway } from "./ihe-stack/ihe-gateway";
 import { createLambda } from "./shared/lambda";
 import { LambdaLayers, setupLambdasLayers } from "./shared/lambda-layers";
+import { getSecrets, Secrets } from "./shared/secrets";
 
 interface IHEStackProps extends StackProps {
   config: EnvConfig;
@@ -28,6 +29,11 @@ export class IHEStack extends Stack {
     const vpc = ec2.Vpc.fromLookup(this, "APIVpc", { vpcId });
 
     const alarmSnsAction = setupSlackNotifSnsTopic(this, props.config);
+
+    //-------------------------------------------
+    // Secrets
+    //-------------------------------------------
+    const secrets = getSecrets(this, props.config);
 
     //-------------------------------------------
     // API Gateway
@@ -107,24 +113,32 @@ export class IHEStack extends Stack {
 
     const lambdaLayers = setupLambdasLayers(this, true);
 
+    const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY;
+
     const documentQueryLambda = this.setupDocumentQueryLambda(
       props,
       lambdaLayers,
       vpc,
+      secrets,
       medicalDocumentsBucket,
+      posthogSecretName,
       alarmSnsAction
     );
     const documentRetrievalLambda = this.setupDocumentRetrievalLambda(
       props,
       lambdaLayers,
       vpc,
+      secrets,
       medicalDocumentsBucket,
+      posthogSecretName,
       alarmSnsAction
     );
     const patientDiscoveryLambda = this.setupPatientDiscoveryLambda(
       props,
       lambdaLayers,
       vpc,
+      secrets,
+      posthogSecretName,
       alarmSnsAction
     );
 
@@ -158,7 +172,9 @@ export class IHEStack extends Stack {
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
     vpc: ec2.IVpc,
+    secrets: Secrets,
     medicalDocumentsBucket: s3.IBucket,
+    posthogSecretName: string | undefined,
     alarmSnsAction?: SnsAction | undefined
   ): Lambda {
     const documentQueryLambda = createLambda({
@@ -170,12 +186,16 @@ export class IHEStack extends Stack {
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         API_URL: props.config.loadBalancerDnsName,
+        ...(posthogSecretName ? { POST_HOG_API_KEY: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
       alarmSnsAction,
       version: props.version,
     });
+
+    const posthogSecretKey = "POST_HOG_API_KEY";
+    secrets[posthogSecretKey]?.grantRead(documentQueryLambda);
     medicalDocumentsBucket.grantReadWrite(documentQueryLambda);
     return documentQueryLambda;
   }
@@ -184,7 +204,9 @@ export class IHEStack extends Stack {
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
     vpc: ec2.IVpc,
+    secrets: Secrets,
     medicalDocumentsBucket: s3.IBucket,
+    posthogSecretName: string | undefined,
     alarmSnsAction?: SnsAction | undefined
   ): Lambda {
     const documentRetrievalLambda = createLambda({
@@ -195,12 +217,16 @@ export class IHEStack extends Stack {
       envType: props.config.environmentType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+        ...(posthogSecretName ? { POST_HOG_API_KEY: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
       alarmSnsAction,
       version: props.version,
     });
+
+    const posthogSecretKey = "POST_HOG_API_KEY";
+    secrets[posthogSecretKey]?.grantRead(documentRetrievalLambda);
     medicalDocumentsBucket.grantRead(documentRetrievalLambda);
     return documentRetrievalLambda;
   }
@@ -209,6 +235,8 @@ export class IHEStack extends Stack {
     props: IHEStackProps,
     lambdaLayers: LambdaLayers,
     vpc: ec2.IVpc,
+    secrets: Secrets,
+    posthogSecretName: string | undefined,
     alarmSnsAction?: SnsAction | undefined
   ): Lambda {
     const patientDiscoveryLambda = createLambda({
@@ -219,12 +247,17 @@ export class IHEStack extends Stack {
       envType: props.config.environmentType,
       envVars: {
         API_URL: props.config.loadBalancerDnsName,
+        ...(posthogSecretName ? { POST_HOG_API_KEY: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
       vpc,
       alarmSnsAction,
       version: props.version,
     });
+
+    const posthogSecretKey = "POST_HOG_API_KEY";
+    secrets[posthogSecretKey]?.grantRead(patientDiscoveryLambda);
+
     return patientDiscoveryLambda;
   }
 }

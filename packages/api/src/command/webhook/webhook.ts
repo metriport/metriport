@@ -1,5 +1,6 @@
 import { webhookDisableFlagName } from "@metriport/core/domain/webhook/index";
 import { errorToString } from "@metriport/shared/common/error";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import Axios from "axios";
 import crypto from "crypto";
 import dayjs from "dayjs";
@@ -11,7 +12,6 @@ import WebhookError from "../../errors/webhook";
 import { isWebhookPongDisabledForCx } from "../../external/aws/appConfig";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
-import { analytics, EventTypes } from "../../shared/analytics";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
 import { updateWebhookStatus } from "../settings/updateSettings";
