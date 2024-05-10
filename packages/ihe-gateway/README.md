@@ -66,13 +66,21 @@ $ ./scripts/run-docker.sh
 
 ### Administrator
 
-To open Administrator windows connected to each task on the cloud, run one of the commands below,
-depending to which type of instance you want to connect to:
+The Administrator is a desktop application used to setup and monitor IHE GW instances.
+
+- Download it
+- Update the `.env`'s variables
+  - `ADMIN_PATH`: the local path to the installed version of the Administrator
+  - `ADMIN_USER`: admin's user
+  - `ADMIN_PASSWORD`: admin's password
+
+To open the Administrator desktop app, run one of the commands below depending to which type of instance you want to
+connect to:
 
 ```shell
 $ npm run admin -- <env> outbound
 $ npm run admin -- <env> inbound
-$ npm run admin -- <env> all
+$ npm run admin -- <env> all # default
 ```
 
 With `<env>` being the cloud environment to which you want to connect to (required), one of:
@@ -80,6 +88,8 @@ With `<env>` being the cloud environment to which you want to connect to (requir
 - `production`
 - `staging`
 - `dev`
+
+When you choose `staging` or `production`, it will connect to each running task on the cloud.
 
 ### Development
 

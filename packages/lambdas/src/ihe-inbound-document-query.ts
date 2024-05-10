@@ -1,6 +1,9 @@
 import { inboundDocumentQueryReqSchema } from "@metriport/ihe-gateway-sdk";
 import * as Sentry from "@sentry/serverless";
 import { processInboundDocumentQuery } from "@metriport/core/external/carequality/dq/process-inbound-dq";
+import { getEnvOrFail } from "./shared/env";
+
+const apiUrl = getEnvOrFail("API_URL");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   console.log(`Running with ${event}`);
@@ -9,7 +12,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
   const baseRequest = inboundDocumentQueryReqSchema.safeParse(JSON.parse(event));
   if (!baseRequest.success) return buildResponse(400, baseRequest.error);
 
-  const result = await processInboundDocumentQuery(baseRequest.data);
+  const result = await processInboundDocumentQuery(baseRequest.data, apiUrl);
   return buildResponse(200, result);
 });
 

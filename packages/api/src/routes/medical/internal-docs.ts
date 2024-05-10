@@ -1,8 +1,8 @@
 import { BulkGetDocUrlStatus } from "@metriport/core/domain/bulk-get-document-url";
 import {
   DocumentBulkSignerLambdaResponse,
-  DocumentBulkSignerLambdaResponseArraySchema,
-} from "@metriport/core/domain/document-bulk-signer-response";
+  documentBulkSignerLambdaResponseArraySchema,
+} from "@metriport/core/external/aws/document-signing/document-bulk-signer-response";
 import { convertResult } from "@metriport/core/domain/document-query";
 import { createDocumentFilePath } from "@metriport/core/domain/document/filename";
 import { S3Utils } from "@metriport/core/external/aws/s3";
@@ -18,6 +18,7 @@ import {
   updateDocumentReference,
 } from "../../command/medical/admin/upload-doc";
 import { checkDocumentQueries } from "../../command/medical/document/check-doc-queries";
+import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 import { queryDocumentsAcrossHIEs } from "../../command/medical/document/document-query";
 import { reConvertDocuments } from "../../command/medical/document/document-reconvert";
 import {
@@ -25,22 +26,22 @@ import {
   processPatientDocumentRequest,
 } from "../../command/medical/document/document-webhook";
 import { appendDocQueryProgress } from "../../command/medical/patient/append-doc-query-progress";
-import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { appendBulkGetDocUrlProgress } from "../../command/medical/patient/bulk-get-doc-url-progress";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import BadRequestError from "../../errors/bad-request";
+import { generateCcd } from "../../external/cda/generate-ccd";
 import { parseJobId } from "../../external/fhir/connector/connector";
+import { setDocQueryProgress } from "../../external/hie/set-doc-query-progress";
 import { Config } from "../../shared/config";
 import { parseISODate } from "../../shared/date";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
+import { requestLogger } from "../helpers/request-logger";
 import { documentQueryProgressSchema } from "../schemas/internal";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler, getFrom, getFromQueryAsArray, getFromQueryAsBoolean } from "../util";
 import { getFromQueryOrFail } from "./../util";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
-import { requestLogger } from "../helpers/request-logger";
-import { calculateDocumentConversionStatus } from "../../command/medical/document/document-conversion-status";
 
 const router = Router();
 const upload = multer();
@@ -368,8 +369,6 @@ router.post(
   })
 );
 
-export default router;
-
 /**
  * POST /internal/docs/triggerBulkDownloadWebhook
  *
@@ -389,7 +388,7 @@ router.post(
     const requestId = getFrom("query").orFail("requestId", req);
     const status = getFrom("query").orFail("status", req);
     const dtos: DocumentBulkSignerLambdaResponse[] =
-      DocumentBulkSignerLambdaResponseArraySchema.parse(req.body);
+      documentBulkSignerLambdaResponseArraySchema.parse(req.body);
 
     const updatedPatient = await appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId },
@@ -410,3 +409,25 @@ router.post(
     return res.status(httpStatus.OK).json(updatedPatient.data.bulkGetDocumentsUrlProgress);
   })
 );
+
+/**
+ * GET /internal/docs/ccd
+ *
+ * Generates a CCD document for the specified patient.
+ * @param req.query.cxId - The customer/account's ID.
+ * @param req.query.patientId - The patient's ID.
+ * @return The CCD document string in XML format.
+ */
+router.get(
+  "/ccd",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getFrom("query").orFail("cxId", req);
+    const patientId = getFrom("query").orFail("patientId", req);
+    const ccd = await generateCcd({ patientId, cxId });
+
+    return res.type("application/xml").status(httpStatus.OK).send(ccd);
+  })
+);
+
+export default router;

@@ -18,7 +18,8 @@ import { DRSamlClientResponse } from "../send/dr-requests";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
-import { createFileName, createFilePath } from "../../../../../../domain/filename";
+import { createDocumentFilePath } from "../../../../../../domain/document/filename";
+import { MetriportError } from "../../../../../../util/error/metriport-error";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
@@ -48,18 +49,19 @@ async function parseDocumentReference({
   s3Utils: S3Utils;
   idMapping: Record<string, string>;
 }): Promise<DocumentReference> {
-  const { mimeType, fileExtension, decodedBytes } = parseFileFromString(documentResponse.Document);
+  const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
   const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
   const metriportId = idMapping[strippedDocUniqueId];
   if (!metriportId) {
-    throw new Error("MetriportId not found for document");
+    throw new MetriportError("MetriportId not found for document");
   }
-  const fileName = `${createFileName(
+
+  const filePath = createDocumentFilePath(
     outboundRequest.cxId,
     outboundRequest.patientId,
-    metriportId
-  )}${fileExtension}`;
-  const filePath = createFilePath(outboundRequest.cxId, outboundRequest.patientId, fileName);
+    metriportId,
+    mimeType
+  );
   const fileInfo = await s3Utils.getFileInfoFromS3(filePath, bucket);
 
   if (!fileInfo.exists) {
@@ -75,7 +77,7 @@ async function parseDocumentReference({
     url: s3Utils.buildFileUrl(bucket, filePath),
     size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
     title: documentResponse?.title,
-    fileName: fileName,
+    fileName: filePath,
     creation: documentResponse.creation,
     language: documentResponse.language,
     contentType: mimeType,
