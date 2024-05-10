@@ -1,9 +1,9 @@
 import {
+  Identifier,
   Patient as FHIRPatient,
   ContactPoint,
   Reference,
   DocumentReference,
-  Identifier,
 } from "@medplum/fhirtypes";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
