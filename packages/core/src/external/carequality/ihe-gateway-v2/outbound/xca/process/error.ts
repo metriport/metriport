@@ -146,6 +146,36 @@ export function handleEmptyResponse({
   };
 }
 
+export function handleErrorMTOMResponse({
+  outboundRequest,
+  gateway,
+}: {
+  outboundRequest: OutboundDocumentQueryReq | OutboundDocumentRetrievalReq;
+  gateway: XCAGateway;
+}): OutboundDocumentQueryResp | OutboundDocumentRetrievalResp {
+  const operationOutcome: OperationOutcome = {
+    resourceType: "OperationOutcome",
+    id: outboundRequest.id,
+    issue: [
+      {
+        severity: "information",
+        code: "mtom-processing-error",
+        details: {
+          text: "Error processing MTOM response",
+        },
+      },
+    ],
+  };
+  return {
+    id: outboundRequest.id,
+    patientId: outboundRequest.patientId,
+    timestamp: outboundRequest.timestamp,
+    responseTimestamp: dayjs().toISOString(),
+    gateway,
+    operationOutcome,
+  };
+}
+
 export function handleSOAPFaultResponse({
   soapFault,
   outboundRequest,

@@ -11,6 +11,7 @@ import {
   handleHTTPErrorResponse,
   handleEmptyResponse,
   handleSOAPFaultResponse,
+  handleErrorMTOMResponse,
 } from "./error";
 import { parseFileFromString } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
@@ -24,6 +25,8 @@ import {
   createDocumentFileName,
 } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
+import { capture } from "../../../../../../util/notifications";
+import { parseMTOMResponse } from "./mtom-parser";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 
@@ -97,27 +100,27 @@ async function parseDocumentReference({
   };
 }
 
+function generateIdMapping(documentReferences: DocumentReference[]): Record<string, string> {
+  return documentReferences.reduce((acc: Record<string, string>, entry) => {
+    if (entry.docUniqueId && entry.metriportId) {
+      acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
+    }
+    return acc;
+  }, {});
+}
+
 async function handleSuccessResponse({
   documentResponses,
   outboundRequest,
   gateway,
   s3Utils,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  documentResponses: any;
+  documentResponses: DocumentResponse[];
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
   s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
-  const idMapping = outboundRequest.documentReference.reduce(
-    (acc: Record<string, string>, entry) => {
-      if (entry.docUniqueId && entry.metriportId) {
-        acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
-      }
-      return acc;
-    },
-    {}
-  );
+  const idMapping = generateIdMapping(outboundRequest.documentReference);
 
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const documentReferences = Array.isArray(documentResponses)
@@ -146,8 +149,8 @@ async function handleSuccessResponse({
   return response;
 }
 
-export async function processDRResponse({
-  drResponse: { response, success, gateway, outboundRequest, contentType },
+export async function processDRResponseSOAP({
+  drResponse: { response, success, gateway, outboundRequest },
   s3Utils,
 }: {
   drResponse: DRSamlClientResponse;
@@ -160,9 +163,6 @@ export async function processDRResponse({
       outboundRequest,
       gateway,
     });
-  }
-  if (contentType?.includes("multipart/related")) {
-    console.log(contentType);
   }
   const parser = new XMLParser({
     ignoreAttributes: false,
@@ -205,5 +205,60 @@ export async function processDRResponse({
       outboundRequest,
       gateway,
     });
+  }
+}
+
+export async function processDRResponseMTOM({
+  drResponse: { response, success, gateway, outboundRequest, contentType },
+  s3Utils,
+}: {
+  drResponse: DRSamlClientResponse;
+  s3Utils: S3Utils;
+}): Promise<OutboundDocumentRetrievalResp> {
+  if (!contentType) {
+    throw new Error("No content type found in response");
+  }
+  if (success === false) {
+    return handleHTTPErrorResponse({
+      httpError: response,
+      outboundRequest,
+      gateway,
+    });
+  }
+  try {
+    const documentResponses = parseMTOMResponse(response, contentType);
+    return handleSuccessResponse({
+      documentResponses,
+      outboundRequest,
+      gateway,
+      s3Utils,
+    });
+  } catch (error) {
+    console.log("Error parsing MTOM response", error);
+    capture.error("Error parsing MTOM response", {
+      extra: {
+        error,
+        response,
+        contentType,
+      },
+    });
+    return handleErrorMTOMResponse({
+      outboundRequest,
+      gateway,
+    });
+  }
+}
+
+export async function processDRResponse({
+  drResponse,
+  s3Utils,
+}: {
+  drResponse: DRSamlClientResponse;
+  s3Utils: S3Utils;
+}): Promise<OutboundDocumentRetrievalResp> {
+  if (drResponse.contentType?.includes("multipart/related")) {
+    return processDRResponseMTOM({ drResponse, s3Utils });
+  } else {
+    return processDRResponseSOAP({ drResponse, s3Utils });
   }
 }
