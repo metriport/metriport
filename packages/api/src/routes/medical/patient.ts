@@ -6,7 +6,7 @@ import {
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
-import { uploadCdaDocuments, uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
@@ -14,7 +14,6 @@ import Router from "express-promise-router";
 import status from "http-status";
 import { z } from "zod";
 import { areDocumentsProcessing } from "../../command/medical/document/document-status";
-import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { createOrUpdateConsolidatedPatientData } from "../../command/medical/patient/consolidated-create";
 import {
   getConsolidatedPatientData,
@@ -33,7 +32,6 @@ import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-li
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import BadRequestError from "../../errors/bad-request";
 import NotFoundError from "../../errors/not-found";
-import { toFHIR as toFHIROrganization } from "../../external/fhir/organization";
 import { countResources } from "../../external/fhir/patient/count-resources";
 import { upsertPatientToFHIRServer } from "../../external/fhir/patient/upsert-patient";
 import { validateFhirEntries } from "../../external/fhir/shared/json-validator";
@@ -409,7 +407,6 @@ async function putConsolidated(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const organization = await getOrganizationOrFail({ cxId });
   const fhirBundle = bundleSchema.parse(req.body);
   const validatedBundle = validateFhirEntries(fhirBundle);
   const incomingAmount = validatedBundle.entry.length;
@@ -418,8 +415,6 @@ async function putConsolidated(req: Request, res: Response) {
 
   const docId = uuidv7();
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
-
-  const fhirOrganization = toFHIROrganization(organization);
   const patientDataPromise = async () => {
     createOrUpdateConsolidatedPatientData({
       cxId,
@@ -430,14 +425,7 @@ async function putConsolidated(req: Request, res: Response) {
   const convertAndUploadCdaPromise = async () => {
     const isValidForCdaConversion = hasCompositionResource(validatedBundle);
     if (isValidForCdaConversion) {
-      const converted = await convertFhirToCda(cxId, patientId, validatedBundle);
-      await uploadCdaDocuments({
-        cxId,
-        patientId,
-        cdaBundles: converted,
-        organization: fhirOrganization,
-        docId,
-      });
+      await convertFhirToCda({ cxId, patientId, docId, validatedBundle });
     }
   };
 
