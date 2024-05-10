@@ -13,7 +13,8 @@ var errorMessage = require("../error/error").errorMessage;
 var HandlebarsConverter = require("../handlebars-converter/handlebars-converter");
 var WorkerUtils = require("./workerUtils");
 var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
-var { extractEncounterTimePeriod } = require('../inputProcessor/dateProcessor');
+var { extractEncounterTimePeriod } = require("../inputProcessor/dateProcessor");
+var { uuidv7 } = require("@metriport/core/util/uuid-v7");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);
@@ -40,9 +41,18 @@ function expireCache() {
   compileCache.clear();
 }
 
-function generateResult(dataTypeHandler, dataContext, template, patientId, encounterTimePeriod) {
+function generateResult(
+  dataTypeHandler,
+  dataContext,
+  template,
+  patientId,
+  encounterTimePeriod,
+  encompassingEncounterId
+) {
   var result = dataTypeHandler.postProcessResult(
-    template(dataContext, { data: { metriportPatientId: patientId, encounterTimePeriod }})
+    template(dataContext, {
+      data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterId },
+    })
   );
   return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
     fhirResource: result,
@@ -156,7 +166,9 @@ WorkerUtils.workerTaskProcessor(msg => {
                     status: 400,
                     resultMsg: errorMessage(
                       errorCodes.BadRequest,
-                      `Unable to parse input data for data type ${dataTypeHandler.dataType}. ${err.toString()}`
+                      `Unable to parse input data for data type ${
+                        dataTypeHandler.dataType
+                      }. ${err.toString()}`
                     ),
                   });
                 });
@@ -178,6 +190,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
+            let encompassingEncounterId = uuidv7();
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
             session.set(
               constants.CLS_KEY_TEMPLATE_LOCATION,
@@ -245,7 +258,8 @@ WorkerUtils.workerTaskProcessor(msg => {
                           dataContext,
                           compiledTemplate,
                           patientId,
-                          encounterTimePeriod
+                          encounterTimePeriod,
+                          encompassingEncounterId
                         ),
                       });
                     } catch (convertErr) {
