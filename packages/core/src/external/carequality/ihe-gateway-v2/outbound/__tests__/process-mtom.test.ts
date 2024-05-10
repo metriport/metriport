@@ -39,6 +39,6 @@ describe("processDRResponse", () => {
       s3Utils,
     });
     expect(response.documentReference?.length).toBe(1);
-    expect(response.documentReference[0]?.contentType).toBe("application/xml");
+    expect(response.documentReference?.[0]?.contentType).toBe("application/xml");
   });
 });

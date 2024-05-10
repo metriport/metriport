@@ -66,3 +66,39 @@ export async function sendSignedXml({
 
   return { response: response.data, contentType: response.headers["content-type"] };
 }
+
+export async function sendSignedXmlMTOM({
+  signedXml,
+  url,
+  samlCertsAndKeys,
+  trustedKeyStore,
+}: {
+  signedXml: string;
+  url: string;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  trustedKeyStore: string;
+}): Promise<{ response: string; contentType: string }> {
+  const boundary = "MIMEBoundary782a6cafc4cf4aab9dbf291522804454";
+  const agent = new https.Agent({
+    rejectUnauthorized: false,
+    cert: samlCertsAndKeys.certChain,
+    key: samlCertsAndKeys.privateKey,
+    passphrase: samlCertsAndKeys.privateKeyPassword,
+    ca: trustedKeyStore,
+    ciphers: "DEFAULT:!DH",
+    secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
+  });
+
+  const payload = `--${boundary}\r\nContent-ID: <doc0@metriport.com>\r\nContent-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${signedXml}\r\n\r\n--${boundary}--`;
+
+  const response = await axios.post(url, payload, {
+    timeout: 120000,
+    headers: {
+      "Accept-Encoding": "gzip, deflate",
+      "Content-Type": `multipart/related; type="application/xop+xml"; start="<doc0@metriport.com>"; boundary=${boundary}; start-info="application/soap+xml"`,
+      "Cache-Control": "no-cache",
+    },
+    httpsAgent: agent,
+  });
+  return { response: response.data, contentType: response.headers["content-type"] };
+}

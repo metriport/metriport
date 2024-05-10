@@ -15,8 +15,8 @@ import { processDQResponse } from "@metriport/core/external/carequality/ihe-gate
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { S3Utils } from "@metriport/core/external/aws/s3";
 import { Config } from "@metriport/core/util/config";
+import { MockS3Utils } from "./s3";
 
 const samlAtributes = {
   subjectId: "System User",
@@ -30,52 +30,15 @@ const samlAtributes = {
   purposeOfUse: "TREATMENT",
 };
 
-class MockS3Utils extends S3Utils {
-  async uploadFile({
-    bucket,
-    key,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    file,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    contentType,
-  }: {
-    bucket: string;
-    key: string;
-    file: Buffer;
-    contentType?: string;
-  }): Promise<AWS.S3.ManagedUpload.SendData> {
-    return {
-      Location: `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`,
-      ETag: "mockETag",
-      Bucket: bucket,
-      Key: key,
-    };
-  }
-
-  async getFileInfoFromS3(
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    key: string,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    bucket: string
-  ): Promise<{ exists: false }> {
-    return { exists: false };
-  }
-  buildFileUrl(bucket: string, key: string): string {
-    console.log("Mock buildFileUrl called");
-    // Return a mock URL
-    return `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`;
-  }
-}
-
 async function queryDatabaseForDQs() {
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(sqlDBCreds);
   const query = `
     SELECT dqr.data
     FROM document_query_result dqr
-    WHERE dqr.status = 'failure'
+    WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 100;
+    LIMIT 1;
   `;
 
   try {
@@ -91,23 +54,28 @@ async function queryDatabaseForDQs() {
   }
 }
 
-async function queryDatabaseForDRs() {
+interface QueryResult {
+  url_dr: string;
+}
+
+async function getDrUrl(id: string): Promise<string> {
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(sqlDBCreds);
   const query = `
-    SELECT drr.data
-    FROM document_retrieval_result drr
-    WHERE drr.status = 'success'
-    ORDER BY drr.data DESC
-    LIMIT 2;
+    SELECT cde.url_dr
+    FROM cq_directory_entry cde
+    WHERE cde.id = :id;
   `;
 
+  console.log("ID: ", id);
   try {
-    const results = await sequelize.query(query, {
+    const results = await sequelize.query<QueryResult>(query, {
+      replacements: { id },
       type: QueryTypes.SELECT,
     });
     sequelize.close();
-    return results;
+    console.log("DR URL: ", results);
+    return results[0].url_dr;
   } catch (error) {
     console.error("Error executing SQL query:", error);
     sequelize.close();
@@ -184,28 +152,51 @@ async function DRIntegrationTest() {
   let failureCount = 0;
   let runTimeErrorCount = 0;
 
-  console.log("Querrying DB for DRs...");
-  const results = await queryDatabaseForDRs();
-  console.log("Sending DRs...");
+  console.log("Querrying DB for DQs...");
+  const results = await queryDatabaseForDQs();
+  console.log("Sending DQs and DRs...");
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const drResult = (result as any).data as OutboundDocumentRetrievalResp;
-    if (!drResult.cxId || !drResult.patientId || !drResult.documentReference) {
-      console.log("Skipping: ", drResult);
+    const dqResult = (result as any).data as OutboundDocumentQueryResp;
+    if (!dqResult.cxId || !dqResult.patientId || !dqResult.externalGatewayPatient) {
+      console.log("Skipping: ", dqResult);
       return undefined;
     }
-    const drRequest: OutboundDocumentRetrievalReq = {
-      id: drResult.id,
-      cxId: drResult.cxId,
-      gateway: drResult.gateway,
-      timestamp: drResult.timestamp,
-      patientId: drResult.patientId,
+
+    const dqRequest: OutboundDocumentQueryReq = {
+      id: dqResult.id,
+      cxId: dqResult.cxId,
+      gateway: dqResult.gateway,
+      timestamp: dqResult.timestamp,
+      patientId: dqResult.patientId,
       samlAttributes: samlAtributes,
-      documentReference: drResult.documentReference,
+      externalGatewayPatient: dqResult.externalGatewayPatient,
+    };
+    const dqResponse = await queryDQ(dqRequest);
+
+    if (!dqResponse.documentReference) {
+      console.log("No document references found for DQ: ", dqRequest, dqResponse);
+      return undefined;
+    }
+
+    const drUrl = await getDrUrl(dqResult.gateway.homeCommunityId);
+    console.log("DR URL: ", drUrl);
+
+    const drRequest: OutboundDocumentRetrievalReq = {
+      id: dqResult.id,
+      cxId: dqResult.cxId,
+      timestamp: dqResult.timestamp,
+      gateway: {
+        url: drUrl,
+        homeCommunityId: dqResult.gateway.homeCommunityId,
+      },
+      patientId: dqResult.patientId,
+      samlAttributes: samlAtributes,
+      documentReference: dqResponse.documentReference,
     };
     try {
       const drResponse = await queryDR(drRequest);
-      return { drResult, drResponse };
+      return { drRequest, drResponse };
     } catch (error) {
       console.error("Runtime error:", error);
       throw error;
@@ -216,25 +207,18 @@ async function DRIntegrationTest() {
   const responses = await Promise.allSettled(promises);
   responses.forEach(response => {
     if (response.status === "fulfilled" && response.value) {
-      const { drResult, drResponse } = response.value;
-      const resultDocumentReferences = new Set(
-        drResult?.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
-      );
+      const { drRequest, drResponse } = response.value;
       const responseDocumentReferences = new Set(
         drResponse?.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
       );
 
-      if (
-        (responseDocumentReferences.size > 0 || resultDocumentReferences.size > 0) &&
-        responseDocumentReferences.size >= resultDocumentReferences.size
-      ) {
+      if (responseDocumentReferences.size > 0) {
         successCount++;
-        console.log("dr result", drResult);
         console.log("dr response", drResponse);
       } else {
         failureCount++;
-        console.log("dr result", drResult);
         console.log("dr response", JSON.stringify(drResponse, null, 2));
+        console.log("dr request", JSON.stringify(drRequest, null, 2));
       }
     } else if (response.status === "rejected") {
       runTimeErrorCount++;

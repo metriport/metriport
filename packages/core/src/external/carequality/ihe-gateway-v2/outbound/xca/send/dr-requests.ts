@@ -2,7 +2,11 @@ import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
+import {
+  getTrustedKeyStore,
+  SamlClientResponse,
+  sendSignedXmlMTOM,
+} from "../../../saml/saml-client";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
 
@@ -29,7 +33,7 @@ export async function sendSignedDRRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const { response, contentType } = await sendSignedXml({
+      const { response, contentType } = await sendSignedXmlMTOM({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -50,6 +54,7 @@ export async function sendSignedDRRequests({
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
       log(`${msg}, error: ${error}`);
+      console.log(error);
 
       const errorString: string = errorToString(error);
       const extra = {

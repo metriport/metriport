@@ -98,13 +98,17 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
         removeNSPrefix: true,
       });
       const jsonObj = parser.parse(content);
-      const docResponse = jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse;
-      if (docResponse) {
+
+      const docResponses = Array.isArray(
+        jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse
+      )
+        ? jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse
+        : [jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse];
+      for (const docResponse of docResponses) {
         documentResponses.push({
           ...docResponse,
           Document: stripCidPrefix(docResponse.Document.Include._href),
         });
-        console.log("docResponse", documentResponses);
       }
     } else if (headers.ContentType.includes("application/octet-stream")) {
       attachments[headers.ContentID] = content;

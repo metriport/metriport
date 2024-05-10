@@ -14,6 +14,9 @@ import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe
 import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
+import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { MockS3Utils } from "./s3";
+import { Config } from "@metriport/core/util/config";
 
 const app = express();
 const port = 8043;
@@ -91,17 +94,18 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       bulkBodyData: req.body,
       samlCertsAndKeys,
     });
-    fs.writeFileSync("../../scratch/dr/miami-may-8.xml", xmlResponses[0].signedRequest);
     const response = await sendSignedDRRequests({
       signedRequests: xmlResponses,
       samlCertsAndKeys,
       patientId: uuidv4(),
       cxId: uuidv4(),
     });
-    if (response[0].contentType?.includes("multipart/related")) {
-      console.log("MTOM Response");
-      fs.writeFileSync("../../scratch/dr/mtom-response.xml", response[0].response);
-    }
+
+    const s3Utils = new MockS3Utils(Config.getAWSRegion());
+    return processDRResponse({
+      drResponse: response[0],
+      s3Utils,
+    });
 
     res.type("application/xml").send(response);
   } catch (error) {
