@@ -91,8 +91,9 @@ export function getCwStrongIdsFromPatient(patient: Patient): StrongId[] {
       period: id.period,
       assigner: id.assigner,
     };
-    if (id.type === "driversLicense")
+    if (id.type === "driversLicense") {
       return { ...base, key: id.value, system: driversLicenseURIs[id.state] };
+    }
     return []; // { ...base, key: id.value, system: identifierSytemByType[id.type] }
   });
 }
