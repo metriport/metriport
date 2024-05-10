@@ -19,6 +19,7 @@ import {
 } from "../error";
 import { validateBasePayload } from "../shared";
 import { decodePatientId } from "./utils";
+import { XML_APP_MIME_TYPE } from "../../../util/mime";
 
 const CCD_NAME = "ccd";
 
@@ -90,7 +91,12 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
     const resp = await api.get(url);
     const ccd = resp.data as string;
     const ccdSize = sizeInBytes(ccd);
-    await s3Utils.uploadFile({ bucket, key: fileName, file: Buffer.from(ccd) });
+    await s3Utils.uploadFile({
+      bucket,
+      key: fileName,
+      file: Buffer.from(ccd),
+      contentType: XML_APP_MIME_TYPE,
+    });
     log(`CCD uploaded into ${bucket} under this name: ${fileName}`);
 
     const docRef: DocumentReference = {
