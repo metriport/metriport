@@ -6,7 +6,10 @@ import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";
 import { DocumentReferenceWithId } from "../../fhir/document";
 import { getDocumentsFromFHIR } from "../../fhir/document/get-documents";
@@ -15,6 +18,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { getCQDirectoryEntryOrFail } from "../command/cq-directory/get-cq-directory-entry";
 import { formatDate } from "../shared";
+import { getCQData } from "../patient";
 import {
   DocumentReferenceWithMetriportId,
   containsMetriportId,
@@ -122,6 +126,31 @@ export async function processOutboundDocumentRetrievalResps({
         level: "error",
       });
     }
+
+    const patient = await getPatientOrFail({ id: patientId, cxId: cxId });
+    const cqData = getCQData(patient.data.externalData);
+    const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
+    const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const successfulGWS = results
+      .filter(result => result.documentReference && result.documentReference.length > 0)
+      .map(result => result.gateway.url);
+    const failedGWS = results
+      .filter(result => !result.documentReference || result.documentReference.length === 0)
+      .map(result => result.gateway.url);
+
+    analytics({
+      distinctId: cxId,
+      event: EventTypes.documentQuery,
+      properties: {
+        requestId,
+        patientId,
+        hie: MedicalDataSource.CAREQUALITY,
+        duration,
+        documentCount: successDocsRetrievedCount,
+        successfulGWS,
+        failedGWS,
+      },
+    });
 
     await tallyDocQueryProgress({
       patient: { id: patientId, cxId: cxId },
