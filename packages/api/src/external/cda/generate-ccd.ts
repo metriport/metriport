@@ -31,17 +31,17 @@ export async function generateCcd({
   const currentTime = getCurrentDate();
 
   return `<ClinicalDocument xmlns="urn:hl7-org:v3" xmlns:sdtc="urn:hl7-org:sdtc" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" moodCode="EVN">
-  <realmCode code="US"/>
+	<realmCode code="US"/>
   <typeId root="2.16.840.1.113883.1.3" extension="POCD_HD000040"/>
-  <templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
-  <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01"/>
-  <id root="${metriportOid}" assigningAuthorityName="${metriportOrganization.name}"/>
+	<templateId root="2.16.840.1.113883.10.20.22.1.1" extension="2015-08-01"/>
+	<templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2015-08-01"/>
+	<id root="${metriportOid}" assigningAuthorityName="${metriportOrganization.name}"/>
   <code code="34133-9" codeSystem="2.16.840.1.113883.6.1" displayName="Summarization of episode note" codeSystemName="LOINC"/>
-  <title>Continuity of Care Document</title>
-  <effectiveTime value="${currentTime}"/>
-  <confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25" displayName="Normal"/>
-  <languageCode code="en-US"/>
-  <recordTarget>
+	<title>Continuity of Care Document</title>
+	<effectiveTime value="${currentTime}"/>
+	<confidentialityCode code="N" codeSystem="2.16.840.1.113883.5.25" displayName="Normal"/>
+	<languageCode code="en-US"/>
+	<recordTarget>
 		<patientRole>
 			<id root="${patientId}"/>
 			${addresses}
