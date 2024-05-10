@@ -29,7 +29,7 @@ export async function uploadCdaDocuments({
   const { log } = out(`uploadCdaDocuments - cxId: ${cxId}, patientId: ${patientId}`);
   try {
     await Promise.all(
-      cdaBundles.map(async cdaBundle => {
+      cdaBundles.map(async (cdaBundle, index) => {
         await cdaDocumentUploaderHandler({
           cxId,
           patientId,
@@ -37,7 +37,7 @@ export async function uploadCdaDocuments({
           medicalDocumentsBucket: Config.getMedicalDocumentsBucketName(),
           region: Config.getAWSRegion(),
           organization,
-          docId,
+          docId: index > 0 ? `${docId}_${index}` : docId,
         });
       })
     );
