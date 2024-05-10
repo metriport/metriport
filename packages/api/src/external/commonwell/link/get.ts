@@ -237,6 +237,9 @@ const findAllPersonsStrongId = async (
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
   const strongIds = getCwStrongIdsFromPatient(patient);
+  if (!strongIds.length) {
+    return [];
+  }
   try {
     const persons = await searchPersons({
       commonWell,

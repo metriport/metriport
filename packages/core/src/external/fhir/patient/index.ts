@@ -12,8 +12,6 @@ import { Patient, splitName, genderAtBirthMapping } from "../../../domain/patien
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
-// TODO Better name
-export type StrongId = Omit<Identifier, "value" | "system"> & { value: string; system: string };
 
 export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   return {
@@ -60,10 +58,11 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   };
 }
 
-export function getFhirStrongIdsFromPatient(patient: PatientIdAndData): StrongId[] {
+export function getFhirStrongIdsFromPatient(patient: PatientIdAndData): Identifier[] {
   return (patient.data.personalIdentifiers ?? []).map(id => {
-    if (id.type === "driversLicense")
+    if (id.type === "driversLicense") {
       return { value: id.value, system: driversLicenseURIs[id.state] };
+    }
     return { value: id.value, system: identifierSytemByType[id.type] };
   });
 }
