@@ -173,7 +173,7 @@ async function DRIntegrationTest() {
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     const dqResponse = await queryDQ(dqRequest);
-
+    console.log("DQ Response: ", dqResponse);
     if (!dqResponse.documentReference) {
       console.log("No document references found for DQ: ", dqRequest, dqResponse);
       return undefined;

@@ -12,7 +12,7 @@ function parseMtomContentType(contentType: string): MtomContentType {
   const contentTypeParams = contentType.split(";").reduce<Record<string, string>>((acc, param) => {
     const index = param.indexOf("=");
     if (index !== -1) {
-      const key = param.substring(0, index).trim();
+      const key = param.substring(0, index).trim().toLowerCase();
       const value = param
         .substring(index + 1)
         .trim()
@@ -49,23 +49,23 @@ function parseMtomHeaders(headerPart: string): MtomHeaders {
   const headers = headerPart.split("\n").reduce<Record<string, string>>((acc, headerLine) => {
     const index = headerLine.indexOf(":");
     if (index !== -1) {
-      const key = headerLine.substring(0, index).trim();
+      const key = headerLine.substring(0, index).trim().toLowerCase();
       const value = headerLine.substring(index + 1).trim();
       acc[key] = value;
     }
     return acc;
   }, {});
 
-  if (!headers["Content-ID"]) {
+  if (!headers["content-id"]) {
     throw new Error("No Content-ID header found in headers.");
   }
-  if (!headers["Content-Type"]) {
+  if (!headers["content-type"]) {
     throw new Error("No Content-Type header found in headers.");
   }
   return {
-    ContentID: stripTags(headers["Content-ID"]),
-    ContentTransferEncoding: headers["Content-Transfer-Encoding"],
-    ContentType: headers["Content-Type"],
+    ContentID: stripTags(headers["content-id"]),
+    ContentTransferEncoding: headers["content-transfer-encoding"],
+    ContentType: headers["content-type"],
   };
 }
 
@@ -79,15 +79,27 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
   const attachments: Record<string, string> = {};
 
   parts.forEach(part => {
-    console.log("part", part);
-    const headersEndIndex = part.indexOf("\n\n");
-    const headersPart = part.slice(0, headersEndIndex).trim();
-    const content = part.slice(headersEndIndex + 2).trim();
+    let splitter = "\r\n\r\n";
+    let headersEndIndex = -1;
+    if (contentTypeParams.startInfo) {
+      splitter = contentTypeParams.startInfo;
+      headersEndIndex = part.indexOf(splitter);
+    }
+    if (headersEndIndex === -1) {
+      splitter = "\r\n\r\n";
+      headersEndIndex = part.indexOf(splitter);
+      if (headersEndIndex === -1) {
+        splitter = "\n\n";
+        headersEndIndex = part.indexOf(splitter);
+        if (headersEndIndex === -1) {
+          throw new Error("No headers found in part.");
+        }
+      }
+    }
+    const headersPart = part.slice(0, headersEndIndex + splitter.length).trim();
+    const content = part.slice(headersEndIndex + splitter.length).trim();
 
     const headers = parseMtomHeaders(headersPart);
-
-    console.log("headers", headers);
-    console.log("content", content);
 
     if (headers.ContentType.includes("application/xop+xml")) {
       const parser = new XMLParser({
@@ -110,11 +122,10 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
           Document: stripCidPrefix(docResponse.Document.Include._href),
         });
       }
-    } else if (headers.ContentType.includes("application/octet-stream")) {
+    } else {
       attachments[headers.ContentID] = content;
     }
   });
-  console.log("attachments", attachments);
 
   // Replace Document placeholders with actual content from attachments
   documentResponses.forEach(docResponse => {
