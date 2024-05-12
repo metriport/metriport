@@ -8,7 +8,6 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
-import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
@@ -41,7 +40,8 @@ type Slot = {
 
 function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  extrinsicObject: any
+  extrinsicObject: any,
+  outboundRequest: OutboundDocumentQueryReq
 ): DocumentReference | undefined {
   const slots = Array.isArray(extrinsicObject?.Slot)
     ? extrinsicObject?.Slot
@@ -118,7 +118,7 @@ function parseDocumentReference(
   }
 
   const documentReference: DocumentReference = {
-    homeCommunityId: stripUrnPrefix(extrinsicObject._home),
+    homeCommunityId: outboundRequest.gateway.homeCommunityId,
     repositoryUniqueId,
     docUniqueId,
     contentType: extrinsicObject?._mimeType,
@@ -144,8 +144,10 @@ function handleSuccessResponse({
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
   const documentReferences = Array.isArray(extrinsicObjects)
-    ? extrinsicObjects.flatMap(extrinsicObject => parseDocumentReference(extrinsicObject) ?? [])
-    : [parseDocumentReference(extrinsicObjects) ?? []].flat();
+    ? extrinsicObjects.flatMap(
+        extrinsicObject => parseDocumentReference(extrinsicObject, outboundRequest) ?? []
+      )
+    : [parseDocumentReference(extrinsicObjects, outboundRequest) ?? []].flat();
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,
