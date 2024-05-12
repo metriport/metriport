@@ -40,18 +40,14 @@ describe("processDRResponse", () => {
     expect(response.documentReference?.length).toBe(2);
     expect(response?.documentReference?.[0]?.contentType).toEqual("application/octet-stream");
     expect(response?.documentReference?.[0]?.docUniqueId).toEqual("123456789");
-    expect(response?.documentReference?.[0]?.homeCommunityId).toEqual(
-      "urn:oid:urn:oid:2.16.840.1.113883.3.9621"
-    );
+    expect(response?.documentReference?.[0]?.homeCommunityId).toEqual("2.16.840.1.113883.3.8391");
     expect(response?.documentReference?.[0]?.repositoryUniqueId).toEqual(
       "urn:oid:2.16.840.1.113883.3.9621"
     );
 
     expect(response?.documentReference?.[1]?.contentType).toEqual("application/octet-stream");
     expect(response?.documentReference?.[1]?.docUniqueId).toEqual("987654321");
-    expect(response?.documentReference?.[1]?.homeCommunityId).toEqual(
-      "urn:oid:urn:oid:2.16.840.1.113883.3.9621"
-    );
+    expect(response?.documentReference?.[1]?.homeCommunityId).toEqual("2.16.840.1.113883.3.8391");
     expect(response?.documentReference?.[1]?.repositoryUniqueId).toEqual(
       "urn:oid:2.16.840.1.113883.3.9621"
     );
@@ -119,7 +115,7 @@ describe("processDRResponse", () => {
   });
 });
 
-describe.skip("processDRResponse for various file types and verify successful upload without corruption", () => {
+describe("processDRResponse for various file types and verify successful upload without corruption", () => {
   const s3Utils = new S3Utils(Config.getAWSRegion());
 
   testFiles.forEach(({ name, mimeType, fileExtension }) => {
