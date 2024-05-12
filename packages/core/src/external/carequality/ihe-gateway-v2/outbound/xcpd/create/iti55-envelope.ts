@@ -15,6 +15,8 @@ import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
+const specialNamespaceRequiredUrl =
+  "https://www.medentcq.com:14430/MedentRespondingGateway-1.0-SNAPSHOT/RespondingGateway/xcpd-iti55";
 
 export type BulkSignedXCPD = {
   gateway: XCPDGateway;
@@ -45,7 +47,7 @@ function createSoapBody({
   const patientAddress = bodyData.patientResource.address?.[0];
   const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
 
-  if (!gateway.url.includes("https://www.medentcq.com")) {
+  if (gateway.url !== specialNamespaceRequiredUrl) {
     const soapBody = {
       "soap:Body": {
         "@_xmlns:urn": namespaces.hl7,

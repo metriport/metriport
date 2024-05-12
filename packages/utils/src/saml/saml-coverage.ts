@@ -235,8 +235,7 @@ function recordError(stats: any, key: string, operationOutcome: any, item: any) 
 }
 
 // Usage
-const filePath =
-  "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bulk-responses-post-ehex.json";
+const filePath = "";
 analyzeResponsesByVendor(filePath);
 analyzeResponsesWithExclusions(filePath, [
   "surescripts",

@@ -11,6 +11,7 @@ const NEWLINE_REGEX = /\r?\n/g;
 
 export const securityHeaderTimestampId = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
 export const securityHeaderEnvelopedId = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
+export const basicRequiredOid = "1.3.6.1.4.1.41800.100";
 
 export function createSecurityHeader({
   publicCert,
@@ -39,7 +40,7 @@ export function createSecurityHeader({
 
   // MUTEX. One ehex endpoint will fail if the subjectIdNameFormat is not set to basic, while the other 2.16.840.1.113883.3.7732.100 will fail if it is not set to uri.
   const subjectIdNameFormat =
-    gatewayOid && gatewayOid === "1.3.6.1.4.1.41800.100"
+    gatewayOid && gatewayOid === basicRequiredOid
       ? "urn:oasis:names:tc:SAML:2.0:attrname-format:basic"
       : "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
