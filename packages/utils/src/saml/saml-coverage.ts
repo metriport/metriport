@@ -1,3 +1,8 @@
+/*
+Script that analyzes the responses from a SAML request and outputs statistics on the number of successful matches and errors for each vendor. It also allows for excluding specific vendors from the analysis.
+Run this after running the bulk-saml script. 
+*/
+
 import { readFileSync } from "fs";
 
 interface Response {
@@ -235,8 +240,7 @@ function recordError(stats: any, key: string, operationOutcome: any, item: any) 
 }
 
 // Usage
-const filePath =
-  "/Users/jonahkaye/Desktop/MetriportUnicorn/metriport/scratch/bulk-responses-post-ehex.json";
+const filePath = "./runs/saml-coverage/xyz.json";
 analyzeResponsesByVendor(filePath);
 analyzeResponsesWithExclusions(filePath, [
   "surescripts",
