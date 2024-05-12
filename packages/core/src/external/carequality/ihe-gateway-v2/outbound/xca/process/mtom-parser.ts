@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { DocumentResponse } from "./dr-response";
+import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
 
 type MtomContentType = {
   boundary: string;
@@ -82,7 +83,7 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
     let splitter = "\r\n\r\n";
     let headersEndIndex = -1;
     if (contentTypeParams.startInfo) {
-      splitter = contentTypeParams.startInfo;
+      splitter = contentTypeParams.startInfo + splitter;
       headersEndIndex = part.indexOf(splitter);
     }
     if (headersEndIndex === -1) {
@@ -96,6 +97,7 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
         }
       }
     }
+
     const headersPart = part.slice(0, headersEndIndex + splitter.length).trim();
     const content = part.slice(headersEndIndex + splitter.length).trim();
 
@@ -117,10 +119,16 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
         ? jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse
         : [jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse];
       for (const docResponse of docResponses) {
-        documentResponses.push({
-          ...docResponse,
-          Document: stripCidPrefix(docResponse.Document.Include._href),
-        });
+        // temporarily skip non-xml documents
+        if (
+          docResponse.mimeType === XML_APP_MIME_TYPE ||
+          docResponse.mimeType === XML_TXT_MIME_TYPE
+        ) {
+          documentResponses.push({
+            ...docResponse,
+            Document: stripCidPrefix(docResponse.Document.Include._href),
+          });
+        }
       }
     } else {
       attachments[headers.ContentID] = content;

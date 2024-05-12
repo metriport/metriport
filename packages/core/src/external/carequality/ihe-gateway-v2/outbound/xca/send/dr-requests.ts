@@ -54,7 +54,6 @@ export async function sendSignedDRRequests({
     } catch (error) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
       log(`${msg}, error: ${error}`);
-      console.log(error);
 
       const errorString: string = errorToString(error);
       const extra = {

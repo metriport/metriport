@@ -126,7 +126,7 @@ function parseDocumentReference(
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
     creation: findSlotValue("creationTime")
-      ? dayjs(findSlotValue("creationTime"), "YYYYMMDDHHmmss").format("YYYY-MM-DDTHH:mm:ss")
+      ? dayjs(findSlotValue("creationTime")).toISOString()
       : undefined,
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };

@@ -1,3 +1,9 @@
+/*
+This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
+It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
+the db.
+*/
+
 import * as dotenv from "dotenv";
 dotenv.config();
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -30,6 +36,10 @@ const samlAtributes = {
   purposeOfUse: "TREATMENT",
 };
 
+type QueryResult = {
+  url_dr: string;
+};
+
 async function queryDatabaseForDQs() {
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(sqlDBCreds);
@@ -54,10 +64,6 @@ async function queryDatabaseForDQs() {
   }
 }
 
-interface QueryResult {
-  url_dr: string;
-}
-
 async function getDrUrl(id: string): Promise<string> {
   const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
   const sequelize = initDbPool(sqlDBCreds);
@@ -66,15 +72,12 @@ async function getDrUrl(id: string): Promise<string> {
     FROM cq_directory_entry cde
     WHERE cde.id = :id;
   `;
-
-  console.log("ID: ", id);
   try {
     const results = await sequelize.query<QueryResult>(query, {
       replacements: { id },
       type: QueryTypes.SELECT,
     });
     sequelize.close();
-    console.log("DR URL: ", results);
     return results[0].url_dr;
   } catch (error) {
     console.error("Error executing SQL query:", error);
@@ -304,11 +307,3 @@ export async function main() {
 }
 
 main();
-
-/* 
-TODO:
-- compare by size, content, type and date, and total number of documents
-- date format in db is this "creation": "2023-08-25T03:59:21", but here is this:   creation: 20230825155925,
-- document unique ids are not constant
-
-*/

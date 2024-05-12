@@ -92,7 +92,7 @@ async function parseDocumentReference({
     docUniqueId: documentResponse.DocumentUniqueId.toString(),
     metriportId: metriportId,
     fileLocation: bucket,
-    homeCommunityId: documentResponse.HomeCommunityId,
+    homeCommunityId: outboundRequest.gateway.homeCommunityId,
     repositoryUniqueId: documentResponse.RepositoryUniqueId,
     newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
     newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
