@@ -1,4 +1,5 @@
 // This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to the gateway specified in the request body.
+// It logs the output into the runs/saml-coverage folder where it can be analyzed later. Reccomendation is to use the saml-coverage script to analyze the results after running.
 // npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 import * as dotenv from "dotenv";
 dotenv.config();
@@ -13,11 +14,12 @@ import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-ga
 
 const timestamp = dayjs().toISOString();
 
+// Set these to staging if you want to actually test the endpoints in a pre-prod env
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
+  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
+  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
+  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
+  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
 };
 
 const patientId = uuidv4();
