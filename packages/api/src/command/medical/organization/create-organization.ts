@@ -16,7 +16,8 @@ type OrganizationNoExternalData = Omit<OrganizationData, "externalData">;
 export type OrganizationCreateCmd = OrganizationNoExternalData & Identifier;
 
 export const createOrganization = async (
-  orgData: OrganizationCreateCmd
+  orgData: OrganizationCreateCmd,
+  orgType: OrganizationType = OrganizationType.healthcareProvider
 ): Promise<OrganizationModel> => {
   const { cxId } = orgData;
 
@@ -24,7 +25,7 @@ export const createOrganization = async (
   const existingOrg = await getOrganization({ cxId });
   if (existingOrg) throw new BadRequestError(`Organization already exists for customer ${cxId}`);
 
-  const org = await createOrganizationInternal(orgData);
+  const org = await createOrganizationInternal(orgData, orgType);
 
   // create tenant on FHIR server
   await createTenantIfNotExists(org);
@@ -34,7 +35,7 @@ export const createOrganization = async (
 
 async function createOrganizationInternal(
   orgData: OrganizationCreateCmd,
-  orgType = OrganizationType.healthcareProvider,
+  orgType: OrganizationType = OrganizationType.healthcareProvider,
   attempt = 1
 ): Promise<OrganizationModel> {
   try {
