@@ -25,6 +25,13 @@ import { getFacilityStrictOrFail } from "../../command/medical/facility/get-faci
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 
+/**
+ * Registers a new obo facility within HIEs.
+ *
+ * @param cxId
+ * @param facility
+ * @returns The updated facility.
+ */
 export async function registerOBOFacilityWithinHIEs(
   cxId: string,
   facility: FacilityOboDetails
