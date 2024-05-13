@@ -487,10 +487,10 @@ router.get(
 /** ---------------------------------------------------------------------------
  * POST /patient/search
  *
- * Searches for a patient previously created at Metriport based on a demographic paylaod and returns the matched patient if exists.
- * If no patient exists, return 404.
+ * Searches for a patient previously created at Metriport based on a demographic paylaod and returns the matched patient, if it exists.
  *
  * @return The matched patient.
+ * @throws NotFoundError if the patient does not exist.
  */
 router.post(
   "/search",
@@ -506,9 +506,7 @@ router.post(
     if (patient) {
       return res.status(status.OK).json(dtoFromModel(patient));
     }
-    return res.status(status.NOT_FOUND).json({
-      message: "Cannot find patient",
-    });
+    throw new NotFoundError("Cannot find patient");
   })
 );
 
