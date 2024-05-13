@@ -92,7 +92,7 @@ export const outboundDQRequest = {
   cxId: uuidv4(),
   timestamp: "2023-12-01T08:44:00Z",
   gateway: {
-    homeCommunityId: "1.16.840.1.113883.3.9801.2.17",
+    homeCommunityId: "2.16.840.1.113883.3.9621",
     url: "http://localhost:9092/Gateway/DocumentQuery/3_0/NhinService/RespondingGateway_Query_Service/DocQuery",
   },
   externalGatewayPatient: {
