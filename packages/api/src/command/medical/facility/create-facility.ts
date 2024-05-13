@@ -1,23 +1,12 @@
 import BadRequestError from "@metriport/core/util/error/bad-request";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import {
+  Facility,
   FacilityCreate,
-  FacilityData,
   FacilityType,
   isOboFacility,
-  Facility,
 } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
-
-export type FacilityCreateCmd = {
-  cxId: string;
-  data: FacilityData;
-  type?: FacilityType;
-  cqOboActive?: boolean;
-  cwOboActive?: boolean;
-  cqOboOid?: string;
-  cwOboOid?: string;
-};
 
 export const createFacility = async ({
   cxId,
@@ -27,8 +16,8 @@ export const createFacility = async ({
   cwOboActive = false,
   cqOboOid,
   cwOboOid,
-}: FacilityCreateCmd): Promise<Facility> => {
-  const input: FacilityCreate = {
+}: FacilityCreate): Promise<Facility> => {
+  const input = {
     id: uuidv7(),
     oid: "", // will be set when facility is created in hook
     facilityNumber: 0, // will be set when facility is created in hook

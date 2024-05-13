@@ -3,11 +3,10 @@ import { DeepNullable } from "ts-essentials";
 import { FacilityCreate, FacilityType, isOboFacility } from "../../../../domain/medical/facility";
 import { makeFacilityData } from "../../../../domain/medical/__tests__/facility";
 import { makeBaseDomain } from "../../../../domain/__tests__/base-domain";
-import { FacilityCreateCmd } from "../create-facility";
 
 export function makeFacilityCreateCmd(
-  params: Partial<DeepNullable<FacilityCreateCmd>> & Partial<Pick<FacilityCreateCmd, "data">> = {}
-): FacilityCreateCmd {
+  params: Partial<DeepNullable<FacilityCreate>> & Partial<Pick<FacilityCreate, "data">> = {}
+): FacilityCreate {
   const type =
     params.type !== undefined
       ? params.type
@@ -68,8 +67,6 @@ export function makeFacilityCreate(
       : false;
   return {
     ...makeBaseDomain(),
-    oid: params.oid ?? faker.string.uuid(),
-    facilityNumber: params.facilityNumber ?? faker.number.int(),
     cxId: params.cxId ?? faker.string.uuid(),
     cqOboActive: cqOboActive,
     cwOboActive: cwOboActive,
