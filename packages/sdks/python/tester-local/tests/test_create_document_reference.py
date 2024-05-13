@@ -15,7 +15,7 @@ base_url = os.environ.get("BASE_URL")
 
 
 def test_create_document_reference() -> None:
-    client = Metriport(api_key=api_key, base_url=base_url)
+    metriport = Metriport(api_key=api_key, base_url=base_url)
 
 
     coding = Coding (
@@ -51,7 +51,7 @@ def test_create_document_reference() -> None:
         context=document_reference_context
     )
 
-    response = client.medical.document.create_document_reference(
+    response = metriport.medical.document.create_document_reference(
         patient_id=patient_id,
         request=uploadDocumentReference
     )

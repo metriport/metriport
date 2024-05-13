@@ -54,6 +54,6 @@ export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }
 
-export function schemaSearchForPatient(input: Demographics, cxId: string) {
+export function schemaDemographicsToPatient(input: Demographics, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }

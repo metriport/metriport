@@ -16,6 +16,6 @@ base_url = os.environ.get("BASE_URL")
 
 
 def test_start_doc_query() -> None:
-    client = Metriport(api_key=api_key, base_url=base_url)
-    response = client.medical.document.start_query(patient_id=patient_id, facility_id=facility_id)
+    metriport = Metriport(api_key=api_key, base_url=base_url)
+    response = metriport.medical.document.start_query(patient_id=patient_id, facility_id=facility_id)
     print(f"Response: {response}")

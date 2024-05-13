@@ -15,7 +15,7 @@ base_url = os.environ.get("BASE_URL")
 
 
 def test_search_patient() -> None:
-    client = Metriport(api_key=api_key, base_url=base_url)
+    metriport = Metriport(api_key=api_key, base_url=base_url)
     patient_data = BasePatient(
         first_name="John",
         last_name="Doe",
@@ -36,7 +36,7 @@ def test_search_patient() -> None:
             country="USA"
         )]
     )
-    client.medical.patient.create(facility_id=facility_id, request=patient_data)
+    metriport.medical.patient.create(facility_id=facility_id, request=patient_data)
     patient_demodata = Demographics(
         first_name="John",
         last_name="Doe",
@@ -57,5 +57,5 @@ def test_search_patient() -> None:
             country="USA"
         )]
     )
-    response = client.medical.patient.search(request=patient_demodata)
+    response = metriport.medical.patient.search(request=patient_demodata)
     print(f"Received patient with ID: {response.id}")

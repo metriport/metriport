@@ -54,7 +54,7 @@ import {
   patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
-  schemaSearchForPatient,
+  schemaDemographicsToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -487,7 +487,7 @@ router.get(
 /** ---------------------------------------------------------------------------
  * POST /patient/search
  *
- * Searches for a patient based on a demographic paylaod and returns the matched patient if exists.
+ * Searches for a patient previously created at Metriport based on a demographic paylaod and returns the matched patient if exists.
  * If no patient exists, return 404.
  *
  * @return The matched patient.
@@ -499,9 +499,7 @@ router.post(
     const cxId = getCxIdOrFail(req);
     const payload = demographicsSchema.parse(req.body);
 
-    const patientSearch: PatientSearchCmd = {
-      ...schemaSearchForPatient(payload, cxId),
-    };
+    const patientSearch: PatientSearchCmd = schemaDemographicsToPatient(payload, cxId);
 
     const patient = await searchPatient(patientSearch);
 

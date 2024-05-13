@@ -15,7 +15,7 @@ if (!apiUrl || !apiToken || !patientId || !facilityId) {
   throw new Error("Required environment variables are not set");
 }
 
-const client = new MetriportClient({
+const metriport = new MetriportClient({
   environment: () => apiUrl,
   apiKey: () => apiToken,
 });
@@ -27,7 +27,7 @@ describe("Document Query tests", () => {
         facilityId: facilityId,
         patientId: patientId,
     }
-    const response = await client.medical.document.startQuery(requestData);
+    const response = await metriport.medical.document.startQuery(requestData);
     console.log(`response: ${JSON.stringify(response, null, 2)}`);
   });
 });

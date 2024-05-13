@@ -14,7 +14,7 @@ import { sanitize, validate } from "./shared";
 
 export type PatientSearchCmd = PatientDemoData & { cxId: string };
 
-export const searchPatient = async (patient: PatientSearchCmd): Promise<Patient | undefined> => {
+export async function searchPatient(patient: PatientSearchCmd): Promise<Patient | undefined> {
   const { cxId } = patient;
 
   const sanitized = sanitize(patient);
@@ -32,7 +32,7 @@ export const searchPatient = async (patient: PatientSearchCmd): Promise<Patient 
   };
 
   return await getPatientByDemo({ cxId, demo });
-};
+}
 
 export const getPatients = async ({
   facilityId,

@@ -10,7 +10,7 @@ patient_id = os.environ.get("PATIENT_ID")
 base_url = os.environ.get("BASE_URL")
 
 def test_create_patient_consolidated():
-    client = Metriport(api_key=api_key, base_url=base_url)
+    metriport = Metriport(api_key=api_key, base_url=base_url)
 
     consolidated_bundle_upload = ConsolidatedBundleUpload(
         resourceType="Bundle",
@@ -41,7 +41,7 @@ def test_create_patient_consolidated():
             }
         ]
         )
-    query_status = client.medical.fhir.create_patient_consolidated(
+    query_status = metriport.medical.fhir.create_patient_consolidated(
         id=patient_id,
         request=consolidated_bundle_upload
     )
