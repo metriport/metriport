@@ -14,7 +14,7 @@ var HandlebarsConverter = require("../handlebars-converter/handlebars-converter"
 var WorkerUtils = require("./workerUtils");
 var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
 var { extractEncounterTimePeriod } = require("../inputProcessor/dateProcessor");
-var { uuidv7 } = require("@metriport/core/util/uuid-v7");
+var { v4: uuidv4 } = require("uuid");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);
@@ -190,7 +190,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
-            let encompassingEncounterId = uuidv7();
+            let encompassingEncounterId = uuidv4();
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
             session.set(
               constants.CLS_KEY_TEMPLATE_LOCATION,
