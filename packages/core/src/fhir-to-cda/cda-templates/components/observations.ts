@@ -1,7 +1,7 @@
 import { Observation } from "@medplum/fhirtypes";
 import { CDAObservation } from "../../cda-types/observation";
 import {
-  buildCodeCVFromCodeableConcept,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildInstanceIdentifiersFromIdentifier,
   withoutNullFlavorString,
@@ -21,7 +21,7 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
             extension: "2015-08-01",
           }),
           id: buildInstanceIdentifiersFromIdentifier(observation.identifier),
-          code: buildCodeCVFromCodeableConcept(observation.code),
+          code: buildCodeCvFromCodeableConcept(observation.code),
           statusCode: {
             code: withoutNullFlavorString(observation.status),
           },

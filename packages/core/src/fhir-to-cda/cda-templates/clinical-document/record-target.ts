@@ -4,9 +4,9 @@ import {
   buildAddress,
   withoutNullFlavorObject,
   withoutNullFlavorString,
-  buildCodeCE,
+  buildCodeCe,
   buildInstanceIdentifiersFromIdentifier,
-  formatDateToCDATimestamp,
+  formatDateToCdaTimestamp,
 } from "../commons";
 import { CdaRecordTarget, CdaPatientRole } from "../../cda-types/shared-types";
 import { useAttribute, valueAttribute } from "../constants";
@@ -22,21 +22,21 @@ function buildPatient(patient: Patient): CdaPatientRole {
         high: withoutNullFlavorObject(undefined, valueAttribute),
       },
     })),
-    administrativeGenderCode: buildCodeCE({
+    administrativeGenderCode: buildCodeCe({
       code: patient.gender,
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(formatDateToCDATimestamp(patient.birthDate), valueAttribute),
+    birthTime: withoutNullFlavorObject(formatDateToCdaTimestamp(patient.birthDate), valueAttribute),
     deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
-    maritalStatusCode: buildCodeCE({
+    maritalStatusCode: buildCodeCe({
       code: patient.maritalStatus?.coding?.[0]?.code,
       codeSystem: "2.16.840.1.113883.5.2",
       codeSystemName: "MaritalStatusCode",
       displayName: patient.maritalStatus?.coding?.[0]?.display,
     }),
     languageCommunication: {
-      languageCode: buildCodeCE({
+      languageCode: buildCodeCe({
         code: patient.communication?.[0]?.language?.coding?.[0]?.code,
       }),
     },

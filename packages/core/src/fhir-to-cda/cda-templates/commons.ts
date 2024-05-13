@@ -40,7 +40,7 @@ export function withNullFlavor(value: string | undefined, key: string): Entry {
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
-export function buildCodeCE({
+export function buildCodeCe({
   code,
   codeSystem,
   codeSystemName,
@@ -61,7 +61,7 @@ export function buildCodeCE({
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
-export function buildCodeCVFromCodeableConcept(
+export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined
 ): CdaCodeCv | Entry {
   if (!codeableConcept) {
@@ -71,7 +71,7 @@ export function buildCodeCVFromCodeableConcept(
   const primaryCoding = codeableConcept.coding?.[0];
 
   const baseCE = primaryCoding
-    ? buildCodeCE({
+    ? buildCodeCe({
         code: primaryCoding.code,
         codeSystem: primaryCoding.system,
         codeSystemName: undefined,
@@ -80,7 +80,7 @@ export function buildCodeCVFromCodeableConcept(
     : {};
 
   const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
-    buildCodeCE({
+    buildCodeCe({
       code: coding.code,
       codeSystem: coding.system,
       codeSystemName: undefined,
@@ -171,7 +171,7 @@ export function buildRepresentedOrganization(
   };
 }
 
-export function formatDateToCDATimestamp(dateString: string | undefined): string | undefined {
+export function formatDateToCdaTimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }

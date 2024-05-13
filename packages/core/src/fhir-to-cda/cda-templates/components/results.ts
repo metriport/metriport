@@ -2,8 +2,8 @@ import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
 import {
   withoutNullFlavorObject,
   withNullFlavor,
-  buildCodeCVFromCodeableConcept,
-  buildCodeCE,
+  buildCodeCvFromCodeableConcept,
+  buildCodeCe,
   buildInstanceIdentifier,
 } from "../commons";
 import { base64ToString } from "../../../util/base64";
@@ -27,7 +27,7 @@ function buildEntriesFromDiagnosticReports(
   fhirBundle: Bundle
 ) {
   return diagnosticReports.map(report => {
-    const codeElement = buildCodeCVFromCodeableConcept(report.code);
+    const codeElement = buildCodeCvFromCodeableConcept(report.code);
     const observations: Observation[] = [];
     report.result?.forEach(result => {
       if (!result.reference) {
@@ -53,7 +53,7 @@ function buildEntriesFromDiagnosticReports(
             root: report.id,
           }),
           code: codeElement,
-          statusCode: buildCodeCE({
+          statusCode: buildCodeCe({
             code: report.status,
           }),
           effectiveTime: withoutNullFlavorObject(
@@ -86,7 +86,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
         templateId: buildInstanceIdentifier({
           root: "2.16.840.1.113883.10.20.22.2.3.1",
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "30954-2",
           codeSystem: "2.16.840.1.113883.6.1",
           codeSystemName: "LOINC",

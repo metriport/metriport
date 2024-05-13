@@ -84,6 +84,7 @@ export type CdaName = {
   validTime: CdaPeriod;
 };
 
+// Ce (CE) stands for Coded with Equivalents
 export type CdaCodeCe = {
   [codeAttribute]?: string;
   [codeSystemAttribute]?: string;
@@ -91,6 +92,7 @@ export type CdaCodeCe = {
   [displayNameAttribute]?: string;
 };
 
+// Cv (CV) stands for Coded Value
 export interface CdaCodeCv extends CdaCodeCe {
   originalText?: string | undefined;
   translation?: CdaCodeCe[] | undefined;
