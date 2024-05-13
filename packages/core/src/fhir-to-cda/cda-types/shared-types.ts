@@ -12,20 +12,20 @@ import {
 export type ClinicalDocument = {
   ClinicalDocument: {
     [namespaceAttribute]: string;
-    realmCode?: CDACodeCE;
-    typeId?: CDAInstanceIdentifier;
-    templateId?: CDAInstanceIdentifier[];
-    id: CDAInstanceIdentifier;
-    code: CDACodeCE;
+    realmCode?: CdaCodeCe;
+    typeId?: CdaInstanceIdentifier;
+    templateId?: CdaInstanceIdentifier[];
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCe;
     title?: string;
     effectiveTime: Entry;
-    confidentialityCode: CDACodeCE;
-    languageCode?: CDACodeCE;
-    setId?: CDAInstanceIdentifier;
+    confidentialityCode: CdaCodeCe;
+    languageCode?: CdaCodeCe;
+    setId?: CdaInstanceIdentifier;
     versionNumber?: Entry;
-    recordTarget: CDARecordTarget;
-    author: CDAAuthor;
-    custodian: CDACustodian;
+    recordTarget: CdaRecordTarget;
+    author: CdaAuthor;
+    custodian: CdaCustodian;
     component: unknown;
   };
 };
@@ -33,41 +33,41 @@ export type ClinicalDocument = {
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
-export type CDATelecom = {
+export type CdaTelecom = {
   use?: EntryObject;
   value?: EntryObject;
 };
 
-export type CDAPeriod = {
+export type CdaPeriod = {
   low?: Entry;
   high?: Entry;
 };
 
-export type CDAAddress = {
+export type CdaAddress = {
   streetAddressLine?: Entry | undefined;
   city?: string | undefined;
   state?: string | undefined;
   postalCode?: string | undefined;
   country?: string | undefined;
-  useablePeriod?: CDAPeriod | undefined;
+  useablePeriod?: CdaPeriod | undefined;
 };
 
-export type CDAOrganization = {
-  id?: CDAInstanceIdentifier[] | Entry;
+export type CdaOrganization = {
+  id?: CdaInstanceIdentifier[] | Entry;
   name?: Entry | undefined;
-  telecom?: CDATelecom[] | undefined;
-  addr?: CDAAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  addr?: CdaAddress[] | undefined;
 };
 
-export type CDAAssignedAuthor = {
+export type CdaAssignedAuthor = {
   id: Entry;
-  addr?: CDAAddress[] | undefined;
-  telecom?: CDATelecom[] | undefined;
-  representedOrganization?: CDAOrganization | undefined;
+  addr?: CdaAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  representedOrganization?: CdaOrganization | undefined;
 };
 
-export type CDAPatientRole = {
-  name?: CDAName[] | undefined;
+export type CdaPatientRole = {
+  name?: CdaName[] | undefined;
   administrativeGenderCode?: EntryObject;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
@@ -77,49 +77,49 @@ export type CDAPatientRole = {
   };
 };
 
-export type CDAName = {
+export type CdaName = {
   use?: EntryObject;
   given?: Entry;
   family?: string | undefined;
-  validTime: CDAPeriod;
+  validTime: CdaPeriod;
 };
 
-export type CDACodeCE = {
+export type CdaCodeCe = {
   [codeAttribute]?: string;
   [codeSystemAttribute]?: string;
   [codeSystemNameAttribute]?: string;
   [displayNameAttribute]?: string;
 };
 
-export interface CDACodeCV extends CDACodeCE {
+export interface CdaCodeCv extends CdaCodeCe {
   originalText?: string | undefined;
-  translation?: CDACodeCE[] | undefined;
+  translation?: CdaCodeCe[] | undefined;
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
-export type CDAInstanceIdentifier = {
+export type CdaInstanceIdentifier = {
   [rootAttribute]?: string;
   [extensionAttribute]?: string;
   [assigningAuthorityNameAttribute]?: string;
 };
 
 // TOP Level CDA Section Types
-export type CDAAuthor = {
+export type CdaAuthor = {
   time: Entry;
-  assignedAuthor: CDAAssignedAuthor;
+  assignedAuthor: CdaAssignedAuthor;
 };
 
-export type CDACustodian = {
+export type CdaCustodian = {
   assignedCustodian: {
-    representedCustodianOrganization: CDAOrganization | undefined;
+    representedCustodianOrganization: CdaOrganization | undefined;
   };
 };
 
-export type CDARecordTarget = {
+export type CdaRecordTarget = {
   patientRole: {
-    id?: CDAInstanceIdentifier[] | Entry;
-    addr?: CDAAddress[] | undefined;
-    telecom?: CDATelecom[] | undefined;
-    patient: CDAPatientRole;
+    id?: CdaInstanceIdentifier[] | Entry;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    patient: CdaPatientRole;
   };
 };

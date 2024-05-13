@@ -6,12 +6,12 @@ import {
   Organization,
 } from "@medplum/fhirtypes";
 import {
-  CDAAddress,
-  CDACodeCE,
-  CDACodeCV,
-  CDAInstanceIdentifier,
-  CDAOrganization,
-  CDATelecom,
+  CdaAddress,
+  CdaCodeCe,
+  CdaCodeCv,
+  CdaInstanceIdentifier,
+  CdaOrganization,
+  CdaTelecom,
   Entry,
   EntryObject,
 } from "../cda-types/shared-types";
@@ -50,8 +50,8 @@ export function buildCodeCE({
   codeSystem?: string | undefined;
   codeSystemName?: string | undefined;
   displayName?: string | undefined;
-}): CDACodeCE {
-  const codeObject: CDACodeCE = {};
+}): CdaCodeCe {
+  const codeObject: CdaCodeCe = {};
   if (code) codeObject["@_code"] = code;
   if (codeSystem) codeObject["@_codeSystem"] = codeSystem;
   if (codeSystemName) codeObject["@_codeSystemName"] = codeSystemName;
@@ -63,7 +63,7 @@ export function buildCodeCE({
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
 export function buildCodeCVFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined
-): CDACodeCV | Entry {
+): CdaCodeCv | Entry {
   if (!codeableConcept) {
     return withoutNullFlavorString(codeableConcept);
   }
@@ -88,7 +88,7 @@ export function buildCodeCVFromCodeableConcept(
     })
   );
 
-  const codeCV: CDACodeCV = {
+  const codeCV: CdaCodeCv = {
     ...baseCE,
     originalText: codeableConcept.text,
     translation: translations?.length ? translations : undefined,
@@ -105,8 +105,8 @@ export function buildInstanceIdentifier({
   root?: string | undefined;
   extension?: string | undefined;
   assigningAuthorityName?: string | undefined;
-}): CDAInstanceIdentifier {
-  const identifier: CDAInstanceIdentifier = {};
+}): CdaInstanceIdentifier {
+  const identifier: CdaInstanceIdentifier = {};
   if (root) identifier[rootAttribute] = root;
   if (extension) identifier[extensionAttribute] = extension;
   if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
@@ -116,7 +116,7 @@ export function buildInstanceIdentifier({
 
 export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
-): CDAInstanceIdentifier[] | Entry {
+): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
     return withNullFlavor(undefined, rootAttribute);
   }
@@ -135,7 +135,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   );
 }
 
-export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[] {
+export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[] {
   if (!telecoms) {
     return [];
   }
@@ -145,7 +145,7 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
   }));
 }
 
-export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
+export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
     ...withoutNullFlavorObject(addr.use, useAttribute),
     streetAddressLine: addr.line?.join(", "),
@@ -162,7 +162,7 @@ export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
 
 export function buildRepresentedOrganization(
   organization: Organization
-): CDAOrganization | undefined {
+): CdaOrganization | undefined {
   return {
     id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
     name: withoutNullFlavorString(organization.name),

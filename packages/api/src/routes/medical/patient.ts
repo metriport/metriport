@@ -440,15 +440,17 @@ async function checkResourceLimit(incomingAmount: number, patient: Patient) {
     });
     if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
       throw new BadRequestError(
-        `Reached maximum number of resources per patient in Sandbox mode ` +
-          `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
+        `Reached maximum number of ${MAX_RESOURCE_STORED_LIMIT} resources per patient in Sandbox mode `,
+        null,
+        { currentAmount, incomingAmount, MAX_RESOURCE_STORED_LIMIT }
       );
     }
     // Limit the amount of resources that can be created at once
     if (incomingAmount > MAX_RESOURCE_COUNT_PER_REQUEST) {
       throw new BadRequestError(
-        `Cannot create more than ${MAX_RESOURCE_COUNT_PER_REQUEST} resources at a time ` +
-          `(incoming: ${incomingAmount})`
+        `Cannot create more than ${MAX_RESOURCE_COUNT_PER_REQUEST} resources at a time.`,
+        null,
+        { incomingAmount }
       );
     }
   }

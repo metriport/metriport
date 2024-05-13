@@ -7,9 +7,9 @@ import {
 } from "../commons";
 import { clinicalDocumentConstants, valueAttribute } from "../constants";
 import {
-  CDAAuthor,
-  CDACustodian,
-  CDARecordTarget,
+  CdaAuthor,
+  CdaCustodian,
+  CdaRecordTarget,
   ClinicalDocument,
 } from "../../cda-types/shared-types";
 
@@ -34,9 +34,9 @@ export function removeEmptyFields(obj: any): unknown {
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
 export function buildClinicalDocumentXML(
-  recordTarget: CDARecordTarget,
-  author: CDAAuthor,
-  custodian: CDACustodian,
+  recordTarget: CdaRecordTarget,
+  author: CdaAuthor,
+  custodian: CdaCustodian,
   structuredBody: unknown
 ): string {
   const jsonObj: ClinicalDocument = {

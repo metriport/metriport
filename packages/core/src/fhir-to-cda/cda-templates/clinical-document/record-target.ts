@@ -8,10 +8,10 @@ import {
   buildInstanceIdentifiersFromIdentifier,
   formatDateToCDATimestamp,
 } from "../commons";
-import { CDARecordTarget, CDAPatientRole } from "../../cda-types/shared-types";
+import { CdaRecordTarget, CdaPatientRole } from "../../cda-types/shared-types";
 import { useAttribute, valueAttribute } from "../constants";
 
-function buildPatient(patient: Patient): CDAPatientRole {
+function buildPatient(patient: Patient): CdaPatientRole {
   return {
     name: patient.name?.map(name => ({
       ...withoutNullFlavorObject(name.use, useAttribute),
@@ -43,7 +43,7 @@ function buildPatient(patient: Patient): CDAPatientRole {
   };
 }
 
-export function buildRecordTargetFromFhirPatient(patient: Patient): CDARecordTarget {
+export function buildRecordTargetFromFhirPatient(patient: Patient): CdaRecordTarget {
   const recordTarget = {
     patientRole: {
       id: buildInstanceIdentifiersFromIdentifier(patient.identifier),
