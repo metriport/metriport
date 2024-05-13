@@ -18,14 +18,14 @@ export type FacilityData = {
   address: AddressStrict;
 };
 
-export interface FacilityCreate extends BaseDomainCreate {
+export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
-  oid: string;
-  facilityNumber: number;
-  cqOboActive: boolean;
-  cwOboActive: boolean;
-  cqOboOid: string | null;
-  cwOboOid: string | null;
+  oid?: string;
+  facilityNumber?: number;
+  cqOboActive?: boolean;
+  cwOboActive?: boolean;
+  cqOboOid?: string;
+  cwOboOid?: string;
   type: FacilityType;
   data: FacilityData;
 }
