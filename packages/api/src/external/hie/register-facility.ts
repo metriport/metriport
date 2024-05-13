@@ -25,7 +25,7 @@ import { getFacilityStrictOrFail } from "../../command/medical/facility/get-faci
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 
-export async function registerOBOFacilityWithHIEs(
+export async function registerOBOFacilityWithinHIEs(
   cxId: string,
   facility: FacilityOboDetails
 ): Promise<FacilityModel> {
@@ -57,18 +57,33 @@ export async function registerOBOFacilityWithHIEs(
   );
 
   // CAREQUALITY
-  const cqOrgName = buildCqOboOrgName(cxOrg.name, cqOboData.cqFacilityName, cqOboData.cqOboOid);
-  await createOrUpdateInCq(cmdFacility, cxOrg.oid, cqOrgName, address);
+  if (facility.cqOboActive && facility.cqOboOid) {
+    const cqOrgName = buildCqOboOrgName(cxOrg.name, cqOboData.cqFacilityName, cqOboData.cqOboOid);
+    await createOrUpdateInCq(cmdFacility, cxOrg.oid, cqOrgName, address);
+  }
 
   // COMMONWELL
-  const cwFacilityName = facility.cwFacilityName ?? cmdFacility.data.name;
-  const cwOrgName = buildCwOboOrgName(cxOrg.name, cwFacilityName, facility.cwOboOid);
-  await createInCw(cmdFacility, cwOrgName, cxOrg.type, cxId);
+  if (facility.cwOboActive && facility.cwOboOid) {
+    const cwFacilityName = facility.cwFacilityName ?? cmdFacility.data.name;
+    const cwOrgName = buildCwOboOrgName(cxOrg.name, cwFacilityName, facility.cwOboOid);
+    await createInCw(cmdFacility, cwOrgName, cxOrg.type, cxId);
+  }
 
   return cmdFacility;
 }
 
-export async function registerNonOBOFacilityWithHIEs(cxId: string, facility: FacilityDetails) {
+/**
+ * Creates a new non-obo facility and registers it within HIEs.
+ * Note: This will create a non-obo facility for all HIEs.
+ *
+ * @param cxId
+ * @param facility
+ * @returns The updated facility.
+ */
+export async function registerNonOBOFacilityWithinHIEs(
+  cxId: string,
+  facility: FacilityDetails
+): Promise<FacilityModel> {
   const [cxOrg, address] = await Promise.all([
     getCxOrganizationNameAndOid(cxId),
     getAddress(getAddressFromInput(facility), cxId),

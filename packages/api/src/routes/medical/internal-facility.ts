@@ -9,8 +9,8 @@ import {
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import {
-  registerOBOFacilityWithHIEs,
-  registerNonOBOFacilityWithHIEs,
+  registerOBOFacilityWithinHIEs,
+  registerNonOBOFacilityWithinHIEs,
 } from "../../external/hie/register-facility";
 
 const router = Router();
@@ -19,7 +19,7 @@ const router = Router();
  *
  * PUT /internal/facility/obo
  *
- * Creates a new obo facility and registers it with HIEs.
+ * Creates a new obo facility and registers it within HIEs.
  *
  * TODO: Add unit tests.
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
@@ -33,7 +33,7 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
 
-    const facility = await registerOBOFacilityWithHIEs(cxId, facilityInput);
+    const facility = await registerOBOFacilityWithinHIEs(cxId, facilityInput);
 
     return res.status(httpStatus.OK).json(facility.dataValues);
   })
@@ -43,7 +43,7 @@ router.put(
  *
  * PUT /internal/facility/non-obo
  *
- * Creates a new non-obo facility and registers it with HIEs.
+ * Creates a new non-obo facility and registers it within HIEs.
  *
  * TODO: Add unit tests.
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
@@ -57,7 +57,7 @@ router.put(
     const cxId = getUUIDFrom("query", req, "cxId").orFail();
     const facilityInput = facilityDetailsSchemaBase.parse(req.body);
 
-    const facility = await registerNonOBOFacilityWithHIEs(cxId, facilityInput);
+    const facility = await registerNonOBOFacilityWithinHIEs(cxId, facilityInput);
 
     return res.status(httpStatus.OK).json(facility.dataValues);
   })
