@@ -75,7 +75,7 @@ export const processRequest = async (
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
 ): Promise<boolean> => {
-  const sendAnalytics = (status: string) => {
+  const sendAnalytics = (status: string, properties?: Record<string, string>) => {
     analytics({
       distinctId: webhookRequest.cxId,
       event: EventTypes.webhook,
@@ -83,13 +83,14 @@ export const processRequest = async (
         whType: webhookRequest.type,
         whStatus: status,
         ...(additionalWHRequestMeta ? additionalWHRequestMeta : {}),
+        ...(properties ? properties : {}),
       },
     });
   };
 
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
-    sendAnalytics("failure");
+    sendAnalytics("failure", { reason: "missing-webhook-settings" });
     return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
   }
   const productType = getProductFromWebhookRequest(webhookRequest);
