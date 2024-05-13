@@ -75,11 +75,6 @@ export const processRequest = async (
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
 ): Promise<boolean> => {
-  const { webhookUrl, webhookKey, webhookEnabled } = settings;
-  if (!webhookUrl || !webhookKey) {
-    return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
-  }
-  const productType = getProductFromWebhookRequest(webhookRequest);
   const sendAnalytics = (status: string) => {
     analytics({
       distinctId: webhookRequest.cxId,
@@ -91,6 +86,13 @@ export const processRequest = async (
       },
     });
   };
+
+  const { webhookUrl, webhookKey, webhookEnabled } = settings;
+  if (!webhookUrl || !webhookKey) {
+    sendAnalytics("failure");
+    return missingWHSettings(webhookRequest, webhookUrl, webhookKey);
+  }
+  const productType = getProductFromWebhookRequest(webhookRequest);
 
   const payload = webhookRequest.payload;
   try {
