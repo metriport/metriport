@@ -1,28 +1,24 @@
 import { z } from "zod";
-import { FacilityType } from "./facility";
-import { required } from "../../shared/required";
-import { AddressStrictSchema } from "../../routes/medical/schemas/address";
+import { FacilityType } from "../../../domain/medical/facility";
+import { required } from "../../../shared/required";
+import { AddressStrictSchema } from "./address";
 
-export const facilityDetailsSchemaBase = z
+export const facilityOboDetailsSchemaBase = z
   .object({
     id: z.string().optional(),
     nameInMetriport: z.string(),
     npi: z.string(),
     type: z.nativeEnum(FacilityType),
+    // CQ
+    cqOboActive: z.boolean().optional(),
+    cqOboOid: z.string().optional(),
+    // CW
+    cwOboActive: z.boolean().optional(),
+    cwOboOid: z.string().optional(),
+    cwFacilityName: z.string().optional(),
   })
   .merge(AddressStrictSchema);
-
-export const facilityOboDetailsSchemaBase = facilityDetailsSchemaBase.extend({
-  // CQ
-  cqOboActive: z.boolean().optional(),
-  cqOboOid: z.string().optional(),
-  // CW
-  cwOboActive: z.boolean().optional(),
-  cwOboOid: z.string().optional(),
-  cwFacilityName: z.string().optional(),
-});
-
-export type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
+type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
 
 export const facilityOboDetailsSchema = facilityOboDetailsSchemaBase
   .refine(required<FacilityOboDetails>("cqOboOid").when("cqOboActive"), {

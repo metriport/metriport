@@ -12,15 +12,9 @@ import {
 } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import cwCommands from "../../external/commonwell";
-import { FacilityModel } from "../../models/medical/facility";
-import {
-  FacilityDetails,
-  FacilityOboDetails,
-  AddressWithCoordinates,
-  CqOboDetails,
-} from "../../domain/medical/internal-facility";
+import { AddressWithCoordinates, CqOboDetails } from "../../domain/medical/facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
-import { FacilityCreate, FacilityUpdate } from "../../domain/medical/facility";
+import { FacilityRegister, FacilityCreate, Facility } from "../../domain/medical/facility";
 import { getFacilityStrictOrFail } from "../../command/medical/facility/get-facility";
 import { createFacility } from "../../command/medical/facility/create-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
@@ -32,10 +26,12 @@ import { updateFacility } from "../../command/medical/facility/update-facility";
  * @param facility
  * @returns The updated facility.
  */
-export async function registerOBOFacilityWithinHIEs(
+export async function registerFacilityWithinHIEs(
   cxId: string,
-  facility: FacilityOboDetails
-): Promise<FacilityModel> {
+  facility: FacilityRegister
+): Promise<Facility> {
+  const isObo = facility.type === "initiator_only";
+
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameAndOid(cxId),
     getAddress(getAddressFromInput(facility), cxId),
@@ -44,74 +40,41 @@ export async function registerOBOFacilityWithinHIEs(
 
   const facilityDetails = createFacilityDetails(cxId, facility, address);
 
-  if (!cqOboData.isObo) {
-    throw new BadRequestError("CQ OBO organization is required");
-  }
+  let oboFacilityDetails = facilityDetails;
 
-  const oboFacilityDetails = {
-    ...facilityDetails,
-    cqOboActive: facility.cqOboActive,
-    cqOboOid: facility.cqOboOid,
-    cwOboActive: facility.cwOboActive,
-    cwOboOid: facility.cwOboOid,
-  };
+  if (isObo) {
+    oboFacilityDetails = {
+      ...oboFacilityDetails,
+      cqOboActive: facility.cqOboActive,
+      cqOboOid: facility.cqOboOid,
+      cwOboActive: facility.cwOboActive,
+      cwOboOid: facility.cwOboOid,
+    };
+  }
 
   const cmdFacility = await createOrUpdateFacility(
     cxId,
     facility.id,
-    facility.npi,
+    facility.data.npi,
     oboFacilityDetails
   );
 
   // CAREQUALITY
-  if (facility.cqOboActive && facility.cqOboOid) {
-    const cqOrgName = buildCqOboOrgName(cxOrg.name, cqOboData.cqFacilityName, cqOboData.cqOboOid);
+  const cqOboEnabled = isObo && cqOboData.enabled;
+  if (cqOboEnabled || !isObo) {
+    const cqFacilityName = cqOboEnabled ? cqOboData.cqFacilityName : cmdFacility.data.name;
+    const cqOboOid = cqOboEnabled ? cqOboData.cqOboOid : undefined;
+    const cqOrgName = buildCqOrgName(cxOrg.name, cqFacilityName, cqOboOid);
     await createOrUpdateInCq(cmdFacility, cxOrg.oid, cqOrgName, address);
   }
 
   // COMMONWELL
-  if (facility.cwOboActive && facility.cwOboOid) {
+  const cwOboEnabled = isObo && facility.cwOboActive && facility.cwOboOid;
+  if (cwOboEnabled || !isObo) {
     const cwFacilityName = facility.cwFacilityName ?? cmdFacility.data.name;
-    const cwOrgName = buildCwOboOrgName(cxOrg.name, cwFacilityName, facility.cwOboOid);
+    const cwOrgName = buildCwOrgName(cxOrg.name, cwFacilityName, facility.cwOboOid);
     await createInCw(cmdFacility, cwOrgName, cxOrg.type, cxId);
   }
-
-  return cmdFacility;
-}
-
-/**
- * Creates a new non-obo facility and registers it within HIEs.
- * Note: This will create a non-obo facility for all HIEs.
- *
- * @param cxId
- * @param facility
- * @returns The updated facility.
- */
-export async function registerNonOBOFacilityWithinHIEs(
-  cxId: string,
-  facility: FacilityDetails
-): Promise<FacilityModel> {
-  const [cxOrg, address] = await Promise.all([
-    getCxOrganizationNameAndOid(cxId),
-    getAddress(getAddressFromInput(facility), cxId),
-  ]);
-
-  const facilityDetails = createFacilityDetails(cxId, facility, address);
-
-  const cmdFacility = await createOrUpdateFacility(
-    cxId,
-    facility.id,
-    facility.npi,
-    facilityDetails
-  );
-
-  // CAREQUALITY
-  const cqOrgName = buildCqOboOrgName(cxOrg.name, cmdFacility.data.name);
-  await createOrUpdateInCq(cmdFacility, cxOrg.oid, cqOrgName, address);
-
-  // COMMONWELL
-  const cwOrgName = buildCwOboOrgName(cxOrg.name, cmdFacility.data.name);
-  await createInCw(cmdFacility, cwOrgName, cxOrg.type, cxId);
 
   return cmdFacility;
 }
@@ -155,30 +118,31 @@ async function getAddress(
   };
 }
 
-function getAddressFromInput(input: FacilityOboDetails): AddressStrict {
+function getAddressFromInput(input: FacilityRegister): AddressStrict {
+  const address = input.data.address;
   return {
-    addressLine1: input.addressLine1,
-    addressLine2: input.addressLine2,
-    city: input.city,
-    state: input.state,
-    zip: input.zip,
-    country: input.country,
+    addressLine1: address.addressLine1,
+    addressLine2: address.addressLine2,
+    city: address.city,
+    state: address.state,
+    zip: address.zip,
+    country: address.country,
   };
 }
 
 async function getCqOboData(
-  cqActive: boolean | undefined,
-  cqOboOid: string | undefined
+  cqActive?: boolean | null,
+  cqOboOid?: string | null
 ): Promise<CqOboDetails> {
   if (cqActive && cqOboOid) {
     const cqFacilityName = await getCqFacilityName(cqOboOid);
     return {
-      isObo: true,
+      enabled: true,
       cqFacilityName,
       cqOboOid,
     };
   }
-  return { isObo: false };
+  return { enabled: false };
 }
 
 async function getCqFacilityName(oid: string) {
@@ -193,7 +157,7 @@ async function getCqFacilityName(oid: string) {
 
 function createFacilityDetails(
   cxId: string,
-  facility: FacilityDetails,
+  facility: FacilityRegister,
   address: AddressWithCoordinates
 ): FacilityCreate {
   const addressStrict = removeCoordinates(address);
@@ -201,8 +165,8 @@ function createFacilityDetails(
   const facilityDetails = {
     cxId,
     data: {
-      name: facility.nameInMetriport,
-      npi: facility.npi,
+      name: facility.data.name,
+      npi: facility.data.npi,
       address: addressStrict,
     },
     type: facility.type,
@@ -217,21 +181,12 @@ function removeCoordinates(address: AddressWithCoordinates): AddressStrict {
   return rest;
 }
 
-type CreateOrUpdateFacility =
-  | FacilityCreate
-  | (FacilityUpdate & {
-      cxId: never;
-      oid: never;
-      facilityNumber: never;
-      type: never;
-    });
-
 async function createOrUpdateFacility(
   cxId: string,
   facilityId: string | undefined,
   facilityNpi: string,
-  facility: CreateOrUpdateFacility
-): Promise<FacilityModel> {
+  facility: FacilityCreate
+): Promise<Facility> {
   if (facilityId) {
     await getFacilityStrictOrFail({ cxId, id: facilityId, npi: facilityNpi });
     const updatedFacility = await updateFacility({
@@ -247,7 +202,7 @@ async function createOrUpdateFacility(
   return createdFacility;
 }
 
-function buildCqOboOrgName(vendorName: string, orgName: string, oboOid?: string): string {
+function buildCqOrgName(vendorName: string, orgName: string, oboOid?: string): string {
   if (oboOid) {
     return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
   }
@@ -255,7 +210,7 @@ function buildCqOboOrgName(vendorName: string, orgName: string, oboOid?: string)
   return `${vendorName} - ${orgName}`;
 }
 
-function buildCwOboOrgName(vendorName: string, orgName: string, oboOid?: string): string {
+function buildCwOrgName(vendorName: string, orgName: string, oboOid?: string | null): string {
   if (oboOid) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
   }
@@ -263,7 +218,7 @@ function buildCwOboOrgName(vendorName: string, orgName: string, oboOid?: string)
 }
 
 async function createOrUpdateInCq(
-  facility: FacilityModel,
+  facility: Facility,
   cxOid: string,
   orgName: string,
   coordinates: AddressWithCoordinates
@@ -295,12 +250,7 @@ async function createOrUpdateInCq(
 }
 
 // WHY DO WE ONLY CREATE BUT WE CREATE OR UPDATE IN CQ?
-async function createInCw(
-  facility: FacilityModel,
-  orgName: string,
-  cxOrgType: OrgType,
-  cxId: string
-) {
+async function createInCw(facility: Facility, orgName: string, cxOrgType: OrgType, cxId: string) {
   const { log } = out("createInCw");
   log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${orgName}`);
   await cwCommands.organization.create(
