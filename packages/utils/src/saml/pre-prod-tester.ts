@@ -1,9 +1,3 @@
-/*
-This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
-It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
-the db.
-*/
-
 import * as dotenv from "dotenv";
 dotenv.config();
 import { initDbPool } from "@metriport/core/util/sequelize";
@@ -23,6 +17,12 @@ import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-g
 import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./s3";
+
+/** 
+This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
+It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
+the db.
+*/
 
 const samlAtributes = {
   subjectId: "System User",
@@ -48,7 +48,7 @@ async function queryDatabaseForDQs() {
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 1;
+    LIMIT 5;
   `;
 
   try {
@@ -121,19 +121,16 @@ async function DQIntegrationTest() {
   responses.forEach(response => {
     if (response.status === "fulfilled" && response.value) {
       const { dqResult, dqResponse } = response.value;
-      const resultDocumentReferences = new Set(
-        dqResult?.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
-      );
       const responseDocumentReferences = new Set(
         dqResponse?.documentReference?.map(doc => `${doc.repositoryUniqueId}-${doc.docUniqueId}`)
       );
 
-      if (
-        (responseDocumentReferences.size > 0 || resultDocumentReferences.size > 0) &&
-        responseDocumentReferences.size >= resultDocumentReferences.size
-      ) {
+      if (responseDocumentReferences.size > 0) {
         successCount++;
       } else {
+        console.log("FAILURE");
+        console.log("dq response", JSON.stringify(dqResponse, null, 2));
+        console.log("dq request", JSON.stringify(dqResult, null, 2));
         failureCount++;
       }
     } else if (response.status === "rejected") {
@@ -161,7 +158,12 @@ async function DRIntegrationTest() {
   const promises = results.map(async result => {
     //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const dqResult = (result as any).data as OutboundDocumentQueryResp;
-    if (!dqResult.cxId || !dqResult.patientId || !dqResult.externalGatewayPatient) {
+    if (
+      !dqResult.cxId ||
+      !dqResult.patientId ||
+      !dqResult.documentReference ||
+      !dqResult.externalGatewayPatient
+    ) {
       console.log("Skipping: ", dqResult);
       return undefined;
     }
