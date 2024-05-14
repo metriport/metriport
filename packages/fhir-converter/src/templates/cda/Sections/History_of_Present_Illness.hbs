@@ -7,7 +7,7 @@
                 {{/with}}
 
                 {{!-- TODO need to add references, author, etc --}}
-                {{#if ../../msg.ClinicalDocument.componentOf.encompassingEncounter}} 
+                {{#if @encompassingEncounterId}} 
                     {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
                 {{/if}}
 
