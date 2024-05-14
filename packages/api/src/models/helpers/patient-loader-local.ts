@@ -22,11 +22,8 @@ export class PatientLoaderLocal implements PatientLoader {
    *
    * When searching patients within a specific customer, use `findBySimilarity`.
    */
-  async findBySimilarityAcrossAllCxs(
-    patient: Omit<FindBySimilarity, "cxId">,
-    order?: Order
-  ): Promise<Patient[]> {
-    return this.findBySimilarityInternal(patient, order);
+  async findBySimilarityAcrossAllCxs(patient: Omit<FindBySimilarity, "cxId">): Promise<Patient[]> {
+    return this.findBySimilarityInternal(patient);
   }
 
   async findBySimilarity(patient: FindBySimilarity, order?: Order): Promise<Patient[]> {

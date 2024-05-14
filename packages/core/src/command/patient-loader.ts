@@ -24,10 +24,7 @@ export interface PatientLoader {
    *
    * When searching patients within a specific customer, use `findBySimilarity`.
    */
-  findBySimilarityAcrossAllCxs(
-    params: Omit<FindBySimilarity, "cxId">,
-    order?: Order
-  ): Promise<Patient[]>;
+  findBySimilarityAcrossAllCxs(params: Omit<FindBySimilarity, "cxId">): Promise<Patient[]>;
 
   findBySimilarity(params: FindBySimilarity, order?: Order): Promise<Patient[]>;
 }
