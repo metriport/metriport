@@ -1,6 +1,3 @@
-// This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to the gateway specified in the request body.
-// It logs the output into the runs/saml-coverage folder where it can be analyzed later. Reccomendation is to use the saml-coverage script to analyze the results after running.
-// npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 import * as dotenv from "dotenv";
 dotenv.config();
 import fs from "fs";
@@ -11,6 +8,13 @@ import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
+
+/** This is a helper script to test constructing your own SOAP+SAML requests. It creates the SOAP 
+Envelope and sends it to the gateway specified in the request body. It logs the output into the 
+runs/saml-coverage folder for later analysis. It is recommended to use the saml-coverage script 
+to analyze the results after running. Run `npm run saml-server` and then reference the 
+Metriport-IHE GW / XML + SAML Constructor - Postman collection.
+*/
 
 const timestamp = dayjs().toISOString();
 
