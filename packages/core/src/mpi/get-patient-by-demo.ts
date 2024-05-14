@@ -66,6 +66,7 @@ export const getPatientByDemo = async ({
       extra: {
         context: `mpi.getPatientByDemo`,
         cxId,
+        demo,
       },
       level: "warning",
     });
