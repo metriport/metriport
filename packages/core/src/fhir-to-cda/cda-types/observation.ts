@@ -1,23 +1,21 @@
-import { classCodeAttribute, moodCodeAttribute } from "../cda-templates/constants";
-import { Entry, CdaInstanceIdentifier, CdaCodeCv } from "./shared-types";
+import { CdaCodeCv, CdaInstanceIdentifier, CdaValueSt, Entry, EntryObject } from "./shared-types";
 
 export interface CDAObservation {
   component: {
     observation: {
-      [classCodeAttribute]: Entry;
-      [moodCodeAttribute]: Entry;
+      _classCodeAttribute: Entry;
+      _moodCodeAttribute: Entry;
       id?: CdaInstanceIdentifier[] | Entry;
       code: CdaCodeCv | Entry;
       text?: Entry;
-      statusCode?: {
-        code: Entry;
-      };
+      statusCode?: EntryObject;
       effectiveTime?: {
-        value: Entry;
+        low?: EntryObject;
+        high?: EntryObject;
       };
       priorityCode?: Entry;
       // TODO support other types of values like CodeableConcept, Quantity, etc.
-      value?: string | undefined;
+      value?: CdaValueSt | undefined;
     };
   };
 }

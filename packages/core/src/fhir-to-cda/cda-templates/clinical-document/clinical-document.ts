@@ -1,17 +1,17 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
-  buildCodeCe,
-  buildInstanceIdentifier,
-  withNullFlavor,
-  withoutNullFlavorObject,
-} from "../commons";
-import { clinicalDocumentConstants, valueAttribute } from "../constants";
-import {
   CdaAuthor,
   CdaCustodian,
   CdaRecordTarget,
   ClinicalDocument,
 } from "../../cda-types/shared-types";
+import {
+  buildCodeCe,
+  buildInstanceIdentifier,
+  withNullFlavor,
+  withoutNullFlavorObject,
+} from "../commons";
+import { _valueAttribute, clinicalDocumentConstants } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -41,7 +41,7 @@ export function buildClinicalDocumentXml(
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      "@_xmlns": "urn:hl7-org:v3",
+      _namespaceAttribute: "urn:hl7-org:v3",
       realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
@@ -64,7 +64,7 @@ export function buildClinicalDocumentXml(
         displayName: clinicalDocumentConstants.code.displayName,
       }),
       title: clinicalDocumentConstants.title,
-      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, valueAttribute),
+      effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, _valueAttribute),
       confidentialityCode: buildCodeCe({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
@@ -80,7 +80,7 @@ export function buildClinicalDocumentXml(
       }),
       versionNumber: withoutNullFlavorObject(
         clinicalDocumentConstants.versionNumber,
-        valueAttribute
+        _valueAttribute
       ),
       recordTarget,
       author,
@@ -88,13 +88,19 @@ export function buildClinicalDocumentXml(
       component: structuredBody,
     },
   };
-
   const cleanedJsonObj = removeEmptyFields(jsonObj);
-
   const builder = new XMLBuilder({
     format: false,
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
     ignoreAttributes: false,
   });
 
-  return builder.build(cleanedJsonObj);
+  const generatedXml = builder.build(cleanedJsonObj);
+  return postProcessXml(generatedXml);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function postProcessXml(xml: any): string {
+  return xml.replaceAll("<br>", "").replaceAll("</br>", "<br />");
 }

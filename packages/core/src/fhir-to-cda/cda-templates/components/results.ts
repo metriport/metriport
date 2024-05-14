@@ -1,26 +1,15 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
-import {
-  withoutNullFlavorObject,
-  withNullFlavor,
-  buildCodeCvFromCodeableConcept,
-  buildCodeCe,
-  buildInstanceIdentifier,
-} from "../commons";
 import { base64ToString } from "../../../util/base64";
+import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
-  valueAttribute,
-  styleCodeAttribute,
-  classCodeAttribute,
-  moodCodeAttribute,
-  typeCodeAttribute,
-  idAttribute,
-} from "../constants";
+  TIMESTAMP_CLEANUP_REGEX,
+  buildCodeCe,
+  buildCodeCvFromCodeableConcept,
+  buildInstanceIdentifier,
+  withoutNullFlavorObject,
+} from "../commons";
+import { _valueAttribute } from "../constants";
 import { buildObservations } from "./observations";
-import {
-  findResourceInBundle,
-  isObservation,
-  isDiagnosticReport,
-} from "../../../external/fhir/shared";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],
@@ -39,32 +28,31 @@ function buildEntriesFromDiagnosticReports(
       }
     });
 
+    const organizer = {
+      _classCodeAttribute: "BATTERY",
+      _moodCodeAttribute: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: "2.16.840.1.113883.10.20.22.4.1",
+        extension: "2015-08-01",
+      }),
+      id: buildInstanceIdentifier({
+        root: report.id,
+      }),
+      code: codeElement,
+      statusCode: buildCodeCe({
+        code: report.status,
+      }),
+      effectiveTime: withoutNullFlavorObject(
+        report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
+        _valueAttribute
+      ),
+      component: buildObservations(observations).map(o => o.component),
+    };
+
     return {
       entry: {
-        [typeCodeAttribute]: "DRIV",
-        organizer: {
-          [classCodeAttribute]: "BATTERY",
-          [moodCodeAttribute]: "EVN",
-          templateId: buildInstanceIdentifier({
-            root: "2.16.840.1.113883.10.20.22.4.1",
-            extension: "2015-08-01",
-          }),
-          id: buildInstanceIdentifier({
-            root: report.id,
-          }),
-          code: codeElement,
-          statusCode: buildCodeCe({
-            code: report.status,
-          }),
-          effectiveTime: withoutNullFlavorObject(
-            report.effectiveDateTime?.replace(/-|:|\.\d+Z$/g, ""),
-            valueAttribute
-          ),
-          text: {
-            reference: withNullFlavor(report.id, valueAttribute),
-          },
-          component: buildObservations(observations).map(o => o.component),
-        },
+        _typeCodeAttribute: "DRIV",
+        organizer,
       },
     };
   });
@@ -78,7 +66,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
   if (diagnosticReports.length === 0) {
     return undefined;
   }
-  const textItems = getTextItemsFromDiagnosticReports(diagnosticReports);
+  const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
     component: {
@@ -93,12 +81,7 @@ export function buildResult(fhirBundle: Bundle): unknown {
           displayName: "Diagnostic Results",
         }),
         title: "Diagnostic Results",
-        text: {
-          list: {
-            [styleCodeAttribute]: "xTOC",
-            item: textItems.map(item => item?.item),
-          },
-        },
+        text: text.map(t => t && t.item),
         entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
       },
     },
@@ -113,11 +96,14 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         ? base64ToString(report.presentedForm[0].data).split(/\n/)
         : [];
       if (contentLines.length > 0) {
+        const contentObjects = contentLines.map(line => ({
+          br: line,
+        }));
         return {
           item: {
             content: {
-              [idAttribute]: report.id,
-              br: contentLines,
+              _idAttribute: `_${report.id}`,
+              br: contentObjects.map(o => o.br),
             },
           },
         };

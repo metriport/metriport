@@ -1,10 +1,12 @@
 import {
   Address,
   CodeableConcept,
+  Coding,
   ContactPoint,
   Identifier,
   Organization,
 } from "@medplum/fhirtypes";
+import { normalizeOid } from "@metriport/shared";
 import {
   CdaAddress,
   CdaCodeCe,
@@ -12,18 +14,29 @@ import {
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaTelecom,
+  CdaValueSt,
   Entry,
   EntryObject,
 } from "../cda-types/shared-types";
 import {
-  assigningAuthorityNameAttribute,
-  extensionAttribute,
-  nullFlavorAttribute,
-  rootAttribute,
-  useAttribute,
-  valueAttribute,
+  _rootAttribute,
+  _useAttribute,
+  _valueAttribute,
+  amaAssnSystemCode,
+  fdasisSystemCode,
+  loincSystemCode,
+  nlmNihSystemCode,
+  snomedSystemCode,
 } from "./constants";
 
+const CODING_MAP = new Map<string, string>();
+CODING_MAP.set("http://loinc.org", loincSystemCode);
+CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
+CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
+CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
+CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
+
+export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
   if (value == undefined) return {};
   return { [key]: value };
@@ -35,7 +48,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { [nullFlavorAttribute]: "UNK" };
+  if (value == undefined) return { _nullFlavorAttribute: "UNK" };
   return { [key]: value };
 }
 
@@ -52,10 +65,10 @@ export function buildCodeCe({
   displayName?: string | undefined;
 }): CdaCodeCe {
   const codeObject: CdaCodeCe = {};
-  if (code) codeObject["@_code"] = code;
-  if (codeSystem) codeObject["@_codeSystem"] = codeSystem;
-  if (codeSystemName) codeObject["@_codeSystemName"] = codeSystemName;
-  if (displayName) codeObject["@_displayName"] = displayName;
+  if (code) codeObject._codeAttribute = code;
+  if (codeSystem) codeObject._codeSystemAttribute = codeSystem;
+  if (codeSystemName) codeObject._codeSystemNameAttribute = codeSystemName;
+  if (displayName) codeObject._displayNameAttribute = displayName;
 
   return codeObject;
 }
@@ -68,8 +81,8 @@ export function buildCodeCvFromCodeableConcept(
     return withoutNullFlavorString(codeableConcept);
   }
 
-  const primaryCoding = codeableConcept.coding?.[0];
-
+  const primaryCodingRaw = codeableConcept.coding?.[0];
+  const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
     ? buildCodeCe({
         code: primaryCoding.code,
@@ -82,7 +95,7 @@ export function buildCodeCvFromCodeableConcept(
   const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
     buildCodeCe({
       code: coding.code,
-      codeSystem: coding.system,
+      codeSystem: mapCodingSystem(coding.system),
       codeSystemName: undefined,
       displayName: coding.display,
     })
@@ -107,9 +120,9 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CdaInstanceIdentifier {
   const identifier: CdaInstanceIdentifier = {};
-  if (root) identifier[rootAttribute] = root;
-  if (extension) identifier[extensionAttribute] = extension;
-  if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
+  if (root) identifier._rootAttribute = root;
+  if (extension) identifier._extensionAttribute = extension;
+  if (assigningAuthorityName) identifier._assigningAuthorityNameAttribute = assigningAuthorityName;
 
   return identifier;
 }
@@ -118,7 +131,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
 ): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
-    return withNullFlavor(undefined, rootAttribute);
+    return withNullFlavor(undefined, _rootAttribute);
   }
 
   const identifiersArray = Array.isArray(identifiers)
@@ -128,7 +141,7 @@ export function buildInstanceIdentifiersFromIdentifier(
     : [];
   return identifiersArray.map(identifier =>
     buildInstanceIdentifier({
-      root: identifier.system,
+      root: identifier.system ? normalizeOid(identifier.system) : undefined,
       extension: identifier.value,
       assigningAuthorityName: identifier.assigner?.display,
     })
@@ -139,23 +152,26 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[]
   if (!telecoms) {
     return [];
   }
-  return telecoms.map(telecom => ({
-    ...withoutNullFlavorObject(telecom.use, useAttribute),
-    ...withoutNullFlavorObject(telecom.value, valueAttribute),
-  }));
+  return telecoms.map(telecom => {
+    const telecomUse = mapTelecomUse(telecom.use);
+    return {
+      ...withoutNullFlavorObject(telecomUse, _useAttribute),
+      ...withoutNullFlavorObject(telecom.value, _valueAttribute),
+    };
+  });
 }
 
 export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
-    ...withoutNullFlavorObject(addr.use, useAttribute),
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
     state: addr.state,
     postalCode: addr.postalCode,
     country: addr.country,
     useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+      low: withoutNullFlavorObject(addr.period?.start, _valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, _valueAttribute),
     },
   }));
 }
@@ -180,4 +196,107 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
   const fractionalSeconds = "0000";
   const cdaTimeStamp = `${datePart}${timePart}.${fractionalSeconds}`;
   return cdaTimeStamp;
+}
+
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
+export function buildValueST(value: string | undefined): CdaValueSt | undefined {
+  if (!value) return undefined;
+
+  const valueObject: CdaValueSt = {};
+  valueObject._xsiTypeAttribute = "ST";
+  valueObject._xmlnsXsiAttribute = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject._inlineTextAttribute = value;
+  return valueObject;
+}
+
+function mapAddressUse(use: string | undefined) {
+  if (!use) return undefined;
+  // From PostalAddressUse of the CDA R2 IG
+  switch (use.toLowerCase()) {
+    case "bad address":
+      return "BAD";
+    case "confidential":
+      return "CONF";
+    case "direct":
+      return "DIR";
+    case "home" || "home address":
+      return "H";
+    case "primary home":
+      return "HP";
+    case "vacation home":
+      return "HV";
+    case "physical visit address":
+      return "PHYS";
+    case "postal address":
+      return "PST";
+    case "public":
+      return "PUB";
+    case "temporary":
+      return "TMP";
+    // from example CDAs
+    case "work":
+      return "WP";
+  }
+  return use;
+}
+
+function mapTelecomUse(use: string | undefined) {
+  if (!use) return undefined;
+  // From Telecom Use of the CDA R2 IG
+  switch (use.toLowerCase()) {
+    case "answering service":
+      return "AS";
+    case "emergency contact":
+      return "EC";
+    case "home" || "primary home":
+      return "HP";
+    case "vacation home":
+      return "HV";
+    case "mobile contact":
+      return "MC";
+    case "pager":
+      return "PG";
+    case "work" || "work place":
+      return "WP";
+  }
+  return use;
+}
+
+function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
+  if (!primaryCodingRaw) return undefined;
+  const system = primaryCodingRaw.system;
+  switch (system) {
+    case "http://loinc.org":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "LOINC",
+        display: primaryCodingRaw.display,
+      };
+    case "http://snomed.info/sct":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "SNOMED-CT",
+        display: primaryCodingRaw.display,
+      };
+    case "http://www.nlm.nih.gov/research/umls/rxnorm":
+      return {
+        system: CODING_MAP.get(system),
+        code: primaryCodingRaw.code ?? "RXNORM",
+        display: primaryCodingRaw.display,
+      };
+    default:
+      return {
+        system: system ? CODING_MAP.get(system) : primaryCodingRaw.system,
+        code: primaryCodingRaw.code,
+        display: primaryCodingRaw.display,
+      };
+  }
+}
+
+function mapCodingSystem(system: string | undefined): string | undefined {
+  if (!system) return undefined;
+  const mappedCodingSystem = CODING_MAP.get(system);
+  if (mappedCodingSystem) return mappedCodingSystem;
+  if (system.includes("urn")) return normalizeOid(system);
+  return system;
 }
