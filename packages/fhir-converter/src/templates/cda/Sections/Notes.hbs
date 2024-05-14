@@ -11,6 +11,10 @@
                     {{/if}}
 
                     {{!-- TODO need to add references, author, etc --}}
+                    {{#if @encompassingEncounterId}} 
+                        {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
+                    {{/if}}
+
                     {{#if note.act.author.assignedAuthor}}
                         {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=note.act.author.assignedAuthor) as |practitionerId|}}
                             {{>Resources/Practitioner.hbs practitioner=note.act.author.assignedAuthor ID=practitionerId.Id}},

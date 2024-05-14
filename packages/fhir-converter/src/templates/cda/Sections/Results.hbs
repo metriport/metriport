@@ -8,6 +8,11 @@
                         {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
                     {{/with}}
                 {{/if}}
+
+                {{#if @encompassingEncounterId}} 
+                    {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
+                {{/if}}
+
                 {{#if drEntry.organizer.performer}}
                      {{#if drEntry.organizer.performer.assignedEntity}}
                         {{!-- should we use author.assignedAuthor or performer.assignedEntity? Not sure which one is generally fuller  --}}
