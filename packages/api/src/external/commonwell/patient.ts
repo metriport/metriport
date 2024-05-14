@@ -136,6 +136,33 @@ export async function create(
   }
 }
 
+export async function get(
+  patient: Patient,
+  facilityId: string
+): Promise<CommonwellPatient | undefined> {
+  const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+
+  const cwEnabled = await validateCWEnabled({
+    patient,
+    facilityId,
+    debug,
+  });
+  if (!cwEnabled) return undefined;
+
+  const cwData = getCWData(patient.data.externalData);
+  if (!cwData) return undefined;
+
+  const _initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = _initiator.name;
+  const initiatorOid = _initiator.oid;
+  const initiatorNpi = _initiator.npi;
+
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
+
+  return await commonWell.getPatient(queryMeta, cwData.patientId);
+}
+
 export async function registerAndLinkPatientInCW(
   patient: Patient,
   facilityId: string,
@@ -432,12 +459,12 @@ async function updatePatientAndLinksInCw(
 async function validateCWEnabled({
   patient,
   facilityId,
-  forceCW,
+  forceCW = false,
   log,
 }: {
   patient: Patient;
   facilityId: string;
-  forceCW: boolean;
+  forceCW?: boolean;
   log: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;

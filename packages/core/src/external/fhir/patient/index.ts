@@ -1,14 +1,14 @@
 import {
+  ContactPoint,
+  DocumentReference,
   Identifier,
   Patient as FHIRPatient,
-  ContactPoint,
   Reference,
-  DocumentReference,
 } from "@medplum/fhirtypes";
-import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
-import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import { Patient, splitName, GenderAtBirth } from "../../../domain/patient";
+import { Contact, ContactTypes } from "../../../domain/contact";
+import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
+import { GenderAtBirth, Patient, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
