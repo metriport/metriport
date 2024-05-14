@@ -8,7 +8,13 @@ import {
   buildInstanceIdentifier,
   withoutNullFlavorObject,
 } from "../commons";
-import { _valueAttribute } from "../constants";
+import {
+  _classCodeAttribute,
+  _idAttribute,
+  _moodCodeAttribute,
+  _typeCodeAttribute,
+  _valueAttribute,
+} from "../constants";
 import { buildObservations } from "./observations";
 
 function buildEntriesFromDiagnosticReports(
@@ -29,8 +35,8 @@ function buildEntriesFromDiagnosticReports(
     });
 
     const organizer = {
-      _classCodeAttribute: "BATTERY",
-      _moodCodeAttribute: "EVN",
+      [_classCodeAttribute]: "BATTERY",
+      [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
         root: "2.16.840.1.113883.10.20.22.4.1",
         extension: "2015-08-01",
@@ -51,7 +57,7 @@ function buildEntriesFromDiagnosticReports(
 
     return {
       entry: {
-        _typeCodeAttribute: "DRIV",
+        [_typeCodeAttribute]: "DRIV",
         organizer,
       },
     };
@@ -102,7 +108,7 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         return {
           item: {
             content: {
-              _idAttribute: `_${report.id}`,
+              [_idAttribute]: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },

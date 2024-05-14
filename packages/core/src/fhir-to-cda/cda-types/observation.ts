@@ -1,10 +1,11 @@
+import { _classCodeAttribute, _moodCodeAttribute } from "../cda-templates/constants";
 import { CdaCodeCv, CdaInstanceIdentifier, CdaValueSt, Entry, EntryObject } from "./shared-types";
 
 export interface CDAObservation {
   component: {
     observation: {
-      _classCodeAttribute: Entry;
-      _moodCodeAttribute: Entry;
+      [_classCodeAttribute]: Entry;
+      [_moodCodeAttribute]: Entry;
       id?: CdaInstanceIdentifier[] | Entry;
       code: CdaCodeCv | Entry;
       text?: Entry;

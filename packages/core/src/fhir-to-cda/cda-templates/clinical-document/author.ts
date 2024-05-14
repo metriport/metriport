@@ -1,11 +1,11 @@
 import { Organization } from "@medplum/fhirtypes";
+import { CdaAuthor } from "../../cda-types/shared-types";
 import {
-  withNullFlavor,
   buildAddress,
   buildRepresentedOrganization,
   buildTelecom,
+  withNullFlavor,
 } from "../commons";
-import { CdaAuthor } from "../../cda-types/shared-types";
 import { _rootAttribute, _valueAttribute } from "../constants";
 
 export function buildAuthor(organization: Organization): CdaAuthor {

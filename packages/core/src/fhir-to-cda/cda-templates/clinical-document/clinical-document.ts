@@ -11,7 +11,7 @@ import {
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
-import { _valueAttribute, clinicalDocumentConstants } from "../constants";
+import { clinicalDocumentConstants, _namespaceAttribute, _valueAttribute } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -41,7 +41,7 @@ export function buildClinicalDocumentXml(
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      _namespaceAttribute: "urn:hl7-org:v3",
+      [_namespaceAttribute]: "urn:hl7-org:v3",
       realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
