@@ -10,6 +10,7 @@ import { useFirstMatchingPatient } from "./merge-patients";
 import { normalizePatient } from "./normalize-patient";
 import { patientToPatientMPI } from "./shared";
 import { log } from "../util/log";
+import { capture } from "../util/notifications";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -58,7 +59,16 @@ export const getPatientByDemo = async ({
   );
 
   if (matchingPatients.length > 1) {
-    log("WARNING: matchPatients in getPatientByDemo returning more than one matched patient!");
+    log(
+      `WARNING: matchPatients in getPatientByDemo for demo: ${demo} and cxId: ${cxId} is returning more than one matched patient!`
+    );
+    capture.message("matchPatients in getPatientByDemo returning more than one matched patient!", {
+      extra: {
+        context: `mpi.getPatientByDemo`,
+        cxId,
+      },
+      level: "warning",
+    });
   }
   // Merge the matching patients
   const mpiPatient = useFirstMatchingPatient(matchingPatients);
