@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-public class TestSearchPatient {
+public class TestMatchPatient {
     @Test
-    public void searchPatient() {
+    public void matchPatient() {
         Dotenv dotenv = Dotenv.load();
 
         String apiKey = dotenv.get("API_KEY");
@@ -75,7 +75,7 @@ public class TestSearchPatient {
                 ))
                 .build();
 
-        var response = client.medical().patient().search(request2);
+        var response = client.medical().patient().match(request2);
         System.out.println("Received patient with ID: " + response.getId());
     }
 }

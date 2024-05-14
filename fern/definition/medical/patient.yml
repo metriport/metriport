@@ -139,12 +139,12 @@ service:
         type: MedicalRecordStatus
         docs: the status of the medical record summary
 
-    search:
-      display-name: Search Patient
+    match:
+      display-name: Match Patient
       docs: |
-        Searches for a Patient in Metriport based on demographic information.
+        Searches for a Patient previously created in Metriport based on demographic information.
       method: POST
-      path: "/search"
+      path: "/match"
       request:
         body: Demographics
       response: Patient

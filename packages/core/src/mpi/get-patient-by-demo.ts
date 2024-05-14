@@ -9,6 +9,7 @@ import {
 import { useFirstMatchingPatient } from "./merge-patients";
 import { normalizePatient } from "./normalize-patient";
 import { patientToPatientMPI } from "./shared";
+import { log } from "../util/log";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -34,13 +35,16 @@ export const getPatientByDemo = async ({
   if (!normalizedPatientDemo) return undefined;
 
   // Find patients based on the criteria of matching dob and genderAtBirth
-  const foundPatients = await patientLoader.findBySimilarity({
-    cxId,
-    data: {
-      dob: normalizedPatientDemo.dob,
-      genderAtBirth: normalizedPatientDemo.genderAtBirth,
+  const foundPatients = await patientLoader.findBySimilarity(
+    {
+      cxId,
+      data: {
+        dob: normalizedPatientDemo.dob,
+        genderAtBirth: normalizedPatientDemo.genderAtBirth,
+      },
     },
-  });
+    [["created_at", "ASC"]]
+  );
 
   // Convert patients to proper datatype
   // Match the found patients with the normalized patient using the similarity function
@@ -49,9 +53,13 @@ export const getPatientByDemo = async ({
     [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
     foundPatients.map(patientToPatientMPI),
     normalizedPatientDemo,
-    SIMILARITY_THRESHOLD
+    SIMILARITY_THRESHOLD,
+    false
   );
 
+  if (matchingPatients.length > 1) {
+    log("WARNING: matchPatients in getPatientByDemo returning more than one matched patient!");
+  }
   // Merge the matching patients
   const mpiPatient = useFirstMatchingPatient(matchingPatients);
   if (!mpiPatient) return undefined;

@@ -217,9 +217,9 @@ export class MetriportMedicalApi {
    *
    * @return The patient if found.
    */
-  async searchPatient(data: Demographics): Promise<PatientDTO | undefined> {
+  async matchPatient(data: Demographics): Promise<PatientDTO | undefined> {
     try {
-      const resp = await this.api.post(`${PATIENT_URL}/search`, data);
+      const resp = await this.api.post(`${PATIENT_URL}/match`, data);
       return resp.data as PatientDTO;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {

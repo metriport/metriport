@@ -1,12 +1,12 @@
 ---
-title: "Search Patient"
+title: "Match Patient"
 description: "Searches for a Patient previously created in Metriport, based on demographic data. Returns a 404 if the patient is not found."
-api: "POST /medical/v1/patient/search"
+api: "POST /medical/v1/patient/match"
 ---
 
 ## Body
 
-<Snippet file="patient-search.mdx" />
+<Snippet file="patient-match.mdx" />
 
 ## Response
 
@@ -19,7 +19,7 @@ import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 
 const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const patient = await metriport.searchPatient(
+const patient = await metriport.matchPatient(
   {
     firstName: "Jose",
     lastName: "Juarez",

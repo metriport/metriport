@@ -4,9 +4,9 @@ import { cloneDeep } from "lodash";
 import BadRequestError from "../../../errors/bad-request";
 import { PatientCreateCmd } from "./create-patient";
 import { PatientUpdateCmd } from "./update-patient";
-import { PatientSearchCmd } from "./get-patient";
+import { PatientMatchCmd } from "./get-patient";
 
-export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientSearchCmd>(
+export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
 ): T {
   const result = cloneDeep(patient);
@@ -14,7 +14,7 @@ export function sanitize<T extends PatientCreateCmd | PatientUpdateCmd | Patient
   return result;
 }
 
-export function validate<T extends PatientCreateCmd | PatientUpdateCmd | PatientSearchCmd>(
+export function validate<T extends PatientCreateCmd | PatientUpdateCmd | PatientMatchCmd>(
   patient: T
 ): boolean {
   if (!patient.address || patient.address.length < 1) return false;

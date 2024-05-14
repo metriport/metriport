@@ -57,5 +57,5 @@ def test_search_patient() -> None:
             country="USA"
         )]
     )
-    response = metriport.medical.patient.search(request=patient_demodata)
+    response = metriport.medical.patient.match(request=patient_demodata)
     print(f"Received patient with ID: {response.id}")

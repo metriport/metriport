@@ -6,15 +6,15 @@ import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
-import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
+import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
 import { sanitize, validate } from "./shared";
 
-export type PatientSearchCmd = PatientDemoData & { cxId: string };
+export type PatientMatchCmd = PatientDemoData & { cxId: string };
 
-export async function searchPatient(patient: PatientSearchCmd): Promise<Patient | undefined> {
+export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | undefined> {
   const { cxId } = patient;
 
   const sanitized = sanitize(patient);

@@ -1,5 +1,6 @@
 import { AtLeastOne } from "@metriport/shared/common/types";
 import { Patient, PatientData } from "../domain/patient";
+import { Order } from "sequelize";
 
 export type GetOne = Pick<Patient, "id" | "cxId">;
 
@@ -23,7 +24,10 @@ export interface PatientLoader {
    *
    * When searching patients within a specific customer, use `findBySimilarity`.
    */
-  findBySimilarityAcrossAllCxs(params: Omit<FindBySimilarity, "cxId">): Promise<Patient[]>;
+  findBySimilarityAcrossAllCxs(
+    params: Omit<FindBySimilarity, "cxId">,
+    order?: Order
+  ): Promise<Patient[]>;
 
-  findBySimilarity(params: FindBySimilarity): Promise<Patient[]>;
+  findBySimilarity(params: FindBySimilarity, order?: Order): Promise<Patient[]>;
 }

@@ -25,8 +25,8 @@ import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientOrFail,
   getPatients,
-  PatientSearchCmd,
-  searchPatient,
+  PatientMatchCmd,
+  matchPatient,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -485,7 +485,7 @@ router.get(
 );
 
 /** ---------------------------------------------------------------------------
- * POST /patient/search
+ * POST /patient/match
  *
  * Searches for a patient previously created at Metriport based on a demographic paylaod and returns the matched patient, if it exists.
  *
@@ -493,15 +493,15 @@ router.get(
  * @throws NotFoundError if the patient does not exist.
  */
 router.post(
-  "/search",
+  "/match",
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const payload = demographicsSchema.parse(req.body);
 
-    const patientSearch: PatientSearchCmd = schemaDemographicsToPatient(payload, cxId);
+    const patientMatch: PatientMatchCmd = schemaDemographicsToPatient(payload, cxId);
 
-    const patient = await searchPatient(patientSearch);
+    const patient = await matchPatient(patientMatch);
 
     if (patient) {
       return res.status(status.OK).json(dtoFromModel(patient));

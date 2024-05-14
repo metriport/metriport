@@ -21,7 +21,7 @@ const metriport = new MetriportClient({
 });
 
 describe("Patient tests", () => {
-  test("search a patient", async () => {
+  test("match a patient", async () => {
     const patientData: BasePatient = {
       firstName: "John",
       lastName: "Doe",
@@ -67,7 +67,7 @@ describe("Patient tests", () => {
         }],
     };
 
-    const response = await metriport.medical.patient.search(patientDemoData);
+    const response = await metriport.medical.patient.match(patientDemoData);
     console.log(`Received patient with ID: ${response.id}`);
   });
 });
