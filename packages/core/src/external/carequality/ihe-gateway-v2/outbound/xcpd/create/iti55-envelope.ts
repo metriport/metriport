@@ -183,13 +183,17 @@ function createSoapBodyWithoutUrn({
                   semanticsText: "Patient.telecom",
                 }
               : {},
-            principalCareProviderId: {
-              value: {
-                "@_extension": providerId,
-                "@_root": "2.16.840.1.113883.4.6",
-              },
-              semanticsText: "AssignedProvider.id",
-            },
+            ...(providerId
+              ? {
+                  principalCareProviderId: {
+                    value: {
+                      "@_extension": providerId,
+                      "@_root": "2.16.840.1.113883.4.6",
+                    },
+                    semanticsText: "AssignedProvider.id",
+                  },
+                }
+              : {}),
           },
         },
       },
