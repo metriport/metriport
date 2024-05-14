@@ -25,7 +25,7 @@ export type BulkSignedXCPD = {
   outboundRequest: OutboundPatientDiscoveryReq;
 };
 
-function SoapBody({
+function createSoapBodyContent({
   messageId,
   homeCommunityId,
   createdTimestamp,
@@ -231,7 +231,7 @@ function createSoapBody({
 
   const useUrn = gateway.url !== specialNamespaceRequiredUrl;
   const soapBody = {
-    "soap:Body": SoapBody({
+    "soap:Body": createSoapBodyContent({
       messageId,
       homeCommunityId,
       createdTimestamp,
