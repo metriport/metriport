@@ -7,13 +7,13 @@
                         {{>Resources/DiagnosticReport.hbs diagReport=note.act ID=(generateUUID (toJsonString note.act))}},
                         {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                             {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Patient/' patientId.Id)}},
+                            {{#if @encompassingEncounterId}} 
+                                {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
+                            {{/if}}
                         {{/with}}
                     {{/if}}
 
                     {{!-- TODO need to add references, author, etc --}}
-                    {{#if @encompassingEncounterId}} 
-                        {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
-                    {{/if}}
 
                     {{#if note.act.author.assignedAuthor}}
                         {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=note.act.author.assignedAuthor) as |practitionerId|}}
