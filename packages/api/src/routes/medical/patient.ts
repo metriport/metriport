@@ -487,7 +487,7 @@ router.get(
 /** ---------------------------------------------------------------------------
  * POST /patient/match
  *
- * Searches for a patient previously created at Metriport based on a demographic paylaod and returns the matched patient, if it exists.
+ * Searches for a patient previously created at Metriport, based on a demographic data. Returns the matched patient, if it exists.
  *
  * @return The matched patient.
  * @throws NotFoundError if the patient does not exist.
