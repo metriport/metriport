@@ -28,7 +28,6 @@ export const clinicalDocumentConstants = {
   typeIdExtension: "POCD_HD000040",
   typeIdRoot: "2.16.840.1.113883.1.3",
   templateIds: [
-    { root: "1.2.840.114350.1.72.1.51693" },
     { root: "2.16.840.1.113883.10.20.22.1.1", extension: "2015-08-01" },
     { root: "2.16.840.1.113883.10.20.22.1.9", extension: "2015-08-01" },
   ],

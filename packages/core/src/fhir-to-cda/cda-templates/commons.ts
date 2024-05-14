@@ -8,13 +8,13 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
 import {
-  CDAAddress,
-  CDACodeCE,
-  CDACodeCV,
-  CDAInstanceIdentifier,
-  CDAOrganization,
-  CDATelecom,
-  CDAValueST,
+  CdaAddress,
+  CdaCodeCe,
+  CdaCodeCv,
+  CdaInstanceIdentifier,
+  CdaOrganization,
+  CdaTelecom,
+  CdaValueSt,
   Entry,
   EntryObject,
 } from "../cda-types/shared-types";
@@ -53,7 +53,7 @@ export function withNullFlavor(value: string | undefined, key: string): Entry {
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
-export function buildCodeCE({
+export function buildCodeCe({
   code,
   codeSystem,
   codeSystemName,
@@ -63,8 +63,8 @@ export function buildCodeCE({
   codeSystem?: string | undefined;
   codeSystemName?: string | undefined;
   displayName?: string | undefined;
-}): CDACodeCE {
-  const codeObject: CDACodeCE = {};
+}): CdaCodeCe {
+  const codeObject: CdaCodeCe = {};
   if (code) codeObject._codeAttribute = code;
   if (codeSystem) codeObject._codeSystemAttribute = codeSystem;
   if (codeSystemName) codeObject._codeSystemNameAttribute = codeSystemName;
@@ -74,9 +74,9 @@ export function buildCodeCE({
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
-export function buildCodeCVFromCodeableConcept(
+export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined
-): CDACodeCV | Entry {
+): CdaCodeCv | Entry {
   if (!codeableConcept) {
     return withoutNullFlavorString(codeableConcept);
   }
@@ -84,7 +84,7 @@ export function buildCodeCVFromCodeableConcept(
   const primaryCodingRaw = codeableConcept.coding?.[0];
   const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
-    ? buildCodeCE({
+    ? buildCodeCe({
         code: primaryCoding.code,
         codeSystem: primaryCoding.system,
         codeSystemName: undefined,
@@ -93,7 +93,7 @@ export function buildCodeCVFromCodeableConcept(
     : {};
 
   const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
-    buildCodeCE({
+    buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
       codeSystemName: undefined,
@@ -101,7 +101,7 @@ export function buildCodeCVFromCodeableConcept(
     })
   );
 
-  const codeCV: CDACodeCV = {
+  const codeCV: CdaCodeCv = {
     ...baseCE,
     originalText: codeableConcept.text,
     translation: translations?.length ? translations : undefined,
@@ -118,8 +118,8 @@ export function buildInstanceIdentifier({
   root?: string | undefined;
   extension?: string | undefined;
   assigningAuthorityName?: string | undefined;
-}): CDAInstanceIdentifier {
-  const identifier: CDAInstanceIdentifier = {};
+}): CdaInstanceIdentifier {
+  const identifier: CdaInstanceIdentifier = {};
   if (root) identifier._rootAttribute = root;
   if (extension) identifier._extensionAttribute = extension;
   if (assigningAuthorityName) identifier._assigningAuthorityNameAttribute = assigningAuthorityName;
@@ -129,7 +129,7 @@ export function buildInstanceIdentifier({
 
 export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
-): CDAInstanceIdentifier[] | Entry {
+): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
     return withNullFlavor(undefined, _rootAttribute);
   }
@@ -148,7 +148,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   );
 }
 
-export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[] {
+export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[] {
   if (!telecoms) {
     return [];
   }
@@ -161,7 +161,7 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[]
   });
 }
 
-export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
+export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
     ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
     streetAddressLine: addr.line?.join(", "),
@@ -178,7 +178,7 @@ export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
 
 export function buildRepresentedOrganization(
   organization: Organization
-): CDAOrganization | undefined {
+): CdaOrganization | undefined {
   return {
     id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
     name: withoutNullFlavorString(organization.name),
@@ -187,7 +187,7 @@ export function buildRepresentedOrganization(
   };
 }
 
-export function formatDateToCDATimestamp(dateString: string | undefined): string | undefined {
+export function formatDateToCdaTimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }
@@ -199,10 +199,10 @@ export function formatDateToCDATimestamp(dateString: string | undefined): string
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
-export function buildValueST(value: string | undefined): CDAValueST | undefined {
+export function buildValueST(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
 
-  const valueObject: CDAValueST = {};
+  const valueObject: CdaValueSt = {};
   valueObject._xsiTypeAttribute = "ST";
   valueObject._xmlnsXsiAttribute = "http://www.w3.org/2001/XMLSchema-instance";
   valueObject._inlineTextAttribute = value;

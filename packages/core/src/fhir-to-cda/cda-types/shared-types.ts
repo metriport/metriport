@@ -1,20 +1,20 @@
 export type ClinicalDocument = {
   ClinicalDocument: {
     _namespaceAttribute: string;
-    realmCode?: CDACodeCE;
-    typeId?: CDAInstanceIdentifier;
-    templateId?: CDAInstanceIdentifier[];
-    id: CDAInstanceIdentifier;
-    code: CDACodeCE;
+    realmCode?: CdaCodeCe;
+    typeId?: CdaInstanceIdentifier;
+    templateId?: CdaInstanceIdentifier[];
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCe;
     title?: string;
     effectiveTime: Entry;
-    confidentialityCode: CDACodeCE;
-    languageCode?: CDACodeCE;
-    setId?: CDAInstanceIdentifier;
+    confidentialityCode: CdaCodeCe;
+    languageCode?: CdaCodeCe;
+    setId?: CdaInstanceIdentifier;
     versionNumber?: Entry;
-    recordTarget: CDARecordTarget;
-    author: CDAAuthor;
-    custodian: CDACustodian;
+    recordTarget: CdaRecordTarget;
+    author: CdaAuthor;
+    custodian: CdaCustodian;
     component: unknown;
   };
 };
@@ -22,41 +22,41 @@ export type ClinicalDocument = {
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
-export type CDATelecom = {
+export type CdaTelecom = {
   use?: EntryObject;
   value?: EntryObject;
 };
 
-export type CDAPeriod = {
+export type CdaPeriod = {
   low?: Entry;
   high?: Entry;
 };
 
-export type CDAAddress = {
+export type CdaAddress = {
   streetAddressLine?: Entry | undefined;
   city?: string | undefined;
   state?: string | undefined;
   postalCode?: string | undefined;
   country?: string | undefined;
-  useablePeriod?: CDAPeriod | undefined;
+  useablePeriod?: CdaPeriod | undefined;
 };
 
-export type CDAOrganization = {
-  id?: CDAInstanceIdentifier[] | Entry;
+export type CdaOrganization = {
+  id?: CdaInstanceIdentifier[] | Entry;
   name?: Entry | undefined;
-  telecom?: CDATelecom[] | undefined;
-  addr?: CDAAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  addr?: CdaAddress[] | undefined;
 };
 
-export type CDAAssignedAuthor = {
+export type CdaAssignedAuthor = {
   id: Entry;
-  addr?: CDAAddress[] | undefined;
-  telecom?: CDATelecom[] | undefined;
-  representedOrganization?: CDAOrganization | undefined;
+  addr?: CdaAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  representedOrganization?: CdaOrganization | undefined;
 };
 
-export type CDAPatientRole = {
-  name?: CDAName[] | undefined;
+export type CdaPatientRole = {
+  name?: CdaName[] | undefined;
   administrativeGenderCode?: EntryObject;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
@@ -66,54 +66,63 @@ export type CDAPatientRole = {
   };
 };
 
-export type CDAName = {
+export type CdaName = {
   use?: EntryObject;
   given?: Entry;
   family?: string | undefined;
-  validTime: CDAPeriod;
+  validTime: CdaPeriod;
 };
 
-export type CDACodeCE = {
+// Ce (CE) stands for Coded with Equivalents
+export type CdaCodeCe = {
   _codeAttribute?: string;
   _codeSystemAttribute?: string;
   _codeSystemNameAttribute?: string;
   _displayNameAttribute?: string;
 };
 
-export type CDAValueST = {
+// St (ST) stands for Simple Text
+export type CdaValueSt = {
   _xsiTypeAttribute?: string;
   _xmlnsXsiAttribute?: string;
   _inlineTextAttribute?: string;
 };
-export interface CDACodeCV extends CDACodeCE {
+
+// Cv (CV) stands for Coded Value
+export interface CdaCodeCv extends CdaCodeCe {
   originalText?: string | undefined;
-  translation?: CDACodeCE[] | undefined;
+  translation?: CdaCodeCe[] | undefined;
+}
+
+export interface CdaCodeCv extends CdaCodeCe {
+  originalText?: string | undefined;
+  translation?: CdaCodeCe[] | undefined;
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
-export type CDAInstanceIdentifier = {
+export type CdaInstanceIdentifier = {
   _rootAttribute?: string;
   _extensionAttribute?: string;
   _assigningAuthorityNameAttribute?: string;
 };
 
 // TOP Level CDA Section Types
-export type CDAAuthor = {
+export type CdaAuthor = {
   time: Entry;
-  assignedAuthor: CDAAssignedAuthor;
+  assignedAuthor: CdaAssignedAuthor;
 };
 
-export type CDACustodian = {
+export type CdaCustodian = {
   assignedCustodian: {
-    representedCustodianOrganization: CDAOrganization | undefined;
+    representedCustodianOrganization: CdaOrganization | undefined;
   };
 };
 
-export type CDARecordTarget = {
+export type CdaRecordTarget = {
   patientRole: {
-    id?: CDAInstanceIdentifier[] | Entry;
-    addr?: CDAAddress[] | undefined;
-    telecom?: CDATelecom[] | undefined;
-    patient: CDAPatientRole;
+    id?: CdaInstanceIdentifier[] | Entry;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    patient: CdaPatientRole;
   };
 };

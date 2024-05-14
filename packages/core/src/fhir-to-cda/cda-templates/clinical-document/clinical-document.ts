@@ -1,12 +1,12 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
-  CDAAuthor,
-  CDACustodian,
-  CDARecordTarget,
+  CdaAuthor,
+  CdaCustodian,
+  CdaRecordTarget,
   ClinicalDocument,
 } from "../../cda-types/shared-types";
 import {
-  buildCodeCE,
+  buildCodeCe,
   buildInstanceIdentifier,
   withNullFlavor,
   withoutNullFlavorObject,
@@ -33,16 +33,16 @@ export function removeEmptyFields(obj: any): unknown {
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
-export function buildClinicalDocumentXML(
-  recordTarget: CDARecordTarget,
-  author: CDAAuthor,
-  custodian: CDACustodian,
+export function buildClinicalDocumentXml(
+  recordTarget: CdaRecordTarget,
+  author: CdaAuthor,
+  custodian: CdaCustodian,
   structuredBody: unknown
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
       _namespaceAttribute: "urn:hl7-org:v3",
-      realmCode: buildCodeCE({ code: clinicalDocumentConstants.realmCode }),
+      realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
         root: clinicalDocumentConstants.typeIdRoot,
@@ -57,7 +57,7 @@ export function buildClinicalDocumentXML(
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
         root: clinicalDocumentConstants.idRoot,
       }),
-      code: buildCodeCE({
+      code: buildCodeCe({
         code: clinicalDocumentConstants.code.code,
         codeSystem: clinicalDocumentConstants.code.codeSystem,
         codeSystemName: clinicalDocumentConstants.code.codeSystemName,
@@ -65,12 +65,12 @@ export function buildClinicalDocumentXML(
       }),
       title: clinicalDocumentConstants.title,
       effectiveTime: withNullFlavor(clinicalDocumentConstants.effectiveTime, _valueAttribute),
-      confidentialityCode: buildCodeCE({
+      confidentialityCode: buildCodeCe({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
         displayName: clinicalDocumentConstants.confidentialityCode.displayName,
       }),
-      languageCode: buildCodeCE({
+      languageCode: buildCodeCe({
         code: clinicalDocumentConstants.languageCode,
       }),
       setId: buildInstanceIdentifier({

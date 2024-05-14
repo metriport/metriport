@@ -18,7 +18,7 @@ import { Bundle } from "@medplum/fhirtypes";
  *
  */
 
-const fhirBaseUrl = "http://localhost:8888";
+const fhirBaseUrl = "http://localhost:8777";
 const baseInputFolder = "./src/cda-converter/scratch/";
 
 async function main() {
@@ -34,7 +34,7 @@ async function main() {
     }
 
     files.forEach(file => {
-      if (!file.endsWith(".json")) {
+      if (!file.endsWith("12345.json")) {
         return;
       }
       const filePath = path.join(baseInputFolder, file);

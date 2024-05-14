@@ -5,10 +5,10 @@ import {
   buildRepresentedOrganization,
   buildTelecom,
 } from "../commons";
-import { CDAAuthor } from "../../cda-types/shared-types";
+import { CdaAuthor } from "../../cda-types/shared-types";
 import { _rootAttribute, _valueAttribute } from "../constants";
 
-export function buildAuthor(organization: Organization): CDAAuthor {
+export function buildAuthor(organization: Organization): CdaAuthor {
   const author = {
     time: withNullFlavor(undefined, _valueAttribute),
     assignedAuthor: {

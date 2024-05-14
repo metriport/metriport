@@ -23,7 +23,7 @@ export async function createAndUploadDocumentMetadataFile({
   cxId: string;
   patientId: string;
   docId: string;
-  size: string;
+  size: number;
   docRef?: DocumentReference;
   organization?: Organization;
   metadataFileName: string;
@@ -37,12 +37,10 @@ export async function createAndUploadDocumentMetadataFile({
   const classCode = docRef?.type;
   const practiceSettingCode = docRef?.context?.practiceSetting;
   const healthcareFacilityTypeCode = docRef?.context?.facilityType;
-  const organizationFromDocRef: Organization | undefined = docRef?.contained?.find(
-    (resource): resource is Organization => isOrganization(resource)
-  );
+  const organizationFromDocRef = docRef?.contained?.find(isOrganization);
   const extrinsicObjectXml = createExtrinsicObjectXml({
     createdTime,
-    size,
+    size: size.toString(),
     patientId: uniquePatientId,
     organization: organization ?? organizationFromDocRef,
     classCode,

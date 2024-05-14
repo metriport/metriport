@@ -79,7 +79,6 @@ export async function documentUploaderHandler(
 
   try {
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
-    const stringSize = size ? size.toString() : "";
     if (!contentType) {
       const message = "Failed to get the mime type of the uploaded file";
       log(`${message}: ${contentType}`);
@@ -94,7 +93,7 @@ export async function documentUploaderHandler(
         cxId,
         patientId,
         docId: destinationKey,
-        size: stringSize,
+        size,
         docRef,
         metadataFileName,
         destinationBucket,

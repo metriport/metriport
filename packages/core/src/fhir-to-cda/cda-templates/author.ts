@@ -1,14 +1,14 @@
 import { Organization } from "@medplum/fhirtypes";
+import { CdaAuthor } from "../cda-types/shared-types";
 import {
   buildAddress,
   buildRepresentedOrganization,
   buildTelecom,
   withNullFlavor,
 } from "./commons";
-import { CDAAuthor } from "../cda-types/shared-types";
 import { _rootAttribute, _valueAttribute } from "./constants";
 
-export function buildAuthor(organization: Organization): CDAAuthor {
+export function buildAuthor(organization: Organization): CdaAuthor {
   const author = {
     time: withNullFlavor(undefined, _valueAttribute),
     assignedAuthor: {

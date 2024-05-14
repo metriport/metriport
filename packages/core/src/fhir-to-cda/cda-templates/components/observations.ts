@@ -2,7 +2,7 @@ import { Observation } from "@medplum/fhirtypes";
 import { CDAObservation } from "../../cda-types/observation";
 import {
   TIMESTAMP_CLEANUP_REGEX,
-  buildCodeCVFromCodeableConcept,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildInstanceIdentifiersFromIdentifier,
   buildValueST,
@@ -23,7 +23,7 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
             extension: "2015-08-01",
           }),
           id: buildInstanceIdentifiersFromIdentifier(observation.identifier),
-          code: buildCodeCVFromCodeableConcept(observation.code),
+          code: buildCodeCvFromCodeableConcept(observation.code),
           statusCode: withoutNullFlavorObject(observation.status, _codeAttribute),
           effectiveTime: {
             low: withoutNullFlavorObject(effectiveTime, _valueAttribute),
