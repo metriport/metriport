@@ -13,7 +13,10 @@ var errorMessage = require("../error/error").errorMessage;
 var HandlebarsConverter = require("../handlebars-converter/handlebars-converter");
 var WorkerUtils = require("./workerUtils");
 var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
-var { extractEncounterTimePeriod } = require("../inputProcessor/dateProcessor");
+var {
+  extractEncounterTimePeriod,
+  getEncompassingEncounterId,
+} = require("../inputProcessor/dateProcessor");
 var { v4: uuidv4 } = require("uuid");
 
 const { createNamespace } = require("cls-hooked");
@@ -190,7 +193,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
-            let encompassingEncounterId = uuidv4();
+            let encompassingEncounterId = getEncompassingEncounterId(srcData);
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
             session.set(
               constants.CLS_KEY_TEMPLATE_LOCATION,
