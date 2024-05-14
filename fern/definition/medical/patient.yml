@@ -142,7 +142,7 @@ service:
     match:
       display-name: Match Patient
       docs: |
-        Searches for a Patient previously created in Metriport based on demographic information.
+        Searches for a Patient previously created in Metriport, based on demographic data.
       method: POST
       path: "/match"
       request:
