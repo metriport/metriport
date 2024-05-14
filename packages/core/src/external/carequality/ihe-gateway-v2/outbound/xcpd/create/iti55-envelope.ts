@@ -198,7 +198,7 @@ function createSoapBodyWithoutUrn({
   return soapBody;
 }
 
-function soapBodyWithUrn({
+function createSoapBodyWithUrn({
   messageId,
   homeCommunityId,
   createdTimestamp,
@@ -398,9 +398,9 @@ function createSoapBody({
   const patientAddress = bodyData.patientResource.address?.[0];
   const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
 
-  if (gateway.url !== specialNamespaceRequiredUrl) {
+  if (gateway.url === specialNamespaceRequiredUrl) {
     const soapBody = {
-      "soap:Body": soapBodyWithUrn({
+      "soap:Body": createSoapBodyWithoutUrn({
         messageId,
         homeCommunityId,
         createdTimestamp,
@@ -418,7 +418,7 @@ function createSoapBody({
     return soapBody;
   } else {
     const soapBody = {
-      "soap:Body": createSoapBodyWithoutUrn({
+      "soap:Body": createSoapBodyWithUrn({
         messageId,
         homeCommunityId,
         createdTimestamp,
