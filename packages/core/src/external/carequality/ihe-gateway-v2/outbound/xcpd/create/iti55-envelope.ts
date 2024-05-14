@@ -12,6 +12,7 @@ import {
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import { Address } from "@medplum/fhirtypes";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
@@ -23,6 +24,356 @@ export type BulkSignedXCPD = {
   signedRequest: string;
   outboundRequest: OutboundPatientDiscoveryReq;
 };
+
+function createSoapBodyWithoutUrn({
+  messageId,
+  homeCommunityId,
+  createdTimestamp,
+  receiverDeviceId,
+  toUrl,
+  patientGender,
+  patientBirthtime,
+  patientFamilyName,
+  patientGivenName,
+  patientAddress,
+  patientTelecom,
+  providerId,
+}: {
+  messageId: string;
+  homeCommunityId: string;
+  createdTimestamp: string;
+  receiverDeviceId: string;
+  toUrl: string;
+  patientGender: string;
+  patientBirthtime: string;
+  patientFamilyName: string;
+  patientGivenName: string;
+  patientAddress: Address | undefined;
+  patientTelecom: string | undefined;
+  providerId: string | undefined;
+}): object {
+  const soapBody = {
+    "@_xmlns:urn": namespaces.hl7,
+    "urn:PRPA_IN201305UV02": {
+      "@_ITSVersion": "XML_1.0",
+      id: {
+        "@_extension": messageId,
+        "@_root": homeCommunityId,
+      },
+      creationTime: {
+        "@_value": timestampToSoapBody(createdTimestamp),
+      },
+      interactionId: {
+        "@_extension": "PRPA_IN201305UV02",
+        "@_root": "2.16.840.1.113883.1.6",
+      },
+      processingCode: {
+        "@_code": "P",
+      },
+      processingModeCode: {
+        "@_code": "T",
+      },
+      acceptAckCode: {
+        "@_code": "AL",
+      },
+      receiver: {
+        "@_typeCode": "RCV",
+        device: {
+          "@_classCode": "DEV",
+          "@_determinerCode": "INSTANCE",
+          id: {
+            "@_root": receiverDeviceId,
+          },
+          telecom: {
+            "@_value": toUrl,
+          },
+          asAgent: {
+            "@_classCode": "AGNT",
+            representedOrganization: {
+              "@_classCode": "ORG",
+              "@_determinerCode": "INSTANCE",
+              id: {
+                "@_root": receiverDeviceId,
+              },
+            },
+          },
+        },
+      },
+      sender: {
+        "@_typeCode": "SND",
+        device: {
+          "@_classCode": "DEV",
+          "@_determinerCode": "INSTANCE",
+          id: {
+            "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+          },
+          asAgent: {
+            "@_classCode": "AGNT",
+            representedOrganization: {
+              "@_classCode": "ORG",
+              "@_determinerCode": "INSTANCE",
+              id: {
+                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+              },
+              name: metriportOrganization,
+            },
+          },
+        },
+      },
+      controlActProcess: {
+        "@_classCode": "CACT",
+        "@_moodCode": "EVN",
+        code: {
+          "@_code": "PRPA_TE201305UV02",
+          "@_codeSystem": "2.16.840.1.113883.1.6",
+        },
+        queryByParameter: {
+          queryId: {
+            "@_extension": messageId,
+            "@_root": homeCommunityId,
+          },
+          statusCode: {
+            "@_code": "new",
+          },
+          responseModalityCode: {
+            "@_code": "R",
+          },
+          responsePriorityCode: {
+            "@_code": "I",
+          },
+          parameterList: {
+            livingSubjectAdministrativeGender: {
+              value: {
+                "@_code": patientGender,
+                "@_codeSystem": "2.16.840.1.113883.5.1",
+              },
+              semanticsText: "LivingSubject.administrativeGender",
+            },
+            livingSubjectBirthTime: {
+              value: {
+                "@_value": patientBirthtime,
+              },
+              semanticsText: "LivingSubject.birthTime",
+            },
+            livingSubjectName: {
+              value: {
+                family: patientFamilyName,
+                given: patientGivenName,
+              },
+              semanticsText: "LivingSubject.name",
+            },
+            patientAddress: patientAddress
+              ? {
+                  value: {
+                    streetAddressLine: patientAddress.line?.join(", "),
+                    city: patientAddress?.city,
+                    state: patientAddress?.state,
+                    postalCode: patientAddress?.postalCode,
+                    country: patientAddress?.country,
+                  },
+                  semanticsText: "Patient.addr",
+                }
+              : {},
+            patientTelecom: patientTelecom
+              ? {
+                  value: {
+                    "@_use": "HP",
+                    "@_value": patientTelecom,
+                  },
+                  semanticsText: "Patient.telecom",
+                }
+              : {},
+            principalCareProviderId: {
+              value: {
+                "@_extension": providerId,
+                "@_root": "2.16.840.1.113883.4.6",
+              },
+              semanticsText: "AssignedProvider.id",
+            },
+          },
+        },
+      },
+    },
+  };
+  return soapBody;
+}
+
+function soapBodyWithUrn({
+  messageId,
+  homeCommunityId,
+  createdTimestamp,
+  receiverDeviceId,
+  toUrl,
+  patientGender,
+  patientBirthtime,
+  patientFamilyName,
+  patientGivenName,
+  patientAddress,
+  patientTelecom,
+  providerId,
+}: {
+  messageId: string;
+  homeCommunityId: string;
+  createdTimestamp: string;
+  receiverDeviceId: string;
+  toUrl: string;
+  patientGender: string;
+  patientBirthtime: string;
+  patientFamilyName: string;
+  patientGivenName: string;
+  patientAddress: Address | undefined;
+  patientTelecom: string | undefined;
+  providerId: string | undefined;
+}): object {
+  const soapBody = {
+    "@_xmlns:urn": namespaces.hl7,
+    "urn:PRPA_IN201305UV02": {
+      "@_ITSVersion": "XML_1.0",
+      "urn:id": {
+        "@_extension": messageId,
+        "@_root": homeCommunityId,
+      },
+      "urn:creationTime": {
+        "@_value": timestampToSoapBody(createdTimestamp),
+      },
+      "urn:interactionId": {
+        "@_extension": "PRPA_IN201305UV02",
+        "@_root": "2.16.840.1.113883.1.6",
+      },
+      "urn:processingCode": {
+        "@_code": "P",
+      },
+      "urn:processingModeCode": {
+        "@_code": "T",
+      },
+      "urn:acceptAckCode": {
+        "@_code": "AL",
+      },
+      "urn:receiver": {
+        "@_typeCode": "RCV",
+        "urn:device": {
+          "@_classCode": "DEV",
+          "@_determinerCode": "INSTANCE",
+          "urn:id": {
+            "@_root": receiverDeviceId,
+          },
+          "urn:telecom": {
+            "@_value": toUrl,
+          },
+          "urn:asAgent": {
+            "@_classCode": "AGNT",
+            "urn:representedOrganization": {
+              "@_classCode": "ORG",
+              "@_determinerCode": "INSTANCE",
+              "urn:id": {
+                "@_root": receiverDeviceId,
+              },
+            },
+          },
+        },
+      },
+      "urn:sender": {
+        "@_typeCode": "SND",
+        "urn:device": {
+          "@_classCode": "DEV",
+          "@_determinerCode": "INSTANCE",
+          "urn:id": {
+            "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+          },
+          "urn:asAgent": {
+            "@_classCode": "AGNT",
+            "urn:representedOrganization": {
+              "@_classCode": "ORG",
+              "@_determinerCode": "INSTANCE",
+              "urn:id": {
+                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
+              },
+              "urn:name": metriportOrganization,
+            },
+          },
+        },
+      },
+      "urn:controlActProcess": {
+        "@_classCode": "CACT",
+        "@_moodCode": "EVN",
+        "urn:code": {
+          "@_code": "PRPA_TE201305UV02",
+          "@_codeSystem": "2.16.840.1.113883.1.6",
+        },
+        "urn:queryByParameter": {
+          "urn:queryId": {
+            "@_extension": messageId,
+            "@_root": homeCommunityId,
+          },
+          "urn:statusCode": {
+            "@_code": "new",
+          },
+          "urn:responseModalityCode": {
+            "@_code": "R",
+          },
+          "urn:responsePriorityCode": {
+            "@_code": "I",
+          },
+          "urn:parameterList": {
+            "urn:livingSubjectAdministrativeGender": {
+              "urn:value": {
+                "@_code": patientGender,
+                "@_codeSystem": "2.16.840.1.113883.5.1",
+              },
+              "urn:semanticsText": "LivingSubject.administrativeGender",
+            },
+            "urn:livingSubjectBirthTime": {
+              "urn:value": {
+                "@_value": patientBirthtime,
+              },
+              "urn:semanticsText": "LivingSubject.birthTime",
+            },
+            "urn:livingSubjectName": {
+              "urn:value": {
+                "urn:family": patientFamilyName,
+                "urn:given": patientGivenName,
+              },
+              "urn:semanticsText": "LivingSubject.name",
+            },
+            "urn:patientAddress": patientAddress
+              ? {
+                  "urn:value": {
+                    "urn:streetAddressLine": patientAddress.line?.join(", "),
+                    "urn:city": patientAddress?.city,
+                    "urn:state": patientAddress?.state,
+                    "urn:postalCode": patientAddress?.postalCode,
+                    "urn:country": patientAddress?.country,
+                  },
+                  "urn:semanticsText": "Patient.addr",
+                }
+              : {},
+            "urn:patientTelecom": patientTelecom
+              ? {
+                  "urn:value": {
+                    "@_use": "HP",
+                    "@_value": patientTelecom,
+                  },
+                  "urn:semanticsText": "Patient.telecom",
+                }
+              : {},
+            ...(providerId
+              ? {
+                  "urn:principalCareProviderId": {
+                    "urn:value": {
+                      "@_extension": providerId,
+                      "@_root": "2.16.840.1.113883.4.6",
+                    },
+                    "urn:semanticsText": "AssignedProvider.id",
+                  },
+                }
+              : {}),
+          },
+        },
+      },
+    },
+  };
+  return soapBody;
+}
 
 function createSoapBody({
   bodyData,
@@ -49,296 +400,38 @@ function createSoapBody({
 
   if (gateway.url !== specialNamespaceRequiredUrl) {
     const soapBody = {
-      "soap:Body": {
-        "@_xmlns:urn": namespaces.hl7,
-        "urn:PRPA_IN201305UV02": {
-          "@_ITSVersion": "XML_1.0",
-          "urn:id": {
-            "@_extension": messageId,
-            "@_root": homeCommunityId,
-          },
-          "urn:creationTime": {
-            "@_value": timestampToSoapBody(createdTimestamp),
-          },
-          "urn:interactionId": {
-            "@_extension": "PRPA_IN201305UV02",
-            "@_root": "2.16.840.1.113883.1.6",
-          },
-          "urn:processingCode": {
-            "@_code": "P",
-          },
-          "urn:processingModeCode": {
-            "@_code": "T",
-          },
-          "urn:acceptAckCode": {
-            "@_code": "AL",
-          },
-          "urn:receiver": {
-            "@_typeCode": "RCV",
-            "urn:device": {
-              "@_classCode": "DEV",
-              "@_determinerCode": "INSTANCE",
-              "urn:id": {
-                "@_root": receiverDeviceId,
-              },
-              "urn:telecom": {
-                "@_value": toUrl,
-              },
-              "urn:asAgent": {
-                "@_classCode": "AGNT",
-                "urn:representedOrganization": {
-                  "@_classCode": "ORG",
-                  "@_determinerCode": "INSTANCE",
-                  "urn:id": {
-                    "@_root": receiverDeviceId,
-                  },
-                },
-              },
-            },
-          },
-          "urn:sender": {
-            "@_typeCode": "SND",
-            "urn:device": {
-              "@_classCode": "DEV",
-              "@_determinerCode": "INSTANCE",
-              "urn:id": {
-                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-              },
-              "urn:asAgent": {
-                "@_classCode": "AGNT",
-                "urn:representedOrganization": {
-                  "@_classCode": "ORG",
-                  "@_determinerCode": "INSTANCE",
-                  "urn:id": {
-                    "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-                  },
-                  "urn:name": metriportOrganization,
-                },
-              },
-            },
-          },
-          "urn:controlActProcess": {
-            "@_classCode": "CACT",
-            "@_moodCode": "EVN",
-            "urn:code": {
-              "@_code": "PRPA_TE201305UV02",
-              "@_codeSystem": "2.16.840.1.113883.1.6",
-            },
-            "urn:queryByParameter": {
-              "urn:queryId": {
-                "@_extension": messageId,
-                "@_root": homeCommunityId,
-              },
-              "urn:statusCode": {
-                "@_code": "new",
-              },
-              "urn:responseModalityCode": {
-                "@_code": "R",
-              },
-              "urn:responsePriorityCode": {
-                "@_code": "I",
-              },
-              "urn:parameterList": {
-                "urn:livingSubjectAdministrativeGender": {
-                  "urn:value": {
-                    "@_code": patientGender,
-                    "@_codeSystem": "2.16.840.1.113883.5.1",
-                  },
-                  "urn:semanticsText": "LivingSubject.administrativeGender",
-                },
-                "urn:livingSubjectBirthTime": {
-                  "urn:value": {
-                    "@_value": patientBirthtime,
-                  },
-                  "urn:semanticsText": "LivingSubject.birthTime",
-                },
-                "urn:livingSubjectName": {
-                  "urn:value": {
-                    "urn:family": patientFamilyName,
-                    "urn:given": patientGivenName,
-                  },
-                  "urn:semanticsText": "LivingSubject.name",
-                },
-                "urn:patientAddress": patientAddress
-                  ? {
-                      "urn:value": {
-                        "urn:streetAddressLine": patientAddress.line.join(", "),
-                        "urn:city": patientAddress?.city,
-                        "urn:state": patientAddress?.state,
-                        "urn:postalCode": patientAddress?.postalCode,
-                        "urn:country": patientAddress?.country,
-                      },
-                      "urn:semanticsText": "Patient.addr",
-                    }
-                  : {},
-                "urn:patientTelecom": patientTelecom
-                  ? {
-                      "urn:value": {
-                        "@_use": "HP",
-                        "@_value": patientTelecom,
-                      },
-                      "urn:semanticsText": "Patient.telecom",
-                    }
-                  : {},
-                "urn:principalCareProviderId": {
-                  "urn:value": {
-                    "@_extension": providerId,
-                    "@_root": "2.16.840.1.113883.4.6",
-                  },
-                  "urn:semanticsText": "AssignedProvider.id",
-                },
-              },
-            },
-          },
-        },
-      },
+      "soap:Body": soapBodyWithUrn({
+        messageId,
+        homeCommunityId,
+        createdTimestamp,
+        receiverDeviceId,
+        toUrl,
+        providerId,
+        patientGender,
+        patientBirthtime,
+        patientFamilyName,
+        patientGivenName,
+        patientAddress,
+        patientTelecom,
+      }),
     };
     return soapBody;
   } else {
     const soapBody = {
-      "soap:Body": {
-        "@_xmlns:urn": namespaces.hl7,
-        "urn:PRPA_IN201305UV02": {
-          "@_ITSVersion": "XML_1.0",
-          id: {
-            "@_extension": messageId,
-            "@_root": homeCommunityId,
-          },
-          creationTime: {
-            "@_value": timestampToSoapBody(createdTimestamp),
-          },
-          interactionId: {
-            "@_extension": "PRPA_IN201305UV02",
-            "@_root": "2.16.840.1.113883.1.6",
-          },
-          processingCode: {
-            "@_code": "P",
-          },
-          processingModeCode: {
-            "@_code": "T",
-          },
-          acceptAckCode: {
-            "@_code": "AL",
-          },
-          receiver: {
-            "@_typeCode": "RCV",
-            device: {
-              "@_classCode": "DEV",
-              "@_determinerCode": "INSTANCE",
-              id: {
-                "@_root": receiverDeviceId,
-              },
-              telecom: {
-                "@_value": toUrl,
-              },
-              asAgent: {
-                "@_classCode": "AGNT",
-                representedOrganization: {
-                  "@_classCode": "ORG",
-                  "@_determinerCode": "INSTANCE",
-                  id: {
-                    "@_root": receiverDeviceId,
-                  },
-                },
-              },
-            },
-          },
-          sender: {
-            "@_typeCode": "SND",
-            device: {
-              "@_classCode": "DEV",
-              "@_determinerCode": "INSTANCE",
-              id: {
-                "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-              },
-              asAgent: {
-                "@_classCode": "AGNT",
-                representedOrganization: {
-                  "@_classCode": "ORG",
-                  "@_determinerCode": "INSTANCE",
-                  id: {
-                    "@_root": METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX,
-                  },
-                  name: metriportOrganization,
-                },
-              },
-            },
-          },
-          controlActProcess: {
-            "@_classCode": "CACT",
-            "@_moodCode": "EVN",
-            code: {
-              "@_code": "PRPA_TE201305UV02",
-              "@_codeSystem": "2.16.840.1.113883.1.6",
-            },
-            queryByParameter: {
-              queryId: {
-                "@_extension": messageId,
-                "@_root": homeCommunityId,
-              },
-              statusCode: {
-                "@_code": "new",
-              },
-              responseModalityCode: {
-                "@_code": "R",
-              },
-              responsePriorityCode: {
-                "@_code": "I",
-              },
-              parameterList: {
-                livingSubjectAdministrativeGender: {
-                  value: {
-                    "@_code": patientGender,
-                    "@_codeSystem": "2.16.840.1.113883.5.1",
-                  },
-                  semanticsText: "LivingSubject.administrativeGender",
-                },
-                livingSubjectBirthTime: {
-                  value: {
-                    "@_value": patientBirthtime,
-                  },
-                  semanticsText: "LivingSubject.birthTime",
-                },
-                livingSubjectName: {
-                  value: {
-                    family: patientFamilyName,
-                    given: patientGivenName,
-                  },
-                  semanticsText: "LivingSubject.name",
-                },
-                patientAddress: patientAddress
-                  ? {
-                      value: {
-                        streetAddressLine: patientAddress.line.join(", "),
-                        city: patientAddress?.city,
-                        state: patientAddress?.state,
-                        postalCode: patientAddress?.postalCode,
-                        country: patientAddress?.country,
-                      },
-                      semanticsText: "Patient.addr",
-                    }
-                  : {},
-                patientTelecom: patientTelecom
-                  ? {
-                      value: {
-                        "@_use": "HP",
-                        "@_value": patientTelecom,
-                      },
-                      semanticsText: "Patient.telecom",
-                    }
-                  : {},
-                principalCareProviderId: {
-                  value: {
-                    "@_extension": providerId,
-                    "@_root": "2.16.840.1.113883.4.6",
-                  },
-                  semanticsText: "AssignedProvider.id",
-                },
-              },
-            },
-          },
-        },
-      },
+      "soap:Body": createSoapBodyWithoutUrn({
+        messageId,
+        homeCommunityId,
+        createdTimestamp,
+        receiverDeviceId,
+        toUrl,
+        patientGender,
+        patientBirthtime,
+        patientFamilyName,
+        patientGivenName,
+        patientAddress,
+        patientTelecom,
+        providerId,
+      }),
     };
     return soapBody;
   }
