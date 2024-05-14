@@ -120,33 +120,37 @@ async function handleSuccessResponse({
   gateway: XCAGateway;
   s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
-  const idMapping = generateIdMapping(outboundRequest.documentReference);
+  try {
+    const idMapping = generateIdMapping(outboundRequest.documentReference);
 
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const documentReferences = Array.isArray(documentResponses)
-    ? await Promise.all(
-        documentResponses.map(async (documentResponse: DocumentResponse) =>
-          parseDocumentReference({ documentResponse, outboundRequest, s3Utils, idMapping })
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const documentReferences = Array.isArray(documentResponses)
+      ? await Promise.all(
+          documentResponses.map(async (documentResponse: DocumentResponse) =>
+            parseDocumentReference({ documentResponse, outboundRequest, s3Utils, idMapping })
+          )
         )
-      )
-    : [
-        await parseDocumentReference({
-          documentResponse: documentResponses,
-          outboundRequest,
-          s3Utils,
-          idMapping,
-        }),
-      ];
+      : [
+          await parseDocumentReference({
+            documentResponse: documentResponses,
+            outboundRequest,
+            s3Utils,
+            idMapping,
+          }),
+        ];
 
-  const response: OutboundDocumentRetrievalResp = {
-    id: outboundRequest.id,
-    patientId: outboundRequest.patientId,
-    timestamp: outboundRequest.timestamp,
-    responseTimestamp: dayjs().toISOString(),
-    gateway,
-    documentReference: documentReferences,
-  };
-  return response;
+    const response: OutboundDocumentRetrievalResp = {
+      id: outboundRequest.id,
+      patientId: outboundRequest.patientId,
+      timestamp: outboundRequest.timestamp,
+      responseTimestamp: dayjs().toISOString(),
+      gateway,
+      documentReference: documentReferences,
+    };
+    return response;
+  } catch (error) {
+    throw new MetriportError(`Error Processing Success Response`, error);
+  }
 }
 
 export async function processDRResponseSOAP({
@@ -182,7 +186,7 @@ export async function processDRResponseSOAP({
   const soapFault = jsonObj?.Envelope?.Body?.Fault;
 
   if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
-    return handleSuccessResponse({
+    return await handleSuccessResponse({
       documentResponses,
       outboundRequest,
       gateway,
@@ -227,14 +231,13 @@ export async function processDRResponseMTOM({
   }
   try {
     const documentResponses = parseMTOMResponse(response, contentType);
-    return handleSuccessResponse({
+    return await handleSuccessResponse({
       documentResponses,
       outboundRequest,
       gateway,
       s3Utils,
     });
   } catch (error) {
-    console.log("Error parsing MTOM response", error);
     capture.error("Error parsing MTOM response", {
       extra: {
         error,
@@ -257,8 +260,8 @@ export async function processDRResponse({
   s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (drResponse.contentType?.includes("multipart/related")) {
-    return processDRResponseMTOM({ drResponse, s3Utils });
+    return await processDRResponseMTOM({ drResponse, s3Utils });
   } else {
-    return processDRResponseSOAP({ drResponse, s3Utils });
+    return await processDRResponseSOAP({ drResponse, s3Utils });
   }
 }

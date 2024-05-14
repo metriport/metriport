@@ -158,7 +158,7 @@ export function handleErrorMTOMResponse({
     id: outboundRequest.id,
     issue: [
       {
-        severity: "information",
+        severity: "error",
         code: "mtom-processing-error",
         details: {
           text: "Error processing MTOM response",

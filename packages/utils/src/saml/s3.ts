@@ -14,6 +14,7 @@ export class MockS3Utils extends S3Utils {
     file: Buffer;
     contentType?: string;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
+    console.log(`Mock uploadFile called for ${bucket} and ${key} with content type ${contentType}`);
     return {
       Location: `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`,
       ETag: "mockETag",
@@ -31,7 +32,6 @@ export class MockS3Utils extends S3Utils {
     return { exists: false };
   }
   buildFileUrl(bucket: string, key: string): string {
-    console.log("Mock buildFileUrl called");
     // Return a mock URL
     return `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`;
   }

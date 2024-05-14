@@ -156,6 +156,7 @@ function handleSuccessResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
   };
   return response;
 }

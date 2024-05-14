@@ -130,7 +130,7 @@ export async function createSignSendProcessDRRequests({
   const s3Utils = new S3Utils(region);
   const results = await Promise.all(
     responses.map(async response => {
-      return processDRResponse({
+      return await processDRResponse({
         drResponse: response,
         s3Utils,
       });
