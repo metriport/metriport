@@ -3,9 +3,9 @@ import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { capture } from "../../shared/notifications";
 import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
 import {
   getCertificate,
@@ -76,10 +76,10 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export const create = async (
+export async function create(
   org: Omit<Organization, "type" | "eTag">,
   isObo = false
-): Promise<void> => {
+): Promise<void> {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -118,9 +118,33 @@ export const create = async (
     });
     throw error;
   }
-};
+}
 
-export const update = async (org: Organization): Promise<void> => {
+export async function get(orgOid: string): Promise<CWOrganization | undefined> {
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  const { log, debug } = out(`CW get org oid ${orgOid}`);
+  const cwId = OID_PREFIX.concat(orgOid);
+  try {
+    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
+    debug(`resp: `, JSON.stringify(resp));
+    return resp;
+  } catch (error) {
+    const msg = `Failure getting Org @ CW`;
+    log(msg, error);
+    capture.error(msg, {
+      extra: {
+        orgOid,
+        cwId,
+        cwReference: commonWell.lastReferenceHeader,
+        context: `cw.org.get`,
+        error,
+      },
+    });
+    throw error;
+  }
+}
+
+export async function update(org: Organization): Promise<void> {
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -154,7 +178,7 @@ export const update = async (org: Organization): Promise<void> => {
     capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
     throw error;
   }
-};
+}
 
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
   const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);

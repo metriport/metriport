@@ -1,13 +1,13 @@
 import {
+  ContactPoint,
+  DocumentReference,
   Identifier,
   Patient as FHIRPatient,
-  ContactPoint,
   Reference,
-  DocumentReference,
 } from "@medplum/fhirtypes";
-import { driversLicenseURIs } from "../../../domain/oid";
-import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
+import { Contact, ContactTypes } from "../../../domain/contact";
+import { driversLicenseURIs } from "../../../domain/oid";
 import { GenderAtBirth, Patient, PersonalIdentifier, splitName } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
@@ -15,6 +15,12 @@ export const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   F: "female",
   M: "male",
 };
+
+export function genderToFhir(
+  gender: GenderAtBirth
+): "male" | "female" | "other" | "unknown" | undefined {
+  return genderMapping[gender];
+}
 
 export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
   return {

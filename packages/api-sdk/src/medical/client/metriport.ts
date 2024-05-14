@@ -263,10 +263,13 @@ export class MetriportMedicalApi {
    * Only one query per given patient can be executed at a time.
    *
    * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional array of resources to be returned.
+   * @param resources Optional array of resources to be returned (defaults to all resource types).
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @param conversionType Optional to indicate how the medical record should be rendered.
+   * @param conversionType Optional to indicate how the medical record should be rendered - one of:
+   *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
+   *      will contain a signed URL to download the file, which is active for 3 minutes.
+   *      If not provided, will send json payload in the webhook.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */

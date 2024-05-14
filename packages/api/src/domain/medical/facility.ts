@@ -20,8 +20,6 @@ export type FacilityData = {
 
 export interface FacilityCreate extends BaseDomainCreate {
   cxId: string;
-  oid: string;
-  facilityNumber: number;
   cqOboActive: boolean;
   cwOboActive: boolean;
   cqOboOid: string | null;
@@ -38,7 +36,10 @@ export interface FacilityUpdate {
   cwOboOid?: string;
 }
 
-export interface Facility extends BaseDomain, FacilityCreate {}
+export interface Facility extends BaseDomain, FacilityCreate {
+  facilityNumber: number;
+  oid: string;
+}
 
 export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
   return `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}.${

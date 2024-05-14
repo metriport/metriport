@@ -116,6 +116,7 @@ export default class OpenSearchConstruct extends Construct {
         slowIndexLogEnabled: true,
         appLogEnabled: true,
       },
+      enableAutoSoftwareUpdate: true,
     });
 
     this.createAlarms(id, props.alarmThresholds);

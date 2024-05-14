@@ -1,7 +1,7 @@
-import { DocumentReference } from "@medplum/fhirtypes";
+import { DocumentReference, Extension } from "@medplum/fhirtypes";
 import { v4 as uuidv4 } from "uuid";
-import { makeBinary } from "./binary";
-import { makePatient } from "./patient";
+import { makeBinary } from "../../__tests__/binary";
+import { makePatient } from "../../__tests__/patient";
 
 // TODO make this dynamic
 export const makeDocumentReference = ({
@@ -9,11 +9,13 @@ export const makeDocumentReference = ({
   patient,
   binary,
   baseURL,
+  extension,
 }: {
   id?: string;
   patient?: ReturnType<typeof makePatient>;
   binary?: ReturnType<typeof makeBinary>;
   baseURL?: string;
+  extension?: Extension[];
 } = {}): DocumentReference => {
   const _patient = patient ?? makePatient();
   const _binary = binary ?? makeBinary();
@@ -59,6 +61,7 @@ export const makeDocumentReference = ({
       },
     ],
     description: "Summarization Of Episode Notes - provided by Metriport",
+    ...(extension ? { extension } : {}),
     content: [
       {
         attachment: {
