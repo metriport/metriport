@@ -10,8 +10,8 @@ import {
   createOrUpdateCQOrganization,
   getCqOrganization,
 } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
+import { createOrUpdateCWOrganization } from "../commonwell/create-or-update-cw-organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
-import cwCommands from "../../external/commonwell";
 import { AddressWithCoordinates, CqOboDetails } from "../../domain/medical/facility";
 import { getOrganizationOrFail } from "../../command/medical/organization/get-organization";
 import { FacilityRegister, FacilityCreate, Facility } from "../../domain/medical/facility";
@@ -73,7 +73,7 @@ export async function registerFacilityWithinHIEs(
   if (cwOboEnabled || !isObo) {
     const cwFacilityName = facility.cwFacilityName ?? cmdFacility.data.name;
     const cwOrgName = buildCwOrgName(cxOrg.name, cwFacilityName, facility.cwOboOid);
-    await createInCw(cmdFacility, cwOrgName, cxOrg.type, cxId);
+    await createOrUpdateInCw(cmdFacility, cwOrgName, cxOrg.type, cxId, isObo);
   }
 
   return cmdFacility;
@@ -250,10 +250,17 @@ async function createOrUpdateInCq(
 }
 
 // WHY DO WE ONLY CREATE BUT WE CREATE OR UPDATE IN CQ?
-async function createInCw(facility: Facility, orgName: string, cxOrgType: OrgType, cxId: string) {
-  const { log } = out("createInCw");
+async function createOrUpdateInCw(
+  facility: Facility,
+  orgName: string,
+  cxOrgType: OrgType,
+  cxId: string,
+  isObo: boolean
+) {
+  const { log } = out("createOrUpdateInCw");
   log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${orgName}`);
-  await cwCommands.organization.create(
+
+  await createOrUpdateCWOrganization(
     {
       cxId,
       id: facility.id,
@@ -267,6 +274,6 @@ async function createInCw(facility: Facility, orgName: string, cxOrgType: OrgTyp
       createdAt: new Date(),
       updatedAt: new Date(),
     },
-    true
+    isObo
   );
 }

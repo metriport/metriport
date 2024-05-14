@@ -76,6 +76,29 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
+export const get = async (oid: string): Promise<CWOrganization | undefined> => {
+  const { log, debug } = out(`CW get - oid ${oid}`);
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  try {
+    const cwId = OID_PREFIX.concat(oid);
+    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
+    debug(`resp: `, JSON.stringify(resp));
+    return resp;
+  } catch (error) {
+    const msg = `Failure getting Org @ CW`;
+    log(msg, error);
+    capture.message(msg, {
+      extra: {
+        orgOID: oid,
+        cwReference: commonWell.lastReferenceHeader,
+        context: `cw.org.get`,
+      },
+      level: "error",
+    });
+    throw error;
+  }
+};
+
 export const create = async (
   org: Omit<Organization, "type" | "eTag">,
   isObo = false
@@ -120,7 +143,10 @@ export const create = async (
   }
 };
 
-export const update = async (org: Organization): Promise<void> => {
+export const update = async (
+  org: Omit<Organization, "type" | "eTag">,
+  isObo = false
+): Promise<void> => {
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -128,7 +154,7 @@ export const update = async (org: Organization): Promise<void> => {
     return undefined;
   }
 
-  const cwOrg = await organizationToCommonwell(org);
+  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);

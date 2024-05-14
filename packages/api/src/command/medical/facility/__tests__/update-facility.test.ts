@@ -3,7 +3,7 @@ import { Facility, FacilityType } from "../../../../domain/medical/facility";
 import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import * as createFacility from "../create-facility";
 import { validateUpdate } from "../update-facility";
-import { makeFacilityUpdateCmd } from "./update-facility.test";
+import { makeFacilityUpdateCmd } from "./update-facility";
 
 function makeValidUpdateCmd(params: Partial<Facility> = {}) {
   return makeFacilityUpdateCmd({
