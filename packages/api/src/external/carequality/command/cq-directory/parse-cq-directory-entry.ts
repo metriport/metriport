@@ -3,13 +3,20 @@ import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
+import { normalizeZipCode } from "@metriport/core/mpi/normalize-patient";
 import { capture } from "@metriport/core/util/notifications";
 import { normalizeOid } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 
-const EARTH_RADIUS = 6378168;
+type LenientAddress = {
+  addressLine?: string | undefined;
+  city?: string | undefined;
+  state?: string | undefined;
+  zip?: string | undefined;
+};
 
+const EARTH_RADIUS = 6378168;
 const XCPD_STRING = "ITI-55";
 const XCA_DQ_STRING = "ITI-38";
 const XCA_DR_STRING = "ITI-39";
@@ -29,7 +36,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
     const managingOrganization = org.managingOrg ? getManagingOrg(org.managingOrg) : undefined;
     const managingOrganizationId = getManagingOrgId(org);
-    const state = getState(org.address);
+    const { addressLine, city, state, zip } = getAddressFields(org.address);
     const active = org.active?.value ?? false;
 
     const orgData: CQDirectoryEntryData = {
@@ -41,7 +48,10 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       lat,
       lon,
       point,
+      addressLine,
+      city,
       state,
+      zip,
       data: org,
       managingOrganization,
       managingOrganizationId,
@@ -127,10 +137,23 @@ function getCoordinates(address: Address[]): Coordinates | undefined {
   return { lat, lon };
 }
 
-function getState(addresses: Address[] | undefined): string | undefined {
-  if (!addresses) return;
-  if (addresses.length > 0 && addresses[0]?.state) return addresses[0].state.value ?? undefined;
-  return;
+function getAddressFields(addresses: Address[] | undefined): LenientAddress {
+  const address: LenientAddress = {};
+  if (addresses && addresses.length > 0) {
+    const firstAddress = addresses[0];
+    if (firstAddress?.line) {
+      const line = Array.isArray(firstAddress.line)
+        ? firstAddress.line[0]?.value
+        : firstAddress.line?.value;
+      address.addressLine = line ?? undefined;
+    }
+    if (firstAddress?.city?.value) address.city = firstAddress?.city?.value;
+    if (firstAddress?.state?.value) address.state = firstAddress?.state?.value;
+    if (firstAddress?.postalCode?.value) {
+      address.zip = normalizeZipCode(firstAddress?.postalCode?.value);
+    }
+  }
+  return address;
 }
 
 function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
