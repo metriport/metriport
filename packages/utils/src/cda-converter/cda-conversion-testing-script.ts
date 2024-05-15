@@ -19,7 +19,7 @@ import { getEnvVarOrFail } from "../../../api/src/shared/config";
  *
  */
 
-const fhirBaseUrl = "http://localhost:8888";
+const fhirBaseUrl = "http://localhost:8777";
 const orgOid = getEnvVarOrFail("ORG_OID");
 const baseInputFolder = "./src/cda-converter/scratch/";
 
@@ -36,7 +36,7 @@ async function main() {
     }
 
     files.forEach(file => {
-      if (!file.endsWith(".json")) {
+      if (!file.endsWith("12345.json")) {
         return;
       }
       const filePath = path.join(baseInputFolder, file);

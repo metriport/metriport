@@ -1,7 +1,7 @@
 import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
-import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
-import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
+import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
+import { _idAttribute, loincCodeSystem, loincSystemName } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
@@ -30,11 +30,11 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     createEntriesFromObservation
   );
   const table = {
-    [idAttribute]: sectionName + "1", // TODO: make the number dynamic if we add more tables
+    [_idAttribute]: sectionName + "1", // TODO: make the number dynamic if we add more tables
     thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
-        [idAttribute]: row.tr[idAttribute],
+        [_idAttribute]: row.tr[_idAttribute],
         td: row.tr.td,
       })),
     },
@@ -46,7 +46,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
         templateId: buildInstanceIdentifier({
           root: "2.16.840.1.113883.10.20.22.2.17",
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "29762-2",
           codeSystem: loincCodeSystem,
           codeSystemName: loincSystemName,

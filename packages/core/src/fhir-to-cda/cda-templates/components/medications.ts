@@ -2,26 +2,26 @@ import { Bundle, Medication, MedicationStatement, Resource } from "@medplum/fhir
 import { ObservationTableRow, SubstanceAdministationEntry } from "../../cda-types/shared-types";
 import { findResourceInBundle } from "../../fhir";
 import {
-  buildCodeCE,
-  buildCodeCVFromCodeableConcept,
+  buildCodeCe,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   createTableHeader,
-  formatDateToCDATimestamp,
+  formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  classCodeAttribute,
-  codeAttribute,
+  _classCodeAttribute,
+  _codeAttribute,
+  _idAttribute,
+  _inlineTextAttribute,
+  _moodCodeAttribute,
+  _typeCodeAttribute,
+  _valueAttribute,
   extensionValue2014,
-  idAttribute,
-  inlineTextAttribute,
   loincCodeSystem,
   loincSystemName,
-  moodCodeAttribute,
   placeholderOrgOid,
-  typeCodeAttribute,
-  valueAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedMedicationStatement } from "./augmented-resources";
@@ -53,12 +53,12 @@ export function buildMedications(fhirBundle: Bundle) {
   );
 
   const table = {
-    [idAttribute]: sectionName,
+    [_idAttribute]: sectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [idAttribute]: row.tr[idAttribute],
+        [_idAttribute]: row.tr[_idAttribute],
         td: row.tr.td,
       })),
     },
@@ -70,7 +70,7 @@ export function buildMedications(fhirBundle: Bundle) {
         templateId: buildInstanceIdentifier({
           root: "2.16.840.1.113883.10.20.22.2.1.1",
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "10160-0",
           codeSystem: loincCodeSystem,
           codeSystemName: loincSystemName,
@@ -116,25 +116,25 @@ function createTableRowFromObservation(
 
   return {
     tr: {
-      [idAttribute]: referenceId,
+      [_idAttribute]: referenceId,
       ["td"]: [
         {
-          [inlineTextAttribute]: medicationName,
+          [_inlineTextAttribute]: medicationName,
         },
         {
-          [inlineTextAttribute]: getDosageFromMedicationStatement(statement.resource),
+          [_inlineTextAttribute]: getDosageFromMedicationStatement(statement.resource),
         },
         {
-          [inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
+          [_inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
         },
         {
-          [inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? "Not Specified",
+          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? "Not Specified",
         },
         {
-          [inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? "Not Specified",
+          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? "Not Specified",
         },
         {
-          [inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? "Not Specified",
+          [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? "Not Specified",
         },
       ],
     },
@@ -160,8 +160,8 @@ function createEntryFromStatement(
   return [
     {
       substanceAdministration: {
-        [classCodeAttribute]: "SBADM",
-        [moodCodeAttribute]: "INT",
+        [_classCodeAttribute]: "SBADM",
+        [_moodCodeAttribute]: "INT",
         templateId: buildInstanceIdentifier({
           root: statement.typeOid,
           extension: extensionValue2014,
@@ -171,28 +171,28 @@ function createEntryFromStatement(
           extension: statement.resource.id,
         }),
         statusCode: {
-          [codeAttribute]: statement.resource.status,
+          [_codeAttribute]: statement.resource.status,
         },
         effectiveTime: {
           low: withoutNullFlavorObject(
-            formatDateToCDATimestamp(statement.resource.effectivePeriod?.start),
-            valueAttribute
+            formatDateToCdaTimestamp(statement.resource.effectivePeriod?.start),
+            _valueAttribute
           ),
           high: withoutNullFlavorObject(
-            formatDateToCDATimestamp(statement.resource.effectivePeriod?.end),
-            valueAttribute
+            formatDateToCdaTimestamp(statement.resource.effectivePeriod?.end),
+            _valueAttribute
           ),
         },
         consumable: {
-          [typeCodeAttribute]: "CSM",
+          [_typeCodeAttribute]: "CSM",
           manufacturedProduct: {
-            [codeAttribute]: "MANU",
+            [_codeAttribute]: "MANU",
             templateId: buildInstanceIdentifier({
               root: "2.16.840.1.113883.10.20.22.4.23",
               extension: "2014-06-09",
             }),
             manufacturedMaterial: {
-              code: buildCodeCVFromCodeableConcept(statement.medication?.code, referenceId),
+              code: buildCodeCvFromCodeableConcept(statement.medication?.code, referenceId),
             },
           },
         },

@@ -34,3 +34,7 @@ function getSuffix(id: string | undefined): string {
   if (!id) return "";
   return id.replace("urn:uuid:", "");
 }
+
+export function getContentTypeOrUnknown(doc: Document): string {
+  return doc.content?.mimeType || "unknown";
+}

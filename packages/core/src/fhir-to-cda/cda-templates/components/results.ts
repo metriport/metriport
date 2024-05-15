@@ -3,19 +3,19 @@ import { base64ToString } from "../../../util/base64";
 import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
   TIMESTAMP_CLEANUP_REGEX,
-  buildCodeCE,
-  buildCodeCVFromCodeableConcept,
+  buildCodeCe,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  classCodeAttribute,
+  _classCodeAttribute,
+  _idAttribute,
+  _moodCodeAttribute,
+  _typeCodeAttribute,
+  _valueAttribute,
   extensionValue2015,
-  idAttribute,
-  moodCodeAttribute,
   placeholderOrgOid,
-  typeCodeAttribute,
-  valueAttribute,
 } from "../constants";
 import { buildObservations } from "./observations";
 
@@ -24,7 +24,7 @@ function buildEntriesFromDiagnosticReports(
   fhirBundle: Bundle
 ) {
   return diagnosticReports.map(report => {
-    const codeElement = buildCodeCVFromCodeableConcept(report.code);
+    const codeElement = buildCodeCvFromCodeableConcept(report.code);
     const observations: Observation[] = [];
     report.result?.forEach(result => {
       if (!result.reference) {
@@ -37,8 +37,8 @@ function buildEntriesFromDiagnosticReports(
     });
 
     const organizer = {
-      [classCodeAttribute]: "BATTERY",
-      [moodCodeAttribute]: "EVN",
+      [_classCodeAttribute]: "BATTERY",
+      [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
         root: "2.16.840.1.113883.10.20.22.4.1",
         extension: extensionValue2015,
@@ -48,19 +48,19 @@ function buildEntriesFromDiagnosticReports(
         extension: report.id,
       }),
       code: codeElement,
-      statusCode: buildCodeCE({
+      statusCode: buildCodeCe({
         code: report.status,
       }),
       effectiveTime: withoutNullFlavorObject(
         report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
-        valueAttribute
+        _valueAttribute
       ),
       component: buildObservations(observations).map(o => o.component),
     };
 
     return {
       entry: {
-        [typeCodeAttribute]: "DRIV",
+        [_typeCodeAttribute]: "DRIV",
         organizer,
       },
     };
@@ -83,7 +83,7 @@ export function buildResult(fhirBundle: Bundle) {
         templateId: buildInstanceIdentifier({
           root: "2.16.840.1.113883.10.20.22.2.3.1",
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "30954-2",
           codeSystem: "2.16.840.1.113883.6.1",
           codeSystemName: "LOINC",
@@ -111,7 +111,7 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         return {
           item: {
             content: {
-              [idAttribute]: `_${report.id}`,
+              [_idAttribute]: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },

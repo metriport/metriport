@@ -2,25 +2,25 @@ import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
 import { ObservationTableRow } from "../../cda-types/shared-types";
 import { isCondition } from "../../fhir";
 import {
-  buildCodeCE,
+  buildCodeCe,
   buildInstanceIdentifier,
   createTableHeader,
-  formatDateToCDATimestamp,
+  formatDateToCdaTimestamp,
   getTextFromCode,
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  classCodeAttribute,
-  codeAttribute,
+  _classCodeAttribute,
+  _codeAttribute,
+  _idAttribute,
+  _inlineTextAttribute,
+  _moodCodeAttribute,
+  _valueAttribute,
   extensionValue2014,
   extensionValue2015,
-  idAttribute,
-  inlineTextAttribute,
   loincCodeSystem,
   loincSystemName,
-  moodCodeAttribute,
   placeholderOrgOid,
-  valueAttribute,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedCondition } from "./augmented-resources";
@@ -54,12 +54,12 @@ export function buildProblems(fhirBundle: Bundle) {
   );
 
   const table = {
-    [idAttribute]: problemsSectionName,
+    [_idAttribute]: problemsSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [idAttribute]: row.tr[idAttribute],
+        [_idAttribute]: row.tr[_idAttribute],
         td: row.tr.td,
       })),
     },
@@ -72,7 +72,7 @@ export function buildProblems(fhirBundle: Bundle) {
           root: "2.16.840.1.113883.10.20.22.2.5.1",
           extension: extensionValue2015,
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "11450-4",
           codeSystem: loincCodeSystem,
           codeSystemName: loincSystemName,
@@ -104,25 +104,26 @@ function createTableRowFromCondition(
   const name = getTextFromCode(condition.resource.code);
   return {
     tr: {
-      [idAttribute]: referenceId,
+      [_idAttribute]: referenceId,
       ["td"]: [
         {
-          [inlineTextAttribute]: getIcdCode(condition.resource.code),
+          [_inlineTextAttribute]: getIcdCode(condition.resource.code),
         },
         {
-          [inlineTextAttribute]: name,
+          [_inlineTextAttribute]: name,
         },
         {
-          [inlineTextAttribute]: "TODO: Check Provider Response",
+          [_inlineTextAttribute]: "TODO: Check Provider Response",
         },
         {
-          [inlineTextAttribute]: "TODO: Check Status",
+          [_inlineTextAttribute]: "TODO: Check Status",
         },
         {
-          [inlineTextAttribute]: condition.resource.note?.[0]?.text ?? "Not Specified",
+          [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? "Not Specified",
         },
         {
-          [inlineTextAttribute]: "TODO: Figure out where to put comments in the Condition resource",
+          [_inlineTextAttribute]:
+            "TODO: Figure out where to put comments in the Condition resource",
         },
       ],
     },
@@ -133,8 +134,8 @@ function createEntryFromCondition(condition: AugmentedCondition, referenceId: st
   return [
     {
       act: {
-        [classCodeAttribute]: "ACT",
-        [moodCodeAttribute]: "EVN",
+        [_classCodeAttribute]: "ACT",
+        [_moodCodeAttribute]: "EVN",
         templateId: buildInstanceIdentifier({
           root: condition.typeOid,
           extension: extensionValue2014,
@@ -143,23 +144,23 @@ function createEntryFromCondition(condition: AugmentedCondition, referenceId: st
           root: placeholderOrgOid,
           extension: condition.resource.id,
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "CONC",
           codeSystem: "2.16.840.1.113883.5.6",
           displayName: "Concern",
         }),
         statusCode: {
-          [codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
+          [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
         },
         text: {
           reference: {
-            [valueAttribute]: referenceId,
+            [_valueAttribute]: referenceId,
           },
         },
         effectiveTime: {
           low: withoutNullFlavorObject(
-            formatDateToCDATimestamp(condition.resource.recordedDate),
-            valueAttribute
+            formatDateToCdaTimestamp(condition.resource.recordedDate),
+            _valueAttribute
           ),
         },
       },

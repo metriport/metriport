@@ -1,52 +1,55 @@
 import { Patient } from "@medplum/fhirtypes";
+import { CdaPatientRole, CdaRecordTarget } from "../../cda-types/shared-types";
 import {
-  buildTelecom,
   buildAddress,
+  buildCodeCe,
+  buildInstanceIdentifiersFromIdentifier,
+  buildTelecom,
+  formatDateToCdaTimestamp,
   withoutNullFlavorObject,
   withoutNullFlavorString,
-  buildCodeCE,
-  buildInstanceIdentifiersFromIdentifier,
-  formatDateToCDATimestamp,
 } from "../commons";
-import { CDARecordTarget, CDAPatientRole } from "../../cda-types/shared-types";
-import { useAttribute, valueAttribute } from "../constants";
+import { _useAttribute, _valueAttribute } from "../constants";
 
-function buildPatient(patient: Patient): CDAPatientRole {
+function buildPatient(patient: Patient): CdaPatientRole {
   return {
     name: patient.name?.map(name => {
       const nameUse = mapNameUse(name.use);
       return {
-        ...withoutNullFlavorObject(nameUse, useAttribute),
+        ...withoutNullFlavorObject(nameUse, _useAttribute),
         given: withoutNullFlavorString(name.given?.join(" ")),
         family: name.family,
         validTime: {
-          low: withoutNullFlavorObject(undefined, valueAttribute),
-          high: withoutNullFlavorObject(undefined, valueAttribute),
+          low: withoutNullFlavorObject(undefined, _valueAttribute),
+          high: withoutNullFlavorObject(undefined, _valueAttribute),
         },
       };
     }),
-    administrativeGenderCode: buildCodeCE({
+    administrativeGenderCode: buildCodeCe({
       code: patient.gender,
       codeSystem: "2.16.840.1.113883.5.1",
       codeSystemName: "AdministrativeGender",
     }),
-    birthTime: withoutNullFlavorObject(formatDateToCDATimestamp(patient.birthDate), valueAttribute),
-    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), valueAttribute),
-    maritalStatusCode: buildCodeCE({
+    birthTime: withoutNullFlavorObject(
+      formatDateToCdaTimestamp(patient.birthDate),
+      _valueAttribute
+    ),
+    deceasedInd: withoutNullFlavorObject(patient.deceasedBoolean?.toString(), _valueAttribute),
+    maritalStatusCode: buildCodeCe({
       code: patient.maritalStatus?.coding?.[0]?.code,
       codeSystem: "2.16.840.1.113883.5.2",
       codeSystemName: "MaritalStatusCode",
       displayName: patient.maritalStatus?.coding?.[0]?.display,
     }),
     languageCommunication: {
-      languageCode: buildCodeCE({
+      languageCode: buildCodeCe({
         code: patient.communication?.[0]?.language?.coding?.[0]?.code,
       }),
     },
   };
 }
 
-export function buildRecordTargetFromFhirPatient(patient: Patient): CDARecordTarget {
+export function buildRecordTargetFromFhirPatient(patient: Patient): CdaRecordTarget {
   const recordTarget = {
     patientRole: {
       id: buildInstanceIdentifiersFromIdentifier(patient.identifier),

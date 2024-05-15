@@ -44,7 +44,7 @@ describe("splitBundleByCompositions", () => {
       ],
     };
     const result = splitBundleByCompositions(validBundle);
-    expect(result.length).toBe(1);
-    expect(result?.[0]?.entry?.length).toBe(3);
+    expect(result.length).toEqual(1);
+    expect(result?.[0]?.entry?.length).toEqual(3);
   });
 });

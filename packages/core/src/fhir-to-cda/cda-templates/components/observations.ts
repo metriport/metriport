@@ -1,8 +1,8 @@
 import { Observation, ObservationComponent } from "@medplum/fhirtypes";
 import {
-  CDACodeCV,
-  CDAInstanceIdentifier,
-  CDAValueST,
+  CdaCodeCv,
+  CdaInstanceIdentifier,
+  CdaValueSt,
   Entry,
   EntryObject,
   ObservationEntry,
@@ -10,39 +10,39 @@ import {
 } from "../../cda-types/shared-types";
 import {
   TIMESTAMP_CLEANUP_REGEX,
-  buildCodeCE,
-  buildCodeCVFromCodeableConcept,
+  buildCodeCe,
+  buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildReferenceId,
   buildValueST,
-  formatDateToCDATimestamp,
+  formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   isLoinc,
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  classCodeAttribute,
-  codeAttribute,
-  extensionAttribute,
+  _classCodeAttribute,
+  _codeAttribute,
+  _extensionAttribute,
+  _idAttribute,
+  _inlineTextAttribute,
+  _moodCodeAttribute,
+  _rootAttribute,
+  _valueAttribute,
   extensionValue2015,
-  idAttribute,
-  inlineTextAttribute,
   loincCodeSystem,
   loincSystemName,
-  moodCodeAttribute,
   placeholderOrgOid,
-  rootAttribute,
-  valueAttribute,
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
 
 export interface CDAObservation {
   component: {
     observation: {
-      [classCodeAttribute]: Entry;
-      [moodCodeAttribute]: Entry;
-      id?: CDAInstanceIdentifier[] | Entry;
-      code: CDACodeCV | Entry;
+      [_classCodeAttribute]: Entry;
+      [_moodCodeAttribute]: Entry;
+      id?: CdaInstanceIdentifier[] | Entry;
+      code: CdaCodeCv | Entry;
       text?: Entry;
       statusCode?: EntryObject;
       effectiveTime?: {
@@ -51,7 +51,7 @@ export interface CDAObservation {
       };
       priorityCode?: Entry;
       // TODO support other types of values like CodeableConcept, Quantity, etc.
-      value?: CDAValueST | undefined;
+      value?: CdaValueSt | undefined;
     };
   };
 }
@@ -62,21 +62,21 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
     return {
       component: {
         observation: {
-          [classCodeAttribute]: "OBS",
-          [moodCodeAttribute]: "EVN",
+          [_classCodeAttribute]: "OBS",
+          [_moodCodeAttribute]: "EVN",
           templateId: buildInstanceIdentifier({
             root: "2.16.840.1.113883.10.20.22.4.2",
             extension: extensionValue2015,
           }),
           id: {
-            [rootAttribute]: placeholderOrgOid,
-            [extensionAttribute]: observation.id ?? observation.identifier?.[0]?.value ?? "",
+            [_rootAttribute]: placeholderOrgOid,
+            [_extensionAttribute]: observation.id ?? observation.identifier?.[0]?.value ?? "",
           },
-          code: buildCodeCVFromCodeableConcept(observation.code),
-          statusCode: withoutNullFlavorObject(observation.status, codeAttribute),
+          code: buildCodeCvFromCodeableConcept(observation.code),
+          statusCode: withoutNullFlavorObject(observation.status, _codeAttribute),
           effectiveTime: {
-            low: withoutNullFlavorObject(effectiveTime, valueAttribute),
-            high: withoutNullFlavorObject(effectiveTime, valueAttribute),
+            low: withoutNullFlavorObject(effectiveTime, _valueAttribute),
+            high: withoutNullFlavorObject(effectiveTime, _valueAttribute),
           },
           value: buildValueST(observation.valueString),
         },
@@ -89,7 +89,7 @@ export function createTableRowsFromObservation(
   observation: AugmentedObservation,
   socHistPrefix: string
 ): ObservationTableRow[] {
-  const date = formatDateToCDATimestamp(observation.resource.effectiveDateTime);
+  const date = formatDateToCdaTimestamp(observation.resource.effectiveDateTime);
   const trs: ObservationTableRow[] = [];
   const formattedDate = formatDateToHumanReadableFormat(date);
   let pairNumber = 0;
@@ -129,22 +129,22 @@ export function createTableRowFromObservation(
 
   return {
     tr: {
-      [idAttribute]: referenceId,
+      [_idAttribute]: referenceId,
       ["td"]: [
         {
-          [inlineTextAttribute]: observation.code?.coding?.[0]?.display ?? observation.code?.text,
+          [_inlineTextAttribute]: observation.code?.coding?.[0]?.display ?? observation.code?.text,
         },
         {
-          [inlineTextAttribute]:
+          [_inlineTextAttribute]:
             observation.valueCodeableConcept?.coding?.[0]?.display ??
             observation.valueCodeableConcept?.text ??
             "Not on file",
         },
         {
-          [inlineTextAttribute]: scoreValue,
+          [_inlineTextAttribute]: scoreValue,
         },
         {
-          [inlineTextAttribute]: date ?? "Unknown",
+          [_inlineTextAttribute]: date ?? "Unknown",
         },
       ],
     },
@@ -166,7 +166,7 @@ export function createEntriesFromObservation(
   socHistNumber: string
 ): ObservationEntry[] {
   let pairNumber = 0;
-  const date = formatDateToCDATimestamp(observation.resource.effectiveDateTime);
+  const date = formatDateToCdaTimestamp(observation.resource.effectiveDateTime);
   const observationEntry = createEntryFromObservation(
     observation.resource,
     observation,
@@ -202,8 +202,8 @@ function createEntryFromObservation(
   const systemIsLoinc = isLoinc(codeSystem);
   const entry = {
     observation: {
-      ["@_classCode"]: "OBS",
-      ["@_moodCode"]: "EVN",
+      [_classCodeAttribute]: "OBS",
+      [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
         root: augObs.typeOid,
         extension: extensionValue2015,
@@ -212,8 +212,7 @@ function createEntryFromObservation(
         root: placeholderOrgOid,
         extension: observation.id ?? augObs.resource.id,
       }),
-
-      code: buildCodeCE({
+      code: buildCodeCe({
         code: observation.code?.coding?.[0]?.code,
         codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
         codeSystemName: systemIsLoinc ? loincSystemName : undefined,
@@ -221,14 +220,14 @@ function createEntryFromObservation(
       }),
       text: {
         reference: {
-          [valueAttribute]: referenceId,
+          [_valueAttribute]: referenceId,
         },
       },
       statusCode: {
-        [codeAttribute]: "completed",
+        [_codeAttribute]: "completed",
       },
-      effectiveTime: withoutNullFlavorObject(date, valueAttribute),
-      interpretationCode: buildCodeCE({
+      effectiveTime: withoutNullFlavorObject(date, _valueAttribute),
+      interpretationCode: buildCodeCe({
         code: observation.interpretation?.[0]?.coding?.[0]?.code,
         codeSystem: observation.interpretation?.[0]?.coding?.[0]?.system,
         codeSystemName: observation.interpretation?.[0]?.coding?.[0]?.display,

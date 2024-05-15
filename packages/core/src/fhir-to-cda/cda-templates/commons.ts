@@ -8,37 +8,45 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
 import {
-  assigningAuthorityNameAttribute,
-  extensionAttribute,
-  inlineTextAttribute,
-  namespaceXsiAttribute,
-  namespaceXsiValue,
-  nullFlavorAttribute,
-  placeholderOrgOid,
-  rootAttribute,
-  useAttribute,
-  valueAttribute,
-  xsiTypeAttribute,
-} from "./constants";
-import {
-  CDAAddress,
-  CDACodeCE,
-  CDACodeCV,
-  CDAInstanceIdentifier,
-  CDAOrganization,
   CDAOriginalText,
-  CDATelecom,
-  CDAValueST,
+  CdaAddress,
+  CdaCodeCe,
+  CdaCodeCv,
+  CdaInstanceIdentifier,
+  CdaOrganization,
+  CdaTelecom,
+  CdaValueSt,
   Entry,
   EntryObject,
 } from "../cda-types/shared-types";
+import {
+  _assigningAuthorityNameAttribute,
+  _codeAttribute,
+  _codeSystemAttribute,
+  _codeSystemNameAttribute,
+  _displayNameAttribute,
+  _extensionAttribute,
+  _inlineTextAttribute,
+  _nullFlavorAttribute,
+  _rootAttribute,
+  _useAttribute,
+  _valueAttribute,
+  _xmlnsXsiAttribute,
+  _xsiTypeAttribute,
+  amaAssnSystemCode,
+  fdasisSystemCode,
+  loincSystemCode,
+  nlmNihSystemCode,
+  placeholderOrgOid,
+  snomedSystemCode,
+} from "./constants";
 
 const CODING_MAP = new Map<string, string>();
-CODING_MAP.set("http://loinc.org", "2.16.840.1.113883.6.1");
-CODING_MAP.set("http://snomed.info/sct", "2.16.840.1.113883.6.96");
-CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", "2.16.840.1.113883.6.88");
-CODING_MAP.set("http://www.ama-assn.org/go/cpt", "2.16.840.1.113883.6.12");
-CODING_MAP.set("http://fdasis.nlm.nih.gov", "2.16.840.1.113883.4.9");
+CODING_MAP.set("http://loinc.org", loincSystemCode);
+CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
+CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
+CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
+CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
@@ -52,12 +60,12 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { [nullFlavorAttribute]: "UNK" };
+  if (value == undefined) return { [_nullFlavorAttribute]: "UNK" };
   return { [key]: value };
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
-export function buildCodeCE({
+export function buildCodeCe({
   code,
   codeSystem,
   codeSystemName,
@@ -67,12 +75,12 @@ export function buildCodeCE({
   codeSystem?: string | undefined;
   codeSystemName?: string | undefined;
   displayName?: string | undefined;
-}): CDACodeCE {
-  const codeObject: CDACodeCE = {};
-  if (code) codeObject["@_code"] = code;
-  if (codeSystem) codeObject["@_codeSystem"] = codeSystem;
-  if (codeSystemName) codeObject["@_codeSystemName"] = codeSystemName;
-  if (displayName) codeObject["@_displayName"] = displayName;
+}): CdaCodeCe {
+  const codeObject: CdaCodeCe = {};
+  if (code) codeObject[_codeAttribute] = code;
+  if (codeSystem) codeObject[_codeSystemAttribute] = codeSystem;
+  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName;
+  if (displayName) codeObject[_displayNameAttribute] = displayName;
 
   return codeObject;
 }
@@ -81,17 +89,17 @@ export function buildOriginalTextReference(value: string): CDAOriginalText {
   return {
     originalText: {
       reference: {
-        [valueAttribute]: value,
+        [_valueAttribute]: value,
       },
     },
   };
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
-export function buildCodeCVFromCodeableConcept(
+export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined,
   textReference?: string
-): CDACodeCV | Entry {
+): CdaCodeCv | Entry {
   if (!codeableConcept) {
     return withoutNullFlavorString(codeableConcept);
   }
@@ -99,7 +107,7 @@ export function buildCodeCVFromCodeableConcept(
   const primaryCodingRaw = codeableConcept.coding?.[0];
   const primaryCoding = cleanUpCoding(primaryCodingRaw);
   const baseCE = primaryCoding
-    ? buildCodeCE({
+    ? buildCodeCe({
         code: primaryCoding.code,
         codeSystem: primaryCoding.system,
         codeSystemName: undefined,
@@ -108,7 +116,7 @@ export function buildCodeCVFromCodeableConcept(
     : {};
 
   const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
-    buildCodeCE({
+    buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
       codeSystemName: undefined,
@@ -116,7 +124,7 @@ export function buildCodeCVFromCodeableConcept(
     })
   );
 
-  const codeCV: CDACodeCV = {
+  const codeCV: CdaCodeCv = {
     ...baseCE,
     originalText: textReference ? buildOriginalTextReference(textReference) : codeableConcept.text,
     translation: translations?.length ? translations : undefined,
@@ -133,20 +141,20 @@ export function buildInstanceIdentifier({
   root?: string | undefined;
   extension?: string | undefined;
   assigningAuthorityName?: string | undefined;
-}): CDAInstanceIdentifier {
-  const identifier: CDAInstanceIdentifier = {};
-  if (root) identifier[rootAttribute] = root;
-  if (extension) identifier[extensionAttribute] = extension;
-  if (assigningAuthorityName) identifier[assigningAuthorityNameAttribute] = assigningAuthorityName;
+}): CdaInstanceIdentifier {
+  const identifier: CdaInstanceIdentifier = {};
+  if (root) identifier[_rootAttribute] = root;
+  if (extension) identifier[_extensionAttribute] = extension;
+  if (assigningAuthorityName) identifier[_assigningAuthorityNameAttribute] = assigningAuthorityName;
 
   return identifier;
 }
 
 export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
-): CDAInstanceIdentifier[] | Entry {
+): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
-    return withNullFlavor(undefined, rootAttribute);
+    return withNullFlavor(undefined, _rootAttribute);
   }
 
   const identifiersArray = Array.isArray(identifiers)
@@ -163,37 +171,37 @@ export function buildInstanceIdentifiersFromIdentifier(
   );
 }
 
-export function buildTelecom(telecoms: ContactPoint[] | undefined): CDATelecom[] {
+export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[] {
   if (!telecoms) {
     return [];
   }
   return telecoms.map(telecom => {
     const telecomUse = mapTelecomUse(telecom.use);
     return {
-      ...withoutNullFlavorObject(telecomUse, useAttribute),
-      ...withoutNullFlavorObject(telecom.value, valueAttribute),
+      ...withoutNullFlavorObject(telecomUse, _useAttribute),
+      ...withoutNullFlavorObject(telecom.value, _valueAttribute),
     };
   });
 }
 
-export function buildAddress(address?: Address[]): CDAAddress[] | undefined {
+export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
-    ...withoutNullFlavorObject(mapAddressUse(addr.use), useAttribute),
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
     state: addr.state,
     postalCode: addr.postalCode,
     country: addr.country,
     useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, valueAttribute),
+      low: withoutNullFlavorObject(addr.period?.start, _valueAttribute),
+      high: withoutNullFlavorObject(addr.period?.end, _valueAttribute),
     },
   }));
 }
 
 export function buildRepresentedOrganization(
   organization: Organization
-): CDAOrganization | undefined {
+): CdaOrganization | undefined {
   return {
     id: buildInstanceIdentifiersFromIdentifier(organization.identifier),
     name: withoutNullFlavorString(organization.name),
@@ -202,7 +210,7 @@ export function buildRepresentedOrganization(
   };
 }
 
-export function formatDateToCDATimestamp(dateString: string | undefined): string | undefined {
+export function formatDateToCdaTimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }
@@ -214,20 +222,20 @@ export function formatDateToCDATimestamp(dateString: string | undefined): string
 export function formatDateToHumanReadableFormat(
   dateString: string | undefined
 ): string | undefined {
-  const date = formatDateToCDATimestamp(dateString);
+  const date = formatDateToCdaTimestamp(dateString);
   if (!date) return undefined;
 
   return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
-export function buildValueST(value: string | undefined): CDAValueST | undefined {
+export function buildValueST(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
 
-  const valueObject: CDAValueST = {};
-  valueObject[xsiTypeAttribute] = "ST";
-  valueObject[namespaceXsiAttribute] = namespaceXsiValue;
-  valueObject[inlineTextAttribute] = value;
+  const valueObject: CdaValueSt = {};
+  valueObject[_xsiTypeAttribute] = "ST";
+  valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject[_inlineTextAttribute] = value;
   return valueObject;
 }
 

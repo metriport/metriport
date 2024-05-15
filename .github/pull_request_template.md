@@ -57,6 +57,8 @@ _[Add and remove items below accordingly]_
 - [ ] Release NPM packages
 - [ ] Fern Definition Updated
 - [ ] Release Fern SDKs
+- [ ] FFs have been set in Staging, Production, and Sandbox
+- [ ] No dependencies between API and Infra that will cause errors during deployment
 - [ ] _[action n-1]_
 - [ ] _[action n]_
 - [ ] Merge this

@@ -1,38 +1,44 @@
 import {
-  assigningAuthorityNameAttribute,
-  classCodeAttribute,
-  codeAttribute,
-  codeSystemAttribute,
-  codeSystemNameAttribute,
-  displayNameAttribute,
-  extensionAttribute,
-  inlineTextAttribute,
-  moodCodeAttribute,
-  namespaceXsiAttribute,
-  namespaceAttribute,
-  rootAttribute,
-  typeCodeAttribute,
-  valueAttribute,
-  xsiTypeAttribute,
+  _assigningAuthorityNameAttribute,
+  _classCodeAttribute,
+  _codeAttribute,
+  _codeSystemAttribute,
+  _codeSystemNameAttribute,
+  _displayNameAttribute,
+  _extensionAttribute,
+  _idAttribute,
+  _inlineTextAttribute,
+  _moodCodeAttribute,
+  _namespaceAttribute,
+  _namespaceSdtcAttribute,
+  _namespaceXsiAttribute,
+  _rootAttribute,
+  _typeCodeAttribute,
+  _valueAttribute,
+  _xmlnsXsiAttribute,
+  _xsiTypeAttribute,
 } from "../cda-templates/constants";
 
 export type ClinicalDocument = {
   ClinicalDocument: {
-    [namespaceAttribute]: string;
-    realmCode?: CDACodeCE;
-    typeId?: CDAInstanceIdentifier;
-    templateId?: CDAInstanceIdentifier[];
-    id: CDAInstanceIdentifier;
-    code: CDACodeCE;
+    [_namespaceAttribute]: string;
+    [_namespaceSdtcAttribute]: string;
+    [_namespaceXsiAttribute]: string;
+    [_moodCodeAttribute]: string;
+    realmCode?: CdaCodeCe;
+    typeId?: CdaInstanceIdentifier;
+    templateId?: CdaInstanceIdentifier[];
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCe;
     title?: string;
     effectiveTime: Entry;
-    confidentialityCode: CDACodeCE;
-    languageCode?: CDACodeCE;
-    setId?: CDAInstanceIdentifier;
+    confidentialityCode: CdaCodeCe;
+    languageCode?: CdaCodeCe;
+    setId?: CdaInstanceIdentifier;
     versionNumber?: Entry;
-    recordTarget: CDARecordTarget;
-    author: CDAAuthor;
-    custodian: CDACustodian;
+    recordTarget: CdaRecordTarget;
+    author: CdaAuthor;
+    custodian: CdaCustodian;
     component: unknown;
   };
 };
@@ -40,106 +46,111 @@ export type ClinicalDocument = {
 export type Entry = { [key: string]: string } | string;
 export type EntryObject = { [key: string]: string };
 
-export type CDATelecom = {
+export type CdaTelecom = {
   use?: EntryObject;
   value?: EntryObject;
 };
 
-export type CDAPeriod = {
+export type CdaPeriod = {
   low?: Entry;
   high?: Entry;
 };
 
-export type CDAAddress = {
+export type CdaAddress = {
   streetAddressLine?: Entry | undefined;
   city?: string | undefined;
   state?: string | undefined;
   postalCode?: string | undefined;
   country?: string | undefined;
-  useablePeriod?: CDAPeriod | undefined;
+  useablePeriod?: CdaPeriod | undefined;
 };
 
-export type CDAOrganization = {
-  id?: CDAInstanceIdentifier[] | Entry;
+export type CdaOrganization = {
+  id?: CdaInstanceIdentifier[] | Entry;
   name?: Entry | undefined;
-  telecom?: CDATelecom[] | undefined;
-  addr?: CDAAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  addr?: CdaAddress[] | undefined;
 };
 
-export type CDAAssignedAuthor = {
+export type CdaAssignedAuthor = {
   id: Entry;
-  addr?: CDAAddress[] | undefined;
-  telecom?: CDATelecom[] | undefined;
-  representedOrganization?: CDAOrganization | undefined;
+  addr?: CdaAddress[] | undefined;
+  telecom?: CdaTelecom[] | undefined;
+  representedOrganization?: CdaOrganization | undefined;
 };
 
-export type CDAPatientRole = {
-  name?: CDAName[] | undefined;
-  administrativeGenderCode?: EntryObject | CDACodeCE;
+export type CdaPatientRole = {
+  name?: CdaName[] | undefined;
+  administrativeGenderCode?: EntryObject;
   birthTime?: EntryObject;
   deceasedInd?: EntryObject;
-  maritalStatusCode?: EntryObject | CDACodeCE;
+  maritalStatusCode?: EntryObject | CdaCodeCe;
   languageCommunication?: {
-    languageCode: EntryObject | CDACodeCE;
+    languageCode: EntryObject | CdaCodeCe;
   };
 };
 
-export type CDAName = {
+export type CdaName = {
   use?: EntryObject;
   given?: Entry;
   family?: string | undefined;
-  validTime: CDAPeriod;
+  validTime: CdaPeriod;
 };
 
 export type CDAOriginalText = {
   originalText: {
     reference: {
-      [valueAttribute]: string;
+      [_valueAttribute]: string;
     };
   };
 };
-export type CDACodeCE = {
-  [codeAttribute]?: string | undefined;
-  [codeSystemAttribute]?: string | undefined;
-  [codeSystemNameAttribute]?: string | undefined;
-  [displayNameAttribute]?: string | undefined;
+
+// Ce (CE) stands for Coded with Equivalents
+export type CdaCodeCe = {
+  [_codeAttribute]?: string;
+  [_codeSystemAttribute]?: string;
+  [_codeSystemNameAttribute]?: string;
+  [_displayNameAttribute]?: string;
 };
 
-export type CDAValueST = {
-  [xsiTypeAttribute]?: string;
-  [namespaceXsiAttribute]?: string;
-  [inlineTextAttribute]?: string;
+// St (ST) stands for Simple Text
+export type CdaValueSt = {
+  [_xsiTypeAttribute]?: string;
+  [_xmlnsXsiAttribute]?: string;
+  [_inlineTextAttribute]?: string;
 };
-export interface CDACodeCV extends CDACodeCE {
+
+// Cv (CV) stands for Coded Value
+export interface CdaCodeCv extends CdaCodeCe {
   originalText?: CDAOriginalText | string | undefined;
-  translation?: CDACodeCE[] | undefined;
+  translation?: CdaCodeCe[] | undefined;
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
-export type CDAInstanceIdentifier = {
-  [rootAttribute]?: string;
-  [extensionAttribute]?: string;
-  [assigningAuthorityNameAttribute]?: string;
+export type CdaInstanceIdentifier = {
+  [_rootAttribute]?: string;
+  [_extensionAttribute]?: string;
+  [_assigningAuthorityNameAttribute]?: string;
 };
 
 // TOP Level CDA Section Types
-export type CDAAuthor = {
+export type CdaAuthor = {
   time: Entry;
-  assignedAuthor: CDAAssignedAuthor;
+  assignedAuthor: CdaAssignedAuthor;
 };
 
-export type CDACustodian = {
+export type CdaCustodian = {
   assignedCustodian: {
-    representedCustodianOrganization: CDAOrganization | undefined;
+    representedCustodianOrganization: CdaOrganization | undefined;
   };
 };
 
-export type CDARecordTarget = {
+export type CdaRecordTarget = {
   patientRole: {
-    id?: CDAInstanceIdentifier[] | Entry;
-    addr?: CDAAddress[] | undefined;
-    telecom?: CDATelecom[] | undefined;
-    patient: CDAPatientRole;
+    id?: CdaInstanceIdentifier[] | Entry;
+    addr?: CdaAddress[] | undefined;
+    telecom?: CdaTelecom[] | undefined;
+    patient: CdaPatientRole;
   };
 };
 
@@ -162,87 +173,87 @@ export type TableRowsAndEntriesResult = {
 
 export type ObservationTableRow = {
   tr: {
-    ["@_ID"]: string;
+    [_idAttribute]: string;
     td: {
-      ["#text"]?: string | undefined;
+      [_inlineTextAttribute]?: string | undefined;
     }[];
   };
 };
 
 export type ObservationEntry = {
   observation: {
-    [classCodeAttribute]: string;
-    [moodCodeAttribute]: string;
+    [_classCodeAttribute]: string;
+    [_moodCodeAttribute]: string;
     templateId?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
+      [_rootAttribute]?: string;
+      [_extensionAttribute]?: string;
     };
     id?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
+      [_rootAttribute]?: string;
+      [_extensionAttribute]?: string;
     };
     code?: {
-      [codeAttribute]?: string | undefined;
-      [codeSystemAttribute]?: string | undefined;
-      [codeSystemNameAttribute]?: string | undefined;
-      [displayNameAttribute]?: string | undefined;
+      [_codeAttribute]?: string | undefined;
+      [_codeSystemAttribute]?: string | undefined;
+      [_codeSystemNameAttribute]?: string | undefined;
+      [_displayNameAttribute]?: string | undefined;
     };
     text: {
       reference: {
-        [valueAttribute]: string;
+        [_valueAttribute]: string;
       };
     };
     statusCode: {
-      [codeAttribute]: string;
+      [_codeAttribute]: string;
     };
     effectiveTime?: {
-      [valueAttribute]?: string | undefined;
+      [_valueAttribute]?: string | undefined;
     };
     entryRelationship?: ObservationEntry[];
-    interpretationCode?: CDACodeCE;
+    interpretationCode?: CdaCodeCe;
   };
 };
 
 export type SubstanceAdministationEntry = {
   substanceAdministration: {
-    [classCodeAttribute]: string;
-    [moodCodeAttribute]: string;
+    [_classCodeAttribute]: string;
+    [_moodCodeAttribute]: string;
     templateId?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
+      [_rootAttribute]?: string;
+      [_extensionAttribute]?: string;
     };
     id?: {
-      [rootAttribute]?: string;
-      [extensionAttribute]?: string;
+      [_rootAttribute]?: string;
+      [_extensionAttribute]?: string;
     };
     statusCode: {
-      [codeAttribute]?: string | undefined;
+      [_codeAttribute]?: string | undefined;
     };
     effectiveTime: {
       low: {
-        [valueAttribute]?: string | undefined;
+        [_valueAttribute]?: string | undefined;
       };
       high: {
-        [valueAttribute]?: string | undefined;
+        [_valueAttribute]?: string | undefined;
       };
     };
     consumable: {
-      [typeCodeAttribute]: string;
+      [_typeCodeAttribute]: string;
       manufacturedProduct: {
-        [codeAttribute]: string;
+        [_codeAttribute]: string;
         templateId?: {
-          [rootAttribute]?: string;
-          [extensionAttribute]?: string;
+          [_rootAttribute]?: string;
+          [_extensionAttribute]?: string;
         };
         manufacturedMaterial: {
-          code: CDACodeCV | Entry;
+          code: CdaCodeCv | Entry;
         };
       };
     };
     entryRelationship?: {
       supply?: {
-        [classCodeAttribute]: string;
-        [moodCodeAttribute]: string;
+        [_classCodeAttribute]: string;
+        [_moodCodeAttribute]: string;
       };
     };
   };

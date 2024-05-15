@@ -1,51 +1,26 @@
 import { XMLBuilder } from "fast-xml-parser";
 import {
-  CDAAuthor,
-  CDACodeCE,
-  CDACustodian,
-  CDAInstanceIdentifier,
-  CDARecordTarget,
-  Entry,
+  CdaAuthor,
+  CdaCustodian,
+  CdaRecordTarget,
+  ClinicalDocument,
 } from "../../cda-types/shared-types";
 import {
-  buildCodeCE,
+  buildCodeCe,
   buildInstanceIdentifier,
-  formatDateToCDATimestamp,
+  formatDateToCdaTimestamp,
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
 import {
+  _moodCodeAttribute,
+  _namespaceSdtcAttribute,
+  _namespaceXsiAttribute,
+  _valueAttribute,
   clinicalDocumentConstants,
-  moodCodeAttribute,
-  namespaceAttribute,
-  namespaceSdtcAttribute,
-  namespaceXsiAttribute,
-  valueAttribute,
 } from "../constants";
 
-export type ClinicalDocument = {
-  ClinicalDocument: {
-    [namespaceAttribute]: string;
-    [namespaceSdtcAttribute]: string;
-    [namespaceXsiAttribute]: string;
-    [moodCodeAttribute]: string;
-    realmCode?: CDACodeCE;
-    typeId?: CDAInstanceIdentifier;
-    templateId?: CDAInstanceIdentifier[];
-    id: CDAInstanceIdentifier;
-    code: CDACodeCE;
-    title?: string;
-    effectiveTime: Entry;
-    confidentialityCode: CDACodeCE;
-    languageCode?: CDACodeCE;
-    setId?: CDAInstanceIdentifier;
-    versionNumber?: Entry;
-    recordTarget: CDARecordTarget;
-    author: CDAAuthor;
-    custodian: CDACustodian;
-    component: unknown;
-  };
-};
+import { _namespaceAttribute } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -67,19 +42,19 @@ export function removeEmptyFields(obj: any): unknown {
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ClinicalDocument.html
-export function buildClinicalDocumentXML(
-  recordTarget: CDARecordTarget,
-  author: CDAAuthor,
-  custodian: CDACustodian,
+export function buildClinicalDocumentXml(
+  recordTarget: CdaRecordTarget,
+  author: CdaAuthor,
+  custodian: CdaCustodian,
   structuredBody: unknown
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      [namespaceAttribute]: "urn:hl7-org:v3",
-      [namespaceSdtcAttribute]: "urn:hl7-org:sdtc",
-      [namespaceXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
-      [moodCodeAttribute]: "EVN",
-      realmCode: buildCodeCE({ code: clinicalDocumentConstants.realmCode }),
+      [_namespaceAttribute]: "urn:hl7-org:v3",
+      [_namespaceSdtcAttribute]: "urn:hl7-org:sdtc",
+      [_namespaceXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
+      [_moodCodeAttribute]: "EVN",
+      realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
         root: clinicalDocumentConstants.typeIdRoot,
@@ -94,7 +69,7 @@ export function buildClinicalDocumentXML(
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
         root: clinicalDocumentConstants.rootOid,
       }),
-      code: buildCodeCE({
+      code: buildCodeCe({
         code: "NOTE-TYPE", // TODO: Make this dynamic. IMPORTANT
         codeSystem: clinicalDocumentConstants.code.codeSystem,
         codeSystemName: clinicalDocumentConstants.code.codeSystemName,
@@ -102,15 +77,15 @@ export function buildClinicalDocumentXML(
       }),
       title: "NOTE-TITLE", // TODO: Make this dynamic. IMPORTANT
       effectiveTime: withNullFlavor(
-        formatDateToCDATimestamp(new Date().toISOString()),
-        valueAttribute
+        formatDateToCdaTimestamp(new Date().toISOString()),
+        _valueAttribute
       ),
-      confidentialityCode: buildCodeCE({
+      confidentialityCode: buildCodeCe({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
         displayName: clinicalDocumentConstants.confidentialityCode.displayName,
       }),
-      languageCode: buildCodeCE({
+      languageCode: buildCodeCe({
         code: clinicalDocumentConstants.languageCode,
       }),
       setId: buildInstanceIdentifier({
@@ -119,7 +94,7 @@ export function buildClinicalDocumentXML(
       }),
       versionNumber: withoutNullFlavorObject(
         clinicalDocumentConstants.versionNumber,
-        valueAttribute
+        _valueAttribute
       ),
       recordTarget,
       author,
@@ -130,6 +105,8 @@ export function buildClinicalDocumentXML(
   const cleanedJsonObj = removeEmptyFields(jsonObj);
   const builder = new XMLBuilder({
     format: false,
+    attributeNamePrefix: "_",
+    textNodeName: "_text",
     ignoreAttributes: false,
   });
 

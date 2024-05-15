@@ -1,7 +1,7 @@
 import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
-import { buildCodeCE, buildInstanceIdentifier, createTableHeader } from "../commons";
-import { idAttribute, loincCodeSystem, loincSystemName } from "../constants";
+import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
+import { _idAttribute, loincCodeSystem, loincSystemName } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
@@ -30,12 +30,12 @@ export function buildMentalStatus(fhirBundle: Bundle) {
     createEntriesFromObservation
   );
   const table = {
-    [idAttribute]: mentalStatusSectionName,
+    [_idAttribute]: mentalStatusSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [idAttribute]: row.tr[idAttribute],
+        [_idAttribute]: row.tr[_idAttribute],
         td: row.tr.td,
       })),
     },
@@ -47,7 +47,7 @@ export function buildMentalStatus(fhirBundle: Bundle) {
         templateId: buildInstanceIdentifier({
           root: "2.16.840.1.113883.10.20.22.2.56",
         }),
-        code: buildCodeCE({
+        code: buildCodeCe({
           code: "10190-7",
           codeSystem: loincCodeSystem,
           codeSystemName: loincSystemName,
