@@ -134,7 +134,10 @@ function handlePatientErrorResponse({
     ...(acknowledgementDetail && {
       code: acknowledgementDetail?.code?._code,
       details: {
-        text: acknowledgementDetail?.text?._text || acknowledgementDetail?.text,
+        text:
+          acknowledgementDetail?.text?._text ??
+          acknowledgementDetail?.text ??
+          acknowledgementDetail?.location,
       },
     }),
   };
