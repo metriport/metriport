@@ -60,12 +60,9 @@ export const getPatientByDemo = async ({
   );
 
   if (matchingPatients.length > 1) {
-    log(
-      `WARNING: matchPatients in getPatientByDemo for demo: ${JSON.stringify(
-        demo
-      )} and cxId: ${cxId} is returning more than one matched patient!`
-    );
-    capture.message("matchPatients in getPatientByDemo returning more than one matched patient!", {
+    const msg = `matchPatients returned more than one patient`;
+    log(`WARN: ${msg} - demo: ${JSON.stringify(demo)}, cxId: ${cxId}`);
+    capture.message(msg, {
       extra: {
         context: `mpi.getPatientByDemo`,
         cxId,
