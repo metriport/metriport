@@ -147,8 +147,13 @@ function getAddressFields(addresses: Address[] | undefined): LenientAddress {
     }
     if (firstAddress?.city?.value) address.city = firstAddress?.city?.value;
     if (firstAddress?.state?.value) address.state = firstAddress?.state?.value;
-    if (firstAddress?.postalCode?.value) {
-      address.zip = normalizeZipCode(firstAddress?.postalCode?.value);
+    const postalCode = firstAddress?.postalCode?.value;
+    if (postalCode && postalCode.length > 0) {
+      try {
+        address.zip = normalizeZipCode(postalCode);
+      } catch (err) {
+        console.log(`normalizeZipCode error for zip ${postalCode} - error: ${err}`);
+      }
     }
   }
   return address;

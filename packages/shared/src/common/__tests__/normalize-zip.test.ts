@@ -24,4 +24,19 @@ describe("normalizeZipCode", () => {
     const expectedOutput = "54321";
     expect(normalizeZipCode(input)).toBe(expectedOutput);
   });
+
+  test("should throw an error if zip contains non-digit and non-dash characters (length 9)", () => {
+    const input = "12345-667a";
+    expect(() => normalizeZipCode(input)).toThrow();
+  });
+
+  test("should throw an error if zip contains non-digit and non-dash characters (length 5)", () => {
+    const input = "1234a";
+    expect(() => normalizeZipCode(input)).toThrow();
+  });
+
+  test("should throw an error if zip is an empty string", () => {
+    const input = "";
+    expect(() => normalizeZipCode(input)).toThrow();
+  });
 });
