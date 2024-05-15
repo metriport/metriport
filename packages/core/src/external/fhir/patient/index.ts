@@ -8,10 +8,19 @@ import {
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
-import { Patient, splitName, genderAtBirthMapping } from "../../../domain/patient";
+import { Patient, splitName, GenderAtBirth } from "../../../domain/patient";
 import { getIdFromSubjectId, getIdFromSubjectRef } from "../shared";
 
 export type PatientIdAndData = Pick<Patient, "id" | "data">;
+
+const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
+  F: "female",
+  M: "male",
+};
+
+export function mapGenderAtBirthToFhir(k: GenderAtBirth): "female" | "male" {
+  return genderMapping[k];
+}
 
 export function toFHIR(patient: PatientIdAndData): FHIRPatient {
   return {
@@ -43,7 +52,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
           return telecoms; // Moved return statement outside of the for loop
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
-    gender: genderAtBirthMapping[patient.data.genderAtBirth],
+    gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
     birthDate: patient.data.dob,
     address:
       patient.data.address.map((addr: Address) => {

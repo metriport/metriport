@@ -16,6 +16,10 @@ const genderMapping: { [k in GenderAtBirth]: string } = {
   M: "M",
 };
 
+export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
+  return genderMapping[k];
+}
+
 export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPerson {
   return {
     details: cwPatient.details,
@@ -65,7 +69,7 @@ export function patientToCommonwell({
         },
       ],
       gender: {
-        code: genderMapping[patient.data.genderAtBirth],
+        code: mapGenderAtBirthToCw(patient.data.genderAtBirth),
       },
       telecom: patient.data.contact?.flatMap(contact => {
         const contacts: Contact[] = [];
