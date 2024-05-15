@@ -1,6 +1,6 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
-import { Op, WhereOptions, json, Order } from "sequelize";
+import { Op, WhereOptions, json } from "sequelize";
 import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../medical/patient";
 
@@ -26,13 +26,12 @@ export class PatientLoaderLocal implements PatientLoader {
     return this.findBySimilarityInternal(patient);
   }
 
-  async findBySimilarity(patient: FindBySimilarity, order?: Order): Promise<Patient[]> {
-    return this.findBySimilarityInternal(patient, order);
+  async findBySimilarity(patient: FindBySimilarity): Promise<Patient[]> {
+    return this.findBySimilarityInternal(patient);
   }
 
   private async findBySimilarityInternal(
-    patient: Partial<Pick<FindBySimilarity, "cxId">> & Omit<FindBySimilarity, "cxId">,
-    order?: Order
+    patient: Partial<Pick<FindBySimilarity, "cxId">> & Omit<FindBySimilarity, "cxId">
   ): Promise<Patient[]> {
     const whereDataClause: WhereOptions<PatientData> = {
       ...(patient.data.firstNameInitial
@@ -55,7 +54,7 @@ export class PatientLoaderLocal implements PatientLoader {
     };
     if (Object.keys(whereClause).length === 0) throw new Error("No search criteria provided");
 
-    const patients = await PatientModel.findAll({ where: whereClause, order });
+    const patients = await PatientModel.findAll({ where: whereClause });
     return patients;
   }
 }

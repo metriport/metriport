@@ -36,15 +36,16 @@ export const getPatientByDemo = async ({
   if (!normalizedPatientDemo) return undefined;
 
   // Find patients based on the criteria of matching dob and genderAtBirth
-  const foundPatients = await patientLoader.findBySimilarity(
-    {
-      cxId,
-      data: {
-        dob: normalizedPatientDemo.dob,
-        genderAtBirth: normalizedPatientDemo.genderAtBirth,
-      },
+  const foundPatients = await patientLoader.findBySimilarity({
+    cxId,
+    data: {
+      dob: normalizedPatientDemo.dob,
+      genderAtBirth: normalizedPatientDemo.genderAtBirth,
     },
-    [["created_at", "ASC"]]
+  });
+
+  foundPatients.sort(
+    (a: Patient, b: Patient) => a.createdAt.getMilliseconds() - b.createdAt.getMilliseconds()
   );
 
   // Convert patients to proper datatype
@@ -60,7 +61,9 @@ export const getPatientByDemo = async ({
 
   if (matchingPatients.length > 1) {
     log(
-      `WARNING: matchPatients in getPatientByDemo for demo: ${demo} and cxId: ${cxId} is returning more than one matched patient!`
+      `WARNING: matchPatients in getPatientByDemo for demo: ${JSON.stringify(
+        demo
+      )} and cxId: ${cxId} is returning more than one matched patient!`
     );
     capture.message("matchPatients in getPatientByDemo returning more than one matched patient!", {
       extra: {
