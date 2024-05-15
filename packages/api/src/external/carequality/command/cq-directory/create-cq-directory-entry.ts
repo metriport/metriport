@@ -24,7 +24,6 @@ function createKeys(): string {
     "managingOrganization";
   const managingOrganizationId: keyof Pick<CQDirectoryEntryModel, "managingOrganizationId"> =
     "managingOrganizationId";
-  const gateway: keyof Pick<CQDirectoryEntryModel, "gateway"> = "gateway";
   const active: keyof Pick<CQDirectoryEntryModel, "active"> = "active";
   const lastUpdatedAtCQ: keyof Pick<CQDirectoryEntryModel, "lastUpdatedAtCQ"> = "lastUpdatedAtCQ";
 
@@ -45,7 +44,6 @@ function createKeys(): string {
     createdAt ? "created_at" : undefined,
     managingOrganization ? "managing_organization" : undefined,
     managingOrganizationId ? "managing_organization_id" : undefined,
-    gateway ? "gateway" : undefined,
     active ? "active" : undefined,
     lastUpdatedAtCQ ? "last_updated_at_cq" : undefined,
   ];
@@ -81,7 +79,6 @@ export async function bulkInsertCQDirectoryEntries(
     date,
     entry.managingOrganization ?? null,
     entry.managingOrganizationId ?? null,
-    entry.gateway ?? false,
     entry.active ?? false,
     entry.lastUpdatedAtCQ ?? null,
   ]);

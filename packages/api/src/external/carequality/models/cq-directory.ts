@@ -23,7 +23,6 @@ export class CQDirectoryEntryModel
   declare data?: Organization;
   declare managingOrganization?: string;
   declare managingOrganizationId?: string;
-  declare gateway: boolean;
   declare active: boolean;
   declare lastUpdatedAtCQ: string;
 
@@ -79,10 +78,6 @@ export class CQDirectoryEntryModel
         managingOrganizationId: {
           type: DataTypes.STRING,
           field: "managing_organization_id",
-        },
-        gateway: {
-          type: DataTypes.BOOLEAN,
-          defaultValue: false,
         },
         active: {
           type: DataTypes.BOOLEAN,

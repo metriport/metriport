@@ -55,7 +55,6 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       data: org,
       managingOrganization,
       managingOrganizationId,
-      gateway: false,
       active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
