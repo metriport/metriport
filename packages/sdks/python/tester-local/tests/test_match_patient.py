@@ -14,7 +14,7 @@ facility_id = os.environ.get("FACILITY_ID")
 base_url = os.environ.get("BASE_URL")
 
 
-def test_search_patient() -> None:
+def test_match_patient() -> None:
     metriport = Metriport(api_key=api_key, base_url=base_url)
     patient_data = BasePatient(
         first_name="John",
