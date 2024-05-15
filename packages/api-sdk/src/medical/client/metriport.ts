@@ -12,14 +12,14 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   BulkGetDocumentUrlQuery,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
   DocumentQuery,
+  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
-  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -183,6 +183,17 @@ export class MetriportMedicalApi {
     const resp = await this.api.get(`${FACILITY_URL}`);
     if (!resp.data) return [];
     return facilityListSchema.parse(resp.data).facilities;
+  }
+
+  /**
+   * Deletes a facility. It will fail if the facility has patients associated with it.
+   *
+   * @param facilityId The ID of facility to be deleted.
+   */
+  async deleteFacility(facilityId: string, eTag?: string): Promise<void> {
+    await this.api.delete(`${FACILITY_URL}/${facilityId}`, {
+      headers: { ...getETagHeader({ eTag }) },
+    });
   }
 
   /**
@@ -361,7 +372,7 @@ export class MetriportMedicalApi {
   /**
    * Removes a patient at Metriport and at HIEs the patient is linked to.
    *
-   * @param patientId The ID of the patient data to be deleted.
+   * @param patientId The ID of the patient to be deleted.
    * @param facilityId The facility providing the NPI to support this operation.
    */
   async deletePatient(patientId: string, facilityId: string, eTag?: string): Promise<void> {
