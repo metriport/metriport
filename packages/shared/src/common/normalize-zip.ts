@@ -1,5 +1,5 @@
 /**
- * Normalizes a zip code by taking the first 5 characters.
+ * Normalizes a zip code by taking the first 4-5 characters.
  * @param zipCode - The zip code to be normalized.
  * @returns The normalized zip code as a string.
  */
