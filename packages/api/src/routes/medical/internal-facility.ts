@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Router from "express-promise-router";
 import httpStatus from "http-status";
 import { requestLogger } from "../helpers/request-logger";
-import { facilityOboDetailsSchema } from "./schemas/internal-facility";
+import { facilityOboDetailsSchema } from "./schemas/facility";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
 import { registerFacilityWithinHIEs } from "../../external/hie/register-facility.ts";
