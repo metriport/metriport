@@ -196,7 +196,7 @@ async function DRIntegrationTest() {
         homeCommunityId: dqResult.gateway.homeCommunityId,
       },
       patientId: dqResult.patientId,
-      samlAttributes: samlAtributes,
+      samlAttributes: samlAttributes,
       documentReference: dqResponse.documentReference,
     };
     try {
