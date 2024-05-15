@@ -41,7 +41,7 @@
     "url": "https://github.com/metriport/metriport/issues"
   },
   "dependencies": {
-    "@metriport/core": "^1.12.3",
+    "@metriport/shared": "^0.7.4",
     "@metriport/ihe-gateway-sdk": "^0.8.4"
   }
 }
