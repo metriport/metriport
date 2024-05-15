@@ -3,9 +3,8 @@ import { Address } from "@metriport/carequality-sdk/models/address";
 import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
-import { normalizeZipCode } from "@metriport/core/mpi/normalize-patient";
 import { capture } from "@metriport/core/util/notifications";
-import { normalizeOid } from "@metriport/shared";
+import { normalizeOid, normalizeZipCode } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 

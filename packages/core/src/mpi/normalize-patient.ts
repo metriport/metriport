@@ -1,5 +1,6 @@
 import { Address } from "../domain/address";
 import { PatientData } from "../domain/patient";
+import { normalizeZipCode } from "@metriport/shared";
 
 /**
  * Takes in patient data and normalizes it by splitting the first and last names,
@@ -39,15 +40,6 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
     }),
   };
   return normalizedPatient;
-}
-
-/**
- * Normalizes a zip code by taking the first 5 characters.
- * @param zipCode - The zip code to be normalized.
- * @returns The normalized zip code as a string.
- */
-export function normalizeZipCode(zipCode: string): string {
-  return zipCode.slice(0, 5);
 }
 
 /**
