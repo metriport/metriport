@@ -1,0 +1,28 @@
+---
+title: "Delete Facility"
+description: "Deletes a Facility. Returns 400 if there are patients associated with the Facility."
+api: "DELETE /medical/v1/facility/{id}"
+---
+
+## Path Params
+
+<ParamField path="id" type="string" required>
+  The ID of your Facility.
+</ParamField>
+
+## Response
+
+`204` - no content, upon successful delete.
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const facilityId = "2.16.840.1.113883.3.666.5.2004.4.102";
+await metriport.deleteFacility(facilityId);
+```
+
+</ResponseExample>
