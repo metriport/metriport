@@ -9,7 +9,10 @@ export type CQDirectoryEntryData = {
   urlDR?: string;
   lat?: number;
   lon?: number;
+  addressLine?: string;
+  city?: string;
   state?: string;
+  zip?: string;
   data?: Organization;
   point?: string;
   managingOrganization?: string;

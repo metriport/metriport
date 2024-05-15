@@ -14,7 +14,10 @@ function createKeys(): string {
   const lat: keyof Pick<CQDirectoryEntryModel, "lat"> = "lat";
   const lon: keyof Pick<CQDirectoryEntryModel, "lon"> = "lon";
   const point: keyof Pick<CQDirectoryEntryModel, "point"> = "point";
+  const addressLine: keyof Pick<CQDirectoryEntryModel, "addressLine"> = "addressLine";
+  const city: keyof Pick<CQDirectoryEntryModel, "city"> = "city";
   const state: keyof Pick<CQDirectoryEntryModel, "state"> = "state";
+  const zip: keyof Pick<CQDirectoryEntryModel, "zip"> = "zip";
   const data: keyof Pick<CQDirectoryEntryModel, "data"> = "data";
   const createdAt: keyof Pick<CQDirectoryEntryModel, "createdAt"> = "createdAt";
   const managingOrganization: keyof Pick<CQDirectoryEntryModel, "managingOrganization"> =
@@ -34,7 +37,10 @@ function createKeys(): string {
     lat,
     lon,
     point,
+    addressLine ? "address_line" : undefined,
+    city,
     state,
+    zip,
     data,
     createdAt ? "created_at" : undefined,
     managingOrganization ? "managing_organization" : undefined,
@@ -67,7 +73,10 @@ export async function bulkInsertCQDirectoryEntries(
     entry.lat ?? null,
     entry.lon ?? null,
     entry.point ?? null,
+    entry.addressLine ?? null,
+    entry.city ?? null,
     entry.state ?? null,
+    entry.zip ?? null,
     entry.data ? JSON.stringify(entry.data) : null,
     date,
     entry.managingOrganization ?? null,

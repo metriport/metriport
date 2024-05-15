@@ -46,7 +46,7 @@ export function normalizePatient<T extends PatientData>(patient: T): T {
  * @param zipCode - The zip code to be normalized.
  * @returns The normalized zip code as a string.
  */
-function normalizeZipCode(zipCode: string): string {
+export function normalizeZipCode(zipCode: string): string {
   return zipCode.slice(0, 5);
 }
 
