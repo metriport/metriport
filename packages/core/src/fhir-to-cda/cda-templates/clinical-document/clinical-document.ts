@@ -106,7 +106,7 @@ export function buildClinicalDocumentXml(
   const builder = new XMLBuilder({
     format: false,
     attributeNamePrefix: "_",
-    textNodeName: "_text",
+    // textNodeName: "#text",
     ignoreAttributes: false,
   });
 

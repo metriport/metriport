@@ -186,7 +186,7 @@ function createEntryFromStatement(
         consumable: {
           [_typeCodeAttribute]: "CSM",
           manufacturedProduct: {
-            [_codeAttribute]: "MANU",
+            // [_codeAttribute]: "MANU",
             templateId: buildInstanceIdentifier({
               root: "2.16.840.1.113883.10.20.22.4.23",
               extension: "2014-06-09",

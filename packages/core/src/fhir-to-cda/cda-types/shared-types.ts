@@ -179,7 +179,6 @@ export type ObservationTableRow = {
     }[];
   };
 };
-
 export type ObservationEntry = {
   observation: {
     [_classCodeAttribute]: string;
@@ -209,8 +208,14 @@ export type ObservationEntry = {
     effectiveTime?: {
       [_valueAttribute]?: string | undefined;
     };
-    entryRelationship?: ObservationEntry[];
+    entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
+  };
+};
+
+export type ObservationEntryRelationship = ObservationEntry & {
+  observation: {
+    typeCode: string;
   };
 };
 
@@ -240,7 +245,7 @@ export type SubstanceAdministationEntry = {
     consumable: {
       [_typeCodeAttribute]: string;
       manufacturedProduct: {
-        [_codeAttribute]: string;
+        // [_codeAttribute]: string;
         templateId?: {
           [_rootAttribute]?: string;
           [_extensionAttribute]?: string;

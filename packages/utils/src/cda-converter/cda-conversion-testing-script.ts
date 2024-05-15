@@ -1,3 +1,6 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// keep that ^ on top
 import { Bundle } from "@medplum/fhirtypes";
 import { generateCdaFromFhirBundle } from "@metriport/core/fhir-to-cda/cda-generators";
 import { splitBundleByCompositions } from "@metriport/core/fhir-to-cda/composition-splitter";

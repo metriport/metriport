@@ -6,6 +6,7 @@ import {
   Entry,
   EntryObject,
   ObservationEntry,
+  ObservationEntryRelationship,
   ObservationTableRow,
 } from "../../cda-types/shared-types";
 import {
@@ -184,8 +185,9 @@ export function createEntriesFromObservation(
         buildReferenceId(socHistNumber, pairNumber),
         date
       );
+      const entryRelationship = createEntryRelationship(entryRelationshipObservation);
       if (observationEntry.observation.entryRelationship)
-        observationEntry.observation.entryRelationship.push(entryRelationshipObservation);
+        observationEntry.observation.entryRelationship.push(entryRelationship);
     });
   }
 
@@ -236,4 +238,13 @@ function createEntryFromObservation(
     },
   };
   return entry;
+}
+
+function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelationship {
+  return {
+    observation: {
+      ...entry.observation,
+      typeCode: "COMP", // TODO: Check the correctness of this
+    },
+  };
 }
