@@ -1,7 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
-import { DocumentResponse } from "./dr-response";
+import { DocumentResponse } from "../process/dr-response";
 import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
-import { stripCidPrefix, stripTags } from "../../../utils";
+import { stripCidPrefix, stripTags } from "./cid";
 
 const quoteRegex = /"/g;
 const carriageReturnLineFeed = "\r\n\r\n";
@@ -13,10 +13,10 @@ type MtomContentType = {
   startInfo?: string | undefined;
 };
 
-function parseMtomContentType(contentType: string): MtomContentType {
+export function parseMtomContentType(contentType: string): MtomContentType {
   const contentTypeParams = contentType.split(";").reduce<Record<string, string>>((acc, param) => {
     const index = param.indexOf("=");
-    if (index !== -1) {
+    if (index >= 0) {
       const key = param.substring(0, index).trim().toLowerCase();
       const value = param
         .substring(index + 1)
@@ -47,10 +47,10 @@ type MtomHeaders = {
   ContentType: string;
 };
 
-function parseMtomHeaders(headerPart: string): MtomHeaders {
+export function parseMtomHeaders(headerPart: string): MtomHeaders {
   const headers = headerPart.split("\n").reduce<Record<string, string>>((acc, headerLine) => {
     const index = headerLine.indexOf(":");
-    if (index !== -1) {
+    if (index >= 0) {
       const key = headerLine.substring(0, index).trim().toLowerCase();
       const value = headerLine.substring(index + 1).trim();
       acc[key] = value;
@@ -87,13 +87,13 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
       splitter = contentTypeParams.startInfo + splitter;
       headersEndIndex = part.indexOf(splitter);
     }
-    if (headersEndIndex === -1) {
+    if (headersEndIndex < 0) {
       splitter = carriageReturnLineFeed;
       headersEndIndex = part.indexOf(splitter);
-      if (headersEndIndex === -1) {
+      if (headersEndIndex < 0) {
         splitter = "\n\n";
         headersEndIndex = part.indexOf(splitter);
-        if (headersEndIndex === -1) {
+        if (headersEndIndex < 0) {
           throw new Error("No headers found in part.");
         }
       }

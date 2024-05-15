@@ -16,7 +16,7 @@ const context = "ihe-gateway-v2-dr-saml-client";
 export type DRSamlClientResponse = SamlClientResponse & {
   gateway: XCAGateway;
   outboundRequest: OutboundDocumentRetrievalReq;
-  contentType: string | undefined;
+  contentType?: string | undefined;
 };
 
 export async function sendSignedDRRequests({
@@ -73,7 +73,6 @@ export async function sendSignedDRRequests({
         outboundRequest: request.outboundRequest,
         response: errorString,
         success: false,
-        contentType: undefined,
       };
     }
   });

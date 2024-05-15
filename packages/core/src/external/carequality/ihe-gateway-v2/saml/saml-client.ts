@@ -6,7 +6,10 @@ import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
+import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 const { log } = out("Saml Client");
+
+const timeout = 120000;
 
 export type SamlClientResponse = {
   response: string;
@@ -78,9 +81,8 @@ export async function sendSignedXmlMTOM({
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
-  const boundary = "MIMEBoundary782a6cafc4cf4aab9dbf291522804454";
   const agent = new https.Agent({
-    rejectUnauthorized: false,
+    rejectUnauthorized: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
@@ -89,13 +91,12 @@ export async function sendSignedXmlMTOM({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const payload = `--${boundary}\r\nContent-ID: <doc0@metriport.com>\r\nContent-Type: application/xop+xml; charset=UTF-8; type="application/soap+xml"\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${signedXml}\r\n\r\n--${boundary}--`;
-
+  const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
   const response = await axios.post(url, payload, {
-    timeout: 120000,
+    timeout: timeout,
     headers: {
       "Accept-Encoding": "gzip, deflate",
-      "Content-Type": `multipart/related; type="application/xop+xml"; start="<doc0@metriport.com>"; boundary=${boundary}; start-info="application/soap+xml"`,
+      "Content-Type": contentType,
       "Cache-Control": "no-cache",
     },
     httpsAgent: agent,

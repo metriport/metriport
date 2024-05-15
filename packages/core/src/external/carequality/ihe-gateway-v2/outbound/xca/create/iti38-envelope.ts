@@ -14,6 +14,7 @@ const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
 const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
 const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
 
+const dateFormat = "YYYYMMDDHHmmss";
 export type BulkSignedDQ = {
   gateway: XCAGateway;
   signedRequest: string;
@@ -29,16 +30,16 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   const practiceSettingCode = bodyData.practiceSettingCode;
   const facilityTypeCode = bodyData.facilityTypeCode;
   const serviceDateFrom = bodyData.serviceDate?.dateFrom
-    ? dayjs(bodyData.serviceDate.dateFrom).format("YYYYMMDDHHmmss")
+    ? dayjs(bodyData.serviceDate.dateFrom).format(dateFormat)
     : undefined;
   const serviceDateTo = bodyData.serviceDate?.dateTo
-    ? dayjs(bodyData.serviceDate.dateTo).format("YYYYMMDDHHmmss")
+    ? dayjs(bodyData.serviceDate.dateTo).format(dateFormat)
     : undefined;
   const documentCreationDateFrom = bodyData.documentCreationDate?.dateFrom
-    ? dayjs(bodyData.documentCreationDate.dateFrom).format("YYYYMMDDHHmmss")
+    ? dayjs(bodyData.documentCreationDate.dateFrom).format(dateFormat)
     : undefined;
   const documentCreationDateTo = bodyData.documentCreationDate?.dateTo
-    ? dayjs(bodyData.documentCreationDate.dateTo).format("YYYYMMDDHHmmss")
+    ? dayjs(bodyData.documentCreationDate.dateTo).format(dateFormat)
     : undefined;
   const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
   const externalGatewayPatientId = bodyData.externalGatewayPatient.id;

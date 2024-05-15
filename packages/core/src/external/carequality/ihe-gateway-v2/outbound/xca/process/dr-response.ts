@@ -26,7 +26,7 @@ import {
 } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { capture } from "../../../../../../util/notifications";
-import { parseMTOMResponse } from "./mtom-parser";
+import { parseMTOMResponse } from "../mtom/parser";
 
 const bucket = Config.getMedicalDocumentsBucketName();
 

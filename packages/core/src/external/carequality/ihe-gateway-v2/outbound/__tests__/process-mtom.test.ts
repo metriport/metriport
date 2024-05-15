@@ -1,12 +1,34 @@
 import fs from "fs";
 import path from "path";
-//import { v4 as uuidv4 } from "uuid";
 import { processDRResponse } from "../xca/process/dr-response";
 import { outboundDRRequestMTOM, outboundDRRequestMultiMTOM } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
+import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
+import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
 const s3Utils = new S3Utils(Config.getAWSRegion());
+
+describe("mtomContentAndHeaderParsing", () => {
+  it("should correctly build and parse MTOM content type and headers", async () => {
+    const signedXml = "<xml>test</xml>";
+    const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
+    const parsedContentType = parseMtomContentType(contentType);
+    expect(parsedContentType.boundary).toBe("MIMEBoundary782a6cafc4cf4aab9dbf291522804454");
+    expect(parsedContentType.type).toBe("application/xop+xml");
+    expect(parsedContentType.start).toBe("<doc0@metriport.com>");
+    expect(parsedContentType.startInfo).toBe("application/soap+xml");
+
+    // Extract headers from payload
+    const headerPart = payload.split("\r\n\r\n")[0] || "";
+    const parsedHeaders = parseMtomHeaders(headerPart);
+    expect(parsedHeaders.ContentID).toBe("doc0@metriport.com");
+    expect(parsedHeaders.ContentType).toBe(
+      `application/xop+xml; charset=UTF-8; type="application/soap+xml"`
+    );
+    expect(parsedHeaders.ContentTransferEncoding).toBe("8bit");
+  });
+});
 
 describe("processDRResponse", () => {
   beforeEach(() => {
