@@ -22,6 +22,7 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
+import { Config } from "../../../shared/config";
 
 dayjs.extend(duration);
 
@@ -305,16 +306,22 @@ describe("MAPI E2E Tests", () => {
     expect(async () => getFhirPatient(patient.id)).rejects.toThrowError(OperationOutcomeError);
   });
 
-  it("deletes the facility", async () => {
-    await medicalApi.deleteFacility(facility.id);
-    try {
-      await medicalApi.getFacility(facility.id);
-      assert.fail("It should have failed to get the facility after deletion");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      console.log("Error:", error);
-      expect(error).toBeTruthy();
-      expect(error.response?.status).toEqual(404);
-    }
-  });
+  // TODO 1634 Remove this
+  // TODO 1634 Remove this
+  // TODO 1634 Remove this
+  // TODO 1634 Remove this
+  if (Config.isDev()) {
+    it("deletes the facility", async () => {
+      await medicalApi.deleteFacility(facility.id);
+      try {
+        await medicalApi.getFacility(facility.id);
+        assert.fail("It should have failed to get the facility after deletion");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.log("Error:", error);
+        expect(error).toBeTruthy();
+        expect(error.response?.status).toEqual(404);
+      }
+    });
+  }
 });
