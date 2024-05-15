@@ -75,6 +75,7 @@ export const processRequest = async (
   additionalWHRequestMeta?: Record<string, string>,
   cxWHRequestMeta?: unknown
 ): Promise<boolean> => {
+  console.log("I AM BEING CALLED");
   const { webhookUrl, webhookKey, webhookEnabled } = settings;
   if (!webhookUrl || !webhookKey) {
     return missingWHSettings(webhookRequest, webhookUrl, webhookKey);

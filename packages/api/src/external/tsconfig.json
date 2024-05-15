@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": true
   },
-  "include": ["./**/*"],
-  "exclude": ["./**/*.test.ts"],
+  "include": ["./**/*", "../command/medical/facility/create-or-update-facility.ts"],
+  "exclude": ["./**/*.test.ts"]
 }

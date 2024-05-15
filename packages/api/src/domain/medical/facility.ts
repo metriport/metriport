@@ -55,15 +55,3 @@ export function isOboEnabled(facility: Facility, hie: MedicalDataSource): boolea
   if (hie === MedicalDataSource.CAREQUALITY) return !!cqOboActive && !!cqOboOid;
   throw new MetriportError("Programming error, invalid HIE type", undefined, { hie });
 }
-
-export type AddressWithCoordinates = AddressStrict & { lat: string; lon: string };
-
-export type CqOboDetails =
-  | {
-      enabled: true;
-      cqFacilityName: string;
-      cqOboOid: string;
-    }
-  | {
-      enabled: false;
-    };

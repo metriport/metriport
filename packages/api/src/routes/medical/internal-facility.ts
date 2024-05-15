@@ -5,7 +5,7 @@ import { requestLogger } from "../helpers/request-logger";
 import { facilityOboDetailsSchema } from "./schemas/internal-facility";
 import { getUUIDFrom } from "../schemas/uuid";
 import { asyncHandler } from "../util";
-import { registerFacilityWithinHIEs } from "../../external/hie/register-facility";
+import { registerFacilityWithinHIEs } from "../../external/hie/register-facility.ts";
 import { FacilityRegister } from "../../domain/medical/facility";
 
 const router = Router();
@@ -14,7 +14,7 @@ const router = Router();
  *
  * PUT /internal/facility
  *
- * Creates a new obo facility and registers it within HIEs.
+ * Creates a new facility and registers it within HIEs.
  *
  * TODO: Add unit tests.
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
@@ -29,7 +29,6 @@ router.put(
     const facilityInput = facilityOboDetailsSchema.parse(req.body);
 
     const facilityUpdate: FacilityRegister = {
-      // need to add id
       id: facilityInput.id,
       cxId,
       cqOboActive: facilityInput.cqOboActive,

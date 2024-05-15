@@ -8,3 +8,14 @@ export async function getCwInitiator(
 ): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId, MedicalDataSource.COMMONWELL);
 }
+
+export function buildCwOrgName(
+  vendorName: string,
+  orgName: string,
+  oboOid?: string | null
+): string {
+  if (oboOid) {
+    return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
+  }
+  return `${vendorName} - ${orgName}`;
+}
