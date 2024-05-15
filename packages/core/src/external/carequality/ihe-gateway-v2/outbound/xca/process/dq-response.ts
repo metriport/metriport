@@ -77,11 +77,13 @@ function parseDocumentReference(
       (c: Classification) => c._classificationScheme === classificationScheme
     );
     if (!classification) return undefined;
-    const classificationSlots = Array.isArray(classification.Slot)
-      ? classification.Slot.filter((slot: Slot) => slot !== null && slot !== undefined)
-      : classification.Slot
-      ? [classification.Slot]
-      : [];
+
+    let classificationSlots: Slot[] = [];
+    if (Array.isArray(classification.Slot)) {
+      classificationSlots = classification.Slot.filter((slot: Slot) => slot != undefined);
+    } else if (classification.Slot) {
+      classificationSlots = [classification.Slot];
+    }
 
     if (!classificationSlots) return undefined;
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);

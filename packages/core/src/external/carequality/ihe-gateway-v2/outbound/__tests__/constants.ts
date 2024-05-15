@@ -162,7 +162,7 @@ export const outboundDRRequest = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
-    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    url: "https://carequality.test123health.com/services/xca-iti38",
     homeCommunityId: "2.16.840.1.113883.3.8391",
   },
   timestamp: "2023-12-01T08:44:00Z",
@@ -208,7 +208,7 @@ export const outboundDRRequestMTOM = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
-    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    url: "https://carequality.test123health.com/services/xca-iti38",
     homeCommunityId: "2.16.840.1.113883.3.8391",
   },
   timestamp: "2023-12-01T08:44:00Z",
@@ -227,10 +227,10 @@ export const outboundDRRequestMTOM = {
   documentReference: [
     {
       contentType: "text/xml",
-      docUniqueId: "1.2.840.114350.1.13.35.2.7.8.688883.688787596",
+      docUniqueId: "123456789",
       metriportId: uuidv4(),
-      homeCommunityId: "urn:oid:1.2.840.114350.1.13.35.2.7.3.688884.100",
-      repositoryUniqueId: "1.2.840.114350.1.13.35.2.7.3.688884.100",
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
     },
   ],
 };
@@ -239,7 +239,7 @@ export const outboundDRRequestMultiMTOM = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
-    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    url: "https://carequality.test123health.com/services/xca-iti38",
     homeCommunityId: "2.16.840.1.113883.3.8391",
   },
   timestamp: "2023-12-01T08:44:00Z",
@@ -260,15 +260,15 @@ export const outboundDRRequestMultiMTOM = {
       contentType: "text/xml",
       docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269592",
       metriportId: uuidv4(),
-      homeCommunityId: "urn:oid:1.2.840.114350.1.13.35.2.7.3.688884.100",
-      repositoryUniqueId: "1.2.840.114350.1.13.35.2.7.3.688884.100",
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
     },
     {
       contentType: "text/xml",
       docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269594",
       metriportId: uuidv4(),
-      homeCommunityId: "urn:oid:1.2.840.114350.1.13.35.2.7.3.688884.100",
-      repositoryUniqueId: "1.2.840.114350.1.13.35.2.7.3.688884.100",
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
     },
   ],
 };

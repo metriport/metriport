@@ -1,11 +1,15 @@
 import { XMLParser } from "fast-xml-parser";
 import { DocumentResponse } from "./dr-response";
 import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
+import { stripCidPrefix, stripTags } from "../../../utils";
+
+const quoteRegex = /"/g;
+const carriageReturnLineFeed = "\r\n\r\n";
 
 type MtomContentType = {
   boundary: string;
-  type: string;
   start: string;
+  type?: string | undefined;
   startInfo?: string | undefined;
 };
 
@@ -17,7 +21,7 @@ function parseMtomContentType(contentType: string): MtomContentType {
       const value = param
         .substring(index + 1)
         .trim()
-        .replace(/"/g, "");
+        .replace(quoteRegex, "");
       acc[key] = value;
     }
     return acc;
@@ -25,9 +29,6 @@ function parseMtomContentType(contentType: string): MtomContentType {
 
   if (!contentTypeParams.boundary) {
     throw new Error("No boundary parameter found in content type.");
-  }
-  if (!contentTypeParams.type) {
-    throw new Error("No type parameter found in content type.");
   }
   if (!contentTypeParams.start) {
     throw new Error("No start parameter found in content type.");
@@ -80,14 +81,14 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
   const attachments: Record<string, string> = {};
 
   parts.forEach(part => {
-    let splitter = "\r\n\r\n";
+    let splitter = carriageReturnLineFeed;
     let headersEndIndex = -1;
     if (contentTypeParams.startInfo) {
       splitter = contentTypeParams.startInfo + splitter;
       headersEndIndex = part.indexOf(splitter);
     }
     if (headersEndIndex === -1) {
-      splitter = "\r\n\r\n";
+      splitter = carriageReturnLineFeed;
       headersEndIndex = part.indexOf(splitter);
       if (headersEndIndex === -1) {
         splitter = "\n\n";
@@ -139,18 +140,10 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
   documentResponses.forEach(docResponse => {
     const document = attachments[docResponse.Document];
     if (!document) {
-      throw new Error(`Attachment with ID ${docResponse.Document} not found.`);
+      throw new Error(`Attachment for Document ID not found`);
     }
     docResponse.Document = document;
   });
 
   return documentResponses;
-}
-
-function stripCidPrefix(cid: string): string {
-  return cid.replace("cid:", "");
-}
-
-function stripTags(content: string): string {
-  return content.replace(/^<|>$/g, "");
 }

@@ -122,8 +122,6 @@ async function handleSuccessResponse({
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
-
-    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const documentReferences = Array.isArray(documentResponses)
       ? await Promise.all(
           documentResponses.map(async (documentResponse: DocumentResponse) =>
@@ -252,6 +250,10 @@ export async function processDRResponseMTOM({
   }
 }
 
+function isMTOMResponse(contentType: string | undefined): boolean {
+  return contentType !== undefined && contentType.includes("multipart/related");
+}
+
 export async function processDRResponse({
   drResponse,
   s3Utils,
@@ -259,7 +261,7 @@ export async function processDRResponse({
   drResponse: DRSamlClientResponse;
   s3Utils: S3Utils;
 }): Promise<OutboundDocumentRetrievalResp> {
-  if (drResponse.contentType?.includes("multipart/related")) {
+  if (isMTOMResponse(drResponse?.contentType)) {
     return await processDRResponseMTOM({ drResponse, s3Utils });
   } else {
     return await processDRResponseSOAP({ drResponse, s3Utils });
