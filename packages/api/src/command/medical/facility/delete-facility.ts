@@ -1,4 +1,4 @@
-import BadRequestError from "@metriport/core/util/error/bad-request";
+import { BadRequestError } from "@metriport/shared";
 import { Facility } from "../../../domain/medical/facility";
 import { getPatients } from "../patient/get-patient";
 import { getFacilityOrFail } from "./get-facility";

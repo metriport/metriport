@@ -1,8 +1,5 @@
-import { MetriportError } from "./error/metriport-error";
+import { MetriportError } from "../error/metriport-error";
 
-/**
- * @deprecated User @metriport/shared/common/env-var instead
- */
 export enum EnvType {
   production = "production",
   sandbox = "sandbox",
@@ -10,14 +7,8 @@ export enum EnvType {
   development = "dev",
 }
 
-/**
- * @deprecated User @metriport/shared/common/env-var instead
- */
 export const getEnvVar = (varName: string): string | undefined => process.env[varName];
 
-/**
- * @deprecated User @metriport/shared/common/env-var instead
- */
 export const getEnvVarOrFail = (varName: string): string => {
   const value = getEnvVar(varName);
   if (!value || value.trim().length < 1) {
@@ -26,9 +17,6 @@ export const getEnvVarOrFail = (varName: string): string => {
   return value;
 };
 
-/**
- * @deprecated User @metriport/shared/common/env-var instead
- */
 export function getEnvType(): EnvType {
   const envType = getEnvVarOrFail("ENV_TYPE");
   const envTypeValues = Object.values(EnvType).map(v => v.toString());
