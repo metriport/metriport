@@ -53,7 +53,7 @@ router.post(
 
     // TODO: #393 declarative, event-based integration
     // Intentionally asynchronous
-    if (organizationType === "healthcare_provider") {
+    if (organizationType !== "healthcare_it_vendor") {
       cwCommands.organization.create(org).catch(processAsyncError(`cw.org.create`));
     }
 
