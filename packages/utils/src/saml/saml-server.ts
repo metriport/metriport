@@ -12,6 +12,7 @@ import { createAndSignBulkDRRequests } from "@metriport/core/external/carequalit
 import { sendSignedXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/send/xcpd-requests";
 import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dq-requests";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
+import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { MockS3Utils } from "./s3";
@@ -41,8 +42,13 @@ app.post("/xcpd", async (req: Request, res: Response) => {
       patientId: uuidv4(),
       cxId: uuidv4(),
     });
+    const results = response.map(response => {
+      return processXCPDResponse({
+        xcpdResponse: response,
+      });
+    });
 
-    res.type("application/xml").send(response);
+    res.type("application/json").send(results);
   } catch (error) {
     console.log(error);
     res.status(500).send({ detail: "Internal Server Error" });
@@ -100,12 +106,12 @@ app.post("/xcadr", async (req: Request, res: Response) => {
     });
 
     const s3Utils = new MockS3Utils(Config.getAWSRegion());
-    return processDRResponse({
+    const results = processDRResponse({
       drResponse: response[0],
       s3Utils,
     });
 
-    res.type("application/xml").send(response);
+    res.type("application/json").send(results);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
   }

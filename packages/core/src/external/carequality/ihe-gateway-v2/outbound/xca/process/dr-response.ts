@@ -241,6 +241,7 @@ export async function processDRResponseMTOM({
         error,
         response,
         contentType,
+        gateway,
       },
     });
     return handleErrorMTOMResponse({

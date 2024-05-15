@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import { genderMapping } from "../../fhir/patient";
 
 const cidPrefixRegex = /^cid:/;
-const tagRegex = /^<|>$/g;
+const endTagRegex = /^<|>$/g;
 
 export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
@@ -20,5 +20,5 @@ export function stripCidPrefix(cid: string): string {
 }
 
 export function stripTags(content: string): string {
-  return content.replace(tagRegex, "");
+  return content.replace(endTagRegex, "");
 }

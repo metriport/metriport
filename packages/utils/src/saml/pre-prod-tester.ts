@@ -24,7 +24,7 @@ It is being used to test that DQs and DRs do not have runtime errors, and to tes
 the db.
 */
 
-const samlAtributes = {
+const samlAttributes = {
   subjectId: "System User",
   subjectRole: {
     code: "106331006",
@@ -105,7 +105,7 @@ async function DQIntegrationTest() {
       gateway: dqResult.gateway,
       timestamp: dqResult.timestamp,
       patientId: dqResult.patientId,
-      samlAttributes: samlAtributes,
+      samlAttributes: samlAttributes,
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     try {
@@ -174,7 +174,7 @@ async function DRIntegrationTest() {
       gateway: dqResult.gateway,
       timestamp: dqResult.timestamp,
       patientId: dqResult.patientId,
-      samlAttributes: samlAtributes,
+      samlAttributes: samlAttributes,
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     const dqResponse = await queryDQ(dqRequest);

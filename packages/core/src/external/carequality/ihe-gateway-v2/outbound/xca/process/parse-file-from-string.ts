@@ -14,7 +14,6 @@ type ParsedFile = {
 export function parseFileFromString(fileAsString: string): ParsedFile {
   let decodedBytes: Buffer;
 
-  // with MTOM we now have non b64 encoded files in the body of the response.
   const firstSixBytesBuffer = Buffer.from(fileAsString.slice(0, 6));
   if (isXMLContentType(firstSixBytesBuffer)) {
     decodedBytes = Buffer.from(fileAsString.trim());
@@ -22,7 +21,6 @@ export function parseFileFromString(fileAsString: string): ParsedFile {
     try {
       decodedBytes = Buffer.from(fileAsString, "base64");
     } catch (ex) {
-      // this doesnt really work. Didnt catch the case of plain xml
       log("Got a non-base64 document! Using original fileAsString content for decodedBytes");
       decodedBytes = Buffer.from(fileAsString.trim());
     }
