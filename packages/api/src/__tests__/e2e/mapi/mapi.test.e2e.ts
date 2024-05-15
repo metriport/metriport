@@ -8,6 +8,7 @@ import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
 import { sleep } from "@metriport/shared";
+import assert from "assert";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
@@ -302,5 +303,18 @@ describe("MAPI E2E Tests", () => {
       "Request failed with status code 404"
     );
     expect(async () => getFhirPatient(patient.id)).rejects.toThrowError(OperationOutcomeError);
+  });
+
+  it("deletes the facility", async () => {
+    await medicalApi.deleteFacility(facility.id);
+    try {
+      await medicalApi.getFacility(facility.id);
+      assert.fail("It should have failed to get the facility after deletion");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.log("Error:", error);
+      expect(error).toBeTruthy();
+      expect(error.response?.status).toEqual(404);
+    }
   });
 });
