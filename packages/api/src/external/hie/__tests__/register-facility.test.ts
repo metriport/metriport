@@ -59,8 +59,6 @@ describe("registerFacility", () => {
 
     await registerFacilityWithinHIEs(cxId, mockedFacility);
 
-    console.log(mockedFacility);
-
     expect(createOrUpdateInCqMock).toHaveBeenCalledWith(
       mockedFacility,
       getCxOrganizationNameAndOidResult.oid,
