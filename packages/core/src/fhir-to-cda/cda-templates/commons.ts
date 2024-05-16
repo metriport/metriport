@@ -19,9 +19,19 @@ import {
   EntryObject,
 } from "../cda-types/shared-types";
 import {
+  _assigningAuthorityNameAttribute,
+  _codeAttribute,
+  _codeSystemAttribute,
+  _codeSystemNameAttribute,
+  _displayNameAttribute,
+  _extensionAttribute,
+  _inlineTextAttribute,
+  _nullFlavorAttribute,
   _rootAttribute,
   _useAttribute,
   _valueAttribute,
+  _xmlnsXsiAttribute,
+  _xsiTypeAttribute,
   amaAssnSystemCode,
   fdasisSystemCode,
   loincSystemCode,
@@ -48,7 +58,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { _nullFlavorAttribute: "UNK" };
+  if (value == undefined) return { [_nullFlavorAttribute]: "UNK" };
   return { [key]: value };
 }
 
@@ -65,10 +75,10 @@ export function buildCodeCe({
   displayName?: string | undefined;
 }): CdaCodeCe {
   const codeObject: CdaCodeCe = {};
-  if (code) codeObject._codeAttribute = code;
-  if (codeSystem) codeObject._codeSystemAttribute = codeSystem;
-  if (codeSystemName) codeObject._codeSystemNameAttribute = codeSystemName;
-  if (displayName) codeObject._displayNameAttribute = displayName;
+  if (code) codeObject[_codeAttribute] = code;
+  if (codeSystem) codeObject[_codeSystemAttribute] = codeSystem;
+  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName;
+  if (displayName) codeObject[_displayNameAttribute] = displayName;
 
   return codeObject;
 }
@@ -120,9 +130,9 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CdaInstanceIdentifier {
   const identifier: CdaInstanceIdentifier = {};
-  if (root) identifier._rootAttribute = root;
-  if (extension) identifier._extensionAttribute = extension;
-  if (assigningAuthorityName) identifier._assigningAuthorityNameAttribute = assigningAuthorityName;
+  if (root) identifier[_rootAttribute] = root;
+  if (extension) identifier[_extensionAttribute] = extension;
+  if (assigningAuthorityName) identifier[_assigningAuthorityNameAttribute] = assigningAuthorityName;
 
   return identifier;
 }
@@ -203,9 +213,9 @@ export function buildValueST(value: string | undefined): CdaValueSt | undefined 
   if (!value) return undefined;
 
   const valueObject: CdaValueSt = {};
-  valueObject._xsiTypeAttribute = "ST";
-  valueObject._xmlnsXsiAttribute = "http://www.w3.org/2001/XMLSchema-instance";
-  valueObject._inlineTextAttribute = value;
+  valueObject[_xsiTypeAttribute] = "ST";
+  valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
+  valueObject[_inlineTextAttribute] = value;
   return valueObject;
 }
 

@@ -1,6 +1,20 @@
+import {
+  _assigningAuthorityNameAttribute,
+  _codeAttribute,
+  _codeSystemAttribute,
+  _codeSystemNameAttribute,
+  _displayNameAttribute,
+  _extensionAttribute,
+  _inlineTextAttribute,
+  _namespaceAttribute,
+  _rootAttribute,
+  _xmlnsXsiAttribute,
+  _xsiTypeAttribute,
+} from "../cda-templates/constants";
+
 export type ClinicalDocument = {
   ClinicalDocument: {
-    _namespaceAttribute: string;
+    [_namespaceAttribute]: string;
     realmCode?: CdaCodeCe;
     typeId?: CdaInstanceIdentifier;
     templateId?: CdaInstanceIdentifier[];
@@ -75,17 +89,17 @@ export type CdaName = {
 
 // Ce (CE) stands for Coded with Equivalents
 export type CdaCodeCe = {
-  _codeAttribute?: string;
-  _codeSystemAttribute?: string;
-  _codeSystemNameAttribute?: string;
-  _displayNameAttribute?: string;
+  [_codeAttribute]?: string;
+  [_codeSystemAttribute]?: string;
+  [_codeSystemNameAttribute]?: string;
+  [_displayNameAttribute]?: string;
 };
 
 // St (ST) stands for Simple Text
 export type CdaValueSt = {
-  _xsiTypeAttribute?: string;
-  _xmlnsXsiAttribute?: string;
-  _inlineTextAttribute?: string;
+  [_xsiTypeAttribute]?: string;
+  [_xmlnsXsiAttribute]?: string;
+  [_inlineTextAttribute]?: string;
 };
 
 // Cv (CV) stands for Coded Value
@@ -101,9 +115,9 @@ export interface CdaCodeCv extends CdaCodeCe {
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
 export type CdaInstanceIdentifier = {
-  _rootAttribute?: string;
-  _extensionAttribute?: string;
-  _assigningAuthorityNameAttribute?: string;
+  [_rootAttribute]?: string;
+  [_extensionAttribute]?: string;
+  [_assigningAuthorityNameAttribute]?: string;
 };
 
 // TOP Level CDA Section Types
