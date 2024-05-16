@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+import { v4 as uuidv4 } from "uuid";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -44,7 +45,7 @@ async function queryDatabaseForDQs() {
     SELECT dqr.data
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
-    ORDER BY RANDOM()
+    ORDER BY created_at DESC
     LIMIT 5;
   `;
 
@@ -194,7 +195,10 @@ async function DRIntegrationTest() {
       },
       patientId: dqResult.patientId,
       samlAttributes: samlAttributes,
-      documentReference: dqResponse.documentReference,
+      documentReference: dqResponse.documentReference.map(doc => ({
+        ...doc,
+        metriportId: uuidv4(),
+      })),
     };
     try {
       const drResponse = await queryDR(drRequest);
@@ -216,7 +220,6 @@ async function DRIntegrationTest() {
 
       if (responseDocumentReferences.size > 0) {
         successCount++;
-        console.log("dr response", drResponse);
       } else {
         failureCount++;
         console.log("dr response", JSON.stringify(drResponse, null, 2));

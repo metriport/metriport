@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { processDRResponse } from "../xca/process/dr-response";
-import { outboundDRRequestMTOM, outboundDRRequestMultiMTOM } from "./constants";
+import { outboundDRRequestMTOM, outboundDRRequestMultiMTOM, testFiles } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
 import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
@@ -25,6 +25,35 @@ describe("mtomContentAndHeaderParsing", () => {
       `application/xop+xml; charset=UTF-8; type="application/soap+xml"`
     );
     expect(parsedHeaders.ContentTransferEncoding).toBe("8bit");
+  });
+});
+
+describe("processDRResponse for MTOM where there is no actual multipart message and the document is still just in the soap", () => {
+  testFiles.forEach(({ name, mimeType, fileExtension }) => {
+    const xmlTemplatePath = path.join(__dirname, "./files/mtom-without-multipart.txt");
+    const xmlTemplate = fs.readFileSync(xmlTemplatePath, "utf8");
+
+    it(`should process the ${fileExtension} MTOM response correctly`, async () => {
+      const fileContent = fs.readFileSync(path.join(__dirname, `./files/${name}`));
+      const fileContentB64 = fileContent.toString("base64");
+      const modifiedXml = xmlTemplate.replace(
+        "<xdsb:Document></xdsb:Document>",
+        `<xdsb:Document>${fileContentB64}</xdsb:Document>`
+      );
+
+      const response = await processDRResponse({
+        drResponse: {
+          success: true,
+          response: modifiedXml,
+          gateway: outboundDRRequestMTOM.gateway,
+          outboundRequest: outboundDRRequestMTOM,
+          contentType: `multipart/related; type="application/xop+xml";start="<root.message@cxf.apache.org>";boundary="40273fbb68604ecba3d877e21a230ee0";start-info="application/soap+xml"`,
+        },
+      });
+
+      expect(response.documentReference?.[0]?.contentType).toEqual(mimeType);
+    });
+    return;
   });
 });
 

@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
@@ -91,6 +92,11 @@ app.post("/xcadr", async (req: Request, res: Response) => {
     return res.status(400).send({ detail: "Invalid content type. Expected 'application/json'." });
   }
 
+  req.body[0].documentReference = req.body[0].documentReference.map((doc: DocumentReference) => ({
+    ...doc,
+    metriportId: uuidv4(),
+  }));
+
   try {
     const xmlResponses = createAndSignBulkDRRequests({
       bulkBodyData: req.body,
@@ -103,10 +109,13 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       cxId: uuidv4(),
     });
 
-    const results = processDRResponse({
-      drResponse: response[0],
-    });
-
+    const results = await Promise.all(
+      response.map(async response => {
+        return processDRResponse({
+          drResponse: response,
+        });
+      })
+    );
     res.type("application/json").send(results);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });
