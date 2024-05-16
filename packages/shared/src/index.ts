@@ -3,6 +3,7 @@ export { getDomainFromEmailWithoutTld } from "./common/email";
 export { errorToString } from "./common/error";
 export { emptyFunction } from "./common/general";
 export { normalizeOid } from "./common/normalize-oid";
+export { normalizeZipCode } from "./common/normalize-zip";
 export { PurposeOfUse } from "./common/purpose-of-use";
 export { executeWithRetries, executeWithRetriesOrFail } from "./common/retry";
 export { sleep } from "./common/sleep";
