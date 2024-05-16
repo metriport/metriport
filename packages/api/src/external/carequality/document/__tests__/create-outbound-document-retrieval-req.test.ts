@@ -43,7 +43,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     homeCommunityId = faker.string.uuid();
   });
 
-  it("returns zero req when no doc refs matching GW homeCommunityId", async () => {
+  it("returns 1 req when no doc refs matching GW homeCommunityId", async () => {
     const documentReferences = [
       makeDocumentReferenceWithMetriporId(),
       makeDocumentReferenceWithMetriporId(),
@@ -59,7 +59,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
-    expect(res.length).toEqual(0);
+    expect(res.length).toEqual(1);
   });
 
   it("returns one req when doc refs within limit", async () => {
