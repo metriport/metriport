@@ -51,7 +51,7 @@ export async function updatePatient(
   const scheduledPdRequestIdCq = cqData?.scheduledPdRequestId;
 
   if (discoveryStatusCq === "processing" && scheduledPdRequestIdCq) {
-    // do nothing
+    // do nothing -- this update will be reflected when scheduled PD runs
   } else if (discoveryStatusCq === "processing" && !scheduledPdRequestIdCq) {
     schedulePatientDiscovery({
       requestId,
@@ -65,10 +65,10 @@ export async function updatePatient(
   const cwData = cwCommands.patient.getCWData(patient.data.externalData);
 
   const statusCw = cwData?.status;
-  const scheduledPdRequestIdCw = cqData?.scheduledPdRequestId;
+  const scheduledPdRequestIdCw = cwData?.scheduledPdRequestId;
 
   if (statusCw === "processing" && scheduledPdRequestIdCw) {
-    // do nothing
+    // do nothing -- this update will be reflected when scheduled PD runs
   } else if (statusCw === "processing" && !scheduledPdRequestIdCw) {
     schedulePatientDiscovery({
       requestId,
@@ -125,7 +125,6 @@ export async function updatePatientWithoutHIEs(
           personalIdentifiers: sanitized.personalIdentifiers,
           address: patientUpdate.address,
           contact: sanitized.contact,
-          patientDiscovery: sanitized.patientDiscovery,
         },
         externalId: sanitized.externalId,
       },
