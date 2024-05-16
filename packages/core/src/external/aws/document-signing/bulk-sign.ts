@@ -38,9 +38,12 @@ export async function getSignedUrls(
           return;
         }
 
-        const fileName = doc.content
-          .map(content => content.attachment?.title)
-          .find(title => title !== undefined);
+        const attachment = doc.content
+          .map(content => content.attachment)
+          .find(attachment => attachment?.title !== undefined);
+
+        const fileName = attachment?.title;
+
         if (!fileName) {
           return;
         }
