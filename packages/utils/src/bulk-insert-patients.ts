@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
+import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 
 dayjs.extend(duration);
@@ -42,10 +43,10 @@ const apiUrl = getEnvVarOrFail("API_URL");
 const cxId = getEnvVarOrFail("CX_ID");
 const delayTime = dayjs.duration(30, "seconds").asMilliseconds(); // Let's keep this 10+ seconds while we're using IHE GW v1
 const inputFileName = "bulk-insert-patients.csv";
-const outputFileName = "./runs/bulk-insert-patient-ids.txt";
-const filePath = path.join(__dirname, outputFileName);
 const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
+
+const getFileName = (orgName: string) => `./runs/bulk-insert/${getFileNameForOrg(orgName, "txt")}`;
 
 type Params = {
   dryrun?: boolean;
@@ -66,10 +67,11 @@ async function main() {
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
 
-  if (!dryRun) initPatientIdRepository();
-
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
+  const outputFileName = getFileName(orgName);
+
+  if (!dryRun) initPatientIdRepository(outputFileName);
 
   // This will insert all the patients into a specific facility.
   // Based off the apiKey it will determine the cx to add to the patients.
@@ -80,13 +82,14 @@ async function main() {
       const metriportPatient = mapCSVPatientToMetriportPatient(data);
       if (metriportPatient) results.push(metriportPatient);
     })
-    .on("end", async () => loadData(results, orgName, localFacilityId, dryRun));
+    .on("end", async () => loadData(results, orgName, localFacilityId, outputFileName, dryRun));
 }
 
 async function loadData(
   results: PatientCreate[],
   orgName: string,
   localFacilityId: string,
+  outputFileName: string,
   dryRun: boolean
 ) {
   console.log(
@@ -108,7 +111,7 @@ async function loadData(
       const createdPatient = await metriportAPI.createPatient(patient, localFacilityId);
       successfulCount++;
       console.log(i + 1, createdPatient);
-      storePatientId(createdPatient.id);
+      storePatientId(createdPatient.id, outputFileName);
     } catch (error) {
       errors.push({
         firstName: patient.firstName,
@@ -130,16 +133,16 @@ async function displayWarningAndConfirmation(results: unknown[], orgName: string
   await sleep(confirmationTime.asMilliseconds());
 }
 
-function initPatientIdRepository() {
-  const dirname = path.dirname(filePath);
+function initPatientIdRepository(fileName: string) {
+  const dirname = path.dirname(fileName);
   if (!fs.existsSync(dirname)) {
     fs.mkdirSync(dirname, { recursive: true });
   }
-  fs.writeFileSync(filePath, "");
+  fs.writeFileSync(fileName, "");
 }
 
-function storePatientId(patientId: string) {
-  fs.appendFileSync(filePath, patientId + "\n");
+function storePatientId(patientId: string, fileName: string) {
+  fs.appendFileSync(fileName, patientId + "\n");
 }
 
 function toTitleCase(str: string): string {

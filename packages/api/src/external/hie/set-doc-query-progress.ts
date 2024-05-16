@@ -20,6 +20,7 @@ type RequiredProgress = Required<Omit<Progress, "webhookSent">>;
 
 export type SetDocQueryProgress = {
   source: MedicalDataSource;
+  startedAt?: Date | undefined;
   downloadProgress?: StaticProgress | undefined;
   convertProgress?: StaticProgress | undefined;
 } & SetDocQueryProgressBase;
@@ -39,6 +40,7 @@ export async function setDocQueryProgress({
   convertibleDownloadErrors,
   increaseCountConvertible,
   source,
+  startedAt,
 }: SetDocQueryProgress): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -52,14 +54,16 @@ export async function setDocQueryProgress({
       transaction,
     });
 
-    // Set the doc query progress for the given hie
+    const existingExternalData = existingPatient.data.externalData ?? {};
+
     const externalData = setHIEDocProgress(
-      existingPatient,
+      existingExternalData,
       downloadProgress,
       convertProgress,
       source,
       convertibleDownloadErrors,
-      increaseCountConvertible
+      increaseCountConvertible,
+      startedAt
     );
 
     const existingPatientDocProgress = existingPatient.data.documentQueryProgress ?? {};
@@ -131,15 +135,14 @@ export function aggregateAndSetHIEProgresses(
 }
 
 export function setHIEDocProgress(
-  patient: PatientModel,
+  externalData: PatientExternalData,
   downloadProgress: Progress | undefined,
   convertProgress: Progress | undefined,
   source: MedicalDataSource,
   convertibleDownloadErrors?: number,
-  increaseCountConvertible?: number
+  increaseCountConvertible?: number,
+  startedAt?: Date
 ): PatientExternalData {
-  const externalData = patient.data.externalData ?? {};
-
   const sourceData = externalData[source];
 
   const docQueryProgress = aggregateDocQueryProgress(
@@ -152,7 +155,10 @@ export function setHIEDocProgress(
 
   externalData[source] = {
     ...externalData[source],
-    documentQueryProgress: docQueryProgress,
+    documentQueryProgress: {
+      ...docQueryProgress,
+      startedAt,
+    },
   };
 
   return externalData;

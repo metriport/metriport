@@ -9,6 +9,8 @@ import {
 import { useFirstMatchingPatient } from "./merge-patients";
 import { normalizePatient } from "./normalize-patient";
 import { patientToPatientMPI } from "./shared";
+import { log } from "../util/log";
+import { capture } from "../util/notifications";
 
 const SIMILARITY_THRESHOLD = 0.96;
 
@@ -42,6 +44,10 @@ export const getPatientByDemo = async ({
     },
   });
 
+  foundPatients.sort(
+    (a: Patient, b: Patient) => a.createdAt.getMilliseconds() - b.createdAt.getMilliseconds()
+  );
+
   // Convert patients to proper datatype
   // Match the found patients with the normalized patient using the similarity function
   const matchingPatients = matchPatients(
@@ -49,9 +55,22 @@ export const getPatientByDemo = async ({
     [matchingPersonalIdentifiersRule, matchingContactDetailsRule],
     foundPatients.map(patientToPatientMPI),
     normalizedPatientDemo,
-    SIMILARITY_THRESHOLD
+    SIMILARITY_THRESHOLD,
+    false
   );
 
+  if (matchingPatients.length > 1) {
+    const msg = `matchPatients returned more than one patient`;
+    log(`WARN: ${msg} - demo: ${JSON.stringify(demo)}, cxId: ${cxId}`);
+    capture.message(msg, {
+      extra: {
+        context: `mpi.getPatientByDemo`,
+        cxId,
+        demo,
+      },
+      level: "warning",
+    });
+  }
   // Merge the matching patients
   const mpiPatient = useFirstMatchingPatient(matchingPatients);
   if (!mpiPatient) return undefined;

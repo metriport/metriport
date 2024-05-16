@@ -9,7 +9,7 @@ import { ISecret } from "aws-cdk-lib/aws-secretsmanager";
 import { IQueue } from "aws-cdk-lib/aws-sqs";
 import { Construct } from "constructs";
 import { EnvType } from "../env-type";
-import { METRICS_NAMESPACE, getConfig } from "../shared/config";
+import { getConfig, METRICS_NAMESPACE } from "../shared/config";
 import { createLambda as defaultCreateLambda } from "../shared/lambda";
 import { LambdaLayers } from "../shared/lambda-layers";
 import OpenSearchConstruct, { OpenSearchConstructProps } from "../shared/open-search-construct";
@@ -129,6 +129,8 @@ export function setup({
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
+    alarmMaxAgeOfOldestMessage: Duration.minutes(1),
+    alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
   });
 
   const dlq = queue.deadLetterQueue;

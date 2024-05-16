@@ -39,7 +39,7 @@ export async function documentUploaderHandler(
     throw new MetriportError(message, null, { sourceBucket, sourceKey });
   }
   const { cxId, patientId, fileId: docId } = s3FileNameParts;
-  const { size, contentType, eTag } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
+  const { size, contentType } = await s3Utils.getFileInfoFromS3(sourceKey, sourceBucket);
 
   const docName = createDocumentFileName(docId, contentType);
   const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
@@ -75,7 +75,6 @@ export async function documentUploaderHandler(
   try {
     const docRef = await forwardCallToServer(cxId, apiServerURL, fileData);
     const stringSize = size ? size.toString() : "";
-    const hash = eTag ? eTag : "";
     if (!contentType) {
       const message = "Failed to get the mime type of the uploaded file";
       console.log(`${message}: ${contentType}`);
@@ -90,7 +89,6 @@ export async function documentUploaderHandler(
         cxId,
         patientId,
         docId: destinationKey,
-        hash,
         size: stringSize,
         docRef,
         metadataFileName,
@@ -125,7 +123,7 @@ async function forwardCallToServer(
   return resp.data;
 }
 
-async function createAndUploadMetadataFile({
+export async function createAndUploadMetadataFile({
   s3Utils,
   cxId,
   patientId,
@@ -140,7 +138,6 @@ async function createAndUploadMetadataFile({
   cxId: string;
   patientId: string;
   docId: string;
-  hash: string;
   size: string;
   docRef: DocumentReference;
   metadataFileName: string;
@@ -171,5 +168,10 @@ async function createAndUploadMetadataFile({
   });
 
   console.log(`Uploading metadata to S3 with key: ${metadataFileName}`);
-  await s3Utils.uploadFile(destinationBucket, metadataFileName, Buffer.from(extrinsicObjectXml));
+  await s3Utils.uploadFile({
+    bucket: destinationBucket,
+    key: metadataFileName,
+    file: Buffer.from(extrinsicObjectXml),
+    contentType: "application/xml",
+  });
 }

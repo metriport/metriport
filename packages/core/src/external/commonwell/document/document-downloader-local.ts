@@ -100,22 +100,23 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     const old_extension = path.extname(fileInfo.name);
-    const [detectedFileType, detectedExtension] = detectFileType(downloadedDocument);
+    const documentBuffer = Buffer.from(downloadedDocument);
+    const { mimeType, fileExtension } = detectFileType(documentBuffer);
 
     // If the file type has not changed
-    if (detectedFileType === document.mimeType || old_extension === detectedExtension) {
+    if (mimeType === document.mimeType || old_extension === fileExtension) {
       return downloadResult;
     }
 
     // If the file type has changed
     console.log(
-      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${detectedFileType} and ${detectedExtension}`
+      `Updating content type in S3 ${fileInfo.name} from previous mimeType: ${document.mimeType} to detected mimeType ${mimeType} and ${fileExtension}`
     );
     const newKey = await this.s3Utils.updateContentTypeInS3(
       downloadResult.bucket,
       downloadResult.key,
-      detectedFileType,
-      detectedExtension
+      mimeType,
+      fileExtension
     );
     const newLocation = downloadResult.location.replace(`${downloadResult.key}`, `${newKey}`);
     const fileDetailsUpdated = await this.s3Utils.getFileInfoFromS3(newKey, downloadResult.bucket);
@@ -187,14 +188,18 @@ export class DocumentDownloaderLocal extends DocumentDownloader {
     }
 
     const b64Buff = Buffer.from(b64, "base64");
-    const newFileName = this.getNewFileName(requestedFileInfo.name, "pdf");
+
+    // Alternativelly we can use the provided mediaType and calculate the extension from it
+    // const providedContentType = xmlBodyTexts[0]?.attributes?.getNamedItem("mediaType")?.value;
+    const { mimeType, fileExtension } = detectFileType(b64Buff);
+    const newFileName = this.getNewFileName(requestedFileInfo.name, fileExtension);
 
     const b64Upload = await this.s3client
       .upload({
         Bucket: this.config.bucketName,
         Key: newFileName,
         Body: b64Buff,
-        ContentType: "application/pdf",
+        ContentType: mimeType,
       })
       .promise();
     const b64FileInfo = await this.s3Utils.getFileInfoFromS3(b64Upload.Key, b64Upload.Bucket);

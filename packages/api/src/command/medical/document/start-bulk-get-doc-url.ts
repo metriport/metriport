@@ -8,13 +8,10 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { storeBulkGetDocumentUrlQueryInit } from "../patient/bulk-get-doc-url-progress";
-import { makeLambdaClient } from "../../../external/aws/lambda";
-import { DocumentBulkSignerLambdaRequest } from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+import { DocumentBulkSignerRequest } from "@metriport/core/external/aws/document-signing/document-bulk-signer";
+import { makeDocumentBulkSigner } from "../../../external/aws/document-bulk-signer-factory";
 import { appendBulkGetDocUrlProgress } from "../patient/bulk-get-doc-url-progress";
 import { capture } from "../../../shared/notifications";
-
-const lambdaClient = makeLambdaClient();
-const bulkSigningLambdaName = "BulkUrlSigningLambda";
 
 /**
  * The function `startBulkGetDocumentUrls` triggers the bulk signing process lambda for a patient's documents and
@@ -25,10 +22,10 @@ const bulkSigningLambdaName = "BulkUrlSigningLambda";
  */
 export const startBulkGetDocumentUrls = async (
   cxId: string,
-  patientId: string
+  patientId: string,
+  cxDownloadRequestMetadata: unknown
 ): Promise<BulkGetDocumentsUrlProgress> => {
   const { log } = Util.out(`startBulkGetDocumentUrls - M patient ${patientId}`);
-  if (!bulkSigningLambdaName) throw new Error("Bulk Signing Lambda Name is undefined");
   const patient = await getPatientOrFail({ id: patientId, cxId });
 
   const bulkGetDocUrlProgress = patient.data.bulkGetDocumentsUrlProgress;
@@ -46,23 +43,20 @@ export const startBulkGetDocumentUrls = async (
     id: patient.id,
     cxId: patient.cxId,
     bulkGetDocumentsUrlProgress: { status: "processing" },
+    cxDownloadRequestMetadata,
     requestId,
   });
 
-  const payload: DocumentBulkSignerLambdaRequest = {
+  const payload: DocumentBulkSignerRequest = {
     patientId: patientId,
     cxId: cxId,
     requestId: requestId,
   };
 
+  const documentBulkSigner = makeDocumentBulkSigner();
+
   try {
-    lambdaClient
-      .invoke({
-        FunctionName: bulkSigningLambdaName,
-        InvocationType: "RequestResponse",
-        Payload: JSON.stringify(payload),
-      })
-      .promise();
+    documentBulkSigner.sign(payload);
   } catch (error) {
     appendBulkGetDocUrlProgress({
       patient: { id: patientId, cxId: cxId },

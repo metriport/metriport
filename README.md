@@ -61,24 +61,6 @@ Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/secur
   <img src="./assets/hipaa-vanta.png" width="20%" />
 </p>
 
-<!-- ### **Health Devices API**
-
-Our [Health Devices API](https://metriport.com/devices), allows you to gain access to your users’ health data from various wearables, RPM devices, and mHealth sources through a single standardized API.
-
-Out of the box, our Health Devices API supports the following integrations:
-
-- Dexcom
-- Fitbit
-- Garmin
-- Oura
-- Whoop
-- Withings
-- Cronometer
-- Apple Health
-- Google Fit
-
-...with many more integrations on the way! If there’s an integration you need that’s not currently on here, feel free to shoot us an [email](mailto:contact@metriport.com) and let us know so we can build it, or feel free to fork our code and add the integration yourself. -->
-
 ### **Medical API**
 
 <div align="center">
@@ -242,6 +224,38 @@ $ npm run commit -- --retry
 ```
 
 Commitizen will retry the last commit message you prepared previously. More about this [here](https://github.com/commitizen/cz-cli#retrying-failed-commits).
+
+### Security
+
+To avoid pushing secrets to the remote git repository we use [Gitleaks](https://github.com/gitleaks/gitleaks) - triggered by [Husky](https://github.com/typicode/husky).
+
+From their repository:
+
+> Gitleaks is a SAST tool for detecting and preventing hardcoded secrets like passwords, api keys, and tokens in git repos.
+
+It automaticaly scans new commits and interrupts the execution if it finds content that match the configured rules.
+
+Example of report while trying to commit changes:
+
+```shell
+> metriport@1.0.0 check-secrets
+> docker run --rm -v $(pwd):/path zricethezav/gitleaks:v8.17.0 protect --source='/path' --staged --no-banner -v
+
+Finding:     ...XXXXXXXXX[1;3;mAIXXXXXXXX[0mXXXXXXX/aXXXXXXX...
+Secret:      [1;3;mXXXXXXXXXXXXXX[0m
+RuleID:      aws-access-token
+Entropy:     1.021928
+File:        packages/core/src/external/cda/__tests__/examples.ts
+Line:        69
+Fingerprint: packages/core/src/external/cda/__tests__/examples.ts:aws-access-token:69
+
+[90m2:31AM[0m [32mINF[0m 1 commits scanned.
+[90m2:31AM[0m [32mINF[0m scan completed in 141ms
+[90m2:31AM[0m [31mWRN[0m leaks found: 1
+husky - pre-commit hook exited with code 1 (error)
+```
+
+If you're absolutely sure there's no secret on the reported file/line, add the fingerprint to `.gitleaksignore` file - that will be ignored and you'll be able to commit.
 
 ### **API Server**
 

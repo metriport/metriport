@@ -71,7 +71,13 @@ export type PatientData = {
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
   cxConsolidatedRequestMetadata?: unknown;
+  cxDownloadRequestMetadata?: unknown;
 };
+
+export type PatientDemoData = Pick<
+  PatientData,
+  "firstName" | "lastName" | "dob" | "genderAtBirth" | "personalIdentifiers" | "address" | "contact"
+>;
 
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;

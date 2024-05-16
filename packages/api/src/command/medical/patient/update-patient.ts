@@ -125,6 +125,7 @@ export async function updatePatientWithoutHIEs(
           personalIdentifiers: sanitized.personalIdentifiers,
           address: patientUpdate.address,
           contact: sanitized.contact,
+          patientDiscovery: sanitized.patientDiscovery,
         },
         externalId: sanitized.externalId,
       },

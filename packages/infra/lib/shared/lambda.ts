@@ -38,6 +38,7 @@ export const buildPolicy = (
 export interface LambdaProps extends StackProps {
   readonly stack: Construct;
   readonly name: string;
+  readonly nameSuffix?: string;
   /**
    * Name of the lambda file without the extension. The file must be a TS file and in the `lambdas/src` folder.
    */
@@ -61,8 +62,10 @@ export interface LambdaProps extends StackProps {
 }
 
 export function createLambda(props: LambdaProps): Lambda {
+  const functionNameSuffix = props.nameSuffix ? `_${props.nameSuffix}` : "";
+  const functionName = props.name + "Lambda" + functionNameSuffix;
   const lambda = new Lambda(props.stack, props.name, {
-    functionName: props.name + "Lambda",
+    functionName,
     runtime: props.runtime ?? Runtime.NODEJS_18_X,
     runtimeManagementMode: props.runtimeManagementMode,
     // TODO move our lambdas to use layers, quicker to deploy and execute them

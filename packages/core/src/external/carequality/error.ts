@@ -75,6 +75,7 @@ function constructBaseErrorResponse(
 ) {
   const baseResponse: BaseErrorResponse = {
     id: payload.id,
+    patientId: payload.patientId,
     timestamp: payload.timestamp,
     responseTimestamp: new Date().toISOString(),
   };

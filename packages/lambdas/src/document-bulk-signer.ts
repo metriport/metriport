@@ -4,7 +4,7 @@ import { getEnvType } from "@metriport/core/util/env-var";
 import {
   getSignedUrls,
   DocumentBulkSignerLambdaRequest,
-} from "@metriport/core/external/aws/lambda-logic/document-bulk-signing";
+} from "@metriport/core/external/aws/document-signing/bulk-sign";
 import { capture } from "./shared/capture";
 
 // Automatically set by AWS

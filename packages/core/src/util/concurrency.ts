@@ -27,6 +27,18 @@ export type ExecuteInChunksOptions = {
   log?: typeof console.log;
 };
 
+/**
+ * Function type that should be passed to `executeAsynchronously`.
+ * It receives the item to be processed, the index of the item in the array,
+ * the index of the promise that is processing the item, and the total amount
+ * of promises that are running in parallel.
+ * It should return a promise that resolves when the processing is done.
+ * It should handle errors internally.
+ * @param item the item to be processed
+ * @param itemIndex the index of the item in the array
+ * @param promiseIndex the index of the promise ("thread") that is processing the item
+ * @param promiseCount the total amount of promises that are running in parallel
+ */
 export type FunctionType<T> = (
   item: T,
   itemIndex: number,
@@ -82,7 +94,9 @@ export async function executeAsynchronously<T>(
   // Copy the array so that we don't mutate the original (this only copies the references)
   const itemsToProcess = collection.slice();
 
-  const amountOfPromises = Math.max(Math.min(collection.length, numberOfParallelExecutions), 1);
+  const amountOfPromises = Math.max(Math.min(itemsToProcess.length, numberOfParallelExecutions), 1);
+
+  const indexControl = { currentIndex: 0 };
 
   const promises = new Array(amountOfPromises).fill(0).map(async (_, promiseIndex) => {
     // possible jitter before each run so that they don't start at the same time
@@ -94,6 +108,7 @@ export async function executeAsynchronously<T>(
       fn,
       promiseIndex,
       amountOfPromises,
+      indexControl,
       keepExecutingOnError,
       log
     );
@@ -113,23 +128,28 @@ async function executeSynchronously<T>(
   fn: FunctionType<T>,
   promiseIndex: number,
   amountOfPromises: number,
+  indexControl: { currentIndex: number },
   keepExecutingOnError: boolean,
   log?: typeof console.log | undefined
 ): Promise<void> {
   const tabs = log ? "\t".repeat(promiseIndex) : emptyString;
-  let itemIndex = 0;
   let item;
-  while ((item = itemsToProcess.pop())) {
+  while ((item = itemsToProcess.shift())) {
     log &&
       log(
-        `... ${tabs}... promise ${promiseIndex} item ${itemIndex} remaining ${itemsToProcess.length}...`
+        `... ${tabs}... promise ${promiseIndex} item ${indexControl.currentIndex} remaining ${itemsToProcess.length}...`
       );
     try {
-      await fn(item, itemIndex++, promiseIndex, amountOfPromises);
+      await fn(item, indexControl.currentIndex, promiseIndex, amountOfPromises);
+      indexControl.currentIndex = indexControl.currentIndex + 1;
     } catch (error) {
       if (keepExecutingOnError) {
         log &&
-          log(`Error on item ${itemIndex} of promise ${promiseIndex}: ${errorToString(error)}`);
+          log(
+            `Error on item ${indexControl.currentIndex} of promise ${promiseIndex}: ${errorToString(
+              error
+            )}`
+          );
       } else {
         throw error;
       }

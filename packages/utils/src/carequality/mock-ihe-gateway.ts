@@ -30,7 +30,7 @@ app.post("/pd/v1", async (req: Request, res: Response) => {
 
 app.post("/dq/v1", async (req: Request, res: Response) => {
   try {
-    const response = await processInboundDocumentQuery(req.body);
+    const response = await processInboundDocumentQuery(req.body, apiUrl);
     res.set("Content-Type", "application/json; charset=utf-8");
     res.send({ response });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -217,35 +217,75 @@ export class S3Utils {
 
     return newKey;
   }
-  async uploadFile(
-    bucket: string,
-    key: string,
-    file: Buffer
-  ): Promise<AWS.S3.ManagedUpload.SendData> {
+  async uploadFile({
+    bucket,
+    key,
+    file,
+    contentType,
+  }: {
+    bucket: string;
+    key: string;
+    file: Buffer;
+    contentType?: string;
+  }): Promise<AWS.S3.ManagedUpload.SendData> {
     return new Promise((resolve, reject) => {
-      this._s3.upload(
-        {
-          Bucket: bucket,
-          Key: key,
-          Body: file,
-        },
-        (err, data) => {
-          if (err) {
-            console.error("Error during upload:", err);
-            reject(err);
-          } else {
-            console.log("Upload successful");
-            resolve(data);
-          }
+      const uploadParams: AWS.S3.PutObjectRequest = {
+        Bucket: bucket,
+        Key: key,
+        Body: file,
+      };
+
+      if (contentType) {
+        uploadParams.ContentType = contentType;
+      }
+
+      this._s3.upload(uploadParams, (err, data) => {
+        if (err) {
+          console.error("Error during upload:", err);
+          reject(err);
+        } else {
+          console.log("Upload successful");
+          resolve(data);
         }
-      );
+      });
     });
   }
+
+  async downloadFile({ bucket, key }: { bucket: string; key: string }): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const params = {
+        Bucket: bucket,
+        Key: key,
+      };
+      this._s3.getObject(params, (err, data) => {
+        if (err) {
+          console.error("Error during download:", err);
+          reject(err);
+        } else {
+          resolve(data.Body as Buffer);
+        }
+      });
+    });
+  }
+
+  async deleteFile({ bucket, key }: { bucket: string; key: string }): Promise<void> {
+    const deleteParams = {
+      Bucket: bucket,
+      Key: key,
+    };
+    this._s3.deleteObject(deleteParams, err => {
+      if (err) {
+        console.error("Error during file deletion:", err);
+        throw err;
+      }
+    });
+  }
+
   async retrieveDocumentIdsFromS3(
     cxId: string,
     patientId: string,
     bucketName: string
-  ): Promise<string[] | undefined> {
+  ): Promise<string[]> {
     const Prefix = `${cxId}/${patientId}/uploads/`;
 
     const params = {
@@ -253,32 +293,27 @@ export class S3Utils {
       Prefix,
     };
 
-    try {
-      const data = await this._s3.listObjectsV2(params).promise();
-      const documentContents = (
-        await Promise.all(
-          data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
-            async item => {
-              if (item.Key) {
-                const params = {
-                  Bucket: bucketName,
-                  Key: item.Key,
-                };
+    const data = await this._s3.listObjectsV2(params).promise();
+    const documentContents = (
+      await Promise.all(
+        data.Contents?.filter(item => item.Key && item.Key.endsWith("_metadata.xml")).map(
+          async item => {
+            if (item.Key) {
+              const params = {
+                Bucket: bucketName,
+                Key: item.Key,
+              };
 
-                const data = await this._s3.getObject(params).promise();
-                return data.Body?.toString();
-              }
-              return undefined;
+              const data = await this._s3.getObject(params).promise();
+              return data.Body?.toString();
             }
-          ) || []
-        )
-      ).filter((item): item is string => Boolean(item));
+            return undefined;
+          }
+        ) || []
+      )
+    ).filter((item): item is string => Boolean(item));
 
-      return documentContents;
-    } catch (error) {
-      console.error(`Error retrieving document IDs from S3: ${error}`);
-      return undefined;
-    }
+    return documentContents;
   }
 
   async listObjects(bucket: string, prefix: string): Promise<AWS.S3.ObjectList | undefined> {
