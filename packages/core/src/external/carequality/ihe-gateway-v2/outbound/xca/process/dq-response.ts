@@ -8,6 +8,7 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
+import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
   XDSDocumentEntryAuthor,
   XDSDocumentEntryClassCode,
@@ -15,6 +16,12 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+
+const enforceSameHomeCommunityIdList = [
+  "2.16.840.1.113883.3.6448",
+  "2.16.840.1.113883.3.6147.458",
+  "2.16.840.1.113883.3.6147.458.2",
+];
 
 type Identifier = {
   _identificationScheme: string;
@@ -37,6 +44,28 @@ type Slot = {
     Value: string | string[];
   };
 };
+
+function getRequestHomeCommunityId(request: OutboundDocumentQueryReq): string {
+  return request.gateway.homeCommunityId;
+}
+
+function getResponseHomeCommunityId(
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extrinsicObject: any
+): string {
+  return stripUrnPrefix(extrinsicObject?._home);
+}
+
+function getHomeCommunityIdForDr(
+  request: OutboundDocumentQueryReq,
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extrinsicObject: any
+): string {
+  if (enforceSameHomeCommunityIdList.includes(request.gateway.homeCommunityId)) {
+    return getRequestHomeCommunityId(request);
+  }
+  return getResponseHomeCommunityId(extrinsicObject);
+}
 
 function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -117,7 +146,7 @@ function parseDocumentReference(
   }
 
   const documentReference: DocumentReference = {
-    homeCommunityId: outboundRequest.gateway.homeCommunityId,
+    homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
     docUniqueId,
     contentType: extrinsicObject?._mimeType,
