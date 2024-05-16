@@ -38,10 +38,9 @@ export async function getSignedUrls(
           return;
         }
 
-        const attachment = doc.content[0].attachment;
-
-        // Check if fileName is defined
-        const fileName = attachment.title;
+        const fileName = doc.content
+          .map(content => content.attachment?.title)
+          .find(title => title !== undefined);
         if (!fileName) {
           return;
         }
