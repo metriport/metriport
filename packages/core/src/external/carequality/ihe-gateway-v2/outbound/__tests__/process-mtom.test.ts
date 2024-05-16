@@ -7,8 +7,6 @@ import { Config } from "../../../../../util/config";
 import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
 import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
-const s3Utils = new S3Utils(Config.getAWSRegion());
-
 describe("mtomContentAndHeaderParsing", () => {
   it("should correctly build and parse MTOM content type and headers", async () => {
     const signedXml = "<xml>test</xml>";
@@ -40,6 +38,12 @@ describe("processDRResponse", () => {
         Key: "mockedkey",
       })
     );
+
+    jest.spyOn(S3Utils.prototype, "getFileInfoFromS3").mockImplementation(() =>
+      Promise.resolve({
+        exists: false,
+      })
+    );
   });
 
   afterEach(() => {
@@ -57,7 +61,6 @@ describe("processDRResponse", () => {
         outboundRequest: outboundDRRequestMTOM,
         contentType,
       },
-      s3Utils,
     });
     expect(response.documentReference?.length).toBe(1);
     expect(response.documentReference?.[0]?.contentType).toBe("application/xml");
@@ -73,7 +76,6 @@ describe("processDRResponse", () => {
         outboundRequest: outboundDRRequestMTOM,
         contentType,
       },
-      s3Utils,
     });
     expect(response.documentReference?.length).toBe(1);
     expect(response.documentReference?.[0]?.contentType).toBe("application/xml");
@@ -89,7 +91,6 @@ describe("processDRResponse", () => {
         outboundRequest: outboundDRRequestMultiMTOM,
         contentType,
       },
-      s3Utils,
     });
     expect(response.documentReference?.length).toBe(2);
   });
@@ -104,7 +105,6 @@ describe("processDRResponse", () => {
         outboundRequest: outboundDRRequestMultiMTOM,
         contentType,
       },
-      s3Utils,
     });
     expect(response.documentReference?.length).toBe(0);
   });
@@ -125,7 +125,6 @@ describe.skip("integrationTestProcessDrResponseMTOM", () => {
         outboundRequest: outboundDRRequestMTOM,
         contentType,
       },
-      s3Utils,
     });
 
     const key = `${outboundDRRequestMTOM.cxId}/${outboundDRRequestMTOM.patientId}/${response.documentReference?.[0]?.fileName}`;

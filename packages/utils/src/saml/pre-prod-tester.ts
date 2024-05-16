@@ -15,9 +15,6 @@ import { processDQResponse } from "@metriport/core/external/carequality/ihe-gate
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { Config } from "@metriport/core/util/config";
-import { MockS3Utils } from "./s3";
-
 /** 
 This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
 It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
@@ -292,10 +289,8 @@ async function queryDR(
       cxId: drRequest.cxId,
     });
 
-    const s3Utils = new MockS3Utils(Config.getAWSRegion());
     return processDRResponse({
       drResponse: response[0],
-      s3Utils,
     });
   } catch (error) {
     console.log("Erroring drRequest", drRequest);

@@ -48,7 +48,7 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: true,
+    rejectUnauthorized: false,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
@@ -82,7 +82,7 @@ export async function sendSignedXmlMTOM({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: true,
+    rejectUnauthorized: false,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,

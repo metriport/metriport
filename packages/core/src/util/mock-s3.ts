@@ -1,7 +1,7 @@
-import { S3Utils } from "@metriport/core/external/aws/s3";
+import { S3Utils } from "../external/aws/s3";
 
 export class MockS3Utils extends S3Utils {
-  async uploadFile({
+  override async uploadFile({
     bucket,
     key,
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -23,7 +23,7 @@ export class MockS3Utils extends S3Utils {
     };
   }
 
-  async getFileInfoFromS3(
+  override async getFileInfoFromS3(
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     key: string,
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -31,7 +31,7 @@ export class MockS3Utils extends S3Utils {
   ): Promise<{ exists: false }> {
     return { exists: false };
   }
-  buildFileUrl(bucket: string, key: string): string {
+  override buildFileUrl(bucket: string, key: string): string {
     // Return a mock URL
     return `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`;
   }

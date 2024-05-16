@@ -15,8 +15,6 @@ import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-g
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
-import { MockS3Utils } from "./s3";
-import { Config } from "@metriport/core/util/config";
 
 const app = express();
 const port = 8043;
@@ -105,10 +103,8 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       cxId: uuidv4(),
     });
 
-    const s3Utils = new MockS3Utils(Config.getAWSRegion());
     const results = processDRResponse({
       drResponse: response[0],
-      s3Utils,
     });
 
     res.type("application/json").send(results);
