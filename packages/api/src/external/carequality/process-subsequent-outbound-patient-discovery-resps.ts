@@ -23,16 +23,20 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   requestId: string;
   cxId: string;
 }): Promise<void> {
-  const baseLogMessage = `CQ PD post - patientId ${patientId}`;
-  const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
+  const { log } = out(`CQ PD post - patientId ${patientId}, requestId: ${requestId}`);
+  const patientIds = { id: patientId, cxId };
 
   try {
-    const patient = await getPatientOrFail({ id: patientId, cxId });
+    const patient = await getPatientOrFail(patientIds);
+
     const discoveryStatus = getCQData(patient.data.externalData)?.discoveryStatus;
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      await updatePatientDiscoveryStatus({ patient, status: "processing" });
+      await updatePatientDiscoveryStatus({
+        patient,
+        status: "processing",
+      });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
@@ -42,9 +46,12 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
+    await updatePatientDiscoveryStatus({
+      patient: patientIds,
+      status: "failed",
+    });
     const msg = `Error on Post Resp Outbound PD Responses`;
-    log(`${msg} - ${errorToString(error)}`);
-    await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
+    log(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,
@@ -52,5 +59,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
         error,
       },
     });
+    // Why are we not throwing this error?
+    throw error;
   }
 }

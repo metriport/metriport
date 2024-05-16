@@ -25,6 +25,7 @@ import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { getCWData } from "../patient";
 import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
+import { clearCommonwellPersonId } from "../command/clear-person-id";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import {
   getPersonalIdentifiersFromPatient,
@@ -136,6 +137,7 @@ export const findCurrentLink = async (
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
       });
+      await clearCommonwellPersonId({ patient });
       await updatePatientDiscoveryStatus({
         patient,
         status: "failed",
@@ -151,6 +153,7 @@ export const findCurrentLink = async (
         commonwellPatientId: patientCWId,
         commonwellPersonId: undefined,
       });
+      await clearCommonwellPersonId({ patient });
       await updatePatientDiscoveryStatus({
         patient,
         status: "failed",
