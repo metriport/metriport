@@ -135,7 +135,7 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
           ) {
             documentResponsesMultipart.push({
               ...docResponse,
-              Document: stripCidPrefix(docResponse.Document.Include._href),
+              Document: decodeURIComponent(stripCidPrefix(docResponse.Document.Include._href)),
             });
           }
         } else {

@@ -45,8 +45,8 @@ async function queryDatabaseForDQs() {
     SELECT dqr.data
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
-    ORDER BY created_at DESC
-    LIMIT 5;
+    ORDER BY RANDOM()
+    LIMIT 100;
   `;
 
   try {
@@ -162,7 +162,7 @@ async function DRIntegrationTest() {
       !dqResult.documentReference ||
       !dqResult.externalGatewayPatient
     ) {
-      console.log("Skipping: ", dqResult);
+      console.log("Skipping: ", dqResult.id);
       return undefined;
     }
 
@@ -176,14 +176,12 @@ async function DRIntegrationTest() {
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     const dqResponse = await queryDQ(dqRequest);
-    console.log("DQ Response: ", dqResponse);
     if (!dqResponse.documentReference) {
-      console.log("No document references found for DQ: ", dqRequest, dqResponse);
+      console.log("No document references found for DQ: ", dqRequest.id);
       return undefined;
     }
 
     const drUrl = await getDrUrl(dqResult.gateway.homeCommunityId);
-    console.log("DR URL: ", drUrl);
 
     const drRequest: OutboundDocumentRetrievalReq = {
       id: dqResult.id,

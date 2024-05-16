@@ -60,7 +60,7 @@ export function createITI39SoapEnvelope({
       "urn:RetrieveDocumentSetRequest": {
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
-          "urn:RepositoryUniqueId": wrapIdInUrnOid(docRef.repositoryUniqueId),
+          "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
           "urn:DocumentUniqueId": docRef.documentUniqueId,
         })),
       },
