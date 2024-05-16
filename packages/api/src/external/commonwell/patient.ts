@@ -27,8 +27,8 @@ import { updatePatient } from "../../command/medical/patient/update-patient";
 import MetriportError from "../../errors/metriport-error";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { Config } from "../../shared/config";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
+import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import {
   isCommonwellEnabled,
   isCWEnabledForCx,
@@ -42,11 +42,9 @@ import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import {
-  setCommonwellIds,
-  setCommenwellCqLinkStatus,
-  setPatientDiscoveryStatus,
-} from "./patient-external-data";
+import { setCommonwellPatientAndPersonIds } from "./command/update-patient-and-person-ids";
+import { setCommenwellCqLinkStatus } from "./command/update-cq-link-status";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import {
   CQLinkStatus,
   findOrCreatePerson,
@@ -103,7 +101,7 @@ export async function create(
   requestId?: string,
   forceCWCreate = false
 ): Promise<void> {
-  const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+  const { debug } = out(`CW update - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
     cxId: patient.cxId,
@@ -112,9 +110,8 @@ export async function create(
   });
 
   if (cwCreateEnabled) {
-    const updatedPatient = await setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const updatedPatient = await updatePatientDiscoveryStatus({
+      patient,
       status: "processing",
       requestId,
       facilityId,
@@ -152,10 +149,9 @@ export async function registerAndLinkPatientInCW(
     // when we enable it
     const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
       ? "unlinked"
-      : undefined;
+      : getLinkStatusCQ(patient.data.externalData);
     await setCommenwellCqLinkStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+      patient,
       cqLinkStatus,
     });
 
@@ -174,9 +170,8 @@ export async function registerAndLinkPatientInCW(
       commonwellPatient,
     });
 
-    await setCommonwellIds({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    await setCommonwellPatientAndPersonIds({
+      patient,
       commonwellPatientId,
     });
 
@@ -189,9 +184,8 @@ export async function registerAndLinkPatientInCW(
       getOrgIdExcludeList,
     });
 
-    await setCommonwellIds({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    await setCommonwellPatientAndPersonIds({
+      patient,
       commonwellPersonId: personId,
     });
 
@@ -200,9 +194,8 @@ export async function registerAndLinkPatientInCW(
     // Schedule PD before completion
     await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
 
-    setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    updatePatientDiscoveryStatus({
+      patient,
       status: "completed",
     });
 
@@ -228,14 +221,13 @@ export async function registerAndLinkPatientInCW(
 
     return { commonwellPatientId, personId };
   } catch (error) {
-    setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    updatePatientDiscoveryStatus({
+      patient,
       status: "failed",
     });
     const msg = `Failure while creating patient @ CW`;
-    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
-    capture.message(msg, {
+    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
@@ -243,7 +235,6 @@ export async function registerAndLinkPatientInCW(
         context: createContext,
         error,
       },
-      level: "error",
     });
     throw error;
   }
@@ -265,9 +256,8 @@ export async function update(
   });
 
   if (cwUpdateEnabled) {
-    await setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const updatedPatient = await updatePatientDiscoveryStatus({
+      patient,
       status: "processing",
       requestId,
       facilityId,
@@ -276,7 +266,7 @@ export async function update(
 
     // intentionally async
     updatePatientAndLinksInCw(
-      patient,
+      updatedPatient,
       facilityId,
       getOrgIdExcludeList,
       requestId,
@@ -420,9 +410,8 @@ async function updatePatientAndLinksInCw(
     // Schedule PD before completion
     await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
 
-    setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    updatePatientDiscoveryStatus({
+      patient,
       status: "completed",
     });
 
@@ -444,13 +433,13 @@ async function updatePatientAndLinksInCw(
 
     await queryDocsIfScheduled(patient, getOrgIdExcludeList);
   } catch (error) {
-    setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    updatePatientDiscoveryStatus({
+      patient,
       status: "failed",
     });
-    console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
-    capture.error(error, {
+    const msg = `Failure while updating patient @ CW`;
+    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+    capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,

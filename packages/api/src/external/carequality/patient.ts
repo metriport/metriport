@@ -24,7 +24,7 @@ import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 
 dayjs.extend(duration);
 
-const context = "cq.patient.discover";
+const discoverContext = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
 export async function discover(
@@ -35,12 +35,11 @@ export async function discover(
 ): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
-  const { cxId } = patient;
 
-  const enabledIHEGW = await validateCQEnabledAndInitGW(cxId, forceEnabled, outerLog);
+  const enabledIHEGW = await validateCQEnabledAndInitGW(patient.cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
-    await updatePatientDiscoveryStatus({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
       requestId,
@@ -49,8 +48,8 @@ export async function discover(
     });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
-      processAsyncError(context)
+    prepareAndTriggerPD(updatedPatient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
+      processAsyncError(discoverContext)
     );
   }
 }
@@ -94,16 +93,22 @@ async function prepareAndTriggerPD(
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
+    await updatePatientDiscoveryStatus({
+      patient,
+      status: "failed",
+    });
     const msg = `Error on Patient Discovery`;
-    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
     capture.error(msg, {
       extra: {
         facilityId,
         patientId: patient.id,
-        context,
+        context: discoverContext,
         error,
       },
     });
+    // Why are we not throwing this error?
+    throw error;
   }
 }
 
