@@ -30,7 +30,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     createEntriesFromObservation
   );
   const table = {
-    [_idAttribute]: sectionName + "1", // TODO: make the number dynamic if we add more tables
+    [_idAttribute]: sectionName + "1", // TODO: Potentially need to create separate text tables for different questionnaires
     thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({

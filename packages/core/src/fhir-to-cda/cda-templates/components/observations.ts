@@ -243,7 +243,7 @@ function createEntryFromObservation(
 
 function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelationship {
   return {
-    [_typeCodeAttribute]: "COMP", // TODO: Check the correctness of this. Could also be "SPRT" in some cases
+    [_typeCodeAttribute]: "COMP", // TODO: Dynamically assign values based on the spec
     observation: {
       ...entry.observation,
     },
