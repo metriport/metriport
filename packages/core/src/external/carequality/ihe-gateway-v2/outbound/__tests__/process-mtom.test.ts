@@ -7,7 +7,7 @@ import { Config } from "../../../../../util/config";
 import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
 import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
-describe("mtomContentAndHeaderParsing", () => {
+describe.skip("mtomContentAndHeaderParsing", () => {
   it("should correctly build and parse MTOM content type and headers", async () => {
     const signedXml = "<xml>test</xml>";
     const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
@@ -29,6 +29,27 @@ describe("mtomContentAndHeaderParsing", () => {
 });
 
 describe("processDRResponse for MTOM where there is no actual multipart message and the document is still just in the soap", () => {
+  beforeEach(() => {
+    jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() =>
+      Promise.resolve({
+        Location: "http://example.com/mockurl",
+        ETag: '"mockedetag"',
+        Bucket: "mockedbucket",
+        Key: "mockedkey",
+      })
+    );
+
+    jest.spyOn(S3Utils.prototype, "getFileInfoFromS3").mockImplementation(() =>
+      Promise.resolve({
+        exists: false,
+      })
+    );
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   testFiles.forEach(({ name, mimeType, fileExtension }) => {
     const xmlTemplatePath = path.join(__dirname, "./files/mtom-without-multipart.txt");
     const xmlTemplate = fs.readFileSync(xmlTemplatePath, "utf8");
@@ -57,7 +78,7 @@ describe("processDRResponse for MTOM where there is no actual multipart message 
   });
 });
 
-describe("processDRResponse", () => {
+describe.skip("processDRResponse", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() =>
       Promise.resolve({

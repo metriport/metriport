@@ -71,6 +71,11 @@ export function parseMtomHeaders(headerPart: string): MtomHeaders {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function containsMultipartCidReference(documentResponse: any): boolean {
+  return !!documentResponse.Document?.Include?._href;
+}
+
 export function parseMTOMResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
   const contentTypeParams = parseMtomContentType(contentType);
 
@@ -114,6 +119,7 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
         removeNSPrefix: true,
       });
       const jsonObj = parser.parse(content);
+      console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
 
       const docResponses = Array.isArray(
         jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse
@@ -121,15 +127,17 @@ export function parseMTOMResponse(mtomMessage: string, contentType: string): Doc
         ? jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse
         : [jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse];
       for (const docResponse of docResponses) {
-        // temporarily skip non-xml documents for multipart mtoms
-        if (
-          docResponse.Document?.Include?._href &&
-          (docResponse.mimeType === XML_APP_MIME_TYPE || docResponse.mimeType === XML_TXT_MIME_TYPE)
-        ) {
-          documentResponsesMultipart.push({
-            ...docResponse,
-            Document: stripCidPrefix(docResponse.Document.Include._href),
-          });
+        if (containsMultipartCidReference(docResponse)) {
+          // temporarily skip non-xml documents for multipart mtoms
+          if (
+            docResponse.mimeType === XML_APP_MIME_TYPE ||
+            docResponse.mimeType === XML_TXT_MIME_TYPE
+          ) {
+            documentResponsesMultipart.push({
+              ...docResponse,
+              Document: stripCidPrefix(docResponse.Document.Include._href),
+            });
+          }
         } else {
           documentResponsesRegular.push(docResponse);
         }

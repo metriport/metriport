@@ -9,6 +9,7 @@ import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
+const maxDocumentReferencesPerDrRequest = 10;
 
 export type BulkSignedDR = {
   gateway: XCAGateway;
@@ -111,8 +112,19 @@ export function createAndSignBulkDRRequests({
   const signedRequests: BulkSignedDR[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
-    signedRequests.push({ gateway: bodyData.gateway, signedRequest, outboundRequest: bodyData });
+    const documentReferences = bodyData.documentReference;
+    for (let i = 0; i < documentReferences.length; i += maxDocumentReferencesPerDrRequest) {
+      const chunkedBodyData = {
+        ...bodyData,
+        documentReference: documentReferences.slice(i, i + maxDocumentReferencesPerDrRequest),
+      };
+      const signedRequest = createAndSignDRRequest(chunkedBodyData, samlCertsAndKeys);
+      signedRequests.push({
+        gateway: bodyData.gateway,
+        signedRequest,
+        outboundRequest: chunkedBodyData,
+      });
+    }
   }
 
   return signedRequests;
