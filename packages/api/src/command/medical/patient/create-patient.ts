@@ -70,17 +70,15 @@ export const createPatient = async (
   const newPatient = await PatientModel.create(patientCreate);
 
   // PD Flow
-  const requestId = uuidv7();
-
   await cwCommands.patient.create(
     newPatient,
     facilityId,
     getCqOrgIdsToDenyOnCw,
-    requestId,
+    undefined,
     forceCommonwell
   );
 
-  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
+  await cqCommands.patient.discover(newPatient, facilityId, undefined, forceCarequality);
 
   return newPatient;
 };

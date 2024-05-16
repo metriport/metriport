@@ -21,6 +21,7 @@ import { PatientDataCarequality } from "./patient-shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 dayjs.extend(duration);
 
@@ -37,27 +38,32 @@ export function getCQData(
 export async function discover(
   patient: Patient,
   facilityId: string,
-  requestId: string,
+  requestId?: string,
   forceEnabled = false
 ): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
 
+  const usedRequestId = requestId ?? uuidv7();
   const enabledIHEGW = await validateCQEnabledAndInitGW(patient.cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      requestId,
+      requestId: usedRequestId,
       facilityId,
       startedAt: new Date(),
     });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(updatedPatient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
-      processAsyncError(discoverContext)
-    );
+    prepareAndTriggerPD(
+      updatedPatient,
+      facilityId,
+      enabledIHEGW,
+      usedRequestId,
+      baseLogMessage
+    ).catch(processAsyncError(discoverContext));
   }
 }
 

@@ -43,7 +43,6 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // PD Flow
-  const requestId = uuidv7();
 
   const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 
@@ -54,12 +53,12 @@ export async function updatePatient(
     // do nothing -- this update will be reflected when scheduled PD runs
   } else if (discoveryStatusCq === "processing" && !scheduledPdRequestIdCq) {
     schedulePatientDiscovery({
-      requestId,
+      requestId: uuidv7(),
       patient,
       source: MedicalDataSource.CAREQUALITY,
     });
   } else {
-    await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
+    await cqCommands.patient.discover(patient, facility.id, undefined, forceCarequality);
   }
 
   const cwData = cwCommands.patient.getCWData(patient.data.externalData);
@@ -71,7 +70,7 @@ export async function updatePatient(
     // do nothing -- this update will be reflected when scheduled PD runs
   } else if (statusCw === "processing" && !scheduledPdRequestIdCw) {
     schedulePatientDiscovery({
-      requestId,
+      requestId: uuidv7(),
       patient,
       source: MedicalDataSource.COMMONWELL,
     });
@@ -80,7 +79,7 @@ export async function updatePatient(
       patient,
       facility.id,
       getCqOrgIdsToDenyOnCw,
-      requestId,
+      undefined,
       forceCommonwell
     );
   }

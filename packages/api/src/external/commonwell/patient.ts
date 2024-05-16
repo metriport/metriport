@@ -96,7 +96,7 @@ export async function create(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
-  requestId: string,
+  requestId?: string,
   forceCWCreate = false
 ): Promise<void> {
   const { debug } = out(`CW create - M patientId ${patient.id}`);
@@ -276,7 +276,7 @@ export async function update(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
-  requestId: string,
+  requestId?: string,
   forceCWUpdate = false
 ): Promise<void> {
   const { log, debug } = out(`CW update - M patientId ${patient.id}`);
