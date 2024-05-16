@@ -12,9 +12,10 @@ export async function getCwInitiator(
 export function buildCwOrgName(
   vendorName: string,
   orgName: string,
+  isProvider: boolean,
   oboOid?: string | null
 ): string {
-  if (oboOid) {
+  if (oboOid && !isProvider) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
   }
   return `${vendorName} - ${orgName}`;

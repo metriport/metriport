@@ -29,8 +29,10 @@ export const updateOrganization = async (
   const fhirOrg = toFHIR(updatedOrg);
   await upsertOrgToFHIRServer(updatedOrg.cxId, fhirOrg);
 
-  // Intentionally asynchronous
-  cwCommands.organization.update(updatedOrg).catch(processAsyncError(`cw.org.update`));
+  if (org.type !== "healthcare_it_vendor") {
+    // Intentionally asynchronous
+    cwCommands.organization.update(updatedOrg).catch(processAsyncError(`cw.org.update`));
+  }
 
   return updatedOrg;
 };

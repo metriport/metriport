@@ -48,6 +48,10 @@ export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
 }
 
+export function isProviderFacility(facilityType?: FacilityType): boolean {
+  return facilityType === FacilityType.initiatorAndResponder;
+}
+
 export function isOboEnabled(facility: Facility, hie: MedicalDataSource): boolean {
   const { type, cwOboActive, cqOboActive, cwOboOid, cqOboOid } = facility;
   if (!isOboFacility(type)) return false;
