@@ -89,7 +89,7 @@ export async function processOutboundPatientDiscoveryResps({
       status: "failed",
     });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
-    log(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
+    console.error(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,

@@ -548,8 +548,8 @@ async function validateCWEnabled({
 
     return true;
   } catch (error) {
-    const msg = `Error validating CW create enabled`;
-    debug(`${msg} - ${errorToString(error)}`);
+    const msg = "Failure validating CW create enabled";
+    console.error(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
