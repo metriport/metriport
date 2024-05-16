@@ -3,7 +3,12 @@ import {
   AddressWithCoordinates,
   removeCoordinates,
 } from "@metriport/core/domain/location-address";
-import { FacilityRegister, Facility, FacilityCreate } from "../../domain/medical/facility";
+import {
+  FacilityRegister,
+  Facility,
+  FacilityCreate,
+  isOboFacility,
+} from "../../domain/medical/facility";
 import { buildCqOrgName } from "../../external/carequality/shared";
 import { buildCwOrgName } from "../../external/commonwell/shared";
 import { getCxOrganizationNameOidAndType } from "../../command/medical/organization/get-organization";
@@ -23,7 +28,7 @@ export async function registerFacilityWithinHIEs(
   cxId: string,
   facility: FacilityRegister
 ): Promise<Facility> {
-  const isObo = facility.type === "initiator_only";
+  const isObo = isOboFacility(facility.type);
 
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),

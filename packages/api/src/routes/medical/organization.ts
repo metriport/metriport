@@ -10,17 +10,13 @@ import {
   OrganizationUpdateCmd,
   updateOrganization,
 } from "../../command/medical/organization/update-organization";
-import { processAsyncError } from "../../errors";
-import cwCommands from "../../external/commonwell";
-import { toFHIR } from "../../external/fhir/organization";
-import { upsertOrgToFHIRServer } from "../../external/fhir/organization/upsert-organization";
 import { getETag } from "../../shared/http";
 import { asyncHandler, getCxIdOrFail, getFromQuery, getFromParamsOrFail } from "../util";
 import { dtoFromModel } from "./dtos/organizationDTO";
 import {
   organizationCreateSchema,
   organizationUpdateSchema,
-  organizationTypeSchema,
+  organizationBizTypeSchema,
 } from "./schemas/organization";
 import { requestLogger } from "../helpers/request-logger";
 
@@ -41,21 +37,11 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const type = getFromQuery("organizationType", req);
-    const organizationType = organizationTypeSchema.parse(type);
+    const organizationType = organizationBizTypeSchema.optional().parse(type);
     const data = organizationCreateSchema.parse(req.body);
 
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
     const org = await createOrganization(createOrg, organizationType);
-
-    // temp solution until we migrate to FHIR
-    const fhirOrg = toFHIR(org);
-    await upsertOrgToFHIRServer(org.cxId, fhirOrg);
-
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous
-    if (organizationType !== "healthcare_it_vendor") {
-      cwCommands.organization.create(org).catch(processAsyncError(`cw.org.create`));
-    }
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })
@@ -84,14 +70,6 @@ router.put(
       cxId,
     };
     const org = await updateOrganization(updateCmd);
-
-    // temp solution until we migrate to FHIR
-    const fhirOrg = toFHIR(org);
-    await upsertOrgToFHIRServer(org.cxId, fhirOrg);
-
-    // TODO: #393 declarative, event-based integration
-    // Intentionally asynchronous
-    cwCommands.organization.update(org).catch(processAsyncError(`cw.org.update`));
 
     return res.status(status.OK).json(dtoFromModel(org));
   })

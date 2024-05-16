@@ -1,4 +1,4 @@
-import { OrganizationData, OrganizationType } from "@metriport/core/domain/organization";
+import { OrganizationData, OrganizationBizType } from "@metriport/core/domain/organization";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { UniqueConstraintError } from "sequelize";
 import BadRequestError from "../../../errors/bad-request";
@@ -8,6 +8,10 @@ import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";
 import { createOrganizationId } from "../customer-sequence/create-id";
 import { getOrganization } from "./get-organization";
+import { toFHIR } from "../../../external/fhir/organization";
+import { upsertOrgToFHIRServer } from "../../../external/fhir/organization/upsert-organization";
+import cwCommands from "../../../external/commonwell";
+import { processAsyncError } from "../../../errors";
 
 const MAX_ATTEMPTS = 5;
 
@@ -17,7 +21,7 @@ export type OrganizationCreateCmd = OrganizationNoExternalData & Identifier;
 
 export const createOrganization = async (
   orgData: OrganizationCreateCmd,
-  orgType: OrganizationType = OrganizationType.healthcareProvider
+  orgType: OrganizationBizType = OrganizationBizType.healthcareProvider
 ): Promise<OrganizationModel> => {
   const { cxId } = orgData;
 
@@ -30,12 +34,20 @@ export const createOrganization = async (
   // create tenant on FHIR server
   await createTenantIfNotExists(org);
 
+  const fhirOrg = toFHIR(org);
+  await upsertOrgToFHIRServer(org.cxId, fhirOrg);
+
+  if (org.type !== "healthcare_it_vendor") {
+    // Intentionally asynchronous
+    cwCommands.organization.create(org).catch(processAsyncError(`cw.org.create`));
+  }
+
   return org;
 };
 
 async function createOrganizationInternal(
   orgData: OrganizationCreateCmd,
-  orgType: OrganizationType = OrganizationType.healthcareProvider,
+  orgType: OrganizationBizType = OrganizationBizType.healthcareProvider,
   attempt = 1
 ): Promise<OrganizationModel> {
   try {
