@@ -44,10 +44,11 @@ export async function processOutboundPatientDiscoveryResps({
       results
     );
 
+    const pdRequestId = getCQData(patient.data.externalData)?.pdRequestId;
     const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
     const pdEndeddAt = getCQData(patient.data.externalData)?.pdEndedAt;
 
-    if (pdStartedAt && !pdEndeddAt) {
+    if (requestId === pdRequestId && pdStartedAt && !pdEndeddAt) {
       analytics({
         distinctId: patient.cxId,
         event: EventTypes.patientDiscovery,

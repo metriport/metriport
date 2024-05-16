@@ -19,6 +19,7 @@ import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-dis
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { clearPatientDiscoveryEndedAt } from "./command/clear-patient-discovery-endedat";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
@@ -48,6 +49,7 @@ export async function discover(
   const enabledIHEGW = await validateCQEnabledAndInitGW(patient.cxId, forceEnabled, outerLog);
 
   if (enabledIHEGW) {
+    await clearPatientDiscoveryEndedAt({ patient });
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
