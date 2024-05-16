@@ -11,7 +11,7 @@ export async function createOrUpdateInCq(
   facility: Facility,
   cxOid: string,
   orgName: string,
-  coordinates: AddressWithCoordinates
+  { coordinates }: AddressWithCoordinates
 ): Promise<void> {
   const { log } = out("createOrUpdateInCq");
   const { address } = facility.data;
@@ -25,8 +25,8 @@ export async function createOrUpdateInCq(
   await createOrUpdateCQOrganization({
     name: orgName,
     addressLine1: addressLine,
-    lat: coordinates.lat,
-    lon: coordinates.lon,
+    lat: coordinates.lat.toString(),
+    lon: coordinates.lon.toString(),
     city: address.city,
     state: address.state,
     postalCode: address.zip,

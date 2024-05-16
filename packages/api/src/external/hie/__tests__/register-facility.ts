@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
-import { OrgType } from "@metriport/core/domain/organization";
 import { USState } from "@metriport/api-sdk";
+import { OrgType } from "@metriport/core/domain/organization";
 
 export const getCxOrganizationNameAndOidResult = {
   name: faker.company.name(),
@@ -16,6 +16,8 @@ export const addressWithCoordinates = {
   state: USState.CA,
   zip: faker.location.zipCode(),
   country: "USA",
-  lat: faker.location.latitude().toString(),
-  lon: faker.location.longitude().toString(),
+  coordinates: {
+    lat: faker.location.latitude(),
+    lon: faker.location.longitude(),
+  },
 };

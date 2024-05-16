@@ -4,10 +4,10 @@ import { Address } from "./address";
 export type AddressStrict = Pick<Address, "addressLine2"> &
   Required<Omit<Address, "addressLine2" | "coordinates">>;
 
-export type AddressWithCoordinates = AddressStrict & { lat: string; lon: string };
+export type AddressWithCoordinates = AddressStrict & Required<Pick<Address, "coordinates">>;
 
 export function removeCoordinates(address: AddressWithCoordinates): AddressStrict {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { lat, lon, ...rest } = address;
+  const { coordinates, ...rest } = address;
   return rest;
 }

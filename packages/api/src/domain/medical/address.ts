@@ -12,20 +12,15 @@ export async function getAddressWithCoordinates(
   });
   const address = (addresses ?? [])[0];
   if (!address) throw new Error("Failed to geocode the address");
-  if (!address.coordinates) {
+  const coordinates = address.coordinates;
+  if (!coordinates) {
     throw new MetriportError(`Missing coordinates for address`, undefined, {
       address: JSON.stringify(address),
     });
   }
-  const { lat, lon } = address.coordinates;
   return {
-    addressLine1: address.addressLine1,
-    addressLine2: address.addressLine2,
-    city: address.city,
-    state: address.state,
-    zip: address.zip,
+    ...address,
+    coordinates,
     country: address.country ?? "USA",
-    lat: lat.toString(),
-    lon: lon.toString(),
   };
 }
