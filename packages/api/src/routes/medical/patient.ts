@@ -4,7 +4,10 @@ import {
   consolidationConversionType,
   mrFormat,
 } from "@metriport/core/domain/conversion/fhir-to-medical-record";
+import { MAXIMUM_UPLOAD_FILE_SIZE } from "@metriport/core/external/aws/lambda-logic/document-uploader";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
+import { uploadFhirBundleToS3 } from "@metriport/core/fhir-to-cda/upload";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { stringToBoolean } from "@metriport/shared";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
@@ -16,6 +19,7 @@ import {
   getConsolidatedPatientData,
   startConsolidatedQuery,
 } from "../../command/medical/patient/consolidated-get";
+import { convertFhirToCda } from "../../command/medical/patient/convert-fhir-to-cda";
 import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
@@ -49,7 +53,7 @@ import {
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
-import { bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
+import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./schemas/fhir";
 import {
   patientUpdateSchema,
   schemaCreateToPatient,
@@ -59,9 +63,8 @@ import {
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
 const router = Router();
-const MAX_RESOURCE_POST_COUNT = 50;
+const MAX_RESOURCE_COUNT_PER_REQUEST = 50;
 const MAX_RESOURCE_STORED_LIMIT = 1000;
-const MAX_CONTENT_LENGTH_BYTES = 1_000_000;
 
 /** ---------------------------------------------------------------------------
  * POST /patient
@@ -395,54 +398,71 @@ router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
  * @param req.param.id The ID of the patient to associate resources to.
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
+ * TODO: 1603 - Simplify the logic and move the bulk of it into the `command` directory.
  */
 router.put("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
 async function putConsolidated(req: Request, res: Response) {
   // Limit the payload size that can be created
   const contentLength = req.headers["content-length"];
-  if (contentLength && parseInt(contentLength) >= MAX_CONTENT_LENGTH_BYTES) {
+  if (contentLength && parseInt(contentLength) >= MAXIMUM_UPLOAD_FILE_SIZE) {
     throw new BadRequestError(
-      `Cannot create bundle with size greater than ${MAX_CONTENT_LENGTH_BYTES} bytes.`
+      `Cannot create bundle with size greater than ${MAXIMUM_UPLOAD_FILE_SIZE} bytes.`
     );
   }
 
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const patient = await getPatientOrFail({ id: patientId, cxId });
-
   const fhirBundle = bundleSchema.parse(req.body);
   const validatedBundle = validateFhirEntries(fhirBundle);
   const incomingAmount = validatedBundle.entry.length;
 
-  // Limit the amount of resources per patient
+  await checkResourceLimit(incomingAmount, patient);
+
+  const docId = uuidv7();
+  await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
+  const patientDataPromise = async () => {
+    createOrUpdateConsolidatedPatientData({
+      cxId,
+      patientId: patient.id,
+      fhirBundle: validatedBundle,
+    });
+  };
+  const convertAndUploadCdaPromise = async () => {
+    const isValidForCdaConversion = hasCompositionResource(validatedBundle);
+    if (isValidForCdaConversion) {
+      await convertFhirToCda({ cxId, patientId, docId, validatedBundle });
+    }
+  };
+
+  await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
+  return res.sendStatus(status.OK);
+}
+
+async function checkResourceLimit(incomingAmount: number, patient: Patient) {
   if (!Config.isCloudEnv() || Config.isSandbox()) {
     const { total: currentAmount } = await countResources({
-      patient: { id: patientId, cxId },
+      patient: { id: patient.id, cxId: patient.cxId },
     });
     if (currentAmount + incomingAmount > MAX_RESOURCE_STORED_LIMIT) {
       throw new BadRequestError(
-        `Reached maximum number of resources per patient in Sandbox mode ` +
-          `(current: ${currentAmount}, incoming: ${incomingAmount}, max: ${MAX_RESOURCE_STORED_LIMIT})`
+        `Reached maximum number of resources per patient in Sandbox mode.`,
+        null,
+        { currentAmount, incomingAmount, MAX_RESOURCE_STORED_LIMIT }
       );
     }
     // Limit the amount of resources that can be created at once
-    if (incomingAmount > MAX_RESOURCE_POST_COUNT) {
-      throw new BadRequestError(
-        `Cannot create more than ${MAX_RESOURCE_POST_COUNT} resources at a time ` +
-          `(incoming: ${incomingAmount})`
-      );
+    if (incomingAmount > MAX_RESOURCE_COUNT_PER_REQUEST) {
+      throw new BadRequestError(`Cannot create this many resources at a time.`, null, {
+        incomingAmount,
+        MAX_RESOURCE_COUNT_PER_REQUEST,
+      });
     }
   }
-  console.log(
-    `[PUT /consolidated] cxId ${cxId}, patientId ${patientId}] ` +
-      `${incomingAmount} resources, ${contentLength} bytes`
-  );
-  const data = await createOrUpdateConsolidatedPatientData({
-    cxId,
-    patientId: patient.id,
-    fhirBundle: validatedBundle,
-  });
-  return res.json(data);
+}
+
+function hasCompositionResource(bundle: ValidBundle): boolean {
+  return bundle.entry.some(entry => entry.resource?.resourceType === "Composition");
 }
 
 /** ---------------------------------------------------------------------------

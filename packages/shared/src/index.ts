@@ -2,6 +2,7 @@ export { optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export { errorToString } from "./common/error";
 export { emptyFunction } from "./common/general";
+export { metriportOrganization } from "./common/metriport-organization";
 export { normalizeOid } from "./common/normalize-oid";
 export { normalizeZipCode } from "./common/normalize-zip";
 export { PurposeOfUse } from "./common/purpose-of-use";
