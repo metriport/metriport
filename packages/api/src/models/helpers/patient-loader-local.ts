@@ -2,7 +2,7 @@ import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { FindBySimilarity, GetOne, PatientLoader } from "@metriport/core/command/patient-loader";
 import { Op, WhereOptions, json } from "sequelize";
 import { getPatientOrFail, getPatientStates } from "../../command/medical/patient/get-patient";
-import { PatientModel } from "../../models/medical/patient";
+import { PatientModel } from "../medical/patient";
 
 /**
  * Implementation of the PatientLoader that executes the logic within the API (local).
