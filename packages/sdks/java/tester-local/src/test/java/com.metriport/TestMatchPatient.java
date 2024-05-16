@@ -5,6 +5,7 @@ import com.metriport.generated.resources.medical.patient.requests.PatientCreate;
 import com.metriport.generated.resources.medical.patient.types.BasePatient;
 import com.metriport.generated.resources.medical.patient.types.PersonalIdentifier;
 import com.metriport.generated.resources.medical.patient.types.DriversLicense;
+import com.metriport.generated.resources.medical.patient.types.Demographics;
 import com.metriport.generated.resources.commons.types.Address;
 import com.metriport.generated.resources.commons.types.UsState;
 import io.github.cdimascio.dotenv.Dotenv;
@@ -12,9 +13,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
-public class TestCreatePatient {
+public class TestMatchPatient {
     @Test
-    public void createPatient() {
+    public void matchPatient() {
         Dotenv dotenv = Dotenv.load();
 
         String apiKey = dotenv.get("API_KEY");
@@ -50,12 +51,31 @@ public class TestCreatePatient {
                 ))
                 .build();
 
-        PatientCreate request = PatientCreate.builder()
+        PatientCreate request1 = PatientCreate.builder()
                 .facilityId(facilityId)
                 .body(patientData)
                 .build();
 
-        var response = client.medical().patient().create(request);
+        client.medical().patient().create(request1);
+
+        Demographics request2 = Demographics.builder()
+                .firstName("John")
+                .lastName("Doe")
+                .dob("1980-01-01")
+                .genderAtBirth("M")
+                .personalIdentifiers(Collections.singletonList(personalIdentifier))
+                .address(Collections.singletonList(
+                        Address.builder()
+                                .addressLine1("123 Main St")
+                                .city("Los Angeles")
+                                .state(UsState.CA)
+                                .zip("90001")
+                                .country("USA")
+                                .build()
+                ))
+                .build();
+
+        var response = client.medical().patient().match(request2);
         System.out.println("Received patient with ID: " + response.getId());
     }
 }

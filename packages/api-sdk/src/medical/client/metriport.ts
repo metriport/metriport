@@ -1,6 +1,7 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
+import status from "http-status";
 import {
   API_KEY_HEADER,
   BASE_ADDRESS,
@@ -24,6 +25,7 @@ import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "..
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
+import { Demographics } from "../models/demographics";
 import { PatientDTO } from "../models/patientDTO";
 
 const NO_DATA_MESSAGE = "No data returned from API";
@@ -208,6 +210,23 @@ export class MetriportMedicalApi {
     const resp = await this.api.get(`${PATIENT_URL}/${id}`);
     if (!resp.data) throw new Error(NO_DATA_MESSAGE);
     return resp.data as PatientDTO;
+  }
+
+  /**
+   * Searches for a patient previously created at Metriport, based on demographics.
+   *
+   * @return The patient if found.
+   */
+  async matchPatient(data: Demographics): Promise<PatientDTO | undefined> {
+    try {
+      const resp = await this.api.post(`${PATIENT_URL}/match`, data);
+      if (!resp.data) throw new Error(NO_DATA_MESSAGE);
+      return resp.data as PatientDTO;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== status.NOT_FOUND) throw err;
+      return undefined;
+    }
   }
 
   /**
