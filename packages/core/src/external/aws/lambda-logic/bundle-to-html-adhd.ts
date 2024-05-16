@@ -1993,7 +1993,10 @@ function createRelatedPersonSection(relatedPersons: RelatedPerson[]) {
     );
   }
 
-  const removeDuplicate = uniqWith(relatedPersons, (a, b) => {
+  const filteredRelatedPersons = relatedPersons.filter(
+    person => getName(person) && getRelationship(person)
+  );
+  const removeDuplicate = uniqWith(filteredRelatedPersons, (a, b) => {
     return getName(a) === getName(b) && getRelationship(a) === getRelationship(b);
   });
 
