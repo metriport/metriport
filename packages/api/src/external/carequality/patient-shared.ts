@@ -1,4 +1,5 @@
 import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { LinkStatus } from "../patient-link";
 
 export class PatientDataCarequality extends PatientExternalDataEntry {
   constructor(
@@ -17,7 +18,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
     /**
      * The status of the patient discovery.
      */
-    public discoveryStatus?: "processing" | "completed" | "failed",
+    public discoveryStatus?: LinkStatus,
     /**
      * The request ID for the next patient discovery while the current patient discovery was processing.
      */

@@ -27,14 +27,36 @@ export type CQLinkStatus = (typeof cqLinkStatus)[number];
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(
     public patientId: string,
-    public personId?: string | undefined,
-    public status?: LinkStatus | undefined,
+    public personId?: string,
     public cqLinkStatus?: CQLinkStatus,
-    public pdStartedAt?: Date | undefined,
-    public pdFacilityId?: Date | undefined,
-    public pdRequestId?: string | undefined,
+    /**
+     * The start of the patient discovery.
+     */
+    public pdStartedAt?: Date,
+    /**
+     * The facility ID used for the patient discovery.
+     */
+    public pdFacilityId?: string,
+    /**
+     * The request Id the patient discovery.
+     */
+    public pdRequestId?: string,
+    /**
+     * The status of the patient discovery.
+     */
+    public status?: LinkStatus,
+    /**
+     * The request ID for the next patient discovery while the current patient discovery was processing.
+     */
+
     public scheduledPdRequestId?: string | undefined,
+    /**
+     * The request ID for the next patient discovery while the current patient discovery was processing.
+     */
     public scheduledPdRequestForceDocQuery?: boolean | undefined,
+    /**
+     * The request ID for the document query triggered while the patient discovery was processing.
+     */
     public scheduledDocQueryRequestId?: string | undefined
   ) {
     super();
