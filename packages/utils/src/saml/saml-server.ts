@@ -22,10 +22,10 @@ const port = 8043;
 app.use(json());
 
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_PRODUCTION"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PRODUCTION"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_PRODUCTION"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_PRODUCTION"),
+  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
+  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
+  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
+  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
 };
 
 app.post("/xcpd", async (req: Request, res: Response) => {
