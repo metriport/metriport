@@ -46,8 +46,6 @@ export async function processOutboundPatientDiscoveryResps({
   try {
     const patient = await getPatientOrFail(patientIds);
 
-    if (results.length > 0) await updateDemographics(patient, results);
-
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
       {
@@ -58,8 +56,9 @@ export async function processOutboundPatientDiscoveryResps({
     );
 
     const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
+    const pdEndeddAt = getCQData(patient.data.externalData)?.pdEndedAt;
 
-    if (pdStartedAt) {
+    if (pdStartedAt && !pdEndeddAt) {
       analytics({
         distinctId: patient.cxId,
         event: EventTypes.patientDiscovery,
@@ -73,12 +72,15 @@ export async function processOutboundPatientDiscoveryResps({
       });
     }
 
+    if (results.length > 0) await updateDemographics(patient, results);
+
     const newPatientDiscovery = await patientDiscoveryIfScheduled(patient);
 
     if (!newPatientDiscovery) {
       await updatePatientDiscoveryStatus({
         patient: patientIds,
         status: "completed",
+        endedAt: new Date(),
       });
 
       await queryDocsIfScheduled(patient);
@@ -87,6 +89,7 @@ export async function processOutboundPatientDiscoveryResps({
     await updatePatientDiscoveryStatus({
       patient: patientIds,
       status: "failed",
+      endedAt: new Date(),
     });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     console.error(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);

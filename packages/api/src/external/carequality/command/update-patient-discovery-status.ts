@@ -20,12 +20,14 @@ export async function updatePatientDiscoveryStatus({
   requestId,
   facilityId,
   startedAt,
+  endedAt,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
   requestId?: string;
   facilityId?: string;
   startedAt?: Date;
+  endedAt?: Date;
 }): Promise<Patient> {
   const patientFilter = {
     id: patient.id,
@@ -49,6 +51,7 @@ export async function updatePatientDiscoveryStatus({
         ...(requestId && { pdRequestId: requestId }),
         ...(facilityId && { pdFacilityId: facilityId }),
         ...(startedAt && { pdStartedAt: startedAt }),
+        ...(startedAt && { pdEndedAt: endedAt }),
       },
     };
 

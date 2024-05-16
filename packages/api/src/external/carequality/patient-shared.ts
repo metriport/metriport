@@ -8,11 +8,15 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public pdStartedAt?: Date,
     /**
+     * The end of the patient discovery. Used to prevent inaccurate statistics.
+     */
+    public pdEndedAt?: Date,
+    /**
      * The facility ID used for the patient discovery.
      */
     public pdFacilityId?: string,
     /**
-     * The request Id the patient discovery.
+     * The request ID the patient discovery.
      */
     public pdRequestId?: string,
     /**
