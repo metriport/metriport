@@ -32,7 +32,7 @@ export async function clearPatientDiscoveryEndedAt({
       ...externalData,
       CAREQUALITY: {
         ...externalData.CAREQUALITY,
-        endedAt: undefined,
+        pdEndedAt: undefined,
       },
     };
 

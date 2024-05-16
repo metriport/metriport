@@ -34,7 +34,7 @@ export const clearCommonwellPersonId = async ({
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        commonwellPersonId: undefined,
+        personId: undefined,
       },
     };
 
