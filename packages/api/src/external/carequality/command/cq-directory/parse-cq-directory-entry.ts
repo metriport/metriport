@@ -8,7 +8,7 @@ import { normalizeOid, normalizeZipCode } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
 
-type LenientAddress = {
+export type LenientAddress = {
   addressLine?: string | undefined;
   city?: string | undefined;
   state?: string | undefined;
@@ -135,28 +135,44 @@ function getCoordinates(address: Address[]): Coordinates | undefined {
   return { lat, lon };
 }
 
-function getAddressFields(addresses: Address[] | undefined): LenientAddress {
-  const address: LenientAddress = {};
-  if (addresses && addresses.length > 0) {
-    const firstAddress = addresses[0];
-    if (firstAddress?.line) {
-      const line = Array.isArray(firstAddress.line)
-        ? firstAddress.line[0]?.value
-        : firstAddress.line?.value;
-      address.addressLine = line ?? undefined;
+export function getAddressFields(addresses: Address[] | undefined): LenientAddress {
+  if (!addresses) return {};
+
+  let bestAddress: LenientAddress = {};
+
+  for (const address of addresses) {
+    const parsedAddress: LenientAddress = {};
+
+    if (address?.line) {
+      const line = Array.isArray(address.line) ? address.line[0]?.value : address.line?.value;
+      if (line) parsedAddress.addressLine = line;
     }
-    if (firstAddress?.city?.value) address.city = firstAddress?.city?.value;
-    if (firstAddress?.state?.value) address.state = firstAddress?.state?.value;
-    const postalCode = firstAddress?.postalCode?.value;
+    if (address?.city?.value) parsedAddress.city = address?.city?.value;
+    if (address?.state?.value) parsedAddress.state = address?.state?.value;
+    const postalCode = address?.postalCode?.value;
     if (postalCode && postalCode.length > 0) {
       try {
-        address.zip = normalizeZipCode(postalCode);
+        parsedAddress.zip = normalizeZipCode(postalCode);
       } catch (err) {
         console.log(`normalizeZipCode error for zip ${postalCode} - error: ${err}`);
       }
     }
+
+    if (
+      parsedAddress.addressLine &&
+      parsedAddress.city &&
+      parsedAddress.state &&
+      parsedAddress.zip
+    ) {
+      return parsedAddress;
+    }
+
+    if (Object.keys(parsedAddress).length > Object.keys(bestAddress).length) {
+      bestAddress = parsedAddress;
+    }
   }
-  return address;
+
+  return bestAddress;
 }
 
 function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
