@@ -9,9 +9,10 @@ import { LinkStatus } from "../../patient-link";
  *
  * @param patient The patient ID and customer ID @ Metriport.
  * @param status The status of integrating the patient across CareQuality gateways.
- * @param requestId The requestId of PD process. Set once.
- * @param facilityId The facilityId of PD process. Set once.
- * @param startedAt The startedAt of PD process. Set once.
+ * @param requestId The requestId of PD process. Set once per request ID.
+ * @param facilityId The facilityId of PD process. Set once per request ID.
+ * @param startedAt The start of PD process. Set once per request ID.
+ * @param endedAt The end of PD process. Set once per request ID.
  * @returns Updated Patient.
  */
 export async function updatePatientDiscoveryStatus({
