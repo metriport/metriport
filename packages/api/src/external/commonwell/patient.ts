@@ -247,7 +247,7 @@ export async function update(
   requestId: string,
   forceCWUpdate = false
 ): Promise<void> {
-  const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
+  const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
   const cwUpdateEnabled = await validateCWEnabled({
     cxId: patient.cxId,
@@ -544,7 +544,7 @@ async function patientDiscoveryIfScheduled(
 export async function remove(patient: Patient, facilityId: string): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
+    const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
 
     if (!(await isCWEnabledForCx(patient.cxId))) {
       debug(`CW disabled for cx ${patient.cxId}, skipping...`);
@@ -637,9 +637,7 @@ async function findOrCreatePersonAndLink({
   patientRefLink: string;
   getOrgIdExcludeList: () => Promise<string[]>;
 }): Promise<{ personId: string; networkLinks: NetworkLink[] | undefined }> {
-  const { log, debug } = Util.out(
-    `CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`
-  );
+  const { log, debug } = out(`CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`);
   let findOrCreateResponse: FindOrCreatePersonResponse;
   try {
     findOrCreateResponse = await findOrCreatePerson({
@@ -694,14 +692,14 @@ async function registerPatient({
   commonwellPatient: CommonwellPatient;
 }): Promise<{ commonwellPatientId: string; patientRefLink: string }> {
   const fnName = `CW registerPatient`;
-  const debug = Util.debug(fnName);
+  const { debug } = out(fnName);
 
   const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
   debug(`resp registerPatient: `, JSON.stringify(respPatient));
 
   const commonwellPatientId = getIdTrailingSlash(respPatient);
 
-  const log = Util.log(`${fnName} - CW patientId ${commonwellPatientId}`);
+  const { log } = out(`${fnName} - CW patientId ${commonwellPatientId}`);
   if (!commonwellPatientId) {
     const msg = `Could not determine the patient ID from CW`;
     log(
@@ -734,7 +732,7 @@ async function updatePatientCW({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<{ patientRefLink: string }> {
-  const { log, debug } = Util.out(`CW updatePatient - CW patientId ${commonwellPatientId}`);
+  const { log, debug } = out(`CW updatePatient - CW patientId ${commonwellPatientId}`);
 
   const respUpdate = await commonWell.updatePatient(
     queryMeta,
@@ -770,7 +768,7 @@ async function getLinkInfo({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<{ hasLink: boolean; isLinkLola3Plus: boolean; strongIds: StrongId[] }> {
-  const { debug } = Util.out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
+  const { debug } = out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
 
   const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
   debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
