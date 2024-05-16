@@ -99,7 +99,7 @@ export async function create(
   requestId?: string,
   forceCWCreate = false
 ): Promise<void> {
-  const { debug } = out(`CW update - M patientId ${patient.id}`);
+  const { debug } = out(`CW create - M patientId ${patient.id}`);
 
   const usedRequestId = requestId ?? uuidv7();
   const cwCreateEnabled = await validateCWEnabled({
