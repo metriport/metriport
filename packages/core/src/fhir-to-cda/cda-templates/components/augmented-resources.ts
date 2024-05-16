@@ -1,10 +1,11 @@
 import {
-  Observation,
-  MedicationStatement,
-  Medication,
   Condition,
+  Medication,
+  MedicationStatement,
+  Observation,
   Resource,
 } from "@medplum/fhirtypes";
+import { medicationsSectionName } from "./medications";
 import { problemsSectionName } from "./problems";
 
 export interface AugmentedResource {
@@ -24,6 +25,6 @@ export class AugmentedCondition implements AugmentedResource {
 
 export class AugmentedMedicationStatement implements AugmentedResource {
   public readonly typeOid = "2.16.840.1.113883.10.20.22.4.16";
-  public readonly sectionName = problemsSectionName;
+  public readonly sectionName = medicationsSectionName;
   constructor(public resource: MedicationStatement, public medication?: Medication | undefined) {}
 }

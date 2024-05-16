@@ -15,6 +15,7 @@ import {
   CdaInstanceIdentifier,
   CdaOrganization,
   CdaTelecom,
+  CdaValueCd,
   CdaValueSt,
   Entry,
   EntryObject,
@@ -77,20 +78,19 @@ export function buildCodeCe({
   displayName?: string | undefined;
 }): CdaCodeCe {
   const codeObject: CdaCodeCe = {};
-  if (code) codeObject[_codeAttribute] = code;
-  if (codeSystem) codeObject[_codeSystemAttribute] = codeSystem;
-  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName;
-  if (displayName) codeObject[_displayNameAttribute] = displayName;
+  const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
+  if (code) codeObject[_codeAttribute] = code.trim();
+  if (mappedCodeSystem) codeObject[_codeSystemAttribute] = mappedCodeSystem;
+  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName.trim();
+  if (displayName) codeObject[_displayNameAttribute] = displayName.trim();
 
   return codeObject;
 }
 
 export function buildOriginalTextReference(value: string): CDAOriginalText {
   return {
-    originalText: {
-      reference: {
-        [_valueAttribute]: value,
-      },
+    reference: {
+      [_valueAttribute]: value,
     },
   };
 }
@@ -115,7 +115,7 @@ export function buildCodeCvFromCodeableConcept(
       })
     : {};
 
-  const translations = (codeableConcept.coding?.slice(1) || []).map(coding =>
+  const translations = (codeableConcept.coding || []).map(coding =>
     buildCodeCe({
       code: coding.code,
       codeSystem: mapCodingSystem(coding.system),
@@ -229,13 +229,31 @@ export function formatDateToHumanReadableFormat(
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
-export function buildValueST(value: string | undefined): CdaValueSt | undefined {
+export function buildValueSt(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
 
   const valueObject: CdaValueSt = {};
   valueObject[_xsiTypeAttribute] = "ST";
   valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
   valueObject[_inlineTextAttribute] = value;
+  return valueObject;
+}
+
+export function buildValueCd(
+  codeableConcept: CodeableConcept | undefined,
+  referenceId: string
+): CdaValueCd | undefined {
+  const valueObject: CdaValueCd = {
+    [_xsiTypeAttribute]: "CD",
+    [_codeAttribute]: codeableConcept?.coding?.[0]?.code,
+    [_codeSystemAttribute]: mapCodingSystem(codeableConcept?.coding?.[0]?.system),
+    [_displayNameAttribute]: codeableConcept?.coding?.[0]?.display,
+    originalText: {
+      reference: {
+        [_valueAttribute]: referenceId,
+      },
+    },
+  };
   return valueObject;
 }
 

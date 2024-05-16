@@ -98,10 +98,8 @@ export type CdaName = {
 };
 
 export type CDAOriginalText = {
-  originalText: {
-    reference: {
-      [_valueAttribute]: string;
-    };
+  reference: {
+    [_valueAttribute]: string;
   };
 };
 
@@ -115,9 +113,18 @@ export type CdaCodeCe = {
 
 // St (ST) stands for Simple Text
 export type CdaValueSt = {
-  [_xsiTypeAttribute]?: string;
+  [_xsiTypeAttribute]?: "ST";
   [_xmlnsXsiAttribute]?: string;
   [_inlineTextAttribute]?: string;
+};
+
+// Cd (CD) stands for Concept Descriptor
+export type CdaValueCd = {
+  [_xsiTypeAttribute]?: "CD";
+  [_codeAttribute]?: string | undefined;
+  [_displayNameAttribute]?: string | undefined;
+  [_codeSystemAttribute]?: string | undefined;
+  originalText?: CDAOriginalText;
 };
 
 // Cv (CV) stands for Coded Value
@@ -214,9 +221,7 @@ export type ObservationEntry = {
 };
 
 export type ObservationEntryRelationship = ObservationEntry & {
-  observation: {
-    typeCode: string;
-  };
+  [_typeCodeAttribute]: string;
 };
 
 export type SubstanceAdministationEntry = {
@@ -235,6 +240,7 @@ export type SubstanceAdministationEntry = {
       [_codeAttribute]?: string | undefined;
     };
     effectiveTime: {
+      [_xsiTypeAttribute]: string;
       low: {
         [_valueAttribute]?: string | undefined;
       };

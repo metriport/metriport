@@ -4,9 +4,11 @@ import { isCondition } from "../../fhir";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
+  buildValueCd,
   createTableHeader,
   formatDateToCdaTimestamp,
   getTextFromCode,
+  isLoinc,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -15,6 +17,7 @@ import {
   _idAttribute,
   _inlineTextAttribute,
   _moodCodeAttribute,
+  _typeCodeAttribute,
   _valueAttribute,
   extensionValue2014,
   extensionValue2015,
@@ -152,17 +155,13 @@ function createEntryFromCondition(condition: AugmentedCondition, referenceId: st
         statusCode: {
           [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
         },
-        text: {
-          reference: {
-            [_valueAttribute]: referenceId,
-          },
-        },
         effectiveTime: {
           low: withoutNullFlavorObject(
             formatDateToCdaTimestamp(condition.resource.recordedDate),
             _valueAttribute
           ),
         },
+        entryRelationship: createEntryRelationship(condition.resource, referenceId),
       },
     },
   ];
@@ -171,4 +170,31 @@ function createEntryFromCondition(condition: AugmentedCondition, referenceId: st
 function getIcdCode(code: CodeableConcept | undefined): string | undefined {
   const icdCoding = code?.coding?.find(coding => coding.system?.includes("icd-10-codes"));
   return icdCoding?.code;
+}
+
+function createEntryRelationship(condition: Condition, referenceId: string) {
+  const codeSystem = condition.code?.coding?.[0]?.system;
+  const systemIsLoinc = isLoinc(codeSystem);
+  return {
+    [_typeCodeAttribute]: "SUBJ",
+    observation: {
+      [_classCodeAttribute]: "OBS",
+      [_moodCodeAttribute]: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: "2.16.840.1.113883.10.20.22.4.4",
+        extension: extensionValue2015,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: condition.id,
+      }),
+      code: buildCodeCe({
+        code: condition.code?.coding?.[0]?.code,
+        codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
+        codeSystemName: systemIsLoinc ? loincSystemName : undefined,
+        displayName: condition.code?.coding?.[0]?.display,
+      }),
+      value: buildValueCd(condition.code, referenceId),
+    },
+  };
 }

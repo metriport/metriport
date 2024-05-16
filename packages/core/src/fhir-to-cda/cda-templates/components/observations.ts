@@ -15,7 +15,7 @@ import {
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   buildReferenceId,
-  buildValueST,
+  buildValueSt,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
   isLoinc,
@@ -29,6 +29,7 @@ import {
   _inlineTextAttribute,
   _moodCodeAttribute,
   _rootAttribute,
+  _typeCodeAttribute,
   _valueAttribute,
   extensionValue2015,
   loincCodeSystem,
@@ -79,7 +80,7 @@ export function buildObservations(observations: Observation[]): CDAObservation[]
             low: withoutNullFlavorObject(effectiveTime, _valueAttribute),
             high: withoutNullFlavorObject(effectiveTime, _valueAttribute),
           },
-          value: buildValueST(observation.valueString),
+          value: buildValueSt(observation.valueString),
         },
       },
     };
@@ -242,9 +243,9 @@ function createEntryFromObservation(
 
 function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelationship {
   return {
+    [_typeCodeAttribute]: "COMP", // TODO: Check the correctness of this. Could also be "SPRT" in some cases
     observation: {
       ...entry.observation,
-      typeCode: "COMP", // TODO: Check the correctness of this
     },
   };
 }

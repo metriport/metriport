@@ -18,6 +18,7 @@ import {
   _moodCodeAttribute,
   _typeCodeAttribute,
   _valueAttribute,
+  _xsiTypeAttribute,
   extensionValue2014,
   loincCodeSystem,
   loincSystemName,
@@ -26,7 +27,7 @@ import {
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedMedicationStatement } from "./augmented-resources";
 
-const sectionName = "medications";
+export const medicationsSectionName = "medications";
 const tableHeaders = ["Medication", "Dosage", "Frequency", "Start Date", "End Date", "Reason"];
 
 export function buildMedications(fhirBundle: Bundle) {
@@ -53,7 +54,7 @@ export function buildMedications(fhirBundle: Bundle) {
   );
 
   const table = {
-    [_idAttribute]: sectionName,
+    [_idAttribute]: medicationsSectionName,
     thead: createTableHeader(tableHeaders),
     tbody: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -157,6 +158,10 @@ function createEntryFromStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
 ): SubstanceAdministationEntry[] {
+  const manufacturedMaterialCode = buildCodeCvFromCodeableConcept(
+    statement.medication?.code,
+    referenceId
+  );
   return [
     {
       substanceAdministration: {
@@ -174,6 +179,7 @@ function createEntryFromStatement(
           [_codeAttribute]: statement.resource.status,
         },
         effectiveTime: {
+          [_xsiTypeAttribute]: "IVL_TS",
           low: withoutNullFlavorObject(
             formatDateToCdaTimestamp(statement.resource.effectivePeriod?.start),
             _valueAttribute
@@ -186,13 +192,12 @@ function createEntryFromStatement(
         consumable: {
           [_typeCodeAttribute]: "CSM",
           manufacturedProduct: {
-            // [_codeAttribute]: "MANU",
             templateId: buildInstanceIdentifier({
               root: "2.16.840.1.113883.10.20.22.4.23",
               extension: "2014-06-09",
             }),
             manufacturedMaterial: {
-              code: buildCodeCvFromCodeableConcept(statement.medication?.code, referenceId),
+              code: manufacturedMaterialCode,
             },
           },
         },
