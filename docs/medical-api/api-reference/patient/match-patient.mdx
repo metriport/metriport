@@ -1,0 +1,56 @@
+---
+title: "Match Patient"
+description: "Searches for a Patient previously created in Metriport, based on demographic data. Returns a 404 if the patient is not found."
+api: "POST /medical/v1/patient/match"
+---
+
+## Body
+
+<Snippet file="patient-match.mdx" />
+
+## Response
+
+<Snippet file="patient-response.mdx" />
+
+<ResponseExample>
+
+```javascript Metriport SDK
+import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
+
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
+
+const patient = await metriport.matchPatient(
+  {
+    firstName: "Jose",
+    lastName: "Juarez",
+    dob: "1951-05-05",
+    genderAtBirth: "M",
+    personalIdentifiers: [
+      {
+        type: "driversLicense",
+        state: USState.CA,
+        value: "51227265",
+      },
+    ],
+    address: [
+      {
+        zip: "12345",
+        city: "San Diego",
+        state: USState.CA,
+        country: "USA",
+        addressLine1: "Guadalajara Street",
+      },
+    ],
+    contact: [
+      {
+        phone: "1234567899",
+        email: "jose@domain.com",
+      },
+    ],
+  },
+);
+```
+
+</ResponseExample>
+
+<Snippet file="patient-response-json.mdx" />

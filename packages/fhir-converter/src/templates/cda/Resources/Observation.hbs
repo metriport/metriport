@@ -47,7 +47,6 @@
         {{/if}}
         
         "bodySite":{{>DataType/CodeableConcept.hbs code=observationEntry.targetSiteCode}},
-        
         {{#if observationEntry.value.code}}
             "valueCodeableConcept":{{>DataType/CodeableConcept.hbs code=observationEntry.value}},
         {{else if observationEntry.value.value}}
@@ -63,6 +62,12 @@
         {{!-- in some cases text is here in the b64 field. Adding so no data loss but not sure if thats the way its supposed to be. also how it renders I do not know         --}}
         {{else if observationEntry.value._b64}}
             "valueString":"{{observationEntry.value._b64}}",
+        {{else if observationEntry.value.translation.value}}
+            {{#if observationEntry.value.translation.originalText._}}
+                "valueString":"{{observationEntry.value.translation.value}} {{observationEntry.value.translation.originalText._}}"
+            {{else}}
+                "valueString":"{{observationEntry.value.translation.value}}
+            {{/if}}
         {{/if}}
         
         "referenceRange":
