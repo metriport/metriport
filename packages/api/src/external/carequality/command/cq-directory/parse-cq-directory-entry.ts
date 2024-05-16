@@ -4,9 +4,12 @@ import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { capture } from "@metriport/core/util/notifications";
-import { normalizeOid, normalizeZipCode } from "@metriport/shared";
+import { errorToString, normalizeOid, normalizeZipCode } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
+import { out } from "@metriport/core/util/log";
+
+const { log } = out(`parseCQDirectoryEntries`);
 
 export type LenientAddress = {
   addressLine?: string | undefined;
@@ -154,7 +157,7 @@ export function getAddressFields(addresses: Address[] | undefined): LenientAddre
       try {
         parsedAddress.zip = normalizeZipCode(postalCode);
       } catch (err) {
-        console.log(`normalizeZipCode error for zip ${postalCode} - error: ${err}`);
+        log(`normalizeZipCode error for zip ${postalCode} - error: ${errorToString(err)}`);
       }
     }
 
@@ -208,7 +211,7 @@ function getNormalizedOid(
   try {
     return normalizeOid(oid);
   } catch (err) {
-    console.log(`${entityDescription} has invalid OID: ${oid}`);
+    log(`${entityDescription} has invalid OID: ${oid}`);
   }
 }
 
@@ -220,7 +223,7 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
 
   if (value.includes("Direct Messaging")) return;
   const msg = `Unknown CQ Endpoint type`;
-  console.log(msg);
+  log(msg);
   capture.message(msg, {
     extra: { value, context: "parseCQDirectoryEntries" },
     level: "warning",
