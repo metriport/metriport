@@ -6,8 +6,7 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 /**
  * Sets the CQLink CommonWell (CW) integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient ID and customer ID @ Metriport.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
  * @returns Updated Patient.
  */

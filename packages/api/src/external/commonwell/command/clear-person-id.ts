@@ -6,8 +6,7 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient ID and customer ID @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
  * @returns Updated Patient.
