@@ -1,9 +1,13 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { setCommonwellIdsAndStatus, CWParams } from "../patient-external-data";
+import { CWParams } from "../patient-external-data";
+import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
+import { updateCommenwellCqLinkStatus } from "../command/update-cq-link-status";
+import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { PatientDataCommonwell } from "../patient-shared";
+import { CQLinkStatus, PatientDataCommonwell } from "../patient-shared";
+import { LinkStatus } from "../../patient-link";
 
 let patient: Patient;
 let patientModel: PatientModel;
@@ -46,20 +50,31 @@ describe("setCommonwellIdsAndStatus", () => {
 
     patientModel_findOne.mockResolvedValueOnce(patient);
 
-    const newValues: CWParams = {
+    const newValues = {
       commonwellPatientId: "commonwellPatientId",
       commonwellPersonId: "commonwellPersonId",
-      commonwellStatus: "processing",
-      cqLinkStatus: "processing",
+      cqLinkStatus: "processing" as CQLinkStatus,
+      status: "processing" as LinkStatus,
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const resultIds = await updateCommonwellPatientAndPersonIds({
+      patient,
       ...newValues,
     });
+    expect(resultIds).toBeTruthy();
 
-    expect(result).toBeTruthy();
+    const resultCqLinkStatus = await updateCommenwellCqLinkStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultCqLinkStatus).toBeTruthy();
+
+    const resultPdStatus = await updatePatientDiscoveryStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultPdStatus).toBeTruthy();
+
     checkPatientUpdateWith(newValues);
   });
 
@@ -83,87 +98,31 @@ describe("setCommonwellIdsAndStatus", () => {
 
     patientModel_findOne.mockResolvedValueOnce(patient);
 
-    const newValues: CWParams = {
+    const newValues = {
       commonwellPatientId: "newCommonwellPatientId",
       commonwellPersonId: "newCommonwellPersonId",
-      commonwellStatus: "completed",
-      cqLinkStatus: "linked",
+      cqLinkStatus: "linked" as CQLinkStatus,
+      status: "completed" as LinkStatus,
     };
 
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    const resultIds = await updateCommonwellPatientAndPersonIds({
+      patient,
       ...newValues,
     });
+    expect(resultIds).toBeTruthy();
 
-    expect(result).toBeTruthy();
+    const resultCqLinkStatus = await updateCommenwellCqLinkStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultCqLinkStatus).toBeTruthy();
+
+    const resultPdStatus = await updatePatientDiscoveryStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultPdStatus).toBeTruthy();
+
     checkPatientUpdateWith(newValues);
-  });
-
-  it("has CW externalData set to newStatus + oldValues when CW externalData has oldValues and we set newStatus", async () => {
-    const oldValues: PatientDataCommonwell = {
-      patientId: "oldCommonwellPatientId",
-      personId: "oldCommonwellPersonId",
-      status: "processing",
-      cqLinkStatus: "processing",
-    };
-
-    const patient = makePatient({
-      data: makePatientData({
-        externalData: {
-          COMMONWELL: {
-            ...oldValues,
-          },
-        },
-      }),
-    });
-
-    patientModel_findOne.mockResolvedValueOnce(patient);
-
-    const newStatus: CWParams = {
-      commonwellPatientId: "newCommonwellPatientId",
-      commonwellPersonId: undefined,
-      commonwellStatus: "completed",
-      cqLinkStatus: undefined,
-    };
-
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
-      ...newStatus,
-    });
-
-    expect(result).toBeTruthy();
-    checkPatientUpdateWith({
-      commonwellPatientId: newStatus.commonwellPatientId,
-      commonwellPersonId: oldValues.personId,
-      commonwellStatus: newStatus.commonwellStatus,
-      cqLinkStatus: oldValues.cqLinkStatus,
-    });
-  });
-
-  it("has CW externalData set to onlyPatientId & cqLinkStatus = unlinked when CW externalData is empty and we set onlyPatientId", async () => {
-    const patient = makePatient();
-
-    patientModel_findOne.mockResolvedValueOnce(patient);
-
-    const onlyPatientId: CWParams = {
-      commonwellPatientId: "newCommonwellPatientId",
-      commonwellPersonId: undefined,
-      commonwellStatus: undefined,
-      cqLinkStatus: undefined,
-    };
-
-    const result = await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
-      ...onlyPatientId,
-    });
-
-    expect(result).toBeTruthy();
-    checkPatientUpdateWith({
-      commonwellPatientId: onlyPatientId.commonwellPatientId,
-      cqLinkStatus: "unlinked",
-    });
   });
 });

@@ -1,21 +1,21 @@
-import { Patient } from "@metriport/core/domain/patient";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { LinkStatus } from "../../patient-link";
 
 /**
- * Sets the CareQuality (CQ) integration status on the patient.
+ * Sets the CommonWell (CW) integration status on the patient.
  *
  * @param patientId The patient ID @ Metriport.
  * @param cxId The customer ID @ Metriport.
- * @param status The status of integrating the patient across CareQuality gateways.
+ * @param status The status of integrating/synchronizing the patient @ CommonWell.
  * @param requestId The requestId of PD process. Set once.
  * @param facilityId The facilityId of PD process. Set once.
  * @param startedAt The startedAt of PD process. Set once.
  * @returns Updated Patient.
  */
-export async function updatePatientDiscoveryStatus({
+export const updatePatientDiscoveryStatus = async ({
   patient,
   status,
   requestId,
@@ -27,7 +27,7 @@ export async function updatePatientDiscoveryStatus({
   requestId?: string;
   facilityId?: string;
   startedAt?: Date;
-}): Promise<Patient> {
+}): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
     cxId: patient.cxId,
@@ -44,9 +44,9 @@ export async function updatePatientDiscoveryStatus({
 
     const updatePatientDiscoveryStatus = {
       ...externalData,
-      CAREQUALITY: {
-        ...externalData.CAREQUALITY,
-        discoveryStatus: status,
+      COMMONWELL: {
+        ...externalData.COMMONWELL,
+        status,
         ...(requestId && { pdRequestId: requestId }),
         ...(facilityId && { pdFacilityId: facilityId }),
         ...(startedAt && { pdStartedAt: startedAt }),
@@ -68,4 +68,4 @@ export async function updatePatientDiscoveryStatus({
 
     return updatedPatient;
   });
-}
+};

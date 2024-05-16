@@ -27,6 +27,13 @@ dayjs.extend(duration);
 const discoverContext = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
+}
+
 export async function discover(
   patient: Patient,
   facilityId: string,
@@ -52,6 +59,11 @@ export async function discover(
       processAsyncError(discoverContext)
     );
   }
+}
+
+export async function remove(patient: Patient): Promise<void> {
+  console.log(`Deleting CQ data - M patientId ${patient.id}`);
+  await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
 
 async function prepareAndTriggerPD(
@@ -174,16 +186,4 @@ export async function gatherXCPDGateways(patient: Patient): Promise<{
     v1Gateways,
     v2Gateways,
   };
-}
-
-export function getCQData(
-  data: PatientExternalData | undefined
-): PatientDataCarequality | undefined {
-  if (!data) return undefined;
-  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
-}
-
-export async function remove(patient: Patient): Promise<void> {
-  console.log(`Deleting CQ data - M patientId ${patient.id}`);
-  await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }

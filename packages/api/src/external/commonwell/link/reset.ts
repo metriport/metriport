@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
-import { setCommonwellIds } from "../patient-external-data";
+import { clearCommonwellPersonId } from "../command/clear-person-id";
 import { getCwInitiator } from "../shared";
 import { patientWithCWData } from "./shared";
 
@@ -38,13 +38,8 @@ export async function reset(patientId: string, cxId: string, facilityId: string)
 
     await commonWell.resetPatientLink(queryMeta, cwPersonId, cwPatientId);
 
-    await setCommonwellIds({
-      patientId: patient.id,
-      cxId: patient.cxId,
-      commonwellPatientId: cwPatientId,
-      commonwellPersonId: undefined,
-      commonwellStatus: undefined,
-      cqLinkStatus: undefined,
+    await clearCommonwellPersonId({
+      patient,
     });
   } catch (error) {
     const cwReference = commonWell?.lastReferenceHeader;

@@ -10,6 +10,7 @@ import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
 import { getCWData, registerAndLinkPatientInCW } from "../patient";
 import { getCwInitiator } from "../shared";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 export type RecreateResultOfPatient = {
   originalCWPatientId: string | undefined;
@@ -102,12 +103,13 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
+    const requestId = uuidv7();
     const cwIds = await registerAndLinkPatientInCW(
       patient,
       facilityId,
       getOrgIdExcludeList,
+      requestId,
       log,
-      undefined,
       initiator
     );
 
@@ -116,7 +118,7 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    const { commonwellPatientId: newCWPatientId, personId: newPersonId } = cwIds;
+    const { commonwellPatientId: newCWPatientId, commonwellPersonId: newPersonId } = cwIds;
 
     if (originalCWPatientId) {
       const extra = {

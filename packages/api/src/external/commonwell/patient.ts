@@ -7,7 +7,6 @@ import {
   Patient as CommonwellPatient,
   Person,
   RequestMetadata,
-  StrongId,
   PatientNetworkLink,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
@@ -42,13 +41,12 @@ import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
-import { setCommonwellPatientAndPersonIds } from "./command/update-patient-and-person-ids";
-import { setCommenwellCqLinkStatus } from "./command/update-cq-link-status";
+import { updateCommonwellPatientAndPersonIds } from "./command/update-patient-and-person-ids";
+import { updateCommenwellCqLinkStatus } from "./command/update-cq-link-status";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import {
   CQLinkStatus,
   findOrCreatePerson,
-  FindOrCreatePersonResponse,
   getMatchingStrongIds,
   PatientDataCommonwell,
 } from "./patient-shared";
@@ -103,6 +101,7 @@ export async function create(
 ): Promise<void> {
   const { debug } = out(`CW update - M patientId ${patient.id}`);
 
+  const usedRequestId = requestId ?? uuidv7();
   const cwCreateEnabled = await validateCWEnabled({
     cxId: patient.cxId,
     forceCW: forceCWCreate,
@@ -113,7 +112,7 @@ export async function create(
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      requestId,
+      requestId: usedRequestId,
       facilityId,
       startedAt: new Date(),
     });
@@ -123,8 +122,8 @@ export async function create(
       updatedPatient,
       facilityId,
       getOrgIdExcludeList,
-      debug,
-      requestId
+      usedRequestId,
+      debug
     ).catch(processAsyncError(createContext));
   }
 }
@@ -133,35 +132,32 @@ export async function registerAndLinkPatientInCW(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
+  requestId: string,
   debug: typeof console.log,
-  requestId?: string,
   initiator?: HieInitiator
-): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
+): Promise<{ commonwellPatientId: string; commonwellPersonId: string } | undefined> {
   let commonWell: CommonWellAPI | undefined;
 
   try {
-    const _initiator = initiator ?? (await getCwInitiator(patient, facilityId));
-    const initiatorName = _initiator.name;
-    const initiatorOid = _initiator.oid;
-    const initiatorNpi = _initiator.npi;
-
+    // THOMAS: What is this?
     // Patients of cxs that not go through EC should have their status undefined so they're not picked up later
     // when we enable it
-    const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
-      ? "unlinked"
-      : getLinkStatusCQ(patient.data.externalData);
-    await setCommenwellCqLinkStatus({
-      patient,
-      cqLinkStatus,
-    });
+    if (
+      (await isEnhancedCoverageEnabledForCx(patient.cxId)) ||
+      !getCWData(patient.data.externalData)?.cqLinkStatus
+    ) {
+      await updateCommenwellCqLinkStatus({
+        patient,
+        cqLinkStatus: "unlinked",
+      });
+    }
 
-    commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
-    const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
-    const commonwellPatient = patientToCommonwell({
+    const { commonWell, queryMeta, commonwellPatient } = await setupCW(
       patient,
-      orgName: initiatorName,
-      orgOID: initiatorOid,
-    });
+      facilityId,
+      initiator
+    );
+
     debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { commonwellPatientId, patientRefLink } = await registerPatient({
@@ -170,56 +166,92 @@ export async function registerAndLinkPatientInCW(
       commonwellPatient,
     });
 
-    await setCommonwellPatientAndPersonIds({
+    await updateCommonwellPatientAndPersonIds({
       patient,
       commonwellPatientId,
     });
 
-    const { personId, networkLinks } = await findOrCreatePersonAndLink({
+    const findOrCreatePersonResponse = await findOrCreatePerson({
       commonWell,
       queryMeta,
       commonwellPatient,
       commonwellPatientId,
-      patientRefLink,
-      getOrgIdExcludeList,
     });
 
-    await setCommonwellPatientAndPersonIds({
-      patient,
-      commonwellPersonId: personId,
-    });
-
-    if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
-
-    // Schedule PD before completion
-    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
-
-    updatePatientDiscoveryStatus({
-      patient,
-      status: "completed",
-    });
-
-    if (requestId) {
-      const pdStartedAt = getCWData(patient.data.externalData)?.pdStartedAt;
-
-      if (pdStartedAt) {
-        analytics({
-          distinctId: patient.cxId,
-          event: EventTypes.patientDiscovery,
-          properties: {
-            hie: MedicalDataSource.COMMONWELL,
-            patientId: patient.id,
-            requestId,
-            pdLinks: networkLinks?.length ?? 0,
-            duration: elapsedTimeFromNow(pdStartedAt),
-          },
-        });
-      }
+    if (!findOrCreatePersonResponse) {
+      throw new MetriportError("Programming error: unexpected state");
     }
 
-    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
+    const { person: commonwellPerson, personId: commonwellPersonId } = findOrCreatePersonResponse;
 
-    return { commonwellPatientId, personId };
+    await updateCommonwellPatientAndPersonIds({
+      patient,
+      commonwellPersonId,
+    });
+
+    const strongIds = getMatchingStrongIds(commonwellPerson, commonwellPatient);
+    const { hasLink, isLinkLola3Plus } = await getLinkInfo({
+      commonWell,
+      queryMeta,
+      commonwellPersonId,
+      commonwellPatientId,
+    });
+    if (!hasLink || (!isLinkLola3Plus && strongIds.length > 0)) {
+      const respLink = await commonWell.addPatientLink(
+        queryMeta,
+        commonwellPersonId,
+        patientRefLink,
+        // safe to get the first one, just need to match one of the person's strong IDs
+        strongIds.length ? strongIds[0] : undefined
+      );
+      debug(`resp addPatientLink: `, JSON.stringify(respLink));
+    }
+
+    const networkLinks = await autoUpgradeNetworkLinks(
+      commonWell,
+      queryMeta,
+      commonwellPatientId,
+      commonwellPersonId,
+      createContext,
+      getOrgIdExcludeList
+    );
+
+    const pdStartedAt = getCWData(patient.data.externalData)?.pdStartedAt;
+
+    if (pdStartedAt) {
+      analytics({
+        distinctId: patient.cxId,
+        event: EventTypes.patientDiscovery,
+        properties: {
+          hie: MedicalDataSource.COMMONWELL,
+          patientId: patient.id,
+          requestId,
+          pdLinks: networkLinks?.length ?? 0,
+          duration: elapsedTimeFromNow(pdStartedAt),
+        },
+      });
+    }
+
+    if (networkLinks && networkLinks.length > 0) {
+      await updateDemographics(patient, networkLinks, facilityId);
+    }
+
+    const newPatientDiscovery = await patientDiscoveryIfScheduled(
+      patient,
+      facilityId,
+      getOrgIdExcludeList
+    );
+
+    if (!newPatientDiscovery) {
+      updatePatientDiscoveryStatus({
+        patient,
+        status: "completed",
+      });
+
+      await queryDocsIfScheduled(patient, getOrgIdExcludeList);
+    }
+
+    return { commonwellPatientId, commonwellPersonId };
   } catch (error) {
     updatePatientDiscoveryStatus({
       patient,
@@ -244,11 +276,12 @@ export async function update(
   patient: Patient,
   facilityId: string,
   getOrgIdExcludeList: () => Promise<string[]>,
-  requestId: string,
+  requestId?: string,
   forceCWUpdate = false
 ): Promise<void> {
   const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
+  const usedRequestId = requestId ?? uuidv7();
   const cwUpdateEnabled = await validateCWEnabled({
     cxId: patient.cxId,
     forceCW: forceCWUpdate,
@@ -259,7 +292,7 @@ export async function update(
     const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
-      requestId,
+      requestId: usedRequestId,
       facilityId,
       startedAt: new Date(),
     });
@@ -269,7 +302,7 @@ export async function update(
       updatedPatient,
       facilityId,
       getOrgIdExcludeList,
-      requestId,
+      usedRequestId,
       log,
       debug
     ).catch(processAsyncError(updateContext));
@@ -283,19 +316,32 @@ async function updatePatientAndLinksInCw(
   requestId: string,
   log: typeof console.log,
   debug: typeof console.log
-) {
+): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
+
   try {
-    const updateData = await setupUpdate(patient, facilityId);
-    if (!updateData) {
-      capture.message("Could not find external data on Patient, creating it @ CW", {
-        extra: { patientId: patient.id, context: updateContext },
+    const commonwellData = getCWData(patient.data.externalData);
+    const commonwellPatientId = commonwellData?.patientId;
+    const commonwellPersonId = commonwellData?.personId;
+
+    if (!commonwellPatientId || !commonwellPersonId) {
+      const subject = "Could not a CW Patient ID or Person ID, creating missing ids @ CW";
+      log(subject);
+      capture.message(subject, {
+        extra: {
+          patientId: patient.id,
+          context: updateContext,
+        },
+        level: "info",
       });
+
       await create(patient, facilityId, getOrgIdExcludeList, undefined);
       return;
     }
-    const { queryMeta, commonwellPatient, commonwellPatientId, personId } = updateData;
-    commonWell = updateData.commonWell;
+
+    const { commonWell, queryMeta, commonwellPatient } = await setupCW(patient, facilityId);
+
+    debug(`Updating this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
     const { patientRefLink } = await updatePatientCW({
       commonWell,
@@ -304,116 +350,58 @@ async function updatePatientAndLinksInCw(
       commonwellPatientId,
     });
 
-    // No person yet, try to find/create with new patient demographics
-    if (!personId) {
-      const { networkLinks } = await findOrCreatePersonAndLink({
+    let commonwellPerson = undefined;
+    try {
+      commonwellPerson = await updateAndEnrollPersonCW({
         commonWell,
         queryMeta,
         commonwellPatient,
         commonwellPatientId,
-        patientRefLink,
-        getOrgIdExcludeList,
+        commonwellPersonId,
       });
-
-      if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      if (err.response?.status !== 404) throw err;
+      const subject = "Got 404 when trying to update person @ CW, trying to find/create it @ CW";
+      log(`${subject} - CW Person ID ${commonwellPersonId}`);
+      capture.message(subject, {
+        extra: {
+          commonwellPatientId,
+          commonwellPersonId,
+          cwReference: commonWell.lastReferenceHeader,
+          context: updateContext,
+        },
+      });
+      await create(patient, facilityId, getOrgIdExcludeList, undefined);
       return;
     }
 
-    // Already has a matching person, so update that person's demographics as well
-    const person = makePersonForPatient(commonwellPatient);
-    try {
-      try {
-        const respPerson = await commonWell.updatePerson(queryMeta, person, personId);
-        debug(`resp updatePerson: `, JSON.stringify(respPerson));
-
-        if (!respPerson.enrolled) {
-          const respReenroll = await commonWell.reenrollPerson(queryMeta, personId);
-          debug(`resp reenrolPerson: `, JSON.stringify(respReenroll));
-        }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        if (err.response?.status !== 404) throw err;
-        const subject = "Got 404 when trying to update person @ CW, trying to find/create it";
-        log(`${subject} - CW Person ID ${personId}`);
-        capture.message(subject, {
-          extra: {
-            commonwellPatientId,
-            personId,
-            cwReference: commonWell.lastReferenceHeader,
-            context: updateContext,
-          },
-        });
-        const { networkLinks } = await findOrCreatePersonAndLink({
-          commonWell,
-          queryMeta,
-          commonwellPatient,
-          commonwellPatientId,
-          patientRefLink,
-          getOrgIdExcludeList,
-        });
-
-        if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
-
-        return;
-      }
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      log(
-        `ERR - Failed to update person - ` +
-          `Patient @ CW: ${commonwellPatientId}, ` +
-          `Person @ CW: ${personId}`
-      );
-      throw err;
-    }
-
-    // Try to get the Person<>Patient link to LOLA3
-    try {
-      const { hasLink, isLinkLola3Plus, strongIds } = await getLinkInfo({
-        commonWell,
+    const strongIds = getMatchingStrongIds(commonwellPerson, commonwellPatient);
+    const { hasLink, isLinkLola3Plus } = await getLinkInfo({
+      commonWell,
+      queryMeta,
+      commonwellPersonId,
+      commonwellPatientId,
+    });
+    if (!hasLink || (!isLinkLola3Plus && strongIds.length > 0)) {
+      const respLink = await commonWell.addPatientLink(
         queryMeta,
-        person,
-        personId,
-        commonwellPatient,
-        commonwellPatientId,
-      });
-      if (!hasLink || (!isLinkLola3Plus && strongIds.length > 0)) {
-        const respLink = await commonWell.addPatientLink(
-          queryMeta,
-          personId,
-          patientRefLink,
-          // safe to get the first one, just need to match one of the person's strong IDs
-          strongIds.length ? strongIds[0] : undefined
-        );
-        debug(`resp patientLink: `, JSON.stringify(respLink));
-      }
-    } catch (err) {
-      log(
-        `ERR - Failed to updgrade patient/person link - ` +
-          `Patient @ CW: ${commonwellPatientId}, ` +
-          `Person @ CW: ${personId}`
+        commonwellPersonId,
+        patientRefLink,
+        // safe to get the first one, just need to match one of the person's strong IDs
+        strongIds.length ? strongIds[0] : undefined
       );
-      throw err;
+      debug(`resp addPatientLink: `, JSON.stringify(respLink));
     }
 
     const networkLinks = await autoUpgradeNetworkLinks(
       commonWell,
       queryMeta,
       commonwellPatientId,
-      personId,
+      commonwellPersonId,
       createContext,
       getOrgIdExcludeList
     );
-
-    if (networkLinks) await updateDemographics(patient, networkLinks, facilityId);
-
-    // Schedule PD before completion
-    await patientDiscoveryIfScheduled(patient, getOrgIdExcludeList, facilityId);
-
-    updatePatientDiscoveryStatus({
-      patient,
-      status: "completed",
-    });
 
     const pdStartedAt = getCWData(patient.data.externalData)?.pdStartedAt;
 
@@ -431,7 +419,24 @@ async function updatePatientAndLinksInCw(
       });
     }
 
-    await queryDocsIfScheduled(patient, getOrgIdExcludeList);
+    if (networkLinks && networkLinks.length > 0) {
+      await updateDemographics(patient, networkLinks, facilityId);
+    }
+
+    const newPatientDiscovery = await patientDiscoveryIfScheduled(
+      patient,
+      facilityId,
+      getOrgIdExcludeList
+    );
+
+    if (!newPatientDiscovery) {
+      updatePatientDiscoveryStatus({
+        patient,
+        status: "completed",
+      });
+
+      await queryDocsIfScheduled(patient, getOrgIdExcludeList);
+    }
   } catch (error) {
     updatePatientDiscoveryStatus({
       patient,
@@ -449,6 +454,64 @@ async function updatePatientAndLinksInCw(
       },
     });
     throw error;
+  }
+}
+
+export async function remove(
+  patient: Patient,
+  facilityId: string,
+  forceCWDelete = false
+): Promise<void> {
+  const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
+
+  const cwDeleteEnabled = await validateCWEnabled({
+    cxId: patient.cxId,
+    forceCW: forceCWDelete,
+    debug,
+  });
+
+  if (cwDeleteEnabled) {
+    let commonWell: CommonWellAPI | undefined;
+
+    try {
+      const commonwellData = getCWData(patient.data.externalData);
+      const commonwellPatientId = commonwellData?.patientId;
+      const commonwellPersonId = commonwellData?.personId;
+
+      if (!commonwellPatientId || !commonwellPersonId) {
+        const subject =
+          "Could not find external data on Patient while deleting it @ CW, continuing...";
+        log(subject);
+        capture.message(subject, {
+          extra: {
+            patientId: patient.id,
+            context: deleteContext,
+          },
+          level: "info",
+        });
+        return;
+      }
+
+      const { commonWell, queryMeta, commonwellPatient } = await setupCW(patient, facilityId);
+
+      debug(`Deleting this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
+
+      const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
+      debug(`resp deletePatient: `, JSON.stringify(resp));
+    } catch (error) {
+      const msg = `Failed to delete patient ${patient.id} @ CW: `;
+      console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+      capture.error(msg, {
+        extra: {
+          facilityId,
+          patientId: patient.id,
+          cwReference: commonWell?.lastReferenceHeader,
+          context: deleteContext,
+          error,
+        },
+      });
+      throw error;
+    }
   }
 }
 
@@ -498,6 +561,30 @@ async function validateCWEnabled({
   }
 }
 
+async function setupCW(
+  patient: Patient,
+  facilityId: string,
+  initiator?: HieInitiator
+): Promise<{
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  commonwellPatient: CommonwellPatient;
+}> {
+  const usedInitiator = initiator ?? (await getCwInitiator(patient, facilityId));
+  const initiatorName = usedInitiator.name;
+  const initiatorOid = usedInitiator.oid;
+
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: usedInitiator.npi });
+  const commonwellPatient = patientToCommonwell({
+    patient,
+    orgName: initiatorName,
+    orgOID: initiatorOid,
+  });
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
+
+  return { commonWell, queryMeta, commonwellPatient };
+}
+
 async function queryDocsIfScheduled(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
@@ -524,13 +611,14 @@ async function queryDocsIfScheduled(
 
 async function patientDiscoveryIfScheduled(
   patient: Patient,
-  getOrgIdExcludeList: () => Promise<string[]>,
-  facilityId: string
-): Promise<void> {
+  facilityId: string,
+  getOrgIdExcludeList: () => Promise<string[]>
+): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
   const scheduledPdRequestId = getCWData(updatedPatient.data.externalData)?.scheduledPdRequestId;
 
+  let newPatientDiscovery = false;
   if (scheduledPdRequestId) {
     const resetPatient = await resetPatientScheduledPatientDiscoveryRequestId({
       patient: updatedPatient,
@@ -538,148 +626,10 @@ async function patientDiscoveryIfScheduled(
     });
 
     await update(resetPatient, facilityId, getOrgIdExcludeList, scheduledPdRequestId);
+
+    newPatientDiscovery = true;
   }
-}
-
-export async function remove(patient: Patient, facilityId: string): Promise<void> {
-  let commonWell: CommonWellAPI | undefined;
-  try {
-    const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
-
-    if (!(await isCWEnabledForCx(patient.cxId))) {
-      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return undefined;
-    }
-
-    const data = await setupUpdate(patient, facilityId);
-    if (!data) {
-      log("Could not find external data on Patient while deleting it @ CW, continuing...");
-      return;
-    }
-    const { queryMeta, commonwellPatientId } = data;
-    commonWell = data.commonWell;
-
-    const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
-    debug(`resp deletePatient: `, JSON.stringify(resp));
-  } catch (err) {
-    console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
-    capture.error(err, {
-      extra: {
-        facilityId,
-        patientId: patient.id,
-        cwReference: commonWell?.lastReferenceHeader,
-        context: deleteContext,
-      },
-    });
-    throw err;
-  }
-}
-
-export async function linkPatientToCW(
-  patient: Patient,
-  facilityId: string,
-  getOrgIdExcludeList: () => Promise<string[]>
-): Promise<void> {
-  const requestId = uuidv7();
-
-  await update(patient, facilityId, getOrgIdExcludeList, requestId);
-}
-
-async function setupUpdate(
-  patient: Patient,
-  facilityId: string
-): Promise<
-  | {
-      commonWell: CommonWellAPI;
-      queryMeta: RequestMetadata;
-      commonwellPatient: CommonwellPatient;
-      commonwellPatientId: string;
-      personId: string | undefined;
-    }
-  | undefined
-> {
-  const commonwellData = patient.data.externalData
-    ? getCWData(patient.data.externalData)
-    : undefined;
-  if (!commonwellData) return undefined;
-  const commonwellPatientId = commonwellData.patientId;
-  const personId = commonwellData.personId;
-
-  if (!commonwellPatientId || !personId) return undefined;
-
-  const initiator = await getCwInitiator(patient, facilityId);
-  const initiatorName = initiator.name;
-  const initiatorOid = initiator.oid;
-
-  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiator.npi });
-  const commonwellPatient = patientToCommonwell({
-    patient,
-    orgName: initiatorName,
-    orgOID: initiatorOid,
-  });
-  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
-
-  return { commonWell, queryMeta, commonwellPatient, commonwellPatientId, personId };
-}
-
-async function findOrCreatePersonAndLink({
-  commonWell,
-  queryMeta,
-  commonwellPatient,
-  commonwellPatientId,
-  patientRefLink,
-  getOrgIdExcludeList,
-}: {
-  commonWell: CommonWellAPI;
-  queryMeta: RequestMetadata;
-  commonwellPatient: CommonwellPatient;
-  commonwellPatientId: string;
-  patientRefLink: string;
-  getOrgIdExcludeList: () => Promise<string[]>;
-}): Promise<{ personId: string; networkLinks: NetworkLink[] | undefined }> {
-  const { log, debug } = out(`CW findOrCreatePersonAndLink - CW patientId ${commonwellPatientId}`);
-  let findOrCreateResponse: FindOrCreatePersonResponse;
-  try {
-    findOrCreateResponse = await findOrCreatePerson({
-      commonWell,
-      queryMeta,
-      commonwellPatient,
-      commonwellPatientId,
-    });
-  } catch (err) {
-    log(`Error calling findOrCreatePerson @ CW`);
-    throw err;
-  }
-  if (!findOrCreateResponse) throw new MetriportError("Programming error: unexpected state");
-  const { personId, person } = findOrCreateResponse;
-
-  // Link Person to Patient
-  try {
-    const strongIds = getMatchingStrongIds(person, commonwellPatient);
-
-    const respLink = await commonWell.addPatientLink(
-      queryMeta,
-      personId,
-      patientRefLink,
-      // safe to get the first one, just need to match one of the person's strong IDs
-      strongIds.length ? strongIds[0] : undefined
-    );
-    debug(`resp patientLink: `, JSON.stringify(respLink));
-  } catch (err) {
-    log(`Error linking Patient<>Person @ CW - personId: ${personId}`);
-    throw err;
-  }
-
-  const networkLinks = await autoUpgradeNetworkLinks(
-    commonWell,
-    queryMeta,
-    commonwellPatientId,
-    personId,
-    createContext,
-    getOrgIdExcludeList
-  );
-
-  return { personId, networkLinks };
+  return newPatientDiscovery;
 }
 
 async function registerPatient({
@@ -721,6 +671,34 @@ async function registerPatient({
   return { commonwellPatientId, patientRefLink };
 }
 
+async function getLinkInfo({
+  commonWell,
+  queryMeta,
+  commonwellPersonId,
+  commonwellPatientId,
+}: {
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  commonwellPersonId: string;
+  commonwellPatientId: string;
+}): Promise<{ hasLink: boolean; isLinkLola3Plus: boolean }> {
+  const { debug } = out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
+
+  const respLinks = await commonWell.getPatientLinks(queryMeta, commonwellPersonId);
+  debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
+
+  const linkToPatient = respLinks._embedded.patientLink.find(link =>
+    link.patient.includes(commonwellPatientId)
+  );
+  if (linkToPatient) {
+    const isLinkLola3Plus = [LOLA.level_3, LOLA.level_4]
+      .map(level => level.toString())
+      .includes(linkToPatient.assuranceLevel);
+    return { hasLink: true, isLinkLola3Plus };
+  }
+  return { hasLink: false, isLinkLola3Plus: false };
+}
+
 async function updatePatientCW({
   commonWell,
   queryMeta,
@@ -753,39 +731,32 @@ async function updatePatientCW({
   return { patientRefLink };
 }
 
-async function getLinkInfo({
+async function updateAndEnrollPersonCW({
   commonWell,
   queryMeta,
-  person,
-  personId,
   commonwellPatient,
   commonwellPatientId,
+  commonwellPersonId,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  person: Person;
-  personId: string;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
-}): Promise<{ hasLink: boolean; isLinkLola3Plus: boolean; strongIds: StrongId[] }> {
-  const { debug } = out(`CW getLinkInfo - CW patientId ${commonwellPatientId}`);
+  commonwellPersonId: string;
+}): Promise<Person> {
+  const { debug } = out(`CW updateAndEnrollPersonCW - CW patientId ${commonwellPatientId}`);
 
-  const respLinks = await commonWell.getPatientLinks(queryMeta, personId);
-  debug(`resp getPatientLinks: ${JSON.stringify(respLinks)}`);
+  const person = makePersonForPatient(commonwellPatient);
+  const respPerson = await commonWell.updatePerson(queryMeta, person, commonwellPersonId);
+  debug(`resp updatePerson: `, JSON.stringify(respPerson));
 
-  const linkToPatient = respLinks._embedded?.patientLink
-    ? respLinks._embedded.patientLink.find(l =>
-        l.patient ? l.patient.includes(commonwellPatientId) : false
-      )
-    : undefined;
-  const strongIds = getMatchingStrongIds(person, commonwellPatient);
-  const hasLink = Boolean(linkToPatient && linkToPatient.assuranceLevel);
-  const isLinkLola3Plus = linkToPatient?.assuranceLevel
-    ? [LOLA.level_3, LOLA.level_4]
-        .map(level => level.toString())
-        .includes(linkToPatient.assuranceLevel)
-    : false;
-  return { hasLink, isLinkLola3Plus, strongIds };
+  if (!respPerson.enrolled) {
+    const respReenroll = await commonWell.reenrollPerson(queryMeta, commonwellPersonId);
+    debug(`resp reenrollPerson: `, JSON.stringify(respReenroll));
+
+    return respReenroll;
+  }
+  return respPerson;
 }
 
 async function updateDemographics(

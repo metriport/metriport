@@ -6,7 +6,8 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
-import { setCommonwellIds, setPatientDiscoveryStatus } from "../patient-external-data";
+import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
+import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
@@ -60,15 +61,13 @@ export async function create(
 
     const link = await commonWell.addPatientLink(queryMeta, personId, cwPatient._links.self.href);
 
-    await setCommonwellIds({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    await updateCommonwellPatientAndPersonIds({
+      patient,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
     });
-    await setPatientDiscoveryStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    await updatePatientDiscoveryStatus({
+      patient,
       status: "completed",
     });
 

@@ -40,20 +40,13 @@ export async function processOutboundPatientDiscoveryResps({
   cxId,
   results,
 }: OutboundPatientDiscoveryRespParam): Promise<void> {
-  const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
-  const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
-  const { log: outerLog } = out(baseLogMessage);
+  const { log } = out(`CQ PD Processing results - patientId ${patientId}, requestId: ${requestId}`);
   const patientIds = { id: patientId, cxId };
 
   try {
-    if (results.length === 0) {
-      log(`No patient discovery results found.`);
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
-      return;
-    }
-
     const patient = await getPatientOrFail(patientIds);
-    await updateDemographics(patient, results);
+
+    if (results.length > 0) await updateDemographics(patient, results);
 
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
@@ -63,11 +56,6 @@ export async function processOutboundPatientDiscoveryResps({
       },
       results
     );
-
-    // Schedule PD before completion
-    await patientDiscoveryIfScheduled(patient);
-
-    await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
 
     const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
 
@@ -85,13 +73,23 @@ export async function processOutboundPatientDiscoveryResps({
       });
     }
 
-    await queryDocsIfScheduled(patient);
+    const newPatientDiscovery = await patientDiscoveryIfScheduled(patient);
 
-    log(`Completed.`);
+    if (!newPatientDiscovery) {
+      await updatePatientDiscoveryStatus({
+        patient: patientIds,
+        status: "completed",
+      });
+
+      await queryDocsIfScheduled(patient);
+    }
   } catch (error) {
+    await updatePatientDiscoveryStatus({
+      patient: patientIds,
+      status: "failed",
+    });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
-    outerLog(`${msg} - ${errorToString(error)}`);
-    await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
+    console.error(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,
@@ -100,6 +98,8 @@ export async function processOutboundPatientDiscoveryResps({
         error,
       },
     });
+    // Why are we not throwing this error?
+    throw error;
   }
 }
 
@@ -123,7 +123,7 @@ async function queryDocsIfScheduled(patient: Patient): Promise<void> {
   }
 }
 
-async function patientDiscoveryIfScheduled(patient: Patient): Promise<void> {
+async function patientDiscoveryIfScheduled(patient: Patient): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
 
   const cqData = getCQData(updatedPatient.data.externalData);
@@ -131,6 +131,7 @@ async function patientDiscoveryIfScheduled(patient: Patient): Promise<void> {
   const facilityId = cqData?.pdFacilityId;
   const scheduledPdRequestId = cqData?.scheduledPdRequestId;
 
+  let newPatientDiscovery = false;
   if (facilityId && scheduledPdRequestId) {
     const resetPatient = await resetPatientScheduledPatientDiscoveryRequestId({
       patient: updatedPatient,
@@ -138,7 +139,10 @@ async function patientDiscoveryIfScheduled(patient: Patient): Promise<void> {
     });
 
     await discover(resetPatient, facilityId, scheduledPdRequestId);
+
+    newPatientDiscovery = true;
   }
+  return newPatientDiscovery;
 }
 
 async function createCQLinks(
