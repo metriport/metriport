@@ -38,10 +38,10 @@ export async function getSignedUrls(
           return;
         }
 
-        const attachment = doc.content[0].attachment;
+        const fileName = doc.content
+          .map(content => content.attachment?.title)
+          .find(title => title !== undefined);
 
-        // Check if fileName is defined
-        const fileName = attachment.title;
         if (!fileName) {
           return;
         }
