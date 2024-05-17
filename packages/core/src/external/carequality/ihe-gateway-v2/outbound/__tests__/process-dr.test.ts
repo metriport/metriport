@@ -155,7 +155,7 @@ describe.skip("processDRResponse for various file types and verify successful up
             },
           });
 
-          this.key = `${outboundDrRequest.cxId}/${outboundDrRequest.patientId}/${this.response.documentReference?.[0]?.fileName}`;
+          this.key = this.response.documentReference?.[0]?.fileName || "";
           this.bucket = this.response.documentReference?.[0]?.fileLocation;
         }
 

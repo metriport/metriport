@@ -30,6 +30,7 @@ export class LambdasNestedStack extends NestedStack {
   readonly lambdaLayers: LambdaLayers;
   readonly cdaToVisualizationLambda: Lambda;
   readonly documentDownloaderLambda: lambda.Function;
+  readonly fhirToCdaConverterLambda: lambda.Function;
   readonly outboundPatientDiscoveryLambda: lambda.Function;
   readonly outboundDocumentQueryLambda: lambda.Function;
   readonly outboundDocumentRetrievalLambda: lambda.Function;
@@ -56,6 +57,14 @@ export class LambdasNestedStack extends NestedStack {
       cwOrgCertificate: props.config.cwSecretNames.CW_ORG_CERTIFICATE,
       cwOrgPrivateKey: props.config.cwSecretNames.CW_ORG_PRIVATE_KEY,
       bucketName: props.medicalDocumentsBucket.bucketName,
+      envType: props.config.environmentType,
+      sentryDsn: props.config.lambdasSentryDSN,
+    });
+
+    this.fhirToCdaConverterLambda = this.setupFhirToCdaConverterLambda({
+      lambdaLayers: this.lambdaLayers,
+      vpc: props.vpc,
+      medicalDocumentsBucket: props.medicalDocumentsBucket,
       envType: props.config.environmentType,
       sentryDsn: props.config.lambdasSentryDSN,
     });
@@ -205,6 +214,35 @@ export class LambdasNestedStack extends NestedStack {
     secrets[cwOrgPrivateKeyKey].grantRead(documentDownloaderLambda);
 
     return documentDownloaderLambda;
+  }
+
+  private setupFhirToCdaConverterLambda(ownProps: {
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    medicalDocumentsBucket: s3.Bucket;
+    envType: EnvType;
+    sentryDsn: string | undefined;
+  }): Lambda {
+    const { lambdaLayers, vpc, medicalDocumentsBucket, sentryDsn, envType } = ownProps;
+
+    const fhirToCdaConverterLambda = createLambda({
+      stack: this,
+      name: "FhirToCdaConverter",
+      runtime: lambda.Runtime.NODEJS_18_X,
+      entry: "fhir-to-cda-converter",
+      envType,
+      envVars: {
+        MEDICAL_DOCUMENTS_BUCKET_NAME: medicalDocumentsBucket.bucketName,
+        ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
+      },
+      layers: [lambdaLayers.shared],
+      memory: 1024, // TODO: 1603 - Monitor to see if more is required
+      timeout: Duration.minutes(5),
+      vpc,
+    });
+
+    medicalDocumentsBucket.grantReadWrite(fhirToCdaConverterLambda);
+    return fhirToCdaConverterLambda;
   }
 
   private setupOutboundPatientDiscovery(ownProps: {

@@ -19,11 +19,7 @@ import { DrSamlClientResponse } from "../send/dr-requests";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
-import { createFileName } from "../../../../../../domain/filename";
-import {
-  createDocumentFilePath,
-  createDocumentFileName,
-} from "../../../../../../domain/document/filename";
+import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { capture } from "../../../../../../util/notifications";
 import { parseMtomResponse } from "../mtom/parser";
@@ -70,8 +66,6 @@ async function parseDocumentReference({
     throw new MetriportError("MetriportId not found for document");
   }
 
-  const fileName = createFileName(outboundRequest.cxId, outboundRequest.patientId, metriportId);
-  const documentFileName = createDocumentFileName(fileName, mimeType);
   const filePath = createDocumentFilePath(
     outboundRequest.cxId,
     outboundRequest.patientId,
@@ -93,7 +87,7 @@ async function parseDocumentReference({
     url: s3Utils.buildFileUrl(bucket, filePath),
     size: documentResponse.size ? parseInt(documentResponse.size) : undefined,
     title: documentResponse?.title,
-    fileName: documentFileName,
+    fileName: filePath,
     creation: documentResponse.creation,
     language: documentResponse.language,
     contentType: mimeType,

@@ -1,9 +1,10 @@
 import { readFileSync } from "fs";
 
 /**
-Script analyzes SAML request responses, outputs stats on successful matches and errors per vendor.
-Allows excluding specific vendors from analysis. Run after bulk-saml script.
-*/
+ * Script that analyzes the responses from a SAML request and outputs statistics on the number of
+ * successful matches and errors for each vendor. It also allows for excluding specific vendors
+ * from the analysis. Run this after running the bulk-saml script.
+ */
 
 interface Response {
   id: string;
