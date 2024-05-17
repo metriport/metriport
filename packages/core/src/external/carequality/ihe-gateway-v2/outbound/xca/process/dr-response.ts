@@ -23,7 +23,6 @@ import { createDocumentFilePath } from "../../../../../../domain/document/filena
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { capture } from "../../../../../../util/notifications";
 import { parseMtomResponse } from "../mtom/parser";
-import { MockS3Utils } from "../../../../../../util/mock-s3";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -42,11 +41,12 @@ export type DocumentResponse = {
   Document: string;
 };
 
-function getS3UtilsInstance(): S3Utils {
-  if (Config.getUseMockS3Utils()) {
-    return new MockS3Utils(region);
-  }
-  return new S3Utils(region);
+let s3UtilsInstance = new S3Utils(region);
+export function getS3UtilsInstance(): S3Utils {
+  return s3UtilsInstance;
+}
+export function setS3UtilsInstance(s3Utils: S3Utils): void {
+  s3UtilsInstance = s3Utils;
 }
 
 async function parseDocumentReference({

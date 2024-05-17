@@ -14,7 +14,12 @@ import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-g
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
-import { processDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import {
+  processDrResponse,
+  setS3UtilsInstance,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { Config } from "@metriport/core/util/config";
+import { MockS3Utils } from "./mock-s3";
 
 /**
  * Helper script to test constructing SOAP+SAML requests.
@@ -120,6 +125,8 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       cxId: uuidv4(),
     });
 
+    const s3utils = new MockS3Utils(Config.getAWSRegion());
+    setS3UtilsInstance(s3utils);
     const results = await Promise.all(
       response.map(async response => {
         return processDrResponse({
