@@ -60,7 +60,7 @@ type cwCreateProps = {
 };
 
 type cwUpdateProps = cwCreateProps;
-type cwRemoveProps = cwCreateProps;
+type cwRemoveProps = Omit<cwCreateProps, "getOrgIdExcludeList">;
 
 type cwCreateFlowProps = Omit<cwCreateProps, "forceCw" | "requestId"> & {
   requestId: string;
@@ -70,7 +70,7 @@ type cwCreateFlowProps = Omit<cwCreateProps, "forceCw" | "requestId"> & {
 };
 
 type cwUpdateFlowProps = cwCreateFlowProps;
-type cwDeleteFlowProps = Omit<cwCreateFlowProps, "requestId">;
+type cwDeleteFlowProps = Omit<cwCreateFlowProps, "requestId" | "getOrgIdExcludeList">;
 
 type cwSdkProps = {
   commonWell: CommonWellAPI;
