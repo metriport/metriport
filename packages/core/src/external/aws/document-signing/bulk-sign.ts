@@ -28,17 +28,20 @@ export async function getSignedUrls(
   const s3Utils = new S3Utils(region);
 
   const documents: DocumentReference[] = await searchDocuments({ cxId, patientId });
+  console.log("[TEST]: Documents: ", documents);
   const ossApiClient = apiClientBulkDownloadWebhook(apiURL);
 
   try {
     const urls = await Promise.all(
       documents.map(async doc => {
+        console.log("[TEST]: Documen.Contentt: ", doc.content);
         const attachment = (doc?.content ?? [])
           .map(content => content?.attachment)
           .find(attachment => attachment?.title !== undefined);
 
+        console.log("[TEST]: Attachment: ", attachment);
         const fileName = attachment?.title;
-
+        console.log("[TEST]: File Name: ", fileName);
         if (!fileName) {
           return;
         }
@@ -48,6 +51,7 @@ export async function getSignedUrls(
           fileName,
           durationSeconds: SIGNED_URL_DURATION_SECONDS,
         });
+        console.log("[TEST]: Signed URL: ", signedUrl);
 
         return {
           id: doc.id,
