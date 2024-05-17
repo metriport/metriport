@@ -6,7 +6,7 @@ import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
 /**
- * Stores the requestId as the scheduled patient discov ery to be executed when the patient discovery
+ * Stores the requestId as the scheduled patient discovery to be executed when the current patient discovery
  * is completed.
  */
 export async function schedulePatientDiscovery({

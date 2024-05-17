@@ -709,7 +709,7 @@ async function setupCwSdkProps({
   facilityId: string;
   initiator?: HieInitiator;
 }): Promise<cwSdkProps> {
-  const usedInitiator = initiator ?? (await getCwInitiator(patient, facilityId));
+  const usedInitiator = initiator ?? (await getCwInitiator({ patient, facilityId }));
   const initiatorName = usedInitiator.name;
   const initiatorOid = usedInitiator.oid;
 

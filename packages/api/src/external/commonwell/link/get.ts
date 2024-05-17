@@ -64,7 +64,7 @@ export async function get(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const initiator = await getCwInitiator(patient, facilityId);
+  const initiator = await await getCwInitiator({ patient, facilityId });
 
   const commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
   const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });

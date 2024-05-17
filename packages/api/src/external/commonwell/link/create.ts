@@ -28,7 +28,7 @@ export async function create(
   }
 
   const patient = await getPatientOrFail({ id: patientId, cxId });
-  const initiator = await getCwInitiator(patient, facilityId);
+  const initiator = await getCwInitiator({ patient, facilityId });
 
   const externalData = patient.data.externalData;
 

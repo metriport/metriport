@@ -35,7 +35,7 @@ export async function getCWAccessForPatient(patient: Patient): Promise<CWAccess>
   const cwPatientId = commonwellData.patientId;
   const cwPersonId = commonwellData.personId;
 
-  const initiator = await getCwInitiator(patient, facilityId);
+  const initiator = await getCwInitiator({ patient, facilityId });
   const initiatorName = initiator.name;
   const initiatorOID = initiator.oid;
   const initiatorNpi = initiator.npi;

@@ -111,10 +111,13 @@ export function formatDate(dateString: string | undefined): string | undefined {
   return undefined;
 }
 
-export async function getCqInitiator(
-  patient: Pick<Patient, "id" | "cxId">,
-  facilityId?: string
-): Promise<HieInitiator> {
+export async function getCqInitiator({
+  patient,
+  facilityId,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  facilityId?: string;
+}): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId, MedicalDataSource.CAREQUALITY);
 }
 

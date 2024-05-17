@@ -97,7 +97,7 @@ export async function recreatePatientAtCW(
       return undefined;
     }
 
-    const initiator = await getCwInitiator(patient, facilityId);
+    const initiator = await getCwInitiator({ patient, facilityId });
     commonWell = makeCommonWellAPI(initiator.name, addOidPrefix(initiator.oid));
     const queryMeta = organizationQueryMeta(initiator.name, { npi: initiator.npi });
 

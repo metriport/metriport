@@ -43,6 +43,7 @@ type cqDiscoverFlowProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
   context: string;
 };
 type cqGatewayProps = Pick<cqDiscoverFlowProps, "patient" | "facilityId" | "requestId">;
+type cqGatherGatewayProps = Pick<cqDiscoverFlowProps, "patient">;
 
 export function getCQData(
   data: PatientExternalData | undefined
@@ -89,7 +90,7 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
   });
 
   try {
-    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await setupCqGateway(cqDiscoverFlowProps);
+    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await setupCqGateways(cqDiscoverFlowProps);
     const numGatewaysV1 = pdRequestGatewayV1.gateways.length;
     const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
@@ -135,15 +136,15 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
   }
 }
 
-async function setupCqGateway({ patient, facilityId, requestId }: cqGatewayProps): Promise<{
+async function setupCqGateways({ patient, facilityId, requestId }: cqGatewayProps): Promise<{
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
   const fhirPatient = toFHIR(patient);
 
   const [{ v1Gateways, v2Gateways }, initiator] = await Promise.all([
-    gatherXCPDGateways(patient),
-    getCqInitiator(patient, facilityId),
+    gatherXCPDGateways({ patient }),
+    getCqInitiator({ patient, facilityId }),
   ]);
 
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
@@ -170,7 +171,7 @@ async function setupCqGateway({ patient, facilityId, requestId }: cqGatewayProps
   };
 }
 
-export async function gatherXCPDGateways(patient: Patient): Promise<{
+async function gatherXCPDGateways({ patient }: cqGatherGatewayProps): Promise<{
   v1Gateways: XCPDGateway[];
   v2Gateways: XCPDGateway[];
 }> {

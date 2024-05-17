@@ -129,7 +129,7 @@ export async function queryAndProcessDocuments({
   }
 
   try {
-    const initiator = await getCwInitiator(patientParam, facilityId);
+    const initiator = await getCwInitiator({ patient: patientParam, facilityId });
 
     await setDocQueryProgress({
       patient: { id: patientId, cxId },
@@ -557,7 +557,10 @@ async function downloadDocsAndUpsertFHIR({
             if (!fileInfo.fileExists) {
               // Download from CW and upload to S3
               uploadToS3 = async () => {
-                const initiator = await getCwInitiator({ id: patient.id, cxId }, facilityId);
+                const initiator = await getCwInitiator({
+                  patient: { id: patient.id, cxId },
+                  facilityId,
+                });
                 const newFile = triggerDownloadDocument({
                   doc,
                   fileInfo,
