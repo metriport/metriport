@@ -20,7 +20,9 @@
     "./command/*": "./dist/command/*.js",
     "./external/*": "./dist/external/*.js",
     "./util/*": "./dist/util/*.js",
-    "./mpi/*": "./dist/mpi/*.js"
+    "./mpi/*": "./dist/mpi/*.js",
+    "./fhir-to-cda/*": "./dist/fhir-to-cda/*.js",
+    "./shareback/*": "./dist/shareback/*.js"
   },
   "typesVersions": {
     "*": {
@@ -41,6 +43,12 @@
       ],
       "mpi/*": [
         "dist/mpi/*"
+      ],
+      "fhir-to-cda/*": [
+        "dist/fhir-to-cda/*"
+      ],
+      "shareback/*": [
+        "dist/shareback/*"
       ]
     }
   },

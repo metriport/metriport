@@ -27,6 +27,7 @@ export const ORGANIZATION_NAME_DEFAULT = "Metriport";
 export const METRIPORT_HOME_COMMUNITY_ID = "urn:oid:2.16.840.1.113883.3.9621";
 export const METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX = "2.16.840.1.113883.3.9621";
 export const METRIPORT_REPOSITORY_UNIQUE_ID = "urn:oid:2.16.840.1.113883.3.9621";
+export const DEFAULT_TITLE = "Clinical Document";
 
 export const replyTo = "http://www.w3.org/2005/08/addressing/anonymous";
 
