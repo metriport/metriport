@@ -3,7 +3,7 @@ import { isCarequalityExtension } from "@metriport/core/external/carequality/ext
 import { isCommonwellExtension } from "@metriport/core/external/commonwell/extension";
 import { isMetriportExtension } from "@metriport/core/external/fhir/shared/extensions/metriport";
 import { uniqBy } from "lodash";
-import { isDocStatusReady } from "@metriport/core/external/opensearch";
+import { isDocStatusReady } from "@metriport/core/external/opensearch/index";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { makeSearchServiceQuery } from "../../opensearch/file-search-connector-factory";
