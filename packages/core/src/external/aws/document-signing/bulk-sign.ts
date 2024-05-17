@@ -34,7 +34,7 @@ export async function getSignedUrls(
     const urls = await Promise.all(
       documents.map(async doc => {
         // Check if content and attachment exist
-        if (!doc.content || !doc.content[0] || !doc.content[0].attachment) {
+        if (!doc.content) {
           return;
         }
 
