@@ -151,7 +151,13 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        await update(patientParam, initiator.facilityId, getOrgIdExcludeList);
+        await update({
+          patient: patientParam,
+          facilityId: facilityId ?? "",
+          getOrgIdExcludeList,
+          forceCW: false,
+          initiator,
+        });
       }
 
       return;

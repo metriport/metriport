@@ -75,13 +75,12 @@ export async function updatePatient(
       source: MedicalDataSource.COMMONWELL,
     });
   } else {
-    await cwCommands.patient.update(
+    await cwCommands.patient.update({
       patient,
-      facility.id,
-      getCqOrgIdsToDenyOnCw,
-      undefined,
-      forceCommonwell
-    );
+      facilityId: facility.id,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+      forceCW: forceCommonwell ?? false,
+    });
   }
 
   return patient;

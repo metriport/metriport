@@ -4,9 +4,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
-import { LinkStatus } from "../patient-link";
 import { getCWData } from "./patient";
-import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
+import { PatientDataCommonwell } from "./patient-shared";
 
 dayjs.extend(duration);
 
@@ -42,10 +41,3 @@ export async function getPatientWithCWData(
     waitTimeBetweenAttemptsToGetPatientCWData.asMilliseconds()
   );
 }
-
-export type CWParams = {
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-  commonwellStatus: LinkStatus | undefined;
-  cqLinkStatus: CQLinkStatus | undefined;
-};

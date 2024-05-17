@@ -1,5 +1,4 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { CWParams } from "../patient-external-data";
 import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
 import { updateCommenwellCqLinkStatus } from "../command/update-cq-link-status";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
@@ -14,6 +13,13 @@ let patientModel: PatientModel;
 
 let patientModel_findOne: jest.SpyInstance;
 let patientModel_update: jest.SpyInstance;
+
+export type CWParams = {
+  commonwellPatientId: string;
+  commonwellPersonId: string | undefined;
+  status: LinkStatus | undefined;
+  cqLinkStatus: CQLinkStatus | undefined;
+};
 
 beforeEach(() => {
   mockStartTransaction();
@@ -34,7 +40,7 @@ const checkPatientUpdateWith = (cwParams: Partial<CWParams>) => {
           COMMONWELL: {
             ...(cwParams.commonwellPatientId && { patientId: cwParams.commonwellPatientId }),
             ...(cwParams.commonwellPersonId && { personId: cwParams.commonwellPersonId }),
-            ...(cwParams.commonwellStatus && { status: cwParams.commonwellStatus }),
+            ...(cwParams.status && { status: cwParams.status }),
             ...(cwParams.cqLinkStatus && { cqLinkStatus: cwParams.cqLinkStatus }),
           },
         }),

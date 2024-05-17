@@ -8,7 +8,7 @@ import { PatientModel } from "../../../models/medical/patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { getCWData, registerAndLinkPatientInCW } from "../patient";
+import { getCWData, runCreateFlow } from "../patient";
 import { getCwInitiator } from "../shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
@@ -64,7 +64,7 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { log } = out(`recreatePatientAtCW - ${patient.id}`);
+  const { debug, log } = out(`recreatePatientAtCW - ${patient.id}`);
 
   if (!(await isCWEnabledForCx(patient.cxId))) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
@@ -103,15 +103,16 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const requestId = uuidv7();
-    const cwIds = await registerAndLinkPatientInCW(
+    const cwIds = await runCreateFlow({
       patient,
       facilityId,
       getOrgIdExcludeList,
-      requestId,
+      requestId: uuidv7(),
+      debug,
       log,
-      initiator
-    );
+      initiator,
+      context: "cw.patient.recreate",
+    });
 
     if (!cwIds) {
       log(`Missing CW IDs while recreating patient at CW`);
