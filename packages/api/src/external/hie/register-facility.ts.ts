@@ -43,7 +43,7 @@ export async function registerFacilityWithinHIEs(
   );
 
   // CAREQUALITY
-  await createOrUpdateInCq(cmdFacility, cxOrg.oid, cqOboData, coordinates);
+  await createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
 
   // COMMONWELL
   await createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);

@@ -9,12 +9,17 @@ export async function getCwInitiator(
   return getHieInitiator(patient, facilityId, MedicalDataSource.COMMONWELL);
 }
 
-export function buildCwOrgName(
-  vendorName: string,
-  orgName: string,
-  isProvider: boolean,
-  oboOid?: string | null
-): string {
+export function buildCwOrgName({
+  vendorName,
+  orgName,
+  isProvider,
+  oboOid,
+}: {
+  vendorName: string;
+  orgName: string;
+  isProvider: boolean;
+  oboOid?: string | null;
+}): string {
   if (oboOid && !isProvider) {
     return `${vendorName} - ${orgName} -OBO- ${oboOid}`;
   }

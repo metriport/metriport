@@ -13,7 +13,7 @@ import { isOboFacility, isProviderFacility } from "../../domain/medical/facility
 
 export async function createOrUpdateInCq(
   facility: Facility,
-  cxOid: string,
+  cxOrg: { name: string; oid: string; type: OrgType },
   cqOboData: CqOboDetails,
   coordinates: Coordinates
 ): Promise<void> {
@@ -29,7 +29,12 @@ export async function createOrUpdateInCq(
 
   const cqFacilityName = cqOboData.enabled ? cqOboData.cqFacilityName : facility.data.name;
   const cqOboOid = cqOboData.enabled ? cqOboData.cqOboOid : undefined;
-  const orgName = buildCqOrgName(cxOid, cqFacilityName, isProvider, cqOboOid);
+  const orgName = buildCqOrgName({
+    vendorName: cxOrg.name,
+    orgName: cqFacilityName,
+    isProvider,
+    oboOid: cqOboOid,
+  });
 
   log(`Creating/Updating a CQ entry with this OID ${facility.oid} and name ${orgName}`);
 
@@ -50,7 +55,7 @@ export async function createOrUpdateInCq(
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
-    parentOrgOid: cxOid,
+    parentOrgOid: cxOrg.oid,
     role: "Connection" as const,
   });
 }
@@ -73,7 +78,12 @@ export async function createOrUpdateInCw(
   }
 
   const cwFacilityName = facilityName ?? facility.data.name;
-  const orgName = buildCwOrgName(cxOrg.name, cwFacilityName, isProvider, facility.cwOboOid);
+  const orgName = buildCwOrgName({
+    vendorName: cxOrg.name,
+    orgName: cwFacilityName,
+    isProvider,
+    oboOid: facility.cwOboOid,
+  });
 
   log(`Creating/Updating a CW entry with this OID ${facility.oid} and name ${orgName}`);
 

@@ -16,7 +16,6 @@ const router = Router();
  *
  * Creates a new facility and registers it within HIEs.
  *
- * TODO: Add unit tests.
  * TODO: Search existing facility by NPI, cqOboOid, and cwOboOid (individually), and fail if it exists?
  *
  * @return The updated facility.

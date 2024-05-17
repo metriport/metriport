@@ -28,6 +28,9 @@ export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   data: FacilityData;
 }
 
+/**
+ * @param cwFacilityName - Optional name, to override current facility name, for the facility in CommonWell
+ */
 export interface FacilityRegister extends FacilityCreate {
   id?: string;
   cwFacilityName?: string;

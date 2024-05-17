@@ -84,7 +84,7 @@ describe("registerFacility", () => {
 
     expect(createOrUpdateInCqMock).toHaveBeenCalledWith(
       mockedFacility,
-      getCxOrganizationNameAndOidResult.oid,
+      getCxOrganizationNameAndOidResult,
       getCqOboDataMockData,
       coordinates
     );
@@ -98,8 +98,6 @@ describe("registerFacility", () => {
   });
 
   it("calls createOrUpdateInCq with name containing OBO when isObo and cqOboData.enabled to true", async () => {
-    const cxId = uuidv7_file.uuidv4();
-
     mockedFacility = {
       ...mockedFacility,
       type: FacilityType.initiatorOnly,
@@ -111,7 +109,12 @@ describe("registerFacility", () => {
       cqOboOid: faker.string.uuid(),
     };
 
-    await shared.createOrUpdateInCq(mockedFacility, cxId, getCqOboDataMockData, coordinates);
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      getCqOboDataMockData,
+      coordinates
+    );
 
     expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -121,8 +124,6 @@ describe("registerFacility", () => {
   });
 
   it("calls createOrUpdateInCq with name not containing OBO when isProvider and cqOboData.enabled to true", async () => {
-    const cxId = uuidv7_file.uuidv4();
-
     mockedFacility = {
       ...mockedFacility,
       type: FacilityType.initiatorAndResponder,
@@ -134,7 +135,12 @@ describe("registerFacility", () => {
       cqOboOid: faker.string.uuid(),
     };
 
-    await shared.createOrUpdateInCq(mockedFacility, cxId, getCqOboDataMockData, coordinates);
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      getCqOboDataMockData,
+      coordinates
+    );
 
     expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -144,8 +150,6 @@ describe("registerFacility", () => {
   });
 
   it("returns createOrUpdateInCq early when its an obo but cqObo not enabled", async () => {
-    const cxId = uuidv7_file.uuidv4();
-
     mockedFacility = {
       ...mockedFacility,
       type: FacilityType.initiatorOnly,
@@ -155,7 +159,12 @@ describe("registerFacility", () => {
       enabled: false,
     };
 
-    await shared.createOrUpdateInCq(mockedFacility, cxId, getCqOboDataMockData, coordinates);
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      getCqOboDataMockData,
+      coordinates
+    );
 
     expect(createOrUpdateCqOrganizationMock).not.toHaveBeenCalled();
   });
