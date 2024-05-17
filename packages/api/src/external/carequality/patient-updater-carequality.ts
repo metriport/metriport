@@ -1,7 +1,6 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { Patient } from "@metriport/core/domain/patient";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import {
@@ -43,8 +42,11 @@ export class PatientUpdaterCarequality extends PatientUpdater {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         const facility = await getFacilityOrFail({ cxId, id: facilityId });
-        const requestId = uuidv7();
-        await cqCommands.patient.discover(patient, facility.id, requestId);
+        await cqCommands.patient.discover({
+          patient,
+          facilityId: facility.id,
+          forceCq: false,
+        });
         await this.isPatientDiscoveryComplete(patient);
       } catch (error) {
         failedUpdateCount++;
