@@ -1,0 +1,60 @@
+---
+title: "Composition"
+description: "A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A Composition defines the structure and narrative content necessary for a document. However, a Composition alone does not constitute a document. Rather, the Composition must be the first entry in a Bundle where Bundle.type=document, and any other resources referenced from Composition must be included as subsequent entries in the Bundle (for example Patient, Practitioner, Encounter, etc.)."
+---
+
+We expect the composition to follow this pattern:
+
+```json
+{
+  "resource": {
+    "resourceType": "Composition",
+    "status": "final",
+    "type": {
+      "coding": [
+        {
+          "code": "11506-3",
+          "display": "Subsequent evaluation note",
+          "system": "http://loinc.org"
+        }
+      ]
+    },
+    "date": "2024-05-16T09:00:00.000Z",
+    "title": "Encounter Summary",
+    "event": [{ "period": { "start": "2024-05-16T08:40:00.000Z" } }],
+    "section": [
+      {
+        "title": "Results",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Results</div>"
+        },
+        "mode": "snapshot",
+        "entry": [
+          // References to any number of resources you want to include into the C-CDA document
+          {
+            "reference": "DiagnosticReport/<diagnosticreport-id>",
+            "display": "Report 1"
+          },
+          {
+            "reference": "Observation/<observation1-id>",
+            "display": "Observation 1"
+          },
+          {
+            "reference": "Observation/<observation2-id>",
+            "display": "Observation 2"
+          },
+          and so on...
+        ]
+      }
+    ],
+    // These must be included
+    "subject": { "reference": "Patient/<patient-id>" },
+    "encounter": { "reference": "Encounter/<encounter-id>" },
+    "author": [
+      { "reference": "Organization/<organization-id>" },
+      { "reference": "Practitioner/<practitioner-id>" }
+    ]
+  }
+}
+```

@@ -1,0 +1,235 @@
+---
+title: "Data Contributions"
+description: "Contribute patient health information back to the networks"
+---
+
+## Overview
+
+This guide will teach you how to contribute data back to the networks with Metriport.
+
+Refer to the following sections for a step-by-step breakdown:
+
+1. [General rules and best practices](#1-general-rules-and-best-practices).
+2. [Contributing structured data](#2-contributing-structured-data).
+3. [Contributing unstructured data](#3-contributing-unstructured-data).
+
+Let's share some data! 🚀
+
+## 1. General rules and best practices
+
+Before going into the details of how to contribute data, let's establish some terminology and line up on the expectations.
+
+The FHIR resources can be identified with either of the two fields: `id`, and `identifier`.
+Here's the breakdown of what each one does, and how we (and you) can use it.
+
+The `id` must be provided, and it must be a [UUID](https://www.uuidtools.com/what-is-uuid#google_vignette). This `id` will be used not only for storing a resource, but to also be referenced by other resources.
+
+The `identifier` is optional and you can use it to tie the resource back to how it may be stored in your system. For example, you might be storing a patient's information under the ID `1234abcd`. This can be whatever number or string your system uses. But this is not a UUID, and we cannot use these to refer to these uniquely. Therefore, these identifiers are optional, and are there for your convenience.
+
+### FHIR resource types
+
+FHIR Resources come in multiple types:
+
+#### Bundles
+
+These are a basic resource that acts as an envelope for your payload. It defines the type of contents, as well as an array of resources contained within it.
+
+#### Top-level resources
+
+These are resources that are required in most cases. Examples of such resources are: Composition, Patient, Organization, Practitioner, Encounter. These are extremely useful to identify the entities involved in a patient visit, but they do not provide meaningful data contributions on their own.
+
+#### Data resources
+
+These are any other resources not mentioned above, which necessarily include meaningful data. Examples are Condition, MedicationRequest, AllergyIntolerance, DiagnosticReport, Observation, and many others. You can see the full list of resources [here](/medical-api/fhir/overview).
+
+---- MORE INFORMATION COMING SOON ----
+
+## 2. Contributing structured data
+
+For structured data, you will be using the [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint, and use FHIR Bundles to provide the data.
+
+Using this endpoint, you can submit the data with two different approaches:
+
+1. Provide the details of an [atomic encounter](#1-atomic-encounter) (patient visit).
+2. Provide [standalone observations](#2-standalone-observations).
+
+### 1. Atomic encounter
+
+You can contribute full reports of patient visits by using the [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint, and using [Composition](/medical-api/more-info/data-contributions/composition) resources to encompass the data related to a single visit. This will generate a separate C-CDA document for it.
+
+To do this, you will need to provide a valid FHIR Bundle of type `document`, with the following requirements:
+
+- It must have a Composition resource with references to the subject (Patient), encounter (Encounter), and author (which must at least contain an Organization resource)
+
+<Tip>
+  FHIR resource names are always capitalized, while properties related to them are lowercased.
+</Tip>
+
+- The Composition resource must also reference at least 1 [data resource](###fhir-resource-types) in its `section.entry` array
+
+Let's take a look at an example FHIR Bundle constituting a patient encounter:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "code": "11506-3",
+              "display": "Subsequent evaluation note",
+              "system": "http://loinc.org"
+            }
+          ]
+        },
+        "date": "2024-05-16T09:00:00.000Z",
+        "title": "Encounter Summary",
+        "event": [{ "period": { "start": "2024-05-16T08:40:00.000Z" } }],
+        "section": [
+          {
+            "title": "Results",
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Results</div>"
+            },
+            "mode": "snapshot",
+            "entry": [
+              {
+                "reference": "DiagnosticReport/<diagnosticreport-id>",
+                "display": "Report 1"
+              },
+              {
+                "reference": "Practitioner/<practitioner-id>",
+                "display": "Practitioner 1"
+              },
+              {
+                "reference": "Observation/<observation-id>",
+                "display": "Observation 1"
+              },
+              {
+                "reference": "MedicationStatement/<medicationstatement-id>",
+                "display": "MedicationStatement 1"
+              },
+              {
+                "reference": "Medication/<medication-id>",
+                "display": "Medication 1"
+              },
+              {
+                "reference": "Condition/<condition-id>",
+                "display": "Condition 1"
+              },
+            ]
+          }
+        ],
+        "subject": { "reference": "Patient/<patient-id>" },
+        "encounter": { "reference": "Encounter/<encounter-id>" },
+        "author": [
+          { "reference": "Organization/<organization-id>" },
+          { "reference": "Practitioner/<practitioner-id>" }
+        ]
+      }
+    },
+    ...
+  ]
+}
+```
+
+### 2. Standalone observations
+
+If you would like to provide some patient information that is not tied to a patient visit, you can do so by not including a Composition resource in your Bundle.
+
+Keep in mind that this will not generate a separate document. However, it will appear on the patient's Continuity of Care Document (CCD).
+
+An example of such an entry can look like this:
+
+```json
+{
+  "resourceType": "Bundle",
+  "type": "collection",
+  "entry": [
+    {
+      "resource": {
+        "id": "<practitioner-resource-id>",
+        "resourceType": "Practitioner",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1234567893"
+          }
+        ],
+        "name": [
+          {
+            "family": "Therapist",
+            "given": ["Tim"]
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+15559586545"
+          },
+          {
+            "system": "email",
+            "value": "tim.therapist@example.com"
+          }
+        ],
+        "address": [
+          {
+            "line": ["922 Anna Squares", "Apt. 594"],
+            "city": "Bartlettmouth",
+            "state": "MI",
+            "postalCode": "28131-1367",
+            "country": "USA"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "id": "457eb867-9256-4613-986f-612c455327c3",
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "VR",
+          "display": "virtual"
+        },
+        "serviceType": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/service-type",
+                "code": "138",
+                "display": "Mental Health Inpatient Services"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/32628128-0d0d-485f-b3c9-7fb61a328064"
+        },
+        "participant": [
+          {
+            "individual": {
+              "reference": "Practitioner/<practitioner-resource-id>"
+            }
+          }
+        ],
+        "period": {
+          "start": "2024-05-15T09:03:00.000Z",
+          "end": "2025-01-09T15:25:00.000Z"
+        }
+      }
+    }
+  ]
+}
+```
+
+## 3. Contributing unstructured data
+
+For unstructured data, you can use our [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint. This should be used for any PDFs, images, scanned documents, etc. The process involves creation of a DocumentReference resource. The guide on how to use this endpoint is included in the link above.
