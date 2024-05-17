@@ -30,9 +30,6 @@ export function createOutboundDocumentRetrievalReqs({
   const now = dayjs().toISOString();
   const user = getSystemUserName(initiator.orgName);
 
-  const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
-    documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
-
   const patientsWithInvalidGW: string[] = [];
 
   const requests = outboundDocumentQueryResps.reduce(
@@ -66,8 +63,7 @@ export function createOutboundDocumentRetrievalReqs({
         },
       };
 
-      const docRefsForCurrentGateway = getDocRefsOfGateway(gateway);
-      const docRefChunks = chunk(docRefsForCurrentGateway, maxDocRefsPerDocRetrievalRequest);
+      const docRefChunks = chunk(documentReferences, maxDocRefsPerDocRetrievalRequest);
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,

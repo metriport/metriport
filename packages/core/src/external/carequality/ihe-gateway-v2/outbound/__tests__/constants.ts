@@ -5,7 +5,7 @@ import {
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 
-export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
+export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
   id: uuidv4(),
   cxId: uuidv4(),
   patientId: uuidv4(),
@@ -50,12 +50,12 @@ export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
   ],
 };
 
-export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
-  id: outboundXCPDRequest.id,
-  patientId: outboundXCPDRequest.patientId,
-  timestamp: outboundXCPDRequest.timestamp,
+export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
+  id: outboundXcpdRequest.id,
+  patientId: outboundXcpdRequest.patientId,
+  timestamp: outboundXcpdRequest.timestamp,
   responseTimestamp: dayjs().toISOString(),
-  gatewayHomeCommunityId: outboundXCPDRequest.samlAttributes.homeCommunityId,
+  gatewayHomeCommunityId: outboundXcpdRequest.samlAttributes.homeCommunityId,
   gateway: {
     id: "018ea97e-7b1c-78e9-8aa1-47c7caf85afe",
     url: "https://mock-metriport/soap/iti55",
@@ -87,12 +87,12 @@ export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
   },
 };
 
-export const outboundDQRequest = {
+export const outboundDqRequest = {
   id: uuidv4(),
   cxId: uuidv4(),
   timestamp: "2023-12-01T08:44:00Z",
   gateway: {
-    homeCommunityId: "1.16.840.1.113883.3.9801.2.17",
+    homeCommunityId: "2.16.840.1.113883.3.9621",
     url: "http://localhost:9092/Gateway/DocumentQuery/3_0/NhinService/RespondingGateway_Query_Service/DocQuery",
   },
   externalGatewayPatient: {
@@ -133,7 +133,7 @@ export const outboundDQRequest = {
   },
 };
 
-export const expectedDQDocumentReference = [
+export const expectedDqDocumentReference = [
   {
     homeCommunityId: "2.16.840.1.113883.3.9621",
     repositoryUniqueId: "2.16.840.1.113883.3.9621",
@@ -158,11 +158,11 @@ export const expectedDQDocumentReference = [
   },
 ];
 
-export const outboundDRRequest = {
+export const outboundDrRequest = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
-    url: "https://carequality.particlehealth.com/services/xca-iti38",
+    url: "https://carequality.test123health.com/services/xca-iti38",
     homeCommunityId: "2.16.840.1.113883.3.8391",
   },
   timestamp: "2023-12-01T08:44:00Z",
@@ -200,6 +200,75 @@ export const outboundDRRequest = {
       metriportId: uuidv4(),
       homeCommunityId: "2.16.840.1.113883.3.8391",
       repositoryUniqueId: "2.16.840.1.113883.3.8391.1000.1",
+    },
+  ],
+};
+
+export const outboundDrRequestMtom = {
+  id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
+  cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
+  gateway: {
+    url: "https://carequality.test123health.com/services/xca-iti38",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+  },
+  timestamp: "2023-12-01T08:44:00Z",
+  patientId: "7f518b03-2ef0-4785-9f0c-dd295458df06",
+  samlAttributes: {
+    subjectId: "Walter H.Brattain IV",
+    subjectRole: {
+      code: "46255001",
+      display: "Pharmacist",
+    },
+    organization: "Family Medical Clinic",
+    organizationId: "http://familymedicalclinic.org",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+    purposeOfUse: "TREATMENT",
+  },
+  documentReference: [
+    {
+      contentType: "text/xml",
+      docUniqueId: "123456789",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
+    },
+  ],
+};
+
+export const outboundDrRequestMultiMtom = {
+  id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
+  cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
+  gateway: {
+    url: "https://carequality.test123health.com/services/xca-iti38",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+  },
+  timestamp: "2023-12-01T08:44:00Z",
+  patientId: "7f518b03-2ef0-4785-9f0c-dd295458df06",
+  samlAttributes: {
+    subjectId: "Walter H.Brattain IV",
+    subjectRole: {
+      code: "46255001",
+      display: "Pharmacist",
+    },
+    organization: "Family Medical Clinic",
+    organizationId: "http://familymedicalclinic.org",
+    homeCommunityId: "2.16.840.1.113883.3.8391",
+    purposeOfUse: "TREATMENT",
+  },
+  documentReference: [
+    {
+      contentType: "text/xml",
+      docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269592",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
+    },
+    {
+      contentType: "text/xml",
+      docUniqueId: "1.2.840.114350.1.13.79.2.7.8.688883.556269594",
+      metriportId: uuidv4(),
+      homeCommunityId: "urn:oid:987654321",
+      repositoryUniqueId: "987654321",
     },
   ],
 };
