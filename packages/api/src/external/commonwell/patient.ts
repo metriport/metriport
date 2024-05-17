@@ -105,7 +105,7 @@ export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkSt
 }
 
 export async function create(cwCreateProps: cwCreateProps): Promise<void> {
-  const { patient, forceCw, requestId, initiator } = cwCreateProps;
+  const { patient, forceCw, requestId } = cwCreateProps;
   const { debug, log } = out(`CW create - M patientId ${patient.id}`);
 
   const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
@@ -117,13 +117,12 @@ export async function create(cwCreateProps: cwCreateProps): Promise<void> {
       debug,
       log,
       context: createContext,
-      initiator,
     }).catch(processAsyncError(createContext));
   }
 }
 
 export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
-  const { patient, forceCw, requestId, initiator } = cwUpdateProps;
+  const { patient, forceCw, requestId } = cwUpdateProps;
   const { debug, log } = out(`CW update - M patientId ${patient.id}`);
 
   const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
@@ -135,13 +134,12 @@ export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
       debug,
       log,
       context: updateContext,
-      initiator,
     }).catch(processAsyncError(updateContext));
   }
 }
 
 export async function remove(cwRemoveProps: cwRemoveProps): Promise<void> {
-  const { patient, forceCw, initiator } = cwRemoveProps;
+  const { patient, forceCw } = cwRemoveProps;
   const { debug, log } = out(`CW delete - M patientId ${patient.id}`);
 
   const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
@@ -152,7 +150,6 @@ export async function remove(cwRemoveProps: cwRemoveProps): Promise<void> {
       debug,
       log,
       context: deleteContext,
-      initiator,
     }).catch(processAsyncError(deleteContext));
   }
 }

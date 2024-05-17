@@ -22,13 +22,13 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
 export async function validateCQEnabledAndInitGW({
   cxId,
   forceCq,
-  baseLogMessage,
+  baseLogMsg,
 }: {
   cxId: string;
   forceCq: boolean;
-  baseLogMessage: string;
+  baseLogMsg: string;
 }): Promise<IHEGateway | undefined> {
-  const { log } = out(baseLogMessage);
+  const { log } = out(baseLogMsg);
 
   try {
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
