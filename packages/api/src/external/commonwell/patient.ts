@@ -229,7 +229,7 @@ async function runUpdateFlow(cwUpdateFlowProps: cwUpdateFlowProps): Promise<void
       commonwellPatientId,
     });
     let commonwellPersonId = commonwellExternalData?.personId;
-    let commonwellPerson = makePersonForPatient(cwSdkProps.commonwellPatient);
+    let commonwellPerson: CommonwellPerson | undefined;
     if (!commonwellPersonId) {
       const perrson = await findOrCreatePersonWrapper({
         ...cwSdkProps,
@@ -239,12 +239,14 @@ async function runUpdateFlow(cwUpdateFlowProps: cwUpdateFlowProps): Promise<void
       commonwellPersonId = perrson.commonwellPersonId;
       commonwellPerson = perrson.commonwellPerson;
     } else {
-      await updateAndEnrollPersonWrapper({
+      const perrson = await updateAndEnrollPersonWrapper({
         ...cwSdkProps,
         ...cwUpdateFlowProps,
         commonwellPatientId,
         commonwellPersonId,
       });
+      commonwellPersonId = perrson.commonwellPersonId;
+      commonwellPerson = perrson.commonwellPerson;
     }
     const { networkLinks } = await linkPersonWrapper({
       ...cwSdkProps,
@@ -285,7 +287,7 @@ async function runRemoveFlow(cwDeleteFlowProps: cwDeleteFlowProps): Promise<void
     const commonwellExternalData = getCWData(patient.data.externalData);
     const commonwellPatientId = commonwellExternalData?.patientId;
     if (!commonwellPatientId) {
-      // Should be clear person ID to keep consistent state?
+      // Should we clear person ID to keep consistent state?
       const subject = "Could not find a CW Patient ID, continuing...";
       log(subject);
       capture.message(subject, {
@@ -332,7 +334,7 @@ async function registerPatientWrapper({
   patient: Patient;
   debug: typeof console.log;
 }): Promise<{ commonwellPatientId: string; patientRefLink: string }> {
-  debug(`Registering this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
+  debug(`Registering CommonwellPatient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
   const { commonwellPatientId, patientRefLink } = await registerCommonwellPatient({
     commonWell,
@@ -361,7 +363,7 @@ async function updatePatientWrapper({
   commonwellPatientId: string;
   debug: typeof console.log;
 }): Promise<{ patientRefLink: string }> {
-  debug(`Updating this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
+  debug(`Updating CommonwellPatient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
   const { patientRefLink } = await updateCommonWellPatient({
     commonWell,
@@ -386,7 +388,7 @@ async function deletePatientWrapper({
   commonwellPatientId: string;
   debug: typeof console.log;
 }): Promise<void> {
-  debug(`Deleting this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
+  debug(`Deleting CommonwellPatient: `, () => JSON.stringify(commonwellPatient, null, 2));
 
   const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
   debug(`resp deletePatient: `, JSON.stringify(resp));
@@ -407,7 +409,7 @@ async function findOrCreatePersonWrapper({
   patient: Patient;
   debug: typeof console.log;
 }): Promise<{ commonwellPerson: CommonwellPerson; commonwellPersonId: string }> {
-  debug(`Finding or creating Person for this Patient: `, () =>
+  debug(`Finding or creating CommonwellPerson for CommonwellPatient: `, () =>
     JSON.stringify(commonwellPatient, null, 2)
   );
 
@@ -446,13 +448,13 @@ async function updateAndEnrollPersonWrapper({
   debug: typeof console.log;
   log: typeof console.log;
   context: string;
-}): Promise<void> {
-  debug(`Updating and re-enrolling for this Patient: `, () =>
+}): Promise<{ commonwellPersonId: string; commonwellPerson: CommonwellPerson }> {
+  debug(`Updating and re-enrolling for CommonwellPatient: `, () =>
     JSON.stringify(commonwellPatient, null, 2)
   );
 
   try {
-    await updateAndEnrollPerson({
+    return await updateAndEnrollPerson({
       commonWell,
       queryMeta,
       commonwellPatient,
@@ -473,7 +475,7 @@ async function updateAndEnrollPersonWrapper({
       },
       level: "info",
     });
-    await findOrCreatePersonWrapper({
+    return await findOrCreatePersonWrapper({
       commonWell,
       queryMeta,
       commonwellPatient,
@@ -647,6 +649,7 @@ async function validateCWEnabled({
   const isSandbox = Config.isSandbox();
 
   if (forceCw || isSandbox) {
+    // Is this still needed?
     debug(`${fnName} - CW forced, proceeding...`);
     return true;
   }
@@ -668,7 +671,7 @@ async function validateCWEnabled({
 
     return true;
   } catch (error) {
-    const msg = "Failure validating CW create enabled";
+    const msg = `${fnName} - Error validating CW create/update/delete enabled`;
     console.error(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
@@ -771,30 +774,30 @@ async function registerCommonwellPatient({
   const fnName = `CW registerCommonwellPatient`;
   const { debug } = out(fnName);
 
-  const respPatient = await commonWell.registerPatient(queryMeta, commonwellPatient);
-  debug(`resp registerPatient: `, JSON.stringify(respPatient));
+  const respRegister = await commonWell.registerPatient(queryMeta, commonwellPatient);
+  debug(`resp registerPatient: `, JSON.stringify(respRegister));
 
-  const commonwellPatientId = getIdTrailingSlash(respPatient);
+  const commonwellPatientId = getIdTrailingSlash(respRegister);
   if (!commonwellPatientId) {
     const msg = `${fnName} - Could not determine the patient ID from CW`;
-    console.error(`${msg}. respPatient: ${JSON.stringify(respPatient)}`);
+    console.error(`${msg}. respRegister: ${JSON.stringify(respRegister)}`);
     capture.error(msg, {
       extra: {
-        respPatient,
+        respRegister,
       },
     });
     throw new Error(msg);
   }
 
-  const patientRefLink = respPatient._links?.self?.href;
+  const patientRefLink = respRegister._links?.self?.href;
   if (!patientRefLink) {
     const msg = `${fnName} - Could not determine the patient ref link`;
     console.error(
-      `${msg}. Patient ID: ${commonwellPatientId} respPatient: ${JSON.stringify(respPatient)}`
+      `${msg}. Patient ID: ${commonwellPatientId} respPatient: ${JSON.stringify(respRegister)}`
     );
     capture.error(msg, {
       extra: {
-        respPatient,
+        respRegister,
       },
     });
     throw new Error(msg);
@@ -850,7 +853,8 @@ async function findOrCreateAndEnrollPerson({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<{ commonwellPersonId: string; commonwellPerson: CommonwellPerson }> {
-  const { debug } = out(`CW findOrCreateAndEnrollPerson - CW patientId ${commonwellPatientId}`);
+  const fnName = `CW updateCommonWellPatient`;
+  const { debug } = out(`${fnName} - CW patientId ${commonwellPatientId}`);
   const baseContext = `cw.findOrCreatePerson`;
 
   const strongIds = commonwellPatient.details.identifier ?? [];
@@ -868,7 +872,7 @@ async function findOrCreateAndEnrollPerson({
     if (persons.length > 1) {
       const { personId, person } = handleMultiplePersonMatches({
         commonwellPatientId,
-        persons: persons as multipleCommonwellPersonWithId,
+        persons: persons as multipleCommonwellPersonWithId, // There's gotta be a better way
         context: baseContext + ".strongIds",
       });
       return { commonwellPersonId: personId, commonwellPerson: person };
@@ -889,7 +893,7 @@ async function findOrCreateAndEnrollPerson({
     // Update 2023-12-12: the above TODO may be deprecated, since we actually want to link to the earliest person - even if the one has more links, they could be a "duplicate" patient that'll be removed later
     const { personId, person } = handleMultiplePersonMatches({
       commonwellPatientId,
-      persons: enrolledPersons as multipleCommonwellPersonWithId,
+      persons: enrolledPersons as multipleCommonwellPersonWithId, // There's gotta be a better way
       context: baseContext + ".enrolled.demographics",
     });
     return { commonwellPersonId: personId, commonwellPerson: person };
@@ -903,32 +907,31 @@ async function findOrCreateAndEnrollPerson({
   if (unenrolledPersons.length > 1) {
     const { personId, person } = handleMultiplePersonMatches({
       commonwellPatientId,
-      persons: unenrolledPersons as multipleCommonwellPersonWithId,
+      persons: unenrolledPersons as multipleCommonwellPersonWithId, // There's gotta be a better way
       context: baseContext + ".unenrolled.demographics",
     });
-    await commonWell.reenrollPerson(queryMeta, person.personId);
+    await commonWell.reenrollPerson(queryMeta, personId);
     return { commonwellPersonId: personId, commonwellPerson: person };
   }
 
   const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
   debug(`Enrolling this commonwellPerson: `, JSON.stringify(tempCommonwellPerson));
-  const respPerson = await commonWell.enrollPerson(queryMeta, tempCommonwellPerson);
-  debug(`resp enrollPerson: `, JSON.stringify(respPerson));
-  const commonwellPerson = respPerson;
-  const commonwellPersonId = getPersonId(respPerson);
+  const respEnroll = await commonWell.enrollPerson(queryMeta, tempCommonwellPerson);
+  debug(`resp enrollPerson: `, JSON.stringify(respEnroll));
+  const commonwellPersonId = getPersonId(respEnroll);
   if (!commonwellPersonId) {
-    const msg = "findOrCreateAndEnrollPerson - Could not get person ID from CW response";
+    const msg = `${fnName} - Could not get person ID from CW response`;
     console.error(
-      `${msg}. Patient ID: ${commonwellPatientId} respPerson: ${JSON.stringify(respPerson)}`
+      `${msg}. Patient ID: ${commonwellPatientId} respEnroll: ${JSON.stringify(respEnroll)}`
     );
     capture.error(msg, {
       extra: {
-        respPerson,
+        respEnroll,
       },
     });
     throw new Error(msg);
   }
-  return { commonwellPersonId, commonwellPerson };
+  return { commonwellPersonId, commonwellPerson: respEnroll };
 }
 
 async function updateAndEnrollPerson({
@@ -943,17 +946,23 @@ async function updateAndEnrollPerson({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
   commonwellPersonId: string;
-}): Promise<void> {
+}): Promise<{ commonwellPersonId: string; commonwellPerson: CommonwellPerson }> {
   const { debug } = out(`CW updateAndEnrollPerson - CW patientId ${commonwellPatientId}`);
 
-  const person = makePersonForPatient(commonwellPatient);
-  const respPerson = await commonWell.updatePerson(queryMeta, person, commonwellPersonId);
-  debug(`resp updatePerson: `, JSON.stringify(respPerson));
+  const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
+  const respUpdate = await commonWell.updatePerson(
+    queryMeta,
+    tempCommonwellPerson,
+    commonwellPersonId
+  );
+  debug(`resp updatePerson: `, JSON.stringify(respUpdate));
 
-  if (!respPerson.enrolled) {
-    const respReenrolledPerson = await commonWell.reenrollPerson(queryMeta, commonwellPersonId);
-    debug(`resp reenrollPerson: `, JSON.stringify(respReenrolledPerson));
+  if (!respUpdate.enrolled) {
+    const respReenroll = await commonWell.reenrollPerson(queryMeta, commonwellPersonId);
+    debug(`resp reenrollPerson: `, JSON.stringify(respReenroll));
+    return { commonwellPersonId, commonwellPerson: respReenroll };
   }
+  return { commonwellPersonId, commonwellPerson: respUpdate };
 }
 
 async function getLinkInfo({

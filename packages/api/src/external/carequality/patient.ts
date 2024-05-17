@@ -55,11 +55,12 @@ export function getCQData(
 export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> {
   const { patient, forceCq, requestId } = cqDiscoverProps;
   const baseLogMsg = `CQ PD - patientId ${patient.id}`;
+  const { log: outerLog } = out(baseLogMsg);
 
   const enabledIHEGW = await validateCQEnabledAndInitGW({
     cxId: patient.cxId,
     forceCq,
-    baseLogMsg,
+    outerLog,
   });
   if (enabledIHEGW) {
     // Intentionally asynchronous
@@ -118,7 +119,7 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
     });
   } catch (error) {
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    const msg = `Error on Patient Discovery`;
+    const msg = "Error on CQ Patient Discovery";
     console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
     capture.error(msg, {
       extra: {

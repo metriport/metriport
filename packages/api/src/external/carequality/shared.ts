@@ -1,7 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
-import { out } from "@metriport/core/util/log";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
@@ -22,13 +21,13 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
 export async function validateCQEnabledAndInitGW({
   cxId,
   forceCq,
-  baseLogMsg,
+  outerLog,
 }: {
   cxId: string;
   forceCq: boolean;
-  baseLogMsg: string;
+  outerLog: typeof console.log;
 }): Promise<IHEGateway | undefined> {
-  const { log } = out(baseLogMsg);
+  const fnName = `CQ validateCQEnabledAndInitGW`;
 
   try {
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
@@ -40,19 +39,19 @@ export async function validateCQEnabledAndInitGW({
     const cqDirectIsDisabledForCx = !isCQDirectEnabled;
 
     if (iheGWNotPresent) {
-      log(`IHE GW not available, skipping PD`);
+      outerLog(`${fnName} - IHE GW not available, skipping PD`);
       return undefined;
     } else if (cqIsDisabled) {
-      log(`CQ not enabled, skipping PD`);
+      outerLog(`${fnName} - CQ not enabled, skipping PD`);
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
-      log(`CQ disabled for cx ${cxId}, skipping PD`);
+      outerLog(`${fnName} - CQ disabled for cx ${cxId}, skipping PD`);
       return undefined;
     }
 
     return iheGateway;
   } catch (error) {
-    const msg = `Error validating CQ PD enabled`;
+    const msg = `${fnName} - Error validating CQ PD enabled`;
     console.error(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {

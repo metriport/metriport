@@ -11,8 +11,8 @@ import {
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
 import cqCommands from ".";
-import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { errorToString } from "@metriport/shared/common/error";
+import { capture } from "@metriport/core/util/notifications";
 import { getPatients, getPatient } from "../../command/medical/patient/get-patient";
 import { getCQData } from "./patient";
 
@@ -51,8 +51,14 @@ export class PatientUpdaterCarequality extends PatientUpdater {
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CQ patient`;
-        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
-        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
+        console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.error(msg, {
+          extra: {
+            cxId,
+            patientId: patient.id,
+            error,
+          },
+        });
       }
     };
     // Execute the promises in parallel
