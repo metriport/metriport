@@ -48,7 +48,7 @@ export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
 }
 
-export function isProviderFacility(facilityType?: FacilityType): boolean {
+export function isNonOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 

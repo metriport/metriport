@@ -9,7 +9,7 @@ import { createOrUpdateCWOrganization } from "../../external/commonwell/create-o
 import { CqOboDetails } from "../../external/carequality/get-obo-data";
 import { buildCqOrgName } from "../../external/carequality/shared";
 import { buildCwOrgName } from "../../external/commonwell/shared";
-import { isOboFacility, isProviderFacility } from "../../domain/medical/facility";
+import { isOboFacility, isNonOboFacility } from "../../domain/medical/facility";
 
 export async function createOrUpdateInCq(
   facility: Facility,
@@ -19,7 +19,7 @@ export async function createOrUpdateInCq(
 ): Promise<void> {
   const { log } = out("createOrUpdateInCq");
   const isObo = isOboFacility(facility.type);
-  const isProvider = isProviderFacility(facility.type);
+  const isProvider = isNonOboFacility(facility.type);
   const cqOboDisabled = !isObo || !cqOboData.enabled;
 
   if (cqOboDisabled && !isProvider) {
@@ -68,7 +68,7 @@ export async function createOrUpdateInCw(
 ): Promise<void> {
   const { log } = out("createOrUpdateInCw");
 
-  const isProvider = isProviderFacility(facility.type);
+  const isProvider = isNonOboFacility(facility.type);
   const isObo = isOboFacility(facility.type);
   const cwOboDisabled = !isObo || !facility.cwOboActive || !facility.cwOboOid;
 

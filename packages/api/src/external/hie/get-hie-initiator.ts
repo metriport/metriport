@@ -1,7 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { isOboEnabled } from "../../domain/medical/facility";
+import { isOboEnabled, isNonOboFacility } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 
 export type HieInitiator = {
@@ -41,7 +41,7 @@ export async function getHieInitiator(
       patientId: patient.id,
     });
   }
-  if (isOboEnabled(facility, hie)) {
+  if (isOboEnabled(facility, hie) || isNonOboFacility(facility.type)) {
     return {
       oid: facility.oid,
       name: facility.data.name,
