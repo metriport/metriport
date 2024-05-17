@@ -9,6 +9,9 @@ import { capture } from "../../util/notifications";
 import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
 import { getDocuments } from "../fhir/document/get-documents";
 
+/* Warning! This function is duplicated in api/src/external/fhir/document/search-documents.ts.
+ * Ticket to fix this: https://github.com/metriport/metriport-internal/issues/1801
+ */
 export async function searchDocuments({
   cxId,
   patientId,
