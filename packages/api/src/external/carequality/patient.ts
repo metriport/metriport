@@ -117,10 +117,7 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
-    await updatePatientDiscoveryStatus({
-      patient,
-      status: "failed",
-    });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
     const msg = `Error on Patient Discovery`;
     console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
     capture.error(msg, {

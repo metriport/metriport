@@ -33,10 +33,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      await updatePatientDiscoveryStatus({
-        patient,
-        status: "processing",
-      });
+      await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
@@ -46,10 +43,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    await updatePatientDiscoveryStatus({
-      patient: patientIds,
-      status: "failed",
-    });
+    await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
     const msg = `Error on Post Resp Outbound PD Responses`;
     console.error(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
