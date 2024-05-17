@@ -155,7 +155,7 @@ export async function queryAndProcessDocuments({
           patient: patientParam,
           facilityId: facilityId ?? "",
           getOrgIdExcludeList,
-          forceCW: false,
+          forceCw: false,
           initiator,
         });
       }

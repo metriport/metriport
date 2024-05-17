@@ -58,7 +58,11 @@ export async function updatePatient(
       source: MedicalDataSource.CAREQUALITY,
     });
   } else {
-    await cqCommands.patient.discover(patient, facility.id, undefined, forceCarequality);
+    await cqCommands.patient.discover({
+      patient,
+      facilityId,
+      forceCq: forceCarequality ?? false,
+    });
   }
 
   const cwData = cwCommands.patient.getCWData(patient.data.externalData);
@@ -79,7 +83,7 @@ export async function updatePatient(
       patient,
       facilityId: facility.id,
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCW: forceCommonwell ?? false,
+      forceCw: forceCommonwell ?? false,
     });
   }
 

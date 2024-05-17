@@ -50,19 +50,19 @@ const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
 const deleteContext = "cw.patient.delete";
 
-export type cwCreateProps = {
+type cwCreateProps = {
   patient: Patient;
   facilityId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
-  forceCW: boolean;
+  forceCw: boolean;
   requestId?: string;
   initiator?: HieInitiator;
 };
 
-export type cwUpdateProps = cwCreateProps;
-export type cwRemoveProps = cwCreateProps;
+type cwUpdateProps = cwCreateProps;
+type cwRemoveProps = cwCreateProps;
 
-type cwCreateFlowProps = Omit<cwCreateProps, "forceCW" | "requestId"> & {
+type cwCreateFlowProps = Omit<cwCreateProps, "forceCw" | "requestId"> & {
   requestId: string;
   debug: typeof console.log;
   log: typeof console.log;
@@ -105,10 +105,10 @@ export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkSt
 }
 
 export async function create(cwCreateProps: cwCreateProps): Promise<void> {
-  const { patient, forceCW, requestId, initiator } = cwCreateProps;
+  const { patient, forceCw, requestId, initiator } = cwCreateProps;
   const { debug, log } = out(`CW create - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCW, debug });
+  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
   if (cwEnabled) {
     // intentionally async
     runCreateFlow({
@@ -123,10 +123,10 @@ export async function create(cwCreateProps: cwCreateProps): Promise<void> {
 }
 
 export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
-  const { patient, forceCW, requestId, initiator } = cwUpdateProps;
+  const { patient, forceCw, requestId, initiator } = cwUpdateProps;
   const { debug, log } = out(`CW update - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCW, debug });
+  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
   if (cwEnabled) {
     // intentionally async
     runUpdateFlow({
@@ -141,10 +141,10 @@ export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
 }
 
 export async function remove(cwRemoveProps: cwRemoveProps): Promise<void> {
-  const { patient, forceCW, initiator } = cwRemoveProps;
+  const { patient, forceCw, initiator } = cwRemoveProps;
   const { debug, log } = out(`CW delete - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCW, debug });
+  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
   if (cwEnabled) {
     // intentionally async
     runRemoveFlow({
@@ -658,17 +658,17 @@ async function endPdFlowWrapper({
 // Helpers
 async function validateCWEnabled({
   cxId,
-  forceCW,
+  forceCw,
   debug,
 }: {
   cxId: string;
-  forceCW: boolean;
+  forceCw: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
   const fnName = `CW validateCWEnabled`;
   const isSandbox = Config.isSandbox();
 
-  if (forceCW || isSandbox) {
+  if (forceCw || isSandbox) {
     debug(`${fnName} - CW forced, proceeding...`);
     return true;
   }
@@ -695,6 +695,7 @@ async function validateCWEnabled({
     capture.error(msg, {
       extra: {
         cxId,
+        forceCw,
         error,
       },
     });
@@ -770,7 +771,7 @@ async function patientDiscoveryIfScheduled(
       patient: resetPatient,
       facilityId,
       getOrgIdExcludeList,
-      forceCW: false,
+      forceCw: false,
       requestId: scheduledPdRequestId,
     });
 

@@ -131,7 +131,12 @@ async function patientDiscoveryIfScheduled(patient: Patient): Promise<boolean> {
       source: MedicalDataSource.CAREQUALITY,
     });
 
-    await discover(resetPatient, facilityId, scheduledPdRequestId);
+    await discover({
+      patient: resetPatient,
+      facilityId,
+      forceCq: false,
+      requestId: scheduledPdRequestId,
+    });
 
     newPatientDiscovery = true;
   }

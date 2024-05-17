@@ -1,6 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { errorToString } from "@metriport/shared/common/error";
@@ -18,42 +19,49 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
   return !!gateway.homeCommunityId && !!gateway.url;
 }
 
-export async function validateCQEnabledAndInitGW(
-  cxId: string,
-  forceEnabled: boolean,
-  outerLog: typeof console.log
-): Promise<IHEGateway | undefined> {
+export async function validateCQEnabledAndInitGW({
+  cxId,
+  forceCq,
+  baseLogMessage,
+}: {
+  cxId: string;
+  forceCq: boolean;
+  baseLogMessage: string;
+}): Promise<IHEGateway | undefined> {
+  const { log } = out(baseLogMessage);
+
   try {
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
 
     const iheGWNotPresent = !iheGateway;
-    const cqIsDisabled = !isCQEnabled && !forceEnabled;
+    const cqIsDisabled = !isCQEnabled && !forceCq;
     const cqDirectIsDisabledForCx = !isCQDirectEnabled;
 
     if (iheGWNotPresent) {
-      outerLog(`IHE GW not available, skipping PD`);
+      log(`IHE GW not available, skipping PD`);
       return undefined;
     } else if (cqIsDisabled) {
-      outerLog(`CQ not enabled, skipping PD`);
+      log(`CQ not enabled, skipping PD`);
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
-      outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+      log(`CQ disabled for cx ${cxId}, skipping PD`);
       return undefined;
     }
 
     return iheGateway;
   } catch (error) {
-    const msg = `Error validating PD enabled`;
-    outerLog(`${msg} - ${errorToString(error)}`);
+    const msg = `Error validating CQ PD enabled`;
+    console.error(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
-        forceEnabled,
+        forceCq,
         error,
       },
     });
+    return undefined;
   }
 }
 

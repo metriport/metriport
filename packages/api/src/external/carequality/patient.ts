@@ -29,6 +29,20 @@ dayjs.extend(duration);
 const discoverContext = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
+type cqDiscoverProps = {
+  patient: Patient;
+  facilityId: string;
+  forceCq: boolean;
+  requestId?: string;
+};
+
+type cqTriggerProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
+  requestId: string;
+  enabledIHEGW: IHEGateway;
+  baseLogMessage: string;
+};
+type cqPrepProps = Pick<cqTriggerProps, "patient" | "facilityId" | "requestId">;
+
 export function getCQData(
   data: PatientExternalData | undefined
 ): PatientDataCarequality | undefined {
@@ -36,36 +50,23 @@ export function getCQData(
   return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
 }
 
-export async function discover(
-  patient: Patient,
-  facilityId: string,
-  requestId?: string,
-  forceEnabled = false
-): Promise<void> {
+export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> {
+  const { patient, forceCq, requestId } = cqDiscoverProps;
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
-  const { log: outerLog } = out(baseLogMessage);
 
-  const usedRequestId = requestId ?? uuidv7();
-  const enabledIHEGW = await validateCQEnabledAndInitGW(patient.cxId, forceEnabled, outerLog);
-
+  const enabledIHEGW = await validateCQEnabledAndInitGW({
+    cxId: patient.cxId,
+    forceCq,
+    baseLogMessage,
+  });
   if (enabledIHEGW) {
-    await clearPatientDiscoveryEndedAt({ patient });
-    const updatedPatient = await updatePatientDiscoveryStatus({
-      patient,
-      status: "processing",
-      requestId: usedRequestId,
-      facilityId,
-      startedAt: new Date(),
-    });
-
     // Intentionally asynchronous
-    prepareAndTriggerPD(
-      updatedPatient,
-      facilityId,
+    triggerPD({
+      ...cqDiscoverProps,
+      requestId: requestId ?? uuidv7(),
       enabledIHEGW,
-      usedRequestId,
-      baseLogMessage
-    ).catch(processAsyncError(discoverContext));
+      baseLogMessage,
+    }).catch(processAsyncError(discoverContext));
   }
 }
 
@@ -74,19 +75,24 @@ export async function remove(patient: Patient): Promise<void> {
   await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
 
-async function prepareAndTriggerPD(
-  patient: Patient,
-  facilityId: string,
-  enabledIHEGW: IHEGateway,
-  requestId: string,
-  baseLogMessage: string
-): Promise<void> {
+async function triggerPD(cqTriggerProps: cqTriggerProps): Promise<void> {
+  const { patient, facilityId, requestId, enabledIHEGW, baseLogMessage } = cqTriggerProps;
+
+  await clearPatientDiscoveryEndedAt({ patient });
+  await updatePatientDiscoveryStatus({
+    patient,
+    status: "processing",
+    requestId,
+    facilityId,
+    startedAt: new Date(),
+  });
+
   try {
-    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery(
+    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery({
       patient,
       facilityId,
-      requestId
-    );
+      requestId,
+    });
     const numGatewaysV1 = pdRequestGatewayV1.gateways.length;
     const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
@@ -132,11 +138,11 @@ async function prepareAndTriggerPD(
   }
 }
 
-async function prepareForPatientDiscovery(
-  patient: Patient,
-  facilityId: string,
-  requestId: string
-): Promise<{
+async function prepareForPatientDiscovery({
+  patient,
+  facilityId,
+  requestId,
+}: cqPrepProps): Promise<{
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
