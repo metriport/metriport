@@ -19,6 +19,7 @@ import {
   CdaValueSt,
   Entry,
   EntryObject,
+  ObservationTableRow,
 } from "../cda-types/shared-types";
 import {
   _assigningAuthorityNameAttribute,
@@ -27,6 +28,7 @@ import {
   _codeSystemNameAttribute,
   _displayNameAttribute,
   _extensionAttribute,
+  _idAttribute,
   _inlineTextAttribute,
   _nullFlavorAttribute,
   _rootAttribute,
@@ -374,4 +376,22 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return "Unknown";
   const primaryCoding = code.coding?.[0];
   return primaryCoding?.display ?? code.text ?? "Unknown";
+}
+
+export function initiateSectionTable(
+  sectionName: string,
+  tableHeaders: string[],
+  tableRows: ObservationTableRow[]
+) {
+  return {
+    [_idAttribute]: sectionName,
+    thead: createTableHeader(tableHeaders),
+    tbody: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: tableRows.map((row: { tr: { [x: string]: any; td: any } }) => ({
+        [_idAttribute]: row.tr[_idAttribute],
+        td: row.tr.td,
+      })),
+    },
+  };
 }

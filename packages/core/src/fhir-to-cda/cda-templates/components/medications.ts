@@ -5,9 +5,9 @@ import {
   buildCodeCe,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
-  createTableHeader,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
+  initiateSectionTable,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -27,7 +27,7 @@ import {
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedMedicationStatement } from "./augmented-resources";
 
-export const medicationsSectionName = "medications";
+const medicationsSectionName = "medications";
 const tableHeaders = ["Medication", "Dosage", "Frequency", "Start Date", "End Date", "Reason"];
 
 export function buildMedications(fhirBundle: Bundle) {
@@ -44,7 +44,7 @@ export function buildMedications(fhirBundle: Bundle) {
     const ref = statement.medicationReference?.reference;
     const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
     const medication = isMedication(refResource) ? refResource : undefined;
-    return new AugmentedMedicationStatement(statement, medication);
+    return new AugmentedMedicationStatement(statement, medicationsSectionName, medication);
   });
 
   const { trs, entries } = createTableRowsAndEntries(
@@ -53,17 +53,7 @@ export function buildMedications(fhirBundle: Bundle) {
     createEntryFromStatement
   );
 
-  const table = {
-    [_idAttribute]: medicationsSectionName,
-    thead: createTableHeader(tableHeaders),
-    tbody: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [_idAttribute]: row.tr[_idAttribute],
-        td: row.tr.td,
-      })),
-    },
-  };
+  const table = initiateSectionTable(medicationsSectionName, tableHeaders, trs);
 
   const medicationsSection = {
     component: {

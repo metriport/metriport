@@ -5,9 +5,9 @@ import {
   buildCodeCe,
   buildInstanceIdentifier,
   buildValueCd,
-  createTableHeader,
   formatDateToCdaTimestamp,
   getTextFromCode,
+  initiateSectionTable,
   isLoinc,
   withoutNullFlavorObject,
 } from "../commons";
@@ -28,7 +28,7 @@ import {
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedCondition } from "./augmented-resources";
 
-export const problemsSectionName = "problems";
+const problemsSectionName = "problems";
 const tableHeaders = [
   "ICD Code",
   "Diagnosis",
@@ -47,26 +47,16 @@ export function buildProblems(fhirBundle: Bundle) {
   }
 
   const augmentedConditions = conditions.map(condition => {
-    return new AugmentedCondition(condition);
+    return new AugmentedCondition(condition, problemsSectionName);
   });
 
   const { trs, entries } = createTableRowsAndEntries(
     augmentedConditions,
-    createTableRowsFromCondition,
+    createTableRowFromCondition,
     createEntryFromCondition
   );
 
-  const table = {
-    [_idAttribute]: problemsSectionName,
-    thead: createTableHeader(tableHeaders),
-    tbody: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tr: trs.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [_idAttribute]: row.tr[_idAttribute],
-        td: row.tr.td,
-      })),
-    },
-  };
+  const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
   const problemsSection = {
     component: {
@@ -90,46 +80,38 @@ export function buildProblems(fhirBundle: Bundle) {
   return problemsSection;
 }
 
-function createTableRowsFromCondition(
-  condition: AugmentedCondition,
-  medicationsPrefix: string
-): ObservationTableRow[] {
-  const trs: ObservationTableRow[] = [];
-  const tableRow = createTableRowFromCondition(condition, medicationsPrefix);
-  if (tableRow) trs.push(tableRow);
-  return trs;
-}
-
 function createTableRowFromCondition(
   condition: AugmentedCondition,
   referenceId: string
-): ObservationTableRow | undefined {
+): ObservationTableRow[] {
   const name = getTextFromCode(condition.resource.code);
-  return {
-    tr: {
-      [_idAttribute]: referenceId,
-      ["td"]: [
-        {
-          [_inlineTextAttribute]: getIcdCode(condition.resource.code),
-        },
-        {
-          [_inlineTextAttribute]: name,
-        },
-        {
-          [_inlineTextAttribute]: "", // TODO: Find out what Provider Response stands for and map accordingly
-        },
-        {
-          [_inlineTextAttribute]: "", // TODO: Find out what Status stands for and map accordingly
-        },
-        {
-          [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? "Not Specified",
-        },
-        {
-          [_inlineTextAttribute]: "", // TODO: Figure out where to put comments in the Condition resource
-        },
-      ],
+  return [
+    {
+      tr: {
+        [_idAttribute]: referenceId,
+        ["td"]: [
+          {
+            [_inlineTextAttribute]: getIcdCode(condition.resource.code),
+          },
+          {
+            [_inlineTextAttribute]: name,
+          },
+          {
+            [_inlineTextAttribute]: "", // TODO: Find out what Provider Response stands for and map accordingly
+          },
+          {
+            [_inlineTextAttribute]: "", // TODO: Find out what Status stands for and map accordingly
+          },
+          {
+            [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? "Not Specified",
+          },
+          {
+            [_inlineTextAttribute]: "", // TODO: Figure out where to put comments in the Condition resource
+          },
+        ],
+      },
     },
-  };
+  ];
 }
 
 function createEntryFromCondition(condition: AugmentedCondition, referenceId: string) {
