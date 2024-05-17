@@ -15,7 +15,7 @@ import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-g
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
-import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { processDrResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 /** 
 This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
 It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
@@ -290,7 +290,7 @@ async function queryDR(
       cxId: drRequest.cxId,
     });
 
-    return processDRResponse({
+    return processDrResponse({
       drResponse: response[0],
     });
   } catch (error) {
