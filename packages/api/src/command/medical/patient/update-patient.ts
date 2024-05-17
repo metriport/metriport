@@ -60,7 +60,7 @@ export async function updatePatient(
   } else {
     await cqCommands.patient.discover({
       patient,
-      facilityId,
+      facilityId: facility.id,
       forceCq: forceCarequality ?? false,
     });
   }
