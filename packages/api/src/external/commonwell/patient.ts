@@ -4,9 +4,12 @@ import {
   LOLA,
   organizationQueryMeta,
   Patient as CommonwellPatient,
-  Person,
+  Person as CommonwellPerson,
   RequestMetadata,
   NetworkLink,
+  getPersonId,
+  isEnrolled,
+  isUnenrolled,
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
@@ -16,7 +19,6 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import MetriportError from "../../errors/metriport-error";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { Config } from "../../shared/config";
 import { capture } from "@metriport/core/util/notifications";
@@ -29,7 +31,6 @@ import {
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
-import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { autoUpgradeNetworkLinks } from "./link/shared";
@@ -37,14 +38,17 @@ import { makePersonForPatient, patientToCommonwell } from "./patient-conversion"
 import { updateCommonwellPatientAndPersonIds } from "./command/update-patient-and-person-ids";
 import { updateCommenwellCqLinkStatus } from "./command/update-cq-link-status";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-import {
-  CQLinkStatus,
-  findOrCreatePerson,
-  getMatchingStrongIds,
-  PatientDataCommonwell,
-} from "./patient-shared";
+import { getMatchingStrongIds } from "./patient-shared";
 import { getCwInitiator } from "./shared";
 import { updateDemographics } from "./patient-demographics";
+import { PatientDataCommonwell } from "./patient-shared";
+import {
+  matchPersonsByDemo,
+  matchPersonsByStrongIds,
+  handleMultiplePersonMatches,
+  singlePersonWithId as singleCommonwellPersonWithId,
+  multiplePersonWithId as multipleCommonwellPersonWithId,
+} from "./person-shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -83,25 +87,6 @@ export function getCWData(
 ): PatientDataCommonwell | undefined {
   if (!data) return undefined;
   return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell; // TODO validate the type
-}
-
-/**
- * Returns the status of linking the Patient with CommonWell.
- */
-export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStatus {
-  const defaultStatus: LinkStatus = "processing";
-  if (!data) return defaultStatus;
-  return getCWData(data)?.status ?? defaultStatus;
-}
-
-/**
- * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
- * Enhanced Coverage.
- */
-export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
-  const defaultStatus: CQLinkStatus = "unlinked";
-  if (!data) return defaultStatus;
-  return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
 export async function create(cwCreateProps: cwCreateProps): Promise<void> {
@@ -295,7 +280,7 @@ async function runRemoveFlow(cwDeleteFlowProps: cwDeleteFlowProps): Promise<void
   const { patient, facilityId, log } = cwDeleteFlowProps;
 
   try {
-    const cwSdkProps = await setupCwSdkProps(cwDeleteFlowProps);
+    const cwSdkProps = await setupCwSdk(cwDeleteFlowProps);
     commonWell = cwSdkProps.commonWell;
     const commonwellExternalData = getCWData(patient.data.externalData);
     const commonwellPatientId = commonwellExternalData?.patientId;
@@ -421,21 +406,17 @@ async function findOrCreatePersonWrapper({
   commonwellPatientId: string;
   patient: Patient;
   debug: typeof console.log;
-}): Promise<{ commonwellPerson: Person; commonwellPersonId: string }> {
-  debug(`Finding or creating for this Patient: `, () => JSON.stringify(commonwellPatient, null, 2));
+}): Promise<{ commonwellPerson: CommonwellPerson; commonwellPersonId: string }> {
+  debug(`Finding or creating Person for this Patient: `, () =>
+    JSON.stringify(commonwellPatient, null, 2)
+  );
 
-  const findOrCreatePersonResponse = await findOrCreatePerson({
+  const { commonwellPerson, commonwellPersonId } = await findOrCreateAndEnrollPerson({
     commonWell,
     queryMeta,
     commonwellPatient,
     commonwellPatientId,
   });
-
-  if (!findOrCreatePersonResponse) {
-    throw new MetriportError("Programming error: unexpected state");
-  }
-
-  const { person: commonwellPerson, personId: commonwellPersonId } = findOrCreatePersonResponse;
 
   await updateCommonwellPatientAndPersonIds({
     patient,
@@ -482,7 +463,7 @@ async function updateAndEnrollPersonWrapper({
   } catch (err: any) {
     if (err.response?.status !== 404) throw err;
     const subject = "Got 404 when trying to update person @ CW, trying to find/create it @ CW";
-    log(`${subject} - CW Person ID ${commonwellPersonId}`);
+    log(`${subject} - CW CommonwellPerson ID ${commonwellPersonId}`);
     capture.message(subject, {
       extra: {
         commonwellPatientId,
@@ -521,7 +502,7 @@ async function linkPersonWrapper({
   queryMeta: RequestMetadata;
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
-  commonwellPerson: Person;
+  commonwellPerson: CommonwellPerson;
   commonwellPersonId: string;
   patient: Patient;
   patientRefLink: string;
@@ -530,7 +511,7 @@ async function linkPersonWrapper({
   debug: typeof console.log;
   context: string;
 }): Promise<{ networkLinks: NetworkLink[] | undefined }> {
-  debug(`Linking for Person: `, () => JSON.stringify(commonwellPerson, null, 2));
+  debug(`Linking for CommonwellPerson: `, () => JSON.stringify(commonwellPerson, null, 2));
 
   const strongIds = getMatchingStrongIds(commonwellPerson, commonwellPatient);
   const { hasLink, isLinkLola3Plus } = await getLinkInfo({
@@ -593,7 +574,7 @@ async function startPdFlowWrapper({
     startedAt: new Date(),
   });
 
-  return await setupCwSdkProps({
+  return await setupCwSdk({
     patient: updatedPatient,
     facilityId,
     initiator,
@@ -652,7 +633,7 @@ async function endPdFlowWrapper({
   }
 }
 
-// Helpers
+// General Helpers
 async function validateCWEnabled({
   cxId,
   forceCw,
@@ -700,7 +681,7 @@ async function validateCWEnabled({
   }
 }
 
-async function setupCwSdkProps({
+async function setupCwSdk({
   patient,
   facilityId,
   initiator,
@@ -777,6 +758,7 @@ async function patientDiscoveryIfScheduled(
   return newPatientDiscovery;
 }
 
+// Commonwell Helpers
 async function registerCommonwellPatient({
   commonWell,
   queryMeta,
@@ -855,6 +837,98 @@ async function updateCommonWellPatient({
     throw new Error(msg);
   }
   return { patientRefLink };
+}
+
+async function findOrCreateAndEnrollPerson({
+  commonWell,
+  queryMeta,
+  commonwellPatient,
+  commonwellPatientId,
+}: {
+  commonWell: CommonWellAPI;
+  queryMeta: RequestMetadata;
+  commonwellPatient: CommonwellPatient;
+  commonwellPatientId: string;
+}): Promise<{ commonwellPersonId: string; commonwellPerson: CommonwellPerson }> {
+  const { debug } = out(`CW findOrCreateAndEnrollPerson - CW patientId ${commonwellPatientId}`);
+  const baseContext = `cw.findOrCreatePerson`;
+
+  const strongIds = commonwellPatient.details.identifier ?? [];
+  if (strongIds.length > 0) {
+    const persons = await matchPersonsByStrongIds({
+      commonWell,
+      queryMeta,
+      strongIds,
+      commonwellPatientId,
+    });
+    if (persons.length === 1) {
+      const commonwellPerson = (persons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+      return { commonwellPersonId: commonwellPerson.personId, commonwellPerson };
+    }
+    if (persons.length > 1) {
+      const { personId, person } = handleMultiplePersonMatches({
+        commonwellPatientId,
+        persons: persons as multipleCommonwellPersonWithId,
+        context: baseContext + ".strongIds",
+      });
+      return { commonwellPersonId: personId, commonwellPerson: person };
+    }
+  }
+  const persons = await matchPersonsByDemo({
+    commonWell,
+    queryMeta,
+    commonwellPatientId,
+  });
+  const enrolledPersons = persons.filter(isEnrolled);
+  if (enrolledPersons.length === 1) {
+    const commonwellPerson = (enrolledPersons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+    return { commonwellPersonId: commonwellPerson.personId, commonwellPerson };
+  }
+  if (enrolledPersons.length > 1) {
+    // TODO needs to be rewritten to return the one with most links
+    // Update 2023-12-12: the above TODO may be deprecated, since we actually want to link to the earliest person - even if the one has more links, they could be a "duplicate" patient that'll be removed later
+    const { personId, person } = handleMultiplePersonMatches({
+      commonwellPatientId,
+      persons: enrolledPersons as multipleCommonwellPersonWithId,
+      context: baseContext + ".enrolled.demographics",
+    });
+    return { commonwellPersonId: personId, commonwellPerson: person };
+  }
+  const unenrolledPersons = persons.filter(isUnenrolled);
+  if (unenrolledPersons.length === 1) {
+    const commonwellPerson = (unenrolledPersons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+    await commonWell.reenrollPerson(queryMeta, commonwellPerson.personId);
+    return { commonwellPersonId: commonwellPerson.personId, commonwellPerson };
+  }
+  if (unenrolledPersons.length > 1) {
+    const { personId, person } = handleMultiplePersonMatches({
+      commonwellPatientId,
+      persons: unenrolledPersons as multipleCommonwellPersonWithId,
+      context: baseContext + ".unenrolled.demographics",
+    });
+    await commonWell.reenrollPerson(queryMeta, person.personId);
+    return { commonwellPersonId: personId, commonwellPerson: person };
+  }
+
+  const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
+  debug(`Enrolling this commonwellPerson: `, JSON.stringify(tempCommonwellPerson));
+  const respPerson = await commonWell.enrollPerson(queryMeta, tempCommonwellPerson);
+  debug(`resp enrollPerson: `, JSON.stringify(respPerson));
+  const commonwellPerson = respPerson;
+  const commonwellPersonId = getPersonId(respPerson);
+  if (!commonwellPersonId) {
+    const msg = "findOrCreateAndEnrollPerson - Could not get person ID from CW response";
+    console.error(
+      `${msg}. Patient ID: ${commonwellPatientId} respPerson: ${JSON.stringify(respPerson)}`
+    );
+    capture.error(msg, {
+      extra: {
+        respPerson,
+      },
+    });
+    throw new Error(msg);
+  }
+  return { commonwellPersonId, commonwellPerson };
 }
 
 async function updateAndEnrollPerson({

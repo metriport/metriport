@@ -4,8 +4,8 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import cwCommands from ".";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import { errorToString } from "../../shared/log";
-import { capture } from "../../shared/notifications";
+import { errorToString } from "@metriport/shared/common/error";
+import { capture } from "@metriport/core/util/notifications";
 
 const maxNumberOfParallelRequestsToCW = 10;
 
@@ -40,9 +40,15 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         });
       } catch (error) {
         failedUpdateCount++;
-        const msg = `Failed to update CW patient`;
-        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
-        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
+        const msg = "Failed to update CW patient";
+        console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.error(msg, {
+          extra: {
+            cxId,
+            patientId: patient.id,
+            error,
+          },
+        });
       }
     };
     // Execute the promises in parallel

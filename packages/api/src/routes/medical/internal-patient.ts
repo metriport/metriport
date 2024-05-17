@@ -42,7 +42,7 @@ import { initEnhancedCoverage } from "../../external/commonwell/cq-bridge/covera
 import { setCQLinkStatuses } from "../../external/commonwell/cq-bridge/cq-link-status";
 import { ECUpdaterLocal } from "../../external/commonwell/cq-bridge/ec-updater-local";
 import { PatientLoaderLocal } from "../../models/helpers/patient-loader-local";
-import { cqLinkStatus } from "../../external/commonwell/patient-shared";
+import { cqLinkStatus } from "../../external/commonwell/patient-external-data";
 import { PatientUpdaterCommonWell } from "../../external/commonwell/patient-updater-commonwell";
 import { parseISODate } from "../../shared/date";
 import { getETag } from "../../shared/http";
