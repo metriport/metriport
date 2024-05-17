@@ -43,3 +43,6 @@ export interface OrganizationCreate extends BaseDomainCreate {
 }
 
 export interface Organization extends BaseDomain, OrganizationCreate {}
+
+export const isCandidateImplementor = (type: OrganizationBizType) =>
+  type === OrganizationBizType.healthcareITVendor;
