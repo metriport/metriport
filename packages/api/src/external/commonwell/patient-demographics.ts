@@ -34,7 +34,9 @@ function createPatientDemographicsDiff(
   patient: Patient,
   netLinkResults: NetworkLink[]
 ): PatientDemographicsDiff | undefined {
-  const patientNetworkLinks: PatientNetworkLink[] = getPatientNetworkLinks(netLinkResults);
+  const patientNetworkLinks: PatientNetworkLink[] = getPatientNetworkLinks(netLinkResults).filter(
+    pnl => filterPatientResources(patient, pnl)
+  );
   const newAddresses: Address[] = patientNetworkLinks
     .flatMap((pnl: PatientNetworkLink) => {
       return pnl.details.address.flatMap((newAddress: PatientNetworkLinkAddress) => {
@@ -58,11 +60,18 @@ function createPatientDemographicsDiff(
 }
 
 function getPatientNetworkLinks(netLinkResults: NetworkLink[]): PatientNetworkLink[] {
-  return netLinkResults.flatMap(pd => {
-    const patientNewtorkLink = pd.patient;
+  return netLinkResults.flatMap(nl => {
+    const patientNewtorkLink = nl.patient;
     if (!patientNewtorkLink) return [];
     return patientNewtorkLink;
   });
+}
+
+function filterPatientResources(patient: Patient, patientNetworkLink: PatientNetworkLink): boolean {
+  return (
+    patient.data.dob !== patientNetworkLink.details.birthDate ||
+    patient.data.genderAtBirth !== patientNetworkLink.details.gender.code
+  );
 }
 
 function checkAndReturnValidNlAddress(

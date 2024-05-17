@@ -1,5 +1,6 @@
 import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
 import { Address } from "@metriport/core/domain/address";
+import { genderMapping } from "@metriport/core/external/fhir/patient/index";
 import { OutboundPatientDiscoveryResp, InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 import { updatePatient } from "../../command/medical/patient/update-patient";
 import { getCQData } from "./patient";
@@ -36,7 +37,9 @@ function createPatientDemographicsDiff(
   patient: Patient,
   pdResults: OutboundPatientDiscoveryResp[]
 ): PatientDemographicsDiff | undefined {
-  const patientResources = getPatientResources(pdResults);
+  const patientResources = getPatientResources(pdResults).filter(pd =>
+    filterPatientResources(patient, pd)
+  );
   const newAddresses: Address[] = patientResources
     .flatMap(pr => {
       return pr.address.flatMap((prAddress: PatientResourceAddress) => {
@@ -67,6 +70,16 @@ function getPatientResources(pdResults: OutboundPatientDiscoveryResp[]): Inbound
     if (!patientResource) return [];
     return patientResource;
   });
+}
+
+function filterPatientResources(
+  patient: Patient,
+  patientResource: InboundPatientResource
+): boolean {
+  return (
+    patient.data.dob !== patientResource.birthDate ||
+    genderMapping[patient.data.genderAtBirth] !== patientResource.gender
+  );
 }
 
 function checkAndReturnValidPrAddress(
