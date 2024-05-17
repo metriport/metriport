@@ -1,8 +1,9 @@
 import { Input, Output } from "@metriport/core/domain/conversion/fhir-to-medical-record";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
-import { getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { getFeatureFlagValue, FeatureFlagDatastore } from "@metriport/core/external/aws/appConfig";
 import { bundleToHtml } from "@metriport/core/external/aws/lambda-logic/bundle-to-html";
 import { bundleToHtmlADHD } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-adhd";
+import { bundleToHtmlHcc } from "@metriport/core/external/aws/lambda-logic/bundle-to-html-hcc";
 import { getSignedUrl as coreGetSignedUrl, makeS3Client } from "@metriport/core/external/aws/s3";
 import { getEnvType } from "@metriport/core/util/env-var";
 import { out } from "@metriport/core/util/log";
@@ -51,11 +52,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(
     );
 
     try {
-      const cxsWithADHDFeatureFlagValue = await getCxsWithADHDFeatureFlagValue();
+      const cxsWithADHDFeatureFlagValue = await getCxsWithFeatureFlagValue(
+        "cxsWithAdhdMrFeatureFlag"
+      );
       const isADHDFeatureFlagEnabled = cxsWithADHDFeatureFlagValue.includes(cxId);
+      const cxsWithHccFeatureFlagValue = await getCxsWithFeatureFlagValue(
+        "cxsWithHccMrFeatureFlag"
+      );
+      const isHccFeatureFlagEnabled = cxsWithHccFeatureFlagValue.includes(cxId);
       const bundle = await getBundleFromS3(fhirFileName);
 
-      const html = isADHDFeatureFlagEnabled ? bundleToHtmlADHD(bundle) : bundleToHtml(bundle);
+      const html = isADHDFeatureFlagEnabled
+        ? bundleToHtmlADHD(bundle)
+        : isHccFeatureFlagEnabled
+        ? bundleToHtmlHcc(bundle)
+        : bundleToHtml(bundle);
+
       const hasContents = doesMrSummaryHaveContents(html);
       log(`MR Summary has contents: ${hasContents}`);
       const htmlFileName = createMRSummaryFileName(cxId, patientId, "html");
@@ -199,20 +211,20 @@ const convertStoreAndReturnPdfUrl = async ({
   return urlPdf;
 };
 
-async function getCxsWithADHDFeatureFlagValue(): Promise<string[]> {
+async function getCxsWithFeatureFlagValue(ffKey: keyof FeatureFlagDatastore): Promise<string[]> {
   try {
     const featureFlag = await getFeatureFlagValue(
       region,
       appConfigAppID,
       appConfigConfigID,
       getEnvType(),
-      "cxsWithADHDMRFeatureFlag"
+      ffKey
     );
 
     if (featureFlag?.enabled && featureFlag?.values) return featureFlag.values;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName: "cxsWithADHDMRFeatureFlag" };
+    const extra = { featureFlagName: ffKey };
     capture.error(msg, { extra: { ...extra, error } });
   }
 

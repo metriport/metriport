@@ -22,7 +22,8 @@ export type FeatureFlagDatastore = {
   cxsWithEnhancedCoverageFeatureFlag: StringValuesFF;
   cxsWithCQDirectFeatureFlag: StringValuesFF;
   cxsWithCWFeatureFlag: StringValuesFF;
-  cxsWithADHDMRFeatureFlag: StringValuesFF;
+  cxsWithAdhdMrFeatureFlag: StringValuesFF;
+  cxsWithHccMrFeatureFlag: StringValuesFF;
   cxsWithNoWebhookPongFeatureFlag: StringValuesFF;
   cxsWithIncreasedSandboxLimitFeatureFlag: StringValuesFF;
   oidsWithIHEGatewayV2Enabled: StringValuesFF;
