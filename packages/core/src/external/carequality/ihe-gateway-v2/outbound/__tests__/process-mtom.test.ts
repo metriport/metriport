@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { processDRResponse } from "../xca/process/dr-response";
-import { outboundDRRequestMTOM, outboundDRRequestMultiMTOM } from "./constants";
+import { processDrResponse } from "../xca/process/dr-response";
+import { outboundDrRequestMtom, outboundDrRequestMultiMtom } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
 import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
@@ -53,12 +53,12 @@ describe("processDRResponse", () => {
   it("should process mtom with xml but binary content type correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "files/mtom-binary-xml.txt"), "utf8");
     const contentType = `multipart/related; type="application/xop+xml";start="<http://tempuri.org/0>";boundary="uuid:5ef8425b-44e7-4a4c-8144-b8ddacb300f9+id=186535";start-info="application/soap+xml"`;
-    const response = await processDRResponse({
+    const response = await processDrResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDRRequestMTOM.gateway,
-        outboundRequest: outboundDRRequestMTOM,
+        gateway: outboundDrRequestMtom.gateway,
+        outboundRequest: outboundDrRequestMtom,
         contentType,
       },
     });
@@ -68,12 +68,12 @@ describe("processDRResponse", () => {
   it("should process mtom with xml and xml content type correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "files/mtom-xml.txt"), "utf8");
     const contentType = `multipart/related; type="application/xop+xml";start="<0.urn:uuid:2a28fe28-cd7d-44f9-88dd-0ab2a2d80073>";boundary="a1109b32-0907-4c3c-9d61-8b8d846b9983";start-info="application/soap+xml"`;
-    const response = await processDRResponse({
+    const response = await processDrResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDRRequestMTOM.gateway,
-        outboundRequest: outboundDRRequestMTOM,
+        gateway: outboundDrRequestMtom.gateway,
+        outboundRequest: outboundDrRequestMtom,
         contentType,
       },
     });
@@ -83,12 +83,12 @@ describe("processDRResponse", () => {
   it("should process multiple xml files in a single mtom correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "files/multi-mtom.txt"), "utf8");
     const contentType = `multipart/related; type="application/xop+xml";start=""<http://tempuri.org/0>";boundary="uuid:34605f3a-f898-4d62-99a5-c0fc113a7e59+id=51889";start-info="application/soap+xml"`;
-    const response = await processDRResponse({
+    const response = await processDrResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDRRequestMTOM.gateway,
-        outboundRequest: outboundDRRequestMultiMTOM,
+        gateway: outboundDrRequestMultiMtom.gateway,
+        outboundRequest: outboundDrRequestMultiMtom,
         contentType,
       },
     });
@@ -97,12 +97,12 @@ describe("processDRResponse", () => {
   it("should not process non-xml mtom response", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "files/mtom-non-xml.txt"), "utf8");
     const contentType = `multipart/related; type="application/xop+xml";start="<0.urn:uuid:2a28fe28-cd7d-44f9-88dd-0ab2a2d80073>";boundary="a1109b32-0907-4c3c-9d61-8b8d846b9983";start-info="application/soap+xml"`;
-    const response = await processDRResponse({
+    const response = await processDrResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDRRequestMTOM.gateway,
-        outboundRequest: outboundDRRequestMultiMTOM,
+        gateway: outboundDrRequestMtom.gateway,
+        outboundRequest: outboundDrRequestMtom,
         contentType,
       },
     });
@@ -117,17 +117,17 @@ describe.skip("integrationTestProcessDrResponseMTOM", () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "files/mtom-binary-xml.txt"), "utf8");
     const contentType = `multipart/related; type="application/xop+xml";start="<http://tempuri.org/0>";boundary="uuid:5ef8425b-44e7-4a4c-8144-b8ddacb300f9+id=186535";start-info="application/soap+xml"`;
     const responseString = `<?xml version="1.0" encoding="UTF-8"?><ClinicalDocument xmlns="urn:hl7-org:v3"></ClinicalDocument>`;
-    const response = await processDRResponse({
+    const response = await processDrResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDRRequestMTOM.gateway,
-        outboundRequest: outboundDRRequestMTOM,
+        gateway: outboundDrRequestMtom.gateway,
+        outboundRequest: outboundDrRequestMtom,
         contentType,
       },
     });
 
-    const key = `${outboundDRRequestMTOM.cxId}/${outboundDRRequestMTOM.patientId}/${response.documentReference?.[0]?.fileName}`;
+    const key = `${outboundDrRequestMtom.cxId}/${outboundDrRequestMtom.patientId}/${response.documentReference?.[0]?.fileName}`;
     const bucket = response.documentReference?.[0]?.fileLocation;
 
     if (bucket) {

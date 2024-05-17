@@ -5,7 +5,7 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import {
   getTrustedKeyStore,
   SamlClientResponse,
-  sendSignedXmlMTOM,
+  sendSignedXmlMtom,
 } from "../../../saml/saml-client";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
@@ -13,7 +13,7 @@ import { out } from "../../../../../../util/log";
 const { log } = out("Sending DR Requests");
 const context = "ihe-gateway-v2-dr-saml-client";
 
-export type DRSamlClientResponse = SamlClientResponse & {
+export type DrSamlClientResponse = SamlClientResponse & {
   gateway: XCAGateway;
   outboundRequest: OutboundDocumentRetrievalReq;
   contentType?: string | undefined;
@@ -29,11 +29,11 @@ export async function sendSignedDRRequests({
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-}): Promise<DRSamlClientResponse[]> {
+}): Promise<DrSamlClientResponse[]> {
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const { response, contentType } = await sendSignedXmlMTOM({
+      const { response, contentType } = await sendSignedXmlMtom({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,

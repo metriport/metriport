@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// keep that ^ on top
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";

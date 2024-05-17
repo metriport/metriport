@@ -10,17 +10,19 @@ import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
-
 const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
 const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
-
 const dateFormat = "YYYYMMDDHHmmss";
+
 export type BulkSignedDQ = {
   gateway: XCAGateway;
   signedRequest: string;
   outboundRequest: OutboundDocumentQueryReq;
 };
 
+function formatDate(date?: string, format: string = dateFormat): string | undefined {
+  return date ? dayjs(date).format(format) : undefined;
+}
 function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   if (!bodyData.gateway) {
     throw new Error("Gateway must be provided");
@@ -29,18 +31,10 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   const classCode = bodyData.classCode;
   const practiceSettingCode = bodyData.practiceSettingCode;
   const facilityTypeCode = bodyData.facilityTypeCode;
-  const serviceDateFrom = bodyData.serviceDate?.dateFrom
-    ? dayjs(bodyData.serviceDate.dateFrom).format(dateFormat)
-    : undefined;
-  const serviceDateTo = bodyData.serviceDate?.dateTo
-    ? dayjs(bodyData.serviceDate.dateTo).format(dateFormat)
-    : undefined;
-  const documentCreationDateFrom = bodyData.documentCreationDate?.dateFrom
-    ? dayjs(bodyData.documentCreationDate.dateFrom).format(dateFormat)
-    : undefined;
-  const documentCreationDateTo = bodyData.documentCreationDate?.dateTo
-    ? dayjs(bodyData.documentCreationDate.dateTo).format(dateFormat)
-    : undefined;
+  const serviceDateFrom = formatDate(bodyData.serviceDate?.dateFrom);
+  const serviceDateTo = formatDate(bodyData.serviceDate?.dateTo);
+  const documentCreationDateFrom = formatDate(bodyData.documentCreationDate?.dateFrom);
+  const documentCreationDateTo = formatDate(bodyData.documentCreationDate?.dateTo);
   const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
   const externalGatewayPatientId = bodyData.externalGatewayPatient.id;
   const externalGatewayPatientSystem = bodyData.externalGatewayPatient.system;

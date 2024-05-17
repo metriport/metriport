@@ -4,9 +4,7 @@ export class MockS3Utils extends S3Utils {
   override async uploadFile({
     bucket,
     key,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     file,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
     contentType,
   }: {
     bucket: string;
@@ -14,7 +12,9 @@ export class MockS3Utils extends S3Utils {
     file: Buffer;
     contentType?: string;
   }): Promise<AWS.S3.ManagedUpload.SendData> {
-    console.log(`Mock uploadFile called for ${bucket} and ${key} with content type ${contentType}`);
+    console.log(
+      `Mock uploadFile called for ${bucket} and ${key} and ${file} with content type ${contentType}`
+    );
     return {
       Location: `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`,
       ETag: "mockETag",
@@ -23,16 +23,10 @@ export class MockS3Utils extends S3Utils {
     };
   }
 
-  override async getFileInfoFromS3(
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    key: string,
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    bucket: string
-  ): Promise<{ exists: false }> {
+  override async getFileInfoFromS3(): Promise<{ exists: false }> {
     return { exists: false };
   }
   override buildFileUrl(bucket: string, key: string): string {
-    // Return a mock URL
     return `https://mocks3.${this.region}.amazonaws.com/${bucket}/${key}`;
   }
 }

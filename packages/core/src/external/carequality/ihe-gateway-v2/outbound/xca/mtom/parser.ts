@@ -71,7 +71,7 @@ export function parseMtomHeaders(headerPart: string): MtomHeaders {
   };
 }
 
-export function parseMTOMResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
+export function parseMtomResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
   const contentTypeParams = parseMtomContentType(contentType);
 
   const boundary = `--${contentTypeParams.boundary}`;

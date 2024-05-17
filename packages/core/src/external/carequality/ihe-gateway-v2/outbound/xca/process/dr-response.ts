@@ -8,14 +8,14 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import {
   handleRegistryErrorResponse,
-  handleHTTPErrorResponse,
+  handleHttpErrorResponse,
   handleEmptyResponse,
-  handleSOAPFaultResponse,
-  handleErrorMTOMResponse,
+  handleSoapFaultResponse,
+  handleErrorMtomResponse,
 } from "./error";
 import { parseFileFromString } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
-import { DRSamlClientResponse } from "../send/dr-requests";
+import { DrSamlClientResponse } from "../send/dr-requests";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
@@ -26,7 +26,7 @@ import {
 } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { capture } from "../../../../../../util/notifications";
-import { parseMTOMResponse } from "../mtom/parser";
+import { parseMtomResponse } from "../mtom/parser";
 import { MockS3Utils } from "../../../../../../util/mock-s3";
 
 const region = Config.getAWSRegion();
@@ -156,14 +156,14 @@ async function handleSuccessResponse({
   }
 }
 
-export async function processDRResponseSOAP({
+export async function processDrResponseSoap({
   drResponse: { response, success, gateway, outboundRequest },
 }: {
-  drResponse: DRSamlClientResponse;
+  drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway,
@@ -199,7 +199,7 @@ export async function processDRResponseSOAP({
       gateway,
     });
   } else if (soapFault) {
-    return handleSOAPFaultResponse({
+    return handleSoapFaultResponse({
       soapFault,
       outboundRequest,
       gateway,
@@ -212,23 +212,23 @@ export async function processDRResponseSOAP({
   }
 }
 
-export async function processDRResponseMTOM({
+export async function processDrResponseMtom({
   drResponse: { response, success, gateway, outboundRequest, contentType },
 }: {
-  drResponse: DRSamlClientResponse;
+  drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!contentType) {
     throw new Error("No content type found in response");
   }
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway,
     });
   }
   try {
-    const documentResponses = parseMTOMResponse(response, contentType);
+    const documentResponses = parseMtomResponse(response, contentType);
     return await handleSuccessResponse({
       documentResponses,
       outboundRequest,
@@ -243,25 +243,25 @@ export async function processDRResponseMTOM({
         gateway,
       },
     });
-    return handleErrorMTOMResponse({
+    return handleErrorMtomResponse({
       outboundRequest,
       gateway,
     });
   }
 }
 
-function isMTOMResponse(contentType: string | undefined): boolean {
+function isMtomResponse(contentType: string | undefined): boolean {
   return contentType !== undefined && contentType.includes("multipart/related");
 }
 
-export async function processDRResponse({
+export async function processDrResponse({
   drResponse,
 }: {
-  drResponse: DRSamlClientResponse;
+  drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
-  if (isMTOMResponse(drResponse?.contentType)) {
-    return await processDRResponseMTOM({ drResponse });
+  if (isMtomResponse(drResponse?.contentType)) {
+    return await processDrResponseMtom({ drResponse });
   } else {
-    return await processDRResponseSOAP({ drResponse });
+    return await processDrResponseSoap({ drResponse });
   }
 }

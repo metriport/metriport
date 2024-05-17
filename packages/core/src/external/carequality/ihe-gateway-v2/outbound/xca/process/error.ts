@@ -84,7 +84,7 @@ export function handleRegistryErrorResponse({
   };
 }
 
-export function handleHTTPErrorResponse({
+export function handleHttpErrorResponse({
   httpError,
   outboundRequest,
   gateway,
@@ -146,7 +146,7 @@ export function handleEmptyResponse({
   };
 }
 
-export function handleErrorMTOMResponse({
+export function handleErrorMtomResponse({
   outboundRequest,
   gateway,
 }: {
@@ -176,7 +176,7 @@ export function handleErrorMTOMResponse({
   };
 }
 
-export function handleSOAPFaultResponse({
+export function handleSoapFaultResponse({
   soapFault,
   outboundRequest,
   gateway,
