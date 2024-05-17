@@ -28,10 +28,6 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public scheduledPdRequestId?: string,
     /**
-     * The request ID for the next patient discovery while the current patient discovery was processing.
-     */
-    public scheduledPdRequestForceDocQuery?: boolean,
-    /**
      * The request ID for the document query triggered while the patient discovery was processing.
      */
     public scheduledDocQueryRequestId?: string
