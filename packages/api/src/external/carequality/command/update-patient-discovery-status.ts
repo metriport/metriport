@@ -5,9 +5,9 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { LinkStatus } from "../../patient-link";
 
 /**
- * Sets the CareQuality (CQ) integration status on the patient.
+ * Sets the CareQuality (CQ) Patient Discovery status on the patient.
  *
- * @param patient The patient ID and customer ID @ Metriport.
+ * @param patient The patient @ Metriport.
  * @param status The status of integrating the patient across CareQuality gateways.
  * @param requestId The requestId of PD process. Set once per request ID.
  * @param facilityId The facilityId of PD process. Set once per request ID.

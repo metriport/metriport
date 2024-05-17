@@ -5,13 +5,13 @@ import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { LinkStatus } from "../../patient-link";
 
 /**
- * Sets the CommonWell (CW) integration status on the patient.
+ * Sets the CommonWell (CW) Patient Discovery status on the patient.
  *
- * @param patient The patient ID and customer ID @ Metriport.
+ * @param patient The patient @ Metriport.
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
- * @param requestId The requestId of PD process. Set once.
- * @param facilityId The facilityId of PD process. Set once.
- * @param startedAt The startedAt of PD process. Set once.
+ * @param requestId The requestId of PD process. Set once per request ID.
+ * @param facilityId The facilityId of PD process. Set once per request ID.
+ * @param startedAt The startedAt of PD process. Set once per request ID.
  * @returns Updated Patient.
  */
 export const updatePatientDiscoveryStatus = async ({

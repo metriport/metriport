@@ -64,7 +64,7 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { debug, log } = out(`recreatePatientAtCW - ${patient.id}`);
+  const { debug, log } = out(`CW recreatePatientAtCW - M patientId ${patient.id}`);
 
   if (!(await isCWEnabledForCx(patient.cxId))) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
