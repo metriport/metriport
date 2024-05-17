@@ -48,7 +48,6 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeDocumentReferenceWithMetriporId(),
       makeDocumentReferenceWithMetriporId(),
     ];
-    console.log("documentReferences", JSON.stringify(documentReferences, null, 2));
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({ gateway: makeXcaGateway({ homeCommunityId }) }),
     ];
@@ -59,7 +58,6 @@ describe("outboundDocumentRetrievalRequest", () => {
       documentReferences,
       outboundDocumentQueryResps,
     });
-    console.log("res", JSON.stringify(res, null, 2));
     expect(res).toBeTruthy();
     expect(res.length).toEqual(1);
     expect(res[0].documentReference.length).toEqual(2);
