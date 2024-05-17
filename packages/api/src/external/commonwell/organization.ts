@@ -76,10 +76,33 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export const create = async (
+export async function get(oid: string): Promise<CWOrganization | undefined> {
+  const { log, debug } = out(`CW get - oid ${oid}`);
+  const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  try {
+    const cwId = OID_PREFIX.concat(oid);
+    const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
+    debug(`resp: `, JSON.stringify(resp));
+    return resp;
+  } catch (error) {
+    const msg = `Failure getting Org @ CW`;
+    log(msg, error);
+    capture.message(msg, {
+      extra: {
+        orgOID: oid,
+        cwReference: commonWell.lastReferenceHeader,
+        context: `cw.org.get`,
+      },
+      level: "error",
+    });
+    throw error;
+  }
+}
+
+export async function create(
   org: Omit<Organization, "type" | "eTag">,
   isObo = false
-): Promise<void> => {
+): Promise<void> {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -118,9 +141,12 @@ export const create = async (
     });
     throw error;
   }
-};
+}
 
-export const update = async (org: Organization): Promise<void> => {
+export async function update(
+  org: Omit<Organization, "type" | "eTag">,
+  isObo = false
+): Promise<void> {
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -128,7 +154,7 @@ export const update = async (org: Organization): Promise<void> => {
     return undefined;
   }
 
-  const cwOrg = await organizationToCommonwell(org);
+  const cwOrg = await organizationToCommonwell(org, isObo);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
     const respUpdate = await commonWell.updateOrg(metriportQueryMeta, cwOrg, cwOrg.organizationId);
@@ -154,7 +180,7 @@ export const update = async (org: Organization): Promise<void> => {
     capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
     throw error;
   }
-};
+}
 
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
   const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);

@@ -5,7 +5,7 @@ import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import * as cwCommands from "../../../../../external/commonwell/__tests__";
+import cwCommands from "../../../../../external/commonwell";
 import { Config } from "../../../../../shared/config";
 import { retryFunction } from "../../../../../shared/retry";
 import { Util } from "../../../../../shared/util";
@@ -35,7 +35,7 @@ if (Config.isStaging() || Config.isDev()) {
         const fhirOrg = await fhirApi.readResource("Organization", org.id, fhirHeaders);
 
         const cwOrg = await retryFunction<CWOrganization | undefined>(
-          async () => await cwCommands.organization.getOne(org.oid),
+          async () => await cwCommands.organization.get(org.oid),
           maxRetries,
           3000
         );
@@ -69,7 +69,7 @@ if (Config.isStaging() || Config.isDev()) {
         );
 
         const cwOrg: CWOrganization | undefined = await retryFunction<CWOrganization | undefined>(
-          async () => await cwCommands.organization.getOne(updatedOrg.oid),
+          async () => await cwCommands.organization.get(updatedOrg.oid),
           maxRetries,
           3000,
           result => result?.name === newName

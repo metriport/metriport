@@ -1,6 +1,7 @@
 import * as AWS from "aws-sdk";
 import { PromiseResult } from "aws-sdk/lib/request";
 import { base64ToString } from "../../util/base64";
+import BadRequestError from "../../util/error/bad-request";
 import { MetriportError } from "../../util/error/metriport-error";
 import NotFoundError from "../../util/error/not-found";
 
@@ -55,7 +56,7 @@ export function getLambdaError(
  *
  * @param result The result of the lambda invocation
  * @param lambdaName The name of the lambda that was invoked, used on error reporting (optional)
- * @param failGracefuly If true, the function will return `undefined` instead of throwing an
+ * @param failGracefully If true, the function will return `undefined` instead of throwing an
  *        error (optional, defaults to `false` - throw an error on failure)
  * @param log A function to log errors (optional, defaults to `console.log`)
  * @returns The payload of the lambda invocation
@@ -63,13 +64,13 @@ export function getLambdaError(
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly?: boolean | false;
+  failGracefully?: boolean | false;
   log?: typeof console.log;
 }): string;
 export function getLambdaResultPayload(params: {
   result: PromiseResult<AWS.Lambda.InvocationResponse, AWS.AWSError>;
   lambdaName?: string;
-  failGracefuly: true;
+  failGracefully: true;
   log?: typeof console.log;
 }): string | undefined;
 export function getLambdaResultPayload({
@@ -97,6 +98,10 @@ export function getLambdaResultPayload({
     const errorDetails = JSON.stringify(lambdaError);
     log(`${msg} - ${errorDetails}`);
     if (failGracefully) return undefined;
+
+    if (lambdaError?.errorType === "BadRequestError" && lambdaError?.errorMessage) {
+      throw new BadRequestError(lambdaError.errorMessage);
+    }
     if (lambdaError?.errorType === "NotFoundError") {
       throw new NotFoundError(msg, undefined, { lambdaName, errorDetails });
     }
