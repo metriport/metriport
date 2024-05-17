@@ -28,7 +28,7 @@ const router = Router();
  * Creates a new organization at Metriport and HIEs.
  *
  * @param req.body The data to create the organization.
- * @param req.params.organizationType Optional organization type.
+ * @param req.params.organizationBizType Optional organization biz type.
  * @returns The newly created organization.
  */
 router.post(
@@ -36,12 +36,12 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
-    const type = getFromQuery("organizationType", req);
-    const organizationType = organizationBizTypeSchema.optional().parse(type);
+    const type = getFromQuery("organizationBizType", req);
+    const organizationBizType = organizationBizTypeSchema.optional().parse(type);
     const data = organizationCreateSchema.parse(req.body);
 
     const createOrg: OrganizationCreateCmd = { cxId, ...data };
-    const org = await createOrganization(createOrg, organizationType);
+    const org = await createOrganization(createOrg, organizationBizType);
 
     return res.status(status.CREATED).json(dtoFromModel(org));
   })

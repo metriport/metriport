@@ -76,7 +76,7 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export const get = async (oid: string): Promise<CWOrganization | undefined> => {
+export async function get(oid: string): Promise<CWOrganization | undefined> {
   const { log, debug } = out(`CW get - oid ${oid}`);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
   try {
@@ -97,12 +97,12 @@ export const get = async (oid: string): Promise<CWOrganization | undefined> => {
     });
     throw error;
   }
-};
+}
 
-export const create = async (
+export async function create(
   org: Omit<Organization, "type" | "eTag">,
   isObo = false
-): Promise<void> => {
+): Promise<void> {
   const { log, debug } = out(`CW create - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -141,12 +141,12 @@ export const create = async (
     });
     throw error;
   }
-};
+}
 
-export const update = async (
+export async function update(
   org: Omit<Organization, "type" | "eTag">,
   isObo = false
-): Promise<void> => {
+): Promise<void> {
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
@@ -180,7 +180,7 @@ export const update = async (
     capture.message(msg, { extra: { ...extra, payload: cwOrg }, level: "error" });
     throw error;
   }
-};
+}
 
 export async function initCQOrgIncludeList(orgOID: string): Promise<void> {
   const { log } = out(`initCQOrgIncludeList - orgOID ${orgOID}`);
