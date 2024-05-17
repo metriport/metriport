@@ -43,7 +43,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     homeCommunityId = faker.string.uuid();
   });
 
-  it("returns 2 req when no doc refs matching GW homeCommunityId", async () => {
+  it("returns 1 req with 2 doc refs when no doc refs match GW homeCommunityId", async () => {
     const documentReferences = [
       makeDocumentReferenceWithMetriporId(),
       makeDocumentReferenceWithMetriporId(),
