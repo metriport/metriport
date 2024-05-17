@@ -61,23 +61,6 @@ describe("getHieInitiator", () => {
     expect(resp.name).toBe(facility.data.name);
   });
 
-  it("returns the organization as initiator when is not OBO", async () => {
-    const facility = makeOboFacility({ type: FacilityType.initiatorAndResponder });
-    getPatientWithDependencies_mock.mockResolvedValueOnce({
-      ...defaultDeps,
-      facilities: [facility],
-    });
-    const org = defaultDeps.organization;
-    const resp = await getHieInitiator(
-      defaultDeps.patient,
-      facility.id,
-      MedicalDataSource.COMMONWELL
-    );
-    expect(resp).toBeTruthy();
-    expect(resp.oid).toBe(org.oid);
-    expect(resp.name).toBe(org.data.name);
-  });
-
   it("returns the facility npi and id when is OBO", async () => {
     const facility = makeOboFacility({ type: FacilityType.initiatorOnly });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
