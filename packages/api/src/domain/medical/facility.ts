@@ -28,6 +28,11 @@ export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   data: FacilityData;
 }
 
+export interface FacilityRegister extends FacilityCreate {
+  id?: string;
+  cwFacilityName?: string /**  Optional name, to override current facility name, for the facility in CommonWell */;
+}
+
 export interface Facility extends BaseDomain, Required<FacilityCreate> {
   oid: string;
   facilityNumber: number;
@@ -41,6 +46,10 @@ export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
 
 export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
+}
+
+export function isProviderFacility(facilityType?: FacilityType): boolean {
+  return facilityType === FacilityType.initiatorAndResponder;
 }
 
 export function isOboEnabled(facility: Facility, hie: MedicalDataSource): boolean {
