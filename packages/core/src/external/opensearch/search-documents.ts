@@ -1,17 +1,12 @@
 import { DocumentReference } from "@medplum/fhirtypes";
-import { isCommonwellExtension } from "../commonwell/extension";
-import { isCarequalityExtension } from "../carequality/extension";
-import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
 import { uniqBy } from "lodash";
-import { isDocStatusReady } from ".";
 import { Config } from "../../util/config";
 import { capture } from "../../util/notifications";
+import { isCommonwellExtension } from "../commonwell/extension";
 import { makeSearchServiceQuery } from "../opensearch/file-search-connector-factory";
+import { isMetriportExtension } from "../fhir/shared/extensions/metriport";
 import { getDocuments } from "../fhir/document/get-documents";
 
-/* Warning! This function is duplicated in api/src/external/fhir/document/search-documents.ts.
- * Ticket to fix this: https://github.com/metriport/metriport-internal/issues/1801
- */
 export async function searchDocuments({
   cxId,
   patientId,
@@ -38,8 +33,7 @@ export async function searchDocuments({
   }
 
   const unique = uniqBy(success, "id");
-  const ready = unique.filter(isDocStatusReady);
-  return ready;
+  return unique;
 }
 
 async function searchOnDocumentReferences(
@@ -60,8 +54,7 @@ function checkExtensions(doc: DocumentReference) {
   if (!extensions) return false;
   const metriport = extensions.find(isMetriportExtension);
   const cw = extensions.find(isCommonwellExtension);
-  const cq = extensions.find(isCarequalityExtension);
-  if (!metriport && !cw && !cq) return false;
+  if (!metriport && !cw) return false;
   return true;
 }
 

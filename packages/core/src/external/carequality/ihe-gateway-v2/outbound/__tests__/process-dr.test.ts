@@ -2,8 +2,8 @@ import fs from "fs";
 import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { OutboundDocumentRetrievalResp } from "@metriport/ihe-gateway-sdk";
-import { processDrResponse } from "../xca/process/dr-response";
-import { outboundDrRequest, testFiles, testFilesForUploadVerification } from "./constants";
+import { processDRResponse } from "../xca/process/dr-response";
+import { outboundDRRequest, testFiles, testFilesForUploadVerification } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
 
@@ -25,26 +25,29 @@ describe("processDRResponse", () => {
 
   it("should process multiple DR responses correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_success.xml"), "utf8");
-    const response = await processDrResponse({
+    const response = await processDRResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDrRequest.gateway,
-        outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
     });
     expect(response.documentReference?.length).toBe(2);
     expect(response?.documentReference?.[0]?.contentType).toEqual("application/octet-stream");
     expect(response?.documentReference?.[0]?.docUniqueId).toEqual("123456789");
-    expect(response?.documentReference?.[0]?.homeCommunityId).toEqual("2.16.840.1.113883.3.8391");
+    expect(response?.documentReference?.[0]?.homeCommunityId).toEqual(
+      "urn:oid:urn:oid:2.16.840.1.113883.3.9621"
+    );
     expect(response?.documentReference?.[0]?.repositoryUniqueId).toEqual(
       "urn:oid:2.16.840.1.113883.3.9621"
     );
 
     expect(response?.documentReference?.[1]?.contentType).toEqual("application/octet-stream");
     expect(response?.documentReference?.[1]?.docUniqueId).toEqual("987654321");
-    expect(response?.documentReference?.[1]?.homeCommunityId).toEqual("2.16.840.1.113883.3.8391");
+    expect(response?.documentReference?.[1]?.homeCommunityId).toEqual(
+      "urn:oid:urn:oid:2.16.840.1.113883.3.9621"
+    );
     expect(response?.documentReference?.[1]?.repositoryUniqueId).toEqual(
       "urn:oid:2.16.840.1.113883.3.9621"
     );
@@ -52,13 +55,12 @@ describe("processDRResponse", () => {
 
   it("should process the soap fault DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
-    const response = await processDrResponse({
+    const response = await processDRResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDrRequest.gateway,
-        outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
     });
 
@@ -67,13 +69,12 @@ describe("processDRResponse", () => {
 
   it("should process the registry error DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_registry_error.xml"), "utf8");
-    const response = await processDrResponse({
+    const response = await processDRResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDrRequest.gateway,
-        outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
@@ -81,13 +82,12 @@ describe("processDRResponse", () => {
 
   it("should process the empty DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_empty.xml"), "utf8");
-    const response = await processDrResponse({
+    const response = await processDRResponse({
       drResponse: {
         success: true,
         response: xmlString,
-        gateway: outboundDrRequest.gateway,
-        outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
@@ -95,13 +95,12 @@ describe("processDRResponse", () => {
   it("should process response that is not a string correctly", async () => {
     const randomResponse = "This is a bad response and is not xml";
 
-    const response = await processDrResponse({
+    const response = await processDRResponse({
       drResponse: {
         success: true,
         response: randomResponse,
-        gateway: outboundDrRequest.gateway,
-        outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
+        gateway: outboundDRRequest.gateway,
+        outboundRequest: outboundDRRequest,
       },
     });
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
@@ -139,19 +138,18 @@ describe.skip("processDRResponse for various file types and verify successful up
         }
 
         async processDRResponse() {
-          this.response = await processDrResponse({
+          this.response = await processDRResponse({
             drResponse: {
               success: true,
               response: this.modifiedXml,
-              gateway: outboundDrRequest.gateway,
+              gateway: outboundDRRequest.gateway,
               outboundRequest: {
-                ...outboundDrRequest,
-                documentReference: outboundDrRequest.documentReference.map(docRef => ({
+                ...outboundDRRequest,
+                documentReference: outboundDRRequest.documentReference.map(docRef => ({
                   ...docRef,
                   metriportId: uuidv4(),
                 })),
               },
-              contentType: "application/xml",
             },
           });
 

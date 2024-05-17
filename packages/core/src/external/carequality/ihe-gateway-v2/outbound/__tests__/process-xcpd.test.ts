@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import { processXCPDResponse } from "../xcpd/process/xcpd-response";
-import { outboundXcpdRequest, expectedXcpdResponse } from "./constants";
+import { outboundXCPDRequest, expectedXCPDResponse } from "./constants";
 
-const gateway = outboundXcpdRequest.gateways[0];
+const gateway = outboundXCPDRequest.gateways[0];
 if (!gateway) {
   throw new Error("Gateway must be provided");
 }
@@ -19,12 +19,12 @@ describe("processXCPDResponse", () => {
         success: true,
         response: xmlMatchString,
         gateway,
-        outboundRequest: outboundXcpdRequest,
+        outboundRequest: outboundXCPDRequest,
       },
     });
 
     expect(response).toEqual({
-      ...expectedXcpdResponse,
+      ...expectedXCPDResponse,
       responseTimestamp: expect.any(String),
     });
   });
@@ -34,7 +34,7 @@ describe("processXCPDResponse", () => {
         success: true,
         response: xmlNoMatchString,
         gateway,
-        outboundRequest: outboundXcpdRequest,
+        outboundRequest: outboundXCPDRequest,
       },
     });
 
@@ -46,7 +46,7 @@ describe("processXCPDResponse", () => {
         success: false,
         response: xmlErrorString,
         gateway,
-        outboundRequest: outboundXcpdRequest,
+        outboundRequest: outboundXCPDRequest,
       },
     });
 
@@ -60,7 +60,7 @@ describe("processXCPDResponse", () => {
         success: false,
         response: httpError.error,
         gateway,
-        outboundRequest: outboundXcpdRequest,
+        outboundRequest: outboundXCPDRequest,
       },
     });
 
@@ -75,7 +75,7 @@ describe("processXCPDResponse", () => {
         success: true,
         response: randomResponse,
         gateway,
-        outboundRequest: outboundXcpdRequest,
+        outboundRequest: outboundXCPDRequest,
       },
     });
     expect(response.operationOutcome).toBeTruthy();

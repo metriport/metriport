@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { processDQResponse } from "../xca/process/dq-response";
-import { outboundDqRequest, expectedDqDocumentReference } from "./constants";
+import { outboundDQRequest, expectedDQDocumentReference } from "./constants";
 
 describe("processDQResponse", () => {
   it("should process the successful DQ response correctly", async () => {
@@ -10,14 +10,14 @@ describe("processDQResponse", () => {
       dqResponse: {
         response: xmlString,
         success: true,
-        gateway: outboundDqRequest.gateway,
-        outboundRequest: outboundDqRequest,
+        gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
     });
     if (!response.documentReference) {
       throw new Error("No DocumentReferences found");
     }
-    expect(response.documentReference).toEqual(expectedDqDocumentReference);
+    expect(response.documentReference).toEqual(expectedDQDocumentReference);
   });
   it("should process the empty DQ response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dq_empty.xml"), "utf8");
@@ -25,8 +25,8 @@ describe("processDQResponse", () => {
       dqResponse: {
         response: xmlString,
         success: true,
-        gateway: outboundDqRequest.gateway,
-        outboundRequest: outboundDqRequest,
+        gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
@@ -38,8 +38,8 @@ describe("processDQResponse", () => {
       dqResponse: {
         response: xmlString,
         success: true,
-        gateway: outboundDqRequest.gateway,
-        outboundRequest: outboundDqRequest,
+        gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
@@ -52,8 +52,8 @@ describe("processDQResponse", () => {
       dqResponse: {
         success: true,
         response: randomResponse,
-        gateway: outboundDqRequest.gateway,
-        outboundRequest: outboundDqRequest,
+        gateway: outboundDQRequest.gateway,
+        outboundRequest: outboundDQRequest,
       },
     });
     expect(response.operationOutcome).toBeTruthy();

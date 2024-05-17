@@ -8,10 +8,7 @@ export function wrapIdInUrnOid(id: string): string {
   return `urn:oid:${id}`;
 }
 
-export function stripUrnPrefix(urn: string | number | undefined): string {
-  if (urn === undefined) {
-    return "";
-  }
+export function stripUrnPrefix(urn: string | number): string {
   if (typeof urn === "number") {
     return urn.toString();
   }

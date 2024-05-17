@@ -33,11 +33,15 @@ export async function getSignedUrls(
   try {
     const urls = await Promise.all(
       documents.map(async doc => {
-        const attachment = (doc?.content ?? [])
-          .map(content => content?.attachment)
-          .find(attachment => attachment?.title !== undefined);
+        // Check if content and attachment exist
+        if (!doc.content || !doc.content[0] || !doc.content[0].attachment) {
+          return;
+        }
 
-        const fileName = attachment?.title;
+        const attachment = doc.content[0].attachment;
+
+        // Check if fileName is defined
+        const fileName = attachment.title;
         if (!fileName) {
           return;
         }
