@@ -28,7 +28,7 @@ export async function sendSignedXCPDRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const response = await sendSignedXml({
+      const { response } = await sendSignedXml({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
