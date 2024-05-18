@@ -516,7 +516,7 @@ module.exports.external = [
       try {
         return specialCharProcessor.Escape(str.toString());
       } catch (err) {
-        throw `helper "escapeSpecialChars" : ${err}`;
+        return undefined
       }
     },
   },
