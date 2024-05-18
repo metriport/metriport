@@ -138,7 +138,7 @@ export async function get(
   patient: Patient,
   facilityId: string
 ): Promise<CommonwellPatient | undefined> {
-  const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+  const { debug } = Util.out(`CW get - M patientId ${patient.id}`);
 
   const cwEnabled = await validateCWEnabled({
     cxId: patient.cxId,

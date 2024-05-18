@@ -137,7 +137,7 @@ describe("MAPI E2E Tests", () => {
     // false && isCqEnabled && expect(cqOrg?.name).toEqual(newName);
   });
 
-  it("create a facility", async () => {
+  it("creates a facility", async () => {
     facility = await medicalApi.createFacility(createFacility);
     validateFacility(facility);
   });
