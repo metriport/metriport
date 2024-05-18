@@ -66,7 +66,7 @@ export const makeDocumentReference = ({
       {
         attachment: {
           contentType: "application/json",
-          url: `${baseURL ?? "http://localhost:8080"}/fhir/R4/Binary/${_binary.id}`,
+          url: `${baseURL ?? "http://somedomain.com"}/fhir/R4/Binary/${_binary.id}`,
         },
       },
     ],
@@ -88,7 +88,7 @@ export const makeDocumentReference = ({
         end: "2022-10-05T23:00:00.000Z",
       },
       sourcePatientInfo: {
-        reference: "#2.16.840.1.113883.3.9621.5.2004.2.118",
+        id: _patient.id,
         type: "Patient",
       },
     },
