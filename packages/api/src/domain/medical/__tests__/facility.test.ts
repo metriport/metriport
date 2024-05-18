@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { makeFacility } from "../../medical/__tests__/facility";
+import { makeFacility } from "./facility";
 import { FacilityType, isOboEnabled } from "../facility";
 
 describe("isOboEnabled", () => {

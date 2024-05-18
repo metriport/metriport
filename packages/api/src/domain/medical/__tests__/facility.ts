@@ -1,4 +1,5 @@
 import { faker } from "@faker-js/faker";
+import { FacilityModel } from "../../../models/medical/facility";
 import { makeBaseDomain } from "../../__tests__/base-domain";
 import { Facility, FacilityData, FacilityType, isOboFacility, makeFacilityOid } from "../facility";
 import { makeAddressStrict } from "./location-address";
@@ -54,4 +55,12 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
     type,
     data: makeFacilityData(params.data),
   };
+}
+
+export function makeFacilityModel(params?: Partial<FacilityModel>): FacilityModel {
+  const facility = makeFacility(params);
+  const model = new FacilityModel(facility);
+  model.type = facility.type;
+  model.data = facility.data;
+  return model;
 }
