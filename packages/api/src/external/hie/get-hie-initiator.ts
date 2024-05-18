@@ -1,8 +1,8 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { isCandidateImplementor } from "@metriport/core/domain/organization";
+import { isItVendor } from "@metriport/core/domain/organization";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { isOboEnabled, isNonOboFacility } from "../../domain/medical/facility";
+import { isOboEnabledForHie } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 
 export type HieInitiator = {
@@ -42,10 +42,21 @@ export async function getHieInitiator(
       patientId: patient.id,
     });
   }
-  if (
-    isOboEnabled(facility, hie) ||
-    (isCandidateImplementor(organization.type) && isNonOboFacility(facility.type))
-  ) {
+
+  if (isItVendor(organization.type)) {
+    console.log("1");
+    if (!isOboEnabledForHie(facility, hie)) {
+      console.log("2");
+      throw new MetriportError(
+        `Organization is a candidate implementor but facility is not OBO enabled for hie`,
+        undefined,
+        {
+          patientId: patient.id,
+          facilityId: facility.id,
+        }
+      );
+    }
+    console.log("3");
     return {
       oid: facility.oid,
       name: facility.data.name,
@@ -54,6 +65,7 @@ export async function getHieInitiator(
       orgName: organization.data.name,
     };
   }
+  console.log("4");
   return {
     oid: organization.oid,
     name: organization.data.name,

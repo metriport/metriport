@@ -52,9 +52,8 @@ export function isNonOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 
-export function isOboEnabled(facility: Facility, hie: MedicalDataSource): boolean {
-  const { type, cwOboActive, cqOboActive, cwOboOid, cqOboOid } = facility;
-  if (!isOboFacility(type)) return false;
+export function isOboEnabledForHie(facility: Facility, hie: MedicalDataSource): boolean {
+  const { cwOboActive, cqOboActive, cwOboOid, cqOboOid } = facility;
   if (hie === MedicalDataSource.COMMONWELL) return !!cwOboActive && !!cwOboOid;
   if (hie === MedicalDataSource.CAREQUALITY) return !!cqOboActive && !!cqOboOid;
   throw new MetriportError("Programming error, invalid HIE type", undefined, { hie });
