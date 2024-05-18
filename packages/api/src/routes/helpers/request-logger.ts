@@ -1,9 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 import { getLocalStorage } from "@metriport/core/util/local-storage";
 import { analyzeRoute } from "./request-analytics";
 
 const asyncLocalStorage = getLocalStorage("reqId");
+const nanoid = customAlphabet("0123456789abcdefghijklmnopqrstuvwxyz");
 
 export const requestLogger = (req: Request, res: Response, next: NextFunction): void => {
   const reqId = nanoid();
