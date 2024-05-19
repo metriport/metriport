@@ -24,7 +24,7 @@ import { getCQData } from "../patient";
 import {
   cqToFHIR,
   DocumentReferenceWithMetriportId,
-  toDocumentReference,
+  filterDocRefsWithMetriportId,
   getContentTypeOrUnknown,
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
@@ -55,7 +55,22 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    const docRefs = results.map(toDocumentReference).flat();
+    await Promise.all(
+      results.map(async result => {
+        if (result.documentReference) {
+          result.documentReference = await Promise.all(
+            result.documentReference.map(async docRef => {
+              const updatedDocRef = await addMetriportDocRefID({ cxId, patientId, requestId })(
+                docRef
+              );
+              return updatedDocRef;
+            })
+          );
+        }
+      })
+    );
+
+    const docRefs = results.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
@@ -72,12 +87,9 @@ export async function processOutboundDocumentQueryResps({
       },
     });
 
-    const docRefsWithMetriportId = await Promise.all(
-      docRefs.map(addMetriportDocRefID({ cxId, patientId, requestId }))
-    );
+    const docRefsWithMetriportId = filterDocRefsWithMetriportId(docRefs);
 
     const docsToDownload = await getNonExistentDocRefs(docRefsWithMetriportId, patientId, cxId);
-
     const convertibleDocCount = docsToDownload.filter(doc =>
       isConvertible(doc.contentType || undefined)
     ).length;
@@ -164,18 +176,18 @@ export async function processOutboundDocumentQueryResps({
       numberOfParallelExecutions: 20,
     });
 
-    const docsWithDqUrlV1Gateway: DocumentReferenceWithMetriportId[] = [];
-    const docsWithDqUrlV2Gateway: DocumentReferenceWithMetriportId[] = [];
+    const outboundDocumentQueryRespsV1: OutboundDocumentQueryResp[] = [];
+    const outboundDocumentQueryRespsV2: OutboundDocumentQueryResp[] = [];
 
     const v2GatewayOIDs = Config.isDev()
       ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
       : await getOidsWithIHEGatewayV2Enabled();
 
-    for (const doc of docsToDownload) {
-      if (v2GatewayOIDs.includes(doc.homeCommunityId)) {
-        docsWithDqUrlV2Gateway.push(doc);
+    for (const result of results) {
+      if (v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
+        outboundDocumentQueryRespsV2.push(result);
       } else {
-        docsWithDqUrlV1Gateway.push(doc);
+        outboundDocumentQueryRespsV1.push(result);
       }
     }
 
@@ -185,16 +197,14 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       patient,
       initiator,
-      documentReferences: docsWithDqUrlV1Gateway,
-      outboundDocumentQueryResps: respWithDRUrl,
+      outboundDocumentQueryResps: outboundDocumentQueryRespsV1,
     });
 
     const documentRetrievalRequestsV2 = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      documentReferences: docsWithDqUrlV2Gateway,
-      outboundDocumentQueryResps: respWithDRUrl,
+      outboundDocumentQueryResps: outboundDocumentQueryRespsV2,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.
