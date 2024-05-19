@@ -43,7 +43,7 @@ describe("outboundDocumentRetrievalRequest", () => {
     homeCommunityId = faker.string.uuid();
   });
 
-  it("returns zero req when no doc refs matching GW homeCommunityId", async () => {
+  it("returns 1 req with 2 doc refs when no doc refs match GW homeCommunityId", async () => {
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
@@ -60,7 +60,8 @@ describe("outboundDocumentRetrievalRequest", () => {
       outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
-    expect(res.length).toEqual(0);
+    expect(res.length).toEqual(1);
+    expect(res[0].documentReference.length).toEqual(2);
   });
 
   it("returns one req when doc refs within limit", async () => {
@@ -168,5 +169,80 @@ describe("outboundDocumentRetrievalRequest", () => {
     expect(res[0].samlAttributes.organization).toEqual(organization.data.name);
     expect(res[0].samlAttributes.organizationId).toEqual(organization.oid);
     expect(res[0].samlAttributes.homeCommunityId).toEqual(organization.oid);
+  });
+});
+
+describe("correct responses with multiple outboundDocumentQueryResps, where the doc refs have the same homeCommunityId as their respective gateways", () => {
+  it("returns correct data for each query response", async () => {
+    const homeCommunityId1 = faker.string.uuid();
+    const homeCommunityId2 = faker.string.uuid();
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId1 }),
+        ],
+      }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+        ],
+      }),
+    ];
+
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResps,
+    });
+
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+
+    expect(res[0]?.documentReference?.length).toEqual(2);
+    expect(res[0]?.documentReference).toEqual(outboundDocumentQueryResps[0]?.documentReference);
+
+    expect(res[1]?.documentReference?.length).toEqual(2);
+    expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
+  });
+  it("correct responses with multiple outboundDocumentQueryResps, where the doc refs for one gateway have different home community ids", async () => {
+    const homeCommunityId1 = faker.string.uuid();
+    const homeCommunityId2 = faker.string.uuid();
+    const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriporId(),
+          makeDocumentReferenceWithMetriporId(),
+        ],
+      }),
+      makeOutboundDocumentQueryResp({
+        gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
+        documentReference: [
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+        ],
+      }),
+    ];
+
+    const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
+      patient,
+      requestId,
+      initiator,
+      outboundDocumentQueryResps,
+    });
+
+    expect(res).toBeTruthy();
+    expect(res.length).toEqual(2);
+
+    expect(res[0]?.documentReference?.length).toEqual(2);
+    expect(res[0]?.documentReference).toEqual(outboundDocumentQueryResps[0]?.documentReference);
+
+    expect(res[1]?.documentReference?.length).toEqual(2);
+    expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
   });
 });
