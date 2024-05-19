@@ -1,6 +1,26 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 var path = require("path");
@@ -14,8 +34,6 @@ module.exports.SAMPLE_DATA_LOCATION = path.join(__dirname, sampleDataFolder);
 module.exports.STATIC_LOCATION = path.join(__dirname, "../../static");
 module.exports.CODE_MIRROR_LOCATION = path.join(__dirname, "../../../node_modules/codemirror/");
 module.exports.MOVE_TO_GLOBAL_KEY_NAME = "_moveResourceToGlobalScope";
-module.exports.HL7V2_TEMPLATE_LOCATION = path.join(__dirname, serviceTemplateFolder, "hl7v2");
-module.exports.HL7V2_DATA_LOCATION = path.join(__dirname, sampleDataFolder, "hl7v2");
 module.exports.CDA_TEMPLATE_LOCATION = path.join(__dirname, serviceTemplateFolder, "cda");
 module.exports.CDA_DATA_LOCATION = path.join(__dirname, sampleDataFolder, "cda");
 module.exports.CLS_NAMESPACE = "conversionRequest";
