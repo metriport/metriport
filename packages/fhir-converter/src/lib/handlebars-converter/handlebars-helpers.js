@@ -1,6 +1,26 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 var uuidv3 = require("uuid/v3");
@@ -11,19 +31,17 @@ var crypto = require("crypto");
 var jsonProcessor = require("../outputProcessor/jsonProcessor");
 var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
-const he = require('he');
+const he = require("he");
 const convert = require("convert-units");
-const path = require('path');
-
+const path = require("path");
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
 const DECIMAL_REGEX_STR = decimal_regex.toString().slice(1, -1);
 
-
 // Some helpers will be referenced in other helpers and declared outside the export below.
 
-var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) {
+var evaluateTemplate = function (templatePath, inObj, returnEmptyObject = false) {
   try {
     var getNamespace = require("cls-hooked").getNamespace;
     var session = getNamespace(constants.CLS_NAMESPACE);
@@ -46,7 +64,11 @@ var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) 
     var processedResult = JSON.parse(jsonProcessor.Process(result));
 
     // Check if the processedResult is undefined or an empty object
-    if (!returnEmptyObject && (processedResult === undefined || (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))) {
+    if (
+      !returnEmptyObject &&
+      (processedResult === undefined ||
+        (Object.keys(processedResult).length === 0 && processedResult.constructor === Object))
+    ) {
       return undefined;
     }
 
@@ -54,7 +76,7 @@ var evaluateTemplate = function(templatePath, inObj, returnEmptyObject = false) 
   } catch (err) {
     throw `helper "evaluateTemplate" : ${err}`;
   }
-}
+};
 
 var getSegmentListsInternal = function (msg, ...segmentIds) {
   var ret = {};
@@ -190,8 +212,7 @@ var getDateTime = function (dateTimeString) {
       ":" +
       dateTimeComposition.milliseconds;
     var timezone = timeZoneChar + dateSections[1];
-    if (!validUTCDateTime(dateTimeComposition)) 
-    {
+    if (!validUTCDateTime(dateTimeComposition)) {
       console.log(`Invalid datetime: ${ds}`);
     }
     return new Date(date + " " + time + " " + timezone).toISOString();
@@ -216,17 +237,17 @@ var getDateTime = function (dateTimeString) {
 };
 
 // Queue approach to check if all values in the json object are nullFlavor
-const allValuesInObjAreNullFlavor = (obj) => {
+const allValuesInObjAreNullFlavor = obj => {
   let queue = [obj];
   while (queue.length > 0) {
     let current = queue.shift();
-    if (current && typeof current === 'object') {
+    if (current && typeof current === "object") {
       if (Object.keys(current).length == 1 && current.nullFlavor) {
         continue;
       }
       for (let key in current) {
         if (current.hasOwnProperty(key)) {
-          if (key === 'classCode'){
+          if (key === "classCode") {
             continue;
           }
           queue.push(current[key]);
@@ -429,7 +450,8 @@ module.exports.external = [
   },
   {
     name: "contains",
-    description: "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
+    description:
+      "Returns true if a string includes any of the provided values: contains parentStr [childStr1, childStr2, ...]",
     func: function (parentStr, ...childStrs) {
       if (!parentStr) {
         return false;
@@ -516,7 +538,7 @@ module.exports.external = [
       try {
         return specialCharProcessor.Escape(str.toString());
       } catch (err) {
-        return undefined
+        return undefined;
       }
     },
   },
@@ -551,7 +573,8 @@ module.exports.external = [
   },
   {
     name: "optionalEvaluate",
-    description: "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
+    description:
+      "Returns template result object: evaluate templatePath inObj. Will return an empty object if the result of the evaluation is undefined",
     func: function (templatePath, inObj) {
       return evaluateTemplate(templatePath, inObj, true);
     },
@@ -574,31 +597,31 @@ module.exports.external = [
   {
     name: "multipleToArray",
     func: function (...vals) {
-        const uniqueSet = new Set();
-        const combinedArr = [];
+      const uniqueSet = new Set();
+      const combinedArr = [];
 
-        // Flatten the input arrays
-        const flatVals = vals.flat();
+      // Flatten the input arrays
+      const flatVals = vals.flat();
 
-        for (let i = 0; i < flatVals.length; i++) {
-            const val = flatVals[i];
-            let hash;
+      for (let i = 0; i < flatVals.length; i++) {
+        const val = flatVals[i];
+        let hash;
 
-            if (typeof val === 'object' && val !== null) {
-                // Attempt to create a unique hash for objects
-                hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
-            } else {
-                // Use primitive value directly
-                hash = val;
-            }
-
-            if (!uniqueSet.has(hash)) {
-                uniqueSet.add(hash);
-                combinedArr.push(val);
-            }
+        if (typeof val === "object" && val !== null) {
+          // Attempt to create a unique hash for objects
+          hash = uuidv3("".concat(JSON.stringify(val)), uuidv3.URL);
+        } else {
+          // Use primitive value directly
+          hash = val;
         }
 
-        return combinedArr;
+        if (!uniqueSet.has(hash)) {
+          uniqueSet.add(hash);
+          combinedArr.push(val);
+        }
+      }
+
+      return combinedArr;
     },
   },
   {
@@ -658,15 +681,20 @@ module.exports.external = [
     func: function getFirstCdaSectionsByTemplateId(msg, ...templateIds) {
       try {
         var ret = {};
-  
-        for (var t = 0; t < templateIds.length - 1; t++) { // -1 because templateIds includes the full message at the end
-          let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component) 
-            ? msg.ClinicalDocument.component.structuredBody.component 
+
+        for (var t = 0; t < templateIds.length - 1; t++) {
+          // -1 because templateIds includes the full message at the end
+          let components = Array.isArray(msg.ClinicalDocument.component.structuredBody.component)
+            ? msg.ClinicalDocument.component.structuredBody.component
             : [msg.ClinicalDocument.component.structuredBody.component];
           for (var i = 0; i < components.length; i++) {
             let sectionObj = components[i].section;
-            let templateIdsArray = Array.isArray(sectionObj.templateId) ? sectionObj.templateId : [sectionObj.templateId];
-            const hasExactMatch = templateIdsArray.some(templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]);
+            let templateIdsArray = Array.isArray(sectionObj.templateId)
+              ? sectionObj.templateId
+              : [sectionObj.templateId];
+            const hasExactMatch = templateIdsArray.some(
+              templateIdObj => templateIdObj && templateIdObj.root === templateIds[t]
+            );
             if (hasExactMatch) {
               ret[normalizeSectionName(templateIds[t])] = sectionObj;
               break;
@@ -936,28 +964,28 @@ module.exports.external = [
   {
     name: "toString",
     description: "Converts to string: toString object",
-    func: function(str) {
+    func: function (str) {
       return str.toString();
     },
   },
   {
     name: "toJsonString",
     description: "Converts to JSON string: toJsonString object",
-    func: function(str) {
+    func: function (str) {
       return JSON.stringify(str);
     },
   },
   {
     name: "toJsonStringPrettier",
     description: "Converts to JSON string with prettier logging: toJsonStringPrettier object",
-    func: function(str) {
+    func: function (str) {
       return JSON.stringify(str, null, 2);
     },
   },
   {
     name: "toLower",
     description: "Converts string to lower case: toLower string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().toLowerCase();
       } catch (err) {
@@ -968,7 +996,7 @@ module.exports.external = [
   {
     name: "trimAndLower",
     description: "Trims and converts string to lower case: trimAndLower string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().trim().toLowerCase();
       } catch (err) {
@@ -979,7 +1007,7 @@ module.exports.external = [
   {
     name: "trimAndUpper",
     description: "Trims and converts string to upper case: trimAndUpper string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().trim().toUpperCase();
       } catch (err) {
@@ -990,7 +1018,7 @@ module.exports.external = [
   {
     name: "toUpper",
     description: "Converts string to upper case: toUpper string",
-    func: function(str) {
+    func: function (str) {
       try {
         return str.toString().toUpperCase();
       } catch (err) {
@@ -1001,7 +1029,7 @@ module.exports.external = [
   {
     name: "isNaN",
     description: "Checks if the object is not a number using JavaScript isNaN: isNaN object",
-    func: function(o) {
+    func: function (o) {
       return isNaN(o);
     },
   },
@@ -1121,13 +1149,14 @@ module.exports.external = [
   },
   {
     name: "parseReferenceData",
-    description: "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
+    description:
+      "Escapes new line and other special chars when parsing ._ fields and then strips JSON of quotes at start and end",
     func: function (referenceData) {
       if (referenceData == undefined) {
         return "";
       }
       return JSON.stringify(referenceData).slice(1, -1);
-    }
+    },
   },
   {
     name: "personalRelationshipRoleTypeCodeSystem",
@@ -1149,17 +1178,20 @@ module.exports.external = [
   },
   {
     name: "convertFeetAndInchesToCm",
-    description: "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
+    description:
+      "Checks if a string is in the format 'number ft number in' and if so, converts the feet and inches to centimeters",
     func: function (str) {
       if (!str) {
         return { isValid: false };
       }
-      const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`));
+      const match = str.match(
+        new RegExp(`^(${DECIMAL_REGEX_STR}) ft (${DECIMAL_REGEX_STR})( in)?$`)
+      );
       if (match) {
-        const inches = (12 * parseFloat(match[1])) + parseFloat(match[2]);
-        const cm = convert(inches).from('in').to('cm');
+        const inches = 12 * parseFloat(match[1]) + parseFloat(match[2]);
+        const cm = convert(inches).from("in").to("cm");
         const cmRounded = parseFloat(cm.toFixed(2));
-        return { isValid: true, value: cmRounded, unit: 'cm' };
+        return { isValid: true, value: cmRounded, unit: "cm" };
       } else {
         return { isValid: false };
       }
@@ -1167,7 +1199,8 @@ module.exports.external = [
   },
   {
     name: "extractNumberAndUnit",
-    description: "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
+    description:
+      "Checks if a string is in the format 'number unit' and if so, extracts the number and the unit",
     func: function (str) {
       if (!str) {
         return { isValid: false };
@@ -1182,7 +1215,8 @@ module.exports.external = [
   },
   {
     name: "extractComparator",
-    description: "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
+    description:
+      "Checks if a string starts with a comparator followed by a decimal number, and if so, extracts the comparator and the number",
     func: function (str) {
       if (!str) {
         return { isValid: false };
@@ -1197,25 +1231,28 @@ module.exports.external = [
   },
   {
     name: "extractRangeFromQuantity",
-    description: "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
+    description:
+      "Checks if a value field of a FHIR Quantity object is in the format 'alphanumeric-alphanumeric' and if so, extracts the two alphanumeric values",
     func: function (obj) {
       if (obj === undefined || obj === null || obj.value === undefined) {
         return { isValid: false };
       }
-      const match = obj.value.match(new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`));
+      const match = obj.value.match(
+        new RegExp(`^\\s*(${DECIMAL_REGEX_STR})\\s*-\\s*(${DECIMAL_REGEX_STR})\\s*$`)
+      );
       if (match) {
-        return { 
-          isValid: true, 
+        return {
+          isValid: true,
           range: {
             low: {
-              value: match[1], 
+              value: match[1],
               unit: obj.unit || "",
             },
             high: {
               value: match[2],
               unit: obj.unit || "",
-            }
-          }
+            },
+          },
         };
       } else {
         return { isValid: false };
@@ -1224,66 +1261,77 @@ module.exports.external = [
   },
   {
     name: "extractDecimal",
-    description: "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
+    description:
+      "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",
     func: function (str) {
       if (!str) {
         return "";
       }
       const match = str.match(new RegExp(`^(${DECIMAL_REGEX_STR})$`));
-      return match ? match[0] : '';
+      return match ? match[0] : "";
     },
   },
   {
     name: "extractAndMapTableData",
-    description: "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
+    description:
+      "Extracts and maps table data from a JSON structure to an array of objects based on table headers and rows.",
     func: function (json) {
-        if (!json || !json.table || !json.table.thead || !json.table.tbody) {
-            return undefined;
-        }
+      if (!json || !json.table || !json.table.thead || !json.table.tbody) {
+        return undefined;
+      }
 
-        const getHeaders = (thead) => {
-            if (!thead.tr || !thead.tr.th) return [];
-            return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
-        };
+      const getHeaders = thead => {
+        if (!thead.tr || !thead.tr.th) return [];
+        return Array.isArray(thead.tr.th) ? thead.tr.th.map(th => th._) : [thead.tr.th._];
+      };
 
-        // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
-        const getRowData = (tr, headers) => {
-            if (!tr || !tr.td || headers.length === 0) return undefined;
-            const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
-            const rowData = {};
-            tdArray.forEach((td, index) => {
-                if (!td) return;
-                if (td.paragraph) {
-                    const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
-                    const textValues = paragraphArray.map(paragraph => {
-                        if (!paragraph || !paragraph.content) return "";
-                        const contentArray = Array.isArray(paragraph.content) ? paragraph.content : [paragraph.content];
-                        return concatenateTextValues(contentArray);
-                    }).join('\n');
-                    rowData[headers[index]] = textValues;
-                } else {
-                    rowData[headers[index]] = td._ || "";
-                }
-            });
-            return rowData;
-        };
+      // we are handling two scenarios rn. One where the values are stored in the pagraph tag and the other where the values are stored in the td tag
+      const getRowData = (tr, headers) => {
+        if (!tr || !tr.td || headers.length === 0) return undefined;
+        const tdArray = Array.isArray(tr.td) ? tr.td : [tr.td];
+        const rowData = {};
+        tdArray.forEach((td, index) => {
+          if (!td) return;
+          if (td.paragraph) {
+            const paragraphArray = Array.isArray(td.paragraph) ? td.paragraph : [td.paragraph];
+            const textValues = paragraphArray
+              .map(paragraph => {
+                if (!paragraph || !paragraph.content) return "";
+                const contentArray = Array.isArray(paragraph.content)
+                  ? paragraph.content
+                  : [paragraph.content];
+                return concatenateTextValues(contentArray);
+              })
+              .join("\n");
+            rowData[headers[index]] = textValues;
+          } else {
+            rowData[headers[index]] = td._ || "";
+          }
+        });
+        return rowData;
+      };
 
-        const concatenateTextValues = (content) => {
-            if (!content) return '';
-            const contentArray = Array.isArray(content) ? content : [content];
-            return contentArray.filter(item => item && '_ in item').map(item => item._).join('\n');
-        };
+      const concatenateTextValues = content => {
+        if (!content) return "";
+        const contentArray = Array.isArray(content) ? content : [content];
+        return contentArray
+          .filter(item => item && "_ in item")
+          .map(item => item._)
+          .join("\n");
+      };
 
-        const headers = getHeaders(json.table.thead);
-        if (headers.length === 0) return undefined;
+      const headers = getHeaders(json.table.thead);
+      if (headers.length === 0) return undefined;
 
-        const trArray = Array.isArray(json.table.tbody.tr) ? json.table.tbody.tr : [json.table.tbody.tr];
-        if (trArray.length === 0) return undefined;
+      const trArray = Array.isArray(json.table.tbody.tr)
+        ? json.table.tbody.tr
+        : [json.table.tbody.tr];
+      if (trArray.length === 0) return undefined;
 
-        const mappedData = trArray.map(tr => getRowData(tr, headers));
-        if (mappedData === "") return undefined;
+      const mappedData = trArray.map(tr => getRowData(tr, headers));
+      if (mappedData === "") return undefined;
 
-        return mappedData;
+      return mappedData;
     },
   },
   {
@@ -1291,9 +1339,13 @@ module.exports.external = [
     description: "Converts mapped data to plain text format.",
     func: function (mappedData) {
       if (!mappedData || mappedData.length === 0) return "";
-      return mappedData.map(entry => {
-        return Object.entries(entry).map(([key, value]) => `${key}: ${value}`).join('\n');
-      }).join('\n\n');
+      return mappedData
+        .map(entry => {
+          return Object.entries(entry)
+            .map(([key, value]) => `${key}: ${value}`)
+            .join("\n");
+        })
+        .join("\n\n");
     },
   },
   {
@@ -1307,21 +1359,23 @@ module.exports.external = [
           return value;
         }
       }
-      return undefined; 
+      return undefined;
     },
   },
   {
     name: "concatDefined",
     description: "Concatenates defined objects, checking for null, undefined, or UNK nullFlavor.",
     func: function (...args) {
-
       args.pop();
-      
-      const isDefined = (obj) => {
+
+      const isDefined = obj => {
         return obj !== null && obj !== undefined && !allValuesInObjAreNullFlavor(obj);
       };
-      return args.filter(arg => isDefined(arg)).map(arg => JSON.stringify(arg)).join('');
-    }
+      return args
+        .filter(arg => isDefined(arg))
+        .map(arg => JSON.stringify(arg))
+        .join("");
+    },
   },
   {
     name: "nullFlavorAwareOr",
@@ -1329,7 +1383,10 @@ module.exports.external = [
     func: function (...args) {
       const values = args.slice(0, -1);
       for (let arg of values) {
-        if (arg && typeof arg !== 'object' || (typeof arg === 'object' && !allValuesInObjAreNullFlavor(arg))) {
+        if (
+          (arg && typeof arg !== "object") ||
+          (typeof arg === "object" && !allValuesInObjAreNullFlavor(arg))
+        ) {
           return true;
         }
       }

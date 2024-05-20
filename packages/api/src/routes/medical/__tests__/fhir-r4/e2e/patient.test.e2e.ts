@@ -4,7 +4,7 @@ dotenv.config({ path: ".env.test" });
 import { faker } from "@faker-js/faker";
 import { makePatient } from "@metriport/core/external/fhir/__tests__/patient";
 import { AxiosResponse } from "axios";
-import { api } from "../../../../__tests__/shared";
+import { api } from "../../../../../__tests__/e2e/shared";
 
 jest.setTimeout(15000);
 
