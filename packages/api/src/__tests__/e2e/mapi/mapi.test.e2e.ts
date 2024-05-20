@@ -29,6 +29,8 @@ const maxTotalTestDuration = dayjs.duration({ minutes: 12 });
 
 const waitTimeBetweenPdAndDq = dayjs.duration({ seconds: 1 }); // not much needed, we schedule DQ if PD still in progress
 
+const waitTimeAfterPutConsolidated = dayjs.duration({ seconds: 1 });
+
 const dqCheckStatusMaxRetries = 30;
 const dqCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 
@@ -183,6 +185,10 @@ describe("MAPI E2E Tests", () => {
     );
     expect(consolidated).toBeTruthy();
     // TODO 1634 compare consolidated vs. consolidatedPayload
+  });
+
+  it("awaits data to be replicated to FHIR server", async () => {
+    await sleep(waitTimeAfterPutConsolidated.asMilliseconds());
   });
 
   it("counts consolidated data", async () => {
