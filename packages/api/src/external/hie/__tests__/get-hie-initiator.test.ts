@@ -81,7 +81,6 @@ describe("getHieInitiator", () => {
 
   it("returns the facility as initiator when is CI and not OBO", async () => {
     const facility = makeOboFacility({ type: FacilityType.initiatorAndResponder });
-    console.log(facility);
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
