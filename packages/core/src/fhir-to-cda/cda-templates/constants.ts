@@ -33,6 +33,7 @@ export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
 export const loincSystemName = "LOINC";
 export const placeholderOrgOid = "placeholder-ORG-OID";
+export const NOT_SPECIFIED = "Not Specified";
 
 export const clinicalDocumentConstants = {
   realmCode: "US",

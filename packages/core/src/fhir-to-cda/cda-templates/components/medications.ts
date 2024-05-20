@@ -11,6 +11,7 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
+  NOT_SPECIFIED,
   _classCodeAttribute,
   _codeAttribute,
   _idAttribute,
@@ -119,13 +120,13 @@ function createTableRowFromObservation(
           [_inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
         },
         {
-          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? "Not Specified",
+          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? NOT_SPECIFIED,
         },
         {
-          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? "Not Specified",
+          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
         },
         {
-          [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? "Not Specified",
+          [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? NOT_SPECIFIED,
         },
       ],
     },

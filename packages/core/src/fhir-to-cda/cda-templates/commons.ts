@@ -22,6 +22,7 @@ import {
   ObservationTableRow,
 } from "../cda-types/shared-types";
 import {
+  NOT_SPECIFIED,
   _assigningAuthorityNameAttribute,
   _codeAttribute,
   _codeSystemAttribute,
@@ -373,9 +374,9 @@ export function createTableHeader(tableHeaders: string[]) {
 }
 
 export function getTextFromCode(code: CodeableConcept | undefined): string {
-  if (!code) return "Unknown";
+  if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
-  return primaryCoding?.display ?? code.text ?? "Unknown";
+  return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
 }
 
 export function initiateSectionTable(

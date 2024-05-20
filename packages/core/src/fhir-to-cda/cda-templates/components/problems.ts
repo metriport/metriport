@@ -12,6 +12,7 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
+  NOT_SPECIFIED,
   _classCodeAttribute,
   _codeAttribute,
   _idAttribute,
@@ -103,7 +104,7 @@ function createTableRowFromCondition(
             [_inlineTextAttribute]: "", // TODO: Find out what Status stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? "Not Specified",
+            [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
           {
             [_inlineTextAttribute]: "", // TODO: Figure out where to put comments in the Condition resource
