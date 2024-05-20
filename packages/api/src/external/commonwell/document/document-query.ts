@@ -60,7 +60,9 @@ import {
   DocumentWithLocation,
   DocumentWithMetriportId,
   getFileName,
+  getContentTypeOrUnknown,
 } from "./shared";
+import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 
 const DOC_DOWNLOAD_CHUNK_SIZE = 10;
 
@@ -115,7 +117,13 @@ export async function queryAndProcessDocuments({
     return;
   }
 
-  const interrupt = buildInterrupt({ patientId, cxId, source: MedicalDataSource.COMMONWELL, log });
+  const interrupt = buildInterrupt({
+    patientId,
+    cxId,
+    requestId,
+    source: MedicalDataSource.COMMONWELL,
+    log,
+  });
   if (!(await isCWEnabledForCx(cxId))) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
@@ -149,6 +157,8 @@ export async function queryAndProcessDocuments({
       return;
     }
 
+    const startedAt = new Date();
+
     const [patient, isECEnabledForThisCx, isCQDirectEnabledForThisCx] = await Promise.all([
       getPatientWithCWData(patientParam),
       isEnhancedCoverageEnabledForCx(cxId),
@@ -181,8 +191,9 @@ export async function queryAndProcessDocuments({
     });
     log(`Got ${cwDocuments.length} documents from CW`);
 
-    const docQueryStartedAt = patient.data.documentQueryProgress?.startedAt;
-    const duration = elapsedTimeFromNow(docQueryStartedAt);
+    const duration = elapsedTimeFromNow(startedAt);
+    const contentTypes = cwDocuments.map(getContentTypeOrUnknown);
+    const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
     analytics({
       distinctId: cxId,
@@ -193,6 +204,7 @@ export async function queryAndProcessDocuments({
         hie: MedicalDataSource.COMMONWELL,
         duration,
         documentCount: cwDocuments.length,
+        ...contentTypeCounts,
       },
     });
 

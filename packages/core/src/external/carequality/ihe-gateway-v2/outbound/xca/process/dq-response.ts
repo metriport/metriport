@@ -6,7 +6,7 @@ import {
   DocumentReference,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
+import { handleRegistryErrorResponse, handleHttpErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
@@ -196,7 +196,7 @@ export function processDQResponse({
   dqResponse: DQSamlClientResponse;
 }): OutboundDocumentQueryResp {
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway: gateway,

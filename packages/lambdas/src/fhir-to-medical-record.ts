@@ -81,8 +81,9 @@ export const handler = Sentry.AWSLambda.wrapHandler(
       return { url, hasContents };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      log(`Error processing bundle: ${error.message}`);
-      capture.error(error, {
+      const msg = `Error converting FHIR to MR Summary`;
+      log(`${msg} - error: ${error.message}`);
+      capture.error(msg, {
         extra: {
           error,
           patientId,

@@ -5,7 +5,7 @@ import {
   OutboundPatientDiscoveryRespSuccessfulSchema,
 } from "@metriport/ihe-gateway-sdk";
 
-export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
+export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
   id: uuidv4(),
   cxId: uuidv4(),
   patientId: uuidv4(),
@@ -50,12 +50,12 @@ export const outboundXCPDRequest: OutboundPatientDiscoveryReq = {
   ],
 };
 
-export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
-  id: outboundXCPDRequest.id,
-  patientId: outboundXCPDRequest.patientId,
-  timestamp: outboundXCPDRequest.timestamp,
+export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
+  id: outboundXcpdRequest.id,
+  patientId: outboundXcpdRequest.patientId,
+  timestamp: outboundXcpdRequest.timestamp,
   responseTimestamp: dayjs().toISOString(),
-  gatewayHomeCommunityId: outboundXCPDRequest.samlAttributes.homeCommunityId,
+  gatewayHomeCommunityId: outboundXcpdRequest.samlAttributes.homeCommunityId,
   gateway: {
     id: "018ea97e-7b1c-78e9-8aa1-47c7caf85afe",
     url: "https://mock-metriport/soap/iti55",
@@ -87,7 +87,7 @@ export const expectedXCPDResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
   },
 };
 
-export const outboundDQRequest = {
+export const outboundDqRequest = {
   id: uuidv4(),
   cxId: uuidv4(),
   timestamp: "2023-12-01T08:44:00Z",
@@ -133,7 +133,7 @@ export const outboundDQRequest = {
   },
 };
 
-export const expectedDQDocumentReference = [
+export const expectedDqDocumentReference = [
   {
     homeCommunityId: "2.16.840.1.113883.3.9621",
     repositoryUniqueId: "2.16.840.1.113883.3.9621",
@@ -158,7 +158,7 @@ export const expectedDQDocumentReference = [
   },
 ];
 
-export const outboundDRRequest = {
+export const outboundDrRequest = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
@@ -204,7 +204,7 @@ export const outboundDRRequest = {
   ],
 };
 
-export const outboundDRRequestMTOM = {
+export const outboundDrRequestMtom = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {
@@ -235,7 +235,7 @@ export const outboundDRRequestMTOM = {
   ],
 };
 
-export const outboundDRRequestMultiMTOM = {
+export const outboundDrRequestMultiMtom = {
   id: "c3734e97-69ba-48e4-a102-03a5e1219fa4",
   cxId: "aeb4767b-ea11-4bbc-ba61-2274b5c9e4e9",
   gateway: {

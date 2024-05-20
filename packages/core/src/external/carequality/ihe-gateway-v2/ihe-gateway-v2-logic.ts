@@ -14,7 +14,7 @@ import { sendSignedDQRequests } from "./outbound/xca/send/dq-requests";
 import { sendSignedDRRequests } from "./outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "./outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "./outbound/xca/process/dq-response";
-import { processDRResponse } from "./outbound/xca/process/dr-response";
+import { processDrResponse } from "./outbound/xca/process/dr-response";
 import { capture } from "../../../util/notifications";
 
 export async function createSignSendProcessXCPDRequest({
@@ -125,7 +125,7 @@ export async function createSignSendProcessDRRequests({
   });
   const results = await Promise.all(
     responses.map(async response => {
-      return await processDRResponse({
+      return await processDrResponse({
         drResponse: response,
       });
     })

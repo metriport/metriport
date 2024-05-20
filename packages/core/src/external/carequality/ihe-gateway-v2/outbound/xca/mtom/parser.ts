@@ -76,7 +76,7 @@ function containsMultipartCidReference(documentResponse: any): boolean {
   return !!documentResponse.Document?.Include?._href;
 }
 
-export function parseMTOMResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
+export function parseMtomResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
   const contentTypeParams = parseMtomContentType(contentType);
 
   const boundary = `--${contentTypeParams.boundary}`;

@@ -71,7 +71,7 @@ export async function sendSignedXml({
   return { response: response.data, contentType: response.headers["content-type"] };
 }
 
-export async function sendSignedXmlMTOM({
+export async function sendSignedXmlMtom({
   signedXml,
   url,
   samlCertsAndKeys,

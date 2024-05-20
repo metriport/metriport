@@ -1,7 +1,6 @@
-// This is a helper script that lets you test constructing your own soap+saml requests. It creates the SOAP Envelope and then sends it to the gateway specified in the request body.
-// npm run saml-server and then reference the Metriport- IHE GW / XML + SAML Constructor - Postman collection
 import * as dotenv from "dotenv";
 dotenv.config();
+// keep that ^ on top
 import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
@@ -15,7 +14,24 @@ import { sendSignedDQRequests } from "@metriport/core/external/carequality/ihe-g
 import { sendSignedDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/send/dr-requests";
 import { processXCPDResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/process/xcpd-response";
 import { processDQResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dq-response";
-import { processDRResponse } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import {
+  processDrResponse,
+  setS3UtilsInstance,
+} from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { Config } from "@metriport/core/util/config";
+import { MockS3Utils } from "./mock-s3";
+
+/**
+ * Helper script to test constructing SOAP+SAML requests.
+ * It creates the SOAP Envelope and sends it to the gateway
+ * specified in the request body.
+ *
+ * Usage:
+ * ts-node ./src/saml/saml-server
+ *
+ * Reference:
+ * Metriport-IHE GW / XML + SAML Constructor - Postman collection
+ */
 
 const app = express();
 const port = 8043;
@@ -109,9 +125,11 @@ app.post("/xcadr", async (req: Request, res: Response) => {
       cxId: uuidv4(),
     });
 
+    const s3utils = new MockS3Utils(Config.getAWSRegion());
+    setS3UtilsInstance(s3utils);
     const results = await Promise.all(
       response.map(async response => {
-        return processDRResponse({
+        return processDrResponse({
           drResponse: response,
         });
       })

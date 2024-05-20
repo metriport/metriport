@@ -1,3 +1,29 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
 {{#if (contains (toString (toJsonString msg)) '2.16.840.1.113883.10.20.22.2.18')}}
     {{#with (getFirstCdaSectionsByTemplateId msg '2.16.840.1.113883.10.20.22.2.18')}}
         {{#each (toArray 2_16_840_1_113883_10_20_22_2_18.entry)}}
@@ -12,7 +38,7 @@
                     2.16.840.1.113883.10.20.22.4.90 - Policy Holder Participant
 
                     Example: https://github.com/HL7/C-CDA-Examples/blob/fb1c33b3a880fc47407f25c5dafa0066996529f4/Documents/CCD/CCD%201/CCD.XML
-                    --}}
+                 --}}
                     {{#if (contains (toJsonString performerEntry.templateId) "2.16.840.1.113883.10.20.22.4.87")}}
                         {{#if performerEntry.assignedEntity.representedOrganization.name._}}
                             {{#with (evaluate 'Utils/GenerateOrganizationId.hbs' obj=performerEntry.assignedEntity.representedOrganization) as |orgId|}}

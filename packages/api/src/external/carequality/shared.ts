@@ -113,3 +113,21 @@ export async function getCqInitiator(
 export function getSystemUserName(orgName: string): string {
   return `${orgName} System User`;
 }
+
+export function buildCqOrgName({
+  vendorName,
+  orgName,
+  isProvider,
+  oboOid,
+}: {
+  vendorName: string;
+  orgName: string;
+  isProvider: boolean;
+  oboOid?: string;
+}): string {
+  if (oboOid && !isProvider) {
+    return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
+  }
+
+  return `${vendorName} - ${orgName}`;
+}
