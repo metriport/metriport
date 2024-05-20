@@ -15,8 +15,12 @@ import {
   createOutboundDocumentRetrievalReqs,
   maxDocRefsPerDocRetrievalRequest,
 } from "../create-outbound-document-retrieval-req";
-import { makeDocumentReferenceWithMetriporId } from "./make-document-reference-with-metriport-id";
+import {
+  makeDocumentReferenceWithMetriportId,
+  makeDocumentReference,
+} from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
+import { filterDocRefsWithMetriportId } from "../shared";
 
 let requestId: string;
 let facilityId: string;
@@ -48,8 +52,8 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId(),
-          makeDocumentReferenceWithMetriporId(),
+          makeDocumentReferenceWithMetriportId(),
+          makeDocumentReferenceWithMetriportId(),
         ],
       }),
     ];
@@ -69,8 +73,8 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
         ],
       }),
     ];
@@ -91,7 +95,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [...Array(maxDocRefsPerDocRetrievalRequest + 1).keys()].map(() =>
-          makeDocumentReferenceWithMetriporId({ homeCommunityId })
+          makeDocumentReferenceWithMetriportId({ homeCommunityId })
         ),
       }),
     ];
@@ -110,7 +114,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [...Array(maxDocRefsPerDocRetrievalRequest * 2 + 1).keys()].map(() =>
-          makeDocumentReferenceWithMetriporId({ homeCommunityId })
+          makeDocumentReferenceWithMetriportId({ homeCommunityId })
         ),
       }),
     ];
@@ -129,8 +133,8 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
         ],
       }),
     ];
@@ -153,8 +157,8 @@ describe("outboundDocumentRetrievalRequest", () => {
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId }),
         ],
       }),
     ];
@@ -180,15 +184,15 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId1 }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
         ],
       }),
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
         ],
       }),
     ];
@@ -216,15 +220,15 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId(),
-          makeDocumentReferenceWithMetriporId(),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
         ],
       }),
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: homeCommunityId2 }),
         documentReference: [
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
-          makeDocumentReferenceWithMetriporId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId2 }),
         ],
       }),
     ];
@@ -244,5 +248,22 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
 
     expect(res[1]?.documentReference?.length).toEqual(2);
     expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
+  });
+});
+
+describe("filterDocRefsWithMetriportId", () => {
+  it("should filter document references with Metriport IDs", () => {
+    const docRefs = [
+      makeDocumentReferenceWithMetriportId({ metriportId: faker.string.uuid() }),
+      makeDocumentReference(),
+      makeDocumentReferenceWithMetriportId({ metriportId: faker.string.uuid() }),
+    ];
+
+    const filteredDocRefs = filterDocRefsWithMetriportId(docRefs);
+
+    expect(filteredDocRefs.length).toBe(2);
+    filteredDocRefs.forEach(docRef => {
+      expect(docRef.metriportId).toBeDefined();
+    });
   });
 });

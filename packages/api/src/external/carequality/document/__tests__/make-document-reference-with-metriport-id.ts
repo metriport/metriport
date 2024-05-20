@@ -1,7 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { DocumentReferenceWithMetriportId } from "../shared";
 
-export function makeDocumentReferenceWithMetriporId({
+export function makeDocumentReference({
   homeCommunityId,
   docUniqueId,
   repositoryUniqueId,
@@ -9,7 +9,6 @@ export function makeDocumentReferenceWithMetriporId({
   fileLocation,
   size,
   urn,
-  metriportId,
   newRepositoryUniqueId,
   newDocumentUniqueId,
   contentType,
@@ -19,42 +18,34 @@ export function makeDocumentReferenceWithMetriporId({
   isNew,
   creation,
   title,
-}: Partial<DocumentReferenceWithMetriportId> = {}): DocumentReferenceWithMetriportId {
-  const _homeCommunityId = homeCommunityId ?? faker.string.uuid();
-  const _docUniqueId = docUniqueId ?? faker.string.uuid();
-  const _repositoryUniqueId = repositoryUniqueId ?? faker.string.uuid();
-  const _fileName = fileName ?? faker.string.alpha();
-  const _fileLocation = fileLocation ?? faker.string.alpha();
-  const _size = size ?? faker.number.int();
-  const _urn = urn ?? faker.string.alpha();
-  const _metriportId = metriportId ?? faker.string.uuid();
-  const _newRepositoryUniqueId = newRepositoryUniqueId ?? faker.string.uuid();
-  const _newDocumentUniqueId = newDocumentUniqueId ?? faker.string.uuid();
-  const _contentType = contentType ?? "application/xml";
-  const _language = language;
-  const _url = url ?? faker.internet.url();
-  const _uri = uri ?? faker.internet.url();
-  const _isNew = isNew ?? faker.datatype.boolean();
-  const _creation = creation ?? faker.date.past().toISOString();
-  const _title = title ?? faker.lorem.text();
-
+}: Partial<DocumentReferenceWithMetriportId> = {}) {
   return {
-    homeCommunityId: _homeCommunityId,
-    docUniqueId: _docUniqueId,
-    repositoryUniqueId: _repositoryUniqueId,
-    fileName: _fileName,
-    fileLocation: _fileLocation,
-    size: _size,
-    urn: _urn,
-    metriportId: _metriportId,
-    newRepositoryUniqueId: _newRepositoryUniqueId,
-    newDocumentUniqueId: _newDocumentUniqueId,
-    contentType: _contentType,
-    language: _language,
-    url: _url,
-    uri: _uri,
-    isNew: _isNew,
-    creation: _creation,
-    title: _title,
+    homeCommunityId: homeCommunityId ?? faker.string.uuid(),
+    docUniqueId: docUniqueId ?? faker.string.uuid(),
+    repositoryUniqueId: repositoryUniqueId ?? faker.string.uuid(),
+    fileName: fileName ?? faker.string.alpha(),
+    fileLocation: fileLocation ?? faker.string.alpha(),
+    size: size ?? faker.number.int(),
+    urn: urn ?? faker.string.alpha(),
+    newRepositoryUniqueId: newRepositoryUniqueId ?? faker.string.uuid(),
+    newDocumentUniqueId: newDocumentUniqueId ?? faker.string.uuid(),
+    contentType: contentType ?? "application/xml",
+    language: language,
+    url: url ?? faker.internet.url(),
+    uri: uri ?? faker.internet.url(),
+    isNew: isNew ?? faker.datatype.boolean(),
+    creation: creation ?? faker.date.past().toISOString(),
+    title: title ?? faker.lorem.text(),
+  };
+}
+
+export function makeDocumentReferenceWithMetriportId({
+  metriportId,
+  ...rest
+}: Partial<DocumentReferenceWithMetriportId> = {}): DocumentReferenceWithMetriportId {
+  const baseDocumentReference = makeDocumentReference(rest);
+  return {
+    ...baseDocumentReference,
+    metriportId: metriportId ?? faker.string.uuid(),
   };
 }

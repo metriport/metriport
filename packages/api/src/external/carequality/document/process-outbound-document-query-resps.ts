@@ -55,22 +55,13 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    await Promise.all(
-      results.map(async result => {
-        if (result.documentReference) {
-          result.documentReference = await Promise.all(
-            result.documentReference.map(async docRef => {
-              const updatedDocRef = await addMetriportDocRefID({ cxId, patientId, requestId })(
-                docRef
-              );
-              return updatedDocRef;
-            })
-          );
-        }
-      })
+    const resultsWithMetriportId = await updateDocumentReferencesWithMetriportId(
+      results,
+      cxId,
+      patientId,
+      requestId
     );
-
-    const docRefs = results.flatMap(result => result.documentReference ?? []);
+    const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
 
@@ -172,7 +163,7 @@ export async function processOutboundDocumentQueryResps({
       });
     };
 
-    await executeAsynchronously(results, replaceDqUrlWithDrUrl, {
+    await executeAsynchronously(resultsWithMetriportId, replaceDqUrlWithDrUrl, {
       numberOfParallelExecutions: 20,
     });
 
@@ -183,7 +174,7 @@ export async function processOutboundDocumentQueryResps({
       ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
       : await getOidsWithIHEGatewayV2Enabled();
 
-    for (const result of results) {
+    for (const result of resultsWithMetriportId) {
       if (v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
         outboundDocumentQueryRespsV2.push(result);
       } else {
@@ -343,4 +334,27 @@ function addMetriportDocRefID({
       metriportId,
     };
   };
+}
+
+export async function updateDocumentReferencesWithMetriportId(
+  results: OutboundDocumentQueryResp[],
+  cxId: string,
+  patientId: string,
+  requestId: string
+): Promise<OutboundDocumentQueryResp[]> {
+  return await Promise.all(
+    results.map(async result => {
+      if (result.documentReference) {
+        result.documentReference = await Promise.all(
+          result.documentReference.map(async docRef => {
+            const updatedDocRef = await addMetriportDocRefID({ cxId, patientId, requestId })(
+              docRef
+            );
+            return updatedDocRef;
+          })
+        );
+      }
+      return result;
+    })
+  );
 }
