@@ -10,11 +10,11 @@ import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
-const onlyOneDocumentReferencePerRequestList = [
-  "2.16.840.1.113883.3.6448",
-  "2.16.840.1.113883.3.6147.458",
-  "2.16.840.1.113883.3.6147.458.2",
-];
+const pointClickCareOid = "2.16.840.1.113883.3.6448";
+const redoxOid = "2.16.840.1.113883.3.6147.458";
+const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
+
+const onlyOneDocumentReferencePerRequestList = [pointClickCareOid, redoxOid, redoxGatewayOid];
 const minDocumentReferencesPerDrRequest = 1;
 const maxDocumentReferencesPerDrRequest = 10;
 
