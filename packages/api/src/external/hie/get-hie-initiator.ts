@@ -44,9 +44,7 @@ export async function getHieInitiator(
   }
 
   if (isItVendor(organization.type)) {
-    console.log("1");
     if (!isOboEnabledForHie(facility, hie)) {
-      console.log("2");
       throw new MetriportError(
         `Organization is a candidate implementor but facility is not OBO enabled for hie`,
         undefined,
@@ -56,7 +54,6 @@ export async function getHieInitiator(
         }
       );
     }
-    console.log("3");
     return {
       oid: facility.oid,
       name: facility.data.name,
@@ -65,7 +62,6 @@ export async function getHieInitiator(
       orgName: organization.data.name,
     };
   }
-  console.log("4");
   return {
     oid: organization.oid,
     name: organization.data.name,
