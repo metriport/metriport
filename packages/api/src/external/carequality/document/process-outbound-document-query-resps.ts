@@ -55,7 +55,7 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    const resultsWithMetriportId = await updateDocumentReferencesWithMetriportId(
+    const resultsWithMetriportId = await updateResultDocumentReferencesWithMetriportId(
       results,
       cxId,
       patientId,
@@ -129,7 +129,7 @@ export async function processOutboundDocumentQueryResps({
     // when doing the doc retrieval
     await storeInitDocRefInFHIR(docRefsWithMetriportId, cxId, patientId, log);
 
-    const respWithDRUrl: OutboundDocumentQueryResp[] = [];
+    const resultsWithMetriportIdAndDrUrl: OutboundDocumentQueryResp[] = [];
 
     const replaceDqUrlWithDrUrl = async (
       outboundDocumentQueryResp: OutboundDocumentQueryResp
@@ -154,7 +154,7 @@ export async function processOutboundDocumentQueryResps({
         return;
       }
 
-      respWithDRUrl.push({
+      resultsWithMetriportIdAndDrUrl.push({
         ...outboundDocumentQueryResp,
         gateway: {
           ...outboundDocumentQueryResp.gateway,
@@ -174,7 +174,7 @@ export async function processOutboundDocumentQueryResps({
       ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
       : await getOidsWithIHEGatewayV2Enabled();
 
-    for (const result of resultsWithMetriportId) {
+    for (const result of resultsWithMetriportIdAndDrUrl) {
       if (v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
         outboundDocumentQueryRespsV2.push(result);
       } else {
@@ -336,7 +336,7 @@ function addMetriportDocRefID({
   };
 }
 
-export async function updateDocumentReferencesWithMetriportId(
+export async function updateResultDocumentReferencesWithMetriportId(
   results: OutboundDocumentQueryResp[],
   cxId: string,
   patientId: string,
@@ -344,17 +344,18 @@ export async function updateDocumentReferencesWithMetriportId(
 ): Promise<OutboundDocumentQueryResp[]> {
   return await Promise.all(
     results.map(async result => {
-      if (result.documentReference) {
-        result.documentReference = await Promise.all(
-          result.documentReference.map(async docRef => {
-            const updatedDocRef = await addMetriportDocRefID({ cxId, patientId, requestId })(
-              docRef
-            );
-            return updatedDocRef;
-          })
-        );
-      }
-      return result;
+      const updatedDocumentReferences = result.documentReference
+        ? await Promise.all(
+            result.documentReference.map(async docRef => {
+              return await addMetriportDocRefID({ cxId, patientId, requestId })(docRef);
+            })
+          )
+        : result.documentReference;
+
+      return {
+        ...result,
+        documentReference: updatedDocumentReferences,
+      };
     })
   );
 }
