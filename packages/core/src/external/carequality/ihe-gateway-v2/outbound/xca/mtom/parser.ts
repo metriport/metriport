@@ -119,7 +119,6 @@ export function parseMtomResponse(mtomMessage: string, contentType: string): Doc
         removeNSPrefix: true,
       });
       const jsonObj = parser.parse(content);
-      console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
 
       const docResponses = Array.isArray(
         jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse

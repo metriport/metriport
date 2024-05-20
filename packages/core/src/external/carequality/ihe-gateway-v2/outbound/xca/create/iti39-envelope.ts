@@ -9,6 +9,13 @@ import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
+
+const onlyOneDocumentReferencePerRequestList = [
+  "2.16.840.1.113883.3.6448",
+  "2.16.840.1.113883.3.6147.458",
+  "2.16.840.1.113883.3.6147.458.2",
+];
+const minDocumentReferencesPerDrRequest = 1;
 const maxDocumentReferencesPerDrRequest = 10;
 
 export type BulkSignedDR = {
@@ -112,11 +119,16 @@ export function createAndSignBulkDRRequests({
   const signedRequests: BulkSignedDR[] = [];
 
   for (const bodyData of bulkBodyData) {
+    const documentReferencesPerRequest = onlyOneDocumentReferencePerRequestList.includes(
+      bodyData.gateway.homeCommunityId
+    )
+      ? minDocumentReferencesPerDrRequest
+      : maxDocumentReferencesPerDrRequest;
     const documentReferences = bodyData.documentReference;
-    for (let i = 0; i < documentReferences.length; i += maxDocumentReferencesPerDrRequest) {
+    for (let i = 0; i < documentReferences.length; i += documentReferencesPerRequest) {
       const chunkedBodyData = {
         ...bodyData,
-        documentReference: documentReferences.slice(i, i + maxDocumentReferencesPerDrRequest),
+        documentReference: documentReferences.slice(i, i + documentReferencesPerRequest),
       };
       const signedRequest = createAndSignDRRequest(chunkedBodyData, samlCertsAndKeys);
       signedRequests.push({

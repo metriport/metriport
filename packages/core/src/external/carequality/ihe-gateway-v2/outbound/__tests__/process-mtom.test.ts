@@ -7,7 +7,7 @@ import { Config } from "../../../../../util/config";
 import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
 import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
-describe.skip("mtomContentAndHeaderParsing", () => {
+describe("mtomContentAndHeaderParsing", () => {
   it("should correctly build and parse MTOM content type and headers", async () => {
     const signedXml = "<xml>test</xml>";
     const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
@@ -78,7 +78,7 @@ describe("processDRResponse for MTOM where there is no actual multipart message 
   });
 });
 
-describe.skip("processDRResponse", () => {
+describe("processDRResponse", () => {
   beforeEach(() => {
     jest.spyOn(S3Utils.prototype, "uploadFile").mockImplementation(() =>
       Promise.resolve({

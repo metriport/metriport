@@ -70,7 +70,6 @@ function getHomeCommunityIdForDr(
 function parseDocumentReference(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any,
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   outboundRequest: OutboundDocumentQueryReq
 ): DocumentReference | undefined {
   const slots = Array.isArray(extrinsicObject?.Slot)
