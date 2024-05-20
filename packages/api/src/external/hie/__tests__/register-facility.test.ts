@@ -27,10 +27,10 @@ let createOrUpdateCwOrganizationMock: jest.SpyInstance;
 beforeEach(() => {
   mockedFacility = makeFacility({
     cqType: FacilityType.initiatorOnly,
-    cqOboActive: true,
+    cqActive: true,
     cqOboOid: faker.string.uuid(),
     cwType: FacilityType.initiatorOnly,
-    cwOboActive: true,
+    cwActive: true,
     cwOboOid: faker.string.uuid(),
   });
 
@@ -66,7 +66,7 @@ describe("registerFacility", () => {
     const cxId = uuidv7_file.uuidv4();
 
     const getCqOboDataMockData = {
-      enabled: mockedRegisterFacility.cqOboActive,
+      enabled: mockedRegisterFacility.cqActive,
       cqFacilityName: faker.company.name(),
       cqOboOid: faker.string.uuid(),
     };
@@ -170,13 +170,13 @@ describe("registerFacility", () => {
     expect(createOrUpdateCqOrganizationMock).not.toHaveBeenCalled();
   });
 
-  it("calls createOrUpdateInCw with name containing OBO when isObo and cwOboActive are true and cwOboOid is present ", async () => {
+  it("calls createOrUpdateInCw with name containing OBO when isObo and cwActive are true and cwOboOid is present ", async () => {
     const cxId = uuidv7_file.uuidv4();
 
     mockedFacility = {
       ...mockedFacility,
       cwType: FacilityType.initiatorOnly,
-      cwOboActive: true,
+      cwActive: true,
       cwOboOid: faker.string.uuid(),
     };
 
@@ -197,13 +197,13 @@ describe("registerFacility", () => {
     );
   });
 
-  it("calls createOrUpdateInCw with name not containing OBO when isProvider and cwOboActive are true and cwOboOid is present ", async () => {
+  it("calls createOrUpdateInCw with name not containing OBO when isProvider and cwActive are true and cwOboOid is present ", async () => {
     const cxId = uuidv7_file.uuidv4();
 
     mockedFacility = {
       ...mockedFacility,
       cwType: FacilityType.initiatorAndResponder,
-      cwOboActive: true,
+      cwActive: true,
       cwOboOid: faker.string.uuid(),
     };
 
@@ -224,13 +224,13 @@ describe("registerFacility", () => {
     );
   });
 
-  it("returns createOrUpdateInCw early when its an obo but cwOboActive or cwOboOid are falsy", async () => {
+  it("returns createOrUpdateInCw early when its an obo but cwActive or cwOboOid are falsy", async () => {
     const cxId = uuidv7_file.uuidv4();
 
     mockedFacility = {
       ...mockedFacility,
       cwType: FacilityType.initiatorOnly,
-      cwOboActive: false,
+      cwActive: false,
       cwOboOid: null,
     };
 
@@ -250,10 +250,10 @@ describe("registerFacility", () => {
     mockedFacility = {
       ...mockedFacility,
       cwType: FacilityType.initiatorAndResponder,
-      cwOboActive: false,
+      cwActive: false,
       cwOboOid: null,
       cqType: FacilityType.initiatorOnly,
-      cqOboActive: true,
+      cqActive: true,
       cqOboOid: faker.string.uuid(),
     };
 
@@ -293,10 +293,10 @@ describe("registerFacility", () => {
     mockedFacility = {
       ...mockedFacility,
       cqType: FacilityType.initiatorAndResponder,
-      cqOboActive: false,
+      cqActive: false,
       cqOboOid: null,
       cwType: FacilityType.initiatorOnly,
-      cwOboActive: true,
+      cwActive: true,
       cwOboOid: faker.string.uuid(),
     };
 

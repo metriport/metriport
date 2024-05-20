@@ -9,8 +9,8 @@ type PartialProps =
   | "eTag"
   | "cqType"
   | "cwType"
-  | "cqOboActive"
-  | "cwOboActive"
+  | "cqActive"
+  | "cwActive"
   | "cqOboOid"
   | "cwOboOid";
 
@@ -24,10 +24,7 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
   const facility = await getFacilityOrFail({ id, cxId });
   validateVersionForUpdate(facility, eTag);
 
-  const { data, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = validateUpdate(
-    facility,
-    facilityUpdate
-  );
+  const { data, cqActive, cwActive, cqOboOid, cwOboOid } = validateUpdate(facility, facilityUpdate);
   const { name, npi, tin, active, address } = data;
 
   return facility.update({
@@ -38,8 +35,8 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
       active,
       address,
     },
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid,
     cwOboOid,
   });
@@ -48,8 +45,8 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
 export function validateUpdate(existing: Facility, updateFac: FacilityUpdateCmd): Facility {
   const cqType = updateFac.cqType ?? existing.cqType;
   const cwType = updateFac.cwType ?? existing.cwType;
-  const cqOboActive = updateFac.cqOboActive ?? existing.cqOboActive;
-  const cwOboActive = updateFac.cwOboActive ?? existing.cwOboActive;
+  const cqActive = updateFac.cqActive ?? existing.cqActive;
+  const cwActive = updateFac.cwActive ?? existing.cwActive;
   const cqOboOid = updateFac.cqOboOid === undefined ? existing.cqOboOid : updateFac.cqOboOid;
   const cwOboOid = updateFac.cwOboOid === undefined ? existing.cwOboOid : updateFac.cwOboOid;
 
@@ -58,8 +55,8 @@ export function validateUpdate(existing: Facility, updateFac: FacilityUpdateCmd)
     ...updateFac,
     cqType,
     cwType,
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid,
     cwOboOid,
   };

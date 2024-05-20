@@ -70,7 +70,7 @@ export async function createOrUpdateInCw(
 
   const isProvider = isNonOboFacility(facility.cwType);
   const isObo = isOboFacility(facility.cwType);
-  const cwOboDisabled = !isObo || !facility.cwOboActive || !facility.cwOboOid;
+  const cwOboDisabled = !isObo || !facility.cwActive || !facility.cwOboOid;
 
   if (cwOboDisabled && !isProvider) {
     log(`CW OBO is not enabled for this facility`);

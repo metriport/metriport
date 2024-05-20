@@ -2,7 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { isItVendor } from "@metriport/core/domain/organization";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
-import { isOboEnabledForHie, isOboFacility, Facility } from "../../domain/medical/facility";
+import { isFacilityActiveForHie, Facility } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
 
 export type HieInitiator = {
@@ -49,11 +49,9 @@ export async function isHieEnabledToQuery(
   const facility = await getPatientsFacility(patient.id, facilities, facilityId);
 
   if (isItVendor(organization.type)) {
-    const facilityType = hie === MedicalDataSource.COMMONWELL ? facility.cwType : facility.cqType;
-    if (isOboFacility(facilityType) && !isOboEnabledForHie(facility, hie)) {
+    if (!isFacilityActiveForHie(facility, hie)) {
       return false;
     }
-    return true;
   }
 
   return true;

@@ -4,17 +4,17 @@ import {
   Facility,
   FacilityCreate,
   FacilityType,
-  isNonOboFacility,
+  isOboFacility,
 } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 
 export const createFacility = async ({
   cxId,
   data,
-  cqOboActive = false,
+  cqActive = false,
   cqType = FacilityType.initiatorAndResponder,
   cqOboOid,
-  cwOboActive = false,
+  cwActive = false,
   cwType = FacilityType.initiatorAndResponder,
   cwOboOid,
 }: FacilityCreate): Promise<Facility> => {
@@ -25,8 +25,8 @@ export const createFacility = async ({
     cxId,
     cqType,
     cwType,
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid: cqOboOid ?? null,
     cwOboOid: cwOboOid ?? null,
     data,
@@ -36,23 +36,15 @@ export const createFacility = async ({
 };
 
 export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
-  const { cwType, cqType, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facility;
-  if (isNonOboFacility(cwType) && cwOboActive) {
+  const { cwType, cqType, cqActive, cwActive, cqOboOid, cwOboOid } = facility;
+  if (isOboFacility(cwType) && cwActive && !cwOboOid) {
     if (!throwOnError) return false;
-    throw new BadRequestError("CW Non-OBO facility cannot have OBO active");
-  }
-  if (cwOboActive && !cwOboOid) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("Facility must have CW OBO OID when CW OBO active");
+    throw new BadRequestError("CW OBO facility must have CW OBO OID when CW OBO active");
   }
 
-  if (isNonOboFacility(cqType) && cqOboActive) {
+  if (isOboFacility(cqType) && cqActive && !cqOboOid) {
     if (!throwOnError) return false;
-    throw new BadRequestError("CQ Non-OBO facility cannot have OBO active");
-  }
-  if (cqOboActive && !cqOboOid) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("Facility must have CQ OBO OID when CQ OBO active");
+    throw new BadRequestError("CQ OBO facility must have CQ OBO OID when CQ OBO active");
   }
 
   return true;

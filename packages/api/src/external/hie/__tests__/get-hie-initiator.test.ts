@@ -19,7 +19,7 @@ let defaultDeps: {
 const makeOboFacility = (params: Partial<Facility> = {}) =>
   makeFacility({
     cwType: FacilityType.initiatorOnly,
-    cwOboActive: true,
+    cwActive: true,
     cwOboOid: faker.string.uuid(),
     ...params,
   });
@@ -74,7 +74,11 @@ describe("getHieInitiator", () => {
 
 describe("isHieEnabledToQuery", () => {
   it("returns true when is CI and OBO", async () => {
-    const facility = makeOboFacility();
+    const facility = makeOboFacility({
+      cwType: FacilityType.initiatorOnly,
+      cwActive: true,
+      cwOboOid: faker.string.uuid(),
+    });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -88,7 +92,7 @@ describe("isHieEnabledToQuery", () => {
   });
 
   it("returns false when is CI and Obo not enabled", async () => {
-    const facility = makeOboFacility({ cwOboActive: false, cwOboOid: undefined });
+    const facility = makeOboFacility({ cwActive: false, cwOboOid: undefined });
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -104,7 +108,7 @@ describe("isHieEnabledToQuery", () => {
   it("returns true when is CI and is non obo", async () => {
     const facility = makeOboFacility({
       cwType: FacilityType.initiatorAndResponder,
-      cwOboActive: false,
+      cwActive: true,
       cwOboOid: undefined,
     });
     getPatientWithDependencies_mock.mockResolvedValueOnce({

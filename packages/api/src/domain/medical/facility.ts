@@ -20,8 +20,8 @@ export type FacilityData = {
 
 export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
-  cqOboActive?: boolean;
-  cwOboActive?: boolean;
+  cqActive?: boolean;
+  cwActive?: boolean;
   cqOboOid?: string | null;
   cwOboOid?: string | null;
   cwType?: FacilityType;
@@ -53,9 +53,9 @@ export function isNonOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorAndResponder;
 }
 
-export function isOboEnabledForHie(facility: Facility, hie: MedicalDataSource): boolean {
-  const { cwOboActive, cqOboActive, cwOboOid, cqOboOid } = facility;
-  if (hie === MedicalDataSource.COMMONWELL) return !!cwOboActive && !!cwOboOid;
-  if (hie === MedicalDataSource.CAREQUALITY) return !!cqOboActive && !!cqOboOid;
+export function isFacilityActiveForHie(facility: Facility, hie: MedicalDataSource): boolean {
+  const { cwActive, cqActive } = facility;
+  if (hie === MedicalDataSource.COMMONWELL) return !!cwActive;
+  if (hie === MedicalDataSource.CAREQUALITY) return !!cqActive;
   throw new MetriportError("Programming error, invalid HIE type", undefined, { hie });
 }

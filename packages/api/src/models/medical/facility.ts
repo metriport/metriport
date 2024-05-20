@@ -15,8 +15,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cxId: string;
   declare oid: string;
   declare facilityNumber: number;
-  declare cqOboActive: boolean;
-  declare cwOboActive: boolean;
+  declare cqActive: boolean;
+  declare cwActive: boolean;
   declare cqOboOid: string | null;
   declare cwOboOid: string | null;
   declare cwType: FacilityType;
@@ -40,11 +40,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         data: {
           type: DataTypes.JSONB,
         },
-        cqOboActive: {
+        cqActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
-        cwOboActive: {
+        cwActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },

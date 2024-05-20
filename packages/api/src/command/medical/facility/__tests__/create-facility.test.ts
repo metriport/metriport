@@ -17,8 +17,8 @@ describe("createFacility", () => {
       const facilityCreate = makeFacilityCreateCmd({
         cwType: null,
         cqType: null,
-        cqOboActive: null,
-        cwOboActive: null,
+        cqActive: null,
+        cwActive: null,
         cqOboOid: null,
         cwOboOid: null,
       });
@@ -28,8 +28,8 @@ describe("createFacility", () => {
           ...facilityCreate,
           cwType: FacilityType.initiatorAndResponder,
           cqType: FacilityType.initiatorAndResponder,
-          cqOboActive: false,
-          cwOboActive: false,
+          cqActive: false,
+          cwActive: false,
           cqOboOid: null,
           cwOboOid: null,
         })
@@ -55,8 +55,8 @@ describe("createFacility", () => {
       });
       expect(facilityCreate).toEqual(
         expect.objectContaining({
-          cqOboActive: true,
-          cwOboActive: true,
+          cqActive: true,
+          cwActive: true,
         })
       );
       expect(facilityCreate.cqOboOid).toBeDefined();
@@ -65,43 +65,25 @@ describe("createFacility", () => {
   });
 
   describe("validateCreate", () => {
-    it("throws when non-OBO and CW OBO is active", async () => {
-      const facility = makeFacilityCreate({
-        cwType: FacilityType.initiatorAndResponder,
-        cqOboActive: false,
-        cwOboActive: true,
-      });
-      expect(() => validateCreate(facility)).toThrow("CW Non-OBO facility cannot have OBO active");
-    });
-
-    it("throws when non-OBO and CQ OBO is active", async () => {
-      const facility = makeFacilityCreate({
-        cqType: FacilityType.initiatorAndResponder,
-        cqOboActive: true,
-        cwOboActive: false,
-      });
-      expect(() => validateCreate(facility)).toThrow("CQ Non-OBO facility cannot have OBO active");
-    });
-
-    it("throws when CQ OBO is active but no CQ OID", async () => {
-      const facility = makeFacilityCreate({
-        cqType: FacilityType.initiatorOnly,
-        cqOboActive: true,
-        cqOboOid: null,
-      });
-      expect(() => validateCreate(facility)).toThrow(
-        "Facility must have CQ OBO OID when CQ OBO active"
-      );
-    });
-
-    it("throws when CW OBO is active but no CW OID", async () => {
+    it("throws when OBO, CW OBO is active and CW OID is null", async () => {
       const facility = makeFacilityCreate({
         cwType: FacilityType.initiatorOnly,
-        cwOboActive: true,
+        cwActive: true,
         cwOboOid: null,
       });
       expect(() => validateCreate(facility)).toThrow(
-        "Facility must have CW OBO OID when CW OBO active"
+        "CW OBO facility must have CW OBO OID when CW OBO active"
+      );
+    });
+
+    it("throws when OBO, CQ OBO is active and CQ OID is null", async () => {
+      const facility = makeFacilityCreate({
+        cqType: FacilityType.initiatorOnly,
+        cqActive: true,
+        cqOboOid: null,
+      });
+      expect(() => validateCreate(facility)).toThrow(
+        "CQ OBO facility must have CQ OBO OID when CQ OBO active"
       );
     });
   });

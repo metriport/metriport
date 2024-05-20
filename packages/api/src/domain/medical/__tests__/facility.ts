@@ -28,15 +28,15 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
   const oid = params.oid ?? makeFacilityOid(makeOrgNumber(), facilityNumber);
   const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
   const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
-  const cqOboActive =
-    params.cqOboActive !== undefined
-      ? params.cqOboActive
+  const cqActive =
+    params.cqActive !== undefined
+      ? params.cqActive
       : isOboFacility(cqType)
       ? faker.datatype.boolean()
       : false;
-  const cwOboActive =
-    params.cwOboActive !== undefined
-      ? params.cwOboActive
+  const cwActive =
+    params.cwActive !== undefined
+      ? params.cwActive
       : isOboFacility(cwType)
       ? faker.datatype.boolean()
       : false;
@@ -46,12 +46,12 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
     cxId: params.cxId ?? faker.string.uuid(),
     oid,
     facilityNumber,
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid:
-      params.cqOboOid !== undefined ? params.cqOboOid : cqOboActive ? faker.string.uuid() : null,
+      params.cqOboOid !== undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : null,
     cwOboOid:
-      params.cwOboOid !== undefined ? params.cwOboOid : cwOboActive ? faker.string.uuid() : null,
+      params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
     cqType,
     cwType,
     data: makeFacilityData(params.data),

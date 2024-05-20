@@ -30,7 +30,7 @@ export async function registerFacilityWithinHIEs(
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),
     getAddressWithCoordinates(getAddressFromInput(facility), cxId),
-    getCqOboData(facility.cqOboActive, facility.cqOboOid),
+    getCqOboData(facility.cqActive, facility.cqOboOid),
   ]);
 
   const { facilityDetails, coordinates } = createFacilityDetails(cxId, facility, address);
@@ -74,7 +74,7 @@ function createFacilityDetails(
   if (isCqObo) {
     facilityDetails = {
       ...facilityDetails,
-      cqOboActive: facility.cqOboActive,
+      cqActive: facility.cqActive,
       cqOboOid: facility.cqOboOid,
     };
   }
@@ -82,7 +82,7 @@ function createFacilityDetails(
   if (isCwObo) {
     facilityDetails = {
       ...facilityDetails,
-      cwOboActive: facility.cwOboActive,
+      cwActive: facility.cwActive,
       cwOboOid: facility.cwOboOid,
     };
   }

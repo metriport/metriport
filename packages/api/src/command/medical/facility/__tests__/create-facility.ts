@@ -9,15 +9,15 @@ export function makeFacilityCreateCmd(
 ): FacilityCreate {
   const cqType = params.cqType !== undefined ? params.cqType : FacilityType.initiatorAndResponder;
   const cwType = params.cwType !== undefined ? params.cwType : FacilityType.initiatorAndResponder;
-  const cqOboActive =
-    params.cqOboActive !== undefined
-      ? params.cqOboActive
+  const cqActive =
+    params.cqActive !== undefined
+      ? params.cqActive
       : cqType && isOboFacility(cqType)
       ? true
       : false;
-  const cwOboActive =
-    params.cwOboActive !== undefined
-      ? params.cwOboActive
+  const cwActive =
+    params.cwActive !== undefined
+      ? params.cwActive
       : cwType && isOboFacility(cwType)
       ? true
       : false;
@@ -25,20 +25,12 @@ export function makeFacilityCreateCmd(
   const preResponse = {
     ...makeBaseDomain(),
     cxId: params.cxId ?? faker.string.uuid(),
-    cqOboActive: cqOboActive ?? undefined,
-    cwOboActive: cwOboActive ?? undefined,
+    cqActive: cqActive ?? undefined,
+    cwActive: cwActive ?? undefined,
     cqOboOid:
-      params.cqOboOid != undefined
-        ? params.cqOboOid
-        : cqOboActive
-        ? faker.string.uuid()
-        : undefined,
+      params.cqOboOid != undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : undefined,
     cwOboOid:
-      params.cwOboOid != undefined
-        ? params.cwOboOid
-        : cwOboActive
-        ? faker.string.uuid()
-        : undefined,
+      params.cwOboOid != undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : undefined,
     cwType: cwType ?? undefined,
     cqType: cqType ?? undefined,
     data: makeFacilityData(params.data),
@@ -53,27 +45,27 @@ export function makeFacilityCreate(
 ): FacilityCreate {
   const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
   const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
-  const cqOboActive =
-    params.cqOboActive != undefined
-      ? params.cqOboActive
+  const cqActive =
+    params.cqActive != undefined
+      ? params.cqActive
       : cqType && isOboFacility(cqType)
       ? faker.datatype.boolean()
       : false;
-  const cwOboActive =
-    params.cwOboActive != undefined
-      ? params.cwOboActive
+  const cwActive =
+    params.cwActive != undefined
+      ? params.cwActive
       : cwType && isOboFacility(cwType)
       ? faker.datatype.boolean()
       : false;
   return {
     ...makeBaseDomain(),
     cxId: params.cxId ?? faker.string.uuid(),
-    cqOboActive: cqOboActive,
-    cwOboActive: cwOboActive,
+    cqActive: cqActive,
+    cwActive: cwActive,
     cqOboOid:
-      params.cqOboOid !== undefined ? params.cqOboOid : cqOboActive ? faker.string.uuid() : null,
+      params.cqOboOid !== undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : null,
     cwOboOid:
-      params.cwOboOid !== undefined ? params.cwOboOid : cwOboActive ? faker.string.uuid() : null,
+      params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
     cwType,
     cqType,
     data: makeFacilityData(params.data),

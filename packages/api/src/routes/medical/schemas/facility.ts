@@ -3,7 +3,6 @@ import { z } from "zod";
 import { AddressStrictSchema } from "./address";
 import { optionalString } from "./shared";
 import { FacilityType } from "../../../domain/medical/facility";
-import { required } from "../../../shared/required";
 
 export const facilityCreateSchema = z.object({
   name: z.string().min(1),
@@ -18,30 +17,19 @@ export const facilityCreateSchema = z.object({
 
 export const facilityUpdateSchema = facilityCreateSchema;
 
-export const facilityOboDetailsSchemaBase = z
+export const facilityOboDetailsSchema = z
   .object({
     id: z.string().optional(),
     nameInMetriport: z.string(),
     npi: z.string(),
     // CQ
     cqType: z.nativeEnum(FacilityType),
-    cqOboActive: z.boolean().optional(),
+    cqActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
     // CW
     cwType: z.nativeEnum(FacilityType),
-    cwOboActive: z.boolean().optional(),
+    cwActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),
     cwFacilityName: z.string().optional(),
   })
   .merge(AddressStrictSchema);
-type FacilityOboDetails = z.infer<typeof facilityOboDetailsSchemaBase>;
-
-export const facilityOboDetailsSchema = facilityOboDetailsSchemaBase
-  .refine(required<FacilityOboDetails>("cqOboOid").when("cqOboActive"), {
-    message: "cqObOid is required and can't be empty when cqOboActive is true",
-    path: ["cqObOid"],
-  })
-  .refine(required<FacilityOboDetails>("cwOboOid").when("cwOboActive"), {
-    message: "cwOboOid is required and can't be empty when cwOboActive is true",
-    path: ["cwOboOid"],
-  });
