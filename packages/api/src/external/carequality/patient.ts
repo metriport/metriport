@@ -35,9 +35,13 @@ export async function discover(
 ): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
-  const { cxId } = patient;
 
-  const enabledIHEGW = await validateCQEnabledAndInitGW(cxId, forceEnabled, outerLog);
+  const enabledIHEGW = await validateCQEnabledAndInitGW(
+    patient,
+    facilityId,
+    forceEnabled,
+    outerLog
+  );
 
   if (enabledIHEGW) {
     await processPatientDiscoveryProgress({ patient, status: "processing" });

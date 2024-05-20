@@ -4,7 +4,7 @@ import {
   Facility,
   FacilityCreate,
   FacilityType,
-  isOboFacility,
+  isNonOboFacility,
 } from "../../../domain/medical/facility";
 import { FacilityModel } from "../../../models/medical/facility";
 
@@ -37,12 +37,7 @@ export const createFacility = async ({
 
 export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
   const { cwType, cqType, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facility;
-
-  if (isOboFacility(cwType) && !cwOboActive) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("CW OBO facility must be active");
-  }
-  if (!isOboFacility(cwType) && cwOboActive) {
+  if (isNonOboFacility(cwType) && cwOboActive) {
     if (!throwOnError) return false;
     throw new BadRequestError("CW Non-OBO facility cannot have OBO active");
   }
@@ -51,11 +46,7 @@ export function validateCreate(facility: FacilityCreate, throwOnError = true): b
     throw new BadRequestError("Facility must have CW OBO OID when CW OBO active");
   }
 
-  if (isOboFacility(cqType) && !cqOboActive) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("CQ OBO facility must be active");
-  }
-  if (!isOboFacility(cqType) && cqOboActive) {
+  if (isNonOboFacility(cqType) && cqOboActive) {
     if (!throwOnError) return false;
     throw new BadRequestError("CQ Non-OBO facility cannot have OBO active");
   }

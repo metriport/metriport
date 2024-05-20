@@ -43,6 +43,7 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
+import { isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -115,7 +116,8 @@ export async function create(
   const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
-    cxId: patient.cxId,
+    patient,
+    facilityId,
     forceCW: forceCWCreate,
     debug,
   });
@@ -235,7 +237,8 @@ export async function update(
   const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
   const cwUpdateEnabled = await validateCWEnabled({
-    cxId: patient.cxId,
+    patient,
+    facilityId,
     forceCW: forceCWUpdate,
     debug,
   });
@@ -427,14 +430,17 @@ async function updatePatientAndLinksInCw(
 }
 
 async function validateCWEnabled({
-  cxId,
+  patient,
+  facilityId,
   forceCW,
   debug,
 }: {
-  cxId: string;
+  patient: Patient;
+  facilityId: string;
   forceCW: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
+  const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCW || isSandbox) {
@@ -443,6 +449,11 @@ async function validateCWEnabled({
   }
 
   try {
+    const isCwQueryEnabled = await isHieEnabledToQuery(
+      facilityId,
+      patient,
+      MedicalDataSource.COMMONWELL
+    );
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
 
@@ -454,6 +465,9 @@ async function validateCWEnabled({
       return false;
     } else if (cwIsDisabled) {
       debug(`CW not enabled, skipping...`);
+      return false;
+    } else if (!isCwQueryEnabled) {
+      debug(`CW not enabled for query, skipping...`);
       return false;
     }
 

@@ -1,5 +1,4 @@
 import { FacilityType } from "../../../../domain/medical/facility";
-import { makeFacility } from "../../../../domain/medical/__tests__/facility";
 import { FacilityModel } from "../../../../models/medical/facility";
 import { mockStartTransaction } from "../../../../models/__tests__/transaction";
 import { createFacility, validateCreate } from "../create-facility";
@@ -66,22 +65,6 @@ describe("createFacility", () => {
   });
 
   describe("validateCreate", () => {
-    it("throws when CQ OBO and CQ OBO is not active", async () => {
-      const facility = makeFacility({
-        cqType: FacilityType.initiatorOnly,
-        cqOboActive: false,
-      });
-      expect(() => validateCreate(facility)).toThrow("CQ OBO facility must be active");
-    });
-
-    it("throws when CW OBO and CW OBO is not active", async () => {
-      const facility = makeFacility({
-        cwType: FacilityType.initiatorOnly,
-        cwOboActive: false,
-      });
-      expect(() => validateCreate(facility)).toThrow("CW OBO facility must be active");
-    });
-
     it("throws when non-OBO and CW OBO is active", async () => {
       const facility = makeFacilityCreate({
         cwType: FacilityType.initiatorAndResponder,
