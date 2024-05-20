@@ -81,6 +81,12 @@ module.exports = function (app) {
 
   app.use(cookieParser());
 
+  // route used for health checks
+  app.get("/", (req, res) => {
+    if (req.accepts("application/json")) return res.json({ status: "OK" });
+    return res.status(200).send("OK");
+  });
+
   /**
    * @swagger
    * /api/UpdateBaseTemplates:
