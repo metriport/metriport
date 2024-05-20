@@ -7,20 +7,18 @@ import { makeBaseDomain } from "../../../../domain/__tests__/base-domain";
 export function makeFacilityCreateCmd(
   params: Partial<DeepNullable<FacilityCreate>> & Partial<Pick<FacilityCreate, "data">> = {}
 ): FacilityCreate {
-  const type =
-    params.type !== undefined
-      ? params.type
-      : faker.helpers.arrayElement(Object.values(FacilityType));
+  const cqType = params.cqType !== undefined ? params.cqType : FacilityType.initiatorAndResponder;
+  const cwType = params.cwType !== undefined ? params.cwType : FacilityType.initiatorAndResponder;
   const cqOboActive =
     params.cqOboActive !== undefined
       ? params.cqOboActive
-      : type && isOboFacility(type)
+      : cqType && isOboFacility(cqType)
       ? true
       : false;
   const cwOboActive =
     params.cwOboActive !== undefined
       ? params.cwOboActive
-      : type && isOboFacility(type)
+      : cwType && isOboFacility(cwType)
       ? true
       : false;
 
@@ -41,7 +39,8 @@ export function makeFacilityCreateCmd(
         : cwOboActive
         ? faker.string.uuid()
         : undefined,
-    type: type ?? undefined,
+    cwType: cwType ?? undefined,
+    cqType: cqType ?? undefined,
     data: makeFacilityData(params.data),
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -52,17 +51,18 @@ export function makeFacilityCreateCmd(
 export function makeFacilityCreate(
   params: Partial<DeepNullable<FacilityCreate>> & Partial<Pick<FacilityCreate, "data">> = {}
 ): FacilityCreate {
-  const type = params.type ?? faker.helpers.arrayElement(Object.values(FacilityType));
+  const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
+  const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
   const cqOboActive =
     params.cqOboActive != undefined
       ? params.cqOboActive
-      : type && isOboFacility(type)
+      : cqType && isOboFacility(cqType)
       ? faker.datatype.boolean()
       : false;
   const cwOboActive =
     params.cwOboActive != undefined
       ? params.cwOboActive
-      : type && isOboFacility(type)
+      : cwType && isOboFacility(cwType)
       ? faker.datatype.boolean()
       : false;
   return {
@@ -74,7 +74,8 @@ export function makeFacilityCreate(
       params.cqOboOid !== undefined ? params.cqOboOid : cqOboActive ? faker.string.uuid() : null,
     cwOboOid:
       params.cwOboOid !== undefined ? params.cwOboOid : cwOboActive ? faker.string.uuid() : null,
-    type,
+    cwType,
+    cqType,
     data: makeFacilityData(params.data),
   };
 }

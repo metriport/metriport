@@ -7,7 +7,8 @@ import { makeFacilityUpdateCmd } from "./update-facility";
 
 function makeValidUpdateCmd(params: Partial<Facility> = {}) {
   return makeFacilityUpdateCmd({
-    type: FacilityType.initiatorOnly,
+    cwType: FacilityType.initiatorOnly,
+    cqType: FacilityType.initiatorOnly,
     cwOboActive: true,
     cqOboActive: true,
     ...params,
@@ -28,13 +29,15 @@ describe("updateFacility", () => {
     it("calls validateCreate", async () => {
       const existing = makeFacility();
       const updateFac = makeValidUpdateCmd();
-      updateFac.type = undefined;
+      updateFac.cwType = undefined;
+      updateFac.cqType = undefined;
       updateFac.cqOboActive = undefined;
       updateFac.cwOboActive = undefined;
       updateFac.cqOboOid = undefined;
       updateFac.cwOboOid = undefined;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { type, cqOboActive, cwOboActive, cqOboOid, cwOboOid, ...updateWithoutObo } = updateFac;
+      const { cqType, cwType, cqOboActive, cwOboActive, cqOboOid, cwOboOid, ...updateWithoutObo } =
+        updateFac;
       validateUpdate(existing, updateFac);
       expect(validateCreate_mock).toHaveBeenCalledWith({
         ...existing,
@@ -43,12 +46,18 @@ describe("updateFacility", () => {
     });
 
     it("uses existing type when update is not present", async () => {
-      const existing = makeFacility({ type: FacilityType.initiatorOnly });
+      const existing = makeFacility({
+        cqType: FacilityType.initiatorOnly,
+        cwType: FacilityType.initiatorOnly,
+      });
       const updateFac = makeValidUpdateCmd();
-      updateFac.type = undefined;
+      updateFac.cwType = undefined;
+      updateFac.cqType = undefined;
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
-      expect(res).toEqual(expect.objectContaining({ type: existing.type }));
+      expect(res).toEqual(
+        expect.objectContaining({ cqType: existing.cqType, cwType: existing.cwType })
+      );
     });
 
     it("uses existing CQ data when update is not present", async () => {
@@ -81,12 +90,20 @@ describe("updateFacility", () => {
       );
     });
 
-    it("uses update type when provided", async () => {
-      const existing = makeFacility({ type: FacilityType.initiatorOnly });
-      const updateFac = makeFacility({ type: FacilityType.initiatorAndResponder });
+    it("uses update cqType when provided", async () => {
+      const existing = makeFacility({ cqType: FacilityType.initiatorOnly });
+      const updateFac = makeFacility({ cqType: FacilityType.initiatorAndResponder });
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
-      expect(res).toEqual(expect.objectContaining({ type: updateFac.type }));
+      expect(res).toEqual(expect.objectContaining({ cqType: updateFac.cqType }));
+    });
+
+    it("uses update cwType when provided", async () => {
+      const existing = makeFacility({ cwType: FacilityType.initiatorOnly });
+      const updateFac = makeFacility({ cwType: FacilityType.initiatorAndResponder });
+      const res = validateUpdate(existing, updateFac);
+      expect(res).toBeTruthy();
+      expect(res).toEqual(expect.objectContaining({ cwType: updateFac.cwType }));
     });
 
     it("uses update CQ data when provided", async () => {

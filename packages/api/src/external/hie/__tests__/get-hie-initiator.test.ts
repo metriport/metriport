@@ -18,7 +18,7 @@ let defaultDeps: {
 
 const makeOboFacility = (params: Partial<Facility> = {}) =>
   makeFacility({
-    type: FacilityType.initiatorOnly,
+    cwType: FacilityType.initiatorOnly,
     cwOboActive: true,
     cwOboOid: faker.string.uuid(),
     ...params,
@@ -47,7 +47,7 @@ describe("getHieInitiator", () => {
 
   it("returns the org when is Provider", async () => {
     const org = makeOrganization({ type: OrganizationBizType.healthcareProvider });
-    const facility = makeOboFacility({ type: FacilityType.initiatorOnly });
+    const facility = makeOboFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       organization: org,
@@ -64,7 +64,7 @@ describe("getHieInitiator", () => {
   });
 
   it("returns the facility as initiator when is CI and OBO", async () => {
-    const facility = makeOboFacility({ type: FacilityType.initiatorOnly });
+    const facility = makeOboFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -80,7 +80,7 @@ describe("getHieInitiator", () => {
   });
 
   it("returns the facility as initiator when is CI and not OBO", async () => {
-    const facility = makeOboFacility({ type: FacilityType.initiatorAndResponder });
+    const facility = makeOboFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -96,7 +96,7 @@ describe("getHieInitiator", () => {
   });
 
   it("returns the facility npi and id when is OBO", async () => {
-    const facility = makeOboFacility({ type: FacilityType.initiatorOnly });
+    const facility = makeOboFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],
@@ -112,7 +112,7 @@ describe("getHieInitiator", () => {
   });
 
   it("returns the facility npi and id when is not OBO", async () => {
-    const facility = makeOboFacility({ type: FacilityType.initiatorAndResponder });
+    const facility = makeOboFacility();
     getPatientWithDependencies_mock.mockResolvedValueOnce({
       ...defaultDeps,
       facilities: [facility],

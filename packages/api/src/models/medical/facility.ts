@@ -19,7 +19,8 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cwOboActive: boolean;
   declare cqOboOid: string | null;
   declare cwOboOid: string | null;
-  declare type: FacilityType;
+  declare cwType: FacilityType;
+  declare cqType: FacilityType;
   declare data: FacilityData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -55,7 +56,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
           type: DataTypes.STRING,
           allowNull: true,
         },
-        type: {
+        cwType: {
+          type: DataTypes.ENUM(...Object.values(FacilityType)),
+          defaultValue: FacilityType.initiatorAndResponder,
+        },
+        cqType: {
           type: DataTypes.ENUM(...Object.values(FacilityType)),
           defaultValue: FacilityType.initiatorAndResponder,
         },

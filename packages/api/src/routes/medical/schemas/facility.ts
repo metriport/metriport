@@ -23,11 +23,12 @@ export const facilityOboDetailsSchemaBase = z
     id: z.string().optional(),
     nameInMetriport: z.string(),
     npi: z.string(),
-    type: z.nativeEnum(FacilityType),
     // CQ
+    cqType: z.nativeEnum(FacilityType),
     cqOboActive: z.boolean().optional(),
     cqOboOid: z.string().optional(),
     // CW
+    cwType: z.nativeEnum(FacilityType),
     cwOboActive: z.boolean().optional(),
     cwOboOid: z.string().optional(),
     cwFacilityName: z.string().optional(),

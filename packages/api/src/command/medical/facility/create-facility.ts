@@ -11,10 +11,11 @@ import { FacilityModel } from "../../../models/medical/facility";
 export const createFacility = async ({
   cxId,
   data,
-  type = FacilityType.initiatorAndResponder,
   cqOboActive = false,
-  cwOboActive = false,
+  cqType = FacilityType.initiatorAndResponder,
   cqOboOid,
+  cwOboActive = false,
+  cwType = FacilityType.initiatorAndResponder,
   cwOboOid,
 }: FacilityCreate): Promise<Facility> => {
   const input = {
@@ -22,7 +23,8 @@ export const createFacility = async ({
     oid: "", // will be set when facility is created in hook
     facilityNumber: 0, // will be set when facility is created in hook
     cxId,
-    type,
+    cqType,
+    cwType,
     cqOboActive,
     cwOboActive,
     cqOboOid: cqOboOid ?? null,
@@ -34,24 +36,32 @@ export const createFacility = async ({
 };
 
 export function validateCreate(facility: FacilityCreate, throwOnError = true): boolean {
-  const { type, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facility;
+  const { cwType, cqType, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = facility;
 
-  if (isOboFacility(type) && !cqOboActive && !cwOboActive) {
+  if (isOboFacility(cwType) && !cwOboActive) {
     if (!throwOnError) return false;
-    throw new BadRequestError("OBO facility must have at least one OBO active");
+    throw new BadRequestError("CW OBO facility must be active");
   }
-  if (!isOboFacility(type) && (cqOboActive || cwOboActive)) {
+  if (!isOboFacility(cwType) && cwOboActive) {
     if (!throwOnError) return false;
-    throw new BadRequestError("Non-OBO facility cannot have OBO active");
-  }
-
-  if (cqOboActive && !cqOboOid) {
-    if (!throwOnError) return false;
-    throw new BadRequestError("Facility must have CQ OBO OID when CQ OBO active");
+    throw new BadRequestError("CW Non-OBO facility cannot have OBO active");
   }
   if (cwOboActive && !cwOboOid) {
     if (!throwOnError) return false;
     throw new BadRequestError("Facility must have CW OBO OID when CW OBO active");
+  }
+
+  if (isOboFacility(cqType) && !cqOboActive) {
+    if (!throwOnError) return false;
+    throw new BadRequestError("CQ OBO facility must be active");
+  }
+  if (!isOboFacility(cqType) && cqOboActive) {
+    if (!throwOnError) return false;
+    throw new BadRequestError("CQ Non-OBO facility cannot have OBO active");
+  }
+  if (cqOboActive && !cqOboOid) {
+    if (!throwOnError) return false;
+    throw new BadRequestError("Facility must have CQ OBO OID when CQ OBO active");
   }
 
   return true;

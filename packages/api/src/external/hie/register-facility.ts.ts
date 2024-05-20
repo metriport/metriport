@@ -56,7 +56,8 @@ function createFacilityDetails(
   facility: FacilityRegister,
   address: AddressWithCoordinates
 ): { facilityDetails: FacilityCreate; coordinates: Coordinates } {
-  const isObo = isOboFacility(facility.type);
+  const isCqObo = isOboFacility(facility.cqType);
+  const isCwObo = isOboFacility(facility.cwType);
   const { address: addressStrict, coordinates } = removeCoordinates(address);
 
   let facilityDetails: FacilityCreate = {
@@ -66,14 +67,21 @@ function createFacilityDetails(
       npi: facility.data.npi,
       address: addressStrict,
     },
-    type: facility.type,
+    cqType: facility.cqType,
+    cwType: facility.cwType,
   };
 
-  if (isObo) {
+  if (isCqObo) {
     facilityDetails = {
       ...facilityDetails,
       cqOboActive: facility.cqOboActive,
       cqOboOid: facility.cqOboOid,
+    };
+  }
+
+  if (isCwObo) {
+    facilityDetails = {
+      ...facilityDetails,
       cwOboActive: facility.cwOboActive,
       cwOboOid: facility.cwOboOid,
     };

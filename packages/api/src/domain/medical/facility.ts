@@ -24,7 +24,8 @@ export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cwOboActive?: boolean;
   cqOboOid?: string | null;
   cwOboOid?: string | null;
-  type?: FacilityType;
+  cwType?: FacilityType;
+  cqType?: FacilityType;
   data: FacilityData;
 }
 

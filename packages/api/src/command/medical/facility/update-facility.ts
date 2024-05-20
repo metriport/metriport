@@ -5,7 +5,14 @@ import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { validateCreate } from "./create-facility";
 import { getFacilityOrFail } from "./get-facility";
 
-type PartialProps = "eTag" | "type" | "cqOboActive" | "cwOboActive" | "cqOboOid" | "cwOboOid";
+type PartialProps =
+  | "eTag"
+  | "cqType"
+  | "cwType"
+  | "cqOboActive"
+  | "cwOboActive"
+  | "cqOboOid"
+  | "cwOboOid";
 
 export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer &
   Omit<Facility, "oid" | "facilityNumber" | "createdAt" | "updatedAt" | PartialProps> &
@@ -39,7 +46,8 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
 };
 
 export function validateUpdate(existing: Facility, updateFac: FacilityUpdateCmd): Facility {
-  const type = updateFac.type ?? existing.type;
+  const cqType = updateFac.cqType ?? existing.cqType;
+  const cwType = updateFac.cwType ?? existing.cwType;
   const cqOboActive = updateFac.cqOboActive ?? existing.cqOboActive;
   const cwOboActive = updateFac.cwOboActive ?? existing.cwOboActive;
   const cqOboOid = updateFac.cqOboOid === undefined ? existing.cqOboOid : updateFac.cqOboOid;
@@ -48,7 +56,8 @@ export function validateUpdate(existing: Facility, updateFac: FacilityUpdateCmd)
   const result = {
     ...existing,
     ...updateFac,
-    type,
+    cqType,
+    cwType,
     cqOboActive,
     cwOboActive,
     cqOboOid,

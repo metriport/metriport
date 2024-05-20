@@ -26,9 +26,10 @@ let createOrUpdateCwOrganizationMock: jest.SpyInstance;
 
 beforeEach(() => {
   mockedFacility = makeFacility({
-    type: FacilityType.initiatorOnly,
+    cqType: FacilityType.initiatorOnly,
     cqOboActive: true,
     cqOboOid: faker.string.uuid(),
+    cwType: FacilityType.initiatorOnly,
     cwOboActive: true,
     cwOboOid: faker.string.uuid(),
   });
@@ -100,7 +101,7 @@ describe("registerFacility", () => {
   it("calls createOrUpdateInCq with name containing OBO when isObo and cqOboData.enabled to true", async () => {
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorOnly,
+      cqType: FacilityType.initiatorOnly,
     };
 
     const getCqOboDataMockData: CqOboDetails = {
@@ -126,7 +127,7 @@ describe("registerFacility", () => {
   it("calls createOrUpdateInCq with name not containing OBO when isProvider and cqOboData.enabled to true", async () => {
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorAndResponder,
+      cqType: FacilityType.initiatorAndResponder,
     };
 
     const getCqOboDataMockData: CqOboDetails = {
@@ -152,7 +153,7 @@ describe("registerFacility", () => {
   it("returns createOrUpdateInCq early when its an obo but cqObo not enabled", async () => {
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorOnly,
+      cqType: FacilityType.initiatorOnly,
     };
 
     const getCqOboDataMockData: CqOboDetails = {
@@ -174,7 +175,7 @@ describe("registerFacility", () => {
 
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorOnly,
+      cwType: FacilityType.initiatorOnly,
       cwOboActive: true,
       cwOboOid: faker.string.uuid(),
     };
@@ -201,7 +202,7 @@ describe("registerFacility", () => {
 
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorAndResponder,
+      cwType: FacilityType.initiatorAndResponder,
       cwOboActive: true,
       cwOboOid: faker.string.uuid(),
     };
@@ -228,7 +229,7 @@ describe("registerFacility", () => {
 
     mockedFacility = {
       ...mockedFacility,
-      type: FacilityType.initiatorOnly,
+      cwType: FacilityType.initiatorOnly,
       cwOboActive: false,
       cwOboOid: null,
     };
@@ -241,5 +242,91 @@ describe("registerFacility", () => {
     );
 
     expect(createOrUpdateCwOrganizationMock).not.toHaveBeenCalled();
+  });
+
+  it("calls createOrUpdateInCw without obo and createOrUpdateInCq with obo when cwType is initiatorAndResponder and cqType is initiatorOnly", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    mockedFacility = {
+      ...mockedFacility,
+      cwType: FacilityType.initiatorAndResponder,
+      cwOboActive: false,
+      cwOboOid: null,
+      cqType: FacilityType.initiatorOnly,
+      cqOboActive: true,
+      cqOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCw(
+      mockedFacility,
+      mockedRegisterFacility.cwFacilityName,
+      getCxOrganizationNameAndOidResult,
+      cxId
+    );
+
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
+      coordinates
+    );
+
+    expect(createOrUpdateCwOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: expect.not.stringContaining("OBO"),
+        }),
+      }),
+      false
+    );
+
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringContaining("OBO"),
+      })
+    );
+  });
+
+  it("calls createOrUpdateInCq without obo and createOrUpdateInCw with obo when cqType is initiatorAndResponder and cwType is initiatorOnly", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    mockedFacility = {
+      ...mockedFacility,
+      cqType: FacilityType.initiatorAndResponder,
+      cqOboActive: false,
+      cqOboOid: null,
+      cwType: FacilityType.initiatorOnly,
+      cwOboActive: true,
+      cwOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCw(
+      mockedFacility,
+      mockedRegisterFacility.cwFacilityName,
+      getCxOrganizationNameAndOidResult,
+      cxId
+    );
+
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      { enabled: false },
+      coordinates
+    );
+
+    expect(createOrUpdateCwOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: expect.stringContaining("OBO"),
+        }),
+      }),
+      true
+    );
+
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.not.stringContaining("OBO"),
+      })
+    );
   });
 });

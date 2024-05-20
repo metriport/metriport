@@ -18,8 +18,8 @@ export async function createOrUpdateInCq(
   coordinates: Coordinates
 ): Promise<void> {
   const { log } = out("createOrUpdateInCq");
-  const isObo = isOboFacility(facility.type);
-  const isProvider = isNonOboFacility(facility.type);
+  const isObo = isOboFacility(facility.cqType);
+  const isProvider = isNonOboFacility(facility.cqType);
   const cqOboDisabled = !isObo || !cqOboData.enabled;
 
   if (cqOboDisabled && !isProvider) {
@@ -68,8 +68,8 @@ export async function createOrUpdateInCw(
 ): Promise<void> {
   const { log } = out("createOrUpdateInCw");
 
-  const isProvider = isNonOboFacility(facility.type);
-  const isObo = isOboFacility(facility.type);
+  const isProvider = isNonOboFacility(facility.cwType);
+  const isObo = isOboFacility(facility.cwType);
   const cwOboDisabled = !isObo || !facility.cwOboActive || !facility.cwOboOid;
 
   if (cwOboDisabled && !isProvider) {
