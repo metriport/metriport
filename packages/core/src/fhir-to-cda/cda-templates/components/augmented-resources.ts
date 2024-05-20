@@ -1,4 +1,5 @@
 import {
+  AllergyIntolerance,
   Condition,
   Medication,
   MedicationStatement,
@@ -15,6 +16,10 @@ export class AugmentedObservation implements AugmentedResource {
   constructor(public typeOid: string, public sectionName: string, public resource: Observation) {}
 }
 
+export class AugmentedAllergy implements AugmentedResource {
+  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.30";
+  constructor(public resource: AllergyIntolerance, public sectionName: string) {}
+}
 export class AugmentedCondition implements AugmentedResource {
   public readonly typeOid = "2.16.840.1.113883.10.20.22.4.3";
   constructor(public resource: Condition, public sectionName: string) {}

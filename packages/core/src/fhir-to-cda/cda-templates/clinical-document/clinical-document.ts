@@ -106,8 +106,9 @@ export function buildClinicalDocumentXml(
   const builder = new XMLBuilder({
     format: false,
     attributeNamePrefix: "_",
-    // textNodeName: "#text",
+    textNodeName: "#text",
     ignoreAttributes: false,
+    suppressBooleanAttributes: false,
   });
 
   return builder.build(cleanedJsonObj);

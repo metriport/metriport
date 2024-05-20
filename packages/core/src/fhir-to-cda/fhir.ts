@@ -1,4 +1,5 @@
 import {
+  AllergyIntolerance,
   Bundle,
   Composition,
   Condition,
@@ -17,6 +18,11 @@ function isOrganization(resource: Resource | undefined): resource is Organizatio
   return resource?.resourceType === "Organization";
 }
 
+export function isAllergyIntolerance(
+  resource: Resource | undefined
+): resource is AllergyIntolerance {
+  return resource?.resourceType === "AllergyIntolerance";
+}
 export function isCondition(resource: Resource | undefined): resource is Condition {
   return resource?.resourceType === "Condition";
 }

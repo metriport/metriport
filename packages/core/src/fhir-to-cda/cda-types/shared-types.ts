@@ -182,6 +182,7 @@ export type ObservationTableRow = {
   tr: {
     [_idAttribute]: string;
     td: {
+      [_idAttribute]?: string;
       [_inlineTextAttribute]?: string | undefined;
     }[];
   };
