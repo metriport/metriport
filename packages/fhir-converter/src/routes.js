@@ -46,12 +46,8 @@ module.exports = function (app) {
   const workerPool = new WorkerPool("./src/lib/workers/worker.js", amountOfWorkers);
   let templateCache = new fileSystemCache(constants.TEMPLATE_FILES_LOCATION);
   templateCache.init();
-  let messageCache = new fileSystemCache(constants.SAMPLE_DATA_LOCATION);
-  messageCache.init();
   app.use(bodyParser.json({ limit: "50mb", extended: true }));
   app.use(bodyParser.text({ limit: "50mb", extended: true }));
-  app.use(express.static(constants.STATIC_LOCATION));
-  app.use("/codemirror", express.static(constants.CODE_MIRROR_LOCATION));
 
   // access function for constants (test instrumentation)
   app.getConstants = function () {
@@ -62,7 +58,6 @@ module.exports = function (app) {
   app.setConstants = function (c) {
     constants = c;
     templateCache = new fileSystemCache(c.TEMPLATE_FILES_LOCATION);
-    messageCache = new fileSystemCache(c.SAMPLE_DATA_LOCATION);
     workerPool.broadcast({ type: "constantsUpdated", data: JSON.stringify(c) });
   };
 
