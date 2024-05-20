@@ -14,7 +14,7 @@ const pointClickCareOid = "2.16.840.1.113883.3.6448";
 const redoxOid = "2.16.840.1.113883.3.6147.458";
 const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
 
-const onlyOneDocumentReferencePerRequestList = [pointClickCareOid, redoxOid, redoxGatewayOid];
+const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
 const minDocumentReferencesPerDrRequest = 1;
 const maxDocumentReferencesPerDrRequest = 10;
 
@@ -119,7 +119,7 @@ export function createAndSignBulkDRRequests({
   const signedRequests: BulkSignedDR[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const documentReferencesPerRequest = onlyOneDocumentReferencePerRequestList.includes(
+    const documentReferencesPerRequest = gatewaysThatAcceptOneDocRefPerRequest.includes(
       bodyData.gateway.homeCommunityId
     )
       ? minDocumentReferencesPerDrRequest
