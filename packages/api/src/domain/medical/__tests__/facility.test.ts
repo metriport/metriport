@@ -2,12 +2,12 @@
 import { faker } from "@faker-js/faker";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { makeFacility } from "../../medical/__tests__/facility";
-import { FacilityType, isOboEnabled } from "../facility";
+import { FacilityType, isOboEnabledForHie } from "../facility";
 
-describe("isOboEnabled", () => {
+describe("isOboEnabledForHie", () => {
   it("throws if invalid MedicalDataSource", async () => {
     const facility = makeFacility({ type: FacilityType.initiatorOnly });
-    expect(() => isOboEnabled(facility, "something" as MedicalDataSource)).toThrow();
+    expect(() => isOboEnabledForHie(facility, "something" as MedicalDataSource)).toThrow();
   });
 
   describe("CQ", () => {
@@ -17,7 +17,7 @@ describe("isOboEnabled", () => {
         cqOboActive: true,
         cqOboOid: faker.string.uuid(),
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.CAREQUALITY);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.CAREQUALITY);
       expect(resp).toBeTruthy();
     });
 
@@ -27,7 +27,7 @@ describe("isOboEnabled", () => {
         cqOboActive: true,
         cqOboOid: null,
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.CAREQUALITY);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.CAREQUALITY);
       expect(resp).toBeFalsy();
     });
 
@@ -37,17 +37,7 @@ describe("isOboEnabled", () => {
         cqOboActive: false,
         cqOboOid: faker.string.uuid(),
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.CAREQUALITY);
-      expect(resp).toBeFalsy();
-    });
-
-    it("returns false when obo is active, has oid, but its not initiator only", async () => {
-      const facility = makeFacility({
-        type: FacilityType.initiatorAndResponder,
-        cqOboActive: true,
-        cqOboOid: faker.string.uuid(),
-      });
-      const resp = isOboEnabled(facility, MedicalDataSource.CAREQUALITY);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.CAREQUALITY);
       expect(resp).toBeFalsy();
     });
   });
@@ -59,7 +49,7 @@ describe("isOboEnabled", () => {
         cwOboActive: true,
         cwOboOid: faker.string.uuid(),
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.COMMONWELL);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.COMMONWELL);
       expect(resp).toBeTruthy();
     });
 
@@ -69,7 +59,7 @@ describe("isOboEnabled", () => {
         cwOboActive: true,
         cwOboOid: null,
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.COMMONWELL);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.COMMONWELL);
       expect(resp).toBeFalsy();
     });
 
@@ -79,17 +69,7 @@ describe("isOboEnabled", () => {
         cwOboActive: false,
         cwOboOid: faker.string.uuid(),
       });
-      const resp = isOboEnabled(facility, MedicalDataSource.COMMONWELL);
-      expect(resp).toBeFalsy();
-    });
-
-    it("returns false when obo is active, has oid, but its not initiator only", async () => {
-      const facility = makeFacility({
-        type: FacilityType.initiatorAndResponder,
-        cwOboActive: true,
-        cwOboOid: faker.string.uuid(),
-      });
-      const resp = isOboEnabled(facility, MedicalDataSource.COMMONWELL);
+      const resp = isOboEnabledForHie(facility, MedicalDataSource.COMMONWELL);
       expect(resp).toBeFalsy();
     });
   });
