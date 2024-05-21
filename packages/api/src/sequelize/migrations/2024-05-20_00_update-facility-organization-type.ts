@@ -61,13 +61,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
         }
       }
 
-      await queryInterface.bulkUpdate(
-        facilityTableName,
-        update,
+      await queryInterface.sequelize.query(
+        `update ${facilityTableName} set cw_type = '${update.cw_type}', cq_type = '${update.cq_type}' where id = '${facility.id}'`,
         {
-          id: facility.id,
-        },
-        { transaction }
+          transaction,
+        }
       );
     }
 
@@ -123,15 +121,11 @@ export const down: Migration = ({ context: queryInterface }) => {
         type = INITIATOR_ONLY;
       }
 
-      await queryInterface.bulkUpdate(
-        facilityTableName,
+      await queryInterface.sequelize.query(
+        `update ${facilityTableName} set type = '${type}' where id = '${facility.id}'`,
         {
-          type,
-        },
-        {
-          id: facility.id,
-        },
-        { transaction }
+          transaction,
+        }
       );
     }
 
