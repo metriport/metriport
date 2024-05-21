@@ -10,6 +10,7 @@ import {
   optionalDateToISOString,
 } from "../../shared";
 import { getETagHeader } from "../models/common/base-update";
+import { Demographics } from "../models/demographics";
 import {
   BulkGetDocumentUrlQuery,
   bulkGetDocumentUrlQuerySchema,
@@ -25,13 +26,14 @@ import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "..
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
 import {
+  GetConsolidatedQueryProgressResponse,
   PatientCreate,
   PatientUpdate,
   StartConsolidatedQueryProgressResponse,
-  GetConsolidatedQueryProgressResponse,
 } from "../models/patient";
-import { Demographics } from "../models/demographics";
 import { PatientDTO } from "../models/patientDTO";
+import { SettingsResponse } from "../models/settings-response";
+import { WebhookStatusResponse } from "../models/webhook-status-response";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -56,7 +58,14 @@ export type Options = {
 );
 
 export class MetriportMedicalApi {
+  // TODO this should be private
   readonly api: AxiosInstance;
+  /**
+   * Options for the settings endpoint.
+   */
+  private optionsForSettings = {
+    baseURL: "/",
+  };
 
   static readonly headers = {
     clientApp: "x-metriport-client",
@@ -77,13 +86,15 @@ export class MetriportMedicalApi {
     const headers = { [API_KEY_HEADER]: apiKey, ...options.additionalHeaders };
     const { sandbox, timeout } = options;
 
-    const baseURL =
-      (options.baseAddress || (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS)) + BASE_PATH;
+    const baseHostAndProtocol =
+      options.baseAddress ?? (sandbox ? BASE_ADDRESS_SANDBOX : BASE_ADDRESS);
+    const baseURL = baseHostAndProtocol + BASE_PATH;
     const axiosConfig: CreateAxiosDefaults = {
       timeout: timeout ?? DEFAULT_AXIOS_TIMEOUT_MILLIS,
       baseURL,
       headers,
     };
+    this.optionsForSettings.baseURL = baseHostAndProtocol;
 
     if (axios) {
       this.api = axios.create(axiosConfig);
@@ -95,9 +106,59 @@ export class MetriportMedicalApi {
   }
 
   /**
-   * Creates a new organization.
+   * Gets the settings for your account.
+   *
+   * @returns Your account settings.
+   */
+  async getSettings(): Promise<SettingsResponse> {
+    const resp = await this.api.get<SettingsResponse>("/settings", {
+      ...this.optionsForSettings,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Update the settings for your account.
+   *
+   * @returns Your updated account settings.
+   */
+  async updateSettings(webhookUrl: string): Promise<SettingsResponse> {
+    const resp = await this.api.post<SettingsResponse>(
+      "/settings",
+      { webhookUrl },
+      { ...this.optionsForSettings }
+    );
+    return resp.data;
+  }
+
+  /**
+   * Gets the status of communication with your app's webhook.
+   *
+   * @returns The status of communication with your app's webhook.
+   */
+  async getWebhookStatus(): Promise<WebhookStatusResponse> {
+    const resp = await this.api.get<WebhookStatusResponse>("/settings/webhook", {
+      ...this.optionsForSettings,
+    });
+    return resp.data;
+  }
+
+  /**
+   * Retries failed webhook requests.
+   *
+   * @returns void
+   */
+  async retryWebhookRequests(): Promise<void> {
+    await this.api.post("/settings/webhook/retry", {
+      ...this.optionsForSettings,
+    });
+  }
+
+  /**
+   * Creates a new organization if one does not already exist.
    *
    * @param data The data to be used to create a new organization.
+   * @throws Error (400) if an organization already exists for the customer.
    * @returns The created organization.
    */
   async createOrganization(data: OrganizationCreate): Promise<Organization> {

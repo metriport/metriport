@@ -17,6 +17,7 @@ const config: JestConfigWithTsJest = {
   testMatch: isE2E
     ? ["**/__tests__/**/(*.)+(spec|test).e2e.[jt]s?(x)"]
     : ["**/__tests__/**/(*.)+(spec|test).[jt]s?(x)"],
+  globalTeardown: "./src/__tests__/tear-down.ts",
   setupFilesAfterEnv: ["./src/__tests__/env-setup.ts"],
   transform: {
     "^.+\\.tsx?$": [
