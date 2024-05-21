@@ -23,12 +23,13 @@ export const toFHIR = (patient: Pick<Patient, "id" | "data">): FHIRPatient => {
     identifier: patient.data.personalIdentifiers
       ? convertDriversLicenseToIdentifier(patient.data.personalIdentifiers)
       : [],
-    name: [
-      {
-        family: patient.data.lastName,
+    // Why are we not splitting last name up? In the docs we say they can enter more than one last name...
+    name: splitName(patient.data.lastName).map(lastName => {
+      return {
+        family: lastName,
         given: splitName(patient.data.firstName),
-      },
-    ],
+      };
+    }),
     telecom:
       patient.data.contact
         ?.map((contact: Contact) => {
