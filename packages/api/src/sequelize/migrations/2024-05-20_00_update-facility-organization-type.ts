@@ -13,6 +13,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       {
         type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
         defaultValue: "initiator_and_responder",
+        allowNull: false,
       },
       { transaction }
     );
@@ -22,6 +23,7 @@ export const up: Migration = async ({ context: queryInterface }) => {
       {
         type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
         defaultValue: "initiator_and_responder",
+        allowNull: false,
       },
       { transaction }
     );
