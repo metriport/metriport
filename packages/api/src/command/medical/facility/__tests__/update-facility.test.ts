@@ -7,9 +7,10 @@ import { makeFacilityUpdateCmd } from "./update-facility";
 
 function makeValidUpdateCmd(params: Partial<Facility> = {}) {
   return makeFacilityUpdateCmd({
-    type: FacilityType.initiatorOnly,
-    cwOboActive: true,
-    cqOboActive: true,
+    cwType: FacilityType.initiatorOnly,
+    cqType: FacilityType.initiatorOnly,
+    cwActive: true,
+    cqActive: true,
     ...params,
   });
 }
@@ -28,13 +29,15 @@ describe("updateFacility", () => {
     it("calls validateCreate", async () => {
       const existing = makeFacility();
       const updateFac = makeValidUpdateCmd();
-      updateFac.type = undefined;
-      updateFac.cqOboActive = undefined;
-      updateFac.cwOboActive = undefined;
+      updateFac.cwType = undefined;
+      updateFac.cqType = undefined;
+      updateFac.cqActive = undefined;
+      updateFac.cwActive = undefined;
       updateFac.cqOboOid = undefined;
       updateFac.cwOboOid = undefined;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { type, cqOboActive, cwOboActive, cqOboOid, cwOboOid, ...updateWithoutObo } = updateFac;
+      const { cqType, cwType, cqActive, cwActive, cqOboOid, cwOboOid, ...updateWithoutObo } =
+        updateFac;
       validateUpdate(existing, updateFac);
       expect(validateCreate_mock).toHaveBeenCalledWith({
         ...existing,
@@ -43,73 +46,87 @@ describe("updateFacility", () => {
     });
 
     it("uses existing type when update is not present", async () => {
-      const existing = makeFacility({ type: FacilityType.initiatorOnly });
+      const existing = makeFacility({
+        cqType: FacilityType.initiatorOnly,
+        cwType: FacilityType.initiatorOnly,
+      });
       const updateFac = makeValidUpdateCmd();
-      updateFac.type = undefined;
+      updateFac.cwType = undefined;
+      updateFac.cqType = undefined;
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
-      expect(res).toEqual(expect.objectContaining({ type: existing.type }));
+      expect(res).toEqual(
+        expect.objectContaining({ cqType: existing.cqType, cwType: existing.cwType })
+      );
     });
 
     it("uses existing CQ data when update is not present", async () => {
-      const existing = makeFacility({ cqOboActive: true, cqOboOid: faker.string.uuid() });
+      const existing = makeFacility({ cqActive: true, cqOboOid: faker.string.uuid() });
       const updateFac = makeValidUpdateCmd();
-      updateFac.cqOboActive = undefined;
+      updateFac.cqActive = undefined;
       updateFac.cqOboOid = undefined;
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
       expect(res).toEqual(
         expect.objectContaining({
-          cqOboActive: existing.cqOboActive,
+          cqActive: existing.cqActive,
           cqOboOid: existing.cqOboOid,
         })
       );
     });
 
     it("uses existing CW data when update is not present", async () => {
-      const existing = makeFacility({ cwOboActive: true, cwOboOid: faker.string.uuid() });
+      const existing = makeFacility({ cwActive: true, cwOboOid: faker.string.uuid() });
       const updateFac = makeValidUpdateCmd();
-      updateFac.cwOboActive = undefined;
+      updateFac.cwActive = undefined;
       updateFac.cwOboOid = undefined;
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
       expect(res).toEqual(
         expect.objectContaining({
-          cwOboActive: existing.cwOboActive,
+          cwActive: existing.cwActive,
           cwOboOid: existing.cwOboOid,
         })
       );
     });
 
-    it("uses update type when provided", async () => {
-      const existing = makeFacility({ type: FacilityType.initiatorOnly });
-      const updateFac = makeFacility({ type: FacilityType.initiatorAndResponder });
+    it("uses update cqType when provided", async () => {
+      const existing = makeFacility({ cqType: FacilityType.initiatorOnly });
+      const updateFac = makeFacility({ cqType: FacilityType.initiatorAndResponder });
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
-      expect(res).toEqual(expect.objectContaining({ type: updateFac.type }));
+      expect(res).toEqual(expect.objectContaining({ cqType: updateFac.cqType }));
+    });
+
+    it("uses update cwType when provided", async () => {
+      const existing = makeFacility({ cwType: FacilityType.initiatorOnly });
+      const updateFac = makeFacility({ cwType: FacilityType.initiatorAndResponder });
+      const res = validateUpdate(existing, updateFac);
+      expect(res).toBeTruthy();
+      expect(res).toEqual(expect.objectContaining({ cwType: updateFac.cwType }));
     });
 
     it("uses update CQ data when provided", async () => {
-      const existing = makeFacility({ cqOboActive: false, cqOboOid: faker.string.uuid() });
-      const updateFac = makeValidUpdateCmd({ cqOboActive: true, cqOboOid: faker.string.uuid() });
+      const existing = makeFacility({ cqActive: false, cqOboOid: faker.string.uuid() });
+      const updateFac = makeValidUpdateCmd({ cqActive: true, cqOboOid: faker.string.uuid() });
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
       expect(res).toEqual(
         expect.objectContaining({
-          cqOboActive: updateFac.cqOboActive,
+          cqActive: updateFac.cqActive,
           cqOboOid: updateFac.cqOboOid,
         })
       );
     });
 
     it("uses update CW data when provided", async () => {
-      const existing = makeFacility({ cwOboActive: false, cwOboOid: faker.string.uuid() });
-      const updateFac = makeValidUpdateCmd({ cwOboActive: true, cwOboOid: faker.string.uuid() });
+      const existing = makeFacility({ cwActive: false, cwOboOid: faker.string.uuid() });
+      const updateFac = makeValidUpdateCmd({ cwActive: true, cwOboOid: faker.string.uuid() });
       const res = validateUpdate(existing, updateFac);
       expect(res).toBeTruthy();
       expect(res).toEqual(
         expect.objectContaining({
-          cwOboActive: updateFac.cwOboActive,
+          cwActive: updateFac.cwActive,
           cwOboOid: updateFac.cwOboOid,
         })
       );

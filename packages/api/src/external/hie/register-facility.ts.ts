@@ -30,7 +30,7 @@ export async function registerFacilityWithinHIEs(
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),
     getAddressWithCoordinates(getAddressFromInput(facility), cxId),
-    getCqOboData(facility.cqOboActive, facility.cqOboOid),
+    getCqOboData(facility.cqActive, facility.cqOboOid),
   ]);
 
   const { facilityDetails, coordinates } = createFacilityDetails(cxId, facility, address);
@@ -56,7 +56,8 @@ function createFacilityDetails(
   facility: FacilityRegister,
   address: AddressWithCoordinates
 ): { facilityDetails: FacilityCreate; coordinates: Coordinates } {
-  const isObo = isOboFacility(facility.type);
+  const isCqObo = isOboFacility(facility.cqType);
+  const isCwObo = isOboFacility(facility.cwType);
   const { address: addressStrict, coordinates } = removeCoordinates(address);
 
   let facilityDetails: FacilityCreate = {
@@ -66,15 +67,22 @@ function createFacilityDetails(
       npi: facility.data.npi,
       address: addressStrict,
     },
-    type: facility.type,
+    cqType: facility.cqType,
+    cwType: facility.cwType,
   };
 
-  if (isObo) {
+  if (isCqObo) {
     facilityDetails = {
       ...facilityDetails,
-      cqOboActive: facility.cqOboActive,
+      cqActive: facility.cqActive,
       cqOboOid: facility.cqOboOid,
-      cwOboActive: facility.cwOboActive,
+    };
+  }
+
+  if (isCwObo) {
+    facilityDetails = {
+      ...facilityDetails,
+      cwActive: facility.cwActive,
       cwOboOid: facility.cwOboOid,
     };
   }
