@@ -48,10 +48,14 @@ export const up: Migration = async ({ context: queryInterface }) => {
       if (facility.type === "initiator_only") {
         if (facility.cq_obo_oid) {
           update["cq_type"] = "initiator_only";
+        } else {
+          update["cq_type"] = "initiator_and_responder";
         }
 
         if (facility.cw_obo_oid) {
           update["cw_type"] = "initiator_only";
+        } else {
+          update["cw_type"] = "initiator_and_responder";
         }
       }
 
@@ -91,6 +95,7 @@ export const down: Migration = ({ context: queryInterface }) => {
       {
         type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
         defaultValue: "initiator_and_responder",
+        allowNull: false,
       },
       { transaction }
     );
@@ -108,7 +113,7 @@ export const down: Migration = ({ context: queryInterface }) => {
       const cqType = facility.cq_type;
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let type: any = "initiator_and_responder";
+      let type = "initiator_and_responder";
 
       if (cwType === "initiator_only" || cqType === "initiator_only") {
         type = "initiator_only";
