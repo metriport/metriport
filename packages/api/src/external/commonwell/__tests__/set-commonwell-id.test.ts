@@ -34,16 +34,41 @@ afterEach(() => {
 });
 
 const checkPatientUpdateWith = (cwParams: Partial<CWParams>) => {
-  expect(patientModel_update).toHaveBeenCalledWith(
+  expect(patientModel_update).toHaveBeenNthCalledWith(
+    1,
     expect.objectContaining({
       data: expect.objectContaining({
         externalData: expect.objectContaining({
-          COMMONWELL: {
+          COMMONWELL: expect.objectContaining({
             ...(cwParams.commonwellPatientId && { patientId: cwParams.commonwellPatientId }),
             ...(cwParams.commonwellPersonId && { personId: cwParams.commonwellPersonId }),
-            ...(cwParams.status && { status: cwParams.status }),
+          }),
+        }),
+      }),
+    }),
+    expect.anything()
+  );
+  expect(patientModel_update).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({
+      data: expect.objectContaining({
+        externalData: expect.objectContaining({
+          COMMONWELL: expect.objectContaining({
             ...(cwParams.cqLinkStatus && { cqLinkStatus: cwParams.cqLinkStatus }),
-          },
+          }),
+        }),
+      }),
+    }),
+    expect.anything()
+  );
+  expect(patientModel_update).toHaveBeenNthCalledWith(
+    3,
+    expect.objectContaining({
+      data: expect.objectContaining({
+        externalData: expect.objectContaining({
+          COMMONWELL: expect.objectContaining({
+            ...(cwParams.status && { status: cwParams.status }),
+          }),
         }),
       }),
     }),
@@ -55,7 +80,7 @@ describe("setCommonwellIdsAndStatus", () => {
   it("has CW externalData set to newValues when CW externalData is empty and we set newValues", async () => {
     const patient = makePatient();
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValue(patient);
 
     const newValues = {
       commonwellPatientId: "commonwellPatientId",
@@ -103,7 +128,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValueOnce(patient);
+    patientModel_findOne.mockResolvedValue(patient);
 
     const newValues = {
       commonwellPatientId: "newCommonwellPatientId",
