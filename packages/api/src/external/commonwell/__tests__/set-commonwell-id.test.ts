@@ -5,8 +5,7 @@ import { updatePatientDiscoveryStatus } from "../command/update-patient-discover
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
 import { mockStartTransaction } from "../../../models/__tests__/transaction";
-import { PatientDataCommonwell } from "../patient-shared";
-import { CQLinkStatus } from "../patient-external-data";
+import { PatientDataCommonwell, CQLinkStatus } from "../patient-shared";
 import { LinkStatus } from "../../patient-link";
 
 let patient: Patient;

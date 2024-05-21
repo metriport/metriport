@@ -11,7 +11,13 @@ import { intersectionBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { capture } from "../../shared/notifications";
 import { LinkStatus } from "../patient-link";
-import { CQLinkStatus } from "./patient-external-data";
+
+// CQLinkStatus --- Deprecate?
+export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
+/**
+ * Status of the patient's link to CareQuality.
+ */
+export type CQLinkStatus = (typeof cqLinkStatus)[number];
 
 export class PatientDataCommonwell extends PatientExternalDataEntry {
   constructor(

@@ -2,7 +2,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { Op } from "sequelize";
 import { PatientModel } from "../../../models/medical/patient";
-import { CQLinkStatus } from "../patient-external-data";
+import { CQLinkStatus } from "../patient-shared";
 
 dayjs.extend(duration);
 

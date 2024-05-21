@@ -52,7 +52,7 @@ export async function updatePatient(
   if (discoveryStatusCq === "processing" && scheduledPdRequestIdCq) {
     // do nothing -- this update will be reflected when scheduled PD runs
   } else if (discoveryStatusCq === "processing" && !scheduledPdRequestIdCq) {
-    schedulePatientDiscovery({
+    await schedulePatientDiscovery({
       requestId: uuidv7(),
       patient,
       source: MedicalDataSource.CAREQUALITY,
@@ -73,7 +73,7 @@ export async function updatePatient(
   if (statusCw === "processing" && scheduledPdRequestIdCw) {
     // do nothing -- this update will be reflected when scheduled PD runs
   } else if (statusCw === "processing" && !scheduledPdRequestIdCw) {
-    schedulePatientDiscovery({
+    await schedulePatientDiscovery({
       requestId: uuidv7(),
       patient,
       source: MedicalDataSource.COMMONWELL,

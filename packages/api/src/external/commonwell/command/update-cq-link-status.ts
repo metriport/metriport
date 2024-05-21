@@ -2,7 +2,8 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { CQLinkStatus, getLinkStatusCQ } from "../patient-external-data";
+import { CQLinkStatus } from "../patient-shared";
+import { getLinkStatusCQ } from "../patient";
 
 /**
  * Sets the CQLink CommonWell (CW) integration status on the patient.

@@ -1,7 +1,6 @@
 import * as link from "./link";
 import * as organization from "./organization";
 import * as patient from "./patient";
-import * as patientExternal from "./patient-external-data";
 
 const cwCommands = {
   organization: {
@@ -16,8 +15,8 @@ const cwCommands = {
     update: patient.update,
     remove: patient.remove,
     getCWData: patient.getCWData,
-    getLinkStatusCQ: patientExternal.getLinkStatusCQ,
-    getLinkStatusCW: patientExternal.getLinkStatusCW,
+    getLinkStatusCQ: patient.getLinkStatusCQ,
+    getLinkStatusCW: patient.getLinkStatusCW,
   },
   link: {
     create: link.create,

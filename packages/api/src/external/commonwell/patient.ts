@@ -30,6 +30,7 @@ import {
 } from "../aws/appConfig";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { LinkStatus } from "../patient-link";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
@@ -41,7 +42,7 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getMatchingStrongIds } from "./patient-shared";
 import { getCwInitiator } from "./shared";
 import { updateDemographics } from "./patient-demographics";
-import { PatientDataCommonwell } from "./patient-shared";
+import { CQLinkStatus, PatientDataCommonwell } from "./patient-shared";
 import {
   matchPersonsByDemo,
   matchPersonsByStrongIds,
@@ -88,6 +89,25 @@ export function getCWData(
 ): PatientDataCommonwell | undefined {
   if (!data) return undefined;
   return data[MedicalDataSource.COMMONWELL] as PatientDataCommonwell; // TODO validate the type
+}
+
+/**
+ * Returns the status of linking the Patient with CommonWell.
+ */
+export function getLinkStatusCW(data: PatientExternalData | undefined): LinkStatus {
+  const defaultStatus: LinkStatus = "processing";
+  if (!data) return defaultStatus;
+  return getCWData(data)?.status ?? defaultStatus;
+}
+
+/**
+ * Returns the status of linking the Patient with CommonWell's CareQuality bridge. Used for
+ * Enhanced Coverage.
+ */
+export function getLinkStatusCQ(data: PatientExternalData | undefined): CQLinkStatus {
+  const defaultStatus: CQLinkStatus = "unlinked";
+  if (!data) return defaultStatus;
+  return getCWData(data)?.cqLinkStatus ?? defaultStatus;
 }
 
 export async function create(cwCreateProps: cwCreateProps): Promise<void> {

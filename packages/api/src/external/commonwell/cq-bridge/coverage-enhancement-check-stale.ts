@@ -5,7 +5,7 @@ import { Op } from "sequelize";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { capture } from "../../../shared/notifications";
-import { CQLinkStatus } from "../patient-external-data";
+import { CQLinkStatus } from "../patient-shared";
 import { completeEnhancedCoverage } from "./coverage-enhancement-complete";
 
 dayjs.extend(duration);
