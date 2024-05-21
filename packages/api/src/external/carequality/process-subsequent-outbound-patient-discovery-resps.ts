@@ -23,7 +23,8 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   requestId: string;
   cxId: string;
 }): Promise<void> {
-  const { log } = out(`CQ PD post - patientId ${patientId}, requestId: ${requestId}`);
+  const baseLogMessage = `CQ PD post - patientId ${patientId}`;
+  const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const patientIds = { id: patientId, cxId };
 
   try {

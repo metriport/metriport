@@ -29,7 +29,8 @@ export async function processOutboundPatientDiscoveryResps({
   cxId,
   results,
 }: OutboundPatientDiscoveryRespParam): Promise<void> {
-  const { log } = out(`CQ PD Processing results - patientId ${patientId}, requestId: ${requestId}`);
+  const baseLogMessage = `CQ PD Processing results - patientId ${patientId}`;
+  const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
   const patientIds = { id: patientId, cxId };
 
   try {

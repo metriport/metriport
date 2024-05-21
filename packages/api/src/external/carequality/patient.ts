@@ -36,16 +36,20 @@ type cqDiscoverProps = {
   requestId?: string;
 };
 
-type cqDiscoverFlowProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
-  requestId: string;
+type cqPrepareAndTriggerPdProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
   enabledIHEGW: IHEGateway;
+  requestId: string;
   baseLogMessage: string;
   context: string;
 };
-type cqGatewayProps = Pick<cqDiscoverFlowProps, "patient" | "facilityId" | "requestId">;
+type cqPreparePdProps = Pick<cqPrepareAndTriggerPdProps, "patient" | "facilityId" | "requestId">;
 
-export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> {
-  const { patient, facilityId, forceCq, requestId } = cqDiscoverProps;
+export async function discover({
+  patient,
+  facilityId,
+  requestId,
+  forceCq = false,
+}: cqDiscoverProps): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
 
@@ -57,34 +61,39 @@ export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> 
   });
   if (enabledIHEGW) {
     // Intentionally asynchronous
-    discoveryFlow({
-      ...cqDiscoverProps,
-      requestId: requestId ?? uuidv7(),
+    prepareAndTriggerPD({
+      patient,
+      facilityId,
       enabledIHEGW,
+      requestId: requestId ?? uuidv7(),
       baseLogMessage,
-      context: context,
+      context,
     }).catch(processAsyncError(context));
   }
 }
 
-export async function remove(patient: Patient): Promise<void> {
-  console.log(`Deleting CQ data - M patientId ${patient.id}`);
-  await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
-}
-
-async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<void> {
-  const { patient, facilityId, enabledIHEGW, baseLogMessage } = cqDiscoverFlowProps;
-
+async function prepareAndTriggerPD({
+  patient,
+  facilityId,
+  enabledIHEGW,
+  requestId,
+  baseLogMessage,
+  context,
+}: cqPrepareAndTriggerPdProps): Promise<void> {
   // Wrapper?
   await clearPatientDiscoveryEndedAt({ patient });
   await updatePatientDiscoveryStatus({
-    ...cqDiscoverFlowProps,
+    patient,
     status: "processing",
     startedAt: new Date(),
   });
 
   try {
-    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await setupCqGateways(cqDiscoverFlowProps);
+    const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery({
+      patient,
+      facilityId,
+      requestId,
+    });
     const numGatewaysV1 = pdRequestGatewayV1.gateways.length;
     const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
@@ -118,7 +127,7 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
       extra: {
         facilityId,
         patientId: patient.id,
-        context: cqDiscoverFlowProps.context,
+        context,
         error,
       },
     });
@@ -127,7 +136,11 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
   }
 }
 
-async function setupCqGateways({ patient, facilityId, requestId }: cqGatewayProps): Promise<{
+async function prepareForPatientDiscovery({
+  patient,
+  facilityId,
+  requestId,
+}: cqPreparePdProps): Promise<{
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
@@ -192,4 +205,9 @@ export function getCQData(
 ): PatientDataCarequality | undefined {
   if (!data) return undefined;
   return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
+}
+
+export async function remove(patient: Patient): Promise<void> {
+  console.log(`Deleting CQ data - M patientId ${patient.id}`);
+  await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
