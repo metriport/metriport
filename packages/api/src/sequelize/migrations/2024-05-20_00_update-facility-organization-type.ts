@@ -77,6 +77,37 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    const [facilityResults] = await queryInterface.sequelize.query(
+      `select * from ${facilityTableName}`,
+      {
+        transaction,
+      }
+    );
+
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const facility of facilityResults as any[]) {
+      const cwType = facility.cw_type;
+      const cqType = facility.cq_type;
+
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let type: any = "initiator_and_responder";
+
+      if (cwType === "initiator_only" || cqType === "initiator_only") {
+        type = "initiator_only";
+      }
+
+      await queryInterface.bulkUpdate(
+        facilityTableName,
+        {
+          type,
+        },
+        {
+          id: facility.id,
+        },
+        { transaction }
+      );
+    }
+
     await queryInterface.removeColumn(facilityTableName, "cq_type", {
       transaction,
     });
