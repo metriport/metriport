@@ -1,6 +1,5 @@
 import https from "https";
 import { MultipartParser } from "formidable";
-import fs from "fs";
 import { constants } from "crypto";
 import axios from "axios";
 import * as AWS from "aws-sdk";
@@ -9,6 +8,8 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
+import { detectFileType } from "../../../../util/file-type";
+
 const { log } = out("Saml Client");
 
 const timeout = 120000;
@@ -101,21 +102,22 @@ export async function sendSignedXmlMtom({
       "Accept-Encoding": "gzip, deflate",
       "Content-Type": contentType,
       "Cache-Control": "no-cache",
-      responseType: "arraybuffer",
-      responseEncoding: "binary",
     },
     httpsAgent: agent,
   });
 
   try {
-    console.log(JSON.stringify(response.headers, null, 2));
-    fs.writeFileSync("../../scratch/dr/response.xml", response.data);
     const mtomContentType = parseMtomContentType(response.headers["content-type"]);
-    const mtomParts = await parseMTOMResp(Buffer.from(response.data), mtomContentType.boundary);
-    fs.writeFileSync("../../scratch/dr/mtomParts.json", JSON.stringify(mtomParts));
-    const bufferData: Buffer = mtomParts.parts[1]?.body || Buffer.from("");
-    const random = Math.floor(Math.random() * 1000);
-    fs.writeFileSync(`../../scratch/dr/again-${random}`, bufferData, { encoding: "binary" });
+    const binaryData: Buffer = Buffer.isBuffer(response.data)
+      ? response.data
+      : Buffer.from(response.data);
+    const mtomParts = await parseMTOMResp(binaryData, mtomContentType.boundary);
+    const soapData: Buffer = mtomParts.parts[0]?.body || Buffer.from("");
+    const fileData: Buffer = mtomParts.parts[1]?.body || Buffer.from("");
+    const fileType = detectFileType(fileData);
+    const fileType2 = detectFileType(soapData);
+    console.log("File type:", fileType);
+    console.log("File type:", fileType2);
   } catch (error) {
     console.error(error);
   }

@@ -4,7 +4,8 @@ import { processDrResponse } from "../xca/process/dr-response";
 import { outboundDrRequestMtom, outboundDrRequestMultiMtom, testFiles } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
-import { parseMtomContentType, parseMtomHeaders } from "../xca/mtom/parser";
+import { parseMtomHeaders } from "../xca/mtom/parser";
+import { parseMtomContentType } from "../../saml/saml-client";
 import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
 describe("mtomContentAndHeaderParsing", () => {
