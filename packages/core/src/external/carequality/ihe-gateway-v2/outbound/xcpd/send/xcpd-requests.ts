@@ -45,9 +45,13 @@ export async function sendSignedXCPDRequests({
         success: true,
         outboundRequest: request.outboundRequest,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
       log(`${msg}, error: ${error}`);
+      if (error?.response?.data) {
+        log(`error details: ${error.response.data}`);
+      }
 
       const errorString: string = errorToString(error);
       const extra = {

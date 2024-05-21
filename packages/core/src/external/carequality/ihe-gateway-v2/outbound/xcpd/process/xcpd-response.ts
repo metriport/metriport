@@ -9,6 +9,9 @@ import {
 import { normalizeGender } from "../../../utils";
 import { capture } from "../../../../../../util/notifications";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
+import { out } from "../../../../../../util/log";
+
+const { log } = out("Processing XCPD Requests");
 
 function handleHTTPErrorResponse({
   httpError,
@@ -53,6 +56,7 @@ function handlePatientMatchResponse({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
+  log(`Found a match for patient: ${outboundRequest.patientId}`);
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = subject1?.patient?.patientPerson?.addr;
