@@ -5,7 +5,14 @@ import { BaseUpdateCmdWithCustomer } from "../base-update-command";
 import { validateCreate } from "./create-facility";
 import { getFacilityOrFail } from "./get-facility";
 
-type PartialProps = "eTag" | "type" | "cqOboActive" | "cwOboActive" | "cqOboOid" | "cwOboOid";
+type PartialProps =
+  | "eTag"
+  | "cqType"
+  | "cwType"
+  | "cqActive"
+  | "cwActive"
+  | "cqOboOid"
+  | "cwOboOid";
 
 export type FacilityUpdateCmd = BaseUpdateCmdWithCustomer &
   Omit<Facility, "oid" | "facilityNumber" | "createdAt" | "updatedAt" | PartialProps> &
@@ -17,10 +24,7 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
   const facility = await getFacilityOrFail({ id, cxId });
   validateVersionForUpdate(facility, eTag);
 
-  const { data, cqOboActive, cwOboActive, cqOboOid, cwOboOid } = validateUpdate(
-    facility,
-    facilityUpdate
-  );
+  const { data, cqActive, cwActive, cqOboOid, cwOboOid } = validateUpdate(facility, facilityUpdate);
   const { name, npi, tin, active, address } = data;
 
   return facility.update({
@@ -31,26 +35,28 @@ export const updateFacility = async (facilityUpdate: FacilityUpdateCmd): Promise
       active,
       address,
     },
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid,
     cwOboOid,
   });
 };
 
 export function validateUpdate(existing: Facility, updateFac: FacilityUpdateCmd): Facility {
-  const type = updateFac.type ?? existing.type;
-  const cqOboActive = updateFac.cqOboActive ?? existing.cqOboActive;
-  const cwOboActive = updateFac.cwOboActive ?? existing.cwOboActive;
+  const cqType = updateFac.cqType ?? existing.cqType;
+  const cwType = updateFac.cwType ?? existing.cwType;
+  const cqActive = updateFac.cqActive ?? existing.cqActive;
+  const cwActive = updateFac.cwActive ?? existing.cwActive;
   const cqOboOid = updateFac.cqOboOid === undefined ? existing.cqOboOid : updateFac.cqOboOid;
   const cwOboOid = updateFac.cwOboOid === undefined ? existing.cwOboOid : updateFac.cwOboOid;
 
   const result = {
     ...existing,
     ...updateFac,
-    type,
-    cqOboActive,
-    cwOboActive,
+    cqType,
+    cwType,
+    cqActive,
+    cwActive,
     cqOboOid,
     cwOboOid,
   };
