@@ -1,6 +1,6 @@
 import { MedplumClient } from "@medplum/core";
 import { MetriportMedicalApi } from "@metriport/api-sdk";
-import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { getEnvVarOrFail } from "@metriport/shared";
 import { baseURL } from "../shared";
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";

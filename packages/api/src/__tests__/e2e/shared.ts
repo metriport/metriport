@@ -1,6 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
 import Axios from "axios";
 import { customAlphabet } from "nanoid";
 import { getEnvVarOrFail } from "../../shared/config";
