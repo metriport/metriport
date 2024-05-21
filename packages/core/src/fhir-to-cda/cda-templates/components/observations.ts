@@ -58,7 +58,7 @@ export interface CDAObservation {
   };
 }
 
-export function buildObservations(observations: Observation[]): CDAObservation[] {
+export function createObservations(observations: Observation[]): CDAObservation[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     return {
@@ -166,7 +166,7 @@ function hasObservationInCode(observation: Observation): boolean {
 export function createEntriesFromObservation(
   observation: AugmentedObservation,
   socHistNumber: string
-): ObservationEntry[] {
+): ObservationEntry {
   let pairNumber = 0;
   const date = formatDateToCdaTimestamp(observation.resource.effectiveDateTime);
   const observationEntry = createEntryFromObservation(
@@ -192,7 +192,7 @@ export function createEntriesFromObservation(
     });
   }
 
-  return [observationEntry];
+  return observationEntry;
 }
 
 function createEntryFromObservation(

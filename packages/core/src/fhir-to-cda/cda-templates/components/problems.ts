@@ -98,16 +98,16 @@ function createTableRowFromCondition(
             [_inlineTextAttribute]: name,
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Find out what Provider Response stands for and map accordingly
+            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Find out what Provider Response stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Find out what Status stands for and map accordingly
+            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Find out what Status stands for and map accordingly
           },
           {
             [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Figure out where to put comments in the Condition resource
+            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Figure out where to put comments in the Condition resource
           },
         ],
       },

@@ -17,7 +17,7 @@ import {
   extensionValue2015,
   placeholderOrgOid,
 } from "../constants";
-import { buildObservations } from "./observations";
+import { createObservations } from "./observations";
 
 function buildEntriesFromDiagnosticReports(
   diagnosticReports: DiagnosticReport[],
@@ -55,7 +55,7 @@ function buildEntriesFromDiagnosticReports(
         report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
         _valueAttribute
       ),
-      component: buildObservations(observations).map(o => o.component),
+      component: createObservations(observations).map(o => o.component),
     };
 
     return {

@@ -7,6 +7,8 @@ import {
   Organization,
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
+import dayjs from "dayjs";
+import LocalizedFormat from "dayjs/plugin/LocalizedFormat";
 import {
   CDAOriginalText,
   CdaAddress,
@@ -45,6 +47,8 @@ import {
   snomedSystemCode,
 } from "./constants";
 
+dayjs.extend(LocalizedFormat);
+
 const CODING_MAP = new Map<string, string>();
 CODING_MAP.set("http://loinc.org", loincSystemCode);
 CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
@@ -66,6 +70,18 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 export function withNullFlavor(value: string | undefined, key: string): Entry {
   if (value == undefined) return { [_nullFlavorAttribute]: "UNK" };
   return { [key]: value };
+}
+
+export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe | undefined {
+  if (!coding) return;
+  const primaryCoding = coding[0];
+  if (!primaryCoding) return;
+  const cleanedUpCoding = cleanUpCoding(primaryCoding);
+  return buildCodeCe({
+    code: cleanedUpCoding?.code,
+    codeSystem: cleanedUpCoding?.system,
+    displayName: cleanedUpCoding?.display,
+  });
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
@@ -225,10 +241,8 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
 export function formatDateToHumanReadableFormat(
   dateString: string | undefined
 ): string | undefined {
-  const date = formatDateToCdaTimestamp(dateString);
-  if (!date) return undefined;
-
-  return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
+  if (!dateString) return undefined;
+  return dayjs(dateString).format("L LT");
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
@@ -242,6 +256,7 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
   return valueObject;
 }
 
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html
 export function buildValueCd(
   codeableConcept: CodeableConcept | undefined,
   referenceId: string
@@ -316,6 +331,7 @@ function mapTelecomUse(use: string | undefined) {
 function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
   if (!primaryCodingRaw) return undefined;
   const system = primaryCodingRaw.system;
+  const codingSystem = system ? CODING_MAP.get(system) : undefined;
   switch (system) {
     case "http://loinc.org":
       return {
@@ -337,14 +353,14 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
       };
     default:
       return {
-        system: system ? CODING_MAP.get(system) : primaryCodingRaw.system,
+        system: codingSystem ?? system,
         code: primaryCodingRaw.code,
         display: primaryCodingRaw.display,
       };
   }
 }
 
-function mapCodingSystem(system: string | undefined): string | undefined {
+export function mapCodingSystem(system: string | undefined): string | undefined {
   if (!system) return undefined;
   const mappedCodingSystem = CODING_MAP.get(system);
   if (mappedCodingSystem) return mappedCodingSystem;

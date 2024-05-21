@@ -1,3 +1,4 @@
+export { wrapInArray } from "./common/array";
 export { optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export { errorToString } from "./common/error";

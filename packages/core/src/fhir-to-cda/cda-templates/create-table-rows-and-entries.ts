@@ -4,6 +4,7 @@ import {
   TableRowsAndEntriesResult,
 } from "../cda-types/shared-types";
 import { AugmentedResource } from "./components/augmented-resources";
+import { wrapInArray } from "@metriport/shared";
 
 export function createTableRowsAndEntries<T extends AugmentedResource>(
   augObs: T[],
@@ -19,8 +20,10 @@ export function createTableRowsAndEntries<T extends AugmentedResource>(
     const sectionPrefix = `${aug.sectionName}${index + 1}`;
     const trs = tableRowsCallback(aug, sectionPrefix);
     const entries = entriesCallback(aug, sectionPrefix);
+    const entriesArray = wrapInArray(entries);
+
     result.trs.push(...trs);
-    result.entries.push(...entries);
+    result.entries.push(...entriesArray);
   });
   return result;
 }

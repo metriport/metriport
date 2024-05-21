@@ -1,8 +1,13 @@
 import { Bundle, Medication, MedicationStatement, Resource } from "@medplum/fhirtypes";
-import { ObservationTableRow, SubstanceAdministationEntry } from "../../cda-types/shared-types";
+import {
+  CdaCodeCe,
+  ObservationTableRow,
+  SubstanceAdministationEntry,
+} from "../../cda-types/shared-types";
 import { findResourceInBundle } from "../../fhir";
 import {
   buildCodeCe,
+  buildCodeCeFromCoding,
   buildCodeCvFromCodeableConcept,
   buildInstanceIdentifier,
   formatDateToCdaTimestamp,
@@ -27,9 +32,18 @@ import {
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedMedicationStatement } from "./augmented-resources";
+import BadRequestError from "../../../util/error/bad-request";
 
 const medicationsSectionName = "medications";
-const tableHeaders = ["Medication", "Dosage", "Frequency", "Start Date", "End Date", "Reason"];
+const tableHeaders = [
+  "Medication",
+  "Code",
+  "Dosage",
+  "Frequency",
+  "Start Date",
+  "End Date",
+  "Reason",
+];
 
 export function buildMedications(fhirBundle: Bundle) {
   const medicationStatements: MedicationStatement[] =
@@ -41,16 +55,14 @@ export function buildMedications(fhirBundle: Bundle) {
     return undefined;
   }
 
-  const augmentedMedStatements = medicationStatements.map(statement => {
-    const ref = statement.medicationReference?.reference;
-    const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
-    const medication = isMedication(refResource) ? refResource : undefined;
-    return new AugmentedMedicationStatement(statement, medicationsSectionName, medication);
-  });
+  const augmentedMedStatements = createAugmentedMedicationStatements(
+    medicationStatements,
+    fhirBundle
+  );
 
   const { trs, entries } = createTableRowsAndEntries(
     augmentedMedStatements,
-    createTableRowsFromMedicationStatements,
+    createTableRowsFromMedicationStatement,
     createEntryFromStatement
   );
 
@@ -85,52 +97,62 @@ function isMedication(resource: Resource | undefined): resource is Medication {
   return resource?.resourceType === "Medication";
 }
 
-function createTableRowsFromMedicationStatements(
-  statement: AugmentedMedicationStatement,
-  medicationsPrefix: string
-): ObservationTableRow[] {
-  const trs: ObservationTableRow[] = [];
-  const tableRow = createTableRowFromObservation(statement, medicationsPrefix);
-  if (tableRow) trs.push(tableRow);
-  return trs;
-}
-
-function createTableRowFromObservation(
+function createTableRowsFromMedicationStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
-): ObservationTableRow | undefined {
+): ObservationTableRow[] {
   const period = {
     start: statement.resource?.effectivePeriod?.start,
     end: statement?.resource?.effectivePeriod?.end,
   };
-  const medicationName = statement.medication?.code?.text;
-  if (!medicationName) return;
-
-  return {
-    tr: {
-      [_idAttribute]: referenceId,
-      ["td"]: [
-        {
-          [_inlineTextAttribute]: medicationName,
-        },
-        {
-          [_inlineTextAttribute]: getDosageFromMedicationStatement(statement.resource),
-        },
-        {
-          [_inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
-        },
-        {
-          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? NOT_SPECIFIED,
-        },
-        {
-          [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
-        },
-        {
-          [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? NOT_SPECIFIED,
-        },
-      ],
+  const code = buildCodeCeFromCoding(statement.medication?.code?.coding);
+  const medicationName = statement.medication?.code?.text ?? code?._displayName;
+  const medicationCode = buildcMedicationCode(code);
+  return [
+    {
+      tr: {
+        [_idAttribute]: referenceId,
+        ["td"]: [
+          {
+            [_inlineTextAttribute]: medicationName,
+          },
+          {
+            [_inlineTextAttribute]: medicationCode, // TODO: Improve this to show the human readable system name alongside the system
+          },
+          {
+            [_inlineTextAttribute]: getDosageFromMedicationStatement(statement.resource),
+          },
+          {
+            [_inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
+          },
+          {
+            [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? NOT_SPECIFIED,
+          },
+          {
+            [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
+          },
+          {
+            [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? NOT_SPECIFIED,
+          },
+        ],
+      },
     },
-  };
+  ];
+}
+
+function createAugmentedMedicationStatements(
+  medicationStatements: MedicationStatement[],
+  fhirBundle: Bundle
+): AugmentedMedicationStatement[] {
+  return medicationStatements.map(statement => {
+    const ref = statement.medicationReference?.reference;
+    const refResource = ref ? findResourceInBundle(fhirBundle, ref) : undefined;
+    const medication = isMedication(refResource) ? refResource : undefined;
+    if (!medication) {
+      throw new BadRequestError("MedicationStatement must reference an existing Medication");
+    }
+    return new AugmentedMedicationStatement(statement, medicationsSectionName, medication);
+  });
 }
 
 function getDosageFromMedicationStatement(statement: MedicationStatement): string {
@@ -195,4 +217,11 @@ function createEntryFromStatement(
       },
     },
   ];
+}
+
+function buildcMedicationCode(code: CdaCodeCe | undefined): string {
+  if (!code) return NOT_SPECIFIED;
+  if (code._codeSystem) return `${code._code} - ${code._codeSystem}`;
+  if (code._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
+  return NOT_SPECIFIED;
 }

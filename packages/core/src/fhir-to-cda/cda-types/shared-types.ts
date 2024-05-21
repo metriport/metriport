@@ -166,15 +166,10 @@ export type CreateTableRowsCallback<T> = (
   sectionPrefix: string
 ) => ObservationTableRow[];
 
-export type CreateEntriesCallback<T> = (
-  aug: T,
-  sectionPrefix: string
-  // ) => (ObservationEntry | SubstanceAdministationEntry)[];
-) => unknown[];
+export type CreateEntriesCallback<T> = (aug: T, sectionPrefix: string) => unknown;
 
 export type TableRowsAndEntriesResult = {
   trs: ObservationTableRow[];
-  // entries: (ObservationEntry | SubstanceAdministationEntry)[];
   entries: unknown[];
 };
 

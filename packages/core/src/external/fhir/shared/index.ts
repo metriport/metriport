@@ -158,6 +158,10 @@ export function findOrganizationResource(fhirBundle: Bundle): Organization | und
   return fhirBundle.entry?.map(e => e.resource).find(isOrganization);
 }
 
+export function findCompositionResource(fhirBundle: Bundle): Composition | undefined {
+  return fhirBundle.entry?.map(e => e.resource).find(isComposition);
+}
+
 export function findPatientResource(fhirBundle: Bundle): Patient | undefined {
   return fhirBundle.entry?.map(e => e.resource).find(isPatient);
 }

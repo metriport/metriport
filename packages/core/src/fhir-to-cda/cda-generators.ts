@@ -1,5 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { findOrganizationResource, findPatientResource } from "../external/fhir/shared";
+import {
+  findCompositionResource,
+  findOrganizationResource,
+  findPatientResource,
+} from "../external/fhir/shared";
 import BadRequestError from "../util/error/bad-request";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clinical-document";
@@ -26,6 +30,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
   const author = buildAuthor(organizationResources);
   const custodian = buildCustodian();
   const structuredBody = buildStructuredBody(fhirBundle);
+  const composition = findCompositionResource(fhirBundle);
 
   if (!structuredBody) {
     throw new BadRequestError(
@@ -37,7 +42,8 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
     recordTarget,
     author,
     custodian,
-    structuredBody
+    structuredBody,
+    composition
   );
 
   const postProcessedXml = postProcessXml(clinicalDocument, oid);
