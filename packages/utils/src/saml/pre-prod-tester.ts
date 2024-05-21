@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// keep that ^ on top
 import { v4 as uuidv4 } from "uuid";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";

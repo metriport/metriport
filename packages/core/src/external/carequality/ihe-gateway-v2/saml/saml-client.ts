@@ -7,10 +7,17 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
-const { log } = out("Saml Client");
 
+const { log } = out("Saml Client");
 const timeout = 120000;
-const rejectUnauthorized = Config.isDev() ? false : true;
+let rejectUnauthorized = true;
+
+export function setRejectUnauthorized(value: boolean): void {
+  rejectUnauthorized = value;
+}
+export function getRejectUnauthorized(): boolean {
+  return rejectUnauthorized;
+}
 
 export type SamlClientResponse = {
   response: string;
@@ -49,7 +56,8 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: rejectUnauthorized,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
@@ -83,7 +91,8 @@ export async function sendSignedXmlMtom({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: rejectUnauthorized,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,

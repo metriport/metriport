@@ -18,6 +18,7 @@ import {
   processDrResponse,
   setS3UtilsInstance,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./mock-s3";
 
@@ -33,15 +34,17 @@ import { MockS3Utils } from "./mock-s3";
  * Metriport-IHE GW / XML + SAML Constructor - Postman collection
  */
 
+const env = "STAGING";
 const app = express();
 const port = 8043;
 app.use(json());
+setRejectUnauthorized(false);
 
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
+  publicCert: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_${env}`),
+  privateKey: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_${env}`),
+  privateKeyPassword: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_PASSWORD_${env}`),
+  certChain: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_INTERMEDIATE_${env}`),
 };
 
 app.post("/xcpd", async (req: Request, res: Response) => {

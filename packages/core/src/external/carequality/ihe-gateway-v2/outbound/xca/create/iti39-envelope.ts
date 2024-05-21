@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
@@ -125,10 +126,11 @@ export function createAndSignBulkDRRequests({
       ? minDocumentReferencesPerDrRequest
       : maxDocumentReferencesPerDrRequest;
     const documentReferences = bodyData.documentReference;
-    for (let i = 0; i < documentReferences.length; i += documentReferencesPerRequest) {
+    const chunks = chunk(documentReferences, documentReferencesPerRequest);
+    chunks.forEach(docRefs => {
       const chunkedBodyData = {
         ...bodyData,
-        documentReference: documentReferences.slice(i, i + documentReferencesPerRequest),
+        documentReference: docRefs,
       };
       const signedRequest = createAndSignDRRequest(chunkedBodyData, samlCertsAndKeys);
       signedRequests.push({
@@ -136,7 +138,7 @@ export function createAndSignBulkDRRequests({
         signedRequest,
         outboundRequest: chunkedBodyData,
       });
-    }
+    });
   }
 
   return signedRequests;
