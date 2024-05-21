@@ -1,4 +1,6 @@
 import https from "https";
+import { MultipartParser } from "formidable";
+import fs from "fs";
 import { constants } from "crypto";
 import axios from "axios";
 import * as AWS from "aws-sdk";
@@ -99,8 +101,130 @@ export async function sendSignedXmlMtom({
       "Accept-Encoding": "gzip, deflate",
       "Content-Type": contentType,
       "Cache-Control": "no-cache",
+      responseType: "arraybuffer",
+      responseEncoding: "binary",
     },
     httpsAgent: agent,
   });
+
+  try {
+    console.log(JSON.stringify(response.headers, null, 2));
+    fs.writeFileSync("../../scratch/dr/response.xml", response.data);
+    const mtomContentType = parseMtomContentType(response.headers["content-type"]);
+    const mtomParts = await parseMTOMResp(Buffer.from(response.data), mtomContentType.boundary);
+    fs.writeFileSync("../../scratch/dr/mtomParts.json", JSON.stringify(mtomParts));
+    const bufferData: Buffer = mtomParts.parts[1]?.body || Buffer.from("");
+    const random = Math.floor(Math.random() * 1000);
+    fs.writeFileSync(`../../scratch/dr/again-${random}`, bufferData, { encoding: "binary" });
+  } catch (error) {
+    console.error(error);
+  }
+
   return { response: response.data, contentType: response.headers["content-type"] };
+}
+
+const quoteRegex = /"/g;
+export type MtomContentType = {
+  boundary: string;
+  start: string;
+  type?: string | undefined;
+  startInfo?: string | undefined;
+};
+
+export interface IMTOMAttachments {
+  parts: Array<{
+    body: Buffer;
+    headers: { [key: string]: string };
+  }>;
+}
+
+export function parseMtomContentType(contentType: string): MtomContentType {
+  const contentTypeParams = contentType.split(";").reduce<Record<string, string>>((acc, param) => {
+    const index = param.indexOf("=");
+    if (index >= 0) {
+      const key = param.substring(0, index).trim().toLowerCase();
+      const value = param
+        .substring(index + 1)
+        .trim()
+        .replace(quoteRegex, "");
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+
+  if (!contentTypeParams.boundary) {
+    throw new Error("No boundary parameter found in content type.");
+  }
+  if (!contentTypeParams.start) {
+    throw new Error("No start parameter found in content type.");
+  }
+  return {
+    boundary: contentTypeParams.boundary,
+    type: contentTypeParams.type,
+    start: contentTypeParams.start,
+    startInfo: contentTypeParams["start-info"],
+  };
+}
+
+export async function parseMTOMResp(payload: Buffer, boundary: string): Promise<IMTOMAttachments> {
+  return new Promise((resolve, reject) => {
+    const resp: IMTOMAttachments = {
+      parts: [],
+    };
+    let headerName = "";
+    let headerValue = "";
+    let data: Buffer;
+    let partIndex = 0;
+    const parser = new MultipartParser();
+
+    parser.initWithBoundary(boundary);
+    parser.on(
+      "data",
+      ({
+        name,
+        buffer,
+        start,
+        end,
+      }: {
+        name: string;
+        buffer: Buffer;
+        start: number;
+        end: number;
+      }) => {
+        switch (name) {
+          case "partBegin":
+            resp.parts[partIndex] = {
+              body: Buffer.from(""),
+              headers: {},
+            };
+            data = Buffer.from("");
+            break;
+          case "headerField":
+            headerName = buffer.slice(start, end).toString();
+            break;
+          case "headerValue":
+            headerValue = buffer.slice(start, end).toString();
+            break;
+          case "headerEnd":
+            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            resp.parts[partIndex]!.headers[headerName.toLowerCase()] = headerValue;
+            break;
+          case "partData":
+            data = Buffer.concat([data, buffer.slice(start, end)]);
+            break;
+          case "partEnd":
+            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            resp.parts[partIndex]!.body = data;
+            partIndex++;
+            break;
+        }
+      }
+    );
+
+    parser.on("end", () => resolve(resp));
+    parser.on("error", reject);
+
+    parser.write(payload);
+    parser.end();
+  });
 }

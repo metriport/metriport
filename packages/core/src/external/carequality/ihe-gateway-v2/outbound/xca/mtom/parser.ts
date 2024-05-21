@@ -1,45 +1,10 @@
 import { XMLParser } from "fast-xml-parser";
 import { DocumentResponse } from "../process/dr-response";
-import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
+//import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
 import { stripCidPrefix, stripTags } from "./cid";
+import { parseMtomContentType } from "../../../saml/saml-client";
 
-const quoteRegex = /"/g;
 const carriageReturnLineFeed = "\r\n\r\n";
-
-type MtomContentType = {
-  boundary: string;
-  start: string;
-  type?: string | undefined;
-  startInfo?: string | undefined;
-};
-
-export function parseMtomContentType(contentType: string): MtomContentType {
-  const contentTypeParams = contentType.split(";").reduce<Record<string, string>>((acc, param) => {
-    const index = param.indexOf("=");
-    if (index >= 0) {
-      const key = param.substring(0, index).trim().toLowerCase();
-      const value = param
-        .substring(index + 1)
-        .trim()
-        .replace(quoteRegex, "");
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-
-  if (!contentTypeParams.boundary) {
-    throw new Error("No boundary parameter found in content type.");
-  }
-  if (!contentTypeParams.start) {
-    throw new Error("No start parameter found in content type.");
-  }
-  return {
-    boundary: contentTypeParams.boundary,
-    type: contentTypeParams.type,
-    start: contentTypeParams.start,
-    startInfo: contentTypeParams["start-info"],
-  };
-}
 
 type MtomHeaders = {
   ContentID: string;
@@ -79,12 +44,14 @@ function containsMultipartCidReference(documentResponse: any): boolean {
 export function parseMtomResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
   const contentTypeParams = parseMtomContentType(contentType);
 
+  console.log("contentTypeParams", contentTypeParams);
   const boundary = `--${contentTypeParams.boundary}`;
   const parts = mtomMessage.split(boundary).slice(1, -1);
 
   const documentResponsesMultipart: DocumentResponse[] = [];
   const documentResponsesRegular: DocumentResponse[] = [];
   const attachments: Record<string, string> = {};
+  //console.log("parts", parts);
 
   parts.forEach(part => {
     let splitter = carriageReturnLineFeed;
@@ -109,6 +76,7 @@ export function parseMtomResponse(mtomMessage: string, contentType: string): Doc
     const content = part.slice(headersEndIndex + splitter.length).trim();
 
     const headers = parseMtomHeaders(headersPart);
+    console.log("headers", headers);
 
     if (headers.ContentType.includes("application/xop+xml")) {
       const parser = new XMLParser({
@@ -119,6 +87,7 @@ export function parseMtomResponse(mtomMessage: string, contentType: string): Doc
         removeNSPrefix: true,
       });
       const jsonObj = parser.parse(content);
+      console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
 
       const docResponses = Array.isArray(
         jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse
@@ -128,15 +97,15 @@ export function parseMtomResponse(mtomMessage: string, contentType: string): Doc
       for (const docResponse of docResponses) {
         if (containsMultipartCidReference(docResponse)) {
           // temporarily skip non-xml documents for multipart mtoms
-          if (
-            docResponse.mimeType === XML_APP_MIME_TYPE ||
-            docResponse.mimeType === XML_TXT_MIME_TYPE
-          ) {
-            documentResponsesMultipart.push({
-              ...docResponse,
-              Document: decodeURIComponent(stripCidPrefix(docResponse.Document.Include._href)),
-            });
-          }
+          // if (
+          //   docResponse.mimeType === XML_APP_MIME_TYPE ||
+          //   docResponse.mimeType === XML_TXT_MIME_TYPE
+          // ) {
+          documentResponsesMultipart.push({
+            ...docResponse,
+            Document: decodeURIComponent(stripCidPrefix(docResponse.Document.Include._href)),
+          });
+          // }
         } else {
           documentResponsesRegular.push(docResponse);
         }
