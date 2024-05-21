@@ -77,6 +77,22 @@ export const up: Migration = async ({ context: queryInterface }) => {
 
 export const down: Migration = ({ context: queryInterface }) => {
   return queryInterface.sequelize.transaction(async transaction => {
+    await queryInterface.renameColumn(facilityTableName, "cw_active", "cw_obo_active", {
+      transaction,
+    });
+    await queryInterface.renameColumn(facilityTableName, "cq_active", "cq_obo_active", {
+      transaction,
+    });
+    await queryInterface.addColumn(
+      facilityTableName,
+      "type",
+      {
+        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
+        defaultValue: "initiator_and_responder",
+      },
+      { transaction }
+    );
+
     const [facilityResults] = await queryInterface.sequelize.query(
       `select * from ${facilityTableName}`,
       {
@@ -114,20 +130,5 @@ export const down: Migration = ({ context: queryInterface }) => {
     await queryInterface.removeColumn(facilityTableName, "cw_type", {
       transaction,
     });
-    await queryInterface.renameColumn(facilityTableName, "cw_active", "cw_obo_active", {
-      transaction,
-    });
-    await queryInterface.renameColumn(facilityTableName, "cq_active", "cq_obo_active", {
-      transaction,
-    });
-    await queryInterface.addColumn(
-      facilityTableName,
-      "type",
-      {
-        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
-        defaultValue: "initiator_and_responder",
-      },
-      { transaction }
-    );
   });
 };
