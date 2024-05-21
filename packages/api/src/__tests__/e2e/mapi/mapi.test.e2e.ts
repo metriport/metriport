@@ -1,6 +1,3 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
 import { faker } from "@faker-js/faker";
 import { OperationOutcomeError } from "@medplum/core";
 import { Bundle, Resource } from "@medplum/fhirtypes";
@@ -14,6 +11,7 @@ import duration from "dayjs/plugin/duration";
 import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
 import { createConsolidated } from "./consolidated";
 import { createFacility, validateFacility } from "./facility";
+import { initMapiE2e, tearDownMapiE2e } from "./init";
 import { validateFhirOrg, validateLocalOrg } from "./organization";
 import {
   createPatient,
@@ -22,6 +20,7 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
+import { getWebhookServerUrl } from "./webhook-server";
 
 dayjs.extend(duration);
 
@@ -38,6 +37,13 @@ const conversionCheckStatusMaxRetries = 12;
 const conversionCheckStatusWaitTime = dayjs.duration({ seconds: 10 });
 
 jest.setTimeout(maxTotalTestDuration.asMilliseconds());
+
+beforeAll(async () => {
+  await initMapiE2e();
+});
+afterAll(async () => {
+  await tearDownMapiE2e();
+});
 
 describe("MAPI E2E Tests", () => {
   let facility: Facility;
@@ -86,6 +92,21 @@ describe("MAPI E2E Tests", () => {
   //   if (!isCqEnabled) return undefined;
   //   return await getCqOrganization(org.oid);
   // };
+
+  it("gets settings", async () => {
+    const settings = await medicalApi.getSettings();
+    expect(settings).toBeTruthy();
+  });
+
+  it("updates settings", async () => {
+    const whUrl = getWebhookServerUrl();
+    const updateResp = await medicalApi.updateSettings(whUrl);
+    expect(updateResp).toBeTruthy();
+    const settings = await medicalApi.getSettings();
+    expect(settings).toBeTruthy();
+    expect(settings.webhookUrl).toBeTruthy();
+    expect(settings.webhookUrl).toEqual(whUrl);
+  });
 
   it("gets an organization", async () => {
     const org = await medicalApi.getOrganization();
@@ -320,7 +341,7 @@ describe("MAPI E2E Tests", () => {
       assert.fail("It should have failed to get the facility after deletion");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.log("Error:", error);
+      // console.log("Error:", error);
       expect(error).toBeTruthy();
       expect(error.response?.status).toEqual(404);
     }
