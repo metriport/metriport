@@ -62,7 +62,8 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
 export function makeFacilityModel(params?: Partial<FacilityModel>): FacilityModel {
   const facility = makeFacility(params);
   const model = new FacilityModel(facility);
-  model.type = facility.type;
+  model.cqType = facility.cqType;
+  model.cwType = facility.cwType;
   model.data = facility.data;
   return model;
 }
