@@ -44,11 +44,11 @@ export const up: Migration = async ({ context: queryInterface }) => {
       }
 
       if (facility.type === "initiator_only") {
-        if (facility.cq_obo_active) {
+        if (facility.cq_obo_oid) {
           update["cq_type"] = "initiator_only";
         }
 
-        if (facility.cw_obo_active) {
+        if (facility.cw_obo_oid) {
           update["cw_type"] = "initiator_only";
         }
       }
