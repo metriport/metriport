@@ -2,6 +2,8 @@ import { DataTypes } from "sequelize";
 import type { Migration } from "..";
 
 const facilityTableName = "facility";
+const INITIATOR_ONLY = "initiator_only";
+const INITIATOR_AND_RESPONDER = "initiator_and_responder";
 
 // Use 'Promise.all' when changes are independent of each other
 // Docs: https://sequelize.org/api/v6/class/src/dialects/abstract/query-interface.js~queryinterface
@@ -11,8 +13,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       facilityTableName,
       "cq_type",
       {
-        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
-        defaultValue: "initiator_and_responder",
+        type: DataTypes.ENUM(INITIATOR_AND_RESPONDER, INITIATOR_ONLY),
+        defaultValue: INITIATOR_AND_RESPONDER,
         allowNull: false,
       },
       { transaction }
@@ -21,8 +23,8 @@ export const up: Migration = async ({ context: queryInterface }) => {
       facilityTableName,
       "cw_type",
       {
-        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
-        defaultValue: "initiator_and_responder",
+        type: DataTypes.ENUM(INITIATOR_AND_RESPONDER, INITIATOR_ONLY),
+        defaultValue: INITIATOR_AND_RESPONDER,
         allowNull: false,
       },
       { transaction }
@@ -40,22 +42,22 @@ export const up: Migration = async ({ context: queryInterface }) => {
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
       const update: any = {};
 
-      if (facility.type === "initiator_and_responder") {
+      if (facility.type === INITIATOR_AND_RESPONDER) {
         update["cq_type"] = facility.type;
         update["cw_type"] = facility.type;
       }
 
-      if (facility.type === "initiator_only") {
+      if (facility.type === INITIATOR_ONLY) {
         if (facility.cq_obo_oid) {
-          update["cq_type"] = "initiator_only";
+          update["cq_type"] = INITIATOR_ONLY;
         } else {
-          update["cq_type"] = "initiator_and_responder";
+          update["cq_type"] = INITIATOR_AND_RESPONDER;
         }
 
         if (facility.cw_obo_oid) {
-          update["cw_type"] = "initiator_only";
+          update["cw_type"] = INITIATOR_ONLY;
         } else {
-          update["cw_type"] = "initiator_and_responder";
+          update["cw_type"] = INITIATOR_AND_RESPONDER;
         }
       }
 
@@ -93,8 +95,8 @@ export const down: Migration = ({ context: queryInterface }) => {
       facilityTableName,
       "type",
       {
-        type: DataTypes.ENUM("initiator_and_responder", "initiator_only"),
-        defaultValue: "initiator_and_responder",
+        type: DataTypes.ENUM(INITIATOR_AND_RESPONDER, INITIATOR_ONLY),
+        defaultValue: INITIATOR_AND_RESPONDER,
         allowNull: false,
       },
       { transaction }
@@ -111,12 +113,14 @@ export const down: Migration = ({ context: queryInterface }) => {
     for (const facility of facilityResults as any[]) {
       const cwType = facility.cw_type;
       const cqType = facility.cq_type;
+      const cwOboOid = facility.cw_obo_oid;
+      const cqOboOid = facility.cq_obo_oid;
 
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let type = "initiator_and_responder";
+      let type = INITIATOR_AND_RESPONDER;
 
-      if (cwType === "initiator_only" || cqType === "initiator_only") {
-        type = "initiator_only";
+      if ((cwType === INITIATOR_ONLY && cwOboOid) || (cqType === INITIATOR_ONLY && cqOboOid)) {
+        type = INITIATOR_ONLY;
       }
 
       await queryInterface.bulkUpdate(
