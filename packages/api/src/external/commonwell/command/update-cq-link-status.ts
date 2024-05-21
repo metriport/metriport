@@ -2,7 +2,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { CQLinkStatus } from "../patient-external-data";
+import { CQLinkStatus, getLinkStatusCQ } from "../patient-external-data";
 
 /**
  * Sets the CQLink CommonWell (CW) integration status on the patient.
@@ -16,7 +16,7 @@ export const updateCommenwellCqLinkStatus = async ({
   cqLinkStatus,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  cqLinkStatus: CQLinkStatus;
+  cqLinkStatus?: CQLinkStatus;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -30,13 +30,15 @@ export const updateCommenwellCqLinkStatus = async ({
       transaction,
     });
 
+    const updatedCQLinkStatus = cqLinkStatus ?? getLinkStatusCQ(existingPatient.data.externalData);
+
     const externalData = existingPatient.data.externalData ?? {};
 
     const updateCqLinkStatus = {
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        cqLinkStatus,
+        cqLinkStatus: updatedCQLinkStatus,
       },
     };
 

@@ -146,18 +146,13 @@ export async function runCreateFlow(
 ): Promise<{ commonwellPatientId: string; commonwellPersonId: string }> {
   let commonWell: CommonWellAPI | undefined;
   const { patient, facilityId } = cwCreateFlowProps;
-  // THOMAS: Remove?
-  // Patients of cxs that not go through EC should have their status undefined so they're not picked up later
+
+  // Patients of cxs that not go through EC should have theis status undefined so they're not picked up later
   // when we enable it
-  if (
-    (await isEnhancedCoverageEnabledForCx(patient.cxId)) ||
-    !getCWData(patient.data.externalData)?.cqLinkStatus
-  ) {
-    await updateCommenwellCqLinkStatus({
-      patient,
-      cqLinkStatus: "unlinked",
-    });
-  }
+  const cqLinkStatus = (await isEnhancedCoverageEnabledForCx(patient.cxId))
+    ? "unlinked"
+    : undefined;
+  await updateCommenwellCqLinkStatus({ patient, cqLinkStatus });
 
   try {
     const cwSdkProps = await startPdFlowWrapper(cwCreateFlowProps);
