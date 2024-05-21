@@ -9,7 +9,7 @@ import { Config } from "../../../util/config";
 import { out } from "../../../util/log";
 import { capture } from "../../../util/notifications";
 import { sizeInBytes } from "../../../util/string";
-import { createAndUploadMetadataFile } from "../../aws/lambda-logic/document-uploader";
+
 import { S3Utils } from "../../aws/s3";
 import {
   IHEGatewayError,
@@ -20,6 +20,7 @@ import {
 import { validateBasePayload } from "../shared";
 import { decodePatientId } from "./utils";
 import { XML_APP_MIME_TYPE } from "../../../util/mime";
+import { createAndUploadDocumentMetadataFile } from "../../../shareback/create-and-upload-extrinsic-object";
 
 const CCD_NAME = "ccd";
 
@@ -118,12 +119,12 @@ async function createAndUploadCcdAndMetadata(cxId: string, patientId: string, ap
     };
 
     const metadataFileName = createUploadMetadataFilePath(cxId, patientId, CCD_NAME);
-    await createAndUploadMetadataFile({
+    await createAndUploadDocumentMetadataFile({
       s3Utils,
       cxId,
       patientId,
       docId: fileName,
-      size: ccdSize.toString(),
+      size: ccdSize,
       docRef,
       metadataFileName,
       destinationBucket: bucket,

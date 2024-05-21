@@ -49,6 +49,7 @@ import {
   singlePersonWithId as singleCommonwellPersonWithId,
   multiplePersonWithId as multipleCommonwellPersonWithId,
 } from "./person-shared";
+import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -90,10 +91,10 @@ export function getCWData(
 }
 
 export async function create(cwCreateProps: cwCreateProps): Promise<void> {
-  const { patient, forceCw, requestId } = cwCreateProps;
+  const { patient, requestId } = cwCreateProps;
   const { debug, log } = out(`CW create - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
+  const cwEnabled = await validateCWEnabled({ ...cwCreateProps, debug });
   if (cwEnabled) {
     // intentionally async
     runCreateFlow({
@@ -107,10 +108,10 @@ export async function create(cwCreateProps: cwCreateProps): Promise<void> {
 }
 
 export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
-  const { patient, forceCw, requestId } = cwUpdateProps;
+  const { patient, requestId } = cwUpdateProps;
   const { debug, log } = out(`CW update - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
+  const cwEnabled = await validateCWEnabled({ ...cwUpdateProps, debug });
   if (cwEnabled) {
     // intentionally async
     runUpdateFlow({
@@ -124,10 +125,10 @@ export async function update(cwUpdateProps: cwUpdateProps): Promise<void> {
 }
 
 export async function remove(cwRemoveProps: cwRemoveProps): Promise<void> {
-  const { patient, forceCw } = cwRemoveProps;
+  const { patient } = cwRemoveProps;
   const { debug, log } = out(`CW delete - M patientId ${patient.id}`);
 
-  const cwEnabled = await validateCWEnabled({ cxId: patient.cxId, forceCw, debug });
+  const cwEnabled = await validateCWEnabled({ ...cwRemoveProps, debug });
   if (cwEnabled) {
     // intentionally async
     runRemoveFlow({
@@ -637,15 +638,18 @@ async function endPdFlowWrapper({
 
 // General Helpers
 async function validateCWEnabled({
-  cxId,
+  patient,
+  facilityId,
   forceCw,
   debug,
 }: {
-  cxId: string;
+  patient: Patient;
+  facilityId: string;
   forceCw: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
   const fnName = `CW validateCWEnabled`;
+  const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCw || isSandbox) {
@@ -655,6 +659,7 @@ async function validateCWEnabled({
   }
 
   try {
+    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
 
@@ -666,6 +671,9 @@ async function validateCWEnabled({
       return false;
     } else if (cwIsDisabled) {
       debug(`${fnName} - CW not enabled, skipping...`);
+      return false;
+    } else if (!isCwQueryEnabled) {
+      debug(`CW not enabled for query, skipping...`);
       return false;
     }
 

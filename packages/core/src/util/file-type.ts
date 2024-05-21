@@ -156,20 +156,7 @@ export function detectFileType(param: Buffer | string): DetectedFileType {
     bytesBuffer[4] === PDF_MAGIC_NUMBER_5
   ) {
     return { mimeType: PDF_MIME_TYPE, fileExtension: PDF_FILE_EXTENSION };
-  } else if (
-    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
-      bytesBuffer[1] === XML_MAGIC_NUMBER_2 &&
-      bytesBuffer[2] === XML_MAGIC_NUMBER_3 &&
-      bytesBuffer[3] === XML_MAGIC_NUMBER_4 &&
-      bytesBuffer[4] === XML_MAGIC_NUMBER_5 &&
-      bytesBuffer[5] === XML_MAGIC_NUMBER_6) ||
-    (bytesBuffer[0] === XML_MAGIC_NUMBER_7 &&
-      bytesBuffer[1] === XML_MAGIC_NUMBER_8 &&
-      bytesBuffer[2] === XML_MAGIC_NUMBER_9 &&
-      bytesBuffer[3] === XML_MAGIC_NUMBER_10 &&
-      bytesBuffer[4] === XML_MAGIC_NUMBER_11 &&
-      bytesBuffer[5] === XML_MAGIC_NUMBER_12)
-  ) {
+  } else if (isXMLContentType(bytesBuffer)) {
     return { mimeType: XML_APP_MIME_TYPE, fileExtension: XML_FILE_EXTENSION };
   } else if (
     bytesBuffer[0] === PNG_MAGIC_NUMBER_1 &&
@@ -217,4 +204,21 @@ export function isContentTypeAccepted(mimeType: string | undefined): boolean {
   ];
 
   return !!mimeType && acceptedContentTypes.includes(mimeType);
+}
+
+export function isXMLContentType(bytesBuffer: Buffer): boolean {
+  return (
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_1 &&
+      bytesBuffer[1] === XML_MAGIC_NUMBER_2 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_3 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_4 &&
+      bytesBuffer[4] === XML_MAGIC_NUMBER_5 &&
+      bytesBuffer[5] === XML_MAGIC_NUMBER_6) ||
+    (bytesBuffer[0] === XML_MAGIC_NUMBER_7 &&
+      bytesBuffer[1] === XML_MAGIC_NUMBER_8 &&
+      bytesBuffer[2] === XML_MAGIC_NUMBER_9 &&
+      bytesBuffer[3] === XML_MAGIC_NUMBER_10 &&
+      bytesBuffer[4] === XML_MAGIC_NUMBER_11 &&
+      bytesBuffer[5] === XML_MAGIC_NUMBER_12)
+  );
 }

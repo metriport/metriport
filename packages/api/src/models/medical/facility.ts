@@ -15,11 +15,12 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
   declare cxId: string;
   declare oid: string;
   declare facilityNumber: number;
-  declare cqOboActive: boolean;
-  declare cwOboActive: boolean;
+  declare cqActive: boolean;
+  declare cwActive: boolean;
   declare cqOboOid: string | null;
   declare cwOboOid: string | null;
-  declare type: FacilityType;
+  declare cwType: FacilityType;
+  declare cqType: FacilityType;
   declare data: FacilityData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -39,11 +40,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
         data: {
           type: DataTypes.JSONB,
         },
-        cqOboActive: {
+        cqActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
-        cwOboActive: {
+        cwActive: {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
@@ -55,7 +56,11 @@ export class FacilityModel extends BaseModel<FacilityModel> implements Facility 
           type: DataTypes.STRING,
           allowNull: true,
         },
-        type: {
+        cwType: {
+          type: DataTypes.ENUM(...Object.values(FacilityType)),
+          defaultValue: FacilityType.initiatorAndResponder,
+        },
+        cqType: {
           type: DataTypes.ENUM(...Object.values(FacilityType)),
           defaultValue: FacilityType.initiatorAndResponder,
         },

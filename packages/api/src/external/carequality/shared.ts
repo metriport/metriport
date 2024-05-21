@@ -1,12 +1,12 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
-import { getHieInitiator, HieInitiator } from "../hie/get-hie-initiator";
+import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
@@ -19,20 +19,24 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
 }
 
 export async function validateCQEnabledAndInitGW({
-  cxId,
+  patient,
+  facilityId,
   forceCq,
   outerLog,
 }: {
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
+  facilityId: string;
   forceCq: boolean;
   outerLog: typeof console.log;
 }): Promise<IHEGateway | undefined> {
   const fnName = `CQ validateCQEnabledAndInitGW`;
+  const { cxId } = patient;
 
   try {
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
+    const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, patient);
 
     const iheGWNotPresent = !iheGateway;
     const cqIsDisabled = !isCQEnabled && !forceCq;
@@ -46,6 +50,9 @@ export async function validateCQEnabledAndInitGW({
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
       outerLog(`${fnName} - CQ disabled for cx ${cxId}, skipping PD`);
+      return undefined;
+    } else if (!isCqQueryEnabled) {
+      outerLog(`${fnName} - CQ querying not enabled for facility, skipping PD`);
       return undefined;
     }
 
@@ -117,9 +124,34 @@ export async function getCqInitiator({
   patient: Pick<Patient, "id" | "cxId">;
   facilityId?: string;
 }): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId, MedicalDataSource.CAREQUALITY);
+  return getHieInitiator(patient, facilityId);
+}
+
+export async function isFacilityEnabledToQueryCQ(
+  facilityId: string | undefined,
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<boolean> {
+  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.CAREQUALITY);
 }
 
 export function getSystemUserName(orgName: string): string {
   return `${orgName} System User`;
+}
+
+export function buildCqOrgName({
+  vendorName,
+  orgName,
+  isProvider,
+  oboOid,
+}: {
+  vendorName: string;
+  orgName: string;
+  isProvider: boolean;
+  oboOid?: string;
+}): string {
+  if (oboOid && !isProvider) {
+    return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
+  }
+
+  return `${vendorName} - ${orgName}`;
 }

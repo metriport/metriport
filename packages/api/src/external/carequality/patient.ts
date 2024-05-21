@@ -53,12 +53,13 @@ export function getCQData(
 }
 
 export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> {
-  const { patient, forceCq, requestId } = cqDiscoverProps;
+  const { patient, facilityId, forceCq, requestId } = cqDiscoverProps;
   const baseLogMsg = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMsg);
 
   const enabledIHEGW = await validateCQEnabledAndInitGW({
-    cxId: patient.cxId,
+    patient,
+    facilityId,
     forceCq,
     outerLog,
   });

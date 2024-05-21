@@ -5,6 +5,7 @@ import * as patientExternal from "./patient-external-data";
 
 const cwCommands = {
   organization: {
+    get: organization.get,
     create: organization.create,
     update: organization.update,
     initCQOrgIncludeList: organization.initCQOrgIncludeList,

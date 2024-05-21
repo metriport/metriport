@@ -1,7 +1,7 @@
 import {
   Organization,
   OrganizationData,
-  OrganizationType,
+  OrganizationBizType,
 } from "@metriport/core/domain/organization";
 import { DataTypes, Sequelize } from "sequelize";
 import { BaseModel, ModelSetup } from "../../models/_default";
@@ -11,7 +11,7 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
   declare cxId: string;
   declare oid: string;
   declare organizationNumber: number;
-  declare type: OrganizationType;
+  declare type: OrganizationBizType;
   declare data: OrganizationData;
 
   static setup: ModelSetup = (sequelize: Sequelize) => {
@@ -29,8 +29,8 @@ export class OrganizationModel extends BaseModel<OrganizationModel> implements O
           unique: true,
         },
         type: {
-          type: DataTypes.ENUM(...Object.values(OrganizationType)),
-          defaultValue: OrganizationType.healthcareProvider,
+          type: DataTypes.ENUM(...Object.values(OrganizationBizType)),
+          defaultValue: OrganizationBizType.healthcareProvider,
         },
         data: {
           type: DataTypes.JSONB,

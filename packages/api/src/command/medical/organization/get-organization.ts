@@ -1,3 +1,4 @@
+import { OrgType } from "@metriport/core/domain/organization";
 import NotFoundError from "../../../errors/not-found";
 import { OrganizationModel } from "../../../models/medical/organization";
 
@@ -18,3 +19,14 @@ export const getOrganizationOrFail = async (filter: Filter): Promise<Organizatio
   if (!org) throw new NotFoundError(`Could not find organization`);
   return org;
 };
+
+export async function getCxOrganizationNameOidAndType(
+  cxId: string
+): Promise<{ name: string; oid: string; type: OrgType }> {
+  const cxOrg = await getOrganizationOrFail({ cxId });
+
+  const vendorName = cxOrg.dataValues.data?.name;
+  if (!vendorName) throw new Error("Organization name is missing");
+
+  return { name: vendorName, oid: cxOrg.oid, type: cxOrg.data.type };
+}

@@ -1,26 +1,23 @@
-import { out } from "@metriport/core/util/log";
 import { Op, Sequelize } from "sequelize";
 import { CQDirectoryEntryModel } from "../../models/cq-directory";
 
-export async function setEntriesAsGateway(oids: string[]): Promise<void> {
-  out(`setEntriesAsGateway`).log(`Found ${oids.length} gateways in the CQ directory. Updating...`);
-  await CQDirectoryEntryModel.update(
-    {
-      gateway: true,
-    },
-    {
-      where: { id: { [Op.in]: oids } },
-    }
-  );
-}
-
-export async function getOrganizationIds(excludeManagingOrgs: string[]): Promise<string[]> {
+/**
+ * Returns the ID of CQ directory entries that are not managed by the organizations provided as
+ * parameter.
+ *
+ * @param managingOrgNames - An array of managing organization names
+ * @returns IDs of the CQ directory entries not managed by the provided orgs
+ */
+export async function getOrganizationIdsNotManagedBy(
+  managingOrgNames: string[]
+): Promise<string[]> {
   const entries = await CQDirectoryEntryModel.findAll({
     attributes: ["id"],
     where: {
-      managingOrganization: {
-        [Op.notIn]: excludeManagingOrgs,
-      },
+      [Op.or]: [
+        { managingOrganization: { [Op.is]: undefined } },
+        { managingOrganization: { [Op.notIn]: managingOrgNames } },
+      ],
     },
   });
   const ids = entries.map(entry => entry.id);
