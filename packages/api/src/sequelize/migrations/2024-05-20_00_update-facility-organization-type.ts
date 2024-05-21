@@ -25,12 +25,6 @@ export const up: Migration = async ({ context: queryInterface }) => {
       },
       { transaction }
     );
-    await queryInterface.renameColumn(facilityTableName, "cw_obo_active", "cw_active", {
-      transaction,
-    });
-    await queryInterface.renameColumn(facilityTableName, "cq_obo_active", "cq_active", {
-      transaction,
-    });
 
     const [facilityResults] = await queryInterface.sequelize.query(
       `select * from ${facilityTableName}`,
@@ -69,6 +63,12 @@ export const up: Migration = async ({ context: queryInterface }) => {
       );
     }
 
+    await queryInterface.renameColumn(facilityTableName, "cw_obo_active", "cw_active", {
+      transaction,
+    });
+    await queryInterface.renameColumn(facilityTableName, "cq_obo_active", "cq_active", {
+      transaction,
+    });
     await queryInterface.removeColumn(facilityTableName, "type", {
       transaction,
     });
