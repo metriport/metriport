@@ -30,11 +30,7 @@ export async function validateCQEnabledAndInitGW(
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
-    const isCqQueryEnabled = await isHieEnabledToQuery(
-      facilityId,
-      patient,
-      MedicalDataSource.CAREQUALITY
-    );
+    const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, patient);
 
     const iheGWNotPresent = !iheGateway;
     const cqIsDisabled = !isCQEnabled && !forceEnabled;
@@ -119,6 +115,13 @@ export async function getCqInitiator(
   facilityId?: string
 ): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId);
+}
+
+export async function isFacilityEnabledToQueryCQ(
+  facilityId: string | undefined,
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<boolean> {
+  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.CAREQUALITY);
 }
 
 export function getSystemUserName(orgName: string): string {

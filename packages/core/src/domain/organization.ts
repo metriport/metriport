@@ -44,7 +44,7 @@ export interface OrganizationCreate extends BaseDomainCreate {
 
 export interface Organization extends BaseDomain, OrganizationCreate {}
 
-export function isItVendor(type: OrganizationBizType) {
+export function isHealthcareItVendor(type: OrganizationBizType) {
   return type === OrganizationBizType.healthcareITVendor;
 }
 

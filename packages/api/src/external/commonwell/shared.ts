@@ -1,11 +1,19 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { getHieInitiator, HieInitiator } from "../hie/get-hie-initiator";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 
 export async function getCwInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId);
+}
+
+export async function isFacilityEnabledToQueryCW(
+  facilityId: string | undefined,
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<boolean> {
+  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.COMMONWELL);
 }
 
 export function buildCwOrgName({

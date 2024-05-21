@@ -43,7 +43,7 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
-import { isHieEnabledToQuery } from "../hie/get-hie-initiator";
+import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -449,11 +449,7 @@ async function validateCWEnabled({
   }
 
   try {
-    const isCwQueryEnabled = await isHieEnabledToQuery(
-      facilityId,
-      patient,
-      MedicalDataSource.COMMONWELL
-    );
+    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
 

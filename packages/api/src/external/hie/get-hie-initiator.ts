@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
-import { isItVendor } from "@metriport/core/domain/organization";
+import { isHealthcareItVendor } from "@metriport/core/domain/organization";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { isFacilityActiveForHie, Facility } from "../../domain/medical/facility";
 import { getPatientWithDependencies } from "../../command/medical/patient/get-patient";
@@ -21,7 +21,7 @@ export async function getHieInitiator(
 
   const facility = await getPatientsFacility(patient.id, facilities, facilityId);
 
-  if (isItVendor(organization.type)) {
+  if (isHealthcareItVendor(organization.type)) {
     return {
       oid: facility.oid,
       name: facility.data.name,
@@ -48,7 +48,7 @@ export async function isHieEnabledToQuery(
 
   const facility = await getPatientsFacility(patient.id, facilities, facilityId);
 
-  if (isItVendor(organization.type)) {
+  if (isHealthcareItVendor(organization.type)) {
     if (!isFacilityActiveForHie(facility, hie)) {
       return false;
     }
