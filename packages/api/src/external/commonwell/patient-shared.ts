@@ -21,7 +21,7 @@ import {
   matchPersonsByStrongIds,
   handleMultiplePersonMatches,
   singlePersonWithId as singleCommonwellPersonWithId,
-  multiplePersonWithId as multipleCommonwellPersonWithId,
+  multiplePersonsWithId as multipleCommonwellPersonsWithId,
 } from "./person-shared";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
@@ -63,6 +63,7 @@ export async function findOrCreatePerson({
   const tempCommonwellPerson = makePersonForPatient(commonwellPatient);
   const strongIds = getPersonalIdentifiers(tempCommonwellPerson);
   if (strongIds.length > 0) {
+    // Search by personal ID
     const persons = await matchPersonsByStrongIds({
       commonWell,
       queryMeta,
@@ -70,13 +71,13 @@ export async function findOrCreatePerson({
       commonwellPatientId,
     });
     if (persons.length === 1) {
-      const person = (persons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+      const person = (persons as singleCommonwellPersonWithId)[0];
       return { personId: person.personId, person };
     }
     if (persons.length > 1) {
       return handleMultiplePersonMatches({
         commonwellPatientId,
-        persons: persons as multipleCommonwellPersonWithId, // There's gotta be a better way
+        persons: persons as multipleCommonwellPersonsWithId,
         context: baseContext + ".strongIds",
       });
     }
@@ -88,7 +89,7 @@ export async function findOrCreatePerson({
   });
   const enrolledPersons = persons.filter(isEnrolled);
   if (enrolledPersons.length === 1) {
-    const person = (enrolledPersons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+    const person = (enrolledPersons as singleCommonwellPersonWithId)[0];
     return { personId: person.personId, person };
   }
   if (enrolledPersons.length > 1) {
@@ -96,20 +97,20 @@ export async function findOrCreatePerson({
     // Update 2023-12-12: the above TODO may be deprecated, since we actually want to link to the earliest person - even if the one has more links, they could be a "duplicate" patient that'll be removed later
     return handleMultiplePersonMatches({
       commonwellPatientId,
-      persons: enrolledPersons as multipleCommonwellPersonWithId, // There's gotta be a better way
+      persons: enrolledPersons as multipleCommonwellPersonsWithId,
       context: baseContext + ".enrolled.demographics",
     });
   }
   const unenrolledPersons = persons.filter(isUnenrolled);
   if (unenrolledPersons.length === 1) {
-    const person = (unenrolledPersons as singleCommonwellPersonWithId)[0]; // There's gotta be a better way
+    const person = (unenrolledPersons as singleCommonwellPersonWithId)[0];
     await commonWell.reenrollPerson(queryMeta, person.personId);
     return { personId: person.personId, person };
   }
   if (unenrolledPersons.length > 1) {
     const { personId, person } = handleMultiplePersonMatches({
       commonwellPatientId,
-      persons: unenrolledPersons as multipleCommonwellPersonWithId, // There's gotta be a better way
+      persons: unenrolledPersons as multipleCommonwellPersonsWithId,
       context: baseContext + ".unenrolled.demographics",
     });
     await commonWell.reenrollPerson(queryMeta, personId);

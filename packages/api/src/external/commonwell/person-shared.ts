@@ -13,7 +13,7 @@ import { minBy } from "lodash";
 
 export type PersonWithId = Person & { personId: string };
 export type singlePersonWithId = [PersonWithId, ...PersonWithId[]];
-export type multiplePersonWithId = [PersonWithId, PersonWithId, ...PersonWithId[]];
+export type multiplePersonsWithId = [PersonWithId, PersonWithId, ...PersonWithId[]];
 
 export function isEnrolledBy(orgName: string, person: Person): boolean {
   return person?.enrollmentSummary?.enroller === orgName;
@@ -89,7 +89,7 @@ export function handleMultiplePersonMatches({
   cwReference,
 }: {
   commonwellPatientId: string;
-  persons: multiplePersonWithId;
+  persons: multiplePersonsWithId;
   context: string;
   cwReference?: string;
 }): { personId: string; person: PersonWithId } {
@@ -113,7 +113,7 @@ export function handleMultiplePersonMatches({
   return { personId: person.personId, person };
 }
 
-function getEarliestPerson(persons: multiplePersonWithId): PersonWithId {
+function getEarliestPerson(persons: multiplePersonsWithId): PersonWithId {
   const earlierst = minBy(persons, p => p.enrollmentSummary?.dateEnrolled);
   const firstOne = persons[0];
   return earlierst ?? firstOne;
