@@ -1,6 +1,6 @@
-import * as dotenv from "dotenv";
-dotenv.config();
-// Keep dotenv import and config before everything else
+// import * as dotenv from "dotenv";
+// dotenv.config();
+// // Keep dotenv import and config before everything else
 import { getEnvVarOrFail } from "@metriport/shared";
 import Axios from "axios";
 import { customAlphabet } from "nanoid";
