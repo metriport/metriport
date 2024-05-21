@@ -18,10 +18,10 @@ import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-import { clearPatientDiscoveryEndedAt } from "./command/clear-patient-discovery-endedat";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { clearPatientDiscoveryEndedAt } from "./command/clear-patient-discovery-endedat";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 dayjs.extend(duration);

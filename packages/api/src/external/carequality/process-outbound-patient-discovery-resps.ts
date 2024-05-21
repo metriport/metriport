@@ -10,13 +10,13 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { CQLink } from "./cq-patient-data";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { analytics, EventTypes } from "../../shared/analytics";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getCQData, discover } from "./patient";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
 import { getDocumentsFromCQ } from "./document/query-documents";
-import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { updateDemographics } from "./patient-demographics";
 
 dayjs.extend(duration);
