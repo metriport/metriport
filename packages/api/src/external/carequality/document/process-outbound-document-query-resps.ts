@@ -179,7 +179,7 @@ export async function processOutboundDocumentQueryResps({
       }
     }
 
-    const initiator = await getCqInitiator({ patient });
+    const initiator = await getCqInitiator(patient);
 
     const documentRetrievalRequestsV1 = createOutboundDocumentRetrievalReqs({
       requestId,

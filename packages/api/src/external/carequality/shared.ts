@@ -59,6 +59,7 @@ export async function validateCQEnabledAndInitGW({
     return iheGateway;
   } catch (error) {
     const msg = `${fnName} - Error validating CQ PD enabled`;
+    outerLog(`${msg} - ${errorToString(error)}`);
     console.error(`${msg}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
@@ -117,13 +118,10 @@ export function formatDate(dateString: string | undefined): string | undefined {
   return undefined;
 }
 
-export async function getCqInitiator({
-  patient,
-  facilityId,
-}: {
-  patient: Pick<Patient, "id" | "cxId">;
-  facilityId?: string;
-}): Promise<HieInitiator> {
+export async function getCqInitiator(
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId?: string
+): Promise<HieInitiator> {
   return getHieInitiator(patient, facilityId);
 }
 

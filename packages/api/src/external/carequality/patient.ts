@@ -26,7 +26,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 dayjs.extend(duration);
 
-const discoverContext = "cq.patient.discover";
+const context = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
 type cqDiscoverProps = {
@@ -39,23 +39,15 @@ type cqDiscoverProps = {
 type cqDiscoverFlowProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
   requestId: string;
   enabledIHEGW: IHEGateway;
-  baseLogMsg: string;
+  baseLogMessage: string;
   context: string;
 };
 type cqGatewayProps = Pick<cqDiscoverFlowProps, "patient" | "facilityId" | "requestId">;
-type cqGatherGatewayProps = Pick<cqDiscoverFlowProps, "patient">;
-
-export function getCQData(
-  data: PatientExternalData | undefined
-): PatientDataCarequality | undefined {
-  if (!data) return undefined;
-  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
-}
 
 export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> {
   const { patient, facilityId, forceCq, requestId } = cqDiscoverProps;
-  const baseLogMsg = `CQ PD - patientId ${patient.id}`;
-  const { log: outerLog } = out(baseLogMsg);
+  const baseLogMessage = `CQ PD - patientId ${patient.id}`;
+  const { log: outerLog } = out(baseLogMessage);
 
   const enabledIHEGW = await validateCQEnabledAndInitGW({
     patient,
@@ -69,9 +61,9 @@ export async function discover(cqDiscoverProps: cqDiscoverProps): Promise<void> 
       ...cqDiscoverProps,
       requestId: requestId ?? uuidv7(),
       enabledIHEGW,
-      baseLogMsg,
-      context: discoverContext,
-    }).catch(processAsyncError(discoverContext));
+      baseLogMessage,
+      context: context,
+    }).catch(processAsyncError(context));
   }
 }
 
@@ -81,7 +73,7 @@ export async function remove(patient: Patient): Promise<void> {
 }
 
 async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<void> {
-  const { patient, facilityId, enabledIHEGW, baseLogMsg } = cqDiscoverFlowProps;
+  const { patient, facilityId, enabledIHEGW, baseLogMessage } = cqDiscoverFlowProps;
 
   // Wrapper?
   await clearPatientDiscoveryEndedAt({ patient });
@@ -97,7 +89,7 @@ async function discoveryFlow(cqDiscoverFlowProps: cqDiscoverFlowProps): Promise<
     const numGatewaysV2 = pdRequestGatewayV2.gateways.length;
 
     const { log } = out(
-      `${baseLogMsg}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
+      `${baseLogMessage}, requestIdV1: ${pdRequestGatewayV1.id}, requestIdV2: ${pdRequestGatewayV2.id}`
     );
 
     log(`Kicking off patient discovery Gateway V1`);
@@ -142,8 +134,8 @@ async function setupCqGateways({ patient, facilityId, requestId }: cqGatewayProp
   const fhirPatient = toFHIR(patient);
 
   const [{ v1Gateways, v2Gateways }, initiator] = await Promise.all([
-    gatherXCPDGateways({ patient }),
-    getCqInitiator({ patient, facilityId }),
+    gatherXCPDGateways(patient),
+    getCqInitiator(patient, facilityId),
   ]);
 
   const pdRequestGatewayV1 = createOutboundPatientDiscoveryReq({
@@ -170,7 +162,7 @@ async function setupCqGateways({ patient, facilityId, requestId }: cqGatewayProp
   };
 }
 
-async function gatherXCPDGateways({ patient }: cqGatherGatewayProps): Promise<{
+async function gatherXCPDGateways(patient: Patient): Promise<{
   v1Gateways: XCPDGateway[];
   v2Gateways: XCPDGateway[];
 }> {
@@ -193,4 +185,11 @@ async function gatherXCPDGateways({ patient }: cqGatherGatewayProps): Promise<{
     v1Gateways,
     v2Gateways,
   };
+}
+
+export function getCQData(
+  data: PatientExternalData | undefined
+): PatientDataCarequality | undefined {
+  if (!data) return undefined;
+  return data[MedicalDataSource.CAREQUALITY] as PatientDataCarequality; // TODO validate the type
 }
