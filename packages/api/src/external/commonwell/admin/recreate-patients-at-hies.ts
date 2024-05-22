@@ -64,7 +64,7 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { debug, log } = out(`CW recreatePatientAtCW - M patientId ${patient.id}`);
+  const { log } = out(`recreatePatientAtCW - ${patient.id}`);
 
   if (!(await isCWEnabledForCx(patient.cxId))) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
@@ -108,7 +108,7 @@ export async function recreatePatientAtCW(
       facilityId,
       getOrgIdExcludeList,
       requestId: uuidv7(),
-      debug,
+      debug: log,
       initiator,
       context: "cw.patient.recreate",
     });

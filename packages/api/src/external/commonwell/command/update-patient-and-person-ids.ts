@@ -17,7 +17,7 @@ export const updatePatientAndPersonIds = async ({
   commonwellPersonId,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  commonwellPatientId?: string;
+  commonwellPatientId: string;
   commonwellPersonId?: string;
 }): Promise<Patient> => {
   const patientFilter = {

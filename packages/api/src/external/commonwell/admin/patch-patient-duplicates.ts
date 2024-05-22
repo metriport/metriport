@@ -6,6 +6,7 @@ import MetriportError from "../../../errors/metriport-error";
 import { autoUpgradeNetworkLinks } from "../link/shared";
 import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
+import { updateCqLinkStatus } from "../command/update-cq-link-status";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
 
@@ -77,6 +78,7 @@ export async function patchDuplicatedPersonsForPatient(
       commonwellPersonId: chosenPersonId,
     });
     await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
 
     if (unenrollByDemographics) {
       log(`unenrolling by demographics...`);

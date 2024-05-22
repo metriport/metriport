@@ -139,7 +139,7 @@ export async function create({
   });
 
   if (cwCreateEnabled) {
-    /* Moved into actual workflow function
+    /* Moved this function into actual workflow function
     await setPatientDiscoveryStatus({	
       patientId: patient.id,	
       cxId: patient.cxId,	
@@ -239,10 +239,7 @@ export async function registerAndLinkPatientInCw({
       getOrgIdExcludeList
     );
     if (!newPatientDiscovery) {
-      await updatePatientDiscoveryStatus({
-        patient,
-        status: "completed",
-      });
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
       await queryDocsIfScheduled(patient, getOrgIdExcludeList);
     }
     return { commonwellPatientId, commonwellPersonId };
@@ -286,7 +283,7 @@ export async function update({
     context: updateContext,
   });
   if (cwUpdateEnabled) {
-    /* Moved into workflow funciton
+    /* Moved this function into actual workflow function
     await setPatientDiscoveryStatus({
       patientId: patient.id,
       cxId: patient.cxId,
@@ -361,7 +358,10 @@ async function updatePatientAndLinksInCw({
       commonwellPatient,
       commonwellPatientId,
     });
-    /* This is not necessary as we already check for missing commonwellPersonId within old setupUpdate
+    /* This is not necessary as we already check for missing commonwellPersonId within checkSetup / old setupUpdate
+
+    // No person yet, try to find/create with new patient demographics
+
     if (!personId) {
       await findOrCreatePersonAndLink({
         commonWell,
@@ -492,11 +492,7 @@ async function updatePatientAndLinksInCw({
       getOrgIdExcludeList
     );
     if (!newPatientDiscovery) {
-      await updatePatientDiscoveryStatus({
-        patient,
-        status: "completed",
-      });
-
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
       await queryDocsIfScheduled(patient, getOrgIdExcludeList);
     }
   } catch (error) {
@@ -529,12 +525,11 @@ async function validateCWEnabled({
   debug: typeof console.log;
   context: string;
 }): Promise<boolean> {
-  const fnName = `CW validateCWEnabled`;
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCw || isSandbox) {
-    debug(`${fnName} - CW forced, proceeding...`);
+    debug(`CW forced, proceeding...`);
     return true;
   }
 
@@ -547,24 +542,23 @@ async function validateCWEnabled({
     const cwIsDisabledForCx = !isEnabledForCx;
 
     if (cwIsDisabledForCx) {
-      debug(`${fnName} - CW disabled for cx ${cxId}, skipping...`);
+      debug(`CW disabled for cx ${cxId}, skipping...`);
       return false;
     } else if (cwIsDisabled) {
-      debug(`${fnName} - CW not enabled, skipping...`);
+      debug(`CW not enabled, skipping...`);
       return false;
     } else if (!isCwQueryEnabled) {
-      debug(`${fnName} - CW not enabled for query, skipping...`);
+      debug(`CW not enabled for query, skipping...`);
       return false;
     }
 
     return true;
   } catch (error) {
-    const msg = `${fnName} - Error validating CW $${context} enabled`;
+    const msg = `Error validating CW ${context} enabled`;
     debug(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
-        forceCw,
         error,
       },
     });
@@ -643,18 +637,16 @@ export async function remove({
     const updateData = await checkUpdate({ patient });
     if (!updateData) {
       // Should we clear patient / person patrial state to keep state consistent?
-      const subject = "Could not find a CW Patient ID, continuing...";
+      const subject =
+        "Could not find external data on Patient while deleting it @ CW, continuing...";
       log(subject);
-      capture.message(
-        "Could not find external data on Patient while deleting it @ CW, continuing...",
-        {
-          extra: {
-            patientId: patient.id,
-            context: deleteContext,
-          },
-          level: "info",
-        }
-      );
+      capture.message(subject, {
+        extra: {
+          patientId: patient.id,
+          context: deleteContext,
+        },
+        level: "info",
+      });
       return;
     }
     const { commonWellAPI, queryMeta, commonwellPatient } = await setupUpdate({
@@ -770,7 +762,7 @@ async function findOrCreatePersonAndLink({
     commonwellPatientId,
   });
 
-  await updatePatientAndPersonIds({ patient, commonwellPersonId });
+  await updatePatientAndPersonIds({ patient, commonwellPatientId, commonwellPersonId });
 
   debug(`Linking for CommonwellPerson: `, () => JSON.stringify(commonwellPerson, null, 2));
   const strongIds = getMatchingStrongIds(commonwellPerson, commonwellPatient);
