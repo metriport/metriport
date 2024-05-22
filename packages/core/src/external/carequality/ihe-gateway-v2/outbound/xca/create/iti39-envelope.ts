@@ -1,21 +1,17 @@
 import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
+import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
+import { requiresOnlyOneDocRefPerRequest } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
-const pointClickCareOid = "2.16.840.1.113883.3.6448";
-const redoxOid = "2.16.840.1.113883.3.6147.458";
-const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
-
-const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
 const minDocumentReferencesPerDrRequest = 1;
 const maxDocumentReferencesPerDrRequest = 10;
 
@@ -68,7 +64,7 @@ export function createITI39SoapEnvelope({
       "urn:RetrieveDocumentSetRequest": {
         "urn:DocumentRequest": documentReferences.map(docRef => ({
           "urn:HomeCommunityId": wrapIdInUrnOid(docRef.homeCommunityId),
-          "urn:RepositoryUniqueId": docRef.repositoryUniqueId,
+          "urn:RepositoryUniqueId": wrapIdInUrnOid(docRef.repositoryUniqueId),
           "urn:DocumentUniqueId": docRef.documentUniqueId,
         })),
       },
@@ -120,9 +116,7 @@ export function createAndSignBulkDRRequests({
   const signedRequests: BulkSignedDR[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const documentReferencesPerRequest = gatewaysThatAcceptOneDocRefPerRequest.includes(
-      bodyData.gateway.homeCommunityId
-    )
+    const documentReferencesPerRequest = requiresOnlyOneDocRefPerRequest(bodyData.gateway)
       ? minDocumentReferencesPerDrRequest
       : maxDocumentReferencesPerDrRequest;
     const documentReferences = bodyData.documentReference;
