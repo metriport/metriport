@@ -675,7 +675,9 @@ export class APIStack extends Stack {
     const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
       functionName: "convertApiCcdaToFhir",
       vpc: this.vpc,
-      code: lambda.DockerImageCode.fromImageAsset("../fhir-converter/Dockerfile.lambda"),
+      code: lambda.DockerImageCode.fromImageAsset("../fhir-converter", {
+        file: "Dockerfile.lambda",
+      }),
     });
     ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda));
 
