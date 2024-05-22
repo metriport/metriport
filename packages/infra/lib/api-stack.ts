@@ -669,8 +669,9 @@ export class APIStack extends Stack {
 
     // CONVERT API
     const convertResource = api.root.addResource("convert");
-    const ccdaConvertResource = convertResource.addResource("ccda/to");
-    const ccdaToFhirConvertResource = ccdaConvertResource.addResource("fhir");
+    const ccdaConvertResource = convertResource.addResource("ccda");
+    const ccdaConvertBaseResource = ccdaConvertResource.addResource("to");
+    const ccdaToFhirConvertResource = ccdaConvertBaseResource.addResource("fhir");
     const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
       functionName: "convertApiCcdaToFhir",
       vpc: this.vpc,
