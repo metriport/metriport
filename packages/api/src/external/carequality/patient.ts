@@ -122,8 +122,7 @@ async function prepareAndTriggerPD({
     });
   } catch (error) {
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
-    const msg = "Error on CQ Patient Discovery";
-    console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${error}`);
+    const msg = `Error on CQ Patient Discovery`;
     capture.error(msg, {
       extra: {
         facilityId,

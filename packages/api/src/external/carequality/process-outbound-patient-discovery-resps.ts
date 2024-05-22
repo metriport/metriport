@@ -34,17 +34,17 @@ export async function processOutboundPatientDiscoveryResps({
   const patientIds = { id: patientId, cxId };
 
   try {
+    /* This short circuits analytics
+    if (results.length === 0) {
+      log(`No patient discovery results found.`);
+      await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
+      return;
+    }
+    */
+    log(`Starting to handle patient discovery results`);
+    const cqLinks = await createCQLinks(patientIds, results);
     const patient = await getPatientOrFail(patientIds);
     if (results.length > 0) await updateDemographics(patient, results);
-
-    log(`Starting to handle patient discovery results`);
-    const cqLinks = await createCQLinks(
-      {
-        id: patientId,
-        cxId,
-      },
-      results
-    );
     const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
     const pdRequestId = getCQData(patient.data.externalData)?.pdRequestId;
     const pdEndeddAt = getCQData(patient.data.externalData)?.pdEndedAt;
@@ -77,7 +77,7 @@ export async function processOutboundPatientDiscoveryResps({
       endedAt: new Date(),
     });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
-    console.error(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
+    log(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,

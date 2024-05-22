@@ -135,6 +135,7 @@ export const findCurrentLink = async (
       capture.message(msg, { extra: captureExtra });
       // Why are we calling this? patientCWId is not updated.
       await updatePatientAndPersonIds({ patient, commonwellPatientId: patientCWId });
+      // The error message talks abut
       await clearPersonId({ patient });
       await updatePatientDiscoveryStatus({ patient, status: "failed" });
       await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
