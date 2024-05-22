@@ -259,6 +259,10 @@ export class Config {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
   }
 
+  static getFhirToCdaConverterLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
+  }
+
   static getDocumentDownloaderLambdaName(): string {
     return getEnvVarOrFail("DOCUMENT_DOWNLOADER_LAMBDA_NAME");
   }

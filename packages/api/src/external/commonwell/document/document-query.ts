@@ -44,6 +44,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { HieInitiator } from "../../hie/get-hie-initiator";
+import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -124,7 +125,10 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-  if (!(await isCWEnabledForCx(cxId))) {
+
+  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
+
+  if (!(await isCWEnabledForCx(cxId)) || !isCwQueryEnabled) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
 

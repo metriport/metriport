@@ -1,3 +1,29 @@
+{{!-- 
+  // ------------------------------------------------------------------------------------------------- 
+  // Copyright (c) 2022-present Metriport Inc.   
+  //  
+  // Licensed under AGPLv3. See LICENSE in the repo root for license information.
+  //  
+  // This file incorporates work covered by the following copyright and  
+  // permission notice:  
+  //  
+  //     Copyright (c) Microsoft Corporation. All rights reserved. 
+  //  
+  //     Permission to use, copy, modify, and/or distribute this software  
+  //     for any purpose with or without fee is hereby granted, provided  
+  //     that the above copyright notice and this permission notice appear  
+  //     in all copies.  
+  //  
+  //     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+  //     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+  //     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+  //     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+  //     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+  //     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+  //     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+  //     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
+  // -------------------------------------------------------------------------------------------------
+--}}
 {{#with msg.ClinicalDocument as |document|}}
     {{>Resources/Composition.hbs composition=document ID=(generateUUID (toJsonString document))}},
     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
@@ -12,19 +38,19 @@
 
     {{#if document.componentOf.encompassingEncounter}}
         {{!-- do we want to include this? Kinda a duplicate of more rich data later in encounter section --}}
-        {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter))}},
+        {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=@encompassingEncounterId}},
         
         {{#if document.componentOf.encompassingEncounter.responsibleParty.assignedEntity}}
             {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=document.componentOf.encompassingEncounter.responsibleParty.assignedEntity) as |practitionerId|}}
                 {{>Resources/Practitioner.hbs practitioner=document.componentOf.encompassingEncounter.responsibleParty.assignedEntity ID=practitionerId.Id}},
-                {{>References/Encounter/participant.individual.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Practitioner/' practitionerId.Id)}},
+                {{>References/Encounter/participant.individual.hbs ID=@encompassingEncounterId REF=(concat 'Practitioner/' practitionerId.Id)}},
             {{/with}}
         {{/if}}
 
-        {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' (generateUUID (toJsonString document.componentOf.encompassingEncounter)))}},
+        {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' @encompassingEncounterId)}},
         {{#with (evaluate 'Utils/GenerateLocationId.hbs' location=document.componentOf.encompassingEncounter.location.healthCareFacility) as |locationId|}}
             {{>Resources/LocationForHeader.hbs location=document.componentOf.encompassingEncounter.location.healthCareFacility ID=locationId.Id}},
-            {{>References/Encounter/location.location.hbs ID=(generateUUID (toJsonString document.componentOf.encompassingEncounter)) REF=(concat 'Location/' locationId.Id)}},
+            {{>References/Encounter/location.location.hbs ID=@encompassingEncounterId REF=(concat 'Location/' locationId.Id)}},
         {{/with}}
     {{/if}}
     

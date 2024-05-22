@@ -11,6 +11,7 @@ const NEWLINE_REGEX = /\r?\n/g;
 
 export const securityHeaderTimestampId = "TS-7c229e85-d62b-471e-9112-a49d1c365004";
 export const securityHeaderEnvelopedId = "TS_3e57269d-075d-4d3f-9f5d-c97ad6afc009";
+export const basicRequiredOid = "1.3.6.1.4.1.41800.100";
 
 export function createSecurityHeader({
   publicCert,
@@ -21,6 +22,7 @@ export function createSecurityHeader({
   metriportOrganization,
   homeCommunityId,
   purposeOfUse,
+  gatewayOid,
 }: {
   publicCert: string;
   createdTimestamp: string;
@@ -30,25 +32,36 @@ export function createSecurityHeader({
   metriportOrganization: string;
   homeCommunityId: string;
   purposeOfUse: string;
+  gatewayOid?: string;
 }): object {
   const certPemStripped = stripPemCertificate(publicCert);
   const [modulusB64, exponentB64] = extractPublicKeyInfo(certPemStripped);
-  const saml2NameID = `CN=ihe."metriport.com",OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+  const saml2NameID = `CN=ihe.metriport.com,OU=CAREQUALITY,O=MetriportInc.,ST=California,C=US`;
+
+  // MUTEX. One ehex endpoint will fail if the subjectIdNameFormat is not set to basic, while the other 2.16.840.1.113883.3.7732.100 will fail if it is not set to uri.
+  const subjectIdNameFormat =
+    gatewayOid && gatewayOid === basicRequiredOid
+      ? "urn:oasis:names:tc:SAML:2.0:attrname-format:basic"
+      : "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
 
   const securityHeader = {
     "wsse:Security": {
       "@_xmlns:wsse": namespaces.wsse,
-      "@_xmlns:saml2": namespaces.saml2,
       "@_xmlns:ds": namespaces.ds,
       "@_xmlns:wsu": namespaces.wsu,
-      "@_xmlns:xsi": namespaces.xsi,
-      "@_xmlns:hl7": namespaces.hl7,
-      "@_xmlns:xs": namespaces.xs,
+      "wsu:Timestamp": {
+        "@_wsu:Id": securityHeaderTimestampId,
+        "wsu:Created": createdTimestamp,
+        "wsu:Expires": expiresTimestamp,
+      },
       "saml2:Assertion": {
-        "@_xsi:type": "saml2:AssertionType",
+        "@_xmlns:saml2": namespaces.saml2,
+        "@_xmlns:xsd": namespaces.xsd,
+        "@_xmlns:xsi": namespaces.xsi,
         "@_ID": securityHeaderEnvelopedId,
         "@_IssueInstant": createdTimestamp,
         "@_Version": "2.0",
+        "@_xsi:type": "saml2:AssertionType",
         "saml2:Issuer": {
           "@_Format": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
           "#text": "support@metriport.com",
@@ -102,8 +115,11 @@ export function createSecurityHeader({
           "saml2:Attribute": [
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:subject-id",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
-              "saml2:AttributeValue": subjectRole,
+              "@_NameFormat": subjectIdNameFormat,
+              "saml2:AttributeValue": {
+                "@_xsi:type": namespaces.xsiType,
+                "#text": subjectRole,
+              },
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:organization",
@@ -122,12 +138,10 @@ export function createSecurityHeader({
             },
             {
               "@_Name": "urn:oasis:names:tc:xacml:2.0:subject:role",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
-                "@_xsi:type": namespaces.ce,
                 "hl7:Role": {
-                  "@_xsi:type": namespaces.ce,
-                  "@_code": "106331006",
+                  "@_xmlns:hl7": namespaces.hl7,
+                  "@_code": "224608005",
                   "@_codeSystem": SNOMED_CODE,
                   "@_codeSystemName": "SNOMED_CT",
                   "@_displayName": "Administrative AND/OR managerial worker",
@@ -136,11 +150,11 @@ export function createSecurityHeader({
             },
             {
               "@_Name": "urn:oasis:names:tc:xspa:1.0:subject:purposeofuse",
-              "@_NameFormat": "urn:oasis:names:tc:SAML:2.0:attrname-format:uri",
               "saml2:AttributeValue": {
                 "@_xmlns:xsi": namespaces.xsi,
-                "@_xsi:type": namespaces.ce,
                 "hl7:PurposeOfUse": {
+                  "@_xmlns:hl7": namespaces.hl7,
+                  "@_xsi:type": namespaces.ce,
                   "@_code": purposeOfUse,
                   "@_codeSystem": NHIN_PURPOSE_CODE_SYSTEM,
                   "@_codeSystemName": "nhin-purpose",
@@ -150,11 +164,6 @@ export function createSecurityHeader({
             },
           ],
         },
-      },
-      "wsu:Timestamp": {
-        "@_wsu:Id": securityHeaderTimestampId,
-        "wsu:Created": createdTimestamp,
-        "wsu:Expires": expiresTimestamp,
       },
     },
   };

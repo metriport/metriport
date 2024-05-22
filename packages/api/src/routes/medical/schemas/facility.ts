@@ -2,6 +2,7 @@ import { validateNPI } from "@metriport/commonwell-sdk";
 import { z } from "zod";
 import { AddressStrictSchema } from "./address";
 import { optionalString } from "./shared";
+import { FacilityType } from "../../../domain/medical/facility";
 
 export const facilityCreateSchema = z.object({
   name: z.string().min(1),
@@ -15,3 +16,20 @@ export const facilityCreateSchema = z.object({
 });
 
 export const facilityUpdateSchema = facilityCreateSchema;
+
+export const facilityOboDetailsSchema = z
+  .object({
+    id: z.string().optional(),
+    nameInMetriport: z.string(),
+    npi: z.string(),
+    // CQ
+    cqType: z.nativeEnum(FacilityType),
+    cqActive: z.boolean().optional(),
+    cqOboOid: z.string().optional(),
+    // CW
+    cwType: z.nativeEnum(FacilityType),
+    cwActive: z.boolean().optional(),
+    cwOboOid: z.string().optional(),
+    cwFacilityName: z.string().optional(),
+  })
+  .merge(AddressStrictSchema);

@@ -8,27 +8,30 @@ import {
 } from "@metriport/ihe-gateway-sdk";
 import {
   handleRegistryErrorResponse,
-  handleHTTPErrorResponse,
+  handleHttpErrorResponse,
   handleEmptyResponse,
-  handleSOAPFaultResponse,
+  handleSoapFaultResponse,
+  handleErrorMtomResponse,
 } from "./error";
 import { parseFileFromString } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
-import { DRSamlClientResponse } from "../send/dr-requests";
+import { DrSamlClientResponse } from "../send/dr-requests";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
+import { capture } from "../../../../../../util/notifications";
+import { parseMtomResponse } from "../mtom/parser";
 
-const bucket = Config.getMedicalDocumentsBucketName();
 const region = Config.getAWSRegion();
+const bucket = Config.getMedicalDocumentsBucketName();
 
-type DocumentResponse = {
-  size: string;
-  title: string;
-  creation: string;
-  language: string;
+export type DocumentResponse = {
+  size?: string;
+  title?: string;
+  creation?: string;
+  language?: string;
   mimeType: string;
   DocumentUniqueId: string;
   HomeCommunityId: string;
@@ -38,17 +41,24 @@ type DocumentResponse = {
   Document: string;
 };
 
+let s3UtilsInstance = new S3Utils(region);
+export function getS3UtilsInstance(): S3Utils {
+  return s3UtilsInstance;
+}
+export function setS3UtilsInstance(s3Utils: S3Utils): void {
+  s3UtilsInstance = s3Utils;
+}
+
 async function parseDocumentReference({
   documentResponse,
   outboundRequest,
-  s3Utils,
   idMapping,
 }: {
   documentResponse: DocumentResponse;
   outboundRequest: OutboundDocumentRetrievalReq;
-  s3Utils: S3Utils;
   idMapping: Record<string, string>;
 }): Promise<DocumentReference> {
+  const s3Utils = getS3UtilsInstance();
   const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
   const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
   const metriportId = idMapping[strippedDocUniqueId];
@@ -84,7 +94,7 @@ async function parseDocumentReference({
     docUniqueId: documentResponse.DocumentUniqueId.toString(),
     metriportId: metriportId,
     fileLocation: bucket,
-    homeCommunityId: documentResponse.HomeCommunityId,
+    homeCommunityId: outboundRequest.gateway.homeCommunityId,
     repositoryUniqueId: documentResponse.RepositoryUniqueId,
     newDocumentUniqueId: documentResponse.NewDocumentUniqueId,
     newRepositoryUniqueId: documentResponse.NewRepositoryUniqueId,
@@ -92,63 +102,62 @@ async function parseDocumentReference({
   };
 }
 
+function generateIdMapping(documentReferences: DocumentReference[]): Record<string, string> {
+  return documentReferences.reduce((acc: Record<string, string>, entry) => {
+    if (entry.docUniqueId && entry.metriportId) {
+      acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
+    }
+    return acc;
+  }, {});
+}
+
 async function handleSuccessResponse({
   documentResponses,
   outboundRequest,
   gateway,
 }: {
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  documentResponses: any;
+  documentResponses: DocumentResponse[];
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
 }): Promise<OutboundDocumentRetrievalResp> {
-  const s3Utils = new S3Utils(region);
-
-  const idMapping = outboundRequest.documentReference.reduce(
-    (acc: Record<string, string>, entry) => {
-      if (entry.docUniqueId && entry.metriportId) {
-        acc[stripUrnPrefix(entry.docUniqueId)] = entry.metriportId;
-      }
-      return acc;
-    },
-    {}
-  );
-
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const documentReferences = Array.isArray(documentResponses)
-    ? await Promise.all(
-        documentResponses.map(async (documentResponse: DocumentResponse) =>
-          parseDocumentReference({ documentResponse, outboundRequest, s3Utils, idMapping })
+  try {
+    const idMapping = generateIdMapping(outboundRequest.documentReference);
+    const documentReferences = Array.isArray(documentResponses)
+      ? await Promise.all(
+          documentResponses.map(async (documentResponse: DocumentResponse) =>
+            parseDocumentReference({ documentResponse, outboundRequest, idMapping })
+          )
         )
-      )
-    : [
-        await parseDocumentReference({
-          documentResponse: documentResponses,
-          outboundRequest,
-          s3Utils,
-          idMapping,
-        }),
-      ];
+      : [
+          await parseDocumentReference({
+            documentResponse: documentResponses,
+            outboundRequest,
+            idMapping,
+          }),
+        ];
 
-  const response: OutboundDocumentRetrievalResp = {
-    id: outboundRequest.id,
-    patientId: outboundRequest.patientId,
-    timestamp: outboundRequest.timestamp,
-    responseTimestamp: dayjs().toISOString(),
-    gateway,
-    documentReference: documentReferences,
-  };
-  return response;
+    const response: OutboundDocumentRetrievalResp = {
+      id: outboundRequest.id,
+      patientId: outboundRequest.patientId,
+      timestamp: outboundRequest.timestamp,
+      responseTimestamp: dayjs().toISOString(),
+      gateway,
+      documentReference: documentReferences,
+    };
+    return response;
+  } catch (error) {
+    throw new MetriportError(`Error Processing Success Response`, error);
+  }
 }
 
-export async function processDRResponse({
+export async function processDrResponseSoap({
   drResponse: { response, success, gateway, outboundRequest },
 }: {
-  drResponse: DRSamlClientResponse;
+  drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway,
@@ -172,7 +181,7 @@ export async function processDRResponse({
   const soapFault = jsonObj?.Envelope?.Body?.Fault;
 
   if ((status === successStatus || status === partialSuccessStatus) && documentResponses) {
-    return handleSuccessResponse({
+    return await handleSuccessResponse({
       documentResponses,
       outboundRequest,
       gateway,
@@ -184,7 +193,7 @@ export async function processDRResponse({
       gateway,
     });
   } else if (soapFault) {
-    return handleSOAPFaultResponse({
+    return handleSoapFaultResponse({
       soapFault,
       outboundRequest,
       gateway,
@@ -194,5 +203,59 @@ export async function processDRResponse({
       outboundRequest,
       gateway,
     });
+  }
+}
+
+export async function processDrResponseMtom({
+  drResponse: { response, success, gateway, outboundRequest, contentType },
+}: {
+  drResponse: DrSamlClientResponse;
+}): Promise<OutboundDocumentRetrievalResp> {
+  if (!contentType) {
+    throw new Error("No content type found in response");
+  }
+  if (success === false) {
+    return handleHttpErrorResponse({
+      httpError: response,
+      outboundRequest,
+      gateway,
+    });
+  }
+  try {
+    const documentResponses = parseMtomResponse(response, contentType);
+    return await handleSuccessResponse({
+      documentResponses,
+      outboundRequest,
+      gateway,
+    });
+  } catch (error) {
+    capture.error("Error parsing MTOM response", {
+      extra: {
+        error,
+        response,
+        contentType,
+        gateway,
+      },
+    });
+    return handleErrorMtomResponse({
+      outboundRequest,
+      gateway,
+    });
+  }
+}
+
+function isMtomResponse(contentType: string | undefined): boolean {
+  return contentType !== undefined && contentType.includes("multipart/related");
+}
+
+export async function processDrResponse({
+  drResponse,
+}: {
+  drResponse: DrSamlClientResponse;
+}): Promise<OutboundDocumentRetrievalResp> {
+  if (isMtomResponse(drResponse?.contentType)) {
+    return await processDrResponseMtom({ drResponse });
+  } else {
+    return await processDrResponseSoap({ drResponse });
   }
 }

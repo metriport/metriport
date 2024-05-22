@@ -91,4 +91,8 @@ export class Config {
   static getPostHogApiKey(): string | undefined {
     return getEnvVar("POST_HOG_API_KEY");
   }
+
+  static getUseMockS3Utils(): boolean {
+    return getEnvVar("USE_MOCK_S3_UTILS") === "true";
+  }
 }

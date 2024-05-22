@@ -6,7 +6,7 @@ import {
   DocumentReference,
   XCAGateway,
 } from "@metriport/ihe-gateway-sdk";
-import { handleRegistryErrorResponse, handleHTTPErrorResponse, handleEmptyResponse } from "./error";
+import { handleRegistryErrorResponse, handleHttpErrorResponse, handleEmptyResponse } from "./error";
 import { DQSamlClientResponse } from "../send/dq-requests";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import {
@@ -16,6 +16,12 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
+
+const enforceSameHomeCommunityIdList = [
+  "2.16.840.1.113883.3.6448",
+  "2.16.840.1.113883.3.6147.458",
+  "2.16.840.1.113883.3.6147.458.2",
+];
 
 type Identifier = {
   _identificationScheme: string;
@@ -39,9 +45,32 @@ type Slot = {
   };
 };
 
-function parseDocumentReference(
+function getRequestHomeCommunityId(request: OutboundDocumentQueryReq): string {
+  return request.gateway.homeCommunityId;
+}
+
+function getResponseHomeCommunityId(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
+): string {
+  return stripUrnPrefix(extrinsicObject?._home);
+}
+
+function getHomeCommunityIdForDr(
+  request: OutboundDocumentQueryReq,
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extrinsicObject: any
+): string {
+  if (enforceSameHomeCommunityIdList.includes(request.gateway.homeCommunityId)) {
+    return getRequestHomeCommunityId(request);
+  }
+  return getResponseHomeCommunityId(extrinsicObject);
+}
+
+function parseDocumentReference(
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extrinsicObject: any,
+  outboundRequest: OutboundDocumentQueryReq
 ): DocumentReference | undefined {
   const slots = Array.isArray(extrinsicObject?.Slot)
     ? extrinsicObject?.Slot
@@ -77,9 +106,11 @@ function parseDocumentReference(
       (c: Classification) => c._classificationScheme === classificationScheme
     );
     if (!classification) return undefined;
-    const classificationSlots = Array.isArray(classification.Slot)
+
+    const slotArray = Array.isArray(classification.Slot)
       ? classification.Slot
       : [classification.Slot];
+    const classificationSlots = slotArray.flatMap((slot: Slot) => slot ?? []);
 
     const slot = classificationSlots.find((s: Slot) => s._name === slotName);
     return slot
@@ -115,14 +146,16 @@ function parseDocumentReference(
   }
 
   const documentReference: DocumentReference = {
-    homeCommunityId: stripUrnPrefix(extrinsicObject._home),
+    homeCommunityId: getHomeCommunityIdForDr(outboundRequest, extrinsicObject),
     repositoryUniqueId,
     docUniqueId,
     contentType: extrinsicObject?._mimeType,
     language: findSlotValue("languageCode"),
     size: sizeValue ? parseInt(sizeValue) : undefined,
     title: findClassificationName(XDSDocumentEntryClassCode),
-    creation: findSlotValue("creationTime"),
+    creation: findSlotValue("creationTime")
+      ? dayjs(findSlotValue("creationTime")).toISOString()
+      : undefined,
     authorInstitution: findClassificationSlotValue(XDSDocumentEntryAuthor, "authorInstitution"),
   };
   return documentReference;
@@ -139,8 +172,10 @@ function handleSuccessResponse({
   gateway: XCAGateway;
 }): OutboundDocumentQueryResp {
   const documentReferences = Array.isArray(extrinsicObjects)
-    ? extrinsicObjects.flatMap(extrinsicObject => parseDocumentReference(extrinsicObject) ?? [])
-    : [parseDocumentReference(extrinsicObjects) ?? []].flat();
+    ? extrinsicObjects.flatMap(
+        extrinsicObject => parseDocumentReference(extrinsicObject, outboundRequest) ?? []
+      )
+    : [parseDocumentReference(extrinsicObjects, outboundRequest) ?? []].flat();
 
   const response: OutboundDocumentQueryResp = {
     id: outboundRequest.id,
@@ -149,6 +184,7 @@ function handleSuccessResponse({
     responseTimestamp: dayjs().toISOString(),
     gateway,
     documentReference: documentReferences,
+    externalGatewayPatient: outboundRequest.externalGatewayPatient,
   };
   return response;
 }
@@ -159,7 +195,7 @@ export function processDQResponse({
   dqResponse: DQSamlClientResponse;
 }): OutboundDocumentQueryResp {
   if (success === false) {
-    return handleHTTPErrorResponse({
+    return handleHttpErrorResponse({
       httpError: response,
       outboundRequest,
       gateway: gateway,

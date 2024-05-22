@@ -20,15 +20,18 @@ import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { Config } from "../../../shared/config";
+import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
 
 export async function getDocumentsFromCQ({
   requestId,
+  facilityId,
   patient,
 }: {
   requestId: string;
+  facilityId?: string;
   patient: Patient;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
@@ -41,9 +44,13 @@ export async function getDocumentsFromCQ({
     source: MedicalDataSource.CAREQUALITY,
     log,
   });
+
+  const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, { id: patientId, cxId });
+
   if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
+  if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
 
   try {
     const [cqPatientData] = await Promise.all([

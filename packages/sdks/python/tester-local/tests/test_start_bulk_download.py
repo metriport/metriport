@@ -16,13 +16,13 @@ base_url = os.environ.get("BASE_URL")
 
 
 def test_start_doc_query() -> None:
-    client = Metriport(api_key=api_key, base_url=base_url)
+    metriport = Metriport(api_key=api_key, base_url=base_url)
     metadata = {
         "metadata": {
             "docId": "12345",
             "docType": "type",
         }
     }
-    response = client.medical.document.start_bulk_get_document_url(patient_id=patient_id, request=metadata)
+    response = metriport.medical.document.start_bulk_get_document_url(patient_id=patient_id, request=metadata)
     print(f"Response: {response}")
 

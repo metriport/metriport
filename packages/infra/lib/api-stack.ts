@@ -44,7 +44,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
+import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -287,6 +287,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      fhirToCdaConverterLambda,
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
@@ -414,6 +415,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      fhirToCdaConverterLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },

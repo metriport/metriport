@@ -115,6 +115,7 @@ export async function queryDocumentsAcrossHIEs({
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
       patient: updatedPatient,
+      facilityId,
       requestId,
     }).catch(emptyFunction);
   }
