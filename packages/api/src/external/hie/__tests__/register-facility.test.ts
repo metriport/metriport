@@ -330,7 +330,7 @@ describe("registerFacility", () => {
     );
   });
 
-  it("calls createOrUpdateInCq with obo and createOrUpdateInCw with obo when cqType is initiatorOnly, cwType is initiatorOnly and both are not active", async () => {
+  it("calls createOrUpdateInCq with obo when cqType is initiatorOnly, and cqActive is false", async () => {
     const cxId = uuidv7_file.uuidv4();
 
     mockedFacility = {
@@ -338,6 +338,34 @@ describe("registerFacility", () => {
       cqType: FacilityType.initiatorOnly,
       cqActive: false,
       cqOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCw(
+      mockedFacility,
+      mockedRegisterFacility.cwFacilityName,
+      getCxOrganizationNameAndOidResult,
+      cxId
+    );
+
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
+      coordinates
+    );
+
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringContaining("OBO"),
+      })
+    );
+  });
+
+  it("calls createOrUpdateInCw with obo when cwType is initiatorOnly, and cwActive is false", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    mockedFacility = {
+      ...mockedFacility,
       cwType: FacilityType.initiatorOnly,
       cwActive: false,
       cwOboOid: faker.string.uuid(),
@@ -364,12 +392,6 @@ describe("registerFacility", () => {
         }),
       }),
       true
-    );
-
-    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: expect.stringContaining("OBO"),
-      })
     );
   });
 });
