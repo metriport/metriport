@@ -2,15 +2,15 @@ var path = require("path");
 var fs = require("fs");
 var Promise = require("promise");
 var compileCache = require("memory-cache");
-var constants = require("../constants/constants");
-var errorCodes = require("../error/error").errorCodes;
-var errorMessage = require("../error/error").errorMessage;
-var HandlebarsConverter = require("../handlebars-converter/handlebars-converter");
-var dataHandlerFactory = require("../dataHandler/dataHandlerFactory");
+var constants = require("../lib/constants/constantsnts");
+var errorCodes = require("../lib/error/error").errorCodes;
+var errorMessage = require("../lib/error/error").errorMessage;
+var HandlebarsConverter = require("../lib/handlebars-converter/handlebars-converter");
+var dataHandlerFactory = require("../lib/dataHandler/dataHandlerFactory");
 var {
   extractEncounterTimePeriod,
   getEncompassingEncounterId,
-} = require("../inputProcessor/dateProcessor");
+} = require("../lib/inputProcessor/dateProcessor");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);

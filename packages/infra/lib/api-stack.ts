@@ -669,7 +669,8 @@ export class APIStack extends Stack {
 
     // CONVERT API
     const convertResource = api.root.addResource("convert");
-    const ccdaConvertResource = convertResource.addResource("ccda");
+    const convertBaseResource = convertResource.addResource("v1");
+    const ccdaConvertResource = convertBaseResource.addResource("ccda");
     const ccdaConvertBaseResource = ccdaConvertResource.addResource("to");
     const ccdaToFhirConvertResource = ccdaConvertBaseResource.addResource("fhir");
     const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
@@ -679,7 +680,9 @@ export class APIStack extends Stack {
         file: "Dockerfile.lambda",
       }),
     });
-    ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda));
+    ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda), {
+      apiKeyRequired: true,
+    });
 
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
