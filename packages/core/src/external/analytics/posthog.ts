@@ -16,11 +16,12 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   timestamp?: Date;
 }
 
-const postApiKey = Config.getPostHogApiKey();
+const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-export const analytics = (params: EventMessageV1) => {
-  if (postApiKey) {
-    const posthog = new PostHog(postApiKey);
+export const analytics = (params: EventMessageV1, postApiKey?: string) => {
+  const apiKey = postApiKey ?? defaultPostHogApiKey;
+  if (apiKey) {
+    const posthog = new PostHog(apiKey);
 
     params.properties = {
       ...(params.properties ? { ...params.properties } : undefined),
