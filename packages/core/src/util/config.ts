@@ -88,4 +88,8 @@ export class Config {
   static getApiUrl(): string {
     return getEnvVarOrFail("API_URL");
   }
+
+  static getUseMockS3Utils(): boolean {
+    return getEnvVar("USE_MOCK_S3_UTILS") === "true";
+  }
 }

@@ -10,9 +10,9 @@ import { wrapIdInUrnUuid } from "../../../../../../util/urn";
 
 const action = "urn:ihe:iti:2007:CrossGatewayQuery";
 const findDocumentId = "14d4debf-8f97-4251-9a74-a90016b0af0d";
-
 const stableDocumentType = "7edca82f-054d-47f2-a032-9b2a5b5186c1";
 const onDemandDocumentType = "34268e47-fdf5-41a6-ba33-82133c465248";
+const dateFormat = "YYYYMMDDHHmmss";
 
 export type BulkSignedDQ = {
   gateway: XCAGateway;
@@ -20,6 +20,9 @@ export type BulkSignedDQ = {
   outboundRequest: OutboundDocumentQueryReq;
 };
 
+function formatDate(date?: string, format: string = dateFormat): string | undefined {
+  return date ? dayjs(date).format(format) : undefined;
+}
 function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   if (!bodyData.gateway) {
     throw new Error("Gateway must be provided");
@@ -28,14 +31,10 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
   const classCode = bodyData.classCode;
   const practiceSettingCode = bodyData.practiceSettingCode;
   const facilityTypeCode = bodyData.facilityTypeCode;
-  const serviceDateFrom = dayjs(bodyData.serviceDate?.dateFrom).format("YYYYMMDDHHmmss");
-  const serviceDateTo = dayjs(bodyData.serviceDate?.dateTo).format("YYYYMMDDHHmmss");
-  const documentCreationDateFrom = dayjs(bodyData.documentCreationDate?.dateFrom).format(
-    "YYYYMMDDHHmmss"
-  );
-  const documentCreationDateTo = dayjs(bodyData.documentCreationDate?.dateTo).format(
-    "YYYYMMDDHHmmss"
-  );
+  const serviceDateFrom = formatDate(bodyData.serviceDate?.dateFrom);
+  const serviceDateTo = formatDate(bodyData.serviceDate?.dateTo);
+  const documentCreationDateFrom = formatDate(bodyData.documentCreationDate?.dateFrom);
+  const documentCreationDateTo = formatDate(bodyData.documentCreationDate?.dateTo);
   const gatewayHomeCommunityId = bodyData.gateway.homeCommunityId;
   const externalGatewayPatientId = bodyData.externalGatewayPatient.id;
   const externalGatewayPatientSystem = bodyData.externalGatewayPatient.system;
@@ -70,48 +69,76 @@ function createSoapBody(bodyData: OutboundDocumentQueryReq): object {
                 "urn2:Value": "('urn:oasis:names:tc:ebxml-regrep:StatusType:Approved')",
               },
             },
-            {
-              "@_name": "$XDSDocumentEntryClassCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${classCode?.code}^^${classCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryPracticeSettingCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${practiceSettingCode?.code}^^${practiceSettingCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
-              "urn2:ValueList": {
-                "urn2:Value": `('${facilityTypeCode?.code}^^${facilityTypeCode?.system}')`,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
-              "urn2:ValueList": {
-                "urn2:Value": serviceDateFrom,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryServiceStartTimeTo",
-              "urn2:ValueList": {
-                "urn2:Value": serviceDateTo,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryCreationTimeFrom",
-              "urn2:ValueList": {
-                "urn2:Value": documentCreationDateFrom,
-              },
-            },
-            {
-              "@_name": "$XDSDocumentEntryCreationTimeTo",
-              "urn2:ValueList": {
-                "urn2:Value": documentCreationDateTo,
-              },
-            },
+            ...(classCode?.code && classCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryClassCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${classCode.code}^^${classCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(practiceSettingCode?.code && practiceSettingCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryPracticeSettingCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${practiceSettingCode.code}^^${practiceSettingCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(facilityTypeCode?.code && facilityTypeCode?.system
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryHealthcareFacilityTypeCode",
+                    "urn2:ValueList": {
+                      "urn2:Value": `('${facilityTypeCode.code}^^${facilityTypeCode.system}')`,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(serviceDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryServiceStartTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": serviceDateTo,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateFrom
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeFrom",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateFrom,
+                    },
+                  },
+                ]
+              : []),
+            ...(documentCreationDateTo
+              ? [
+                  {
+                    "@_name": "$XDSDocumentEntryCreationTimeTo",
+                    "urn2:ValueList": {
+                      "urn2:Value": documentCreationDateTo,
+                    },
+                  },
+                ]
+              : []),
             {
               "@_name": "$XDSDocumentEntryType",
               "urn2:ValueList": {

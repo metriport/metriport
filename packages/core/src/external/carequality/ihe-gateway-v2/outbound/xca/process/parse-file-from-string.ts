@@ -1,4 +1,4 @@
-import { detectFileType } from "../../../../../../util/file-type";
+import { detectFileType, isXMLContentType } from "../../../../../../util/file-type";
 import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
 import { XMLParser } from "fast-xml-parser";
 import { out } from "../../../../../../util/log";
@@ -14,11 +14,16 @@ type ParsedFile = {
 export function parseFileFromString(fileAsString: string): ParsedFile {
   let decodedBytes: Buffer;
 
-  try {
-    decodedBytes = Buffer.from(fileAsString, "base64");
-  } catch (ex) {
-    log("Got a non-base64 document! Using original fileAsString content for decodedBytes");
+  const firstSixBytesBuffer = Buffer.from(fileAsString.slice(0, 6));
+  if (isXMLContentType(firstSixBytesBuffer)) {
     decodedBytes = Buffer.from(fileAsString.trim());
+  } else {
+    try {
+      decodedBytes = Buffer.from(fileAsString, "base64");
+    } catch (ex) {
+      log("Got a non-base64 document! Using original fileAsString content for decodedBytes");
+      decodedBytes = Buffer.from(fileAsString.trim());
+    }
   }
 
   if (!decodedBytes) {

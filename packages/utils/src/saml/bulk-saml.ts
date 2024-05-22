@@ -1,5 +1,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
+// keep that ^ on top
 import fs from "fs";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";

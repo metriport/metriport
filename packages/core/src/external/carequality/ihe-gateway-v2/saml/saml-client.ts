@@ -6,7 +6,10 @@ import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
+import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 const { log } = out("Saml Client");
+
+const timeout = 120000;
 
 export type SamlClientResponse = {
   response: string;
@@ -43,7 +46,7 @@ export async function sendSignedXml({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<string> {
+}): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
     rejectUnauthorized: true,
     cert: samlCertsAndKeys.certChain,
@@ -58,10 +61,45 @@ export async function sendSignedXml({
     timeout: 120000,
     headers: {
       "Content-Type": "application/soap+xml;charset=UTF-8",
+      Accept: "application/soap+xml",
       "Cache-Control": "no-cache",
     },
     httpsAgent: agent,
   });
 
-  return response.data;
+  return { response: response.data, contentType: response.headers["content-type"] };
+}
+
+export async function sendSignedXmlMtom({
+  signedXml,
+  url,
+  samlCertsAndKeys,
+  trustedKeyStore,
+}: {
+  signedXml: string;
+  url: string;
+  samlCertsAndKeys: SamlCertsAndKeys;
+  trustedKeyStore: string;
+}): Promise<{ response: string; contentType: string }> {
+  const agent = new https.Agent({
+    rejectUnauthorized: true,
+    cert: samlCertsAndKeys.certChain,
+    key: samlCertsAndKeys.privateKey,
+    passphrase: samlCertsAndKeys.privateKeyPassword,
+    ca: trustedKeyStore,
+    ciphers: "DEFAULT:!DH",
+    secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
+  });
+
+  const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
+  const response = await axios.post(url, payload, {
+    timeout: timeout,
+    headers: {
+      "Accept-Encoding": "gzip, deflate",
+      "Content-Type": contentType,
+      "Cache-Control": "no-cache",
+    },
+    httpsAgent: agent,
+  });
+  return { response: response.data, contentType: response.headers["content-type"] };
 }
