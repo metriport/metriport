@@ -30,7 +30,7 @@ export async function registerFacilityWithinHIEs(
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),
     getAddressWithCoordinates(getAddressFromInput(facility), cxId),
-    getCqOboData(facility.cqActive, facility.cqOboOid),
+    getCqOboData(facility.cqOboOid),
   ]);
 
   const { facilityDetails, coordinates } = createFacilityDetails(cxId, facility, address);
