@@ -57,13 +57,13 @@ async function ccdaToFhir(ccda, patientId) {
       if (!srcData || srcData.length == 0) {
         reject({
           status: 400,
-          resultMsg: errorMessage(errorCodes.BadRequest, "No srcData provided."),
+          resultMsg: "No srcData provided.",
         });
       }
       if (!patientId) {
         reject({
           status: 400,
-          resultMsg: errorMessage(errorCodes.BadRequest, "No patientId provided."),
+          resultMsg: "No patientId provided.",
         });
       }
       let templateName = "ccd.hbs";
@@ -88,7 +88,7 @@ async function ccdaToFhir(ccda, patientId) {
                 if (err) {
                   reject({
                     status: 404,
-                    resultMsg: errorMessage(errorCodes.NotFound, "Template not found"),
+                    resultMsg: "Template not found",
                   });
                 } else {
                   try {
@@ -100,10 +100,7 @@ async function ccdaToFhir(ccda, patientId) {
                   } catch (convertErr) {
                     reject({
                       status: 400,
-                      resultMsg: errorMessage(
-                        errorCodes.BadRequest,
-                        "Error during template compilation. " + convertErr.toString()
-                      ),
+                      resultMsg: "Error during template compilation. " + convertErr.toString(),
                     });
                   }
                 }
@@ -139,10 +136,7 @@ async function ccdaToFhir(ccda, patientId) {
               } catch (convertErr) {
                 reject({
                   status: 400,
-                  resultMsg: errorMessage(
-                    errorCodes.BadRequest,
-                    "Error during template evaluation. " + convertErr.toString()
-                  ),
+                  resultMsg: "Error during template evaluation. " + convertErr.toString(),
                 });
               }
             },
@@ -154,14 +148,24 @@ async function ccdaToFhir(ccda, patientId) {
         .catch(err => {
           reject({
             status: 400,
-            resultMsg: errorMessage(
-              errorCodes.BadRequest,
-              `Unable to parse input data for template ${templateName}. ${err.toString()}`
-            ),
+            resultMsg: `Unable to parse input data for template ${templateName}. ${err.toString()}`,
           });
         });
     });
   });
+}
+
+function buildSuccessResponse(payload) {
+  return {
+    statusCode: 200,
+    body: payload,
+  };
+}
+function buildErrorResponse(status, message) {
+  return {
+    statusCode: status,
+    body: { status, detail: message },
+  };
 }
 
 exports.handler = async event => {
@@ -169,17 +173,13 @@ exports.handler = async event => {
   const ccda = event.body;
   try {
     const fhirResp = await ccdaToFhir(ccda, patientId);
-    const response = {
-      statusCode: 200,
-      body: fhirResp.fhirResource,
-    };
-    return response;
+    return buildSuccessResponse(fhirResp.resultMsg.fhirResource);
   } catch (err) {
     console.log(`Error`, JSON.stringify(err));
-    const response = {
-      statusCode: 500,
-      body: "Something went wrong, email support@metriport.com for help!",
-    }; 
-    return response;
+    if (err.status && err.resultMsg) {
+      return buildErrorResponse(err.status, err.resultMsg);
+    }
+
+    return buildErrorResponse(500, "Something went wrong, ping support@metriport.com for help!");
   }
 };
