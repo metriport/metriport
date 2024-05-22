@@ -2,15 +2,15 @@ var path = require("path");
 var fs = require("fs");
 var Promise = require("promise");
 var compileCache = require("memory-cache");
-var constants = require("../lib/constants/constants");
-var errorCodes = require("../lib/error/error").errorCodes;
-var errorMessage = require("../lib/error/error").errorMessage;
-var HandlebarsConverter = require("../lib/handlebars-converter/handlebars-converter");
-var dataHandlerFactory = require("../lib/dataHandler/dataHandlerFactory");
+var constants = require("./lib/constants/constants");
+var errorCodes = require("./lib/error/error").errorCodes;
+var errorMessage = require("./lib/error/error").errorMessage;
+var HandlebarsConverter = require("./lib/handlebars-converter/handlebars-converter");
+var dataHandlerFactory = require("./lib/dataHandler/dataHandlerFactory");
 var {
   extractEncounterTimePeriod,
   getEncompassingEncounterId,
-} = require("../lib/inputProcessor/dateProcessor");
+} = require("./lib/inputProcessor/dateProcessor");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);
@@ -24,7 +24,7 @@ function GetHandlebarsInstance(dataTypeHandler, templatesMap) {
   var instance = HandlebarsConverter.instance(
     needToUseMap ? true : rebuildCache,
     dataTypeHandler,
-    path.join(constants.TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType),
+    path.join(constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType),
     templatesMap
   );
   rebuildCache = needToUseMap ? true : false; // New instance should be created also after templatesMap usage
@@ -53,6 +53,7 @@ function generateResult(
 async function ccdaToFhir(ccda, patientId) {
   return new Promise((fulfill, reject) => {
     session.run(() => {
+      let srcData = ccda;
       if (!srcData || srcData.length == 0) {
         reject({
           status: 400,
@@ -65,7 +66,6 @@ async function ccdaToFhir(ccda, patientId) {
           resultMsg: errorMessage(errorCodes.BadRequest, "No patientId provided."),
         });
       }
-      let srcData = ccda;
       let templateName = "ccd.hbs";
       let srcDataType = "cda";
       let encounterTimePeriod = extractEncounterTimePeriod(srcData);
@@ -75,7 +75,7 @@ async function ccdaToFhir(ccda, patientId) {
       session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
       session.set(
         constants.CLS_KEY_TEMPLATE_LOCATION,
-        path.join(constants.TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
+        path.join(constants.BASE_TEMPLATE_FILES_LOCATION, dataTypeHandler.dataType)
       );
 
       const getTemplate = templateName => {
@@ -83,7 +83,7 @@ async function ccdaToFhir(ccda, patientId) {
           var template = compileCache.get(templateName);
           if (!template) {
             fs.readFile(
-              path.join(constants.TEMPLATE_FILES_LOCATION, srcDataType, templateName),
+              path.join(constants.BASE_TEMPLATE_FILES_LOCATION, srcDataType, templateName),
               (err, templateContent) => {
                 if (err) {
                   reject({
@@ -165,7 +165,7 @@ async function ccdaToFhir(ccda, patientId) {
 }
 
 exports.handler = async event => {
-  const patientId = event.queryStringParameters.patientId;
+  const patientId = event.queryStringParameters ? event.queryStringParameters.patientId : "";
   const ccda = event.body;
   try {
     const fhirResp = await ccdaToFhir(ccda, patientId);
@@ -175,7 +175,11 @@ exports.handler = async event => {
     };
     return response;
   } catch (err) {
-    console.log(`Error`, error);
-    throw err;
+    console.log(`Error`, JSON.stringify(err));
+    const response = {
+      statusCode: 500,
+      body: "Something went wrong, email support@metriport.com for help!",
+    }; 
+    return response;
   }
 };
