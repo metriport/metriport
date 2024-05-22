@@ -7,7 +7,6 @@ import {
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../../../utils";
-import { capture } from "../../../../../../util/notifications";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
 
@@ -56,7 +55,6 @@ function handlePatientMatchResponse({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
-  log(`Found a match for patient: ${outboundRequest.patientId}`);
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = subject1?.patient?.patientPerson?.addr;
@@ -110,8 +108,6 @@ function handlePatientErrorResponse({
   jsonObj,
   outboundRequest,
   gateway,
-  patientId,
-  cxId,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jsonObj: any;
@@ -120,17 +116,6 @@ function handlePatientErrorResponse({
   patientId?: string | undefined;
   cxId?: string | undefined;
 }): OutboundPatientDiscoveryResp {
-  const msg = "An AbortedError (AE) was received from the responding gateway";
-  capture.error(msg, {
-    extra: {
-      context: `ihe-gateway-v2-outbound-patient-discovery`,
-      outboundRequest,
-      jsonObj,
-      gateway,
-      patientId,
-      cxId,
-    },
-  });
   const acknowledgementDetail =
     getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {
@@ -222,6 +207,7 @@ export function processXCPDResponse({
   const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
 
   if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
+    log(`Found a match for cxId: ${cxId} patient: ${patientId}`);
     return handlePatientMatchResponse({
       jsonObj,
       outboundRequest,
@@ -237,8 +223,6 @@ export function processXCPDResponse({
       jsonObj,
       outboundRequest,
       gateway,
-      patientId,
-      cxId,
     });
   }
 }
