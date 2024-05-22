@@ -6,13 +6,13 @@ import { CQLinkStatus } from "../patient-shared";
 import { getLinkStatusCQ } from "../patient";
 
 /**
- * Sets the CQLink CommonWell (CW) integration status on the patient.
+ * Sets the CommonWell (CW) CQLink integration status on the patient.
  *
  * @param patient The patient ID and customer ID @ Metriport.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
  * @returns Updated Patient.
  */
-export const updateCommenwellCqLinkStatus = async ({
+export const updateCqLinkStatus = async ({
   patient,
   cqLinkStatus,
 }: {

@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
-import { updateCommenwellCqLinkStatus } from "../command/update-cq-link-status";
+import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
+import { updateCqLinkStatus } from "../command/update-cq-link-status";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { makePatient, makePatientData } from "../../../domain/medical/__tests__/patient";
@@ -88,13 +88,13 @@ describe("setCommonwellIdsAndStatus", () => {
       status: "processing" as LinkStatus,
     };
 
-    const resultIds = await updateCommonwellPatientAndPersonIds({
+    const resultIds = await updatePatientAndPersonIds({
       patient,
       ...newValues,
     });
     expect(resultIds).toBeTruthy();
 
-    const resultCqLinkStatus = await updateCommenwellCqLinkStatus({
+    const resultCqLinkStatus = await updateCqLinkStatus({
       patient,
       ...newValues,
     });
@@ -136,13 +136,13 @@ describe("setCommonwellIdsAndStatus", () => {
       status: "completed" as LinkStatus,
     };
 
-    const resultIds = await updateCommonwellPatientAndPersonIds({
+    const resultIds = await updatePatientAndPersonIds({
       patient,
       ...newValues,
     });
     expect(resultIds).toBeTruthy();
 
-    const resultCqLinkStatus = await updateCommenwellCqLinkStatus({
+    const resultCqLinkStatus = await updateCqLinkStatus({
       patient,
       ...newValues,
     });

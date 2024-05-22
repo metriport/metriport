@@ -4,14 +4,12 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 
 /**
- * Sets the CommonWell (CW) IDs and integration status on the patient.
+ * Clears the CommonWell (CW) Person ID on the patient.
  *
  * @param patient The patient ID and customer ID @ Metriport.
- * @param commonwellPatientId The patient ID @ CommonWell.
- * @param commonwellPersonId The person ID @ CommonWell.
  * @returns Updated Patient.
  */
-export const clearCommonwellPersonId = async ({
+export const clearPersonId = async ({
   patient,
 }: {
   patient: Pick<Patient, "id" | "cxId">;

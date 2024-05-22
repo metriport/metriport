@@ -4,7 +4,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import MetriportError from "../../../errors/metriport-error";
 import { autoUpgradeNetworkLinks } from "../link/shared";
-import { updateCommonwellPatientAndPersonIds } from "../command/update-patient-and-person-ids";
+import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import { isEnrolledBy } from "../person-shared";
 import { getCWAccessForPatient } from "./shared";
@@ -71,10 +71,10 @@ export async function patchDuplicatedPersonsForPatient(
     );
 
     // update Metriport's DB
-    await updateCommonwellPatientAndPersonIds({
+    await updatePatientAndPersonIds({
       patient,
-      commonwellPatientId: cwPatientId,
-      commonwellPersonId: chosenPersonId,
+      commonWellPatientId: cwPatientId,
+      commonWellPersonId: chosenPersonId,
     });
     await updatePatientDiscoveryStatus({
       patient,

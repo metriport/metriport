@@ -4,21 +4,21 @@ import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 
 /**
- * Sets the CommonWell (CW) IDs and integration status on the patient.
+ * Sets the CommonWell (CW) IDs on the patient.
  *
  * @param patient The patient ID and customer ID @ Metriport.
- * @param commonwellPatientId The patient ID @ CommonWell.
- * @param commonwellPersonId The person ID @ CommonWell.
+ * @param commonWellPatientId The patient ID @ CommonWell.
+ * @param commonWellPersonId The person ID @ CommonWell.
  * @returns Updated Patient.
  */
-export const updateCommonwellPatientAndPersonIds = async ({
+export const updatePatientAndPersonIds = async ({
   patient,
-  commonwellPatientId,
-  commonwellPersonId,
+  commonWellPatientId,
+  commonWellPersonId,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  commonwellPatientId?: string;
-  commonwellPersonId?: string;
+  commonWellPatientId?: string;
+  commonWellPersonId?: string;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -38,8 +38,8 @@ export const updateCommonwellPatientAndPersonIds = async ({
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        ...(commonwellPatientId && { patientId: commonwellPatientId }),
-        ...(commonwellPersonId && { personId: commonwellPersonId }),
+        ...(commonWellPatientId && { patientId: commonWellPatientId }),
+        ...(commonWellPersonId && { personId: commonWellPersonId }),
       },
     };
 
