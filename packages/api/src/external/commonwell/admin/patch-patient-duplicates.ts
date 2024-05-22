@@ -73,13 +73,10 @@ export async function patchDuplicatedPersonsForPatient(
     // update Metriport's DB
     await updatePatientAndPersonIds({
       patient,
-      commonWellPatientId: cwPatientId,
-      commonWellPersonId: chosenPersonId,
+      commonwellPatientId: cwPatientId,
+      commonwellPersonId: chosenPersonId,
     });
-    await updatePatientDiscoveryStatus({
-      patient,
-      status: "completed",
-    });
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     if (unenrollByDemographics) {
       log(`unenrolling by demographics...`);

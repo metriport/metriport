@@ -22,15 +22,15 @@ export function isEnrolledBy(orgName: string, person: Person): boolean {
 export async function matchPersonsByDemo({
   commonWell,
   queryMeta,
-  commonWellPatientId,
+  commonwellPatientId,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  commonWellPatientId: string;
+  commonwellPatientId: string;
 }): Promise<PersonWithId[]> {
-  const { debug } = out(`CW matchPersonsByDemo - CW patientId ${commonWellPatientId}`);
+  const { debug } = out(`CW matchPersonsByDemo - CW patientId ${commonwellPatientId}`);
 
-  const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonWellPatientId);
+  const respSearch = await commonWell.searchPersonByPatientDemo(queryMeta, commonwellPatientId);
   debug(`resp searchPersonByPatientDemo: `, JSON.stringify(respSearch));
 
   const persons = respSearch._embedded.person;
@@ -43,15 +43,15 @@ export async function matchPersonsByDemo({
 export async function matchPersonsByStrongIds({
   commonWell,
   queryMeta,
-  commonWellPatientId,
+  commonwellPatientId,
   strongIds,
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  commonWellPatientId: string;
+  commonwellPatientId: string;
   strongIds: StrongId[];
 }): Promise<PersonWithId[]> {
-  const { debug } = out(`CW matchPersonsByStrongIds - CW patientId ${commonWellPatientId}`);
+  const { debug } = out(`CW matchPersonsByStrongIds - CW patientId ${commonwellPatientId}`);
 
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
@@ -83,17 +83,17 @@ export async function matchPersonsByStrongIds({
 }
 
 export function handleMultiplePersonMatches({
-  commonWellPatientId,
+  commonwellPatientId,
   persons,
   context,
   cwReference,
 }: {
-  commonWellPatientId: string;
+  commonwellPatientId: string;
   persons: multiplePersonWithId;
   context: string;
   cwReference?: string;
 }): { personId: string; person: PersonWithId } {
-  const { log } = out(`CW handleMultiplePersonMatches - CW patientId ${commonWellPatientId}`);
+  const { log } = out(`CW handleMultiplePersonMatches - CW patientId ${commonwellPatientId}`);
 
   const personIds = persons.map(p => p.personId);
   const msg = "Found more than one person.";
@@ -101,7 +101,7 @@ export function handleMultiplePersonMatches({
   capture.message(msg, {
     extra: {
       action: "Earliest",
-      commonWellPatientId,
+      commonwellPatientId,
       persons: getDemographics(persons),
       context,
       cwReference,

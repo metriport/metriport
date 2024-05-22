@@ -36,7 +36,6 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
           patient,
           facilityId,
           getOrgIdExcludeList: this.orgIdExcludeList,
-          forceCw: false,
         });
       } catch (error) {
         failedUpdateCount++;

@@ -27,6 +27,7 @@ import { getCWData } from "../patient";
 import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
 import { clearPersonId } from "../command/clear-person-id";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
+import { updateCqLinkStatus } from "../command/update-cq-link-status";
 import {
   getPersonalIdentifiersFromPatient,
   PatientDataCommonwell,
@@ -132,33 +133,21 @@ export const findCurrentLink = async (
       log(msg);
       captureExtra.cwReference = commonWell.lastReferenceHeader;
       capture.message(msg, { extra: captureExtra });
-      await updatePatientAndPersonIds({
-        patient,
-        commonWellPatientId: patientCWId,
-        commonWellPersonId: undefined,
-      });
+      // Why are we calling this? patientCWId is not updated.
+      await updatePatientAndPersonIds({ patient, commonwellPatientId: patientCWId });
       await clearPersonId({ patient });
-      await updatePatientDiscoveryStatus({
-        patient,
-        status: "failed",
-      });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
       return;
     }
 
     if (!patientLinkToPerson._embedded?.patientLink?.length) {
       log(`No patient linked to person`, patientLinkToPerson);
 
-      await updatePatientAndPersonIds({
-        patient,
-        commonWellPatientId: patientCWId,
-        commonWellPersonId: undefined,
-      });
-      await clearPersonId({ patient });
-      await updatePatientDiscoveryStatus({
-        patient,
-        status: "failed",
-      });
-
+      // Why are we calling this? patientCWId is not updated.
+      await updatePatientAndPersonIds({ patient, commonwellPatientId: patientCWId });
+      await updatePatientDiscoveryStatus({ patient, status: "failed" });
+      await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
       return;
     }
 

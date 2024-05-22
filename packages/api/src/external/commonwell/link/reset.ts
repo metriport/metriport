@@ -5,7 +5,7 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
-import { clearPersonId } from "../command/clear-person-id";
+import { updateCqLinkStatus } from "../command/update-cq-link-status";
 import { getCwInitiator } from "../shared";
 import { patientWithCWData } from "./shared";
 
@@ -39,12 +39,9 @@ export async function reset(patientId: string, cxId: string, facilityId: string)
 
     await commonWell.resetPatientLink(queryMeta, cwPersonId, cwPatientId);
 
-    await updatePatientAndPersonIds({
-      patient,
-      commonWellPatientId: cwPatientId,
-      commonWellPersonId: undefined,
-    });
-    await clearPersonId({ patient });
+    // Why are we calling this? cwPatientId is not updated.
+    await updatePatientAndPersonIds({ patient, commonwellPatientId: cwPatientId });
+    await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
   } catch (error) {
     const cwReference = commonWell?.lastReferenceHeader;
     const msg = `Failure resetting CW link`;

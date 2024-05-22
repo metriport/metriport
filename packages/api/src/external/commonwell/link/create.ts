@@ -8,6 +8,7 @@ import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
 import { updatePatientAndPersonIds } from "../command/update-patient-and-person-ids";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
+import { updateCqLinkStatus } from "../command/update-cq-link-status";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
@@ -63,13 +64,11 @@ export async function create(
 
     await updatePatientAndPersonIds({
       patient,
-      commonWellPatientId: cwPatientId,
-      commonWellPersonId: personId,
+      commonwellPatientId: cwPatientId,
+      commonwellPersonId: personId,
     });
-    await updatePatientDiscoveryStatus({
-      patient,
-      status: "completed",
-    });
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    await updateCqLinkStatus({ patient, cqLinkStatus: undefined });
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");

@@ -84,8 +84,8 @@ describe("setCommonwellIdsAndStatus", () => {
     const newValues = {
       commonwellPatientId: "commonwellPatientId",
       commonwellPersonId: "commonwellPersonId",
-      cqLinkStatus: "processing" as CQLinkStatus,
       status: "processing" as LinkStatus,
+      cqLinkStatus: "processing" as CQLinkStatus,
     };
 
     const resultIds = await updatePatientAndPersonIds({
@@ -94,17 +94,17 @@ describe("setCommonwellIdsAndStatus", () => {
     });
     expect(resultIds).toBeTruthy();
 
-    const resultCqLinkStatus = await updateCqLinkStatus({
-      patient,
-      ...newValues,
-    });
-    expect(resultCqLinkStatus).toBeTruthy();
-
     const resultPdStatus = await updatePatientDiscoveryStatus({
       patient,
       ...newValues,
     });
     expect(resultPdStatus).toBeTruthy();
+
+    const resultCqLinkStatus = await updateCqLinkStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultCqLinkStatus).toBeTruthy();
 
     checkPatientUpdateWith(newValues);
   });
@@ -132,8 +132,8 @@ describe("setCommonwellIdsAndStatus", () => {
     const newValues = {
       commonwellPatientId: "newCommonwellPatientId",
       commonwellPersonId: "newCommonwellPersonId",
-      cqLinkStatus: "linked" as CQLinkStatus,
       status: "completed" as LinkStatus,
+      cqLinkStatus: "linked" as CQLinkStatus,
     };
 
     const resultIds = await updatePatientAndPersonIds({
@@ -142,17 +142,17 @@ describe("setCommonwellIdsAndStatus", () => {
     });
     expect(resultIds).toBeTruthy();
 
-    const resultCqLinkStatus = await updateCqLinkStatus({
-      patient,
-      ...newValues,
-    });
-    expect(resultCqLinkStatus).toBeTruthy();
-
     const resultPdStatus = await updatePatientDiscoveryStatus({
       patient,
       ...newValues,
     });
     expect(resultPdStatus).toBeTruthy();
+
+    const resultCqLinkStatus = await updateCqLinkStatus({
+      patient,
+      ...newValues,
+    });
+    expect(resultCqLinkStatus).toBeTruthy();
 
     checkPatientUpdateWith(newValues);
   });
