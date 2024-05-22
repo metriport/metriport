@@ -39,15 +39,9 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
         });
       } catch (error) {
         failedUpdateCount++;
-        const msg = "Failed to update CW patient";
-        console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
-        capture.error(msg, {
-          extra: {
-            cxId,
-            patientId: patient.id,
-            error,
-          },
-        });
+        const msg = `Failed to update CW patient`;
+        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
     };
     // Execute the promises in parallel
