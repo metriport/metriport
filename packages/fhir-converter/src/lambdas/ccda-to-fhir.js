@@ -158,18 +158,18 @@ async function ccdaToFhir(ccda, patientId) {
 function buildSuccessResponse(payload) {
   return {
     statusCode: 200,
-    body: payload,
+    body: JSON.stringify(payload),
     headers: {
-      "content-type": "application/json",
+      "Content-Type": "application/json",
     },
   };
 }
 function buildErrorResponse(status, message) {
   return {
     statusCode: status,
-    body: { status, detail: message },
+    body: JSON.stringify({ status, detail: message }),
     headers: {
-      "content-type": "application/json",
+      "Content-Type": "application/json",
     },
   };
 }
