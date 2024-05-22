@@ -679,6 +679,8 @@ export class APIStack extends Stack {
       code: lambda.DockerImageCode.fromImageAsset("../fhir-converter", {
         file: "Dockerfile.lambda",
       }),
+      timeout: Duration.minutes(1),
+      memorySize: 1024,
     });
     ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda), {
       apiKeyRequired: true,

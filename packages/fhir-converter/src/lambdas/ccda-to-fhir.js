@@ -173,6 +173,7 @@ exports.handler = async event => {
   const ccda = event.body;
   try {
     const fhirResp = await ccdaToFhir(ccda, patientId);
+    console.log(`Converted to FHIR bundle successfully!`);
     return buildSuccessResponse(fhirResp.resultMsg.fhirResource);
   } catch (err) {
     console.log(`Error`, JSON.stringify(err));
