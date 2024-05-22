@@ -36,7 +36,7 @@ export async function createOrUpdateInCq(
     oboOid: cqOboOid,
   });
 
-  const oid = facility.cqOboOid ?? facility.oid;
+  const oid = isObo && facility.cqOboOid ? facility.cqOboOid : facility.oid;
 
   log(`Creating/Updating a CQ entry with this OID ${oid} and name ${orgName}`);
 
@@ -87,7 +87,7 @@ export async function createOrUpdateInCw(
     oboOid: facility.cwOboOid,
   });
 
-  const oid = facility.cwOboOid ?? facility.oid;
+  const oid = isObo && facility.cwOboOid ? facility.cwOboOid : facility.oid;
 
   log(`Creating/Updating a CW entry with this OID ${oid} and name ${orgName}`);
 
