@@ -331,21 +331,12 @@ describe("registerFacility", () => {
   });
 
   it("calls createOrUpdateInCq with obo when cqType is initiatorOnly, and cqActive is false", async () => {
-    const cxId = uuidv7_file.uuidv4();
-
     mockedFacility = {
       ...mockedFacility,
       cqType: FacilityType.initiatorOnly,
       cqActive: false,
       cqOboOid: faker.string.uuid(),
     };
-
-    await shared.createOrUpdateInCw(
-      mockedFacility,
-      mockedRegisterFacility.cwFacilityName,
-      getCxOrganizationNameAndOidResult,
-      cxId
-    );
 
     await shared.createOrUpdateInCq(
       mockedFacility,
@@ -376,13 +367,6 @@ describe("registerFacility", () => {
       mockedRegisterFacility.cwFacilityName,
       getCxOrganizationNameAndOidResult,
       cxId
-    );
-
-    await shared.createOrUpdateInCq(
-      mockedFacility,
-      getCxOrganizationNameAndOidResult,
-      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
-      coordinates
     );
 
     expect(createOrUpdateCwOrganizationMock).toHaveBeenCalledWith(
