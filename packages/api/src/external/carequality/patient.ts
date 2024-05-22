@@ -26,7 +26,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 dayjs.extend(duration);
 
-const context = "cq.patient.discover";
+const discoverContext = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
 export async function discover({
@@ -61,8 +61,8 @@ export async function discover({
       enabledIHEGW,
       requestId: requestId ?? uuidv7(),
       baseLogMessage,
-      context,
-    }).catch(processAsyncError(context));
+      context: discoverContext,
+    }).catch(processAsyncError(discoverContext));
   }
 }
 

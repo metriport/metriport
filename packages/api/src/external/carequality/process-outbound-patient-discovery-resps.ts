@@ -77,7 +77,7 @@ export async function processOutboundPatientDiscoveryResps({
       endedAt: new Date(),
     });
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
-    log(`${msg}. Patient ID: ${patientIds.id}. Cause: ${errorToString(error)}`);
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,
