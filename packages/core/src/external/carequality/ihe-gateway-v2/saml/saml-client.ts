@@ -12,6 +12,10 @@ const { log } = out("Saml Client");
 const timeout = 120000;
 let rejectUnauthorized = true;
 
+/*
+ * ONLY use this function for testing purposes. It will turn off SSL Verification of the server if set to false.
+ * See saml-server.ts for usage.
+ */
 export function setRejectUnauthorized(value: boolean): void {
   rejectUnauthorized = value;
 }
