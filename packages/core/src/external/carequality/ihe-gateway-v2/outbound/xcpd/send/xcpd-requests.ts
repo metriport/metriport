@@ -50,7 +50,7 @@ export async function sendSignedXCPDRequests({
         `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
       );
       if (error?.response?.data) {
-        log(`error details: ${error?.response?.data}`);
+        log(`error details: ${JSON.stringify(error?.response?.data)}`);
       }
 
       const errorString: string = errorToString(error);
