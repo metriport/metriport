@@ -1,0 +1,13 @@
+FROM amazon/aws-lambda-nodejs:18
+
+# Copy the Lambda functions
+COPY src/lib/lambdas/ccda-to-fhir.js package.json package-lock.json ${LAMBDA_TASK_ROOT}/
+# Copy the rest of the files
+COPY src/lib/ ${LAMBDA_TASK_ROOT}/lib/
+COPY src/templates/ ${LAMBDA_TASK_ROOT}/templates/
+
+# Install NPM dependencies for function
+RUN npm install
+
+
+CMD [ "ccda-to-fhir.handler" ]

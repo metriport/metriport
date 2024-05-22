@@ -667,6 +667,17 @@ export class APIStack extends Stack {
       bucket: medicalDocumentsBucket,
     });
 
+    // CONVERT API
+    const convertResource = api.root.addResource("convert");
+    const ccdaConvertResource = convertResource.addResource("ccda/to");
+    const ccdaToFhirConvertResource = ccdaConvertResource.addResource("fhir");
+    const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
+      functionName: "convertApiCcdaToFhir",
+      vpc: this.vpc,
+      code: lambda.DockerImageCode.fromImageAsset("../fhir-converter/Dockerfile.lambda"),
+    });
+    ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda));
+
     // WEBHOOKS
     const webhookResource = api.root.addResource("webhook");
 
