@@ -16,12 +16,7 @@ import {
 } from "../../../../shared";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { capture } from "../../../../../../util/notifications";
-
-const enforceSameHomeCommunityIdList = [
-  "2.16.840.1.113883.3.6448",
-  "2.16.840.1.113883.3.6147.458",
-  "2.16.840.1.113883.3.6147.458.2",
-];
+import { requiresRequestHomeCommunityId } from "../../../gateways";
 
 type Identifier = {
   _identificationScheme: string;
@@ -61,7 +56,7 @@ function getHomeCommunityIdForDr(
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   extrinsicObject: any
 ): string {
-  if (enforceSameHomeCommunityIdList.includes(request.gateway.homeCommunityId)) {
+  if (requiresRequestHomeCommunityId(request.gateway)) {
     return getRequestHomeCommunityId(request);
   }
   return getResponseHomeCommunityId(extrinsicObject);

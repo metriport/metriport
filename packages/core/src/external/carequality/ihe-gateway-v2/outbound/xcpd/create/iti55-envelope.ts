@@ -13,12 +13,13 @@ import {
 import { OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { timestampToSoapBody } from "../../../utils";
 import { wrapIdInUrnUuid } from "../../../../../../util/urn";
+import {
+  requiresUrnInSoapBody,
+  requiresMetriportOidInsteadOfInitiatorOid,
+} from "../../../gateways";
 
 const DATE_DASHES_REGEX = /-/g;
 const action = "urn:hl7-org:v3:PRPA_IN201305UV02:CrossGatewayPatientDiscovery";
-const specialNamespaceRequiredUrl =
-  "https://www.medentcq.com:14430/MedentRespondingGateway-1.0-SNAPSHOT/RespondingGateway/xcpd-iti55";
-
 export type BulkSignedXCPD = {
   gateway: XCPDGateway;
   signedRequest: string;
@@ -221,7 +222,9 @@ function createSoapBody({
   const receiverDeviceId = gateway.oid;
   const toUrl = gateway.url;
   const providerId = bodyData.principalCareProviderIds[0];
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = requiresMetriportOidInsteadOfInitiatorOid(gateway)
+    ? METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX
+    : bodyData.samlAttributes.homeCommunityId;
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
   const patientBirthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
   const patientFamilyName = bodyData.patientResource.name?.[0]?.family;
@@ -229,7 +232,7 @@ function createSoapBody({
   const patientAddress = bodyData.patientResource.address?.[0];
   const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
 
-  const useUrn = gateway.url !== specialNamespaceRequiredUrl;
+  const useUrn = requiresUrnInSoapBody(gateway);
   const soapBody = {
     "soap:Body": createSoapBodyContent({
       messageId,
@@ -265,7 +268,9 @@ export function createITI5SoapEnvelope({
   const toUrl = gateway.url;
   const gatewayOid = gateway.oid;
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = requiresMetriportOidInsteadOfInitiatorOid(gateway)
+    ? METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX
+    : bodyData.samlAttributes.homeCommunityId;
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
