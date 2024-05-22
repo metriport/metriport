@@ -18,24 +18,27 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
 
   const result = await processInboundDocumentQuery(baseRequest.data, apiUrl);
 
-  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 0 && result.cxId) {
-    let postHogApiKey: string | undefined;
+  if (
+    result.extrinsicObjectXmls &&
+    result.extrinsicObjectXmls.length > 0 &&
+    result.cxId &&
+    postHogSecretName
+  ) {
+    const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogSecretName) {
-      postHogApiKey = await getSecretValue(postHogSecretName, region);
-    }
-
-    analytics(
-      {
-        distinctId: result.cxId,
-        event: EventTypes.inboundDocumentQuery,
-        properties: {
-          patientId: result.patientId,
-          documentCount: result.extrinsicObjectXmls.length,
+    if (postHogApiKey) {
+      analytics(
+        {
+          distinctId: result.cxId,
+          event: EventTypes.inboundDocumentQuery,
+          properties: {
+            patientId: result.patientId,
+            documentCount: result.extrinsicObjectXmls.length,
+          },
         },
-      },
-      postHogApiKey
-    );
+        postHogApiKey
+      );
+    }
   }
 
   return buildResponse(200, result);

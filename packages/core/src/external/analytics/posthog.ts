@@ -20,20 +20,20 @@ const defaultPostHogApiKey = Config.getPostHogApiKey();
 
 export const analytics = (params: EventMessageV1, postApiKey?: string) => {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
-  if (apiKey) {
-    const posthog = new PostHog(apiKey);
+  if (!apiKey) return;
 
-    params.properties = {
-      ...(params.properties ? { ...params.properties } : undefined),
-      environment: Config.getEnvType(),
-      platform: "oss-api",
-      $set_once: {
-        cxId: params.distinctId,
-      },
-    };
+  const posthog = new PostHog(apiKey);
 
-    posthog.capture(params);
-  }
+  params.properties = {
+    ...(params.properties ? { ...params.properties } : undefined),
+    environment: Config.getEnvType(),
+    platform: "oss-api",
+    $set_once: {
+      cxId: params.distinctId,
+    },
+  };
+
+  posthog.capture(params);
 };
 
 export enum EventTypes {

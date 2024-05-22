@@ -22,24 +22,22 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
 
   const result = await processInboundPatientDiscovery(baseRequest.data, mpi);
 
-  if (result.patientMatch && result.cxId) {
-    let postHogApiKey: string | undefined;
+  if (result.patientMatch && result.cxId && postHogSecretName) {
+    const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogSecretName) {
-      postHogApiKey = await getSecretValue(postHogSecretName, region);
-    }
-
-    analytics(
-      {
-        distinctId: result.cxId,
-        event: EventTypes.inboundPatientDiscovery,
-        properties: {
-          patientId: result.patientId,
-          patientMatch: result.patientMatch,
+    if (postHogApiKey) {
+      analytics(
+        {
+          distinctId: result.cxId,
+          event: EventTypes.inboundPatientDiscovery,
+          properties: {
+            patientId: result.patientId,
+            patientMatch: result.patientMatch,
+          },
         },
-      },
-      postHogApiKey
-    );
+        postHogApiKey
+      );
+    }
   }
 
   return buildResponse(200, result);
