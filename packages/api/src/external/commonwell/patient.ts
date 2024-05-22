@@ -128,13 +128,13 @@ export async function create({
   requestId?: string;
   forceCw?: boolean;
 }): Promise<void> {
-  const { debug } = out(`CW create - M patientId ${patient.id}`);
+  const { log, debug } = out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
     patient,
     facilityId,
     forceCw,
-    debug,
+    log,
     context: createContext,
   });
 
@@ -279,7 +279,7 @@ export async function update({
     patient,
     facilityId,
     forceCw,
-    debug,
+    log,
     context: updateContext,
   });
   if (cwUpdateEnabled) {
@@ -516,20 +516,21 @@ async function validateCWEnabled({
   patient,
   facilityId,
   forceCw,
-  debug,
+  log,
   context,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   facilityId: string;
   forceCw: boolean;
-  debug: typeof console.log;
+  log: typeof console.log;
   context: string;
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
+  // TODO: Align forceCw with CQ
   if (forceCw || isSandbox) {
-    debug(`CW forced, proceeding...`);
+    log(`CW forced, proceeding...`);
     return true;
   }
 
@@ -541,24 +542,25 @@ async function validateCWEnabled({
     const cwIsDisabled = !isCWEnabled;
     const cwIsDisabledForCx = !isEnabledForCx;
 
-    if (cwIsDisabledForCx) {
-      debug(`CW disabled for cx ${cxId}, skipping...`);
+    if (cwIsDisabled) {
+      log(`CW not enabled, skipping...`);
       return false;
-    } else if (cwIsDisabled) {
-      debug(`CW not enabled, skipping...`);
+    } else if (cwIsDisabledForCx) {
+      log(`CW disabled for cx ${cxId}, skipping...`);
       return false;
     } else if (!isCwQueryEnabled) {
-      debug(`CW not enabled for query, skipping...`);
+      log(`CW querying not enabled, skipping...`);
       return false;
     }
 
     return true;
   } catch (error) {
-    const msg = `Error validating CW ${context} enabled`;
-    debug(`${msg} - ${errorToString(error)}`);
+    const msg = `Error validating CW PD ${context} enabled`;
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
+        forceCw,
         error,
       },
     });

@@ -43,7 +43,6 @@ export async function updatePatient(
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
   // PD Flow
-
   const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;
@@ -61,7 +60,7 @@ export async function updatePatient(
     await cqCommands.patient.discover({
       patient,
       facilityId: facility.id,
-      forceCq: forceCarequality ?? false,
+      forceCq: forceCarequality,
     });
   }
 
@@ -83,7 +82,7 @@ export async function updatePatient(
       patient,
       facilityId: facility.id,
       getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-      forceCw: forceCommonwell ?? false,
+      forceCw: forceCommonwell,
     });
   }
 

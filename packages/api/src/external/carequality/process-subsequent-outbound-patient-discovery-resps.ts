@@ -29,13 +29,10 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
   try {
     const patient = await getPatientOrFail(patientIds);
-
     const discoveryStatus = getCQData(patient.data.externalData)?.discoveryStatus;
-
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
-
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
         patientId: patient.id,

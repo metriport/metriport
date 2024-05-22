@@ -22,14 +22,13 @@ export async function validateCQEnabledAndInitGW({
   patient,
   facilityId,
   forceCq,
-  outerLog,
+  log,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   facilityId: string;
   forceCq: boolean;
-  outerLog: typeof console.log;
+  log: typeof console.log;
 }): Promise<IHEGateway | undefined> {
-  const fnName = `CQ validateCQEnabledAndInitGW`;
   const { cxId } = patient;
 
   try {
@@ -43,24 +42,23 @@ export async function validateCQEnabledAndInitGW({
     const cqDirectIsDisabledForCx = !isCQDirectEnabled;
 
     if (iheGWNotPresent) {
-      outerLog(`${fnName} - IHE GW not available, skipping PD`);
+      log(`IHE GW not available, skipping PD`);
       return undefined;
     } else if (cqIsDisabled) {
-      outerLog(`${fnName} - CQ not enabled, skipping PD`);
+      log(` CQ not enabled, skipping PD`);
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
-      outerLog(`${fnName} - CQ disabled for cx ${cxId}, skipping PD`);
+      log(`CQ disabled for cx ${cxId}, skipping PD`);
       return undefined;
     } else if (!isCqQueryEnabled) {
-      outerLog(`${fnName} - CQ querying not enabled for facility, skipping PD`);
+      log(`CQ querying not enabled for facility, skipping PD`);
       return undefined;
     }
 
     return iheGateway;
   } catch (error) {
-    const msg = `${fnName} - Error validating CQ PD enabled`;
-    outerLog(`${msg} - ${errorToString(error)}`);
-    console.error(`${msg}. Cause: ${errorToString(error)}`);
+    const msg = `Error validating CQ PD enabled`;
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,

@@ -29,37 +29,31 @@ dayjs.extend(duration);
 const context = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
-type cqDiscoverProps = {
-  patient: Patient;
-  facilityId: string;
-  forceCq: boolean;
-  requestId?: string;
-};
-
-type cqPrepareAndTriggerPdProps = Omit<cqDiscoverProps, "forceCq" | "requestId"> & {
-  enabledIHEGW: IHEGateway;
-  requestId: string;
-  baseLogMessage: string;
-  context: string;
-};
-type cqPreparePdProps = Pick<cqPrepareAndTriggerPdProps, "patient" | "facilityId" | "requestId">;
-
 export async function discover({
   patient,
   facilityId,
   requestId,
   forceCq = false,
-}: cqDiscoverProps): Promise<void> {
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId?: string;
+  forceCq?: boolean;
+}): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
-  const { log: outerLog } = out(baseLogMessage);
+  const { log } = out(baseLogMessage);
 
   const enabledIHEGW = await validateCQEnabledAndInitGW({
     patient,
     facilityId,
     forceCq,
-    outerLog,
+    log,
   });
   if (enabledIHEGW) {
+    /* Moved this function into actual workflow function
+    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    */
+
     // Intentionally asynchronous
     prepareAndTriggerPD({
       patient,
@@ -79,12 +73,19 @@ async function prepareAndTriggerPD({
   requestId,
   baseLogMessage,
   context,
-}: cqPrepareAndTriggerPdProps): Promise<void> {
-  // Wrapper?
+}: {
+  patient: Patient;
+  facilityId: string;
+  enabledIHEGW: IHEGateway;
+  requestId: string;
+  baseLogMessage: string;
+  context: string;
+}): Promise<void> {
   await clearPatientDiscoveryEndedAt({ patient });
   await updatePatientDiscoveryStatus({
     patient,
     status: "processing",
+    requestId,
     startedAt: new Date(),
   });
 
@@ -140,14 +141,18 @@ async function prepareForPatientDiscovery({
   patient,
   facilityId,
   requestId,
-}: cqPreparePdProps): Promise<{
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId: string;
+}): Promise<{
   pdRequestGatewayV1: OutboundPatientDiscoveryReq;
   pdRequestGatewayV2: OutboundPatientDiscoveryReq;
 }> {
   const fhirPatient = toFHIR(patient);
 
   const [{ v1Gateways, v2Gateways }, initiator] = await Promise.all([
-    gatherXCPDGateways(patient),
+    gatherXCPDGateways({ patient }),
     getCqInitiator(patient, facilityId),
   ]);
 
@@ -175,7 +180,7 @@ async function prepareForPatientDiscovery({
   };
 }
 
-async function gatherXCPDGateways(patient: Patient): Promise<{
+async function gatherXCPDGateways({ patient }: { patient: Patient }): Promise<{
   v1Gateways: XCPDGateway[];
   v2Gateways: XCPDGateway[];
 }> {

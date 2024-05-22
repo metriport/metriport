@@ -35,6 +35,7 @@ export async function processOutboundPatientDiscoveryResps({
 
   try {
     const patient = await getPatientOrFail(patientIds);
+    if (results.length > 0) await updateDemographics(patient, results);
 
     log(`Starting to handle patient discovery results`);
     const cqLinks = await createCQLinks(
@@ -44,12 +45,10 @@ export async function processOutboundPatientDiscoveryResps({
       },
       results
     );
-
-    const pdRequestId = getCQData(patient.data.externalData)?.pdRequestId;
     const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
+    const pdRequestId = getCQData(patient.data.externalData)?.pdRequestId;
     const pdEndeddAt = getCQData(patient.data.externalData)?.pdEndedAt;
-
-    if (requestId === pdRequestId && pdStartedAt && !pdEndeddAt) {
+    if (requestId === pdRequestId && !pdEndeddAt) {
       analytics({
         distinctId: patient.cxId,
         event: EventTypes.patientDiscovery,
@@ -62,18 +61,13 @@ export async function processOutboundPatientDiscoveryResps({
         },
       });
     }
-
-    if (results.length > 0) await updateDemographics(patient, results);
-
     const newPatientDiscovery = await patientDiscoveryIfScheduled(patient);
-
     if (!newPatientDiscovery) {
       await updatePatientDiscoveryStatus({
         patient: patientIds,
         status: "completed",
         endedAt: new Date(),
       });
-
       await queryDocsIfScheduled(patient);
     }
   } catch (error) {

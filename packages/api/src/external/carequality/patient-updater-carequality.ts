@@ -42,23 +42,13 @@ export class PatientUpdaterCarequality extends PatientUpdater {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         const facility = await getFacilityOrFail({ cxId, id: facilityId });
-        await cqCommands.patient.discover({
-          patient,
-          facilityId: facility.id,
-          forceCq: false,
-        });
+        await cqCommands.patient.discover({ patient, facilityId: facility.id });
         await this.isPatientDiscoveryComplete(patient);
       } catch (error) {
         failedUpdateCount++;
         const msg = `Failed to update CQ patient`;
-        console.error(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
-        capture.error(msg, {
-          extra: {
-            cxId,
-            patientId: patient.id,
-            error,
-          },
-        });
+        console.log(`${msg}. Patient ID: ${patient.id}. Cause: ${errorToString(error)}`);
+        capture.message(msg, { extra: { cxId, patientId: patient.id }, level: "error" });
       }
     };
     // Execute the promises in parallel

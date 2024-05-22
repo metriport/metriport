@@ -73,14 +73,14 @@ export const createPatient = async (
   await cqCommands.patient.discover({
     patient: newPatient,
     facilityId,
-    forceCq: forceCarequality ?? false,
+    forceCq: forceCarequality,
   });
 
   await cwCommands.patient.create({
     patient: newPatient,
     facilityId,
     getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-    forceCw: forceCommonwell ?? false,
+    forceCw: forceCommonwell,
   });
 
   return newPatient;
