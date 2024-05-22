@@ -1,5 +1,5 @@
-import { XCAGateway, XCPDGateway } from "@metriport/ihe-gateway-sdk";
-
+import { XCAGateway, XCPDGateway, SamlAttributes } from "@metriport/ihe-gateway-sdk";
+import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../shared";
 /*
  * Gateways with this url require the Metriport OID instead of the Initiator OID in the SOAP body.
  */
@@ -28,8 +28,14 @@ const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redo
  */
 const enforceSameHomeCommunityIdList = [pointClickCareOid, redoxOid, redoxGatewayOid];
 
-export function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway): boolean {
+function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway): boolean {
   return gateway.url == requiresMetriportOidUrl;
+}
+
+export function getHomeCommunityId(gateway: XCPDGateway, samlAttributes: SamlAttributes): string {
+  return requiresMetriportOidInsteadOfInitiatorOid(gateway)
+    ? METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX
+    : samlAttributes.homeCommunityId;
 }
 
 export function requiresUrnInSoapBody(gateway: XCPDGateway): boolean {
