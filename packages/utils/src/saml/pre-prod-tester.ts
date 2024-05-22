@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { v4 as uuidv4 } from "uuid";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -51,7 +52,7 @@ async function queryDatabaseForDQs() {
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 5;
+    LIMIT 100;
   `;
 
   try {
@@ -167,7 +168,7 @@ async function DRIntegrationTest() {
       !dqResult.documentReference ||
       !dqResult.externalGatewayPatient
     ) {
-      console.log("Skipping: ", dqResult);
+      console.log("Skipping: ", dqResult.id);
       return undefined;
     }
 
@@ -181,14 +182,12 @@ async function DRIntegrationTest() {
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     const dqResponse = await queryDQ(dqRequest);
-    console.log("DQ Response: ", dqResponse);
     if (!dqResponse.documentReference) {
-      console.log("No document references found for DQ: ", dqRequest, dqResponse);
+      console.log("No document references found for DQ: ", dqRequest.id);
       return undefined;
     }
 
     const drUrl = await getDrUrl(dqResult.gateway.homeCommunityId);
-    console.log("DR URL: ", drUrl);
 
     const drRequest: OutboundDocumentRetrievalReq = {
       id: dqResult.id,
@@ -200,7 +199,10 @@ async function DRIntegrationTest() {
       },
       patientId: dqResult.patientId,
       samlAttributes: samlAttributes,
-      documentReference: dqResponse.documentReference,
+      documentReference: dqResponse.documentReference.map(doc => ({
+        ...doc,
+        metriportId: uuidv4(),
+      })),
     };
     try {
       const drResponse = await queryDR(drRequest);
@@ -222,7 +224,6 @@ async function DRIntegrationTest() {
 
       if (responseDocumentReferences.size > 0) {
         successCount++;
-        console.log("dr response", drResponse);
       } else {
         failureCount++;
         console.log("dr response", JSON.stringify(drResponse, null, 2));

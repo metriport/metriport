@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { chunk } from "lodash";
 import { XMLBuilder } from "fast-xml-parser";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
@@ -9,6 +10,14 @@ import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
 import { OutboundDocumentRetrievalReq, XCAGateway } from "@metriport/ihe-gateway-sdk";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
+
+const pointClickCareOid = "2.16.840.1.113883.3.6448";
+const redoxOid = "2.16.840.1.113883.3.6147.458";
+const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
+
+const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
+const minDocumentReferencesPerDrRequest = 1;
+const maxDocumentReferencesPerDrRequest = 10;
 
 export type BulkSignedDR = {
   gateway: XCAGateway;
@@ -111,8 +120,25 @@ export function createAndSignBulkDRRequests({
   const signedRequests: BulkSignedDR[] = [];
 
   for (const bodyData of bulkBodyData) {
-    const signedRequest = createAndSignDRRequest(bodyData, samlCertsAndKeys);
-    signedRequests.push({ gateway: bodyData.gateway, signedRequest, outboundRequest: bodyData });
+    const documentReferencesPerRequest = gatewaysThatAcceptOneDocRefPerRequest.includes(
+      bodyData.gateway.homeCommunityId
+    )
+      ? minDocumentReferencesPerDrRequest
+      : maxDocumentReferencesPerDrRequest;
+    const documentReferences = bodyData.documentReference;
+    const chunks = chunk(documentReferences, documentReferencesPerRequest);
+    chunks.forEach(docRefs => {
+      const chunkedBodyData = {
+        ...bodyData,
+        documentReference: docRefs,
+      };
+      const signedRequest = createAndSignDRRequest(chunkedBodyData, samlCertsAndKeys);
+      signedRequests.push({
+        gateway: bodyData.gateway,
+        signedRequest,
+        outboundRequest: chunkedBodyData,
+      });
+    });
   }
 
   return signedRequests;
