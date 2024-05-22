@@ -159,12 +159,18 @@ function buildSuccessResponse(payload) {
   return {
     statusCode: 200,
     body: payload,
+    headers: {
+      "content-type": "application/json",
+    },
   };
 }
 function buildErrorResponse(status, message) {
   return {
     statusCode: status,
     body: { status, detail: message },
+    headers: {
+      "content-type": "application/json",
+    },
   };
 }
 
