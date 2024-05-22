@@ -34,6 +34,7 @@ import {
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
@@ -67,7 +68,7 @@ export function createObservations(observations: Observation[]): CDAObservation[
           [_classCodeAttribute]: "OBS",
           [_moodCodeAttribute]: "EVN",
           templateId: buildInstanceIdentifier({
-            root: "2.16.840.1.113883.10.20.22.4.2",
+            root: oids.resultObservation,
             extension: extensionValue2015,
           }),
           id: {

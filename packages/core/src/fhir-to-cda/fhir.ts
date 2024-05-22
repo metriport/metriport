@@ -3,12 +3,16 @@ import {
   Composition,
   Condition,
   DiagnosticReport,
+  Medication,
+  MedicationStatement,
   Observation,
   Organization,
   Patient,
   Resource,
 } from "@medplum/fhirtypes";
+import { mentalHealthSurveyCodes } from "./cda-templates/constants";
 
+// TODO: Move these to packages/core/src/external/fhir/shared/index.ts
 function isPatient(resource: Resource | undefined): resource is Patient {
   return resource?.resourceType === "Patient";
 }
@@ -31,6 +35,16 @@ export function isObservation(resource: Resource | undefined): resource is Obser
 
 export function isDiagnosticReport(resource: Resource | undefined): resource is DiagnosticReport {
   return resource?.resourceType === "DiagnosticReport";
+}
+
+export function isMedicationStatement(
+  resource: Resource | undefined
+): resource is MedicationStatement {
+  return resource?.resourceType === "MedicationStatement";
+}
+
+export function isMedication(resource: Resource | undefined): resource is Medication {
+  return resource?.resourceType === "Medication";
 }
 
 export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {
@@ -58,4 +72,14 @@ export function findResourceInBundle(bundle: Bundle, reference: string): Resourc
     return entryReference === reference;
   });
   return entry?.resource;
+}
+
+export function isMentalSurveyObservation(resource: Resource | undefined): resource is Observation {
+  if (!isObservation(resource)) {
+    return false;
+  }
+
+  return resource?.code?.coding?.[0]?.code
+    ? mentalHealthSurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
+    : false;
 }

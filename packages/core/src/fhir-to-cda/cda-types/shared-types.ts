@@ -164,7 +164,7 @@ export type CdaRecordTarget = {
 export type CreateTableRowsCallback<T> = (
   observation: T,
   sectionPrefix: string
-) => ObservationTableRow[];
+) => ObservationTableRow | ObservationTableRow[];
 
 export type CreateEntriesCallback<T> = (aug: T, sectionPrefix: string) => unknown;
 
@@ -182,6 +182,7 @@ export type ObservationTableRow = {
   };
 };
 export type ObservationEntry = {
+  [_typeCodeAttribute]?: string;
   observation: {
     [_classCodeAttribute]: string;
     [_moodCodeAttribute]: string;
@@ -199,17 +200,18 @@ export type ObservationEntry = {
       [_codeSystemNameAttribute]?: string | undefined;
       [_displayNameAttribute]?: string | undefined;
     };
-    text: {
+    text?: {
       reference: {
         [_valueAttribute]: string;
       };
     };
-    statusCode: {
+    statusCode?: {
       [_codeAttribute]: string;
     };
     effectiveTime?: {
       [_valueAttribute]?: string | undefined;
     };
+    value?: CdaValueCd | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
   };

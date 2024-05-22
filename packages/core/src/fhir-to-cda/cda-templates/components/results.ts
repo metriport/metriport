@@ -15,6 +15,7 @@ import {
   _typeCodeAttribute,
   _valueAttribute,
   extensionValue2015,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { createObservations } from "./observations";
@@ -40,7 +41,7 @@ function buildEntriesFromDiagnosticReports(
       [_classCodeAttribute]: "BATTERY",
       [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
-        root: "2.16.840.1.113883.10.20.22.4.1",
+        root: oids.resultOrganizer,
         extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({
@@ -81,7 +82,7 @@ export function buildResult(fhirBundle: Bundle) {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.3.1",
+          root: oids.resultsSection,
         }),
         code: buildCodeCe({
           code: "30954-2",

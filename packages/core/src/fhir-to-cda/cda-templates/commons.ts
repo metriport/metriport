@@ -8,7 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
 import dayjs from "dayjs";
-import LocalizedFormat from "dayjs/plugin/LocalizedFormat";
+import utc from "dayjs/plugin/utc";
 import {
   CDAOriginalText,
   CdaAddress,
@@ -41,13 +41,14 @@ import {
   _xsiTypeAttribute,
   amaAssnSystemCode,
   fdasisSystemCode,
+  icd10SystemCode,
   loincSystemCode,
   nlmNihSystemCode,
   placeholderOrgOid,
   snomedSystemCode,
 } from "./constants";
 
-dayjs.extend(LocalizedFormat);
+dayjs.extend(utc);
 
 const CODING_MAP = new Map<string, string>();
 CODING_MAP.set("http://loinc.org", loincSystemCode);
@@ -55,6 +56,7 @@ CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
 CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
 CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
+CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
@@ -233,9 +235,14 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
   if (!dateString) {
     return undefined;
   }
-  const formatted = dateString.replace(/-/g, "");
-  if (formatted.includes("T")) return formatted.split("T")[0];
-  return formatted;
+
+  // Formats dates of type 2000-01-01T12:15:00.000Z
+  if (dateString.includes("T")) {
+    return dayjs(dateString).utc().format("YYYYMMDDHHmmss");
+  }
+
+  // Formats dates of type 2000-01-01
+  return dayjs(dateString).format("YYYYMMDD");
 }
 
 export function formatDateToHumanReadableFormat(
@@ -362,10 +369,11 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
 
 export function mapCodingSystem(system: string | undefined): string | undefined {
   if (!system) return undefined;
-  const mappedCodingSystem = CODING_MAP.get(system);
+  const systemLowerCase = system.toLowerCase();
+  const mappedCodingSystem = CODING_MAP.get(systemLowerCase);
   if (mappedCodingSystem) return mappedCodingSystem;
-  if (system.includes("urn")) return normalizeOid(system);
-  return system;
+  if (systemLowerCase.includes("urn")) return normalizeOid(systemLowerCase);
+  return systemLowerCase;
 }
 
 export function buildReferenceId(prefix: string, pairNumber: number): string {
@@ -373,7 +381,7 @@ export function buildReferenceId(prefix: string, pairNumber: number): string {
 }
 
 export function isLoinc(system: string | undefined): boolean {
-  if (system?.toLowerCase().includes("loinc")) {
+  if (system?.toLowerCase().trim().includes("loinc")) {
     return true;
   }
   return false;

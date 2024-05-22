@@ -52,9 +52,5 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function postProcessXml(xml: any, oid: string): string {
-  return xml
-    .replaceAll("<br>", "")
-    .replaceAll("</br>", "<br />")
-    .replaceAll("&apos;", "'")
-    .replaceAll(placeholderOrgOid, oid);
+  return xml.replaceAll("<br>", "<br/>").replaceAll("</br>", "").replaceAll(placeholderOrgOid, oid);
 }

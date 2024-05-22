@@ -28,12 +28,32 @@ export const snomedSystemCode = "2.16.840.1.113883.6.96";
 export const nlmNihSystemCode = "2.16.840.1.113883.6.88";
 export const amaAssnSystemCode = "2.16.840.1.113883.6.12";
 export const fdasisSystemCode = "2.16.840.1.113883.4.9";
+export const icd10SystemCode = "2.16.840.1.113883.6.90";
 export const extensionValue2014 = "2014-06-09";
 export const extensionValue2015 = "2015-08-01";
 export const loincCodeSystem = "2.16.840.1.113883.6.1";
 export const loincSystemName = "LOINC";
 export const placeholderOrgOid = "placeholder-ORG-OID";
 export const NOT_SPECIFIED = "Not Specified";
+
+export const oids = {
+  medicationSection: "2.16.840.1.113883.10.20.22.2.1.1",
+  mentalStatusSection: "2.16.840.1.113883.10.20.22.2.56",
+  problemsSection: "2.16.840.1.113883.10.20.22.2.5.1",
+  resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
+  socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
+  conditionType: "2.16.840.1.113883.10.20.22.4.3",
+  socialHistoryType: "2.16.840.1.113883.10.20.22.4.38",
+  medicationStatementType: "2.16.840.1.113883.10.20.22.4.16",
+  mentalStatusType: "2.16.840.1.113883.10.20.22.4.74",
+  problemObservation: "2.16.840.1.113883.10.20.22.4.4",
+  resultOrganizer: "2.16.840.1.113883.10.20.22.4.1",
+  medicationInformation: "2.16.840.1.113883.10.20.22.4.23",
+  resultObservation: "2.16.840.1.113883.10.20.22.4.2",
+};
+
+export const mentalHealthSurveyCodes = ["44249-1"];
+export const socialHistorySurveyCodes = ["lg51306-5"];
 
 export const clinicalDocumentConstants = {
   realmCode: "US",

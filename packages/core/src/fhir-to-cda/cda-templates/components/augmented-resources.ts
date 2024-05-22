@@ -5,26 +5,31 @@ import {
   Observation,
   Resource,
 } from "@medplum/fhirtypes";
+import { oids } from "../constants";
 
-export interface AugmentedResource {
+export interface AugmentedResource<T extends Resource> {
   readonly typeOid: string;
   readonly sectionName: string;
-  resource: Resource;
+  resource: T;
 }
-export class AugmentedObservation implements AugmentedResource {
-  constructor(public typeOid: string, public sectionName: string, public resource: Observation) {}
-}
-
-export class AugmentedCondition implements AugmentedResource {
-  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.3";
-  constructor(public resource: Condition, public sectionName: string) {}
-}
-
-export class AugmentedMedicationStatement implements AugmentedResource {
-  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.16";
+export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(
-    public resource: MedicationStatement,
-    public sectionName: string,
-    public medication?: Medication | undefined
+    public readonly typeOid: string,
+    public readonly sectionName: string,
+    public readonly resource: Observation
+  ) {}
+}
+
+export class AugmentedCondition implements AugmentedResource<Condition> {
+  public readonly typeOid = oids.conditionType;
+  constructor(public readonly sectionName: string, public readonly resource: Condition) {}
+}
+
+export class AugmentedMedicationStatement implements AugmentedResource<MedicationStatement> {
+  public readonly typeOid = oids.medicationStatementType;
+  constructor(
+    public readonly sectionName: string,
+    public readonly resource: MedicationStatement,
+    public readonly medication: Medication
   ) {}
 }

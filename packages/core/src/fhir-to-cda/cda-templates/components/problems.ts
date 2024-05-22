@@ -1,5 +1,5 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
-import { ObservationTableRow } from "../../cda-types/shared-types";
+import { ObservationEntry, ObservationTableRow } from "../../cda-types/shared-types";
 import { isCondition } from "../../fhir";
 import {
   buildCodeCe,
@@ -9,6 +9,7 @@ import {
   getTextFromCode,
   initiateSectionTable,
   isLoinc,
+  mapCodingSystem,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -24,6 +25,7 @@ import {
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
@@ -48,7 +50,7 @@ export function buildProblems(fhirBundle: Bundle) {
   }
 
   const augmentedConditions = conditions.map(condition => {
-    return new AugmentedCondition(condition, problemsSectionName);
+    return new AugmentedCondition(problemsSectionName, condition);
   });
 
   const { trs, entries } = createTableRowsAndEntries(
@@ -63,7 +65,7 @@ export function buildProblems(fhirBundle: Bundle) {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.5.1",
+          root: oids.problemsSection,
           extension: extensionValue2015,
         }),
         code: buildCodeCe({
@@ -116,45 +118,51 @@ function createTableRowFromCondition(
 }
 
 function createEntryFromCondition(condition: AugmentedCondition, referenceId: string) {
-  return [
-    {
-      act: {
-        [_classCodeAttribute]: "ACT",
-        [_moodCodeAttribute]: "EVN",
-        templateId: buildInstanceIdentifier({
-          root: condition.typeOid,
-          extension: extensionValue2014,
-        }),
-        id: buildInstanceIdentifier({
-          root: placeholderOrgOid,
-          extension: condition.resource.id,
-        }),
-        code: buildCodeCe({
-          code: "CONC",
-          codeSystem: "2.16.840.1.113883.5.6",
-          displayName: "Concern",
-        }),
-        statusCode: {
-          [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
-        },
-        effectiveTime: {
-          low: withoutNullFlavorObject(
-            formatDateToCdaTimestamp(condition.resource.recordedDate),
-            _valueAttribute
-          ),
-        },
-        entryRelationship: createEntryRelationship(condition.resource, referenceId),
+  return {
+    act: {
+      [_classCodeAttribute]: "ACT",
+      [_moodCodeAttribute]: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: condition.typeOid,
+        extension: extensionValue2014,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: condition.resource.id,
+      }),
+      code: buildCodeCe({
+        code: "CONC",
+        codeSystem: "2.16.840.1.113883.5.6",
+        displayName: "Concern",
+      }),
+      statusCode: {
+        [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
       },
+      effectiveTime: {
+        low: withoutNullFlavorObject(
+          formatDateToCdaTimestamp(condition.resource.recordedDate),
+          _valueAttribute
+        ),
+      },
+      entryRelationship: createEntryRelationship(condition.resource, referenceId),
     },
-  ];
+  };
 }
 
-function getIcdCode(code: CodeableConcept | undefined): string | undefined {
-  const icdCoding = code?.coding?.find(coding => coding.system?.includes("icd-10-codes"));
-  return icdCoding?.code;
+function getIcdCode(code: CodeableConcept | undefined): string {
+  const icdCoding = code?.coding?.find(coding => {
+    if (coding.system?.toLowerCase().includes("icd-10")) {
+      return true;
+    }
+    if (mapCodingSystem(coding.system?.toLowerCase())) {
+      return true;
+    }
+    return false;
+  });
+  return icdCoding?.code ?? NOT_SPECIFIED;
 }
 
-function createEntryRelationship(condition: Condition, referenceId: string) {
+function createEntryRelationship(condition: Condition, referenceId: string): ObservationEntry {
   const codeSystem = condition.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {
@@ -163,7 +171,7 @@ function createEntryRelationship(condition: Condition, referenceId: string) {
       [_classCodeAttribute]: "OBS",
       [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
-        root: "2.16.840.1.113883.10.20.22.4.4",
+        root: oids.problemObservation,
         extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({

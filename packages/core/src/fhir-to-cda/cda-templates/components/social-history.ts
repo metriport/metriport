@@ -1,13 +1,18 @@
 import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
 import { isObservation } from "../../fhir";
 import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
-import { _idAttribute, loincCodeSystem, loincSystemName } from "../constants";
+import {
+  _idAttribute,
+  loincCodeSystem,
+  loincSystemName,
+  oids,
+  socialHistorySurveyCodes,
+} from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
 
 const sectionName = "socialhistory";
-const mentalHealthSurveyCodes = ["lg51306-5"];
 const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
 
 export function buildSocialHistory(fhirBundle: Bundle) {
@@ -21,7 +26,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
   }
 
   const augmentedObservations = socialHistoryObservations.map(
-    obs => new AugmentedObservation("2.16.840.1.113883.10.20.22.4.38", sectionName, obs)
+    obs => new AugmentedObservation(oids.socialHistoryType, sectionName, obs)
   );
 
   const { trs, entries } = createTableRowsAndEntries(
@@ -44,7 +49,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.17",
+          root: oids.socialHistorySection,
         }),
         code: buildCodeCe({
           code: "29762-2",
@@ -67,6 +72,6 @@ function isSocialHistoryObservation(resource: Resource | undefined): resource is
   }
 
   return resource?.code?.coding?.[0]?.code
-    ? mentalHealthSurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
+    ? socialHistorySurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
     : false;
 }

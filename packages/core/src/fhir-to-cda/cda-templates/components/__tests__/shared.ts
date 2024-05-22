@@ -1,6 +1,21 @@
+import { faker } from "@faker-js/faker";
 import { Bundle } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
 import { formatDateToCdaTimestamp, formatDateToHumanReadableFormat } from "../../commons";
+
+export function makeBaseDomain() {
+  return {
+    id: faker.string.uuid(),
+  };
+}
+
+export function makeSubjectReference() {
+  const id = faker.string.uuid();
+  console.log(id);
+  return {
+    subject: { reference: `Patient/${id}` },
+  };
+}
 
 export function createEmptyBundle(): Bundle {
   return {
@@ -11,19 +26,19 @@ export function createEmptyBundle(): Bundle {
 }
 
 export function getPastDateInDifferentFormats(subtractYears?: number): {
-  dateFhir: string;
-  dateXml: string;
+  dateIso: string;
+  dateCda: string;
   dateHumanReadable: string;
 } {
   const dateMinusTwoYears = dayjs().subtract(subtractYears ?? 1, "year");
-  const dateFhir = dateMinusTwoYears.toISOString();
-  const dateXml = formatDateToCdaTimestamp(dateFhir);
-  const dateHumanReadable = formatDateToHumanReadableFormat(dateFhir);
-  if (!dateXml || !dateHumanReadable) throw new Error("Past dates failed to initialize");
+  const dateIso = dateMinusTwoYears.toISOString();
+  const dateCda = formatDateToCdaTimestamp(dateIso);
+  const dateHumanReadable = formatDateToHumanReadableFormat(dateIso);
+  if (!dateCda || !dateHumanReadable) throw new Error("Past dates failed to initialize");
 
   return {
-    dateFhir,
-    dateXml,
+    dateIso,
+    dateCda,
     dateHumanReadable,
   };
 }

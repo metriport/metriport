@@ -1,10 +1,11 @@
-import { Bundle, Medication, MedicationStatement, Resource } from "@medplum/fhirtypes";
+import { Bundle, MedicationStatement, CodeableConcept } from "@medplum/fhirtypes";
+import BadRequestError from "../../../util/error/bad-request";
 import {
   CdaCodeCe,
   ObservationTableRow,
   SubstanceAdministationEntry,
 } from "../../cda-types/shared-types";
-import { findResourceInBundle } from "../../fhir";
+import { findResourceInBundle, isMedication, isMedicationStatement } from "../../fhir";
 import {
   buildCodeCe,
   buildCodeCeFromCoding,
@@ -28,11 +29,11 @@ import {
   extensionValue2014,
   loincCodeSystem,
   loincSystemName,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedMedicationStatement } from "./augmented-resources";
-import BadRequestError from "../../../util/error/bad-request";
 
 const medicationsSectionName = "medications";
 const tableHeaders = [
@@ -72,7 +73,7 @@ export function buildMedications(fhirBundle: Bundle) {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.1.1",
+          root: oids.medicationSection,
         }),
         code: buildCodeCe({
           code: "10160-0",
@@ -89,14 +90,6 @@ export function buildMedications(fhirBundle: Bundle) {
   return medicationsSection;
 }
 
-function isMedicationStatement(resource: Resource | undefined): resource is MedicationStatement {
-  return resource?.resourceType === "MedicationStatement";
-}
-
-function isMedication(resource: Resource | undefined): resource is Medication {
-  return resource?.resourceType === "Medication";
-}
-
 function createTableRowsFromMedicationStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
@@ -107,7 +100,7 @@ function createTableRowsFromMedicationStatement(
   };
   const code = buildCodeCeFromCoding(statement.medication?.code?.coding);
   const medicationName = statement.medication?.code?.text ?? code?._displayName;
-  const medicationCode = buildcMedicationCode(code);
+  const medicationCode = buildMedicationCode(code);
   return [
     {
       tr: {
@@ -132,7 +125,7 @@ function createTableRowsFromMedicationStatement(
             [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: statement.resource.reasonCode?.[0]?.text ?? NOT_SPECIFIED,
+            [_inlineTextAttribute]: getPrescriptionReasons(statement.resource.reasonCode),
           },
         ],
       },
@@ -151,77 +144,115 @@ function createAugmentedMedicationStatements(
     if (!medication) {
       throw new BadRequestError("MedicationStatement must reference an existing Medication");
     }
-    return new AugmentedMedicationStatement(statement, medicationsSectionName, medication);
+    return new AugmentedMedicationStatement(medicationsSectionName, statement, medication);
   });
 }
 
 function getDosageFromMedicationStatement(statement: MedicationStatement): string {
-  const dosageValue = statement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.value;
-  const dosageUnit = statement.dosage?.[0]?.doseAndRate?.[0]?.doseQuantity?.unit;
-  return `${dosageValue} ${dosageUnit}`;
+  return (
+    statement.dosage
+      ?.map(dosage => {
+        return dosage.doseAndRate
+          ?.map(doseAndRate => {
+            if (doseAndRate.doseQuantity?.value && doseAndRate.doseQuantity?.unit) {
+              return `${doseAndRate.doseQuantity.value} ${doseAndRate.doseQuantity.unit}`;
+            }
+            return undefined;
+          })
+          .filter(Boolean);
+      })
+      .flat()
+      .join(", ") || NOT_SPECIFIED
+  );
 }
 
 function getFrequencyFromMedicationStatement(statement: MedicationStatement): string {
-  const rateValue = statement.dosage?.[0]?.doseAndRate?.[0]?.rateQuantity?.value;
-  const rateUnit = statement.dosage?.[0]?.doseAndRate?.[0]?.rateQuantity?.unit;
-  return `${rateValue} ${rateUnit}`;
+  return (
+    statement.dosage
+      ?.map(dosage => {
+        return dosage.doseAndRate
+          ?.map(doseAndRate => {
+            if (doseAndRate.rateQuantity?.value && doseAndRate.rateQuantity?.unit) {
+              return `${doseAndRate.rateQuantity.value} ${doseAndRate.rateQuantity.unit}`;
+            }
+            return undefined;
+          })
+          .filter(Boolean);
+      })
+      .flat()
+      .join(", ") || NOT_SPECIFIED
+  );
 }
 
 function createEntryFromStatement(
   statement: AugmentedMedicationStatement,
   referenceId: string
-): SubstanceAdministationEntry[] {
+): SubstanceAdministationEntry {
   const manufacturedMaterialCode = buildCodeCvFromCodeableConcept(
     statement.medication?.code,
     referenceId
   );
-  return [
-    {
-      substanceAdministration: {
-        [_classCodeAttribute]: "SBADM",
-        [_moodCodeAttribute]: "INT",
-        templateId: buildInstanceIdentifier({
-          root: statement.typeOid,
-          extension: extensionValue2014,
-        }),
-        id: buildInstanceIdentifier({
-          root: placeholderOrgOid,
-          extension: statement.resource.id,
-        }),
-        statusCode: {
-          [_codeAttribute]: statement.resource.status,
-        },
-        effectiveTime: {
-          [_xsiTypeAttribute]: "IVL_TS",
-          low: withoutNullFlavorObject(
-            formatDateToCdaTimestamp(statement.resource.effectivePeriod?.start),
-            _valueAttribute
-          ),
-          high: withoutNullFlavorObject(
-            formatDateToCdaTimestamp(statement.resource.effectivePeriod?.end),
-            _valueAttribute
-          ),
-        },
-        consumable: {
-          [_typeCodeAttribute]: "CSM",
-          manufacturedProduct: {
-            templateId: buildInstanceIdentifier({
-              root: "2.16.840.1.113883.10.20.22.4.23",
-              extension: "2014-06-09",
-            }),
-            manufacturedMaterial: {
-              code: manufacturedMaterialCode,
-            },
+  return {
+    substanceAdministration: {
+      [_classCodeAttribute]: "SBADM",
+      [_moodCodeAttribute]: "INT",
+      templateId: buildInstanceIdentifier({
+        root: statement.typeOid,
+        extension: extensionValue2014,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: statement.resource.id,
+      }),
+      statusCode: {
+        [_codeAttribute]: statement.resource.status,
+      },
+      effectiveTime: {
+        [_xsiTypeAttribute]: "IVL_TS",
+        low: withoutNullFlavorObject(
+          formatDateToCdaTimestamp(statement.resource.effectivePeriod?.start),
+          _valueAttribute
+        ),
+        high: withoutNullFlavorObject(
+          formatDateToCdaTimestamp(statement.resource.effectivePeriod?.end),
+          _valueAttribute
+        ),
+      },
+      consumable: {
+        [_typeCodeAttribute]: "CSM",
+        manufacturedProduct: {
+          templateId: buildInstanceIdentifier({
+            root: oids.medicationInformation,
+            extension: extensionValue2014,
+          }),
+          manufacturedMaterial: {
+            code: manufacturedMaterialCode,
           },
         },
       },
     },
-  ];
+  };
 }
 
-function buildcMedicationCode(code: CdaCodeCe | undefined): string {
-  if (!code) return NOT_SPECIFIED;
-  if (code._codeSystem) return `${code._code} - ${code._codeSystem}`;
-  if (code._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
+function buildMedicationCode(code: CdaCodeCe | undefined): string {
+  if (code?._code) {
+    if (code?._codeSystem) return `${code._code} - ${code._codeSystem}`;
+    if (code?._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
+  }
+  return NOT_SPECIFIED;
+}
+
+function getPrescriptionReasons(concepts: CodeableConcept[] | undefined): string {
+  if (!concepts) return NOT_SPECIFIED;
+  if (concepts.length > 0) {
+    return concepts
+      .map(concept => {
+        const code = buildCodeCeFromCoding(concept.coding);
+        if (code?._displayName) return code._displayName.trim();
+        if (concept.text) return concept.text.trim();
+        return;
+      })
+      .join(", ");
+  }
   return NOT_SPECIFIED;
 }
