@@ -36,9 +36,9 @@ export async function createOrUpdateInCq(
     oboOid: cqOboOid,
   });
 
-  const oid = isObo && facility.cqOboOid ? facility.cqOboOid : facility.oid;
+  const cqOid = isObo && facility.cqOboOid ? facility.cqOboOid : facility.oid;
 
-  log(`Creating/Updating a CQ entry with this OID ${oid} and name ${orgName}`);
+  log(`Creating/Updating a CQ entry with this OID ${cqOid} and name ${orgName}`);
 
   const { address } = facility.data;
   const addressLine = address.addressLine2
@@ -53,7 +53,7 @@ export async function createOrUpdateInCq(
     city: address.city,
     state: address.state,
     postalCode: address.zip,
-    oid,
+    oid: cqOid,
     contactName: metriportCompanyDetails.name,
     phone: metriportCompanyDetails.phone,
     email: metriportEmailForCq,
@@ -87,15 +87,15 @@ export async function createOrUpdateInCw(
     oboOid: facility.cwOboOid,
   });
 
-  const oid = isObo && facility.cwOboOid ? facility.cwOboOid : facility.oid;
+  const cwOid = isObo && facility.cwOboOid ? facility.cwOboOid : facility.oid;
 
-  log(`Creating/Updating a CW entry with this OID ${oid} and name ${orgName}`);
+  log(`Creating/Updating a CW entry with this OID ${cwOid} and name ${orgName}`);
 
   await createOrUpdateCWOrganization(
     {
       cxId,
       id: facility.id,
-      oid,
+      oid: cwOid,
       data: {
         name: orgName,
         type: cxOrg.type,
