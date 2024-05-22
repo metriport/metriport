@@ -43,10 +43,10 @@ export async function registerFacilityWithinHIEs(
   );
 
   // CAREQUALITY
-  await createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
+  createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
 
   // COMMONWELL
-  await createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
+  createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
 
   return cmdFacility;
 }
