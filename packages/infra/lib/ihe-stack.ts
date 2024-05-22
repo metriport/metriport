@@ -116,32 +116,32 @@ export class IHEStack extends Stack {
 
     const posthogSecretName = props.config.analyticsSecretNames?.POST_HOG_API_KEY_SECRET_NAME;
 
-    const documentQueryLambda = this.setupDocumentQueryLambda(
+    const documentQueryLambda = this.setupDocumentQueryLambda({
       props,
       lambdaLayers,
       vpc,
       secrets,
       medicalDocumentsBucket,
       posthogSecretName,
-      alarmSnsAction
-    );
-    const documentRetrievalLambda = this.setupDocumentRetrievalLambda(
+      alarmSnsAction,
+    });
+    const documentRetrievalLambda = this.setupDocumentRetrievalLambda({
       props,
       lambdaLayers,
       vpc,
       secrets,
       medicalDocumentsBucket,
       posthogSecretName,
-      alarmSnsAction
-    );
-    const patientDiscoveryLambda = this.setupPatientDiscoveryLambda(
+      alarmSnsAction,
+    });
+    const patientDiscoveryLambda = this.setupPatientDiscoveryLambda({
       props,
       lambdaLayers,
       vpc,
       secrets,
       posthogSecretName,
-      alarmSnsAction
-    );
+      alarmSnsAction,
+    });
 
     createIHEGateway(this, {
       ...props,
@@ -169,15 +169,23 @@ export class IHEStack extends Stack {
     });
   }
 
-  private setupDocumentQueryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    secrets: Secrets,
-    medicalDocumentsBucket: s3.IBucket,
-    posthogSecretName: string | undefined,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
+  private setupDocumentQueryLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    secrets,
+    medicalDocumentsBucket,
+    posthogSecretName,
+    alarmSnsAction,
+  }: {
+    props: IHEStackProps;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    medicalDocumentsBucket: s3.IBucket;
+    posthogSecretName: string | undefined;
+    alarmSnsAction?: SnsAction | undefined;
+  }): Lambda {
     const documentQueryLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentQuery",
@@ -200,15 +208,23 @@ export class IHEStack extends Stack {
     return documentQueryLambda;
   }
 
-  private setupDocumentRetrievalLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    secrets: Secrets,
-    medicalDocumentsBucket: s3.IBucket,
-    posthogSecretName: string | undefined,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
+  private setupDocumentRetrievalLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    secrets,
+    medicalDocumentsBucket,
+    posthogSecretName,
+    alarmSnsAction,
+  }: {
+    props: IHEStackProps;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    medicalDocumentsBucket: s3.IBucket;
+    posthogSecretName: string | undefined;
+    alarmSnsAction?: SnsAction | undefined;
+  }): Lambda {
     const documentRetrievalLambda = createLambda({
       stack: this,
       name: "IHEInboundDocumentRetrieval",
@@ -230,14 +246,21 @@ export class IHEStack extends Stack {
     return documentRetrievalLambda;
   }
 
-  private setupPatientDiscoveryLambda(
-    props: IHEStackProps,
-    lambdaLayers: LambdaLayers,
-    vpc: ec2.IVpc,
-    secrets: Secrets,
-    posthogSecretName: string | undefined,
-    alarmSnsAction?: SnsAction | undefined
-  ): Lambda {
+  private setupPatientDiscoveryLambda({
+    props,
+    lambdaLayers,
+    vpc,
+    secrets,
+    posthogSecretName,
+    alarmSnsAction,
+  }: {
+    props: IHEStackProps;
+    lambdaLayers: LambdaLayers;
+    vpc: ec2.IVpc;
+    secrets: Secrets;
+    posthogSecretName: string | undefined;
+    alarmSnsAction?: SnsAction | undefined;
+  }): Lambda {
     const patientDiscoveryLambda = createLambda({
       stack: this,
       name: "IHEInboundPatientDiscovery",
