@@ -51,9 +51,15 @@ export async function sendSignedDRRequests({
         outboundRequest: request.outboundRequest,
         contentType,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
-      log(`${msg}, error: ${error}`);
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      );
+      if (error?.response?.data) {
+        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+      }
 
       const errorString: string = errorToString(error);
       const extra = {

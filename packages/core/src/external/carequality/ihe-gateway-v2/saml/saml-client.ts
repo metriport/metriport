@@ -11,9 +11,19 @@ import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import { detectFileType } from "../../../../util/file-type";
 
 const { log } = out("Saml Client");
-
 const timeout = 120000;
-const rejectUnauthorized = Config.isDev() ? false : true;
+let rejectUnauthorized = true;
+
+/*
+ * ONLY use this function for testing purposes. It will turn off SSL Verification of the server if set to false.
+ * See saml-server.ts for usage.
+ */
+export function setRejectUnauthorized(value: boolean): void {
+  rejectUnauthorized = value;
+}
+export function getRejectUnauthorized(): boolean {
+  return rejectUnauthorized;
+}
 
 export type SamlClientResponse = {
   response: string;
@@ -52,7 +62,8 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: rejectUnauthorized,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
@@ -86,7 +97,8 @@ export async function sendSignedXmlMtom({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: rejectUnauthorized,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,

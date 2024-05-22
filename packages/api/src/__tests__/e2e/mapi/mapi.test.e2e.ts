@@ -5,16 +5,16 @@ import { faker } from "@faker-js/faker";
 import { Organization as FhirOrg } from "@medplum/fhirtypes";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { Organization as CWOrganization } from "@metriport/commonwell-sdk";
-import cwCommands from "../../../../../external/commonwell";
-import { Config } from "../../../../../shared/config";
-import { retryFunction } from "../../../../../shared/retry";
-import { Util } from "../../../../../shared/util";
+import { areDocumentsProcessing } from "../../../command/medical/document/document-status";
+import cwCommands from "../../../external/commonwell";
+import { Config } from "../../../shared/config";
+import { retryFunction } from "../../../shared/retry";
+import { Util } from "../../../shared/util";
 import { createConsolidated } from "./consolidated";
 import { createFacility, validateFacility } from "./facility";
 import { validateCWOrg, validateFhirOrg, validateLocalOrg } from "./organization";
 import { createPatient, validateFhirPatient, validateLocalPatient } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
-import { areDocumentsProcessing } from "../../../../../command/medical/document/document-status";
 
 const maxRetries = 4;
 
