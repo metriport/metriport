@@ -17,15 +17,15 @@ description: "Follow this guide to get started accessing your patients' medical 
 Getting started with our Medical API is pretty easy, you'll just need take the following steps:
 
 1. [Create a developer account](#1-create-a-developer-account).
-2. [Request API access](#2-request-api-access).
-3. [Generate an API key](#3-generate-an-api-key).
-4. [Integrate your app with Metriport](#4-integrate-your-app-with-metriport).
-5. [Register your Organization](#5-register-your-organization).
-6. [Create Facilities and Patients](#6-create-facilities-and-patients).
-7. [Get Patient Medical Documents](#7-get-patient-medical-documents).
-8. [Get Patient FHIR Resources](#8-get-patient-fhir-resources). 🎉🎉🎉
-9. [Generate Patient Medical Record Summary](#9-generate-patient-medical-record-summary). ⭐⭐⭐
-10. [Share Medical Data with the Networks](#10-share-medical-data-with-the-networks). 🚀🚀🚀
+1. [Generate an API key](#2-generate-an-api-key).
+1. [Integrate your app with Metriport](#3-integrate-your-app-with-metriport).
+1. [Register your Organization](#4-register-your-organization).
+1. [Create Facilities and Patients](#5-create-facilities-and-patients).
+1. [Get Patient Medical Documents](#6-get-patient-medical-documents).
+1. [Get Patient FHIR Resources](#7-get-patient-fhir-resources). 🔥
+1. [Generate Patient Medical Record Summary](#8-generate-patient-medical-record-summary). 📄
+1. [Share Medical Data with the Networks](#9-share-medical-data-with-the-networks). 🏥
+1. [Request API access](#10-request-api-access).
 
 Feel free to check this demo video out before getting started to get a high level overview of the platform:
 
@@ -39,39 +39,16 @@ Let's get into it! 🤘
 
 ## 1. Create a developer account
 
-<Card
-  title="Click me to go to the developer dashboard!"
-  icon="user"
-  href="https://dash.metriport.com/"
->
-  This will take you to the Metriport developer dashboard where you can create your Metriport
-  account, if you don't have one already.
-</Card>
+<Snippet file="create-dev-account.mdx" />
+
 
 ---
 
-## 2. Request API access
-
-Once you've created an account and confirmed your email, you'll be taken to the [dashboard
-home page](https://dash.metriport.com/). From here, take the following steps to request API access:
-
-- In the left hand menu, click `Products & Billing`.
-- Click `Get Started` on the Medical API product.
-- Press `Book an Intro Call` and select a time and a date to talk to us.
-
-After the call, we will promptly setup your account.
-
----
-
-## 3. Generate an API key
+## 2. Generate an API key
 
 After we approve your access request, take the following steps to get your API key:
 
-Once you've created an account and confirmed your email, you'll be taken to the [dashboard
-home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
-
-- In the left hand menu, click "Products & Billing".
-- Click `Get Started` on the Medical API product, and add your payment info.
+- Toggle the `Sandbox` switch in the Dashboard navbar to enter `Sandbox` mode (learn more about this [here](/medical-api/more-info/sandbox)).
 - In the left hand menu, click `Developers`.
 - On the Developers page, you'll be able to click the "Generate Secret Key" button.
 
@@ -86,15 +63,9 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
   on the Developers page by clicking the trash button beside the key.
 </Tip>
 
-<Tip>
-  After you get access to the Medical API, you can go to the Developers page and toggle the switch
-  under the `Sandbox` section. Learn more about it [here](/medical-api/more-info/sandbox).
-
-</Tip>
-
 ---
 
-## 4. Integrate your app with Metriport
+## 3. Integrate your app with Metriport
 
 Note that there are two ways to receive data from Metriport:
 
@@ -111,7 +82,7 @@ Note that there are two ways to receive data from Metriport:
 
 ---
 
-## 5. Register your Organization
+## 4. Register your Organization
 
 <Info>
   For the remainder of the steps, you are able to either use the Dashboard UI, or the API - whatever
@@ -147,7 +118,7 @@ See the [Create Organization endpoint](/medical-api/api-reference/organization/c
 
 ---
 
-## 6. Create Facilities and Patients
+## 5. Create Facilities and Patients
 
 Once your Organization is registered, you can now create `Facilities` and `Patients`. First,
 you'll need to create your `Facilities`.
@@ -190,7 +161,7 @@ See the [Create Patient endpoint](/medical-api/api-reference/patient/create-pati
 
 ---
 
-## 7. Get Patient Medical Documents
+## 6. Get Patient Medical Documents
 
 Now, you're able to access your Patients' medical `Documents`. This involves 2 main steps:
 
@@ -225,7 +196,7 @@ See the [Get Document endpoint](/medical-api/api-reference/document/get-document
 
 - In the side panel that comes up after clicking `Documents`, simply click `Download` on the desired Document.
 
-## 8. Get Patient FHIR Resources 🎉🎉🎉
+## 7. Get Patient FHIR Resources 🔥
 
 As we query for Documents we will automatically convert XML C-CDA docs into FHIR resources.
 
@@ -242,11 +213,11 @@ Data Query](/medical-api/api-reference/fhir/consolidated-data-query-post) endpoi
 We also provide the ability to add any FHIR resources to a Patient with our [Create Patient's Consolidated
 Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 
-## 9. Generate Patient Medical Record Summary ⭐⭐⭐
+## 8. Generate Patient Medical Record Summary 📄
 
 The aforementioned FHIR resources are generated from all available C-CDAs for a patient, resulting in a set of unique medical records. To condense all of these records into a single document, refer to the [Medical Record Summary](/medical-api/more-info/medical-record-summary) guide.
 
-## 10. Share Medical Data with the Networks 🚀🚀🚀
+## 9. Share Medical Data with the Networks 🏥
 
 To uphold data quality in the networks, and improve patient health outcomes, it's required that your organization reciprocates medical data exchange by making net-new patient clinical data available to the networks. Some examples of this include:
 
@@ -259,9 +230,23 @@ Metriport makes it easy to share this data back with the networks - you can:
 - Upload FHIR data using our [Create Patient's Consolidated Data](/medical-api/api-reference/fhir/create-patient-consolidated) endpoint.
 - Upload binary documents using the [Upload Document](/medical-api/api-reference/document/post-upload-url) endpoint.
 
+---
+
+## 10. Request API access
+
+To start using the Medical API for production workloads, with real patient data, you can take the following steps to request production API access:
+
+- In the left hand menu, click `Products & Billing`.
+- Click `Get Started` on the Medical API product.
+- Press `Book an Intro Call` and select a time and a date to talk to us.
+
+After the call, we will promptly setup your account.
+
 ## Wrapping up
 
-That's it! You're now well equiped to use the Metriport API to access and manage your Patients' medical data.
+That's it! 🤘
+
+You're now well equiped to use the Metriport API to access, manage, and exchange your Patients' medical data.
 
 As next steps, we'd recommend scoping out our [Medical API Reference](/medical-api/api-reference/organization/create-organization)
 in further detail to see the other things you can do with the API.
