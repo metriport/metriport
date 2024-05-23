@@ -5,7 +5,7 @@ import { getEnvVar, getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { processInboundDocumentRetrieval } from "@metriport/core/external/carequality/dr/process-inbound-dr";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 
-const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET_NAME");
+const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 const region = getEnvVarOrFail("AWS_REGION");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
