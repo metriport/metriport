@@ -9,7 +9,6 @@ describe("formatDateToHumanReadableFormat", () => {
   it("should format date-time string with milliseconds correctly", () => {
     const dateTime = "2024-05-22T02:25:16.443Z";
     const formattedDateTime = formatDateToHumanReadableFormat(dateTime);
-    console.log(formattedDateTime, "ASJDOSAJDOAJSDNS");
     expect(formattedDateTime).toBe("05/22/2024 2:25 AM");
   });
 

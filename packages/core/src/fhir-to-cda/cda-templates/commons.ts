@@ -240,21 +240,26 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
 
   // Formats dates of type 2000-01-01T12:15:00.000Z
   if (dateString.includes("T")) {
-    return dayjs(dateString).utc().format("YYYYMMDDHHmmss");
+    if (dateString.endsWith("Z")) {
+      return dayjs(dateString).utc().format("YYYYMMDDHHmmss");
+    }
+    return dayjs(dateString).format("YYYYMMDDHHmmss");
   }
 
   // Formats dates of type 2000-01-01
-  return dayjs(dateString).utc().format("YYYYMMDD");
+  return dayjs(dateString).format("YYYYMMDD");
 }
 
 export function formatDateToHumanReadableFormat(
   dateString: string | undefined
 ): string | undefined {
   if (!dateString) return undefined;
-  if (dateString.includes("T")) return dayjs(dateString).utc().format("L LT");
-  return dayjs(dateString).utc().format("L");
-}
 
+  const date = dayjs(dateString);
+
+  if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
+  return date.utc().format("MM/DD/YYYY");
+}
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
 export function buildValueSt(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
