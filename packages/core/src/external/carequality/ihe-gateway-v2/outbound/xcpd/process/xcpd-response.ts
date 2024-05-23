@@ -14,7 +14,7 @@ import { toArray } from "../../../utils";
 const { log } = out("Processing XCPD Requests");
 
 type Address = {
-  streetAddressLine: string | undefined;
+  streetAddressLine: string | string[] | undefined;
   city: string | undefined;
   state: string | undefined;
   postalCode: string | undefined;
@@ -84,7 +84,7 @@ function handlePatientMatchResponse({
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
   const addresses = addr.map((address: Address) => ({
-    line: address?.streetAddressLine ? [address.streetAddressLine] : undefined,
+    line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
     city: address?.city,
     state: address?.state,
     postalCode: String(address?.postalCode),
