@@ -8,6 +8,7 @@ import {
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
 import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
 import utc from "dayjs/plugin/utc";
 import {
   CDAOriginalText,
@@ -48,6 +49,7 @@ import {
   snomedSystemCode,
 } from "./constants";
 
+dayjs.extend(localizedFormat);
 dayjs.extend(utc);
 
 const CODING_MAP = new Map<string, string>();
@@ -242,14 +244,15 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
   }
 
   // Formats dates of type 2000-01-01
-  return dayjs(dateString).format("YYYYMMDD");
+  return dayjs(dateString).utc().format("YYYYMMDD");
 }
 
 export function formatDateToHumanReadableFormat(
   dateString: string | undefined
 ): string | undefined {
   if (!dateString) return undefined;
-  return dayjs(dateString).format("L LT");
+  if (dateString.includes("T")) return dayjs(dateString).utc().format("L LT");
+  return dayjs(dateString).utc().format("L");
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html

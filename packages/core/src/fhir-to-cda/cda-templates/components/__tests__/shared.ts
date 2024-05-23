@@ -10,10 +10,8 @@ export function makeBaseDomain() {
 }
 
 export function makeSubjectReference() {
-  const id = faker.string.uuid();
-  console.log(id);
   return {
-    subject: { reference: `Patient/${id}` },
+    subject: { reference: `Patient/${faker.string.uuid()}` },
   };
 }
 

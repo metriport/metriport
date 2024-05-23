@@ -25,8 +25,17 @@ beforeEach(() => {
 });
 
 describe("buildProblems", () => {
-  it("correctly maps a single Condition", () => {
+  it("correctly includes the text note into the Problems table", () => {
     bundle.entry?.push({ resource: condition });
+    const res = buildProblems(bundle);
+    const cleanedJsonObj = removeEmptyFields(res);
+    const xmlRes = xmlBuilder.build(cleanedJsonObj);
+    /* eslint-disable @typescript-eslint/no-non-null-assertion */
+    expect(xmlRes).toContain(`<td>${conditionNicotine.note![0]?.text}</td>`);
+  });
+
+  it("correctly maps a single Condition without a note", () => {
+    bundle.entry?.push({ resource: { ...condition, note: [] } });
 
     const filePath = path.join(__dirname, "problems-section.xml");
     const xmlTemplate = fs.readFileSync(filePath, "utf8");
@@ -43,7 +52,7 @@ describe("buildProblems", () => {
     expect(xmlRes).toEqual(xmlContent);
   });
 
-  it("correctly maps two Conditions", () => {
+  it("correctly maps two Conditions with notes", () => {
     bundle.entry?.push({ resource: condition });
 
     const conditionId2 = faker.string.uuid();
