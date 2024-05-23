@@ -45,8 +45,8 @@ export async function processOutboundPatientDiscoveryResps({
     const cqLinks = await createCQLinks(patientIds, results);
     const patient = await getPatientOrFail(patientIds);
     if (results.length > 0) await updateDemographics(patient, results);
-    const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
     const pdRequestId = getCQData(patient.data.externalData)?.pdRequestId;
+    const pdStartedAt = getCQData(patient.data.externalData)?.pdStartedAt;
     const pdEndeddAt = getCQData(patient.data.externalData)?.pdEndedAt;
     if (requestId === pdRequestId && !pdEndeddAt) {
       analytics({
@@ -86,8 +86,6 @@ export async function processOutboundPatientDiscoveryResps({
         error,
       },
     });
-    // Why are we not throwing this error?
-    throw error;
   }
 }
 

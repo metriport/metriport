@@ -41,11 +41,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    await updatePatientDiscoveryStatus({
-      patient: patientIds,
-      status: "failed",
-      endedAt: new Date(),
-    });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
@@ -55,7 +50,5 @@ export async function processPostRespOutboundPatientDiscoveryResps({
         error,
       },
     });
-    // Why are we not throwing this error?
-    throw error;
   }
 }
