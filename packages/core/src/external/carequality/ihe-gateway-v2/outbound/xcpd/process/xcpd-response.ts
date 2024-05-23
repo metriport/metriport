@@ -9,8 +9,29 @@ import {
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
 import { out } from "../../../../../../util/log";
+import { toArray } from "../../../utils";
 
 const { log } = out("Processing XCPD Requests");
+
+type Address = {
+  streetAddressLine: string | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  postalCode: string | undefined;
+  country: string | undefined;
+  county: string | undefined;
+};
+
+type Name = {
+  given: string | string[] | undefined;
+  family: string | undefined;
+  delimiter: string | undefined;
+};
+
+type Telecom = {
+  _use: string;
+  _value: string;
+};
 
 function handleHTTPErrorResponse({
   httpError,
@@ -55,35 +76,38 @@ function handlePatientMatchResponse({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
+  console.log(JSON.stringify(jsonObj, null, 2));
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
-  const addr = subject1?.patient?.patientPerson?.addr;
-  const addressLine1 = addr?.streetAddressLine?._text ?? addr?.streetAddressLine;
-  const city = addr?.city?._text ?? addr?.city;
-  const state = addr?.state?._text ?? addr?.state;
-  const postalCode = addr?.postalCode?._text ?? addr?.postalCode;
-  const country = addr?.country?._text ?? addr?.country;
+  const addr = toArray(subject1?.patient?.patientPerson?.addr);
+  const names = toArray(subject1?.patient?.patientPerson?.name);
+  const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
-  const addresses = [
-    {
-      ...(addressLine1 && { line: [addressLine1] }),
-      ...(city && { city }),
-      ...(state && { state }),
-      ...(postalCode && { postalCode: String(postalCode) }),
-      ...(country && { country: country }),
-    },
-  ];
+  const addresses = addr.map((address: Address) => ({
+    line: address?.streetAddressLine ? [address.streetAddressLine] : undefined,
+    city: address?.city,
+    state: address?.state,
+    postalCode: String(address?.postalCode),
+    country: address?.country,
+  }));
+
+  const patientNames = names.map((name: Name) => ({
+    given: toArray(name?.given).filter((g): g is string => Boolean(g)),
+    family: name?.family,
+  }));
+
+  const patientTelecoms = telecoms
+    .map((telecom: Telecom) => ({
+      value: telecom?._value,
+    }))
+    .filter(telecom => telecom.value !== undefined);
 
   const patientResource = {
-    name: [
-      {
-        given: [subject1?.patient?.patientPerson?.name?.given],
-        family: subject1?.patient?.patientPerson?.name?.family,
-      },
-    ],
+    name: patientNames,
     gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
+    ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
