@@ -93,6 +93,8 @@ Get started converting using our [Quickstart Guide](https://docs.metriport.com/c
 
 Check out the links below to get started with Metriport in minutes!
 
+### **[Slack Community](https://join.slack.com/t/metriport-oss/shared_invite/zt-2jezazysw-~AuXop_rFmWQXKmjYRr~cA) 💬**
+
 ### **[Quickstart Guide](https://docs.metriport.com/medical-api/getting-started/quickstart) 🚀**
 
 ### **[Developer Dashboard](https://dash.metriport.com/) 💻**
@@ -140,20 +142,17 @@ Our npm packages are available in [`/packages`](/packages):
 
 ---
 
-## **Prerequisites**
+## Contributing
 
-Before getting started with the deployment or any development, ensure you have done the following:
+Got ideas for how you can make Metriport better? We welcome community contributions!
 
-1. Install the prerequisite programs:
-   - [The latest LTS Node.js version](https://nodejs.org/en/download/).
-   - [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-   - (Optional) [VS Code](https://code.visualstudio.com/) - recommended IDE.
-   - (Optional) [DBeaver](https://dbeaver.io/) - recommended universal DB tool.
-2. Create an AWS account.
-3. Create an [AWS IAM admin user](https://docs.aws.amazon.com/IAM/latest/UserGuide/getting-started_create-admin-group.html).
-4. Setup AWS `Route 53` to [handle the DNS for your domain, and create a hosted zone](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/migrate-dns-domain-inactive.html).
-5. Follow modules 1 & 2 of [this guide](https://aws.amazon.com/getting-started/guides/setup-cdk/) for `Typescript` to bootstrap the `AWS CDK` on your local machine.
-6. 🥳 🎉 🥳 🎉 🥳 🎉
+#### Contribution guidelines
+
+By making a contribution to this project, you are deemed to have accepted the [Developer Certificate of Origin](https://developercertificate.org/) (DCO), agree to GitHub's [Community Guidelines](https://help.github.com/en/github/site-policy/github-community-guidelines), and agree to the [Acceptable Use Policies](https://help.github.com/en/github/site-policy/github-acceptable-use-policies).
+
+#### Requesting a feature, or reporting a bug
+
+[Click here to open a new issue](https://github.com/metriport/metriport/issues/new/choose) - follow the chosen template and you're good to go.
 
 ## **Local Development**
 
