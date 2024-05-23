@@ -3,7 +3,7 @@ import * as path from "path";
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 import { MetriportClient } from "../src";
-import { BasePatient, PersonalIdentifier } from "../src/api/resources/medical/resources/patient/types";
+import { BasePatient } from "../src/api/resources/medical/resources/patient/types";
 import { PatientCreate } from "../src/api/resources/medical/resources/patient/client/requests";
 import { UsState, Address } from "../src/api/resources/commons/types";
 
@@ -15,7 +15,7 @@ if (!apiUrl || !apiToken || !facilityId) {
   throw new Error("Required environment variables are not set");
 }
 
-const client = new MetriportClient({
+const metriport = new MetriportClient({
   environment: () => apiUrl,
   apiKey: () => apiToken,
 });
@@ -46,7 +46,7 @@ describe("Patient tests", () => {
         body: patientData
       };
 
-    const response = await client.medical.patient.create(createRequest);
+    const response = await metriport.medical.patient.create(createRequest);
     console.log(`Received patient with ID: ${response.id}`);
   });
 });

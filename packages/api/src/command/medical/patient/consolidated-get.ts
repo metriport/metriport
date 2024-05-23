@@ -19,6 +19,7 @@ import {
 import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/shared/index";
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { ResourceTypeForConsolidation } from "../../../domain/medical/consolidation-resources";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
@@ -26,7 +27,6 @@ import {
   getPatientFilter,
 } from "../../../external/fhir/patient/resource-filter";
 import { getReferencesFromFHIR } from "../../../external/fhir/references/get-references";
-import { EventTypes, analytics } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { capture } from "../../../shared/notifications";
 import { Util } from "../../../shared/util";

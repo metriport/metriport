@@ -13,7 +13,7 @@ if (!apiUrl || !apiToken || !patientId) {
   throw new Error("Required environment variables are not set");
 }
 
-const client = new MetriportClient({
+const metriport = new MetriportClient({
   environment: () => apiUrl,
   apiKey: () => apiToken,
 });
@@ -21,7 +21,7 @@ const client = new MetriportClient({
 describe("Consolidated Query tests", () => {
   test("start consolidated query", async () => {
     console.log("Calling get_consolidated_query_status...");
-    const queryStatus = await client.medical.fhir.getConsolidatedQueryStatus(patientId);
+    const queryStatus = await metriport.medical.fhir.getConsolidatedQueryStatus(patientId);
     console.log(`queryStatus: ${JSON.stringify(queryStatus, null, 2)}`);
 
     const requestData: GetPatientConsolidatedData = {
@@ -31,25 +31,25 @@ describe("Consolidated Query tests", () => {
     };
 
     console.log("Calling start_consolidated_query...");
-    const response = await client.medical.fhir.startConsolidatedQuery(
+    const response = await metriport.medical.fhir.startConsolidatedQuery(
       patientId,
       requestData
     );
     console.log(`response: ${JSON.stringify(response, null, 2)}`);
 
     console.log("Now, calling get_consolidated_query_status...");
-    const queryStatus2 = await client.medical.fhir.getConsolidatedQueryStatus(patientId);
+    const queryStatus2 = await metriport.medical.fhir.getConsolidatedQueryStatus(patientId);
     console.log(`queryStatus: ${JSON.stringify(queryStatus2, null, 2)}`);
 
     console.log("Sleeping...");
     await new Promise(resolve => setTimeout(resolve, 5000));
 
     console.log("Calling get_consolidated_query_status again...");
-    const queryStatus3 = await client.medical.fhir.getConsolidatedQueryStatus(patientId);
+    const queryStatus3 = await metriport.medical.fhir.getConsolidatedQueryStatus(patientId);
     console.log(`queryStatus: ${JSON.stringify(queryStatus3, null, 2)}`);
 
     console.log("Counting...");
-    const count = await client.medical.fhir.countPatientData(patientId);
+    const count = await metriport.medical.fhir.countPatientData(patientId);
     console.log(`count: ${JSON.stringify(count, null, 2)}`);
   }, 10000);
 });

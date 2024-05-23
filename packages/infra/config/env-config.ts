@@ -87,7 +87,7 @@ type EnvConfigBase = {
   medicalDocumentsUploadBucketName: string;
   fhirConverterBucketName?: string;
   analyticsSecretNames?: {
-    POST_HOG_API_KEY: string;
+    POST_HOG_API_KEY_SECRET_NAME: string;
   };
   locationService?: {
     stackName: string;

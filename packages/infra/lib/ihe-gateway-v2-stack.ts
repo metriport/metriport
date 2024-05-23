@@ -105,7 +105,7 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
         ...(sentryDsn ? { SENTRY_DSN: sentryDsn } : {}),
       },
       layers: [lambdaLayers.shared],
-      memory: 1024,
+      memory: 4096,
       timeout: Duration.minutes(5),
       vpc,
     });

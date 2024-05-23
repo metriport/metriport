@@ -238,11 +238,6 @@ export class Config {
   static getCWMemberOID(): string {
     return getEnvVarOrFail("CW_MEMBER_OID");
   }
-
-  static getPostHogApiKey(): string | undefined {
-    return getEnvVar("POST_HOG_API_KEY");
-  }
-
   static getMedicalDocumentsBucketName(): string {
     return getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
   }
@@ -262,6 +257,10 @@ export class Config {
 
   static getConvertDocLambdaName(): string | undefined {
     return getEnvVar("CONVERT_DOC_LAMBDA_NAME");
+  }
+
+  static getFhirToCdaConverterLambdaName(): string | undefined {
+    return getEnvVar("FHIR_TO_CDA_CONVERTER_LAMBDA_NAME");
   }
 
   static getDocumentDownloaderLambdaName(): string {

@@ -17,7 +17,9 @@ export type InboundDocumentQueryRespSuccessful = z.infer<
   typeof inboundDocumentQueryRespSuccessfulSchema
 >;
 
-const inboundDocumentQueryRespFaultSchema = baseErrorResponseSchema;
+const inboundDocumentQueryRespFaultSchema = baseErrorResponseSchema.extend({
+  extrinsicObjectXmls: z.never().or(z.literal(undefined)),
+});
 
 export type InboundDocumentQueryRespFault = z.infer<typeof inboundDocumentQueryRespFaultSchema>;
 

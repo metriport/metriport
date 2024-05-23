@@ -20,7 +20,6 @@ import { uniqBy } from "lodash";
 import multer from "multer";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { makeCarequalityManagementAPI } from "../../external/carequality/api";
-import { setEntriesAsGateway } from "../../external/carequality/command/cq-directory/cq-gateways";
 import { bulkInsertCQDirectoryEntries } from "../../external/carequality/command/cq-directory/create-cq-directory-entry";
 import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { parseCQDirectoryEntries } from "../../external/carequality/command/cq-directory/parse-cq-directory-entry";
@@ -45,8 +44,8 @@ import { processOutboundPatientDiscoveryResps } from "../../external/carequality
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
 import { cqOrgDetailsSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
-import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 import { requestLogger } from "../helpers/request-logger";
+import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
 
 dayjs.extend(duration);
 const router = Router();
@@ -92,19 +91,10 @@ router.post(
     const parsedOrgs = parseCQDirectoryEntries(orgs);
     console.log(`Parsed ${parsedOrgs.length} orgs`);
 
-    const gatewaysSet = new Set<string>();
-    for (const org of parsedOrgs) {
-      if (org.managingOrganizationId) {
-        gatewaysSet.add(org.managingOrganizationId);
-      }
-    }
-
     // TODO remove this with https://github.com/metriport/metriport-internal/issues/1638
     const nonDup = uniqBy(parsedOrgs, "id");
     console.log(`Adding ${nonDup.length} CQ directory entries...`);
     await bulkInsertCQDirectoryEntries(sequelize, nonDup, cqDirectoryEntry);
-
-    await setEntriesAsGateway(Array.from(gatewaysSet));
 
     return res.sendStatus(httpStatus.OK);
   })

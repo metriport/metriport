@@ -1,4 +1,4 @@
-import { PatientCreate, patientCreateSchema } from "@metriport/api-sdk";
+import { PatientCreate, patientCreateSchema, Demographics } from "@metriport/api-sdk";
 import { z } from "zod";
 
 export const patientUpdateSchema = patientCreateSchema;
@@ -19,5 +19,9 @@ export function schemaCreateToPatient(input: PatientCreate, cxId: string) {
 }
 
 export function schemaUpdateToPatient(input: PatientUpdate, cxId: string) {
+  return schemaCreateToPatient(input, cxId);
+}
+
+export function schemaDemographicsToPatient(input: Demographics, cxId: string) {
   return schemaCreateToPatient(input, cxId);
 }

@@ -1,0 +1,137 @@
+---
+title: "Convert C-CDA to FHIR R4"
+description: "Converts the provided C-CDA document to a FHIR R4 Bundle."
+api: "POST /convert/v1/ccda/to/fhir"
+---
+
+## Body
+
+<ParamField body type="xml" required>
+    A valid C-CDA (R2.1) XML document.
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3">
+        <!-- contents -->
+    </ClinicalDocument>
+    ```
+
+    <Tip>
+        You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes.
+    </Tip>
+</ParamField>
+
+
+
+
+## Query Params
+
+
+<ParamField query="patientId" type="string" required>
+  Your internal identifier for the patient that the provided C-CDA document corresponds to.
+  This will be used to populated the patient-related references in the returned FHIR Bundle.
+</ParamField>
+
+
+## Response
+
+
+Returns a [FHIR R4 Bundle](/medical-api/fhir/resources/bundle) of type `batch` with the 
+`entry` containing an array of FHIR R4 Resources being the outcome of the conversion.
+
+```json
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:adc44b9c-3083-396f-877f-463120f6b26a",
+            "resource": {
+                "resourceType": "Location",
+                "id": "adc44b9c-3083-396f-877f-463120f6b26a",
+                "name": "Good Health Urgent Care",
+                "address": {
+                    "line": [
+                        "1007 Health Drive"
+                    ],
+                    "city": "Portland",
+                    "state": "OR",
+                    "country": "US",
+                    "postalCode": "99123"
+                },
+                "telecom": [
+                    {
+                        "system": "phone",
+                        "value": "+1(555)555-1030",
+                        "use": "work"
+                    }
+                ],
+                "type": [
+                    {
+                        "coding": [
+                            {
+                                "code": "1160-1",
+                                "display": "Urgent Care Center",
+                                "system": "urn:oid:2.16.840.1.113883.6.259"
+                            }
+                        ]
+                    }
+                ]
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Location/adc44b9c-3083-396f-877f-463120f6b26a"
+            }
+        },
+         {
+            "fullUrl": "urn:uuid:7134ccce-d097-300c-a811-e4d2fc04a4c7",
+            "resource": {
+                "resourceType": "Immunization",
+                "id": "7134ccce-d097-300c-a811-e4d2fc04a4c7",
+                "identifier": [
+                    {
+                        "system": "urn:ietf:rfc:3986",
+                        "value": "urn:uuid:e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92"
+                    }
+                ],
+                "occurrenceDateTime": "1998-12-15",
+                "vaccineCode": {
+                    "coding": [
+                        {
+                            "code": "88",
+                            "display": "Influenza virus vaccine",
+                            "system": "http://hl7.org/fhir/sid/cvx"
+                        }
+                    ]
+                },
+                "lotNumber": "1",
+                "manufacturer": {
+                    "display": "Health LS - Immuno Inc."
+                },
+                "doseQuantity": {
+                    "value": "50",
+                    "unit": "ug",
+                    "system": "http://unitsofmeasure.org"
+                },
+                "status": "completed",
+                "route": {
+                    "coding": [
+                        {
+                            "code": "C28161",
+                            "display": "Intramuscular injection",
+                            "system": "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl"
+                        }
+                    ]
+                },
+                "patient": {
+                    "reference": "Patient/123"
+                }
+            },
+            "request": {
+                "method": "PUT",
+                "url": "Immunization/7134ccce-d097-300c-a811-e4d2fc04a4c7"
+            }
+        },
+    ]
+}
+```

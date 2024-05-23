@@ -16,6 +16,7 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { capture } from "@metriport/core/util/notifications";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import httpStatus from "http-status";
 import { chunk, partition } from "lodash";
 import { removeDocRefMapping } from "../../../command/medical/docref-mapping/remove-docref-mapping";
@@ -25,7 +26,6 @@ import {
   getUrl,
   S3Info,
 } from "../../../command/medical/document/document-query-storage-info";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { mapDocRefToMetriport } from "../../../shared/external";
 import { Util } from "../../../shared/util";
@@ -44,6 +44,7 @@ import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-re
 import { reportFHIRError } from "../../fhir/shared/error-mapping";
 import { getAllPages } from "../../fhir/shared/paginated";
 import { HieInitiator } from "../../hie/get-hie-initiator";
+import { isFacilityEnabledToQueryCW } from "../../commonwell/shared";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -124,7 +125,10 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-  if (!(await isCWEnabledForCx(cxId))) {
+
+  const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
+
+  if (!(await isCWEnabledForCx(cxId)) || !isCwQueryEnabled) {
     return interrupt(`CW disabled for cx ${cxId}`);
   }
 

@@ -18,27 +18,26 @@ export type FacilityData = {
   address: AddressStrict;
 };
 
-export interface FacilityCreate extends BaseDomainCreate {
+export interface FacilityCreate extends Omit<BaseDomainCreate, "id"> {
   cxId: string;
+  cqActive?: boolean;
+  cwActive?: boolean;
+  cqOboOid?: string | null;
+  cwOboOid?: string | null;
+  cwType?: FacilityType;
+  cqType?: FacilityType;
+  data: FacilityData;
+}
+
+export interface FacilityRegister extends FacilityCreate {
+  id?: string;
+  cwFacilityName?: string /**  Optional name, to override current facility name, for the facility in CommonWell */;
+}
+
+export interface Facility extends BaseDomain, Required<FacilityCreate> {
   oid: string;
   facilityNumber: number;
-  cqOboActive: boolean;
-  cwOboActive: boolean;
-  cqOboOid: string | null;
-  cwOboOid: string | null;
-  type: FacilityType;
-  data: FacilityData;
 }
-
-export interface FacilityUpdate {
-  data: FacilityData;
-  cqOboActive?: boolean;
-  cwOboActive?: boolean;
-  cqOboOid?: string;
-  cwOboOid?: string;
-}
-
-export interface Facility extends BaseDomain, FacilityCreate {}
 
 export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
   return `${Config.getSystemRootOID()}.${OIDNode.organizations}.${orgNumber}.${
@@ -46,14 +45,17 @@ export function makeFacilityOid(orgNumber: number, facilityNumber: number) {
   }.${facilityNumber}`;
 }
 
-export function isOboFacility(facilityType: FacilityType): boolean {
+export function isOboFacility(facilityType?: FacilityType): boolean {
   return facilityType === FacilityType.initiatorOnly;
 }
 
-export function isOboEnabled(facility: Facility, hie: MedicalDataSource): boolean {
-  const { type, cwOboActive, cqOboActive, cwOboOid, cqOboOid } = facility;
-  if (!isOboFacility(type)) return false;
-  if (hie === MedicalDataSource.COMMONWELL) return !!cwOboActive && !!cwOboOid;
-  if (hie === MedicalDataSource.CAREQUALITY) return !!cqOboActive && !!cqOboOid;
+export function isNonOboFacility(facilityType?: FacilityType): boolean {
+  return facilityType === FacilityType.initiatorAndResponder;
+}
+
+export function isFacilityActiveForHie(facility: Facility, hie: MedicalDataSource): boolean {
+  const { cwActive, cqActive } = facility;
+  if (hie === MedicalDataSource.COMMONWELL) return !!cwActive;
+  if (hie === MedicalDataSource.CAREQUALITY) return !!cqActive;
   throw new MetriportError("Programming error, invalid HIE type", undefined, { hie });
 }

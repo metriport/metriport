@@ -287,6 +287,7 @@ export class APIStack extends Stack {
       lambdaLayers,
       cdaToVisualizationLambda,
       documentDownloaderLambda,
+      fhirToCdaConverterLambda,
       outboundPatientDiscoveryLambda,
       outboundDocumentQueryLambda,
       outboundDocumentRetrievalLambda,
@@ -414,6 +415,7 @@ export class APIStack extends Stack {
       outboundDocumentRetrievalLambda,
       medicalDocumentsUploadBucket,
       fhirToMedicalRecordLambda,
+      fhirToCdaConverterLambda,
       searchIngestionQueue: ccdaSearchQueue,
       searchEndpoint: ccdaSearchDomain.domainEndpoint,
       searchAuth: { userName: ccdaSearchUserName, secret: ccdaSearchSecret },
@@ -663,6 +665,25 @@ export class APIStack extends Stack {
       oauthScopes: oauthScopes,
       envType: props.config.environmentType,
       bucket: medicalDocumentsBucket,
+    });
+
+    // CONVERT API
+    const convertResource = api.root.addResource("convert");
+    const convertBaseResource = convertResource.addResource("v1");
+    const ccdaConvertResource = convertBaseResource.addResource("ccda");
+    const ccdaConvertBaseResource = ccdaConvertResource.addResource("to");
+    const ccdaToFhirConvertResource = ccdaConvertBaseResource.addResource("fhir");
+    const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
+      functionName: "convertApiCcdaToFhir",
+      vpc: this.vpc,
+      code: lambda.DockerImageCode.fromImageAsset("../fhir-converter", {
+        file: "Dockerfile.lambda",
+      }),
+      timeout: Duration.minutes(1),
+      memorySize: 1024,
+    });
+    ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda), {
+      apiKeyRequired: true,
     });
 
     // WEBHOOKS

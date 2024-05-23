@@ -2,16 +2,21 @@ import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import { getTrustedKeyStore, SamlClientResponse, sendSignedXml } from "../../../saml/saml-client";
+import {
+  getTrustedKeyStore,
+  SamlClientResponse,
+  sendSignedXmlMtom,
+} from "../../../saml/saml-client";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("Sending DR Requests");
 const context = "ihe-gateway-v2-dr-saml-client";
 
-export type DRSamlClientResponse = SamlClientResponse & {
+export type DrSamlClientResponse = SamlClientResponse & {
   gateway: XCAGateway;
   outboundRequest: OutboundDocumentRetrievalReq;
+  contentType?: string | undefined;
 };
 
 export async function sendSignedDRRequests({
@@ -24,11 +29,11 @@ export async function sendSignedDRRequests({
   samlCertsAndKeys: SamlCertsAndKeys;
   patientId: string;
   cxId: string;
-}): Promise<DRSamlClientResponse[]> {
+}): Promise<DrSamlClientResponse[]> {
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const response = await sendSignedXml({
+      const { response, contentType } = await sendSignedXmlMtom({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -44,10 +49,17 @@ export async function sendSignedDRRequests({
         response,
         success: true,
         outboundRequest: request.outboundRequest,
+        contentType,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed DR SAML Request";
-      log(`${msg}, error: ${error}`);
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      );
+      if (error?.response?.data) {
+        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+      }
 
       const errorString: string = errorToString(error);
       const extra = {
