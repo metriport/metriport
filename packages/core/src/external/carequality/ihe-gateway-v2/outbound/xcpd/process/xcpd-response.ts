@@ -71,7 +71,6 @@ function handlePatientMatchResponse({
   outboundRequest: OutboundPatientDiscoveryReq;
   gateway: XCPDGateway;
 }): OutboundPatientDiscoveryResp {
-  console.log(JSON.stringify(jsonObj, null, 2));
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
