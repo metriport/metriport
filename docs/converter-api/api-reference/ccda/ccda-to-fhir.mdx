@@ -9,20 +9,21 @@ TBD
 ## Body
 
 <ParamField body type="string" required>
-  A valid C-CDA (R2.1) XML document.
+    A valid C-CDA (R2.1) XML document.
+
+    ```xml
+    <?xml version="1.0" encoding="UTF-8"?>
+    <ClinicalDocument xmlns="urn:hl7-org:v3">
+        <!-- contents -->
+    </ClinicalDocument>
+    ```
+
+    <Tip>
+        You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes
+        - there are a ton of good sample files out there in addition to this.
+    </Tip>
 </ParamField>
 
-  ```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<ClinicalDocument xmlns="urn:hl7-org:v3">
-    <!-- contents -->
-</ClinicalDocument>
-```
-
-  <Tip>
-    You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes
-    - there are a ton of good sample files out there in addition to this.
-</Tip>
 
 
 
