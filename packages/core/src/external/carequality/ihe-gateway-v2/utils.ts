@@ -13,5 +13,8 @@ export function timestampToSoapBody(createdTimestamp: string): string {
 }
 
 export function toArray<T>(input: T | T[]): T[] {
+  if (input == undefined) {
+    return [];
+  }
   return Array.isArray(input) ? input : [input];
 }

@@ -13,7 +13,7 @@ import { toArray } from "../../../utils";
 
 const { log } = out("Processing XCPD Requests");
 
-type Address = {
+type IheAddress = {
   streetAddressLine: string | string[] | undefined;
   city: string | undefined;
   state: string | undefined;
@@ -22,11 +22,43 @@ type Address = {
   county: string | undefined;
 };
 
-type Name = {
+type CarequalityAddress = {
+  line: string[] | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  postalCode: string | undefined;
+  country: string | undefined;
+};
+
+type IheName = {
   given: string | string[] | undefined;
   family: string | undefined;
   delimiter: string | undefined;
 };
+
+type CarequalityName = {
+  given: string[];
+  family: string | undefined;
+};
+
+function iheAddressToCarequalityAddress(iheAddress: IheAddress[]): CarequalityAddress[] {
+  const addresses = iheAddress.map((address: IheAddress) => ({
+    line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
+    city: address?.city,
+    state: address?.state,
+    postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
+    country: address?.country,
+  }));
+  return addresses;
+}
+
+function iheNameToCarequalityName(iheName: IheName[]): CarequalityName[] {
+  const patientNames = iheName.map((name: IheName) => ({
+    given: toArray(name?.given).filter((g): g is string => Boolean(g)),
+    family: name?.family,
+  }));
+  return patientNames;
+}
 
 function handleHTTPErrorResponse({
   httpError,
@@ -76,18 +108,8 @@ function handlePatientMatchResponse({
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
 
-  const addresses = addr.map((address: Address) => ({
-    line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
-    city: address?.city,
-    state: address?.state,
-    postalCode: String(address?.postalCode),
-    country: address?.country,
-  }));
-
-  const patientNames = names.map((name: Name) => ({
-    given: toArray(name?.given).filter((g): g is string => Boolean(g)),
-    family: name?.family,
-  }));
+  const addresses = iheAddressToCarequalityAddress(addr);
+  const patientNames = iheNameToCarequalityName(names);
 
   const patientResource = {
     name: patientNames,
