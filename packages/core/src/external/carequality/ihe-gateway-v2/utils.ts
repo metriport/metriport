@@ -6,7 +6,11 @@ export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "fe
   if (gender === undefined) {
     return undefined;
   }
-  return mapGenderAtBirthToFhir(gender) ?? undefined;
+  const mappedGender = mapGenderAtBirthToFhir(gender);
+  if (mappedGender === "other" || mappedGender === "unknown") {
+    return undefined;
+  }
+  return mappedGender;
 }
 
 export function timestampToSoapBody(createdTimestamp: string): string {
