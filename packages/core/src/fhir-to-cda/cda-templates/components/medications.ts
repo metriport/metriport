@@ -236,8 +236,8 @@ function createEntryFromStatement(
 
 function buildMedicationCode(code: CdaCodeCe | undefined): string {
   if (code?._code) {
-    if (code?._codeSystem) return `${code._code} - ${code._codeSystem}`;
-    if (code?._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
+    if (code._codeSystem) return `${code._code} - ${code._codeSystem}`;
+    if (code._codeSystemName) return `${code._code} - ${code._codeSystemName}`;
   }
   return NOT_SPECIFIED;
 }

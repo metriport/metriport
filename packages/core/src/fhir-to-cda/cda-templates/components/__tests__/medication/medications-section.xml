@@ -1,1 +1,97 @@
-<component><section><templateId root="2.16.840.1.113883.10.20.22.2.1.1"></templateId><code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Medication use Narrative"></code><title>MEDICATIONS</title><text><table ID="medications"><thead><tr><th>Medication</th><th>Code</th><th>Dosage</th><th>Frequency</th><th>Start Date</th><th>End Date</th><th>Reason</th></tr></thead><tbody><tr ID="medications1"><td>CARVEDILOL</td><td>315577 - 2.16.840.1.113883.6.88</td><td>6.25 mg (milligram)</td><td>1 pill/day</td><td>${params.pastDateHumanReadable}</td><td>${params.NOT_SPECIFIED}</td><td>heart, weakness</td></tr></tbody></table></text><entry><substanceAdministration classCode="SBADM" moodCode="INT"><templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09"></templateId><id root="placeholder-ORG-OID" extension="${params.medStmntId}"></id><statusCode code="active"></statusCode><effectiveTime xsi:type="IVL_TS"><low value="${params.pastDateCda}"></low></effectiveTime><consumable typeCode="CSM"><manufacturedProduct><templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09"></templateId><manufacturedMaterial><code code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG"><originalText><reference value="medications1"></reference></originalText><translation code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG"></translation><translation code="51407-040" codeSystem="2.16.840.1.113883.6.69" displayName="Carvedilol"></translation></code></manufacturedMaterial></manufacturedProduct></consumable></substanceAdministration></entry></section></component>
+<component>
+	<section>
+		<templateId root="2.16.840.1.113883.10.20.22.2.1.1">
+		</templateId>
+		<code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="History of Medication use Narrative">
+		</code>
+		<title>
+			MEDICATIONS
+		</title>
+		<text>
+			<table ID="medications">
+				<thead>
+					<tr>
+						<th>
+							Medication
+						</th>
+						<th>
+							Code
+						</th>
+						<th>
+							Dosage
+						</th>
+						<th>
+							Frequency
+						</th>
+						<th>
+							Start Date
+						</th>
+						<th>
+							End Date
+						</th>
+						<th>
+							Reason
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ID="medications1">
+						<td>
+							CARVEDILOL
+						</td>
+						<td>
+							315577 - 2.16.840.1.113883.6.88
+						</td>
+						<td>
+							6.25 mg (milligram)
+						</td>
+						<td>
+							1 pill/day
+						</td>
+						<td>
+							${params.pastDateHumanReadable}
+						</td>
+						<td>
+							${params.NOT_SPECIFIED}
+						</td>
+						<td>
+							heart, weakness
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</text>
+		<entry>
+			<substanceAdministration classCode="SBADM" moodCode="INT">
+				<templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${params.medStmntId}">
+				</id>
+				<statusCode code="active">
+				</statusCode>
+				<effectiveTime xsi:type="IVL_TS">
+					<low value="${params.pastDateCda}">
+					</low>
+				</effectiveTime>
+				<consumable typeCode="CSM">
+					<manufacturedProduct>
+						<templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09">
+						</templateId>
+						<manufacturedMaterial>
+							<code code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG">
+								<originalText>
+									<reference value="medications1">
+									</reference>
+								</originalText>
+								<translation code="315577" codeSystem="2.16.840.1.113883.6.88" displayName="carvedilol 6.25 MG">
+								</translation>
+								<translation code="51407-040" codeSystem="2.16.840.1.113883.6.69" displayName="Carvedilol">
+								</translation>
+							</code>
+						</manufacturedMaterial>
+					</manufacturedProduct>
+				</consumable>
+			</substanceAdministration>
+		</entry>
+	</section>
+</component>

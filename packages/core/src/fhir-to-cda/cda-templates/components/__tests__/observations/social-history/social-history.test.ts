@@ -1,11 +1,10 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Observation } from "@medplum/fhirtypes";
-import fs from "fs";
 import path from "path";
 import { removeEmptyFields } from "../../../../clinical-document/clinical-document";
 import { xmlBuilder } from "../../../../clinical-document/shared";
 import { buildSocialHistory } from "../../../social-history";
-import { createEmptyBundle } from "../../shared";
+import { createEmptyBundle, getXmlContentFromFile } from "../../shared";
 import { makeObservation } from "../make-observation";
 import { observationMentalStatus } from "./social-history-examples";
 
@@ -50,9 +49,7 @@ describe("buildSocialHistory", () => {
 
   it("correctly maps a single social-history survey Observation", () => {
     bundle.entry?.push({ resource: observation });
-
     const filePath = path.join(__dirname, "social-history-section.xml");
-    const xmlTemplate = fs.readFileSync(filePath, "utf8");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -62,7 +59,7 @@ describe("buildSocialHistory", () => {
     // since `eval()` isn't explicitly using them
     console.log("params", params);
 
-    const xmlContent = eval("`" + xmlTemplate + "`");
+    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
     const res = buildSocialHistory(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

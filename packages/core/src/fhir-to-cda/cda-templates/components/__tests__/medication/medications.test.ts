@@ -1,13 +1,12 @@
-import { Bundle, Medication, MedicationStatement } from "@medplum/fhirtypes";
-import fs from "fs";
 import { faker } from "@faker-js/faker";
+import { Bundle, Medication, MedicationStatement } from "@medplum/fhirtypes";
+import path from "path";
 import { removeEmptyFields } from "../../../clinical-document/clinical-document";
 import { xmlBuilder } from "../../../clinical-document/shared";
-import { buildMedications } from "../../medications";
-import path from "path";
-import { makeMedicationStatementPair, makeMedicationStatementPair2 } from "./medication";
-import { createEmptyBundle, getPastDateInDifferentFormats } from "../shared";
 import { NOT_SPECIFIED } from "../../../constants";
+import { buildMedications } from "../../medications";
+import { createEmptyBundle, getPastDateInDifferentFormats, getXmlContentFromFile } from "../shared";
+import { makeMedicationStatementPair, makeMedicationStatementPair2 } from "./medication";
 
 let medStmntId: string;
 let medId: string;
@@ -56,9 +55,7 @@ describe("buildMedications", () => {
   it("correctly maps a single MedicationStatement with a related Medication", () => {
     bundle.entry?.push({ resource: medStatement });
     bundle.entry?.push({ resource: med });
-
     const filePath = path.join(__dirname, "medications-section.xml");
-    const xmlTemplate = fs.readFileSync(filePath, "utf8");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -71,7 +68,7 @@ describe("buildMedications", () => {
     // since `eval()` isn't explicitly using them
     console.log("params", params);
 
-    const xmlContent = eval("`" + xmlTemplate + "`");
+    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
     const res = buildMedications(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -104,9 +101,7 @@ describe("buildMedications", () => {
 
     bundle.entry?.push({ resource: medicationStatement2 });
     bundle.entry?.push({ resource: medication2 });
-
     const filePath = path.join(__dirname, "medications-section-2.xml");
-    const xmlTemplate = fs.readFileSync(filePath, "utf8");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -124,7 +119,7 @@ describe("buildMedications", () => {
     // since `eval()` isn't explicitly using them
     console.log("params", params);
 
-    const xmlContent = eval("`" + xmlTemplate + "`");
+    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
     const res = buildMedications(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
 import { Bundle } from "@medplum/fhirtypes";
 import dayjs from "dayjs";
+import fs from "fs";
 import { formatDateToCdaTimestamp, formatDateToHumanReadableFormat } from "../../commons";
 
 export function makeBaseDomain() {
@@ -45,4 +46,14 @@ export function getPastDate(subtractYears?: number): string {
   const dateMinusTwoYears = dayjs().subtract(subtractYears ?? 1, "year");
   const dateFhir = dateMinusTwoYears.toISOString();
   return dateFhir;
+}
+
+export function getXmlContentFromFile(filePath: string): string {
+  const xmlTemplate = fs.readFileSync(filePath, "utf8");
+  const lines = xmlTemplate.split("\n");
+  let xmlContent = "";
+  lines.forEach(line => {
+    xmlContent += line.trim();
+  });
+  return xmlContent;
 }

@@ -1,13 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Condition } from "@medplum/fhirtypes";
-import fs from "fs";
 import path from "path";
 import { removeEmptyFields } from "../../../clinical-document/clinical-document";
 import { xmlBuilder } from "../../../clinical-document/shared";
 import { buildProblems } from "../../problems";
-import { createEmptyBundle } from "../shared";
-import { makeCondition } from "./make-condition";
+import { createEmptyBundle, getXmlContentFromFile } from "../shared";
 import { conditionHyperlipidemia, conditionNicotine } from "./condition-examples";
+import { makeCondition } from "./make-condition";
 
 let conditionId: string;
 let bundle: Bundle;
@@ -38,7 +37,6 @@ describe("buildProblems", () => {
     bundle.entry?.push({ resource: { ...condition, note: [] } });
 
     const filePath = path.join(__dirname, "problems-section.xml");
-    const xmlTemplate = fs.readFileSync(filePath, "utf8");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -48,7 +46,7 @@ describe("buildProblems", () => {
     // since `eval()` isn't explicitly using them
     console.log("params", params);
 
-    const xmlContent = eval("`" + xmlTemplate + "`");
+    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
     const res = buildProblems(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
@@ -66,9 +64,7 @@ describe("buildProblems", () => {
     });
 
     bundle.entry?.push({ resource: condition2 });
-
     const filePath = path.join(__dirname, "problems-section-2.xml");
-    const xmlTemplate = fs.readFileSync(filePath, "utf8");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -79,7 +75,7 @@ describe("buildProblems", () => {
     // since `eval()` isn't explicitly using them
     console.log("params", params);
 
-    const xmlContent = eval("`" + xmlTemplate + "`");
+    const xmlContent = eval("`" + getXmlContentFromFile(filePath) + "`");
     const res = buildProblems(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);

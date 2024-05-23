@@ -1,4 +1,3 @@
-export function wrapInArray(element: unknown): unknown[] {
-  if (Array.isArray(element)) return element;
-  return [element];
+export function toArray<T>(input: T | T[]): T[] {
+  return Array.isArray(input) ? input : [input];
 }

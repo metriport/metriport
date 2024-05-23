@@ -1,1 +1,167 @@
-<component><section><templateId root="2.16.840.1.113883.10.20.22.2.56"></templateId><code code="10190-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Mental status Narrative"></code><title>MENTAL STATUS</title><text><table ID="mentalstatus"><thead><tr><th>Question / Observation</th><th>Answer / Status</th><th>Score</th><th>Date Recorded</th></tr></thead><tbody><tr ID="mentalstatus1-pair1"><td>How often in the past two weeks have you had little interest or pleasure in doing things?</td><td>Not at all</td><td>0</td><td>07/24/2012</td></tr><tr ID="mentalstatus1-pair2"><td>How often in the past two weeks have you been feeling down, depressed, or hopeless?</td><td>Not at all</td><td>0</td><td>07/24/2012</td></tr><tr ID="mentalstatus1-pair3"><td>How often in the past two weeks have you had trouble falling or staying asleep, or sleeping too much?</td><td>Not at all</td><td>0</td><td>07/24/2012</td></tr><tr ID="mentalstatus1-pair4"><td>PHQ-9 quick depression assessment panel [Reported.PHQ]</td><td>Low risk</td><td>N/A</td><td>07/24/2012</td></tr></tbody></table></text><entry><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="44249-1" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PHQ-9 quick depression assessment panel [Reported.PHQ]"></code><text><reference value="mentalstatus1"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><entryRelationship typeCode="COMP"><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="44250-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you had little interest or pleasure in doing things?"></code><text><reference value="mentalstatus1-pair1"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="score" codeSystemName="0" displayName="0"></interpretationCode></observation></entryRelationship><entryRelationship typeCode="COMP"><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="44255-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you been feeling down, depressed, or hopeless?"></code><text><reference value="mentalstatus1-pair2"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="score" codeSystemName="0" displayName="0"></interpretationCode></observation></entryRelationship><entryRelationship typeCode="COMP"><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="44259-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you had trouble falling or staying asleep, or sleeping too much?"></code><text><reference value="mentalstatus1-pair3"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="score" codeSystemName="0" displayName="0"></interpretationCode></observation></entryRelationship></observation></entry></section></component>
+<component>
+	<section>
+		<templateId root="2.16.840.1.113883.10.20.22.2.56">
+		</templateId>
+		<code code="10190-7" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Mental status Narrative">
+		</code>
+		<title>
+			MENTAL STATUS
+		</title>
+		<text>
+			<table ID="mentalstatus">
+				<thead>
+					<tr>
+						<th>
+							Question / Observation
+						</th>
+						<th>
+							Answer / Status
+						</th>
+						<th>
+							Score
+						</th>
+						<th>
+							Date Recorded
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ID="mentalstatus1-pair1">
+						<td>
+							How often in the past two weeks have you had little interest or pleasure in doing things?
+						</td>
+						<td>
+							Not at all
+						</td>
+						<td>
+							0
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+					<tr ID="mentalstatus1-pair2">
+						<td>
+							How often in the past two weeks have you been feeling down, depressed, or hopeless?
+						</td>
+						<td>
+							Not at all
+						</td>
+						<td>
+							0
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+					<tr ID="mentalstatus1-pair3">
+						<td>
+							How often in the past two weeks have you had trouble falling or staying asleep, or sleeping too much?
+						</td>
+						<td>
+							Not at all
+						</td>
+						<td>
+							0
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+					<tr ID="mentalstatus1-pair4">
+						<td>
+							PHQ-9 quick depression assessment panel [Reported.PHQ]
+						</td>
+						<td>
+							Low risk
+						</td>
+						<td>
+							N/A
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</text>
+		<entry>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${params.observationId}">
+				</id>
+				<code code="44249-1" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="PHQ-9 quick depression assessment panel [Reported.PHQ]">
+				</code>
+				<text>
+					<reference value="mentalstatus1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20120723171600">
+				</effectiveTime>
+				<entryRelationship typeCode="COMP">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01">
+						</templateId>
+						<id root="placeholder-ORG-OID" extension="${params.observationId}">
+						</id>
+						<code code="44250-9" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you had little interest or pleasure in doing things?">
+						</code>
+						<text>
+							<reference value="mentalstatus1-pair1">
+							</reference>
+						</text>
+						<statusCode code="completed">
+						</statusCode>
+						<effectiveTime value="20120723171600">
+						</effectiveTime>
+						<interpretationCode code="score" codeSystemName="0" displayName="0">
+						</interpretationCode>
+					</observation>
+				</entryRelationship>
+				<entryRelationship typeCode="COMP">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01">
+						</templateId>
+						<id root="placeholder-ORG-OID" extension="${params.observationId}">
+						</id>
+						<code code="44255-8" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you been feeling down, depressed, or hopeless?">
+						</code>
+						<text>
+							<reference value="mentalstatus1-pair2">
+							</reference>
+						</text>
+						<statusCode code="completed">
+						</statusCode>
+						<effectiveTime value="20120723171600">
+						</effectiveTime>
+						<interpretationCode code="score" codeSystemName="0" displayName="0">
+						</interpretationCode>
+					</observation>
+				</entryRelationship>
+				<entryRelationship typeCode="COMP">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.74" extension="2015-08-01">
+						</templateId>
+						<id root="placeholder-ORG-OID" extension="${params.observationId}">
+						</id>
+						<code code="44259-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="How often in the past two weeks have you had trouble falling or staying asleep, or sleeping too much?">
+						</code>
+						<text>
+							<reference value="mentalstatus1-pair3">
+							</reference>
+						</text>
+						<statusCode code="completed">
+						</statusCode>
+						<effectiveTime value="20120723171600">
+						</effectiveTime>
+						<interpretationCode code="score" codeSystemName="0" displayName="0">
+						</interpretationCode>
+					</observation>
+				</entryRelationship>
+			</observation>
+		</entry>
+	</section>
+</component>

@@ -1,1 +1,135 @@
-<component><section><templateId root="2.16.840.1.113883.10.20.22.2.17"></templateId><code code="29762-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Social history Narrative"></code><title>SOCIAL HISTORY</title><text><table ID="socialhistory1"><thead><tr><th>Question / Observation</th><th>Answer / Status</th><th>Score</th><th>Date Recorded</th></tr></thead><tbody><tr ID="socialhistory1-pair1"><td>What is your living situation today?</td><td>I have a steady place to live</td><td>0</td><td>07/24/2012</td></tr><tr ID="socialhistory1-pair2"><td>Think about the place you live. Do you have problems with any of the following?</td><td>None of the above</td><td>0</td><td>07/24/2012</td></tr><tr ID="socialhistory1-pair3"><td>SDOH</td><td>Low risk</td><td>N/A</td><td>07/24/2012</td></tr></tbody></table></text><entry><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="LG51306-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SDOH"></code><text><reference value="socialhistory1"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="L" codeSystem="2.16.840.1.113883.5.83" codeSystemName="Low risk" displayName="Low risk"></interpretationCode><entryRelationship typeCode="COMP"><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="71802-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="What is your living situation today?"></code><text><reference value="socialhistory1-pair1"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="score" codeSystemName="0" displayName="0"></interpretationCode></observation></entryRelationship><entryRelationship typeCode="COMP"><observation classCode="OBS" moodCode="EVN"><templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01"></templateId><id root="placeholder-ORG-OID" extension="${params.observationId}"></id><code code="96778-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Think about the place you live. Do you have problems with any of the following?"></code><text><reference value="socialhistory1-pair2"></reference></text><statusCode code="completed"></statusCode><effectiveTime value="20120723171600"></effectiveTime><interpretationCode code="score" codeSystemName="0" displayName="0"></interpretationCode></observation></entryRelationship></observation></entry></section></component>
+<component>
+	<section>
+		<templateId root="2.16.840.1.113883.10.20.22.2.17">
+		</templateId>
+		<code code="29762-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Social history Narrative">
+		</code>
+		<title>
+			SOCIAL HISTORY
+		</title>
+		<text>
+			<table ID="socialhistory1">
+				<thead>
+					<tr>
+						<th>
+							Question / Observation
+						</th>
+						<th>
+							Answer / Status
+						</th>
+						<th>
+							Score
+						</th>
+						<th>
+							Date Recorded
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr ID="socialhistory1-pair1">
+						<td>
+							What is your living situation today?
+						</td>
+						<td>
+							I have a steady place to live
+						</td>
+						<td>
+							0
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+					<tr ID="socialhistory1-pair2">
+						<td>
+							Think about the place you live. Do you have problems with any of the following?
+						</td>
+						<td>
+							None of the above
+						</td>
+						<td>
+							0
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+					<tr ID="socialhistory1-pair3">
+						<td>
+							SDOH
+						</td>
+						<td>
+							Low risk
+						</td>
+						<td>
+							N/A
+						</td>
+						<td>
+							07/24/2012
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</text>
+		<entry>
+			<observation classCode="OBS" moodCode="EVN">
+				<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
+				</templateId>
+				<id root="placeholder-ORG-OID" extension="${params.observationId}">
+				</id>
+				<code code="LG51306-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="SDOH">
+				</code>
+				<text>
+					<reference value="socialhistory1">
+					</reference>
+				</text>
+				<statusCode code="completed">
+				</statusCode>
+				<effectiveTime value="20120723171600">
+				</effectiveTime>
+				<interpretationCode code="L" codeSystem="2.16.840.1.113883.5.83" codeSystemName="Low risk" displayName="Low risk">
+				</interpretationCode>
+				<entryRelationship typeCode="COMP">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
+						</templateId>
+						<id root="placeholder-ORG-OID" extension="${params.observationId}">
+						</id>
+						<code code="71802-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="What is your living situation today?">
+						</code>
+						<text>
+							<reference value="socialhistory1-pair1">
+							</reference>
+						</text>
+						<statusCode code="completed">
+						</statusCode>
+						<effectiveTime value="20120723171600">
+						</effectiveTime>
+						<interpretationCode code="score" codeSystemName="0" displayName="0">
+						</interpretationCode>
+					</observation>
+				</entryRelationship>
+				<entryRelationship typeCode="COMP">
+					<observation classCode="OBS" moodCode="EVN">
+						<templateId root="2.16.840.1.113883.10.20.22.4.38" extension="2015-08-01">
+						</templateId>
+						<id root="placeholder-ORG-OID" extension="${params.observationId}">
+						</id>
+						<code code="96778-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Think about the place you live. Do you have problems with any of the following?">
+						</code>
+						<text>
+							<reference value="socialhistory1-pair2">
+							</reference>
+						</text>
+						<statusCode code="completed">
+						</statusCode>
+						<effectiveTime value="20120723171600">
+						</effectiveTime>
+						<interpretationCode code="score" codeSystemName="0" displayName="0">
+						</interpretationCode>
+					</observation>
+				</entryRelationship>
+			</observation>
+		</entry>
+	</section>
+</component>
