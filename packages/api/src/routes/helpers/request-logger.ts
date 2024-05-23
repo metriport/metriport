@@ -37,11 +37,15 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
         elapsedTimeInMs
       );
 
-      const isSuccessful = res.statusCode >= 200 && res.statusCode < 300;
-
-      if (isSuccessful) {
-        analyzeRoute({ req, method, url: urlWithParams, params, query, duration: elapsedTimeInMs });
-      }
+      analyzeRoute({
+        req,
+        method,
+        url: urlWithParams,
+        params,
+        query,
+        duration: elapsedTimeInMs,
+        status: res.statusCode,
+      });
     });
     next();
   });

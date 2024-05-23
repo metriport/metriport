@@ -25,6 +25,7 @@ export const analyzeRoute = ({
   params,
   query,
   duration,
+  status,
 }: {
   req: Request;
   method: string;
@@ -32,6 +33,7 @@ export const analyzeRoute = ({
   params: Record<string, string> | undefined;
   query: QueryString.ParsedQs | undefined;
   duration: number;
+  status: number;
 }): void => {
   const reqCxId = getCxId(req);
   const headerCxId = getCxIdFromHeaders(req);
@@ -47,6 +49,7 @@ export const analyzeRoute = ({
         method,
         url,
         duration,
+        status,
         ...params,
         ...query,
       },
