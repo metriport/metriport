@@ -26,6 +26,14 @@ export const inboundPatientResourceSchema = z.object({
       country: z.string().optional(),
     })
   ),
+  telecom: z
+    .array(
+      z.object({
+        system: z.string().optional(),
+        value: z.string().optional(),
+      })
+    )
+    .optional(),
 });
 
 export type InboundPatientResource = z.infer<typeof inboundPatientResourceSchema>;

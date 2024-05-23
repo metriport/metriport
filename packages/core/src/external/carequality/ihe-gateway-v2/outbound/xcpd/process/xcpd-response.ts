@@ -41,6 +41,16 @@ type CarequalityName = {
   family: string | undefined;
 };
 
+type IheTelecom = {
+  _use: string;
+  _value: string;
+};
+
+type CarequalityTelecom = {
+  system: string | undefined;
+  value: string | undefined;
+};
+
 function iheAddressToCarequalityAddress(iheAddress: IheAddress[]): CarequalityAddress[] {
   const addresses = iheAddress.map((address: IheAddress) => ({
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
@@ -58,6 +68,14 @@ function iheNameToCarequalityName(iheName: IheName[]): CarequalityName[] {
     family: name?.family,
   }));
   return patientNames;
+}
+
+function iheTelecomToCarequalityTelecom(iheTelecom: IheTelecom[]): CarequalityTelecom[] {
+  const patientTelecoms = iheTelecom.map((telecom: IheTelecom) => ({
+    system: telecom?._use,
+    value: telecom?._value,
+  }));
+  return patientTelecoms;
 }
 
 function handleHTTPErrorResponse({
@@ -107,15 +125,18 @@ function handlePatientMatchResponse({
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
+  const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
   const addresses = iheAddressToCarequalityAddress(addr);
   const patientNames = iheNameToCarequalityName(names);
+  const patientTelecoms = iheTelecomToCarequalityTelecom(telecoms);
 
   const patientResource = {
     name: patientNames,
     gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
+    ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
