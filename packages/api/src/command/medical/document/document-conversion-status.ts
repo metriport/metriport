@@ -97,6 +97,7 @@ export async function calculateDocumentConversionStatus({
     });
 
     const conversionStatus = expectedPatient.data.documentQueryProgress?.convert?.status;
+
     if (conversionStatus === "completed") {
       processPatientDocumentRequest(
         cxId,
