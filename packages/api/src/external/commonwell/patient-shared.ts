@@ -10,10 +10,10 @@ import {
   StrongId,
 } from "@metriport/commonwell-sdk";
 import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "../../shared/notifications";
-import { Util } from "../../shared/util";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
 
@@ -48,7 +48,7 @@ export async function findOrCreatePerson({
   commonwellPatient: CommonwellPatient;
   commonwellPatientId: string;
 }): Promise<FindOrCreatePersonResponse> {
-  const { log, debug } = Util.out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
+  const { log, debug } = out(`CW findOrCreatePerson - CW patientId ${commonwellPatientId}`);
   const context = `cw.findOrCreatePerson.strongIds`;
   const person = makePersonForPatient(commonwellPatient);
   const strongIds: StrongId[] = person.details?.identifier ?? [];
@@ -144,9 +144,7 @@ function alertAndReturnEarliestPerson(
   cwReference?: string,
   context?: string
 ): FindOrCreatePersonResponse {
-  const { log } = Util.out(
-    `CW alertAndReturnMostRecentPerson - CW patientId ${commonwellPatientId}`
-  );
+  const { log } = out(`CW alertAndReturnMostRecentPerson - CW patientId ${commonwellPatientId}`);
   const personIds = persons.map(getPersonId).flatMap(filterTruthy);
   const subject = "Found more than one person for patient demographics";
   const message = idsToAlertMessage(commonwellPatientId, personIds);
@@ -195,7 +193,7 @@ export async function searchPersonIds({
   queryMeta: RequestMetadata;
   strongIds: StrongId[];
 }): Promise<string[]> {
-  const { log } = Util.out(`CW searchPersonIds`);
+  const { log } = out(`CW searchPersonIds`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
@@ -222,7 +220,7 @@ export async function searchPersons({
   queryMeta: RequestMetadata;
   strongIds: StrongId[];
 }): Promise<CommonwellPerson[]> {
-  const { log } = Util.out(`CW searchPersons`);
+  const { log } = out(`CW searchPersons`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
