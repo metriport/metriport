@@ -238,16 +238,9 @@ export function formatDateToCdaTimestamp(dateString: string | undefined): string
     return undefined;
   }
 
-  // Formats dates of type 2000-01-01T12:15:00.000Z
-  if (dateString.includes("T")) {
-    if (dateString.endsWith("Z")) {
-      return dayjs(dateString).utc().format("YYYYMMDDHHmmss");
-    }
-    return dayjs(dateString).format("YYYYMMDDHHmmss");
-  }
-
-  // Formats dates of type 2000-01-01
-  return dayjs(dateString).format("YYYYMMDD");
+  const date = dayjs(dateString);
+  if (dateString.includes("T")) return date.utc().format("YYYYMMDDHHmmss");
+  return date.utc().format("YYYYMMDD");
 }
 
 export function formatDateToHumanReadableFormat(
@@ -256,7 +249,6 @@ export function formatDateToHumanReadableFormat(
   if (!dateString) return undefined;
 
   const date = dayjs(dateString);
-
   if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
   return date.utc().format("MM/DD/YYYY");
 }
