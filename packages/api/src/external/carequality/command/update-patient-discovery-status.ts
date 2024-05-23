@@ -11,8 +11,8 @@ import { LinkStatus } from "../../patient-link";
  * @param status The status of integrating the patient across CareQuality gateways.
  * @param requestId The requestId of PD process. Set once per request ID.
  * @param facilityId The facilityId of PD process. Set once per request ID.
- * @param startedAt The start of PD process. Set once per request ID.
- * @param endedAt The end of PD process. Set once per request ID.
+ * @param startedAt The start of PD process. Set once per request ID. If set, clears existing endedAt.
+ * @param endedAt The end of PD process. Set once per request ID. Overrides clearing if set.
  * @returns Updated Patient.
  */
 export async function updatePatientDiscoveryStatus({
@@ -51,7 +51,7 @@ export async function updatePatientDiscoveryStatus({
         discoveryStatus: status,
         ...(requestId && { pdRequestId: requestId }),
         ...(facilityId && { pdFacilityId: facilityId }),
-        ...(startedAt && { pdStartedAt: startedAt }),
+        ...(startedAt && { pdStartedAt: startedAt, endedAt: undefined }),
         ...(endedAt && { pdEndedAt: endedAt }),
       },
     };
