@@ -44,6 +44,9 @@ describe("buildProblems", () => {
     const params = {
       conditionId,
     };
+    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
+    // since `eval()` isn't explicitly using them
+    console.log("params", params);
 
     const xmlContent = eval("`" + xmlTemplate + "`");
     const res = buildProblems(bundle);
@@ -72,6 +75,9 @@ describe("buildProblems", () => {
       conditionId,
       conditionId2,
     };
+    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
+    // since `eval()` isn't explicitly using them
+    console.log("params", params);
 
     const xmlContent = eval("`" + xmlTemplate + "`");
     const res = buildProblems(bundle);

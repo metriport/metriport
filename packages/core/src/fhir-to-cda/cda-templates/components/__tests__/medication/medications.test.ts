@@ -67,6 +67,9 @@ describe("buildMedications", () => {
       pastDateCda,
       pastDateHumanReadable,
     };
+    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
+    // since `eval()` isn't explicitly using them
+    console.log("params", params);
 
     const xmlContent = eval("`" + xmlTemplate + "`");
     const res = buildMedications(bundle);
@@ -117,6 +120,9 @@ describe("buildMedications", () => {
       endDateXml,
       endDateHumanReadable,
     };
+    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
+    // since `eval()` isn't explicitly using them
+    console.log("params", params);
 
     const xmlContent = eval("`" + xmlTemplate + "`");
     const res = buildMedications(bundle);

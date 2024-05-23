@@ -58,6 +58,9 @@ describe("buildSocialHistory", () => {
     const params = {
       observationId,
     };
+    // TODO: Remove the console.log after we fix the tsconfig to ignore "unused" vars,
+    // since `eval()` isn't explicitly using them
+    console.log("params", params);
 
     const xmlContent = eval("`" + xmlTemplate + "`");
     const res = buildSocialHistory(bundle);
@@ -65,32 +68,4 @@ describe("buildSocialHistory", () => {
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
     expect(xmlRes).toEqual(xmlContent);
   });
-
-  // it("correctly maps two observations with notes", () => {
-  //   bundle.entry?.push({ resource: observation });
-
-  //   const conditionId2 = faker.string.uuid();
-  //   const condition2 = makeObservation({
-  //     id: conditionId2,
-  //     /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  //     code: observationMentalStatus.code!,
-  //   });
-
-  //   bundle.entry?.push({ resource: condition2 });
-
-  //   const filePath = path.join(__dirname, "problems-section-2.xml");
-  //   const xmlTemplate = fs.readFileSync(filePath, "utf8");
-
-  //   /* eslint-disable @typescript-eslint/no-unused-vars */
-  //   const params = {
-  //     conditionId,
-  //     conditionId2,
-  //   };
-
-  //   const xmlContent = eval("`" + xmlTemplate + "`");
-  //   const res = buildProblems(bundle);
-  //   const cleanedJsonObj = removeEmptyFields(res);
-  //   const xmlRes = xmlBuilder.build(cleanedJsonObj);
-  //   expect(xmlRes).toEqual(xmlContent);
-  // });
 });
