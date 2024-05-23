@@ -18,7 +18,7 @@ const genderMapping: { [k in GenderAtBirth]: "female" | "male" } = {
   M: "male",
 };
 
-export function mapGenderAtBirthToFhir(k: GenderAtBirth): "female" | "male" {
+export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>["gender"] {
   return genderMapping[k];
 }
 
