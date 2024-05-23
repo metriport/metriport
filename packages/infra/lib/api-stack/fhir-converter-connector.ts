@@ -37,14 +37,12 @@ function settings() {
     lambdaTimeout,
     // How long will it take before Axios returns a timeout error - should be less than the lambda timeout
     axiosTimeout: lambdaTimeout.minus(Duration.seconds(5)), // give the lambda some time to deal with the timeout
-    // Number of times we want to retry a message, this includes throttles!
-    maxReceiveCount: 5,
     // Number of times we want to retry a message that timed out when trying to be processed
-    maxTimeoutRetries: 15,
+    maxTimeoutRetries: 5,
+    delayWhenRetrying: Duration.seconds(10),
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-    delayWhenRetrying: Duration.seconds(10),
   };
 }
 
@@ -60,15 +58,12 @@ export function createQueueAndBucket({
   alarmSnsAction?: SnsAction;
 }): FHIRConnector {
   const config = getConfig();
-  const { connectorName, visibilityTimeout, maxReceiveCount } = settings();
+  const { connectorName, visibilityTimeout } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
-    // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
-    // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
-    fifo: false,
+    fifo: true,
     visibilityTimeout,
-    maxReceiveCount,
     createRetryLambda: true,
     lambdaLayers: [lambdaLayers.shared],
     envType,

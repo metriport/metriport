@@ -1,7 +1,7 @@
 import { SQSMessageAttributes, SQSRecord } from "aws-lambda";
 import * as AWS from "aws-sdk";
 import { SQS } from "aws-sdk";
-import { MessageBodyAttributeMap } from "aws-sdk/clients/sqs";
+import { MessageBodyAttributeMap, SendMessageRequest } from "aws-sdk/clients/sqs";
 import { capture } from "./capture";
 
 export class SQSUtils {
@@ -19,12 +19,19 @@ export class SQSUtils {
     return this._sqs;
   }
 
+  getRetryCount(message: SQSRecord): number {
+    return parseInt(message.messageAttributes?.retryCount?.stringValue ?? "0");
+  }
+
   async sendToDLQ(message: SQSRecord) {
     if (!this.dlqURL) throw new Error(`Missing dlqURL`);
     await this.dequeue(message);
     const sendParams: AWS.SQS.SendMessageRequest = {
       MessageBody: message.body,
       QueueUrl: this.dlqURL,
+      // DelaySeconds: delaySeconds, // Missing, consider adding it when updating/using this
+      MessageGroupId: message.attributes.MessageGroupId,
+      MessageDeduplicationId: message.attributes.MessageDeduplicationId,
       MessageAttributes: this.attributesToSend(message.messageAttributes),
     };
     try {
@@ -39,12 +46,22 @@ export class SQSUtils {
   }
 
   async reEnqueue(message: SQSRecord) {
+    const retryCount = this.getRetryCount(message);
+    const messageAttributes = {
+      ...message.messageAttributes,
+      retryCount: {
+        stringValue: (retryCount + 1).toString(),
+        dataType: "String",
+      },
+    };
     await this.dequeue(message);
-    const sendParams = {
+    const sendParams: SendMessageRequest = {
       MessageBody: message.body,
       QueueUrl: this.sourceQueueURL,
-      MessageAttributes: this.attributesToSend(message.messageAttributes),
       DelaySeconds: this.delayWhenRetryingSeconds, // wait at least that long before retrying
+      MessageGroupId: message.attributes.MessageGroupId,
+      MessageDeduplicationId: message.attributes.MessageDeduplicationId,
+      MessageAttributes: this.attributesToSend(messageAttributes),
     };
     try {
       await this.sqs.sendMessage(sendParams).promise();

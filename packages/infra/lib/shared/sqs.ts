@@ -22,7 +22,7 @@ import { createRetryLambda, DEFAULT_LAMBDA_TIMEOUT } from "./lambda";
  */
 const DEFAULT_VISIBILITY_TIMEOUT_MULTIPLIER = 6;
 
-const DEFAULT_MAX_RECEIVE_COUNT = 5;
+const DEFAULT_MAX_RECEIVE_COUNT = 1;
 const DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE = Duration.minutes(10);
 
 export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
@@ -49,7 +49,7 @@ export type QueueProps = (StandardQueueProps | FifoQueueProps) & {
  * Creates a SQS queue.
  *
  * @param props.createDLQ - create a dead letter queue, default true
- * @param props.createRetryLambda - create a lambda to retry messages on DLQ, default true
+ * @param props.createRetryLambda - create a lambda to retry messages on DLQ (default true)
  * @param props.fifo - whether to create a FIFO queue or not, default false
  * @returns
  */
@@ -57,6 +57,8 @@ export function createQueue(props: QueueProps): Queue {
   const alarmMaxAgeOfOldestMessage =
     props.alarmMaxAgeOfOldestMessage ?? DEFAULT_MAX_AGE_OF_OLDEST_MESSAGE;
   const createDLQ = props.createDLQ !== false;
+  const isParamCreateRetryLambda =
+    props.createRetryLambda === undefined ? true : props.createRetryLambda;
 
   const dlq = createDLQ
     ? defaultDLQ(props.stack, props.name, props.fifo, {
@@ -85,7 +87,7 @@ export function createQueue(props: QueueProps): Queue {
     alarmAction: props?.alarmSnsAction,
   });
 
-  if (createDLQ && dlq) {
+  if (createDLQ && dlq && isParamCreateRetryLambda) {
     createRetryLambda({
       ...props,
       sourceQueue: dlq,

@@ -8,7 +8,6 @@ import fetch from "node-fetch";
 import { capture } from "./shared/capture";
 import { CloudWatchUtils, Metrics } from "./shared/cloudwatch";
 import { getEnvOrFail, isSandbox } from "./shared/env";
-import { isAxiosBadGateway, isAxiosTimeout } from "./shared/http";
 import { Log, prefixedLog } from "./shared/log";
 import { apiClient } from "./shared/oss-api";
 import { S3Utils } from "./shared/s3";
@@ -23,8 +22,6 @@ const region = getEnvOrFail("AWS_REGION");
 // Set by us
 const metricsNamespace = getEnvOrFail("METRICS_NAMESPACE");
 const apiURL = getEnvOrFail("API_URL");
-const maxTimeoutRetries = Number(getEnvOrFail("MAX_TIMEOUT_RETRIES"));
-const delayWhenRetryingSeconds = Number(getEnvOrFail("DELAY_WHEN_RETRY_SECONDS"));
 const sourceQueueURL = getEnvOrFail("QUEUE_URL");
 const dlqURL = getEnvOrFail("DLQ_URL");
 const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
@@ -32,7 +29,7 @@ const fhirServerUrl = getEnvOrFail("FHIR_SERVER_URL");
 const sourceUrl = "https://api.metriport.com/cda/to/fhir";
 const maxRetries = 10;
 
-const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL, delayWhenRetryingSeconds);
+const sqsUtils = new SQSUtils(region, sourceQueueURL, dlqURL);
 const s3Utils = new S3Utils(region);
 const cloudWatchUtils = new CloudWatchUtils(region, lambdaName, metricsNamespace);
 const placeholderReplaceRegex = new RegExp("66666666-6666-6666-6666-666666666666", "g");
@@ -186,30 +183,15 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         await ossApi.notifyApi({ cxId, patientId, status: "success", jobId, source }, log);
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
-        // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        const count = message.attributes?.ApproximateReceiveCount
-          ? Number(message.attributes?.ApproximateReceiveCount)
-          : undefined;
-        const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
-        const isRetryError = isAxiosTimeout(error) || isAxiosBadGateway(error);
-        if (!(error instanceof MetriportError) && isRetryError && isWithinRetryRange) {
-          console.log(`Timed out, reenqueue (${count} of ${maxTimeoutRetries}): `, message);
-          capture.message("Sending to FHIR server timed out", {
-            extra: { message, context: lambdaName, retryCount: count },
-          });
-          await sqsUtils.reEnqueue(message);
-        } else {
-          console.log(`Error processing message: ${JSON.stringify(message)}; \n${error.message}`);
-          capture.error(error, {
-            extra: { message, context: lambdaName, retryCount: count, error },
-          });
-          await sqsUtils.sendToDLQ(message);
-
-          await ossApi.notifyApi(
-            { cxId, patientId, status: "failed", details: error.message, jobId, source },
-            log
-          );
-        }
+        console.log(`Error processing message: ${JSON.stringify(message)}; \n${error.message}`);
+        capture.error(error, {
+          extra: { message, context: lambdaName, error },
+        });
+        await sqsUtils.sendToDLQ(message);
+        await ossApi.notifyApi(
+          { cxId, patientId, status: "failed", details: error.message, jobId, source },
+          log
+        );
       }
     }
     console.log(`Done`);

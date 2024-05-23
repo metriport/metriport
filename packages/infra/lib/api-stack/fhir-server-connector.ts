@@ -27,14 +27,9 @@ function settings() {
     maxConcurrency: prod ? 32 : 4,
     // How long can the lambda run for, max is 900 seconds (15 minutes)
     lambdaTimeout,
-    // Number of times we want to retry a message, this includes throttles!
-    maxReceiveCount: 5,
-    // Number of times we want to retry a message that timed out when trying to be processed
-    maxTimeoutRetries: 15,
     // How long messages should be invisible for other consumers, based on the lambda timeout
     // We don't care if the message gets reprocessed, so no need to have a huge visibility timeout that makes it harder to move messages to the DLQ
     visibilityTimeout: Duration.seconds(lambdaTimeout.toSeconds() * 2 + 1),
-    delayWhenRetrying: Duration.seconds(10),
   };
 }
 
@@ -70,23 +65,19 @@ export function createConnector({
     lambdaTimeout,
     lambdaBatchSize,
     maxConcurrency,
-    maxReceiveCount,
     visibilityTimeout,
-    maxTimeoutRetries,
-    delayWhenRetrying,
   } = settings();
   const queue = defaultCreateQueue({
     stack,
     name: connectorName,
     // To use FIFO we'd need to change the lambda code to set visibilityTimeout=0 on messages to be
     // reprocessed, instead of re-enqueueing them (bc of messageDeduplicationId visibility of 5min)
-    fifo: false,
+    fifo: true,
     visibilityTimeout,
-    maxReceiveCount,
     lambdaLayers: [lambdaLayers.shared],
     envType,
     alarmSnsAction,
-    alarmMaxAgeOfOldestMessage: Duration.minutes(2),
+    alarmMaxAgeOfOldestMessage: Duration.minutes(3),
     alarmMaxAgeOfOldestMessageDlq: Duration.minutes(5),
   });
 
@@ -104,8 +95,6 @@ export function createConnector({
     envType,
     envVars: {
       METRICS_NAMESPACE,
-      MAX_TIMEOUT_RETRIES: String(maxTimeoutRetries),
-      DELAY_WHEN_RETRY_SECONDS: delayWhenRetrying.toSeconds().toString(),
       ...(config.lambdasSentryDSN ? { SENTRY_DSN: config.lambdasSentryDSN } : {}),
       QUEUE_URL: queue.queueUrl,
       DLQ_URL: dlq.queue.queueUrl,

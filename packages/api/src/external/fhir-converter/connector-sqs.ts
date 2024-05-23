@@ -42,6 +42,9 @@ export class FHIRConverterConnectorSQS implements FHIRConverterConnector {
         startedAt: dayjs.utc().toISOString(),
         ...(source && { source }),
       },
+      fifo: true,
+      messageGroupId: documentId,
+      messageDeduplicationId: documentId,
     });
   }
 }

@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/serverless";
 import { SQSEvent } from "aws-lambda";
+import { SendMessageRequest } from "aws-sdk/clients/sqs";
 import axios from "axios";
 import * as uuid from "uuid";
 import { capture } from "./shared/capture";
@@ -153,6 +154,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
       const jobId = attrib.jobId?.stringValue;
       const jobStartedAt = attrib.startedAt?.stringValue;
       const source = attrib.source?.stringValue;
+      const messageGroupId = message.attributes.MessageGroupId;
+      const messageDeduplicationId = message.attributes.MessageDeduplicationId;
       if (!cxId) throw new Error(`Missing cxId`);
       if (!patientId) throw new Error(`Missing patientId`);
       const log = prefixedLog(`${i}, patient ${patientId}, job ${jobId}`);
@@ -251,6 +254,8 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           jobStartedAt,
           jobId,
           source,
+          messageGroupId,
+          messageDeduplicationId,
           log
         );
 
@@ -259,9 +264,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
         //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         // If it timed-out let's just reenqueue for future processing - NOTE: the destination MUST be idempotent!
-        const count = message.attributes?.ApproximateReceiveCount
-          ? Number(message.attributes?.ApproximateReceiveCount)
-          : undefined;
+        const count = sqsUtils.getRetryCount(message);
         const isWithinRetryRange = count == null || count <= maxTimeoutRetries;
         const isRetryError = isAxiosTimeout(err) || isAxiosBadGateway(err);
         if (isRetryError && isWithinRetryRange) {
@@ -288,6 +291,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: SQSEvent) => {
           await sqsUtils.sendToDLQ(message);
 
           await ossApi.notifyApi({ cxId, patientId, status: "failed", jobId, source }, log);
+          // Intentionally not rethrowing the error to avoid reprocessing the message
         }
       }
     }
@@ -361,6 +365,8 @@ async function sendConversionResult(
   jobStartedAt: string | undefined,
   jobId: string | undefined,
   source: string | undefined,
+  messageGroupId: string | undefined,
+  messageDeduplicationId: string | undefined,
   log: Log
 ) {
   const fileName = `${sourceFileName}.json`;
@@ -380,7 +386,7 @@ async function sendConversionResult(
     s3FileName: fileName,
   });
 
-  const sendParams = {
+  const sendParams: SendMessageRequest = {
     MessageBody: queuePayload,
     QueueUrl: conversionResultQueueURL,
     MessageAttributes: {
@@ -390,6 +396,8 @@ async function sendConversionResult(
       ...(jobId ? sqsUtils.singleAttributeToSend("jobId", jobId) : {}),
       ...(source ? sqsUtils.singleAttributeToSend("source", source) : {}),
     },
+    MessageGroupId: messageGroupId,
+    MessageDeduplicationId: messageDeduplicationId,
   };
   await sqsUtils.sqs.sendMessage(sendParams).promise();
 }

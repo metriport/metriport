@@ -23,6 +23,9 @@ export class FHIRServerConnectorSQS implements FHIRServerConnector {
         jobId: createJobId(requestId, documentId),
         startedAt: dayjs.utc().toISOString(),
       },
+      fifo: true,
+      messageGroupId: documentId,
+      messageDeduplicationId: documentId,
     });
   }
 }
