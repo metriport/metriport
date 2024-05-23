@@ -21,7 +21,6 @@ import { PatientDataCarequality } from "./patient-shared";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
-import { clearPatientDiscoveryEndedAt } from "./command/clear-patient-discovery-endedat";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 
 dayjs.extend(duration);
@@ -81,7 +80,6 @@ async function prepareAndTriggerPD({
   baseLogMessage: string;
   context: string;
 }): Promise<void> {
-  await clearPatientDiscoveryEndedAt({ patient });
   await updatePatientDiscoveryStatus({
     patient,
     status: "processing",
