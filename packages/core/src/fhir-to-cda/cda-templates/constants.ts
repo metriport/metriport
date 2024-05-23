@@ -36,20 +36,21 @@ export const loincSystemName = "LOINC";
 export const placeholderOrgOid = "placeholder-ORG-OID";
 export const NOT_SPECIFIED = "Not Specified";
 
+// Codes taken from: https://www.hl7.org/ccdasearch/
 export const oids = {
-  medicationSection: "2.16.840.1.113883.10.20.22.2.1.1",
+  medicationsSection: "2.16.840.1.113883.10.20.22.2.1.1",
   mentalStatusSection: "2.16.840.1.113883.10.20.22.2.56",
   problemsSection: "2.16.840.1.113883.10.20.22.2.5.1",
   resultsSection: "2.16.840.1.113883.10.20.22.2.3.1",
   socialHistorySection: "2.16.840.1.113883.10.20.22.2.17",
-  conditionType: "2.16.840.1.113883.10.20.22.4.3",
-  socialHistoryType: "2.16.840.1.113883.10.20.22.4.38",
-  medicationStatementType: "2.16.840.1.113883.10.20.22.4.16",
-  mentalStatusType: "2.16.840.1.113883.10.20.22.4.74",
-  problemObservation: "2.16.840.1.113883.10.20.22.4.4",
+  problemConcernAct: "2.16.840.1.113883.10.20.22.4.3",
+  socialHistoryObs: "2.16.840.1.113883.10.20.22.4.38",
+  medicationActivity: "2.16.840.1.113883.10.20.22.4.16",
+  mentalStatusObs: "2.16.840.1.113883.10.20.22.4.74",
+  problemObs: "2.16.840.1.113883.10.20.22.4.4",
   resultOrganizer: "2.16.840.1.113883.10.20.22.4.1",
   medicationInformation: "2.16.840.1.113883.10.20.22.4.23",
-  resultObservation: "2.16.840.1.113883.10.20.22.4.2",
+  resultObs: "2.16.840.1.113883.10.20.22.4.2",
 };
 
 export const mentalHealthSurveyCodes = ["44249-1"];

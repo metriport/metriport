@@ -26,7 +26,7 @@ export function buildSocialHistory(fhirBundle: Bundle) {
   }
 
   const augmentedObservations = socialHistoryObservations.map(
-    obs => new AugmentedObservation(oids.socialHistoryType, sectionName, obs)
+    obs => new AugmentedObservation(sectionName, obs, oids.socialHistoryObs)
   );
 
   const { trs, entries } = createTableRowsAndEntries(

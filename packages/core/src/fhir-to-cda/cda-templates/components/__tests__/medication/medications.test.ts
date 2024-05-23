@@ -55,7 +55,7 @@ describe("buildMedications", () => {
   it("correctly maps a single MedicationStatement with a related Medication", () => {
     bundle.entry?.push({ resource: medStatement });
     bundle.entry?.push({ resource: med });
-    const filePath = path.join(__dirname, "medications-section.xml");
+    const filePath = path.join(__dirname, "medications-section-single-entry.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -101,7 +101,7 @@ describe("buildMedications", () => {
 
     bundle.entry?.push({ resource: medicationStatement2 });
     bundle.entry?.push({ resource: medication2 });
-    const filePath = path.join(__dirname, "medications-section-2.xml");
+    const filePath = path.join(__dirname, "medications-section-two-entries.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

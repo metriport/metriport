@@ -1,4 +1,10 @@
-import { Bundle, MedicationStatement, CodeableConcept } from "@medplum/fhirtypes";
+import {
+  Bundle,
+  MedicationStatement,
+  CodeableConcept,
+  DosageDoseAndRate,
+  Dosage,
+} from "@medplum/fhirtypes";
 import BadRequestError from "../../../util/error/bad-request";
 import {
   CdaCodeCe,
@@ -73,7 +79,7 @@ export function buildMedications(fhirBundle: Bundle) {
     component: {
       section: {
         templateId: buildInstanceIdentifier({
-          root: oids.medicationSection,
+          root: oids.medicationsSection,
         }),
         code: buildCodeCe({
           code: "10160-0",
@@ -149,21 +155,18 @@ function createAugmentedMedicationStatements(
 }
 
 function getDosageFromMedicationStatement(statement: MedicationStatement): string {
-  return (
-    statement.dosage
-      ?.map(dosage => {
-        return dosage.doseAndRate
-          ?.map(doseAndRate => {
-            if (doseAndRate.doseQuantity?.value && doseAndRate.doseQuantity?.unit) {
-              return `${doseAndRate.doseQuantity.value} ${doseAndRate.doseQuantity.unit}`;
-            }
-            return undefined;
-          })
-          .filter(Boolean);
-      })
-      .flat()
-      .join(", ") || NOT_SPECIFIED
-  );
+  return statement.dosage?.flatMap(convertDosage).join(", ") || NOT_SPECIFIED;
+}
+
+function convertDosage(dosage: Dosage): string[] {
+  return dosage.doseAndRate?.map(convertDoseAndRate).filter(Boolean) as string[];
+}
+
+function convertDoseAndRate(doseAndRate: DosageDoseAndRate): string | undefined {
+  if (doseAndRate.doseQuantity?.value && doseAndRate.doseQuantity?.unit) {
+    return `${doseAndRate.doseQuantity.value} ${doseAndRate.doseQuantity.unit}`;
+  }
+  return undefined;
 }
 
 function getFrequencyFromMedicationStatement(statement: MedicationStatement): string {

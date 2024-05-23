@@ -8,25 +8,25 @@ import {
 import { oids } from "../constants";
 
 export interface AugmentedResource<T extends Resource> {
-  readonly typeOid: string;
   readonly sectionName: string;
   resource: T;
+  readonly typeOid: string;
 }
 export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(
-    public readonly typeOid: string,
     public readonly sectionName: string,
-    public readonly resource: Observation
+    public readonly resource: Observation,
+    public readonly typeOid: string
   ) {}
 }
 
 export class AugmentedCondition implements AugmentedResource<Condition> {
-  public readonly typeOid = oids.conditionType;
+  public readonly typeOid = oids.problemConcernAct;
   constructor(public readonly sectionName: string, public readonly resource: Condition) {}
 }
 
 export class AugmentedMedicationStatement implements AugmentedResource<MedicationStatement> {
-  public readonly typeOid = oids.medicationStatementType;
+  public readonly typeOid = oids.medicationActivity;
   constructor(
     public readonly sectionName: string,
     public readonly resource: MedicationStatement,

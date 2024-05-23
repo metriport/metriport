@@ -49,7 +49,7 @@ describe("buildSocialHistory", () => {
 
   it("correctly maps a single social-history survey Observation", () => {
     bundle.entry?.push({ resource: observation });
-    const filePath = path.join(__dirname, "social-history-section.xml");
+    const filePath = path.join(__dirname, "social-history-section-single-survey.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

@@ -49,7 +49,7 @@ describe("buildMentalStatus", () => {
 
   it("correctly maps a single mental status survey Observation", () => {
     bundle.entry?.push({ resource: observation });
-    const filePath = path.join(__dirname, "mental-status-section.xml");
+    const filePath = path.join(__dirname, "mental-status-section-single-survey.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

@@ -20,7 +20,7 @@ export function buildMentalStatus(fhirBundle: Bundle) {
   }
 
   const augmentedObservations = mentalStatusObservations.map(
-    obs => new AugmentedObservation(oids.mentalStatusType, mentalStatusSectionName, obs)
+    obs => new AugmentedObservation(mentalStatusSectionName, obs, oids.mentalStatusObs)
   );
 
   const { trs, entries } = createTableRowsAndEntries(

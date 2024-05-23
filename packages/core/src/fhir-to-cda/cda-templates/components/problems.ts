@@ -171,7 +171,7 @@ function createEntryRelationship(condition: Condition, referenceId: string): Obs
       [_classCodeAttribute]: "OBS",
       [_moodCodeAttribute]: "EVN",
       templateId: buildInstanceIdentifier({
-        root: oids.problemObservation,
+        root: oids.problemObs,
         extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({

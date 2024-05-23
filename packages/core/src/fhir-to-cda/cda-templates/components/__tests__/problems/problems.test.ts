@@ -36,7 +36,7 @@ describe("buildProblems", () => {
   it("correctly maps a single Condition without a note", () => {
     bundle.entry?.push({ resource: { ...condition, note: [] } });
 
-    const filePath = path.join(__dirname, "problems-section.xml");
+    const filePath = path.join(__dirname, "problems-section-single-entry.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
@@ -64,7 +64,7 @@ describe("buildProblems", () => {
     });
 
     bundle.entry?.push({ resource: condition2 });
-    const filePath = path.join(__dirname, "problems-section-2.xml");
+    const filePath = path.join(__dirname, "problems-section-two-entries.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

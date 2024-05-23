@@ -68,7 +68,7 @@ export function createObservations(observations: Observation[]): CDAObservation[
           [_classCodeAttribute]: "OBS",
           [_moodCodeAttribute]: "EVN",
           templateId: buildInstanceIdentifier({
-            root: oids.resultObservation,
+            root: oids.resultObs,
             extension: extensionValue2015,
           }),
           id: {
