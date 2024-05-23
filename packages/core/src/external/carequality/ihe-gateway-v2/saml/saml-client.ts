@@ -7,9 +7,21 @@ import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
-const { log } = out("Saml Client");
 
+const { log } = out("Saml Client");
 const timeout = 120000;
+let rejectUnauthorized = true;
+
+/*
+ * ONLY use this function for testing purposes. It will turn off SSL Verification of the server if set to false.
+ * See saml-server.ts for usage.
+ */
+export function setRejectUnauthorized(value: boolean): void {
+  rejectUnauthorized = value;
+}
+export function getRejectUnauthorized(): boolean {
+  return rejectUnauthorized;
+}
 
 export type SamlClientResponse = {
   response: string;
@@ -48,7 +60,8 @@ export async function sendSignedXml({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: true,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,
@@ -82,7 +95,8 @@ export async function sendSignedXmlMtom({
   trustedKeyStore: string;
 }): Promise<{ response: string; contentType: string }> {
   const agent = new https.Agent({
-    rejectUnauthorized: true,
+    rejectUnauthorized: getRejectUnauthorized(),
+    requestCert: true,
     cert: samlCertsAndKeys.certChain,
     key: samlCertsAndKeys.privateKey,
     passphrase: samlCertsAndKeys.privateKeyPassword,

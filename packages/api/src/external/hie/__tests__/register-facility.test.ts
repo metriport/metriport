@@ -329,4 +329,53 @@ describe("registerFacility", () => {
       })
     );
   });
+
+  it("calls createOrUpdateInCq with obo when cqType is initiatorOnly, and cqActive is false", async () => {
+    mockedFacility = {
+      ...mockedFacility,
+      cqType: FacilityType.initiatorOnly,
+      cqActive: false,
+      cqOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
+      coordinates
+    );
+
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringContaining("OBO"),
+      })
+    );
+  });
+
+  it("calls createOrUpdateInCw with obo when cwType is initiatorOnly, and cwActive is false", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    mockedFacility = {
+      ...mockedFacility,
+      cwType: FacilityType.initiatorOnly,
+      cwActive: false,
+      cwOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCw(
+      mockedFacility,
+      mockedRegisterFacility.cwFacilityName,
+      getCxOrganizationNameAndOidResult,
+      cxId
+    );
+
+    expect(createOrUpdateCwOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: expect.stringContaining("OBO"),
+        }),
+      }),
+      true
+    );
+  });
 });

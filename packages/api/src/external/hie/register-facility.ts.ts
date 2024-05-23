@@ -30,7 +30,7 @@ export async function registerFacilityWithinHIEs(
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),
     getAddressWithCoordinates(getAddressFromInput(facility), cxId),
-    getCqOboData(facility.cqActive, facility.cqOboOid),
+    getCqOboData(facility.cqOboOid),
   ]);
 
   const { facilityDetails, coordinates } = createFacilityDetails(cxId, facility, address);
@@ -43,10 +43,10 @@ export async function registerFacilityWithinHIEs(
   );
 
   // CAREQUALITY
-  await createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
+  createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
 
   // COMMONWELL
-  await createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
+  createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
 
   return cmdFacility;
 }
