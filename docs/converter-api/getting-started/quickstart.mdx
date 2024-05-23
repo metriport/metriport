@@ -3,7 +3,7 @@ title: "FHIR Converter API"
 description: "Follow this guide to get started converting C-CDA documents to FHIR."
 ---
 
-
+<img className="h-40" src="/images/metriport-logo.png" />
 
 ## Overview
 
@@ -47,7 +47,44 @@ home page](https://dash.metriport.com/). From here, take the following steps to 
 
 ## 3. Convert C-CDA to FHIR
 
-See the [Get Document endpoint](/converter-api/api-reference/ccda/ccda-to-fhir) in our API reference for details.
+Essentially, you'll just need to send a `POST` request to the [Convert C-CDA to FHIR endpoint](/converter-api/api-reference/ccda/ccda-to-fhir),
+with the body containing a valid C-CDA (R2.1) XML document to convert:
+
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3">
+    <!-- contents -->
+</ClinicalDocument>
+```
+
+<Tip>
+  You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes.
+</Tip>
+
+Since C-CDAs correspond to a particular patient, you should also specify the `patientId` query param to match your patient's identifier. 
+
+You'll get back a [FHIR R4 Bundle](/medical-api/fhir/resources/bundle) back, with `entry` containing an array of FHIR R4 Resources being the outcome of the conversion.
+
+```json
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:adc44b9c-3083-396f-877f-463120f6b26a",
+            "resource": {
+                "resourceType": "Location",
+                "id": "adc44b9c-3083-396f-877f-463120f6b26a",
+                "name": "Good Health Urgent Care"
+            }
+        }
+    ]
+}
+```
+
+See the [Convert C-CDA to FHIR endpoint](/converter-api/api-reference/ccda/ccda-to-fhir) in our API reference for more details.
+
 
 ---
 

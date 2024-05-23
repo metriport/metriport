@@ -17,8 +17,7 @@ api: "POST /convert/v1/ccda/to/fhir"
     ```
 
     <Tip>
-        You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes
-        - there are a ton of good sample files out there in addition to this.
+        You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes.
     </Tip>
 </ParamField>
 
@@ -36,23 +35,6 @@ api: "POST /convert/v1/ccda/to/fhir"
 
 ## Response
 
-<ResponseExample>
-
-```typescript Metriport SDK
-import { MetriportConvertApi } from "@metriport/api-sdk";
-
-const metriportConvert = new MetriportConvertApi(apiToken);
-
-const fhirBundle = await metriportConvert.ccdaToFhir(
-  patientId,
-  `<?xml version="1.0" encoding="UTF-8"?>
-<ClinicalDocument xmlns="urn:hl7-org:v3">
-    <!-- contents -->
-</ClinicalDocument>`
-);
-```
-
-</ResponseExample>
 
 Returns a [FHIR R4 Bundle](/medical-api/fhir/resources/bundle) of type `batch` with the 
 `entry` containing an array of FHIR R4 Resources being the outcome of the conversion.
