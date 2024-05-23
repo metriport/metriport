@@ -8,7 +8,7 @@ import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { namespaces, expiresIn } from "../../../constants";
 import { ORGANIZATION_NAME_DEFAULT as metriportOrganization, replyTo } from "../../../../shared";
 import { wrapIdInUrnUuid, wrapIdInUrnOid } from "../../../../../../util/urn";
-import { requiresOnlyOneDocRefPerRequest } from "../../../gateways";
+import { requiresOnlyOneDocRefPerRequest, getHomeCommunityId } from "../../../gateways";
 
 const action = "urn:ihe:iti:2007:CrossGatewayRetrieve";
 
@@ -39,7 +39,7 @@ export function createITI39SoapEnvelope({
   }));
 
   const subjectRole = bodyData.samlAttributes.subjectRole.display;
-  const homeCommunityId = bodyData.samlAttributes.homeCommunityId;
+  const homeCommunityId = getHomeCommunityId(bodyData.gateway, bodyData.samlAttributes);
   const purposeOfUse = bodyData.samlAttributes.purposeOfUse;
 
   const createdTimestamp = dayjs().toISOString();
