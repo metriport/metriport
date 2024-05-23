@@ -39,6 +39,8 @@
 
 </div>
 
+### **[Join us on our Slack Community](https://join.slack.com/t/metriport-oss/shared_invite/zt-2jezazysw-~AuXop_rFmWQXKmjYRr~cA) 💬**
+
 ## **Overview**
 
 <div>
