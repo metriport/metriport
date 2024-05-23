@@ -1,7 +1,11 @@
 import fs from "fs";
 import path from "path";
 import { processXCPDResponse } from "../xcpd/process/xcpd-response";
-import { outboundXcpdRequest, expectedXcpdResponse } from "./constants";
+import {
+  outboundXcpdRequest,
+  expectedXcpdResponse,
+  expectedMultiNameAddressResponse,
+} from "./constants";
 
 const gateway = outboundXcpdRequest.gateways[0];
 if (!gateway) {
@@ -9,6 +13,10 @@ if (!gateway) {
 }
 
 const xmlMatchString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_match.xml"), "utf8");
+const xmlMatchStringMultiNameAddress = fs.readFileSync(
+  path.join(__dirname, "xmls/xcpd_match_multi_addr_name.xml"),
+  "utf8"
+);
 const xmlNoMatchString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_no_match.xml"), "utf8");
 const xmlErrorString = fs.readFileSync(path.join(__dirname, "xmls/xcpd_error.xml"), "utf8");
 
@@ -25,6 +33,21 @@ describe("processXCPDResponse", () => {
 
     expect(response).toEqual({
       ...expectedXcpdResponse,
+      responseTimestamp: expect.any(String),
+    });
+  });
+  it("should process the match XCPD response with multiple addresses and patient names correctly", async () => {
+    const response = processXCPDResponse({
+      xcpdResponse: {
+        success: true,
+        response: xmlMatchStringMultiNameAddress,
+        gateway,
+        outboundRequest: outboundXcpdRequest,
+      },
+    });
+
+    expect(response).toEqual({
+      ...expectedMultiNameAddressResponse,
       responseTimestamp: expect.any(String),
     });
   });

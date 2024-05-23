@@ -28,11 +28,6 @@ type Name = {
   delimiter: string | undefined;
 };
 
-type Telecom = {
-  _use: string;
-  _value: string;
-};
-
 function handleHTTPErrorResponse({
   httpError,
   outboundRequest,
@@ -81,7 +76,6 @@ function handlePatientMatchResponse({
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
-  const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
   const addresses = addr.map((address: Address) => ({
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
@@ -96,18 +90,11 @@ function handlePatientMatchResponse({
     family: name?.family,
   }));
 
-  const patientTelecoms = telecoms
-    .map((telecom: Telecom) => ({
-      value: telecom?._value,
-    }))
-    .filter(telecom => telecom.value !== undefined);
-
   const patientResource = {
     name: patientNames,
     gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
-    ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
