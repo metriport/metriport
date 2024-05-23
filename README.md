@@ -52,13 +52,11 @@
 
 ## **Security and Privacy**
 
-Metriport is SOC 2 and HIPAA compliant. [Click here](https://metriport.com/security/) to learn more about our security practices.
+Metriport is SOC 2 and HIPAA compliant. [Click here](https://security.metriport.com/) to learn more about our security practices.
 
-<p float="left">
+<p style="text-align: center;">
   <img src="./assets/soc2.png" width="20%" />
   <img src="./assets/hipaa.png" width="30%" />
-  <img src="./assets/soc2-vanta.png" width="20%" />
-  <img src="./assets/hipaa-vanta.png" width="20%" />
 </p>
 
 ### **Medical API**
@@ -81,6 +79,14 @@ Our [Medical Dashboard](https://www.metriport.com/dashboard) enables providers t
 
 Tools like our FHIR explorer and PDF converter help you make sense of the data you need to make relevant care decisions and improve patient outcomes.
 
+### **Converter API**
+
+<div align="center">
+   <img width="90%" alt="convert c-cda to fhir" src="./assets/fhir-converter.png">
+</div>
+
+A key piece to achieving true interoperability is compatibility between different data formats. Using advanced processing techniques, Metriport's [FHIR Converter](https://www.metriport.com/fhir-converter) takes common healthcare data formats such as C-CDA, and converts them into FHIR R4 to streamline data exchange.
+
 ## **Getting Started**
 
 Check out the links below to get started with Metriport in minutes!
@@ -97,15 +103,21 @@ Check out the links below to get started with Metriport in minutes!
 
 Backend for the Metriport API.
 
-- Dir: [`/api`](/api)
+- Dir: [`/packages/api`](/packages/api)
 - URL: [https://api.metriport.com/](https://api.metriport.com/)
 - Sandbox URL: [https://api.sandbox.metriport.com/](https://api.sandbox.metriport.com/)
+
+### **FHIR Converter**
+
+Engine to convert various healthcara data formats to FHIR, and back.
+
+- Dir: [`/packages/fhir-converter`](/packages/fhir-converter)
 
 ### **Infrastructure as Code**
 
 We use AWS CDK as IaC.
 
-- Dir: [`/infra`](/infra)
+- Dir: [`/packages/infra`](/packages/infra)
 
 ### **Docs**
 
@@ -115,8 +127,6 @@ Our beautiful developer documentation, powered by [mintlify](https://mintlify.co
 - URL: [https://docs.metriport.com/](https://docs.metriport.com/getting-started/introduction)
 
 ### **Packages**
-
-Checkout our packages in [`/pkgs`](/pkgs) to help you turbocharge your development:
 
 #### **npm**
 
