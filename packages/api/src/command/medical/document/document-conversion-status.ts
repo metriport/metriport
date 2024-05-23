@@ -71,6 +71,10 @@ export async function calculateDocumentConversionStatus({
 
     if (isConversionCompleted) {
       const startedAt = updatedPatient.data.documentQueryProgress?.startedAt;
+      const convert = updatedPatient.data.documentQueryProgress?.convert;
+      const totalDocsConverted = convert?.total;
+      const successfulConversions = convert?.successful;
+      const failedConversions = convert?.errors;
 
       analytics({
         distinctId: cxId,
@@ -80,6 +84,9 @@ export async function calculateDocumentConversionStatus({
           patientId,
           hie: source,
           duration: elapsedTimeFromNow(startedAt),
+          totalDocsConverted,
+          successfulConversions,
+          failedConversions,
         },
       });
     }
