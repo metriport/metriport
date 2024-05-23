@@ -12,7 +12,7 @@ import { getPatientOrFail } from "../patient/get-patient";
 import { tallyDocQueryProgress } from "../../../external/hie/tally-doc-query-progress";
 import { getCWData } from "../../../external/commonwell/patient";
 import { getCQData } from "../../../external/carequality/patient";
-import { analytics, EventTypes } from "../../../shared/analytics";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { updateConversionProgress } from "./document-query";
 import { processPatientDocumentRequest } from "./document-webhook";
 import { MAPIWebhookStatus } from "./document-webhook";

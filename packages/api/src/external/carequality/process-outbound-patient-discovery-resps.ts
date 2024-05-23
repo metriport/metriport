@@ -2,6 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { OutboundPatientDiscoveryRespParam } from "@metriport/core/external/carequality/ihe-gateway/outbound-result-poller-direct";
 import { capture } from "@metriport/core/util/notifications";
 import { OutboundPatientDiscoveryResp } from "@metriport/ihe-gateway-sdk";
@@ -11,7 +12,6 @@ import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { CQLink } from "./cq-patient-data";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
-import { analytics, EventTypes } from "../../shared/analytics";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 
 dayjs.extend(duration);
