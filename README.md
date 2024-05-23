@@ -87,6 +87,8 @@ Tools like our FHIR explorer and PDF converter help you make sense of the data y
 
 A key piece to achieving true interoperability is compatibility between different data formats. Using advanced processing techniques, Metriport's [FHIR Converter](https://www.metriport.com/fhir-converter) takes common healthcare data formats such as C-CDA, and converts them into FHIR R4 to streamline data exchange.
 
+Get started converting using our [Quickstart Guide](https://docs.metriport.com/converter-api/getting-started/quickstart).
+
 ## **Getting Started**
 
 Check out the links below to get started with Metriport in minutes!
