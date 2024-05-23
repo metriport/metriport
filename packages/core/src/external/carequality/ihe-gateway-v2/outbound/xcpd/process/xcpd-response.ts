@@ -41,23 +41,29 @@ type CarequalityName = {
   family: string | undefined;
 };
 
-function iheAddressToCarequalityAddress(iheAddress: IheAddress[]): CarequalityAddress[] {
-  const addresses = iheAddress.map((address: IheAddress) => ({
+function convertIheAddressToCarequalityAddress(address: IheAddress): CarequalityAddress {
+  return {
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
     city: address?.city,
     state: address?.state,
     postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
     country: address?.country,
-  }));
-  return addresses;
+  };
 }
 
-function iheNameToCarequalityName(iheName: IheName[]): CarequalityName[] {
-  const patientNames = iheName.map((name: IheName) => ({
+function iheAddressesToCarequalityAddresses(iheAddresses: IheAddress[]): CarequalityAddress[] {
+  return iheAddresses.map(convertIheAddressToCarequalityAddress);
+}
+
+function convertIheNameToCarequalityName(name: IheName): CarequalityName {
+  return {
     given: toArray(name?.given).filter((g): g is string => Boolean(g)),
     family: name?.family,
-  }));
-  return patientNames;
+  };
+}
+
+function iheNamesToCarequalityNames(iheNames: IheName[]): CarequalityName[] {
+  return iheNames.map(convertIheNameToCarequalityName);
 }
 
 function handleHTTPErrorResponse({
@@ -108,8 +114,8 @@ function handlePatientMatchResponse({
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
 
-  const addresses = iheAddressToCarequalityAddress(addr);
-  const patientNames = iheNameToCarequalityName(names);
+  const addresses = iheAddressesToCarequalityAddresses(addr);
+  const patientNames = iheNamesToCarequalityNames(names);
 
   const patientResource = {
     name: patientNames,
