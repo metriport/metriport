@@ -289,8 +289,6 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   };
 };
 
-main();
-
 const states: { [k in string]: USState } = {
   Arizona: USState.AZ,
   Alabama: USState.AL,
@@ -343,3 +341,5 @@ const states: { [k in string]: USState } = {
   Wisconsin: USState.WI,
   Wyoming: USState.WY,
 };
+
+main();

@@ -20,10 +20,14 @@ dayjs.extend(duration);
 
 /**
  * This script retrieves coverage data for Patients from the DB.
+ * It doesn't trigger Document Queries - it assumes this has been already done.
+ * @see bulk-query-patients.ts for Document Query
  *
- * Update the `patientIds` with the list of Patient IDs you
- * want to get coverage data for, otherwise it will do it for all
- * Patients of the respective customer (expensive).
+ * Update the `patientIds` with the list of Patient IDs you want to get coverage data for,
+ * otherwise it will do it for all Patients of the respective customer (expensive!).
+ *
+ * Execute this with:
+ * $ npm run coverage-assessment
  */
 
 // add patient IDs here to kick off queries for specific patient IDs
@@ -62,12 +66,15 @@ async function main() {
 
   const startedAt = Date.now();
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
-  const { orgName } = await getCxData(cxId, undefined, false);
-  const fileName = csvName(orgName);
 
+  const { orgName } = await getCxData(cxId, undefined, false);
+  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds();
+
+  await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, log);
+
+  const fileName = csvName(orgName);
   initCsv(fileName);
 
-  const patientIdsToQuery = await getPatientIds(log);
   log(`>>> Running it...`);
 
   await executeAsynchronously(
@@ -79,7 +86,6 @@ async function main() {
     },
     { numberOfParallelExecutions }
   );
-
   const ellapsed = Date.now() - startedAt;
   log(`>>> Done assessing coverage for all ${patientIdsToQuery.length} patients in ${ellapsed} ms`);
   process.exit(0);
@@ -93,29 +99,31 @@ function initCsv(fileName: string) {
   fs.writeFileSync(fileName, csvHeader);
 }
 
-async function getPatientIds(log: typeof console.log): Promise<string[]> {
+async function getPatientIds(): Promise<{ patientIds: string[]; isAllPatients: boolean }> {
   if (patientIds.length > 0) {
-    return patientIds;
+    return { patientIds, isAllPatients: false };
   }
-  return await getAllPatientIds(log);
+  const allPatientIds = await getAllPatientIds();
+  return { patientIds: allPatientIds, isAllPatients: true };
 }
 
-async function getAllPatientIds(log: typeof console.log): Promise<string[]> {
-  displayNoDryRunWarning(log);
-  log(
-    "You are about to trigger a document query for all patients of the CX. This is very expensive!"
-  );
-  log("Cancel this script now if you're not sure.");
-  await sleep(confirmationTime.asMilliseconds());
+async function getAllPatientIds(): Promise<string[]> {
   const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
   const patientIds = resp.data.patientIds;
   return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
-function displayNoDryRunWarning(log: typeof console.log) {
-  // The first chars there are to set color red on the terminal
-  // See: // https://stackoverflow.com/a/41407246/2099911
-  log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
+async function displayWarningAndConfirmation(
+  patientCount: number | undefined,
+  isAllPatients: boolean,
+  log: typeof console.log
+) {
+  const msgForAllPatients = `You are about to get the coverage info of ALL patients of the CX (${patientCount}). This can be expensive.`;
+  const msgForFewPatients = `You are about to get the coverage info of ${patientCount} patients of the CX.`;
+  const msg = isAllPatients ? msgForAllPatients : msgForFewPatients;
+  log(msg);
+  log("Cancel this now if you're not sure.");
+  await sleep(confirmationTime.asMilliseconds());
 }
 
 async function getCoverageForPatient(patientId: string, fileName: string, log: typeof console.log) {
