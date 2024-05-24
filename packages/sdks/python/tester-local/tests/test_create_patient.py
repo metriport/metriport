@@ -2,7 +2,7 @@ import os
 
 from generated.client import Metriport
 from generated.resources import UsState, Address
-from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense
+from generated.resources.medical import BasePatient, PersonalIdentifier_DriversLicense, PersonalIdentifier_Ssn
 
 import os
 from dotenv import load_dotenv
@@ -26,6 +26,10 @@ def test_create_patient() -> None:
                 type="driversLicense",
                 state=UsState.CA,
                 value="12345678",
+            ),
+            PersonalIdentifier_Ssn(
+                type="ssn",
+                value="123456789",
             )
         ],
         address=[Address(

@@ -21,19 +21,19 @@
 </ParamField>
 
 <ParamField body="personalIdentifiers" type="PersonalIdentifier[]" optional>
-  An array of the Patient's personal IDs, such as a driver's license. May be empty.
+  An array of the Patient's personal IDs, such as a driver's license or SSN. May be empty.
 
   <Expandable title="PersonalIdentifier properties">
     <ParamField body="type" type="string" required>
-      The ID type - currently `driversLicense` is supported.
+      The ID type - currently `driversLicense` or `ssn` is supported.
     </ParamField>
 
     <ParamField body="state" type="string" required>
-      The 2 letter state acronym where this ID was issued, for example: `CA`.
+      The 2 letter state acronym where this ID was issued, for example: `CA`. Only required for type `driversLicense`.
     </ParamField>
 
     <ParamField body="value" type="string" required>
-      The ID number.
+      The ID number. For type `ssn`, should be 9 digits.
     </ParamField>
 
   </Expandable>
