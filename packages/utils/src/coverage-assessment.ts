@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
+import { getPatientIds } from "./patient/get-ids";
 import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 
@@ -68,7 +69,11 @@ async function main() {
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
 
   const { orgName } = await getCxData(cxId, undefined, false);
-  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds();
+  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
+    cxId,
+    patientIds,
+    axios,
+  });
 
   await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, log);
 
@@ -97,20 +102,6 @@ function initCsv(fileName: string) {
     fs.mkdirSync(dirName, { recursive: true });
   }
   fs.writeFileSync(fileName, csvHeader);
-}
-
-async function getPatientIds(): Promise<{ patientIds: string[]; isAllPatients: boolean }> {
-  if (patientIds.length > 0) {
-    return { patientIds, isAllPatients: false };
-  }
-  const allPatientIds = await getAllPatientIds();
-  return { patientIds: allPatientIds, isAllPatients: true };
-}
-
-async function getAllPatientIds(): Promise<string[]> {
-  const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
-  const patientIds = resp.data.patientIds;
-  return (Array.isArray(patientIds) ? patientIds : []) as string[];
 }
 
 async function displayWarningAndConfirmation(

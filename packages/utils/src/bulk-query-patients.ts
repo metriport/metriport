@@ -16,6 +16,8 @@ import { chunk } from "lodash";
 import path from "path";
 import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { getPatientIds } from "./patient/get-ids";
+import { logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -75,20 +77,6 @@ function initCsv(fileName: string) {
   fs.writeFileSync(fileName, csvHeader);
 }
 
-async function getPatientIds(): Promise<{ patientIds: string[]; isAllPatients: boolean }> {
-  if (patientIds.length > 0) {
-    return { patientIds, isAllPatients: false };
-  }
-  const allPatientIds = await getAllPatientIds();
-  return { patientIds: allPatientIds, isAllPatients: true };
-}
-
-async function getAllPatientIds(): Promise<string[]> {
-  const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
-  const patientIds = resp.data.patientIds;
-  return (Array.isArray(patientIds) ? patientIds : []) as string[];
-}
-
 async function displayWarningAndConfirmation(
   patientCount: number | undefined,
   isAllPatients: boolean,
@@ -98,11 +86,7 @@ async function displayWarningAndConfirmation(
   const msgForAllPatients = `You are about to trigger a document query for ALL patients of the CX (${patientCount}). This is very expensive!`;
   const msgForFewPatients = `You are about to trigger a document query for ${patientCount} patients of the CX. This can be expensive!`;
   const msg = isAllPatients ? msgForAllPatients : msgForFewPatients;
-  if (!dryRun) {
-    // The first chars there are to set color red on the terminal
-    // See: // https://stackoverflow.com/a/41407246/2099911
-    log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
-  }
+  if (!dryRun) logNotDryRun(log);
   log(msg);
   log("Cancel this now if you're not sure.");
   if (!dryRun) await sleep(confirmationTime.asMilliseconds());
@@ -194,14 +178,19 @@ async function main() {
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
 
   const { orgName } = await getCxData(cxId, undefined, false);
-  const fileName = csvName(orgName);
-  if (!dryRun) initCsv(fileName);
-
-  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds();
+  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
+    cxId,
+    patientIds,
+    axios,
+  });
 
   await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, dryRun, log);
 
+  const fileName = csvName(orgName);
+  if (!dryRun) initCsv(fileName);
+
   log(`>>> Running it...`);
+
   let count = 0;
   const chunks = chunk(patientIdsToQuery, patientChunkSize);
   for (const [i, chunk] of Object.entries(chunks)) {
