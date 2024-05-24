@@ -118,10 +118,10 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
         value: "mailto:test@test.com",
       },
     ],
-    personalIdentifiers: [
+    identifier: [
       {
-        extension: "987564321",
-        root: "2.16.840.1.113883.3.9621",
+        value: "987564321",
+        system: "2.16.840.1.113883.3.9621",
       },
     ],
   },

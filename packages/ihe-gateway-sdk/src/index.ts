@@ -67,4 +67,5 @@ export {
   PatientResource,
   patientResourceSchema,
   PersonalIdentifier,
+  Gender,
 } from "./models/shared";

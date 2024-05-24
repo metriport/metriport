@@ -44,8 +44,8 @@ type IheIdentifier = {
 
 function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): PersonalIdentifier {
   return {
-    extension: identifier?._extension,
-    root: identifier?._root,
+    value: identifier?._extension,
+    system: identifier?._root,
   };
 }
 
@@ -150,7 +150,7 @@ function handlePatientMatchResponse({
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
     ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
-    ...(patientIdentifiers.length > 0 && { personalIdentifiers: patientIdentifiers }),
+    ...(patientIdentifiers.length > 0 && { identifier: patientIdentifiers }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
