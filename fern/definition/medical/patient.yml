@@ -183,12 +183,17 @@ types:
   PersonalIdentifier:
     union:
       driversLicense: DriversLicense
+      ssn: SSN
     examples:
       - name: Example1
         value:
           type: driversLicense
           state: CA
           value: "51227265"
+      - name: Example2
+        value:
+          type: ssn
+          value: "123456789"
 
   DriversLicense:
     properties:
@@ -198,6 +203,14 @@ types:
       value:
         type: string
         docs: The ID number.
+      assigner: optional<string>
+      period: optional<fhir.Period>
+
+  SSN:
+    properties:
+      value:
+        type: string
+        docs: The 9 digit ID number, for example `123456789`.
       assigner: optional<string>
       period: optional<fhir.Period>
 

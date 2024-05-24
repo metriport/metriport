@@ -4,12 +4,7 @@ import {
   removeCoordinates,
 } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
-import {
-  FacilityRegister,
-  Facility,
-  FacilityCreate,
-  isOboFacility,
-} from "../../domain/medical/facility";
+import { FacilityRegister, Facility, FacilityCreate } from "../../domain/medical/facility";
 import { getCxOrganizationNameOidAndType } from "../../command/medical/organization/get-organization";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { getCqOboData } from "../../external/carequality/get-obo-data";
@@ -51,16 +46,14 @@ export async function registerFacilityWithinHIEs(
   return cmdFacility;
 }
 
-function createFacilityDetails(
+export function createFacilityDetails(
   cxId: string,
   facility: FacilityRegister,
   address: AddressWithCoordinates
 ): { facilityDetails: FacilityCreate; coordinates: Coordinates } {
-  const isCqObo = isOboFacility(facility.cqType);
-  const isCwObo = isOboFacility(facility.cwType);
   const { address: addressStrict, coordinates } = removeCoordinates(address);
 
-  let facilityDetails: FacilityCreate = {
+  const facilityDetails: FacilityCreate = {
     cxId,
     data: {
       name: facility.data.name,
@@ -69,23 +62,11 @@ function createFacilityDetails(
     },
     cqType: facility.cqType,
     cwType: facility.cwType,
+    cqActive: facility.cqActive,
+    cwActive: facility.cwActive,
+    cqOboOid: facility.cqOboOid,
+    cwOboOid: facility.cwOboOid,
   };
-
-  if (isCqObo) {
-    facilityDetails = {
-      ...facilityDetails,
-      cqActive: facility.cqActive,
-      cqOboOid: facility.cqOboOid,
-    };
-  }
-
-  if (isCwObo) {
-    facilityDetails = {
-      ...facilityDetails,
-      cwActive: facility.cwActive,
-      cwOboOid: facility.cwOboOid,
-    };
-  }
 
   return {
     facilityDetails,

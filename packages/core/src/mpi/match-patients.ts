@@ -165,5 +165,9 @@ function isSameContactByEmail(a?: Contact, b?: Contact): boolean {
 }
 
 function isSameIdentifierById(a?: PersonalIdentifier, b?: PersonalIdentifier): boolean {
-  return a?.value === b?.value && a?.state === b?.state && a?.type === b?.type;
+  return (
+    a?.value === b?.value &&
+    a?.type === b?.type &&
+    (a?.type === "driversLicense" && b?.type === "driversLicense" ? a.state === b.state : true)
+  );
 }

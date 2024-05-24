@@ -6,32 +6,19 @@ import {
   NameUseCodes,
   Patient as CommonwellPatient,
   Person as CommonwellPerson,
+  StrongId,
 } from "@metriport/commonwell-sdk";
-import {
-  driversLicenseURIs,
-  medicareURI,
-  addOidPrefix,
-  passportURI,
-  ssnURI,
-} from "@metriport/core/domain/oid";
-import {
-  GenderAtBirth,
-  generalTypes,
-  Patient,
-  PatientData,
-  splitName,
-} from "@metriport/core/domain/patient";
+import { addOidPrefix, driversLicenseURIs } from "@metriport/core/domain/oid";
+import { Patient, splitName, GenderAtBirth } from "@metriport/core/domain/patient";
 
-export const genderMapping: { [k in GenderAtBirth]: string } = {
+const genderMapping: { [k in GenderAtBirth]: string } = {
   F: "F",
   M: "M",
 };
 
-const identifierSytemByType: Record<(typeof generalTypes)[number], string> = {
-  ssn: ssnURI,
-  passport: passportURI,
-  medicare: medicareURI,
-};
+export function mapGenderAtBirthToCw(k: GenderAtBirth): string {
+  return genderMapping[k];
+}
 
 export function makePersonForPatient(cwPatient: CommonwellPatient): CommonwellPerson {
   return {
@@ -55,7 +42,7 @@ export function patientToCommonwell({
     key: patient.id,
     assigner: orgName,
   };
-  const strongIdentifiers = getStrongIdentifiers(patient.data);
+  const strongIds = getCwStrongIdsFromPatient(patient);
   let addedAddress = false;
   return {
     identifier: [identifier],
@@ -82,7 +69,7 @@ export function patientToCommonwell({
         },
       ],
       gender: {
-        code: genderMapping[patient.data.genderAtBirth],
+        code: mapGenderAtBirthToCw(patient.data.genderAtBirth),
       },
       telecom: patient.data.contact?.flatMap(contact => {
         const contacts: Contact[] = [];
@@ -101,20 +88,23 @@ export function patientToCommonwell({
         return contacts;
       }),
       birthDate: patient.data.dob,
-      identifier: strongIdentifiers,
+      identifier: strongIds,
     },
   };
 }
 
-function getStrongIdentifiers(data: PatientData): Identifier[] | undefined {
-  return data.personalIdentifiers?.map(id => ({
-    use: "usual",
-    key: id.value,
-    system:
-      id.type === "driversLicense" ? driversLicenseURIs[id.state] : identifierSytemByType[id.type],
-    period: id.period,
-    ...(id.assigner ? { assigner: id.assigner } : undefined),
-  }));
+export function getCwStrongIdsFromPatient(patient: Patient): StrongId[] {
+  return (patient.data.personalIdentifiers ?? []).flatMap(id => {
+    const base = {
+      use: "usual" as StrongId["use"],
+      period: id.period,
+      assigner: id.assigner,
+    };
+    if (id.type === "driversLicense") {
+      return { ...base, key: id.value, system: driversLicenseURIs[id.state] };
+    }
+    return []; // { ...base, key: id.value, system: identifierSytemByType[id.type] }
+  });
 }
 
 function normalizePhoneNumber(phone: string): string {

@@ -36,31 +36,40 @@ type IheTelecom = {
   _value: string;
 };
 
-function iheAddressToAddress(iheAddress: IheAddress[]): Address[] {
-  const addresses = iheAddress.map((address: IheAddress) => ({
+function convertIheAddressToAddress(address: IheAddress): Address {
+  return {
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
     city: address?.city,
     state: address?.state,
     postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
     country: address?.country,
-  }));
-  return addresses;
+  };
 }
 
-function iheNameToName(iheName: IheName[]): Name[] {
-  const patientNames = iheName.map((name: IheName) => ({
+function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] {
+  return iheAddresses.map(convertIheAddressToAddress);
+}
+
+function convertIheNameToCarequalityName(name: IheName): Name {
+  return {
     given: toArray(name?.given).filter((g): g is string => Boolean(g)),
     family: name?.family,
-  }));
-  return patientNames;
+  };
 }
 
-function iheTelecomToTelecom(iheTelecom: IheTelecom[]): Telecom[] {
-  const patientTelecoms = iheTelecom.map((telecom: IheTelecom) => ({
-    system: telecom?._use,
-    value: telecom?._value,
-  }));
-  return patientTelecoms;
+function iheNamesToNames(iheNames: IheName[]): Name[] {
+  return iheNames.map(convertIheNameToCarequalityName);
+}
+
+function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom {
+  return {
+    system: iheTelecom?._use,
+    value: iheTelecom?._value,
+  };
+}
+
+function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] {
+  return iheTelecom.map(convertIheTelecomToTelecom);
 }
 
 function handleHTTPErrorResponse({
@@ -112,9 +121,9 @@ function handlePatientMatchResponse({
   const names = toArray(subject1?.patient?.patientPerson?.name);
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
-  const addresses = iheAddressToAddress(addr);
-  const patientNames = iheNameToName(names);
-  const patientTelecoms = iheTelecomToTelecom(telecoms);
+  const addresses = iheAddressesToAddresses(addr);
+  const patientNames = iheNamesToNames(names);
+  const patientTelecoms = iheTelecomsToTelecoms(telecoms);
 
   const patientResource = {
     name: patientNames,
