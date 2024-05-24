@@ -1,4 +1,5 @@
 import { USState } from "../..";
+import { GeneralPersonalIdentifiers, DriversLicensePersonalIdentifier } from "./demographics";
 
 export type PatientDTO = {
   id: string;
@@ -30,7 +31,7 @@ type Address = {
   coordinates?: Coordinates;
 };
 
-type PersonalIdentifier = {
+export type BaseIdentifier = {
   value: string;
   period?:
     | {
@@ -42,9 +43,13 @@ type PersonalIdentifier = {
         end: string;
       };
   assigner?: string;
-  type: "driversLicense";
-  state: keyof typeof USState;
 };
+
+export type PersonalIdentifier = BaseIdentifier &
+  (
+    | { type: GeneralPersonalIdentifiers }
+    | { type: DriversLicensePersonalIdentifier; state: USState }
+  );
 
 type Contact = {
   phone?: string | undefined;
