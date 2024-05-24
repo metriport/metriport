@@ -5,6 +5,9 @@ import {
   OutboundPatientDiscoveryReq,
   XCPDGateway,
   OperationOutcome,
+  Name,
+  Address,
+  Telecom,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
@@ -22,23 +25,10 @@ type IheAddress = {
   county: string | undefined;
 };
 
-type CarequalityAddress = {
-  line: string[] | undefined;
-  city: string | undefined;
-  state: string | undefined;
-  postalCode: string | undefined;
-  country: string | undefined;
-};
-
 type IheName = {
   given: string | string[] | undefined;
   family: string | undefined;
   delimiter: string | undefined;
-};
-
-type CarequalityName = {
-  given: string[];
-  family: string | undefined;
 };
 
 type IheTelecom = {
@@ -46,12 +36,7 @@ type IheTelecom = {
   _value: string;
 };
 
-type CarequalityTelecom = {
-  system: string | undefined;
-  value: string | undefined;
-};
-
-function iheAddressToCarequalityAddress(iheAddress: IheAddress[]): CarequalityAddress[] {
+function iheAddressToAddress(iheAddress: IheAddress[]): Address[] {
   const addresses = iheAddress.map((address: IheAddress) => ({
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
     city: address?.city,
@@ -62,7 +47,7 @@ function iheAddressToCarequalityAddress(iheAddress: IheAddress[]): CarequalityAd
   return addresses;
 }
 
-function iheNameToCarequalityName(iheName: IheName[]): CarequalityName[] {
+function iheNameToName(iheName: IheName[]): Name[] {
   const patientNames = iheName.map((name: IheName) => ({
     given: toArray(name?.given).filter((g): g is string => Boolean(g)),
     family: name?.family,
@@ -70,7 +55,7 @@ function iheNameToCarequalityName(iheName: IheName[]): CarequalityName[] {
   return patientNames;
 }
 
-function iheTelecomToCarequalityTelecom(iheTelecom: IheTelecom[]): CarequalityTelecom[] {
+function iheTelecomToTelecom(iheTelecom: IheTelecom[]): Telecom[] {
   const patientTelecoms = iheTelecom.map((telecom: IheTelecom) => ({
     system: telecom?._use,
     value: telecom?._value,
@@ -127,9 +112,9 @@ function handlePatientMatchResponse({
   const names = toArray(subject1?.patient?.patientPerson?.name);
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
 
-  const addresses = iheAddressToCarequalityAddress(addr);
-  const patientNames = iheNameToCarequalityName(names);
-  const patientTelecoms = iheTelecomToCarequalityTelecom(telecoms);
+  const addresses = iheAddressToAddress(addr);
+  const patientNames = iheNameToName(names);
+  const patientTelecoms = iheTelecomToTelecom(telecoms);
 
   const patientResource = {
     name: patientNames,

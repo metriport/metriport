@@ -4,39 +4,8 @@ import {
   baseResponseSchema,
   externalGatewayPatientSchema,
   XCPDGatewaySchema,
+  patientResourceSchema,
 } from "../shared";
-
-export const inboundPatientResourceSchema = z.object({
-  name: z
-    .array(
-      z.object({
-        family: z.string().optional(),
-        given: z.array(z.string()).optional(),
-      })
-    )
-    .optional(),
-  gender: z.enum(["male", "female", "undifferentiated"]).optional(),
-  birthDate: z.string().optional(),
-  address: z.array(
-    z.object({
-      line: z.array(z.string()).optional(),
-      city: z.string().optional(),
-      state: z.string().optional(),
-      postalCode: z.string().optional(),
-      country: z.string().optional(),
-    })
-  ),
-  telecom: z
-    .array(
-      z.object({
-        system: z.string().optional(),
-        value: z.string().optional(),
-      })
-    )
-    .optional(),
-});
-
-export type InboundPatientResource = z.infer<typeof inboundPatientResourceSchema>;
 
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
@@ -78,7 +47,7 @@ export const outboundPatientDiscoveryRespSuccessfulSchema =
   outboundPatientDiscoveryRespDefaultSchema
     .merge(patientDiscoveryRespSuccessfulDefaultSchema)
     .extend({
-      patientResource: inboundPatientResourceSchema.optional(),
+      patientResource: patientResourceSchema.optional(),
     });
 
 export const outboundPatientDiscoveryRespFaultSchema =

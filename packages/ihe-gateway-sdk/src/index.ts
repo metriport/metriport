@@ -44,8 +44,6 @@ export {
   OutboundPatientDiscoveryRespSuccessfulSchema,
   OutboundPatientDiscoveryRespFaultSchema,
   outboundPatientDiscoveryRespSchema,
-  InboundPatientResource,
-  inboundPatientResourceSchema,
 } from "./models/patient-discovery/patient-discovery-responses";
 export {
   BaseErrorResponse,
@@ -63,4 +61,9 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
+  Name,
+  Address,
+  Telecom,
+  PatientResource,
+  patientResourceSchema,
 } from "./models/shared";

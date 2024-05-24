@@ -1,6 +1,6 @@
 import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
-import { Address } from "@medplum/fhirtypes";
+import { Address, Telecom, Name } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
@@ -31,8 +31,7 @@ function createSoapBodyContent({
   toUrl,
   patientGender,
   patientBirthtime,
-  patientFamilyName,
-  patientGivenName,
+  patientName,
   patientAddress,
   patientTelecom,
   providerId,
@@ -44,11 +43,10 @@ function createSoapBodyContent({
   receiverDeviceId: string;
   toUrl: string;
   patientGender: string;
-  patientBirthtime: string;
-  patientFamilyName: string;
-  patientGivenName: string;
-  patientAddress: Address | undefined;
-  patientTelecom: string | undefined;
+  patientBirthtime: string | undefined;
+  patientName: Name[] | undefined;
+  patientAddress: Address[] | undefined;
+  patientTelecom: Telecom[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
 }): object {
@@ -150,37 +148,44 @@ function createSoapBodyContent({
               },
               [`${prefix}semanticsText`]: "LivingSubject.administrativeGender",
             },
-            [`${prefix}livingSubjectBirthTime`]: {
-              [`${prefix}value`]: {
-                "@_value": patientBirthtime,
-              },
-              [`${prefix}semanticsText`]: "LivingSubject.birthTime",
-            },
-            [`${prefix}livingSubjectName`]: {
-              [`${prefix}value`]: {
-                [`${prefix}family`]: patientFamilyName,
-                [`${prefix}given`]: patientGivenName,
-              },
-              [`${prefix}semanticsText`]: "LivingSubject.name",
-            },
-            [`${prefix}patientAddress`]: patientAddress
+            [`${prefix}livingSubjectBirthTime`]: patientBirthtime
               ? {
                   [`${prefix}value`]: {
-                    [`${prefix}streetAddressLine`]: patientAddress.line?.join(", "),
-                    [`${prefix}city`]: patientAddress?.city,
-                    [`${prefix}state`]: patientAddress?.state,
-                    [`${prefix}postalCode`]: patientAddress?.postalCode,
-                    [`${prefix}country`]: patientAddress?.country,
+                    "@_value": patientBirthtime,
                   },
+                  [`${prefix}semanticsText`]: "LivingSubject.birthTime",
+                }
+              : {},
+            [`${prefix}livingSubjectName`]: patientName
+              ? {
+                  [`${prefix}value`]: patientName.map(name => ({
+                    [`${prefix}family`]: name.family,
+                    ...name.given?.reduce((acc: { [key: string]: string }, givenName) => {
+                      acc[`${prefix}given`] = givenName;
+                      return acc;
+                    }, {}),
+                  })),
+                  [`${prefix}semanticsText`]: "LivingSubject.name",
+                }
+              : {},
+            [`${prefix}patientAddress`]: patientAddress
+              ? {
+                  [`${prefix}value`]: patientAddress.map(address => ({
+                    [`${prefix}streetAddressLine`]: address.line?.join(", "),
+                    [`${prefix}city`]: address.city,
+                    [`${prefix}state`]: address.state,
+                    [`${prefix}postalCode`]: address.postalCode,
+                    [`${prefix}country`]: address.country,
+                  })),
                   [`${prefix}semanticsText`]: "Patient.addr",
                 }
               : {},
             [`${prefix}patientTelecom`]: patientTelecom
               ? {
-                  [`${prefix}value`]: {
-                    "@_use": "HP",
-                    "@_value": patientTelecom,
-                  },
+                  [`${prefix}value`]: patientTelecom.map(telecom => ({
+                    "@_use": telecom.system,
+                    "@_value": telecom.value,
+                  })),
                   [`${prefix}semanticsText`]: "Patient.telecom",
                 }
               : {},
@@ -221,11 +226,10 @@ function createSoapBody({
   const providerId = bodyData.principalCareProviderIds[0];
   const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
-  const patientBirthtime = bodyData.patientResource.birthDate.replace(DATE_DASHES_REGEX, "");
-  const patientFamilyName = bodyData.patientResource.name?.[0]?.family;
-  const patientGivenName = bodyData.patientResource.name?.[0]?.given?.[0];
-  const patientAddress = bodyData.patientResource.address?.[0];
-  const patientTelecom = bodyData.patientResource.telecom?.[0]?.value ?? undefined;
+  const patientBirthtime = bodyData.patientResource.birthDate?.replace(DATE_DASHES_REGEX, "");
+  const patientName = bodyData.patientResource.name;
+  const patientAddress = bodyData.patientResource.address;
+  const patientTelecom = bodyData.patientResource.telecom;
 
   const useUrn = requiresUrnInSoapBody(gateway);
   const soapBody = {
@@ -237,8 +241,7 @@ function createSoapBody({
       toUrl,
       patientGender,
       patientBirthtime,
-      patientFamilyName,
-      patientGivenName,
+      patientName,
       patientAddress,
       patientTelecom,
       providerId,

@@ -141,3 +141,34 @@ export const documentReferenceSchema = z.object({
     .nullish(),
 });
 export type DocumentReference = z.infer<typeof documentReferenceSchema>;
+
+export const nameSchema = z.object({
+  family: z.string().optional(),
+  given: z.array(z.string()).optional(),
+});
+export type Name = z.infer<typeof nameSchema>;
+
+export const addressSchema = z.object({
+  line: z.array(z.string()).optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().optional(),
+  country: z.string().optional(),
+});
+export type Address = z.infer<typeof addressSchema>;
+
+export const telecomSchema = z.object({
+  system: z.string().optional(),
+  value: z.string().optional(),
+});
+export type Telecom = z.infer<typeof telecomSchema>;
+
+export const patientResourceSchema = z.object({
+  name: z.array(nameSchema).optional(),
+  gender: z.enum(["male", "female", "undifferentiated"]).optional(),
+  birthDate: z.string().optional(),
+  address: z.array(addressSchema),
+  telecom: z.array(telecomSchema).optional(),
+});
+
+export type PatientResource = z.infer<typeof patientResourceSchema>;
