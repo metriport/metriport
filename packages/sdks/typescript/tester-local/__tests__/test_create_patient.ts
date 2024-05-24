@@ -27,11 +27,17 @@ describe("Patient tests", () => {
       lastName: "Doe",
       dob: "1980-01-01",
       genderAtBirth: "M",
-      personalIdentifiers: [{
+      personalIdentifiers: [
+        {
           type: "driversLicense",
           state: UsState.Ca,
           value: "12345678",
-        }],
+        },
+        {
+          type: "ssn",
+          value: "123456789",
+        }
+      ],
       address: [{
           addressLine1: "123 Main St",
           city: "Los Angeles",
