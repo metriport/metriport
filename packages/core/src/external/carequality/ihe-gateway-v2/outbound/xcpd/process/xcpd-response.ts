@@ -49,14 +49,8 @@ function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): Pe
   };
 }
 
-function iheIdentifiersToPersonalIdentifiers(
-  patientId: IheIdentifier,
-  otherIds: IheIdentifier[]
-): PersonalIdentifier[] {
-  return [
-    convertIheIdentifierToPersonalIdentifier(patientId),
-    ...otherIds.map(convertIheIdentifierToPersonalIdentifier),
-  ];
+function iheIdentifiersToPersonalIdentifiers(otherIds: IheIdentifier[]): PersonalIdentifier[] {
+  return otherIds.map(convertIheIdentifierToPersonalIdentifier);
 }
 
 function convertIheAddressToAddress(address: IheAddress): Address {
@@ -143,13 +137,12 @@ function handlePatientMatchResponse({
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
-  const patientId = subject1?.patient?.id;
   const otherIds = toArray(subject1?.patient?.patientPerson?.asOtherIDs?.id);
 
   const addresses = iheAddressesToAddresses(addr);
   const patientNames = iheNamesToNames(names);
   const patientTelecoms = iheTelecomsToTelecoms(telecoms);
-  const patientIdentifiers = iheIdentifiersToPersonalIdentifiers(patientId, otherIds);
+  const patientIdentifiers = iheIdentifiersToPersonalIdentifiers(otherIds);
 
   const patientResource = {
     name: patientNames,

@@ -108,6 +108,22 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
         country: "USA",
       },
     ],
+    telecom: [
+      {
+        system: "MC",
+        value: "tel:+1310-000-0000",
+      },
+      {
+        system: "H",
+        value: "mailto:test@test.com",
+      },
+    ],
+    personalIdentifiers: [
+      {
+        extension: "987564321",
+        root: "2.16.840.1.113883.3.9621",
+      },
+    ],
   },
 };
 
