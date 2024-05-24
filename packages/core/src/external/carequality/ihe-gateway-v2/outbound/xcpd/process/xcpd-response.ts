@@ -8,6 +8,7 @@ import {
   Name,
   Address,
   Telecom,
+  PersonalIdentifier,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../../../utils";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
@@ -35,6 +36,28 @@ type IheTelecom = {
   _use: string;
   _value: string;
 };
+
+type IheIdentifier = {
+  _extension: string;
+  _root: string;
+};
+
+function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): PersonalIdentifier {
+  return {
+    extension: identifier?._extension,
+    root: identifier?._root,
+  };
+}
+
+function iheIdentifiersToPersonalIdentifiers(
+  patientId: IheIdentifier,
+  otherIds: IheIdentifier[]
+): PersonalIdentifier[] {
+  return [
+    convertIheIdentifierToPersonalIdentifier(patientId),
+    ...otherIds.map(convertIheIdentifierToPersonalIdentifier),
+  ];
+}
 
 function convertIheAddressToAddress(address: IheAddress): Address {
   return {
@@ -120,10 +143,13 @@ function handlePatientMatchResponse({
   const addr = toArray(subject1?.patient?.patientPerson?.addr);
   const names = toArray(subject1?.patient?.patientPerson?.name);
   const telecoms = toArray(subject1?.patient?.patientPerson?.telecom);
+  const patientId = subject1?.patient?.id;
+  const otherIds = toArray(subject1?.patient?.patientPerson?.asOtherIDs?.id);
 
   const addresses = iheAddressesToAddresses(addr);
   const patientNames = iheNamesToNames(names);
   const patientTelecoms = iheTelecomsToTelecoms(telecoms);
+  const patientIdentifiers = iheIdentifiersToPersonalIdentifiers(patientId, otherIds);
 
   const patientResource = {
     name: patientNames,
@@ -131,6 +157,7 @@ function handlePatientMatchResponse({
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
     ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
+    ...(patientIdentifiers.length > 0 && { personalIdentifiers: patientIdentifiers }),
   };
 
   const response: OutboundPatientDiscoveryResp = {

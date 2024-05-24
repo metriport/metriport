@@ -66,4 +66,5 @@ export {
   Telecom,
   PatientResource,
   patientResourceSchema,
+  PersonalIdentifier,
 } from "./models/shared";

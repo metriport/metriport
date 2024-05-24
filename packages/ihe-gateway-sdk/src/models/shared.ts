@@ -163,12 +163,19 @@ export const telecomSchema = z.object({
 });
 export type Telecom = z.infer<typeof telecomSchema>;
 
+export const personalIdentifierSchema = z.object({
+  root: z.string(),
+  extension: z.string(),
+});
+export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
+
 export const patientResourceSchema = z.object({
   name: z.array(nameSchema).optional(),
   gender: z.enum(["male", "female", "undifferentiated"]).optional(),
   birthDate: z.string().optional(),
   address: z.array(addressSchema),
   telecom: z.array(telecomSchema).optional(),
+  personalIdentifiers: z.array(personalIdentifierSchema).optional(),
 });
 
 export type PatientResource = z.infer<typeof patientResourceSchema>;
