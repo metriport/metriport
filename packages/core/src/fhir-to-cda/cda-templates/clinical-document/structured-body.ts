@@ -16,8 +16,8 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
 
   const structuredBody = {
     structuredBody: {
-      component: structuredBodySections.map(comp => ({
-        section: comp?.component.section,
+      section: structuredBodySections.map(section => ({
+        section: section,
       })),
     },
   };

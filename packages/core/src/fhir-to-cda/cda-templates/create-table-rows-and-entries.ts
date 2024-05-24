@@ -7,12 +7,12 @@ import {
 } from "../cda-types/shared-types";
 import { AugmentedResource } from "./components/augmented-resources";
 
-export function createTableRowsAndEntries<R extends Resource, T extends AugmentedResource<R>>(
+export function createTableRowsAndEntries<R extends Resource, T extends AugmentedResource<R>, X>(
   augObs: T[],
   tableRowsCallback: CreateTableRowsCallback<T>,
-  entriesCallback: CreateEntriesCallback<T>
-): TableRowsAndEntriesResult {
-  const result: TableRowsAndEntriesResult = {
+  entriesCallback: CreateEntriesCallback<T, X>
+): TableRowsAndEntriesResult<X> {
+  const result: TableRowsAndEntriesResult<X> = {
     trs: [],
     entries: [],
   };

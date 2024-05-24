@@ -1,13 +1,7 @@
-import { Bundle, Observation, Resource } from "@medplum/fhirtypes";
-import { isObservation } from "../../fhir";
+import { Bundle, Observation } from "@medplum/fhirtypes";
+import { isSocialHistoryObservation } from "../../fhir";
 import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
-import {
-  _idAttribute,
-  loincCodeSystem,
-  loincSystemName,
-  oids,
-  socialHistorySurveyCodes,
-} from "../constants";
+import { _idAttribute, loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
@@ -46,32 +40,20 @@ export function buildSocialHistory(fhirBundle: Bundle) {
   };
 
   const socialHistorySection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: oids.socialHistorySection,
-        }),
-        code: buildCodeCe({
-          code: "29762-2",
-          codeSystem: loincCodeSystem,
-          codeSystemName: loincSystemName,
-          displayName: "Social history Narrative",
-        }),
-        title: "SOCIAL HISTORY",
-        text: { table },
-        entry: entries,
-      },
+    section: {
+      templateId: buildInstanceIdentifier({
+        root: oids.socialHistorySection,
+      }),
+      code: buildCodeCe({
+        code: "29762-2",
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+        displayName: "Social history Narrative",
+      }),
+      title: "SOCIAL HISTORY",
+      text: { table },
+      entry: entries,
     },
   };
   return socialHistorySection;
-}
-
-function isSocialHistoryObservation(resource: Resource | undefined): resource is Observation {
-  if (!isObservation(resource)) {
-    return false;
-  }
-
-  return resource?.code?.coding?.[0]?.code
-    ? socialHistorySurveyCodes.includes(resource.code.coding[0].code.toLowerCase())
-    : false;
 }

@@ -387,7 +387,13 @@ export function isLoinc(system: string | undefined): boolean {
   return false;
 }
 
-export function createTableHeader(tableHeaders: string[]) {
+type TableHeader = {
+  tr: {
+    th: string[];
+  }[];
+};
+
+export function createTableHeader(tableHeaders: string[]): TableHeader {
   return {
     tr: [
       {
@@ -403,20 +409,42 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
   return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
 }
 
+export type CdaTable = {
+  table: {
+    [_idAttribute]: string;
+    thead: TableHeader;
+    tbody: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: TableRowWithId[];
+    };
+  };
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TableRow = { tr: { [x: string]: any; td: any } };
 export function initiateSectionTable(
   sectionName: string,
   tableHeaders: string[],
   tableRows: ObservationTableRow[]
-) {
+): CdaTable {
   return {
-    [_idAttribute]: sectionName,
-    thead: createTableHeader(tableHeaders),
-    tbody: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tr: tableRows.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [_idAttribute]: row.tr[_idAttribute],
-        td: row.tr.td,
-      })),
+    table: {
+      [_idAttribute]: sectionName,
+      thead: createTableHeader(tableHeaders),
+      tbody: {
+        tr: mapTableRows(tableRows),
+      },
     },
   };
+}
+
+type TableRowWithId = {
+  [_idAttribute]: string;
+  td: TableRow;
+};
+
+function mapTableRows(tableRows: ObservationTableRow[]): TableRowWithId[] {
+  return tableRows.map((row: TableRow) => ({
+    [_idAttribute]: row.tr[_idAttribute],
+    td: row.tr.td,
+  }));
 }

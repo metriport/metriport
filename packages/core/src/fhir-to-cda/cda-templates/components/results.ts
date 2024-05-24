@@ -1,6 +1,10 @@
 import { Bundle, DiagnosticReport, Observation } from "@medplum/fhirtypes";
+import {
+  findResourceInBundle,
+  isDiagnosticReport,
+  isObservation,
+} from "../../../external/fhir/shared";
 import { base64ToString } from "../../../util/base64";
-import { findResourceInBundle, isDiagnosticReport, isObservation } from "../../fhir";
 import {
   TIMESTAMP_CLEANUP_REGEX,
   buildCodeCe,
@@ -79,21 +83,19 @@ export function buildResult(fhirBundle: Bundle) {
   const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: oids.resultsSection,
-        }),
-        code: buildCodeCe({
-          code: "30954-2",
-          codeSystem: "2.16.840.1.113883.6.1",
-          codeSystemName: "LOINC",
-          displayName: "Diagnostic Results",
-        }),
-        title: "Diagnostic Results",
-        text: text.map(t => t && t.item),
-        entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
-      },
+    section: {
+      templateId: buildInstanceIdentifier({
+        root: oids.resultsSection,
+      }),
+      code: buildCodeCe({
+        code: "30954-2",
+        codeSystem: "2.16.840.1.113883.6.1",
+        codeSystemName: "LOINC",
+        displayName: "Diagnostic Results",
+      }),
+      title: "Diagnostic Results",
+      text: text.map(t => t && t.item),
+      entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
     },
   };
   return resultsSection;

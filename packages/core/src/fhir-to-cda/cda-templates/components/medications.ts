@@ -1,17 +1,22 @@
 import {
   Bundle,
-  MedicationStatement,
   CodeableConcept,
-  DosageDoseAndRate,
   Dosage,
+  DosageDoseAndRate,
+  MedicationStatement,
 } from "@medplum/fhirtypes";
+import {
+  findResourceInBundle,
+  isMedication,
+  isMedicationStatement,
+} from "../../../external/fhir/shared";
 import BadRequestError from "../../../util/error/bad-request";
+import { MedicationSection } from "../../cda-types/sections";
 import {
   CdaCodeCe,
   ObservationTableRow,
   SubstanceAdministationEntry,
 } from "../../cda-types/shared-types";
-import { findResourceInBundle, isMedication, isMedicationStatement } from "../../fhir";
 import {
   buildCodeCe,
   buildCodeCeFromCoding,
@@ -52,7 +57,7 @@ const tableHeaders = [
   "Reason",
 ];
 
-export function buildMedications(fhirBundle: Bundle) {
+export function buildMedications(fhirBundle: Bundle): MedicationSection {
   const medicationStatements: MedicationStatement[] =
     fhirBundle.entry?.flatMap(entry =>
       isMedicationStatement(entry.resource) ? [entry.resource] : []
@@ -76,21 +81,19 @@ export function buildMedications(fhirBundle: Bundle) {
   const table = initiateSectionTable(medicationsSectionName, tableHeaders, trs);
 
   const medicationsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: oids.medicationsSection,
-        }),
-        code: buildCodeCe({
-          code: "10160-0",
-          codeSystem: loincCodeSystem,
-          codeSystemName: loincSystemName,
-          displayName: "History of Medication use Narrative",
-        }),
-        title: "MEDICATIONS",
-        text: { table },
-        entry: entries,
-      },
+    section: {
+      templateId: buildInstanceIdentifier({
+        root: oids.medicationsSection,
+      }),
+      code: buildCodeCe({
+        code: "10160-0",
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+        displayName: "History of Medication use Narrative",
+      }),
+      title: "MEDICATIONS",
+      text: table,
+      entry: entries,
     },
   };
   return medicationsSection;

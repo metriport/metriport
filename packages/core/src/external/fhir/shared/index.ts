@@ -12,6 +12,9 @@ import {
   Reference,
   Resource,
   ResourceType as MedplumResourceType,
+  Condition,
+  Medication,
+  MedicationStatement,
 } from "@medplum/fhirtypes";
 import { isCommonwellExtension } from "../../commonwell/extension";
 import { isCarequalityExtension } from "../../carequality/extension";
@@ -152,6 +155,20 @@ export function isObservation(resource: Resource | undefined): resource is Obser
 
 export function isDiagnosticReport(resource: Resource | undefined): resource is DiagnosticReport {
   return resource?.resourceType === "DiagnosticReport";
+}
+
+export function isCondition(resource: Resource | undefined): resource is Condition {
+  return resource?.resourceType === "Condition";
+}
+
+export function isMedicationStatement(
+  resource: Resource | undefined
+): resource is MedicationStatement {
+  return resource?.resourceType === "MedicationStatement";
+}
+
+export function isMedication(resource: Resource | undefined): resource is Medication {
+  return resource?.resourceType === "Medication";
 }
 
 export function findOrganizationResource(fhirBundle: Bundle): Organization | undefined {

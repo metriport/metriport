@@ -1,6 +1,9 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
-import { ObservationEntry, ObservationTableRow } from "../../cda-types/shared-types";
-import { isCondition } from "../../fhir";
+import {
+  ObservationEntry,
+  ObservationTableRow,
+  ProblemsConcernActEntry,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
@@ -30,6 +33,8 @@ import {
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedCondition } from "./augmented-resources";
+import { ProblemsSection } from "../../cda-types/sections";
+import { isCondition } from "../../../external/fhir/shared";
 
 const problemsSectionName = "problems";
 const tableHeaders = [
@@ -41,7 +46,7 @@ const tableHeaders = [
   "Comments",
 ];
 
-export function buildProblems(fhirBundle: Bundle) {
+export function buildProblems(fhirBundle: Bundle): ProblemsSection {
   const conditions: Condition[] =
     fhirBundle.entry?.flatMap(entry => (isCondition(entry.resource) ? [entry.resource] : [])) || [];
 
@@ -62,22 +67,20 @@ export function buildProblems(fhirBundle: Bundle) {
   const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
   const problemsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: oids.problemsSection,
-          extension: extensionValue2015,
-        }),
-        code: buildCodeCe({
-          code: "11450-4",
-          codeSystem: loincCodeSystem,
-          codeSystemName: loincSystemName,
-          displayName: "Problem list - Reported",
-        }),
-        title: "PROBLEMS",
-        text: { table },
-        entry: entries,
-      },
+    section: {
+      templateId: buildInstanceIdentifier({
+        root: oids.problemsSection,
+        extension: extensionValue2015,
+      }),
+      code: buildCodeCe({
+        code: "11450-4",
+        codeSystem: loincCodeSystem,
+        codeSystemName: loincSystemName,
+        displayName: "Problem list - Reported",
+      }),
+      title: "PROBLEMS",
+      text: table,
+      entry: entries,
     },
   };
   return problemsSection;
@@ -117,7 +120,10 @@ function createTableRowFromCondition(
   ];
 }
 
-function createEntryFromCondition(condition: AugmentedCondition, referenceId: string) {
+function createEntryFromCondition(
+  condition: AugmentedCondition,
+  referenceId: string
+): ProblemsConcernActEntry {
   return {
     act: {
       [_classCodeAttribute]: "ACT",

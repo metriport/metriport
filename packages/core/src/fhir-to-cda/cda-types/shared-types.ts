@@ -166,11 +166,11 @@ export type CreateTableRowsCallback<T> = (
   sectionPrefix: string
 ) => ObservationTableRow | ObservationTableRow[];
 
-export type CreateEntriesCallback<T> = (aug: T, sectionPrefix: string) => unknown;
+export type CreateEntriesCallback<T, R> = (aug: T, sectionPrefix: string) => R;
 
-export type TableRowsAndEntriesResult = {
+export type TableRowsAndEntriesResult<D> = {
   trs: ObservationTableRow[];
-  entries: unknown[];
+  entries: D[];
 };
 
 export type ObservationTableRow = {
@@ -264,5 +264,23 @@ export type SubstanceAdministationEntry = {
         [_moodCodeAttribute]: string;
       };
     };
+  };
+};
+
+export type ProblemsConcernActEntry = {
+  act: {
+    [_classCodeAttribute]: string;
+    [_moodCodeAttribute]: string;
+    templateId: CdaInstanceIdentifier;
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCe;
+    statusCode: {
+      [_codeAttribute]: string;
+    };
+    effectiveTime: {
+      low?: EntryObject;
+      high?: EntryObject;
+    };
+    entryRelationship: ObservationEntry;
   };
 };
