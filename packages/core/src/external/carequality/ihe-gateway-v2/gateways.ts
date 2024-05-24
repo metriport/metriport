@@ -3,8 +3,11 @@ import { METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX } from "../shared";
 /*
  * Gateways with this url require the Metriport OID instead of the Initiator OID in the SOAP body.
  */
-const requiresMetriportOidUrl =
-  "https://carequality.ntstplatform.com:443/Inbound/XCPDRespondingGateway";
+const requiresMetriportOidUrl = [
+  "https://carequality.ntstplatform.com:443/Inbound/XCPDRespondingGateway",
+  "https://carequality.ntstplatform.com:443/Inbound/XCAGatewayQuery",
+  "https://carequality.ntstplatform.com:443/Inbound/XCAGatewayRetrieve",
+];
 
 /*
  * Gateways with this url require the URN namespace to NOT be in the SOAP body.
@@ -28,11 +31,14 @@ const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redo
  */
 const enforceSameHomeCommunityIdList = [pointClickCareOid, redoxOid, redoxGatewayOid];
 
-function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway): boolean {
-  return gateway.url == requiresMetriportOidUrl;
+function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway | XCAGateway): boolean {
+  return requiresMetriportOidUrl.includes(gateway.url);
 }
 
-export function getHomeCommunityId(gateway: XCPDGateway, samlAttributes: SamlAttributes): string {
+export function getHomeCommunityId(
+  gateway: XCPDGateway | XCAGateway,
+  samlAttributes: SamlAttributes
+): string {
   return requiresMetriportOidInsteadOfInitiatorOid(gateway)
     ? METRIPORT_HOME_COMMUNITY_ID_NO_PREFIX
     : samlAttributes.homeCommunityId;

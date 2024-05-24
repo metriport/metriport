@@ -17,7 +17,9 @@ export type InboundDocumentRetrievalRespSuccessful = z.infer<
   typeof inboundDocumentRetrievalRespSuccessfulSchema
 >;
 
-const inboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema;
+const inboundDocumentRetrievalRespFaultSchema = baseErrorResponseSchema.extend({
+  documentReference: z.never().or(z.literal(undefined)),
+});
 
 export type InboundDocumentRetrievalRespFault = z.infer<
   typeof inboundDocumentRetrievalRespFaultSchema

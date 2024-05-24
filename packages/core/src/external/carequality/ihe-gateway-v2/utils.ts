@@ -11,3 +11,10 @@ export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female
 export function timestampToSoapBody(createdTimestamp: string): string {
   return dayjs(createdTimestamp).toISOString();
 }
+
+export function toArray<T>(input: T | T[]): T[] {
+  if (input == undefined) {
+    return [];
+  }
+  return Array.isArray(input) ? input : [input];
+}
