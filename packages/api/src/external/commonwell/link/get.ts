@@ -28,11 +28,8 @@ import { updatePatientAndPersonIds } from "../command/update-patient-and-person-
 import { clearPersonId } from "../command/clear-person-id";
 import { updatePatientDiscoveryStatus } from "../command/update-patient-discovery-status";
 import { updateCqLinkStatus } from "../command/update-cq-link-status";
-import {
-  getPersonalIdentifiersFromPatient,
-  PatientDataCommonwell,
-  searchPersons,
-} from "../patient-shared";
+import { PatientDataCommonwell, searchPersons } from "../patient-shared";
+import { getCwStrongIdsFromPatient } from "../patient-conversion";
 import { getCwInitiator } from "../shared";
 import { commonwellPersonLinks } from "./shared";
 
@@ -235,7 +232,7 @@ const findAllPersonsStrongId = async (
   queryMeta: RequestMetadata
 ): Promise<Person[]> => {
   const { log } = out("cw.findAllPersonsStrongId");
-  const strongIds = getPersonalIdentifiersFromPatient(patient);
+  const strongIds = getCwStrongIdsFromPatient(patient);
   if (!strongIds.length) {
     return [];
   }

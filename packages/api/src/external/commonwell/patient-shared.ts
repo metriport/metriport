@@ -5,11 +5,11 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { driversLicenseURIs } from "@metriport/core/domain/oid";
-import { Patient, PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { intersectionBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
-import { capture } from "../../shared/notifications";
+import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { capture } from "@metriport/core/util/notifications";
+import { out } from "@metriport/core/util/log";
 import { LinkStatus } from "../patient-link";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
@@ -52,8 +52,6 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
   }
 }
 
-type SimplifiedPersonalId = { key: string; system: string };
-
 export function getMatchingStrongIds(
   person: CommonwellPerson,
   patient: CommonwellPatient
@@ -71,13 +69,14 @@ export async function searchPersons({
 }: {
   commonWell: CommonWellAPI;
   queryMeta: RequestMetadata;
-  strongIds: SimplifiedPersonalId[];
+  strongIds: StrongId[];
 }): Promise<CommonwellPerson[]> {
+  const { log } = out(`CW searchPersons`);
   const respSearches = await Promise.allSettled(
     strongIds.map(id =>
       commonWell.searchPerson(queryMeta, id.key, id.system).catch(error => {
         const msg = `Failed to search for person with strongId`;
-        console.log(`${msg}. Cause: ${error}`);
+        log(`${msg}. Cause: ${error}`);
         capture.message(msg, { extra: { context: `cw.searchPersons`, error }, level: "error" });
         throw error;
       })
@@ -88,12 +87,4 @@ export async function searchPersons({
     .flatMap(filterTruthy);
 
   return fulfilled;
-}
-
-export function getPersonalIdentifiersFromPatient(patient: Patient): SimplifiedPersonalId[] {
-  return (patient.data.personalIdentifiers ?? []).flatMap(id =>
-    id.value !== undefined && id.state !== undefined
-      ? { key: id.value, system: driversLicenseURIs[id.state] }
-      : []
-  );
 }

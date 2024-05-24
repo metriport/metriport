@@ -1,6 +1,6 @@
 import { Patient, PatientDemographicsDiff } from "@metriport/core/domain/patient";
 import { Address } from "@metriport/core/domain/address";
-import { genderMapping } from "@metriport/core/external/fhir/patient/index";
+import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
 import { OutboundPatientDiscoveryResp, InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 import { updatePatient } from "../../command/medical/patient/update-patient";
 import { getCQData } from "./patient";
@@ -78,7 +78,7 @@ function filterPatientResources(
 ): boolean {
   return (
     patient.data.dob !== patientResource.birthDate ||
-    genderMapping[patient.data.genderAtBirth] !== patientResource.gender
+    mapGenderAtBirthToFhir(patient.data.genderAtBirth) !== patientResource.gender
   );
 }
 

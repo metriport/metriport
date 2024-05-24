@@ -7,7 +7,7 @@ import * as getAddress from "../../../domain/medical/address";
 import * as getOrg from "../../../command/medical/organization/get-organization";
 import * as getCqOboData from "../../../external/carequality/get-obo-data";
 import * as createOrUpdateFacility from "../../../command/medical/facility/create-or-update-facility";
-import { registerFacilityWithinHIEs } from "../register-facility.ts";
+import { registerFacilityWithinHIEs, createFacilityDetails } from "../register-facility.ts";
 import * as shared from "../shared";
 import {
   getCxOrganizationNameAndOidResult,
@@ -328,5 +328,87 @@ describe("registerFacility", () => {
         name: expect.not.stringContaining("OBO"),
       })
     );
+  });
+
+  it("calls createOrUpdateInCq with obo when cqType is initiatorOnly, and cqActive is false", async () => {
+    mockedFacility = {
+      ...mockedFacility,
+      cqType: FacilityType.initiatorOnly,
+      cqActive: false,
+      cqOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCq(
+      mockedFacility,
+      getCxOrganizationNameAndOidResult,
+      { enabled: true, cqFacilityName: faker.company.name(), cqOboOid: faker.string.uuid() },
+      coordinates
+    );
+
+    expect(createOrUpdateCqOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringContaining("OBO"),
+      })
+    );
+  });
+
+  it("calls createOrUpdateInCw with obo when cwType is initiatorOnly, and cwActive is false", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    mockedFacility = {
+      ...mockedFacility,
+      cwType: FacilityType.initiatorOnly,
+      cwActive: false,
+      cwOboOid: faker.string.uuid(),
+    };
+
+    await shared.createOrUpdateInCw(
+      mockedFacility,
+      mockedRegisterFacility.cwFacilityName,
+      getCxOrganizationNameAndOidResult,
+      cxId
+    );
+
+    expect(createOrUpdateCwOrganizationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          name: expect.stringContaining("OBO"),
+        }),
+      }),
+      true
+    );
+  });
+});
+
+describe("createFacilityDetails", () => {
+  it("returns facilityDetails and coordinates with facilityDetails containing addressStrict", async () => {
+    const cxId = uuidv7_file.uuidv4();
+
+    const result = createFacilityDetails(cxId, mockedRegisterFacility, addressWithCoordinates);
+
+    expect(result).toEqual({
+      facilityDetails: {
+        cqActive: mockedRegisterFacility.cqActive,
+        cqOboOid: mockedRegisterFacility.cqOboOid,
+        cqType: mockedRegisterFacility.cqType,
+        cwActive: mockedRegisterFacility.cwActive,
+        cwOboOid: mockedRegisterFacility.cwOboOid,
+        cwType: mockedRegisterFacility.cwType,
+        cxId,
+        data: {
+          address: {
+            addressLine1: addressWithCoordinates.addressLine1,
+            addressLine2: addressWithCoordinates.addressLine2,
+            city: addressWithCoordinates.city,
+            country: "USA",
+            state: addressWithCoordinates.state,
+            zip: addressWithCoordinates.zip,
+          },
+          name: mockedRegisterFacility.data.name,
+          npi: mockedRegisterFacility.data.npi,
+        },
+      },
+      coordinates,
+    });
   });
 });

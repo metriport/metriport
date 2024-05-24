@@ -233,7 +233,7 @@ export async function processDrResponseMtom({
       extra: {
         error,
         response,
-        contentType,
+        outboundRequest,
         gateway,
       },
     });

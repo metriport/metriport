@@ -1,13 +1,25 @@
 import dayjs from "dayjs";
-import { genderMapping } from "../../fhir/patient";
+import { GenderAtBirth } from "../../../domain/patient";
+import { mapGenderAtBirthToFhir } from "../../fhir/patient";
 
-export function normalizeGender(gender: "M" | "F" | undefined): "male" | "female" | undefined {
+export function normalizeGender(gender: GenderAtBirth | undefined): "male" | "female" | undefined {
   if (gender === undefined) {
     return undefined;
   }
-  return genderMapping[gender] ?? undefined;
+  const mappedGender = mapGenderAtBirthToFhir(gender);
+  if (mappedGender === "other" || mappedGender === "unknown") {
+    return undefined;
+  }
+  return mappedGender;
 }
 
 export function timestampToSoapBody(createdTimestamp: string): string {
   return dayjs(createdTimestamp).toISOString();
+}
+
+export function toArray<T>(input: T | T[]): T[] {
+  if (input == undefined) {
+    return [];
+  }
+  return Array.isArray(input) ? input : [input];
 }

@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
+import { v4 as uuidv4 } from "uuid";
 import { initDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
@@ -20,12 +21,16 @@ import {
   setS3UtilsInstance,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { Config } from "@metriport/core/util/config";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { MockS3Utils } from "./mock-s3";
+
 /** 
 This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
 It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
 the db.
 */
+
+setRejectUnauthorized(false);
 
 const samlAttributes = {
   subjectId: "System User",
@@ -51,7 +56,7 @@ async function queryDatabaseForDQs() {
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 5;
+    LIMIT 100;
   `;
 
   try {
@@ -167,7 +172,7 @@ async function DRIntegrationTest() {
       !dqResult.documentReference ||
       !dqResult.externalGatewayPatient
     ) {
-      console.log("Skipping: ", dqResult);
+      console.log("Skipping: ", dqResult.id);
       return undefined;
     }
 
@@ -181,14 +186,12 @@ async function DRIntegrationTest() {
       externalGatewayPatient: dqResult.externalGatewayPatient,
     };
     const dqResponse = await queryDQ(dqRequest);
-    console.log("DQ Response: ", dqResponse);
     if (!dqResponse.documentReference) {
-      console.log("No document references found for DQ: ", dqRequest, dqResponse);
+      console.log("No document references found for DQ: ", dqRequest.id);
       return undefined;
     }
 
     const drUrl = await getDrUrl(dqResult.gateway.homeCommunityId);
-    console.log("DR URL: ", drUrl);
 
     const drRequest: OutboundDocumentRetrievalReq = {
       id: dqResult.id,
@@ -200,7 +203,10 @@ async function DRIntegrationTest() {
       },
       patientId: dqResult.patientId,
       samlAttributes: samlAttributes,
-      documentReference: dqResponse.documentReference,
+      documentReference: dqResponse.documentReference.map(doc => ({
+        ...doc,
+        metriportId: uuidv4(),
+      })),
     };
     try {
       const drResponse = await queryDR(drRequest);
@@ -222,7 +228,6 @@ async function DRIntegrationTest() {
 
       if (responseDocumentReferences.size > 0) {
         successCount++;
-        console.log("dr response", drResponse);
       } else {
         failureCount++;
         console.log("dr response", JSON.stringify(drResponse, null, 2));

@@ -7,8 +7,64 @@ import {
   OperationOutcome,
 } from "@metriport/ihe-gateway-sdk";
 import { normalizeGender } from "../../../utils";
-import { capture } from "../../../../../../util/notifications";
 import { XCPDSamlClientResponse } from "../send/xcpd-requests";
+import { out } from "../../../../../../util/log";
+import { toArray } from "../../../utils";
+
+const { log } = out("Processing XCPD Requests");
+
+type IheAddress = {
+  streetAddressLine: string | string[] | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  postalCode: string | undefined;
+  country: string | undefined;
+  county: string | undefined;
+};
+
+type CarequalityAddress = {
+  line: string[] | undefined;
+  city: string | undefined;
+  state: string | undefined;
+  postalCode: string | undefined;
+  country: string | undefined;
+};
+
+type IheName = {
+  given: string | string[] | undefined;
+  family: string | undefined;
+  delimiter: string | undefined;
+};
+
+type CarequalityName = {
+  given: string[];
+  family: string | undefined;
+};
+
+function convertIheAddressToCarequalityAddress(address: IheAddress): CarequalityAddress {
+  return {
+    line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
+    city: address?.city,
+    state: address?.state,
+    postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
+    country: address?.country,
+  };
+}
+
+function iheAddressesToCarequalityAddresses(iheAddresses: IheAddress[]): CarequalityAddress[] {
+  return iheAddresses.map(convertIheAddressToCarequalityAddress);
+}
+
+function convertIheNameToCarequalityName(name: IheName): CarequalityName {
+  return {
+    given: toArray(name?.given).filter((g): g is string => Boolean(g)),
+    family: name?.family,
+  };
+}
+
+function iheNamesToCarequalityNames(iheNames: IheName[]): CarequalityName[] {
+  return iheNames.map(convertIheNameToCarequalityName);
+}
 
 function handleHTTPErrorResponse({
   httpError,
@@ -55,30 +111,14 @@ function handlePatientMatchResponse({
 }): OutboundPatientDiscoveryResp {
   const subject1 =
     getPatientRegistryProfile(jsonObj)?.controlActProcess?.subject?.registrationEvent?.subject1;
-  const addr = subject1?.patient?.patientPerson?.addr;
-  const addressLine1 = addr?.streetAddressLine?._text ?? addr?.streetAddressLine;
-  const city = addr?.city?._text ?? addr?.city;
-  const state = addr?.state?._text ?? addr?.state;
-  const postalCode = addr?.postalCode?._text ?? addr?.postalCode;
-  const country = addr?.country?._text ?? addr?.country;
+  const addr = toArray(subject1?.patient?.patientPerson?.addr);
+  const names = toArray(subject1?.patient?.patientPerson?.name);
 
-  const addresses = [
-    {
-      ...(addressLine1 && { line: [addressLine1] }),
-      ...(city && { city }),
-      ...(state && { state }),
-      ...(postalCode && { postalCode: String(postalCode) }),
-      ...(country && { country: country }),
-    },
-  ];
+  const addresses = iheAddressesToCarequalityAddresses(addr);
+  const patientNames = iheNamesToCarequalityNames(names);
 
   const patientResource = {
-    name: [
-      {
-        given: [subject1?.patient?.patientPerson?.name?.given],
-        family: subject1?.patient?.patientPerson?.name?.family,
-      },
-    ],
+    name: patientNames,
     gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
     address: addresses,
@@ -106,8 +146,6 @@ function handlePatientErrorResponse({
   jsonObj,
   outboundRequest,
   gateway,
-  patientId,
-  cxId,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jsonObj: any;
@@ -116,17 +154,6 @@ function handlePatientErrorResponse({
   patientId?: string | undefined;
   cxId?: string | undefined;
 }): OutboundPatientDiscoveryResp {
-  const msg = "An AbortedError (AE) was received from the responding gateway";
-  capture.error(msg, {
-    extra: {
-      context: `ihe-gateway-v2-outbound-patient-discovery`,
-      outboundRequest,
-      jsonObj,
-      gateway,
-      patientId,
-      cxId,
-    },
-  });
   const acknowledgementDetail =
     getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {
@@ -218,6 +245,7 @@ export function processXCPDResponse({
   const { ack, queryResponseCode } = getAckAndQueryResponseCodeFromPatientRegistryProfile(jsonObj);
 
   if (isApplicationAccept(ack) && isXCPDRespOk(queryResponseCode)) {
+    log(`Found a match for cxId: ${cxId} patient: ${patientId}`);
     return handlePatientMatchResponse({
       jsonObj,
       outboundRequest,
@@ -233,8 +261,6 @@ export function processXCPDResponse({
       jsonObj,
       outboundRequest,
       gateway,
-      patientId,
-      cxId,
     });
   }
 }
