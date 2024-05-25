@@ -11,7 +11,7 @@ import { analytics, EventTypes } from "@metriport/core/external/analytics/postho
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
+import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
