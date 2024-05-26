@@ -20,7 +20,8 @@ import { cqOrgsToXCPDGateways } from "./organization-conversion";
 import { PatientDataCarequality } from "./patient-shared";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 
 dayjs.extend(duration);
 
@@ -44,7 +45,7 @@ export async function discover(
   );
 
   if (enabledIHEGW) {
-    await processPatientDiscoveryProgress({ patient, status: "processing" });
+    await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
     // Intentionally asynchronous
     prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
@@ -93,7 +94,8 @@ async function prepareAndTriggerPD(
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
-    await processPatientDiscoveryProgress({ patient, status: "failed" });
+    await updatePatientDiscoveryStatus({ patient, status: "failed" });
+    await queryDocsIfScheduled({ patient, isFailed: true });
     capture.error(msg, {
       extra: {
         facilityId,

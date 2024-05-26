@@ -11,8 +11,12 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq-data";
 import { CQLink } from "./cq-patient-data";
-import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { getDocumentsFromCQ } from "./document/query-documents";
+import { setDocQueryProgress } from "../hie/set-doc-query-progress";
+import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
+import { getCQData } from "./patient";
 
 dayjs.extend(duration);
 
@@ -32,7 +36,7 @@ export async function processOutboundPatientDiscoveryResps({
   try {
     if (results.length === 0) {
       log(`No patient discovery results found.`);
-      await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
+      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
       return;
     }
 
@@ -44,8 +48,6 @@ export async function processOutboundPatientDiscoveryResps({
       },
       results
     );
-
-    await processPatientDiscoveryProgress({ patient: patientIds, status: "completed" });
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const startedAt = patient.data.patientDiscovery?.startedAt;
@@ -62,11 +64,13 @@ export async function processOutboundPatientDiscoveryResps({
       },
     });
 
-    log(`Completed.`);
+    await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
+    await queryDocsIfScheduled({ patient: patientIds });
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
-    await processPatientDiscoveryProgress({ patient: patientIds, status: "failed" });
+    await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
+    await queryDocsIfScheduled({ patient: patientIds, isFailed: true });
     capture.error(msg, {
       extra: {
         patientId,
@@ -104,4 +108,40 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
       id: pd.gateway.id,
     };
   });
+}
+
+export async function queryDocsIfScheduled({
+  patient,
+  isFailed = false,
+}: {
+  patient: Pick<Patient, "id" | "cxId">;
+  isFailed?: boolean;
+}): Promise<void> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledDocQueryRequestId = getCQData(
+    updatedPatient.data.externalData
+  )?.scheduledDocQueryRequestId;
+
+  if (scheduledDocQueryRequestId) {
+    const resetPatient = await resetPatientScheduledDocQueryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+
+    if (isFailed) {
+      await setDocQueryProgress({
+        patient,
+        requestId: scheduledDocQueryRequestId,
+        source: MedicalDataSource.CAREQUALITY,
+        downloadProgress: { status: "failed", total: 0 },
+        convertProgress: { status: "failed", total: 0 },
+      });
+    } else {
+      await getDocumentsFromCQ({
+        patient: resetPatient,
+        requestId: scheduledDocQueryRequestId,
+      });
+    }
+  }
 }

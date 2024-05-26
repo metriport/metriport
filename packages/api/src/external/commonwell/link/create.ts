@@ -6,7 +6,10 @@ import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
 import { isCWEnabledForCx } from "../../aws/appConfig";
 import { makeCommonWellAPI } from "../api";
-import { setCommonwellIdsAndStatus } from "../patient-external-data";
+import {
+  updateCommonwellIdsAndStatus,
+  updatePatientDiscoveryStatus,
+} from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { autoUpgradeNetworkLinks, patientWithCWData } from "./shared";
 
@@ -60,14 +63,13 @@ export async function create(
 
     const link = await commonWell.addPatientLink(queryMeta, personId, cwPatient._links.self.href);
 
-    await setCommonwellIdsAndStatus({
-      patientId: patient.id,
-      cxId: patient.cxId,
+    await updateCommonwellIdsAndStatus({
+      patient,
       commonwellPatientId: cwPatientId,
       commonwellPersonId: personId,
-      commonwellStatus: "completed",
       cqLinkStatus: undefined,
     });
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     if (!link._links?.self?.href) {
       throw new Error("Link has no href");

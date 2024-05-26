@@ -46,15 +46,13 @@ export async function getPatientWithCWData(
 }
 
 export type CWParams = {
-  commonwellPatientId: string;
-  commonwellPersonId: string | undefined;
-  commonwellStatus: LinkStatus | undefined;
-  cqLinkStatus: CQLinkStatus | undefined;
+  commonwellPatientId?: string;
+  commonwellPersonId?: string;
+  cqLinkStatus?: CQLinkStatus;
 };
 
 export type SetCommonwellIdParams = CWParams & {
-  patientId: string;
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
 };
 
 /**
@@ -64,22 +62,19 @@ export type SetCommonwellIdParams = CWParams & {
  * @param cxId The customer ID @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
- * @param commonwellStatus The status of integrating/synchronizing the patient @ CommonWell.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
  *        bridge with CQ. If not provided, it will keep the current CQ link status.
  * @returns
  */
-export const setCommonwellIdsAndStatus = async ({
-  patientId,
-  cxId,
+export const updateCommonwellIdsAndStatus = async ({
+  patient,
   commonwellPatientId,
   commonwellPersonId,
-  commonwellStatus,
   cqLinkStatus,
 }: SetCommonwellIdParams): Promise<Patient> => {
   const patientFilter = {
-    id: patientId,
-    cxId,
+    id: patient.id,
+    cxId: patient.cxId,
   };
 
   return executeOnDBTx(PatientModel.prototype, async transaction => {
@@ -99,7 +94,6 @@ export const setCommonwellIdsAndStatus = async ({
         ...externalData.COMMONWELL,
         ...(commonwellPatientId && { patientId: commonwellPatientId }),
         ...(commonwellPersonId && { personId: commonwellPersonId }),
-        ...(commonwellStatus && { status: commonwellStatus }),
         ...(updatedCQLinkStatus && { cqLinkStatus: updatedCQLinkStatus }),
       },
     };
@@ -129,18 +123,16 @@ export const setCommonwellIdsAndStatus = async ({
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
  * @returns
  */
-export const setPatientDiscoveryStatus = async ({
-  patientId,
-  cxId,
+export const updatePatientDiscoveryStatus = async ({
+  patient,
   status,
 }: {
-  patientId: string;
-  cxId: string;
+  patient: Pick<Patient, "id" | "cxId">;
   status: LinkStatus;
 }): Promise<Patient> => {
   const patientFilter = {
-    id: patientId,
-    cxId,
+    id: patient.id,
+    cxId: patient.cxId,
   };
 
   return await executeOnDBTx(PatientModel.prototype, async transaction => {
