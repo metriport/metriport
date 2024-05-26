@@ -58,8 +58,7 @@ export type SetCommonwellIdParams = CWParams & {
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient@ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
@@ -118,8 +117,7 @@ export const updateCommonwellIdsAndStatus = async ({
 /**
  * Sets the CommonWell (CW) integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient@ Metriport.
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
  * @returns
  */

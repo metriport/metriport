@@ -7,8 +7,7 @@ import { LinkStatus } from "../../patient-link";
 /**
  * Sets the CareQuality (CQ) integration status on the patient.
  *
- * @param patientId The patient ID @ Metriport.
- * @param cxId The customer ID @ Metriport.
+ * @param patient The patient@ Metriport.
  * @param status The status of integrating/synchronizing the patient across CareQuality.
  * @returns
  */
