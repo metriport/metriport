@@ -195,6 +195,9 @@ export class IHEStack extends Stack {
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
         API_URL: props.config.loadBalancerDnsName,
+        ...(props.config.engineeringCxId
+          ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
+          : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
@@ -233,6 +236,9 @@ export class IHEStack extends Stack {
       envType: props.config.environmentType,
       envVars: {
         MEDICAL_DOCUMENTS_BUCKET_NAME: props.config.medicalDocumentsBucketName,
+        ...(props.config.engineeringCxId
+          ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
+          : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
@@ -269,6 +275,9 @@ export class IHEStack extends Stack {
       envType: props.config.environmentType,
       envVars: {
         API_URL: props.config.loadBalancerDnsName,
+        ...(props.config.engineeringCxId
+          ? { ENGINEERING_CX_ID: props.config.engineeringCxId }
+          : {}),
         ...(posthogSecretName ? { POST_HOG_API_KEY_SECRET: posthogSecretName } : {}),
         ...(props.config.lambdasSentryDSN ? { SENTRY_DSN: props.config.lambdasSentryDSN } : {}),
       },
