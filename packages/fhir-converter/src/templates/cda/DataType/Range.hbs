@@ -25,8 +25,8 @@
   // -------------------------------------------------------------------------------------------------
 --}}
 {
-     {{#with (extractReferenceRange range) as |rangeObj|}}
-            "low": {{>DataType/SimpleQuantity.hbs quantity=rangeObj.low}},
-            "high": {{>DataType/SimpleQuantity.hbs quantity=rangeObj.high}},
-    {{/with}}
+  {{#with (extractReferenceRange range) as |rangeObj|}}
+    "low": {{>DataType/SimpleQuantity.hbs quantity=rangeObj.low}},
+    "high": {{>DataType/SimpleQuantity.hbs quantity=rangeObj.high}},
+  {{/with}}
 }
