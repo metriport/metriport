@@ -1,0 +1,110 @@
+---
+title: "FHIR Converter API"
+description: "Follow this guide to get started converting C-CDA documents to FHIR."
+---
+
+<img className="h-40" src="/images/metriport-logo.png" />
+
+## Overview
+
+Getting started with our FHIR Converter API is pretty easy, you'll just need take the following steps:
+
+1. [Create a developer account](#1-create-a-developer-account).
+1. [Generate an API key](#2-generate-an-api-key).
+1. [Convert C-CDA to FHIR](#3-convert-c-cda-to-fhir).
+1. [Request Production access](#4-request-api-access).
+
+
+Let's get into it! 🤘
+
+## 1. Create a developer account
+
+<Snippet file="create-dev-account.mdx" />
+
+---
+
+## 2. Generate an API key
+
+Once you've created an account and confirmed your email, you'll be taken to the [dashboard
+home page](https://dash.metriport.com/). From here, take the following steps to get your API key:
+
+- Toggle the `Sandbox` switch in the Dashboard navbar to enter `Sandbox` mode (learn more about this [here](/converter-api/more-info/sandbox)).
+- In the left hand menu, click `Developers`.
+- On the Developers page, you'll be able to click the "Generate Secret Key" button.
+
+<Info>
+  This Secret Key will allow you to start making requests to the Metriport API.
+  Treat this like a password, and keep it somewhere safe! You can read the [API
+  Keys](/home/api-info/api-keys) page to learn more about API key security best practices.
+</Info>
+
+<Tip>
+  If you believe your key has been compromised, you can always revoke it and then generate a new one
+  on the Developers page by clicking the trash button beside the key.
+</Tip>
+
+---
+
+## 3. Convert C-CDA to FHIR
+
+Essentially, you'll just need to send a `POST` request to the [Convert C-CDA to FHIR endpoint](/converter-api/api-reference/ccda/ccda-to-fhir),
+with the body containing a valid C-CDA (R2.1) XML document to convert:
+
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<ClinicalDocument xmlns="urn:hl7-org:v3">
+    <!-- contents -->
+</ClinicalDocument>
+```
+
+<Tip>
+  You can use [this example C-CDA from HL7](https://github.com/HL7/CDA-ccda-2.1/blob/master/examples/C-CDA_R2-1_CCD.xml) for testing purposes.
+</Tip>
+
+Since C-CDAs correspond to a particular patient, you should also specify the `patientId` query param to match your patient's identifier. 
+
+You'll get back a [FHIR R4 Bundle](/medical-api/fhir/resources/bundle) back, with `entry` containing an array of FHIR R4 Resources being the outcome of the conversion.
+
+```json
+{
+    "resourceType": "Bundle",
+    "type": "batch",
+    "entry": [
+        {
+            "fullUrl": "urn:uuid:adc44b9c-3083-396f-877f-463120f6b26a",
+            "resource": {
+                "resourceType": "Location",
+                "id": "adc44b9c-3083-396f-877f-463120f6b26a",
+                "name": "Good Health Urgent Care"
+            }
+        }
+    ]
+}
+```
+
+See the [Convert C-CDA to FHIR endpoint](/converter-api/api-reference/ccda/ccda-to-fhir) in our API reference for more details.
+
+
+---
+
+## 4. Request Production access 🚀
+
+To start using the Convert API for production workloads, you can take the following steps to request production API access:
+
+- In the left hand menu, click `Products & Billing`.
+- Click `Get Started` on the Converter API product.
+- Press `Book an Intro Call` and select a time and a date to talk to us.
+
+After the call, we will promptly setup your account for production access.
+
+---
+
+## Wrapping up
+
+That's it! 🤘
+
+You're now well equiped to use the Metriport Converter API to convert healthcare data to various standards.
+
+For next steps, we'd recommend scoping out our [Converter API Reference](/converter-api/api-reference/ccda/ccda-to-fhir)
+in further detail to see the other things you can do with the API.

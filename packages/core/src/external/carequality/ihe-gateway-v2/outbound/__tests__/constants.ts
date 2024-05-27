@@ -87,6 +87,30 @@ export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema 
   },
 };
 
+export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
+  ...expectedXcpdResponse,
+  patientResource: {
+    ...expectedXcpdResponse.patientResource,
+    name: [
+      ...(expectedXcpdResponse.patientResource?.name ?? []),
+      {
+        given: ["nwhinone", "bartholomew"],
+        family: "nwhinzzztestpatient",
+      },
+    ],
+    address: [
+      ...(expectedXcpdResponse.patientResource?.address ?? []),
+      {
+        line: ["1200 Test Street", "APT 1A"],
+        city: "Helena",
+        state: "AL",
+        postalCode: "35080",
+        country: "USA",
+      },
+    ],
+  },
+};
+
 export const outboundDqRequest = {
   id: uuidv4(),
   cxId: uuidv4(),

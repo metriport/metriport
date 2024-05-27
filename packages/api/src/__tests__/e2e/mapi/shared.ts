@@ -1,7 +1,7 @@
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 import { FhirClient } from "@metriport/core/external/fhir/api/api";
-import { baseURL } from "../../../../__tests__/shared";
-import { getEnvVarOrFail } from "../../../../../shared/config";
+import { baseURL } from "../shared";
+import { getEnvVarOrFail } from "../../../shared/config";
 import { MedplumClient } from "@medplum/core";
 
 export const ACCOUNT_PATH = "/internal/admin/cx-account";

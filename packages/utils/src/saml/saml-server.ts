@@ -4,8 +4,8 @@ dotenv.config();
 import { v4 as uuidv4 } from "uuid";
 import express from "express";
 import { json, Request, Response } from "express";
-import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
+import { DocumentReference } from "@metriport/ihe-gateway-sdk";
 import { createAndSignBulkXCPDRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xcpd/create/iti55-envelope";
 import { createAndSignBulkDQRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti38-envelope";
 import { createAndSignBulkDRRequests } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/create/iti39-envelope";
@@ -18,6 +18,7 @@ import {
   processDrResponse,
   setS3UtilsInstance,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { Config } from "@metriport/core/util/config";
 import { MockS3Utils } from "./mock-s3";
 
@@ -33,15 +34,17 @@ import { MockS3Utils } from "./mock-s3";
  * Metriport-IHE GW / XML + SAML Constructor - Postman collection
  */
 
+const env = "STAGING";
 const app = express();
 const port = 8043;
 app.use(json());
+setRejectUnauthorized(false);
 
 const samlCertsAndKeys = {
-  publicCert: getEnvVarOrFail("CQ_ORG_CERTIFICATE_STAGING"),
-  privateKey: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_STAGING"),
-  privateKeyPassword: getEnvVarOrFail("CQ_ORG_PRIVATE_KEY_PASSWORD_STAGING"),
-  certChain: getEnvVarOrFail("CQ_ORG_CERTIFICATE_INTERMEDIATE_STAGING"),
+  publicCert: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_${env}`),
+  privateKey: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_${env}`),
+  privateKeyPassword: getEnvVarOrFail(`CQ_ORG_PRIVATE_KEY_PASSWORD_${env}`),
+  certChain: getEnvVarOrFail(`CQ_ORG_CERTIFICATE_INTERMEDIATE_${env}`),
 };
 
 app.post("/xcpd", async (req: Request, res: Response) => {
@@ -134,7 +137,6 @@ app.post("/xcadr", async (req: Request, res: Response) => {
         });
       })
     );
-
     res.type("application/json").send(results);
   } catch (error) {
     res.status(500).send({ detail: "Internal Server Error" });

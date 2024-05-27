@@ -4,12 +4,7 @@ import {
   removeCoordinates,
 } from "@metriport/core/domain/location-address";
 import { Coordinates } from "@metriport/core/domain/address";
-import {
-  FacilityRegister,
-  Facility,
-  FacilityCreate,
-  isOboFacility,
-} from "../../domain/medical/facility";
+import { FacilityRegister, Facility, FacilityCreate } from "../../domain/medical/facility";
 import { getCxOrganizationNameOidAndType } from "../../command/medical/organization/get-organization";
 import { getAddressWithCoordinates } from "../../domain/medical/address";
 import { getCqOboData } from "../../external/carequality/get-obo-data";
@@ -30,7 +25,7 @@ export async function registerFacilityWithinHIEs(
   const [cxOrg, address, cqOboData] = await Promise.all([
     getCxOrganizationNameOidAndType(cxId),
     getAddressWithCoordinates(getAddressFromInput(facility), cxId),
-    getCqOboData(facility.cqOboActive, facility.cqOboOid),
+    getCqOboData(facility.cqOboOid),
   ]);
 
   const { facilityDetails, coordinates } = createFacilityDetails(cxId, facility, address);
@@ -43,41 +38,35 @@ export async function registerFacilityWithinHIEs(
   );
 
   // CAREQUALITY
-  await createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
+  createOrUpdateInCq(cmdFacility, cxOrg, cqOboData, coordinates);
 
   // COMMONWELL
-  await createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
+  createOrUpdateInCw(cmdFacility, facility.cwFacilityName, cxOrg, cxId);
 
   return cmdFacility;
 }
 
-function createFacilityDetails(
+export function createFacilityDetails(
   cxId: string,
   facility: FacilityRegister,
   address: AddressWithCoordinates
 ): { facilityDetails: FacilityCreate; coordinates: Coordinates } {
-  const isObo = isOboFacility(facility.type);
   const { address: addressStrict, coordinates } = removeCoordinates(address);
 
-  let facilityDetails: FacilityCreate = {
+  const facilityDetails: FacilityCreate = {
     cxId,
     data: {
       name: facility.data.name,
       npi: facility.data.npi,
       address: addressStrict,
     },
-    type: facility.type,
+    cqType: facility.cqType,
+    cwType: facility.cwType,
+    cqActive: facility.cqActive,
+    cwActive: facility.cwActive,
+    cqOboOid: facility.cqOboOid,
+    cwOboOid: facility.cwOboOid,
   };
-
-  if (isObo) {
-    facilityDetails = {
-      ...facilityDetails,
-      cqOboActive: facility.cqOboActive,
-      cqOboOid: facility.cqOboOid,
-      cwOboActive: facility.cwOboActive,
-      cwOboOid: facility.cwOboOid,
-    };
-  }
 
   return {
     facilityDetails,

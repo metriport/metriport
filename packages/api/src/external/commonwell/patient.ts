@@ -13,12 +13,12 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import MetriportError from "../../errors/metriport-error";
-import { analytics, EventTypes } from "../../shared/analytics";
 import { Config } from "../../shared/config";
 import { capture } from "../../shared/notifications";
 import { Util } from "../../shared/util";
@@ -43,6 +43,7 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
+import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -115,7 +116,8 @@ export async function create(
   const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
-    cxId: patient.cxId,
+    patient,
+    facilityId,
     forceCW: forceCWCreate,
     debug,
   });
@@ -235,7 +237,8 @@ export async function update(
   const { log, debug } = Util.out(`CW update - M patientId ${patient.id}`);
 
   const cwUpdateEnabled = await validateCWEnabled({
-    cxId: patient.cxId,
+    patient,
+    facilityId,
     forceCW: forceCWUpdate,
     debug,
   });
@@ -427,14 +430,17 @@ async function updatePatientAndLinksInCw(
 }
 
 async function validateCWEnabled({
-  cxId,
+  patient,
+  facilityId,
   forceCW,
   debug,
 }: {
-  cxId: string;
+  patient: Patient;
+  facilityId: string;
   forceCW: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
+  const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCW || isSandbox) {
@@ -443,6 +449,7 @@ async function validateCWEnabled({
   }
 
   try {
+    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
     const isCWEnabled = await isCommonwellEnabled();
     const isEnabledForCx = await isCWEnabledForCx(cxId);
 
@@ -454,6 +461,9 @@ async function validateCWEnabled({
       return false;
     } else if (cwIsDisabled) {
       debug(`CW not enabled, skipping...`);
+      return false;
+    } else if (!isCwQueryEnabled) {
+      debug(`CW not enabled for query, skipping...`);
       return false;
     }
 

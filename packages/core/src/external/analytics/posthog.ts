@@ -1,5 +1,5 @@
 import { PostHog } from "posthog-node";
-import { Config } from "./config";
+import { Config } from "../../util/config";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
 export interface IdentifyMessageV1 {
@@ -16,23 +16,24 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
   timestamp?: Date;
 }
 
-const postApiKey = Config.getPostHogApiKey();
+const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-export const analytics = (params: EventMessageV1) => {
-  if (postApiKey) {
-    const posthog = new PostHog(postApiKey);
+export const analytics = (params: EventMessageV1, postApiKey?: string) => {
+  const apiKey = postApiKey ?? defaultPostHogApiKey;
+  if (!apiKey) return;
 
-    params.properties = {
-      ...(params.properties ? { ...params.properties } : undefined),
-      environment: Config.getEnvType(),
-      platform: "oss-api",
-      $set_once: {
-        cxId: params.distinctId,
-      },
-    };
+  const posthog = new PostHog(apiKey);
 
-    posthog.capture(params);
-  }
+  params.properties = {
+    ...(params.properties ? { ...params.properties } : undefined),
+    environment: Config.getEnvType(),
+    platform: "oss-api",
+    $set_once: {
+      cxId: params.distinctId,
+    },
+  };
+
+  posthog.capture(params);
 };
 
 export enum EventTypes {
@@ -44,6 +45,9 @@ export enum EventTypes {
   documentQuery = "documentQuery",
   documentConversion = "documentConversion",
   consolidatedQuery = "consolidatedQuery",
+  inboundPatientDiscovery = "inbound.patientDiscovery",
+  inboundDocumentQuery = "inbound.documentQuery",
+  inboundDocumentRetrieval = "inbound.documentRetrieval",
 }
 
 export enum EventErrMessage {

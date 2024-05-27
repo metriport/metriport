@@ -78,7 +78,11 @@ describe("outboundDocumentRetrievalRequest", () => {
         ],
       }),
     ];
-    facility = makeFacility({ id: facilityId, type: FacilityType.initiatorOnly });
+    facility = makeFacility({
+      id: facilityId,
+      cwType: FacilityType.initiatorOnly,
+      cqType: FacilityType.initiatorOnly,
+    });
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,
@@ -138,7 +142,11 @@ describe("outboundDocumentRetrievalRequest", () => {
         ],
       }),
     ];
-    facility = makeFacility({ ...facility, type: FacilityType.initiatorOnly });
+    facility = makeFacility({
+      ...facility,
+      cwType: FacilityType.initiatorOnly,
+      cqType: FacilityType.initiatorOnly,
+    });
     initiator = { ...initiator, name: facility.data.name, oid: facility.oid };
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
@@ -162,7 +170,11 @@ describe("outboundDocumentRetrievalRequest", () => {
         ],
       }),
     ];
-    facility = makeFacility({ ...facility, type: FacilityType.initiatorAndResponder });
+    facility = makeFacility({
+      ...facility,
+      cwType: FacilityType.initiatorOnly,
+      cqType: FacilityType.initiatorOnly,
+    });
     const res: OutboundDocumentRetrievalReq[] = createOutboundDocumentRetrievalReqs({
       patient,
       requestId,

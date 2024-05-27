@@ -30,12 +30,13 @@ router.put(
     const facilityUpdate: FacilityRegister = {
       id: facilityInput.id,
       cxId,
-      cqOboActive: facilityInput.cqOboActive,
-      cwOboActive: facilityInput.cwOboActive,
+      cqActive: facilityInput.cqActive,
+      cqType: facilityInput.cqType,
       cqOboOid: facilityInput.cqOboOid,
+      cwActive: facilityInput.cwActive,
+      cwType: facilityInput.cwType,
       cwOboOid: facilityInput.cwOboOid,
       cwFacilityName: facilityInput.cwFacilityName,
-      type: facilityInput.type,
       data: {
         name: facilityInput.nameInMetriport,
         npi: facilityInput.npi,
