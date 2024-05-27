@@ -18,7 +18,6 @@ export async function getHieInitiator(
   facilityId: string | undefined
 ): Promise<HieInitiator> {
   const { organization, facilities } = await getPatientWithDependencies(patient);
-
   const facility = getPatientsFacility(patient.id, facilities, facilityId);
 
   if (isHealthcareItVendor(organization.type)) {
