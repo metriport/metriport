@@ -7,6 +7,7 @@ import { getEnvVarOrFail, getEnvVar } from "@metriport/core/util/env-var";
 
 const apiUrl = getEnvVarOrFail("API_URL");
 const region = getEnvVarOrFail("AWS_REGION");
+const engineeringCxId = getEnvVar("ENGINEERING_CX_ID");
 const postHogSecretName = getEnvVar("POST_HOG_API_KEY_SECRET");
 
 export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
@@ -18,22 +19,19 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
 
   const result = await processInboundDocumentQuery(baseRequest.data, apiUrl);
 
-  if (
-    result.extrinsicObjectXmls &&
-    result.extrinsicObjectXmls.length > 0 &&
-    result.cxId &&
-    postHogSecretName
-  ) {
+  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 0 && postHogSecretName) {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
-    if (postHogApiKey) {
+    if (postHogApiKey && engineeringCxId) {
+      result.externalGatewayPatient?.system;
       analytics(
         {
-          distinctId: result.cxId,
+          distinctId: engineeringCxId,
           event: EventTypes.inboundDocumentQuery,
           properties: {
             patientId: result.patientId,
             documentCount: result.extrinsicObjectXmls.length,
+            homeCommunityId: baseRequest.data.samlAttributes.homeCommunityId,
           },
         },
         postHogApiKey
