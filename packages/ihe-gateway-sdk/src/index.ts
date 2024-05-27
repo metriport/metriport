@@ -61,6 +61,8 @@ export {
   SamlAttributes,
   XCAGateway,
   XCPDGateway,
+} from "./models/shared";
+export {
   Name,
   Address,
   Telecom,
@@ -68,4 +70,4 @@ export {
   patientResourceSchema,
   PersonalIdentifier,
   Gender,
-} from "./models/shared";
+} from "./models/patient-discovery/patient";

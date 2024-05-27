@@ -24,12 +24,6 @@ const redoxGatewayOid = "2.16.840.1.113883.3.6147.458.2";
  */
 const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redoxGatewayOid];
 
-/*
- * These gateways require that the home community ID in the DR request is the same as the one
- * in the gateway. But these gateways also return different home community IDs in the DQ response
- * than in the gateway. So we need to handle this and use the request home community ID instead of the response.
- */
-
 function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway | XCAGateway): boolean {
   return requiresMetriportOidUrl.includes(gateway.url);
 }

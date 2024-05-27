@@ -1,5 +1,6 @@
 import * as z from "zod";
-import { baseRequestSchema, XCPDGatewaySchema, patientResourceSchema } from "../shared";
+import { baseRequestSchema, XCPDGatewaySchema } from "../shared";
+import { patientResourceSchema } from "./patient";
 
 const patientDiscoveryDefaultSchema = baseRequestSchema.extend({
   patientResource: patientResourceSchema,

@@ -5,6 +5,7 @@ import {
   Reference,
   DocumentReference,
 } from "@medplum/fhirtypes";
+import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
@@ -22,9 +23,9 @@ export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>[
   return genderMapping[k];
 }
 
-export function toFHIR(patient: PatientIdAndData): FHIRPatient {
+function mapPatientDataToResource(patient: PatientIdAndData) {
   return {
-    resourceType: "Patient",
+    resourceType: "Patient" as const,
     id: patient.id,
     identifier: getFhirIdentifersFromPatient(patient),
     name: [
@@ -49,7 +50,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
               }
             }
           }
-          return telecoms; // Moved return statement outside of the for loop
+          return telecoms;
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
     gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
@@ -65,6 +66,14 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
         };
       }) || [],
   };
+}
+
+export function toFHIR(patient: PatientIdAndData): FHIRPatient {
+  return mapPatientDataToResource(patient);
+}
+
+export function toIheGatewayPatientResource(patient: PatientIdAndData): PatientResource {
+  return mapPatientDataToResource(patient);
 }
 
 export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identifier[] {

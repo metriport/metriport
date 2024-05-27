@@ -7,7 +7,7 @@ import { Address } from "../../../domain/address";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
+import { toIheGatewayPatientResource as convertPatientToFHIR } from "../../fhir/patient";
 import {
   IHEGatewayError,
   XDSRegistryError,

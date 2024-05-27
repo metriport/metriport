@@ -4,8 +4,8 @@ import {
   baseResponseSchema,
   externalGatewayPatientSchema,
   XCPDGatewaySchema,
-  patientResourceSchema,
 } from "../shared";
+import { patientResourceSchema } from "./patient";
 
 const patientDiscoveryRespSuccessfulDefaultSchema = baseResponseSchema.extend({
   patientMatch: z.literal(true),
@@ -47,7 +47,7 @@ export const outboundPatientDiscoveryRespSuccessfulSchema =
   outboundPatientDiscoveryRespDefaultSchema
     .merge(patientDiscoveryRespSuccessfulDefaultSchema)
     .extend({
-      patientResource: patientResourceSchema.optional(),
+      patientResource: patientResourceSchema,
     });
 
 export const outboundPatientDiscoveryRespFaultSchema =

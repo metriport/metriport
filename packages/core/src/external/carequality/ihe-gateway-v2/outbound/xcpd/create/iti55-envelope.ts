@@ -171,7 +171,7 @@ function createSoapBodyContent({
               ? {
                   [`${prefix}value`]: patientNames.map(name => ({
                     [`${prefix}family`]: name.family,
-                    ...name.given?.reduce((acc: { [key: string]: string }, givenName) => {
+                    ...name.given?.reduce((acc: { [key: string]: string }, givenName: string) => {
                       acc[`${prefix}given`] = givenName;
                       return acc;
                     }, {}),

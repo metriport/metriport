@@ -27,19 +27,19 @@ type IheAddress = {
 };
 
 type IheName = {
-  given: string | string[] | undefined;
-  family: string | undefined;
+  given: string | string[];
+  family: string;
   delimiter: string | undefined;
 };
 
 type IheTelecom = {
-  _use: string;
-  _value: string;
+  _use: string | undefined;
+  _value: string | undefined;
 };
 
 type IheIdentifier = {
-  _extension: string;
-  _root: string;
+  _extension: string | undefined;
+  _root: string | undefined;
 };
 
 function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): PersonalIdentifier {
@@ -49,7 +49,12 @@ function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): Pe
   };
 }
 
-function iheIdentifiersToPersonalIdentifiers(otherIds: IheIdentifier[]): PersonalIdentifier[] {
+function iheIdentifiersToPersonalIdentifiers(
+  otherIds: IheIdentifier[]
+): PersonalIdentifier[] | undefined {
+  if (!otherIds || otherIds.every(id => !id._extension && !id._root)) {
+    return undefined;
+  }
   return otherIds.map(convertIheIdentifierToPersonalIdentifier);
 }
 
@@ -63,14 +68,20 @@ function convertIheAddressToAddress(address: IheAddress): Address {
   };
 }
 
-function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] {
+function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] | undefined {
+  if (
+    !iheAddresses ||
+    iheAddresses.every(a => !a.city && !a.state && !a.postalCode && !a.country)
+  ) {
+    return undefined;
+  }
   return iheAddresses.map(convertIheAddressToAddress);
 }
 
 function convertIheNameToCarequalityName(name: IheName): Name {
   return {
     given: toArray(name?.given).filter((g): g is string => Boolean(g)),
-    family: name?.family,
+    family: name.family,
   };
 }
 
@@ -85,7 +96,10 @@ function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom {
   };
 }
 
-function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] {
+function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] | undefined {
+  if (!iheTelecom || iheTelecom.every(t => !t._use && !t._value)) {
+    return undefined;
+  }
   return iheTelecom.map(convertIheTelecomToTelecom);
 }
 
@@ -148,9 +162,9 @@ function handlePatientMatchResponse({
     name: patientNames,
     gender: normalizeGender(subject1?.patient?.patientPerson?.administrativeGenderCode?._code),
     birthDate: subject1?.patient?.patientPerson?.birthTime?._value,
-    address: addresses,
-    ...(patientTelecoms.length > 0 && { telecom: patientTelecoms }),
-    ...(patientIdentifiers.length > 0 && { identifier: patientIdentifiers }),
+    ...(addresses && { address: addresses }),
+    ...(patientTelecoms && { telecom: patientTelecoms }),
+    ...(patientIdentifiers && { identifier: patientIdentifiers }),
   };
 
   const response: OutboundPatientDiscoveryResp = {
