@@ -49,6 +49,12 @@ export async function processOutboundPatientDiscoveryResps({
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const startedAt = patient.data.patientDiscovery?.startedAt;
+    const successfulGWS = results
+      .filter(result => result.patientMatch)
+      .map(result => result.gateway.url);
+    const failedGWS = results
+      .filter(result => !result.patientMatch)
+      .map(result => result.gateway.url);
 
     analytics({
       distinctId: patient.cxId,
@@ -59,6 +65,8 @@ export async function processOutboundPatientDiscoveryResps({
         requestId,
         pdLinks: cqLinks.length,
         duration: elapsedTimeFromNow(startedAt),
+        successfulGWS,
+        failedGWS,
       },
     });
 

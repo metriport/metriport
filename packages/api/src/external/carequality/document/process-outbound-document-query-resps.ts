@@ -58,6 +58,12 @@ export async function processOutboundDocumentQueryResps({
     const docRefs = results.map(toDocumentReference).flat();
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
+    const successfulGWS = results
+      .filter(result => result.documentReference && result.documentReference.length > 0)
+      .map(result => result.gateway.url);
+    const failedGWS = results
+      .filter(result => !result.documentReference || result.documentReference.length === 0)
+      .map(result => result.gateway.url);
 
     analytics({
       distinctId: cxId,
@@ -68,6 +74,8 @@ export async function processOutboundDocumentQueryResps({
         hie: MedicalDataSource.CAREQUALITY,
         duration,
         documentCount: docRefs.length,
+        successfulGWS,
+        failedGWS,
         ...contentTypeCounts,
       },
     });
