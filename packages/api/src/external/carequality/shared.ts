@@ -3,6 +3,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
 import { MedicalDataSource } from "@metriport/core/external/index";
+import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
 import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
@@ -85,7 +86,12 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
+  organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
+});
+
+export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
+  organizationBizType: true,
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
