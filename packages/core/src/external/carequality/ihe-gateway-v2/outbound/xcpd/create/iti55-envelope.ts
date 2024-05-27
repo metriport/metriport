@@ -158,7 +158,7 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            [`${prefix}livingSubjectIdentifier`]: identifiers
+            [`${prefix}livingSubjectId`]: identifiers
               ? {
                   [`${prefix}value`]: identifiers.map(identifier => ({
                     "@_extension": identifier.value,
