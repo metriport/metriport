@@ -1260,6 +1260,73 @@ module.exports.external = [
     },
   },
   {
+    name: "extractReferenceRange",
+    description: "Parses lab result reference value ranges",
+    func: function (obj) {
+      function cleanUpReturn(obj1, obj2, name1, name2) {
+        if (!obj1 && !obj2) return;
+        return {
+          ...(obj1 && { [name1]: obj1 }),
+          ...(obj2 && { [name2]: obj2 }),
+        };
+      }
+
+      function getRangeLimit(limit) {
+        if (limit.value) {
+          return limit;
+        } else if (limit.nullFlavor === "OTH") {
+          const translation = limit.translation;
+          const value = translation?.value ?? undefined;
+          const unit = translation?.originalText?._ ?? undefined;
+          return cleanUpReturn(value, unit, "value", "unit");
+        }
+        return;
+      }
+
+      function buildRange(value) {
+        if (value.includes("-")) {
+          const [low, high] = value.split("-");
+          return {
+            low: {
+              value: low.trim(),
+            },
+            high: {
+              value: high.trim(),
+            },
+          };
+        }
+        if (typeof value === "string") {
+          return {
+            low: {
+              value: value.trim(),
+            },
+          };
+        }
+      }
+
+      function parseRange(range) {
+        const value = range.value;
+        if (value) {
+          if (value["x:type"] === "ST") {
+            if (value._) {
+              return buildRange(value._);
+            }
+          } else if (value["x:type"] === "IVL_PQ" || value["x:type"] === "IVL_REAL") {
+            const low = getRangeLimit(value.low);
+            const high = getRangeLimit(value.high);
+            const ret = cleanUpReturn(low, high, "low", "high");
+            if (ret) return ret;
+            if (range.text?._) {
+              return buildRange(range.text._);
+            }
+          }
+        }
+      }
+
+      return parseRange(obj);
+    },
+  },
+  {
     name: "extractDecimal",
     description:
       "Returns true if following the FHIR decimal specification: https://www.hl7.org/fhir/R4/datatypes.html#decimal ",

@@ -42,7 +42,7 @@ import {
 } from "../../external/carequality/ihe-result";
 import { processOutboundPatientDiscoveryResps } from "../../external/carequality/process-outbound-patient-discovery-resps";
 import { processPostRespOutboundPatientDiscoveryResps } from "../../external/carequality/process-subsequent-outbound-patient-discovery-resps";
-import { cqOrgDetailsSchema } from "../../external/carequality/shared";
+import { cqOrgDetailsOrgBizRequiredSchema } from "../../external/carequality/shared";
 import { Config } from "../../shared/config";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getFrom, getFromQueryAsBoolean } from "../util";
@@ -143,7 +143,7 @@ router.post(
   requestLogger,
   asyncHandler(async (req: Request, res: Response) => {
     const body = req.body;
-    const orgDetails = cqOrgDetailsSchema.parse(body);
+    const orgDetails = cqOrgDetailsOrgBizRequiredSchema.parse(body);
     await createOrUpdateCQOrganization(orgDetails);
 
     return res.sendStatus(httpStatus.OK);

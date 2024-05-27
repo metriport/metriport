@@ -65,7 +65,8 @@ export async function recreatePatientAtCW(
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log } = out(`recreatePatientAtCW - ${patient.id}`);
 
-  if (!(await isCWEnabledForCx(patient.cxId))) {
+  const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
+  if (!isCwEnabledForCx) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
     return undefined;
   }

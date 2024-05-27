@@ -125,12 +125,10 @@ export async function queryAndProcessDocuments({
     source: MedicalDataSource.COMMONWELL,
     log,
   });
-
+  const isCwEnabledForCx = await isCWEnabledForCx(cxId);
+  if (!isCwEnabledForCx) return interrupt(`CW disabled for cx ${cxId}`);
   const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patientParam);
-
-  if (!(await isCWEnabledForCx(cxId)) || !isCwQueryEnabled) {
-    return interrupt(`CW disabled for cx ${cxId}`);
-  }
+  if (!isCwQueryEnabled) return interrupt(`CW disabled for facility ${facilityId}`);
 
   try {
     const initiator = await getCwInitiator(patientParam, facilityId);

@@ -150,7 +150,7 @@ export async function update(
   const { log, debug } = out(`CW update - M oid ${org.oid}, id ${org.id}`);
 
   if (!(await isCWEnabledForCx(org.cxId))) {
-    debug(`CW disabled for cx ${org.cxId}, skipping...`);
+    log(`CW disabled for cx ${org.cxId}, skipping...`);
     return undefined;
   }
 

@@ -96,10 +96,14 @@
             {{/if}}
         {{/if}}
         
-        "referenceRange":
-        [
-          {{>DataType/Range.hbs referenceRange=observationEntry.referenceRange.observationRange.value}}
-        ],
+        {{#if observationEntry.referenceRange.observationRange}}
+             "referenceRange":
+            [
+                {{>DataType/Range.hbs range=observationEntry.referenceRange.observationRange}}
+            ],
+        {{/if}}
+
+        
         "interpretation":
         [
             {{>DataType/CodeableConcept.hbs code=observationEntry.interpretationCode}},
