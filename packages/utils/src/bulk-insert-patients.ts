@@ -13,6 +13,7 @@ import fs from "fs";
 import path from "path";
 import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -126,9 +127,7 @@ async function loadData(
 }
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
-  if (!dryRun) {
-    console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
-  }
+  if (!dryRun) logNotDryRun();
   console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
   await sleep(confirmationTime.asMilliseconds());
 }
@@ -289,8 +288,6 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   };
 };
 
-main();
-
 const states: { [k in string]: USState } = {
   Arizona: USState.AZ,
   Alabama: USState.AL,
@@ -343,3 +340,5 @@ const states: { [k in string]: USState } = {
   Wisconsin: USState.WI,
   Wyoming: USState.WY,
 };
+
+main();

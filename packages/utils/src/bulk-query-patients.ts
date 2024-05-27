@@ -16,6 +16,8 @@ import { chunk } from "lodash";
 import path from "path";
 import { getFileNameForOrg } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { getPatientIds } from "./patient/get-ids";
+import { logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -27,6 +29,10 @@ dayjs.extend(duration);
  * Make sure to update the `patientIds` with the list of Patient IDs you
  * want to trigger document queries for, otherwise it will do it for all
  * Patients of the respective customer.
+ *
+ * Execute this with:
+ * $ npm run bulk-query -- --dryrun
+ * $ npm run bulk-query
  */
 
 // add patient IDs here to kick off queries for specific patient IDs
@@ -59,7 +65,7 @@ const confirmationTime = dayjs.duration(10, "seconds");
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 
-const csvName = (cxName: string): string => `./runs/DocQuery/${getFileNameForOrg(cxName, "csv")}`;
+const csvName = (cxName: string): string => `./runs/bulk-query/${getFileNameForOrg(cxName, "csv")}`;
 
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
@@ -71,36 +77,19 @@ function initCsv(fileName: string) {
   fs.writeFileSync(fileName, csvHeader);
 }
 
-async function getPatientIds(dryRun: boolean, log: typeof console.log): Promise<string[]> {
-  if (patientIds.length > 0) {
-    if (!dryRun) {
-      displayNoDryRunWarning(log);
-      log("Cancel this script now if you're not sure.");
-      await sleep(confirmationTime.asMilliseconds());
-    }
-    return patientIds;
-  }
-  return await getAllPatientIds(dryRun, log);
-}
-
-async function getAllPatientIds(dryRun: boolean, log: typeof console.log): Promise<string[]> {
-  if (!dryRun) {
-    displayNoDryRunWarning(log);
-    log(
-      "You are about to trigger a document query for all patients of the CX. This is very expensive!"
-    );
-    log("Cancel this script now if you're not sure.");
-    await sleep(confirmationTime.asMilliseconds());
-  }
-  const resp = await axios.get(`${apiUrl}/internal/patient/ids?cxId=${cxId}`);
-  const patientIds = resp.data.patientIds;
-  return (Array.isArray(patientIds) ? patientIds : []) as string[];
-}
-
-function displayNoDryRunWarning(log: typeof console.log) {
-  // The first chars there are to set color red on the terminal
-  // See: // https://stackoverflow.com/a/41407246/2099911
-  log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----");
+async function displayWarningAndConfirmation(
+  patientCount: number | undefined,
+  isAllPatients: boolean,
+  dryRun: boolean,
+  log: typeof console.log
+) {
+  const msgForAllPatients = `You are about to trigger a document query for ALL patients of the CX (${patientCount}). This is very expensive!`;
+  const msgForFewPatients = `You are about to trigger a document query for ${patientCount} patients of the CX. This can be expensive!`;
+  const msg = isAllPatients ? msgForAllPatients : msgForFewPatients;
+  if (!dryRun) logNotDryRun(log);
+  log(msg);
+  log("Cancel this now if you're not sure.");
+  if (!dryRun) await sleep(confirmationTime.asMilliseconds());
 }
 
 async function queryDocsForPatient(
@@ -187,18 +176,24 @@ async function main() {
 
   const startedAt = Date.now();
   log(`>>> Starting with ${patientIds.length} patient IDs...`);
+
   const { orgName } = await getCxData(cxId, undefined, false);
+  const { patientIds: patientIdsToQuery, isAllPatients } = await getPatientIds({
+    cxId,
+    patientIds,
+    axios,
+  });
+
+  await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, dryRun, log);
+
   const fileName = csvName(orgName);
+  if (!dryRun) initCsv(fileName);
 
-  initCsv(fileName);
-
-  const patientIdsToQuery = await getPatientIds(dryRun, log);
   log(`>>> Running it...`);
-  const chunks = chunk(patientIdsToQuery, patientChunkSize);
 
   let count = 0;
-  // TODO move to core's executeAsynchronously()
-  for (const chunk of chunks) {
+  const chunks = chunk(patientIdsToQuery, patientChunkSize);
+  for (const [i, chunk] of Object.entries(chunks)) {
     log(`>>> Querying docs for chunk of ${chunk.length} patient from ${orgName}...`);
     const docQueries: Promise<void>[] = [];
     for (const patientId of chunk) {
@@ -207,9 +202,12 @@ async function main() {
     }
     await Promise.allSettled(docQueries);
 
-    log(`>>> Progress: ${count + 1}/${patientIdsToQuery.length} patient doc queries complete`);
-    log(`>>> Sleeping for ${delayTime.asMilliseconds()} ms before the next chunk...`);
-    await sleep(delayTime.asMilliseconds());
+    log(`>>> Progress: ${count}/${patientIdsToQuery.length} patient doc queries complete`);
+
+    if (parseInt(i) < chunks.length - 1) {
+      log(`>>> Sleeping for ${delayTime.asMilliseconds()} ms before the next chunk...`);
+      await sleep(delayTime.asMilliseconds());
+    }
   }
 
   log(`>>> Done querying docs for all patients in ${Date.now() - startedAt} ms`);

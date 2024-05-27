@@ -4,7 +4,10 @@ import { OrgType } from "@metriport/core/domain/organization";
 import { metriportEmail as metriportEmailForCq } from "../../external/carequality/constants";
 import { metriportCompanyDetails } from "@metriport/shared";
 import { Facility } from "../../domain/medical/facility";
-import { createOrUpdateCQOrganization } from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
+import {
+  createOrUpdateCQOrganization,
+  doesOrganizationExistInCQ,
+} from "../../external/carequality/command/cq-directory/create-or-update-cq-organization";
 import { createOrUpdateCWOrganization } from "../../external/commonwell/create-or-update-cw-organization";
 import { CqOboDetails } from "../../external/carequality/get-obo-data";
 import { buildCqOrgName } from "../../external/carequality/shared";
@@ -18,6 +21,13 @@ export async function createOrUpdateInCq(
   coordinates: Coordinates
 ): Promise<void> {
   const { log } = out("createOrUpdateInCq");
+  const orgExistsInDirectory = await doesOrganizationExistInCQ(cxOrg.oid);
+
+  if (!orgExistsInDirectory) {
+    log(`Organization ${cxOrg.name} with OID ${cxOrg.oid} does not exist in the CQ directory`);
+    return;
+  }
+
   const isObo = isOboFacility(facility.cqType);
   const isProvider = isNonOboFacility(facility.cqType);
   const cqOboDisabled = !isObo || !cqOboData.enabled;
