@@ -164,19 +164,21 @@ export const telecomSchema = z.object({
 export type Telecom = z.infer<typeof telecomSchema>;
 
 export const personalIdentifierSchema = z.object({
-  system: z.string(),
-  value: z.string(),
+  system: z.string().optional(),
+  value: z.string().optional(),
 });
 export type PersonalIdentifier = z.infer<typeof personalIdentifierSchema>;
 
-export const genderSchema = z.enum(["male", "female", "undifferentiated"]).optional();
+export const genderSchema = z.enum(["male", "female", "other", "unknown", "undefined"]).optional();
 export type Gender = z.infer<typeof genderSchema>;
 
 export const patientResourceSchema = z.object({
+  resourceType: z.string().optional(),
+  id: z.string().optional(),
   name: z.array(nameSchema).optional(),
   gender: genderSchema,
   birthDate: z.string().optional(),
-  address: z.array(addressSchema),
+  address: z.array(addressSchema).optional(),
   telecom: z.array(telecomSchema).optional(),
   identifier: z.array(personalIdentifierSchema).optional(),
 });
