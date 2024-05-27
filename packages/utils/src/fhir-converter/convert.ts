@@ -154,8 +154,6 @@ function replaceIDs(fhirBundle: FHIRBundle, patientId: string): FHIRBundle {
     const regex = new RegExp(stringToReplace.old, "g");
     fhirBundleStr = fhirBundleStr.replace(regex, stringToReplace.new);
   }
-
-  console.log(`Bundle being sent to FHIR server: ${fhirBundleStr}`);
   return JSON.parse(fhirBundleStr);
 }
 
