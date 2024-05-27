@@ -35,7 +35,6 @@ describe("processXCPDResponse", () => {
         outboundRequest: outboundXcpdRequest,
       },
     });
-    console.log("response", JSON.stringify(response, null, 2));
 
     expect(response).toEqual({
       ...expectedXcpdResponse,
