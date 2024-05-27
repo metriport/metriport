@@ -29,7 +29,6 @@ const gatewaysThatAcceptOneDocRefPerRequest = [pointClickCareOid, redoxOid, redo
  * in the gateway. But these gateways also return different home community IDs in the DQ response
  * than in the gateway. So we need to handle this and use the request home community ID instead of the response.
  */
-const enforceSameHomeCommunityIdList = [pointClickCareOid, redoxOid, redoxGatewayOid];
 
 function requiresMetriportOidInsteadOfInitiatorOid(gateway: XCPDGateway | XCAGateway): boolean {
   return requiresMetriportOidUrl.includes(gateway.url);
@@ -50,8 +49,4 @@ export function requiresUrnInSoapBody(gateway: XCPDGateway): boolean {
 
 export function requiresOnlyOneDocRefPerRequest(gateway: XCAGateway): boolean {
   return gatewaysThatAcceptOneDocRefPerRequest.includes(gateway.homeCommunityId);
-}
-
-export function requiresRequestHomeCommunityId(gateway: XCAGateway): boolean {
-  return enforceSameHomeCommunityIdList.includes(gateway.homeCommunityId);
 }
