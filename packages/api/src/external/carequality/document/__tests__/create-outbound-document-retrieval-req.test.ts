@@ -15,12 +15,8 @@ import {
   createOutboundDocumentRetrievalReqs,
   maxDocRefsPerDocRetrievalRequest,
 } from "../create-outbound-document-retrieval-req";
-import {
-  makeDocumentReferenceWithMetriportId,
-  makeDocumentReference,
-} from "./make-document-reference-with-metriport-id";
+import { makeDocumentReferenceWithMetriportId } from "./make-document-reference-with-metriport-id";
 import { makeOutboundDocumentQueryResp, makeXcaGateway } from "./shared";
-import { filterDocRefsWithMetriportId } from "../shared";
 
 let requestId: string;
 let facilityId: string;
@@ -261,22 +257,5 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
 
     expect(res[1]?.documentReference?.length).toEqual(2);
     expect(res[1]?.documentReference).toEqual(outboundDocumentQueryResps[1]?.documentReference);
-  });
-});
-
-describe("filterDocRefsWithMetriportId", () => {
-  it("should filter document references with Metriport IDs", () => {
-    const docRefs = [
-      makeDocumentReferenceWithMetriportId({ metriportId: faker.string.uuid() }),
-      makeDocumentReference(),
-      makeDocumentReferenceWithMetriportId({ metriportId: faker.string.uuid() }),
-    ];
-
-    const filteredDocRefs = filterDocRefsWithMetriportId(docRefs);
-
-    expect(filteredDocRefs.length).toBe(2);
-    filteredDocRefs.forEach(docRef => {
-      expect(docRef.metriportId).toBeDefined();
-    });
   });
 });
