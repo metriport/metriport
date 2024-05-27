@@ -1,6 +1,6 @@
 import { XMLBuilder } from "fast-xml-parser";
 import dayjs from "dayjs";
-import { Address, Telecom, Name } from "@metriport/ihe-gateway-sdk";
+import { Address, Telecom, Name, PersonalIdentifier } from "@metriport/ihe-gateway-sdk";
 import { createSecurityHeader } from "../../../saml/security/security-header";
 import { signFullSaml } from "../../../saml/security/sign";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
@@ -31,9 +31,10 @@ function createSoapBodyContent({
   toUrl,
   patientGender,
   patientBirthtime,
-  patientName,
-  patientAddress,
-  patientTelecom,
+  patientNames,
+  patientAddresses,
+  patientTelecoms,
+  identifiers,
   providerId,
   useUrn = true,
 }: {
@@ -44,9 +45,10 @@ function createSoapBodyContent({
   toUrl: string;
   patientGender: string;
   patientBirthtime: string | undefined;
-  patientName: Name[] | undefined;
-  patientAddress: Address[] | undefined;
-  patientTelecom: Telecom[] | undefined;
+  patientNames: Name[] | undefined;
+  patientAddresses: Address[] | undefined;
+  patientTelecoms: Telecom[] | undefined;
+  identifiers: PersonalIdentifier[] | undefined;
   providerId: string | undefined;
   useUrn?: boolean;
 }): object {
@@ -156,9 +158,18 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.birthTime",
                 }
               : {},
-            [`${prefix}livingSubjectName`]: patientName
+            [`${prefix}livingSubjectIdentifier`]: identifiers
               ? {
-                  [`${prefix}value`]: patientName.map(name => ({
+                  [`${prefix}value`]: identifiers.map(identifier => ({
+                    "@_extension": identifier.value,
+                    "@_root": identifier.system,
+                  })),
+                  [`${prefix}semanticsText`]: "LivingSubject.id",
+                }
+              : {},
+            [`${prefix}livingSubjectName`]: patientNames
+              ? {
+                  [`${prefix}value`]: patientNames.map(name => ({
                     [`${prefix}family`]: name.family,
                     ...name.given?.reduce((acc: { [key: string]: string }, givenName) => {
                       acc[`${prefix}given`] = givenName;
@@ -168,9 +179,9 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "LivingSubject.name",
                 }
               : {},
-            [`${prefix}patientAddress`]: patientAddress
+            [`${prefix}patientAddress`]: patientAddresses
               ? {
-                  [`${prefix}value`]: patientAddress.map(address => ({
+                  [`${prefix}value`]: patientAddresses.map(address => ({
                     [`${prefix}streetAddressLine`]: address.line?.join(", "),
                     [`${prefix}city`]: address.city,
                     [`${prefix}state`]: address.state,
@@ -180,9 +191,9 @@ function createSoapBodyContent({
                   [`${prefix}semanticsText`]: "Patient.addr",
                 }
               : {},
-            [`${prefix}patientTelecom`]: patientTelecom
+            [`${prefix}patientTelecom`]: patientTelecoms
               ? {
-                  [`${prefix}value`]: patientTelecom.map(telecom => ({
+                  [`${prefix}value`]: patientTelecoms.map(telecom => ({
                     "@_use": telecom.system,
                     "@_value": telecom.value,
                   })),
@@ -227,9 +238,10 @@ function createSoapBody({
   const homeCommunityId = getHomeCommunityId(gateway, bodyData.samlAttributes);
   const patientGender = bodyData.patientResource.gender === "female" ? "F" : "M";
   const patientBirthtime = bodyData.patientResource.birthDate?.replace(DATE_DASHES_REGEX, "");
-  const patientName = bodyData.patientResource.name;
-  const patientAddress = bodyData.patientResource.address;
-  const patientTelecom = bodyData.patientResource.telecom;
+  const patientNames = bodyData.patientResource.name;
+  const patientAddresses = bodyData.patientResource.address;
+  const patientTelecoms = bodyData.patientResource.telecom;
+  const identifiers = bodyData.patientResource.identifier;
 
   const useUrn = requiresUrnInSoapBody(gateway);
   const soapBody = {
@@ -241,9 +253,10 @@ function createSoapBody({
       toUrl,
       patientGender,
       patientBirthtime,
-      patientName,
-      patientAddress,
-      patientTelecom,
+      patientNames,
+      patientAddresses,
+      patientTelecoms,
+      identifiers,
       providerId,
       useUrn,
     }),
