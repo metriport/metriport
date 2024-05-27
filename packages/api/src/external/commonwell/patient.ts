@@ -141,12 +141,12 @@ export async function get(
   patient: Patient,
   facilityId: string
 ): Promise<CommonwellPatient | undefined> {
-  const { debug } = out(`CW get - M patientId ${patient.id}`);
+  const { log } = out(`CW get - M patientId ${patient.id}`);
 
   const cwEnabled = await validateCWEnabled({
     patient,
     facilityId,
-    debug,
+    log,
   });
   if (!cwEnabled) return undefined;
 
