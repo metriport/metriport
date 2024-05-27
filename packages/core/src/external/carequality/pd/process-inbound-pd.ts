@@ -86,9 +86,9 @@ export function mapPatientResourceToPatientData(
 }
 
 function getPatientAddresses(patientResource: PatientResource | undefined): Address[] {
-  if (!patientResource) return [];
+  if (!patientResource?.address) return [];
   const addresses: Address[] = [];
-  for (const address of patientResource?.address ?? []) {
+  for (const address of patientResource.address) {
     const state = address.state ? getStateEnum(address.state) : undefined;
     const line = address.line ? address.line.join(", ") : undefined;
     const city = address.city || undefined;
