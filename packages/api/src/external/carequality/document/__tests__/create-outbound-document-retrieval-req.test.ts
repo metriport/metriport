@@ -228,12 +228,13 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
   it("correct responses with multiple outboundDocumentQueryResps, where the doc refs for one gateway have different home community ids", async () => {
     const homeCommunityId1 = faker.string.uuid();
     const homeCommunityId2 = faker.string.uuid();
+    const homeCommunityId3 = faker.string.uuid();
     const outboundDocumentQueryResps: OutboundDocumentQueryResp[] = [
       makeOutboundDocumentQueryResp({
         gateway: makeXcaGateway({ homeCommunityId: homeCommunityId1 }),
         documentReference: [
-          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
-          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId1 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId3 }),
+          makeDocumentReferenceWithMetriportId({ homeCommunityId: homeCommunityId3 }),
         ],
       }),
       makeOutboundDocumentQueryResp({

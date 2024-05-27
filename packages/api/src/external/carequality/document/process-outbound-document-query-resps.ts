@@ -342,12 +342,13 @@ export async function updateResultDocumentReferencesWithMetriportId(
   patientId: string,
   requestId: string
 ): Promise<OutboundDocumentQueryResp[]> {
+  const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
   return await Promise.all(
     results.map(async result => {
       const updatedDocumentReferences = result.documentReference
         ? await Promise.all(
             result.documentReference.map(async docRef => {
-              return await addMetriportDocRefID({ cxId, patientId, requestId })(docRef);
+              return await addDocRefId(docRef);
             })
           )
         : result.documentReference;
