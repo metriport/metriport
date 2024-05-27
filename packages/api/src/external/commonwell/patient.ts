@@ -27,6 +27,7 @@ import {
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
 } from "../aws/appConfig";
+import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
@@ -43,7 +44,6 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
-import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -113,13 +113,13 @@ export async function create(
   requestId?: string,
   forceCWCreate = false
 ): Promise<void> {
-  const { debug } = Util.out(`CW create - M patientId ${patient.id}`);
+  const { log, debug } = Util.out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
     patient,
     facilityId,
     forceCW: forceCWCreate,
-    debug,
+    log,
   });
 
   if (cwCreateEnabled) {
@@ -240,7 +240,7 @@ export async function update(
     patient,
     facilityId,
     forceCW: forceCWUpdate,
-    debug,
+    log,
   });
 
   if (cwUpdateEnabled) {
@@ -433,51 +433,49 @@ async function validateCWEnabled({
   patient,
   facilityId,
   forceCW,
-  debug,
+  log,
 }: {
   patient: Patient;
   facilityId: string;
   forceCW: boolean;
-  debug: typeof console.log;
+  log: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCW || isSandbox) {
-    debug(`CW forced, proceeding...`);
+    log(`CW forced, proceeding...`);
     return true;
   }
 
   try {
-    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
-    const isCWEnabled = await isCommonwellEnabled();
-    const isEnabledForCx = await isCWEnabledForCx(cxId);
-
-    const cwIsDisabled = !isCWEnabled;
-    const cwIsDisabledForCx = !isEnabledForCx;
-
-    if (cwIsDisabledForCx) {
-      debug(`CW disabled for cx ${cxId}, skipping...`);
-      return false;
-    } else if (cwIsDisabled) {
-      debug(`CW not enabled, skipping...`);
-      return false;
-    } else if (!isCwQueryEnabled) {
-      debug(`CW not enabled for query, skipping...`);
+    const [isCwEnabledGlobally, isCwEnabledForCx] = await Promise.all([
+      isCommonwellEnabled(),
+      isCWEnabledForCx(cxId),
+    ]);
+    if (!isCwEnabledGlobally) {
+      log(`CW not enabled, skipping...`);
       return false;
     }
-
+    if (!isCwEnabledForCx) {
+      log(`CW disabled for cx ${cxId}, skipping...`);
+      return false;
+    }
+    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
+    if (!isCwQueryEnabled) {
+      log(`CW not enabled for query, skipping...`);
+      return false;
+    }
     return true;
   } catch (error) {
     const msg = `Error validating CW create enabled`;
-    debug(`${msg} - ${errorToString(error)}`);
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
         error,
       },
     });
-
     return false;
   }
 }
@@ -511,8 +509,9 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   try {
     const { log, debug } = Util.out(`CW delete - M patientId ${patient.id}`);
 
-    if (!(await isCWEnabledForCx(patient.cxId))) {
-      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
+    const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
+    if (!isCwEnabledForCx) {
+      log(`CW disabled for cx ${patient.cxId}, skipping...`);
       return undefined;
     }
 
