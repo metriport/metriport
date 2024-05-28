@@ -40,7 +40,7 @@ export async function processOutboundDocumentQueryResps({
   requestId,
   patientId,
   cxId,
-  results,
+  response,
 }: OutboundDocQueryRespParam): Promise<void> {
   const { log } = out(`CQ DR - requestId ${requestId}, patient ${patientId}`);
 
@@ -58,24 +58,24 @@ export async function processOutboundDocumentQueryResps({
     const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
     const resultsWithMetriportId: OutboundDocumentQueryResp[] = [];
 
-    const updateResultDocumentReferencesWithMetriportId = async (
-      result: OutboundDocumentQueryResp
+    const updateResponseDocumentReferencesWithMetriportId = async (
+      response: OutboundDocumentQueryResp
     ): Promise<void> => {
-      const updatedDocumentReferences = result.documentReference
+      const updatedDocumentReferences = response.documentReference
         ? await Promise.all(
-            result.documentReference.map(async docRef => {
+            response.documentReference.map(async docRef => {
               return await addDocRefId(docRef);
             })
           )
-        : result.documentReference;
+        : response.documentReference;
 
       resultsWithMetriportId.push({
-        ...result,
+        ...response,
         documentReference: updatedDocumentReferences,
       });
     };
 
-    await executeAsynchronously(results, updateResultDocumentReferencesWithMetriportId, {
+    await executeAsynchronously(response, updateResponseDocumentReferencesWithMetriportId, {
       numberOfParallelExecutions: 20,
     });
 
@@ -185,8 +185,8 @@ export async function processOutboundDocumentQueryResps({
       numberOfParallelExecutions: 20,
     });
 
-    const outboundDocumentQueryRespsV1: OutboundDocumentQueryResp[] = [];
-    const outboundDocumentQueryRespsV2: OutboundDocumentQueryResp[] = [];
+    const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
+    const outboundDocumentQueryResultsV2: OutboundDocumentQueryResp[] = [];
 
     const v2GatewayOIDs = Config.isDev()
       ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
@@ -194,9 +194,9 @@ export async function processOutboundDocumentQueryResps({
 
     for (const result of resultsWithMetriportIdAndDrUrl) {
       if (v2GatewayOIDs.includes(result.gateway.homeCommunityId)) {
-        outboundDocumentQueryRespsV2.push(result);
+        outboundDocumentQueryResultsV2.push(result);
       } else {
-        outboundDocumentQueryRespsV1.push(result);
+        outboundDocumentQueryResultsV1.push(result);
       }
     }
 
@@ -206,14 +206,14 @@ export async function processOutboundDocumentQueryResps({
       requestId,
       patient,
       initiator,
-      outboundDocumentQueryResps: outboundDocumentQueryRespsV1,
+      outboundDocumentQueryResults: outboundDocumentQueryResultsV1,
     });
 
     const documentRetrievalRequestsV2 = createOutboundDocumentRetrievalReqs({
       requestId,
       patient,
       initiator,
-      outboundDocumentQueryResps: outboundDocumentQueryRespsV2,
+      outboundDocumentQueryResults: outboundDocumentQueryResultsV2,
     });
 
     // We send the request to IHE Gateway to initiate the doc retrieval with doc references by each respective gateway.

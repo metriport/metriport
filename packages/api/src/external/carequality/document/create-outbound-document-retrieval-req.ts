@@ -17,21 +17,21 @@ export function createOutboundDocumentRetrievalReqs({
   requestId,
   patient,
   initiator,
-  outboundDocumentQueryResps,
+  outboundDocumentQueryResults,
 }: {
   requestId: string;
   patient: Patient;
   initiator: HieInitiator;
-  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
+  outboundDocumentQueryResults: OutboundDocumentQueryResp[];
 }): OutboundDocumentRetrievalReq[] {
   const now = dayjs().toISOString();
   const user = getSystemUserName(initiator.orgName);
 
   const patientsWithInvalidGW: string[] = [];
 
-  const requests = outboundDocumentQueryResps.reduce(
-    (acc: OutboundDocumentRetrievalReq[], documentQueryResp) => {
-      const { patientId, gateway, documentReference } = documentQueryResp;
+  const requests = outboundDocumentQueryResults.reduce(
+    (acc: OutboundDocumentRetrievalReq[], documentQueryResult) => {
+      const { patientId, gateway, documentReference } = documentQueryResult;
 
       if (!isGWValid(gateway)) {
         if (patientId) patientsWithInvalidGW.push(patientId);
