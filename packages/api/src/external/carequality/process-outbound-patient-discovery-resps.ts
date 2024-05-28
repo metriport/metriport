@@ -37,6 +37,7 @@ export async function processOutboundPatientDiscoveryResps({
   const patientIds = { id: patientId, cxId };
 
   try {
+    // BUG This prevents analytics from firing for valid cases of no links
     if (results.length === 0) {
       log(`No patient discovery results found.`);
       await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
@@ -55,9 +56,8 @@ export async function processOutboundPatientDiscoveryResps({
     const patient = await getPatientOrFail({ id: patientId, cxId });
     const cqData = getCQData(patient.data.externalData);
     const startedAt = cqData?.discoveryStartedAt;
-    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
-    const facilityId = cqData?.discoveryFacilityId;
 
+    // BUG There's no gurantee the requestId of the current PD matches this request ID
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -70,6 +70,8 @@ export async function processOutboundPatientDiscoveryResps({
       },
     });
 
+    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
+    const facilityId = cqData?.discoveryFacilityId;
     let foundNewDemographics = false;
     if (rerunPdOnNewDemographics) {
       foundNewDemographics = await checkForNewDemographics(patient, cqLinks);

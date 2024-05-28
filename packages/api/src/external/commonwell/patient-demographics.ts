@@ -15,10 +15,10 @@ export async function checkForNewDemographics(
   links: NetworkLink[]
 ): Promise<boolean> {
   const patientDemographics = patientToLinkedDemoData(patient);
-  const usableLinksDemographics = getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToLinkedDemo)
-    .filter(ld => scoreLink(patientDemographics, ld));
-  return usableLinksDemographics.some(ld => linkHasNewDemographicData(patientDemographics, ld));
+  return getPatientNetworkLinks(links)
+    .map(patientNetworkLinkToLinkedDemoData)
+    .filter(ld => scoreLink(patientDemographics, ld))
+    .some(ld => linkHasNewDemographicData(patientDemographics, ld));
 }
 
 export async function augmentPatientDemograhpics(patient: Patient): Promise<Patient> {
@@ -29,7 +29,7 @@ export async function augmentPatientDemograhpics(patient: Patient): Promise<Pati
   const links = cwData?.data.links ?? [];
   const patientDemographics = patientToLinkedDemoData(patient);
   const usableLinksDemographics = getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToLinkedDemo)
+    .map(patientNetworkLinkToLinkedDemoData)
     .filter(ld => scoreLink(patientDemographics, ld));
   return createAugmentedPatient(patient, usableLinksDemographics);
 }
@@ -42,7 +42,7 @@ function getPatientNetworkLinks(linkResults: NetworkLink[]): PatientNetworkLink[
   });
 }
 
-function patientNetworkLinkToLinkedDemo(patientNetworkLink: PatientNetworkLink): LinkDemoData {
+function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLink): LinkDemoData {
   const dob = patientNetworkLink.details.birthDate;
   const gender = patientNetworkLink.details.gender.code;
   const names = (patientNetworkLink.details.name ?? []).flatMap(name => {

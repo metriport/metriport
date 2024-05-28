@@ -12,10 +12,10 @@ import { CQLink } from "./cq-patient-data";
 
 export async function checkForNewDemographics(patient: Patient, links: CQLink[]): Promise<boolean> {
   const patientDemographics = patientToLinkedDemoData(patient);
-  const usableLinksDemographics = getPatientResources(links)
-    .map(patientResourceToLinkedDemo)
-    .filter(ld => scoreLink(patientDemographics, ld));
-  return usableLinksDemographics.some(ld => linkHasNewDemographicData(patientDemographics, ld));
+  return getPatientResources(links)
+    .map(patientResourceToLinkedDemoData)
+    .filter(ld => scoreLink(patientDemographics, ld))
+    .some(ld => linkHasNewDemographicData(patientDemographics, ld));
 }
 
 export async function augmentPatientDemograhpics(patient: Patient): Promise<Patient> {
@@ -26,7 +26,7 @@ export async function augmentPatientDemograhpics(patient: Patient): Promise<Pati
   const links = cqData?.data.links ?? [];
   const patientDemographics = patientToLinkedDemoData(patient);
   const usableLinksDemographics = getPatientResources(links)
-    .map(patientResourceToLinkedDemo)
+    .map(patientResourceToLinkedDemoData)
     .filter(ld => scoreLink(patientDemographics, ld));
   return createAugmentedPatient(patient, usableLinksDemographics);
 }
@@ -39,7 +39,7 @@ function getPatientResources(pdResults: CQLink[]): InboundPatientResource[] {
   });
 }
 
-function patientResourceToLinkedDemo(patientResource: InboundPatientResource): LinkDemoData {
+function patientResourceToLinkedDemoData(patientResource: InboundPatientResource): LinkDemoData {
   const dob = patientResource.birthDate;
   const gender = patientResource.gender;
   const names = (patientResource.name ?? []).flatMap(name => {

@@ -25,7 +25,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 }): Promise<void> {
   const baseLogMessage = `CQ PD post - patientId ${patientId}`;
   const { log } = out(`${baseLogMessage}, requestId: ${requestId}`);
-  const patientIds = { id: patientId, cxId };
 
   try {
     const patient = await getPatientOrFail({ id: patientId, cxId });
@@ -33,7 +32,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "processing" });
+      await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,
@@ -45,7 +44,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
   } catch (error) {
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
-    await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
     capture.error(msg, {
       extra: {
         patientId,
