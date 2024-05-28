@@ -33,7 +33,7 @@ import {
   isCQDirectEnabledForCx,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../../aws/appConfig";
+} from "../../aws/app-config";
 import { reportMetric } from "../../aws/cloudwatch";
 import { ingestIntoSearchEngine } from "../../aws/opensearch";
 import { convertCDAToFHIR, isConvertible } from "../../fhir-converter/converter";

@@ -5,7 +5,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
 import { getCWData, registerAndLinkPatientInCW } from "../patient";

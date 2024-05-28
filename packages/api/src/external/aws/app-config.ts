@@ -1,4 +1,4 @@
-import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";

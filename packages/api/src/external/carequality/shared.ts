@@ -6,7 +6,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
-import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
+import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
 import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 

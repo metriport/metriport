@@ -6,7 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
+import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import {
   getCertificate,
   makeCommonWellAPI,

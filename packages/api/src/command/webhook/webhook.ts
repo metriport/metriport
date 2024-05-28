@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
 import WebhookError from "../../errors/webhook";
-import { isWebhookPongDisabledForCx } from "../../external/aws/appConfig";
+import { isWebhookPongDisabledForCx } from "../../external/aws/app-config";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { capture } from "../../shared/notifications";

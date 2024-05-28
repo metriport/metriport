@@ -27,7 +27,7 @@ import {
   isCommonwellEnabled,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../aws/appConfig";
+} from "../aws/app-config";
 import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";

@@ -2,7 +2,7 @@ import { CommonWellAPI, CommonwellError, organizationQueryMeta } from "@metripor
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { out } from "@metriport/core/util/log";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { makeCommonWellAPI } from "../api";
 import { setCommonwellIdsAndStatus } from "../patient-external-data";
 import { getCwInitiator } from "../shared";

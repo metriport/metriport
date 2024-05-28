@@ -10,7 +10,7 @@ import { DocumentReference, OutboundDocumentQueryResp } from "@metriport/ihe-gat
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { mapDocRefToMetriport } from "../../../shared/external";
-import { isCQDirectEnabledForCx } from "../../aws/appConfig";
+import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { isConvertible } from "../../fhir-converter/converter";
 import { upsertDocumentToFHIRServer } from "../../fhir/document/save-document-reference";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -29,7 +29,7 @@ import {
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
-import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
+import { getOidsWithIHEGatewayV2Enabled } from "../../aws/app-config";
 import { Config } from "../../../shared/config";
 
 const parallelUpsertsToFhir = 10;

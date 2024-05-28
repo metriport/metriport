@@ -1,7 +1,7 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
-import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
+import { getOidsWithIHEGatewayV2Enabled } from "../aws/app-config";
 import { Config } from "../../shared/config";
 
 export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<{
