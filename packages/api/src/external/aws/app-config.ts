@@ -6,7 +6,8 @@ import {
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared/common/error";
+import { errorToString, getEnvVar } from "@metriport/shared";
+import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
 
 const { log } = out(`App Config - FF`);
@@ -105,6 +106,20 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
 
 export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
+}
+
+export async function getE2eCxIds(): Promise<string | undefined> {
+  if (Config.isDev()) {
+    const apiKey = getEnvVar("TEST_API_KEY");
+    return apiKey ? getCxIdFromApiKey(apiKey) : undefined;
+  }
+  const cxIds = await getCxsWithFeatureFlagEnabled("e2eCxIds");
+  if (cxIds.length > 0) {
+    const msg = `FF e2eCxIds should only have 1 cxId`;
+    log(`${msg} but it has ${cxIds.length}, using the first one.`);
+    capture.message(msg, { extra: { cxIds }, level: "warning" });
+  }
+  return cxIds[0];
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
