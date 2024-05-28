@@ -10,10 +10,7 @@ import {
 } from "../shared/patient-demographics";
 import { getCwPatientData } from "./command/cw-patient-data/get-cw-data";
 
-export async function checkForNewDemographics(
-  patient: Patient,
-  links: NetworkLink[]
-): Promise<boolean> {
+export function checkForNewDemographics(patient: Patient, links: NetworkLink[]): boolean {
   const patientDemographics = patientToLinkedDemoData(patient);
   return getPatientNetworkLinks(links)
     .map(patientNetworkLinkToLinkedDemoData)

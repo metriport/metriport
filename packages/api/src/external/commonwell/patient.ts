@@ -203,7 +203,7 @@ export async function registerAndLinkPatientInCW({
 
     let foundNewDemographics = false;
     if (rerunPdOnNewDemographics) {
-      foundNewDemographics = await checkForNewDemographics(patient, cwLinks);
+      foundNewDemographics = checkForNewDemographics(patient, cwLinks);
     }
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
@@ -399,7 +399,7 @@ async function updatePatientAndLinksInCw({
 
     let foundNewDemographics = false;
     if (rerunPdOnNewDemographics) {
-      foundNewDemographics = await checkForNewDemographics(patient, cwLinks);
+      foundNewDemographics = checkForNewDemographics(patient, cwLinks);
     }
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;

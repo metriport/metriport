@@ -15,8 +15,8 @@ import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
 import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
-import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
+import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 import { augmentPatientDemograhpics } from "./patient-demographics";
 

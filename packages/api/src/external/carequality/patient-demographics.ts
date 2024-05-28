@@ -10,7 +10,7 @@ import {
 import { getCQPatientData } from "./command/cq-patient-data/get-cq-data";
 import { CQLink } from "./cq-patient-data";
 
-export async function checkForNewDemographics(patient: Patient, links: CQLink[]): Promise<boolean> {
+export function checkForNewDemographics(patient: Patient, links: CQLink[]): boolean {
   const patientDemographics = patientToLinkedDemoData(patient);
   return getPatientResources(links)
     .map(patientResourceToLinkedDemoData)

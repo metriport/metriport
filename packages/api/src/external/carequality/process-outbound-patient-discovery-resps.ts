@@ -74,7 +74,7 @@ export async function processOutboundPatientDiscoveryResps({
     const facilityId = cqData?.discoveryFacilityId;
     let foundNewDemographics = false;
     if (rerunPdOnNewDemographics) {
-      foundNewDemographics = await checkForNewDemographics(patient, cqLinks);
+      foundNewDemographics = checkForNewDemographics(patient, cqLinks);
     }
 
     let scheduledPdRequest = cqData?.scheduledPdRequest;
