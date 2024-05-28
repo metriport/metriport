@@ -3,10 +3,10 @@ import { OID_PREFIX } from "@metriport/core/domain/oid";
 import { Organization } from "@metriport/core/domain/organization";
 import { getOrgsByPrio } from "@metriport/core/external/commonwell/cq-bridge/get-orgs";
 import { out } from "@metriport/core/util/log";
+import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config, getEnvVarOrFail } from "../../shared/config";
-import { capture } from "../../shared/notifications";
-import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/appConfig";
+import { isCWEnabledForCx, isEnhancedCoverageEnabledForCx } from "../aws/app-config";
 import {
   getCertificate,
   makeCommonWellAPI,
@@ -76,24 +76,25 @@ export async function organizationToCommonwell(
   return cwOrg;
 }
 
-export async function get(oid: string): Promise<CWOrganization | undefined> {
-  const { log, debug } = out(`CW get - oid ${oid}`);
+export async function get(orgOid: string): Promise<CWOrganization | undefined> {
+  const { log, debug } = out(`CW get org oid ${orgOid}`);
   const commonWell = makeCommonWellAPI(Config.getCWMemberOrgName(), Config.getCWMemberOID());
+  const cwId = OID_PREFIX.concat(orgOid);
   try {
-    const cwId = OID_PREFIX.concat(oid);
     const resp = await commonWell.getOneOrg(metriportQueryMeta, cwId);
     debug(`resp: `, JSON.stringify(resp));
     return resp;
   } catch (error) {
     const msg = `Failure getting Org @ CW`;
     log(msg, error);
-    capture.message(msg, {
+    capture.error(msg, {
       extra: {
-        orgOID: oid,
+        orgOid,
+        cwId,
         cwReference: commonWell.lastReferenceHeader,
         context: `cw.org.get`,
+        error,
       },
-      level: "error",
     });
     throw error;
   }

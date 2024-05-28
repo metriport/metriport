@@ -1,9 +1,9 @@
-import base64url from "base64url";
+import { base64ToString } from "@metriport/core/util/base64";
 import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import { MAPIAccess } from "../../models/medical/mapi-access";
-import { getCxIdOrFail } from "../util";
 import { Config } from "../../shared/config";
+import { getCxIdOrFail } from "../util";
 
 /**
  * Process the API key and get the customer id.
@@ -11,18 +11,25 @@ import { Config } from "../../shared/config";
  */
 export const processAPIKey = (req: Request, res: Response, next: NextFunction): void => {
   try {
-    // TODO: don't do anything in standalone mode
-    // just trying to get the info, the auth is done on API GW
-    // downstream routes should check whether `cxId` is present on the request or not
-    const encodedApiKey = req.header("x-api-key") as string;
-    const apiKey = base64url.decode(encodedApiKey);
-    const splitApiKey = apiKey.split(":");
-    req.cxId = splitApiKey[1];
+    // Just gets the cxId from the API Key, the actual auth is done on API GW.
+    // Downstream routes should check whether `cxId` is present on the request or not.
+    const encodedApiKey = req.header("x-api-key");
+    req.cxId = getCxIdFromApiKey(encodedApiKey);
   } catch (error) {
     // noop - auth is done on API GW level, this is just to make data available downstream
   }
   next();
 };
+
+export function getCxIdFromApiKey(encodedApiKey: string | undefined): string {
+  if (!encodedApiKey) throw new Error("No API Key provided");
+  const apiKey = base64ToString(encodedApiKey);
+  const splitApiKey = apiKey.split(":");
+  if (splitApiKey.length !== 2) throw new Error("Invalid API Key format");
+  const cxId = splitApiKey[1];
+  if (cxId.trim().length < 5) throw new Error("Invalid API Key format");
+  return cxId;
+}
 
 /**
  * Validates the customer making the request was granted access

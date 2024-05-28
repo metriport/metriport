@@ -15,11 +15,11 @@ api: "POST /medical/v1/facility"
 <ResponseExample>
 
 ```javascript Metriport SDK
-import { Metriport, USState } from "@metriport/api-sdk";
+import { MetriportMedicalApi, USState } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const facility = await metriportClient.createFacility({
+const facility = await metriport.createFacility({
   name: "Care Facility, LLC",
   npi: "1234567891",
   tin: "12-3456789",

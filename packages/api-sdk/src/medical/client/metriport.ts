@@ -12,14 +12,14 @@ import {
 import { getETagHeader } from "../models/common/base-update";
 import {
   BulkGetDocumentUrlQuery,
+  bulkGetDocumentUrlQuerySchema,
+  documentListSchema,
   DocumentQuery,
+  documentQuerySchema,
   DocumentReference,
   ListDocumentFilters,
   ListDocumentResult,
   UploadDocumentResult,
-  bulkGetDocumentUrlQuerySchema,
-  documentListSchema,
-  documentQuerySchema,
 } from "../models/document";
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
@@ -186,6 +186,17 @@ export class MetriportMedicalApi {
   }
 
   /**
+   * Deletes a facility. It will fail if the facility has patients associated with it.
+   *
+   * @param facilityId The ID of facility to be deleted.
+   */
+  async deleteFacility(facilityId: string, eTag?: string): Promise<void> {
+    await this.api.delete(`${FACILITY_URL}/${facilityId}`, {
+      headers: { ...getETagHeader({ eTag }) },
+    });
+  }
+
+  /**
    * Creates a new patient at Metriport and HIEs.
    *
    * @param data The data to be used to create a new patient.
@@ -282,10 +293,13 @@ export class MetriportMedicalApi {
    * Only one query per given patient can be executed at a time.
    *
    * @param patientId The ID of the patient whose data is to be returned.
-   * @param resources Optional array of resources to be returned.
+   * @param resources Optional array of resources to be returned (defaults to all resource types).
    * @param dateFrom Optional start date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
    * @param dateTo Optional end date that resources will be filtered by (inclusive). Format is YYYY-MM-DD.
-   * @param conversionType Optional to indicate how the medical record should be rendered.
+   * @param conversionType Optional to indicate how the medical record should be rendered - one of:
+   *      "pdf", "html", or "json" (defaults to "json"). If "html" or "pdf", the Webhook payload
+   *      will contain a signed URL to download the file, which is active for 3 minutes.
+   *      If not provided, will send json payload in the webhook.
    * @param metadata Optional metadata to be sent along the webhook request as response of this query.
    * @return The consolidated data query status.
    */
@@ -358,7 +372,7 @@ export class MetriportMedicalApi {
   /**
    * Removes a patient at Metriport and at HIEs the patient is linked to.
    *
-   * @param patientId The ID of the patient data to be deleted.
+   * @param patientId The ID of the patient to be deleted.
    * @param facilityId The facility providing the NPI to support this operation.
    */
   async deletePatient(patientId: string, facilityId: string, eTag?: string): Promise<void> {

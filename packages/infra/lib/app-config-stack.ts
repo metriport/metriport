@@ -2,9 +2,11 @@ import { StackProps } from "aws-cdk-lib";
 import * as appConfig from "aws-cdk-lib/aws-appconfig";
 import { Construct } from "constructs";
 import { EnvConfig } from "../config/env-config";
+
 interface AppConfigStackProps extends StackProps {
   config: EnvConfig;
 }
+
 export function createAppConfigStack({
   stack,
   props,
