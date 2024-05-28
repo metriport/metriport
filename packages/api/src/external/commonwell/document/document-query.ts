@@ -51,7 +51,7 @@ import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
 import { tallyDocQueryProgress } from "../../hie/tally-doc-query-progress";
 import { makeCommonWellAPI } from "../api";
 import { groupCWErrors } from "../error-categories";
-import { getCWData, linkPatientToCW } from "../patient";
+import { getCWData, update } from "../patient";
 import { getPatientWithCWData, PatientWithCWData } from "../patient-external-data";
 import { getCwInitiator } from "../shared";
 import { makeDocumentDownloader } from "./document-downloader-factory";
@@ -153,7 +153,12 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        await linkPatientToCW(patientParam, initiator.facilityId, getOrgIdExcludeList);
+        // WARNING Could interfere with currently running state of another PD
+        await update({
+          patient: patientParam,
+          facilityId: initiator.facilityId,
+          getOrgIdExcludeList,
+        });
       }
 
       return;

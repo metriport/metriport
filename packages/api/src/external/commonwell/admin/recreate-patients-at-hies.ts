@@ -3,13 +3,12 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
 import { isCWEnabledForCx } from "../../aws/app-config";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
-import { getCWData, registerAndLinkPatientInCW } from "../patient";
+import { getCWData, create } from "../patient";
 import { getCwInitiator } from "../shared";
 
 export type RecreateResultOfPatient = {
@@ -64,7 +63,7 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { log, debug } = out(`recreatePatientAtCW - ${patient.id}`);
+  const { log } = out(`recreatePatientAtCW - ${patient.id}`);
 
   const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
   if (!isCwEnabledForCx) {
@@ -104,15 +103,12 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    // BUG Could interfere with currently running state of another PD
-    const cwIds = await registerAndLinkPatientInCW({
+    // WARNING Could interfere with currently running state of another PD
+    const cwIds = await create({
       patient,
       facilityId,
       getOrgIdExcludeList,
-      rerunPdOnNewDemographics: false,
-      requestId: uuidv7(),
-      startedAt: new Date(),
-      debug,
+      callSynchronous: true,
       initiator,
     });
 

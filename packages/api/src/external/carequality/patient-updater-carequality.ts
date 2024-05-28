@@ -10,11 +10,10 @@ import {
 } from "@metriport/core/util/race-control";
 import { getFacilityOrFail } from "../../command/medical/facility/get-facility";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
-import cqCommands from ".";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 import { getPatients, getPatient } from "../../command/medical/patient/get-patient";
-import { getCQData } from "./patient";
+import { getCQData, discover } from "./patient";
 
 dayjs.extend(duration);
 
@@ -42,7 +41,8 @@ export class PatientUpdaterCarequality extends PatientUpdater {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         await getFacilityOrFail({ cxId, id: facilityId });
-        await cqCommands.patient.discover({ patient, facilityId });
+        // WARNING Could interfere with currently running state of another PD
+        await discover({ patient, facilityId });
         await this.isPatientDiscoveryComplete(patient);
       } catch (error) {
         failedUpdateCount++;

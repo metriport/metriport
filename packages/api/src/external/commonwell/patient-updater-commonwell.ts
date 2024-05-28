@@ -1,9 +1,9 @@
 import { PatientUpdater } from "@metriport/core/command/patient-updater";
 import { Patient } from "@metriport/core/domain/patient";
 import { executeAsynchronously } from "@metriport/core/util/concurrency";
-import cwCommands from ".";
 import { getPatients } from "../../command/medical/patient/get-patient";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
+import { update } from "./patient";
 import { errorToString } from "../../shared/log";
 import { capture } from "../../shared/notifications";
 
@@ -32,8 +32,8 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
-        // BUG Could interfere with currently running state of another PD
-        await cwCommands.patient.update({
+        // WARNING Could interfere with currently running state of another PD
+        await update({
           patient,
           facilityId,
           getOrgIdExcludeList: this.orgIdExcludeList,

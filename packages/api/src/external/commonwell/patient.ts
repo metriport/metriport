@@ -88,6 +88,8 @@ export async function create({
   requestId,
   forceCWCreate = false,
   rerunPdOnNewDemographics = false,
+  callSynchronous = false,
+  initiator,
 }: {
   patient: Patient;
   facilityId: string;
@@ -95,7 +97,9 @@ export async function create({
   requestId?: string;
   forceCWCreate?: boolean;
   rerunPdOnNewDemographics?: boolean;
-}): Promise<void> {
+  callSynchronous?: boolean;
+  initiator?: HieInitiator;
+}): Promise<{ commonwellPatientId: string; personId: string } | void> {
   const { log, debug } = out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
@@ -116,9 +120,7 @@ export async function create({
       discoveryStartedAt,
       rerunPdOnNewDemographics,
     });
-
-    // intentionally async
-    registerAndLinkPatientInCW({
+    const registerParams = {
       patient,
       facilityId,
       getOrgIdExcludeList,
@@ -126,7 +128,15 @@ export async function create({
       requestId: discoveryRequestId,
       startedAt: discoveryStartedAt,
       debug,
-    }).catch(processAsyncError(createContext));
+      initiator,
+    };
+
+    if (callSynchronous) {
+      await registerAndLinkPatientInCW(registerParams);
+    } else {
+      // intentionally async
+      registerAndLinkPatientInCW(registerParams).catch(processAsyncError(createContext));
+    }
   }
 }
 
@@ -158,7 +168,7 @@ export async function get(
   return await commonWell.getPatient(queryMeta, cwData.patientId);
 }
 
-export async function registerAndLinkPatientInCW({
+async function registerAndLinkPatientInCW({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -347,9 +357,9 @@ export async function update({
       patient: augmentedPatient,
       facilityId,
       getOrgIdExcludeList,
+      rerunPdOnNewDemographics,
       requestId: discoveryRequestId,
       startedAt: discoveryStartedAt,
-      rerunPdOnNewDemographics,
       debug,
     }).catch(processAsyncError(updateContext));
   }
@@ -359,17 +369,17 @@ async function updatePatientAndLinksInCw({
   patient,
   facilityId,
   getOrgIdExcludeList,
+  rerunPdOnNewDemographics,
   requestId,
   startedAt,
-  rerunPdOnNewDemographics,
   debug,
 }: {
   patient: Patient;
   facilityId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
+  rerunPdOnNewDemographics: boolean;
   requestId: string;
   startedAt: Date;
-  rerunPdOnNewDemographics: boolean;
   debug: typeof console.log;
 }): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
@@ -379,7 +389,15 @@ async function updatePatientAndLinksInCw({
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
       });
-      await create({ patient, facilityId, getOrgIdExcludeList });
+      await registerAndLinkPatientInCW({
+        patient,
+        facilityId,
+        getOrgIdExcludeList,
+        rerunPdOnNewDemographics,
+        requestId,
+        startedAt,
+        debug,
+      });
       return;
     }
     const { commonwellPatientId, personId } = updateData;
@@ -618,14 +636,6 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     });
     throw err;
   }
-}
-
-export async function linkPatientToCW(
-  patient: Patient,
-  facilityId: string,
-  getOrgIdExcludeList: () => Promise<string[]>
-): Promise<void> {
-  await update({ patient, facilityId, getOrgIdExcludeList });
 }
 
 async function setupUpdate({
