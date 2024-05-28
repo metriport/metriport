@@ -1272,6 +1272,7 @@ module.exports.external = [
       }
 
       function getRangeLimit(limit) {
+        if (!limit) return;
         if (limit.value) {
           return limit;
         } else if (limit.nullFlavor === "OTH") {
@@ -1284,6 +1285,7 @@ module.exports.external = [
       }
 
       function buildRange(value) {
+        if (!value) return;
         if (value.includes("-")) {
           const [low, high] = value.split("-");
           return {
