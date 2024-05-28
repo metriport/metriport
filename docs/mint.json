@@ -115,7 +115,8 @@
             "medical-api/api-reference/facility/create-facility",
             "medical-api/api-reference/facility/get-facility",
             "medical-api/api-reference/facility/update-facility",
-            "medical-api/api-reference/facility/list-facilities"
+            "medical-api/api-reference/facility/list-facilities",
+            "medical-api/api-reference/facility/delete-facility"
           ]
         },
         {

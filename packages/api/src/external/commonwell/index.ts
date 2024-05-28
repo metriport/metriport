@@ -12,6 +12,7 @@ const cwCommands = {
   },
   patient: {
     create: patient.create,
+    get: patient.get,
     update: patient.update,
     remove: patient.remove,
     getCWData: patient.getCWData,
