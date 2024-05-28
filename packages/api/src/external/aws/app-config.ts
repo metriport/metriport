@@ -114,8 +114,8 @@ export async function getE2eCxIds(): Promise<string | undefined> {
     return apiKey ? getCxIdFromApiKey(apiKey) : undefined;
   }
   const cxIds = await getCxsWithFeatureFlagEnabled("e2eCxIds");
-  if (cxIds.length > 0) {
-    const msg = `FF e2eCxIds should only have 1 cxId`;
+  if (cxIds.length > 1) {
+    const msg = `FF e2eCxIds should have 1 cxId`;
     log(`${msg} but it has ${cxIds.length}, using the first one.`);
     capture.message(msg, { extra: { cxIds }, level: "warning" });
   }
