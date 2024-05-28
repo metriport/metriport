@@ -11,6 +11,7 @@ import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
   IMTOMAttachments,
+  convertSoapResponseToMtomResponse,
 } from "../outbound/xca/mtom/parser";
 
 const { log } = out("Saml Client");
@@ -121,10 +122,15 @@ export async function sendSignedXmlMtom({
     httpsAgent: agent,
     responseType: "arraybuffer",
   });
-  const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
+
   const binaryData: Buffer = Buffer.isBuffer(response.data)
     ? response.data
     : Buffer.from(response.data, "binary");
-  const mtomParts = await parseMtomResponse(binaryData, boundary);
-  return mtomParts;
+
+  const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
+  if (boundary) {
+    return await parseMtomResponse(binaryData, boundary);
+  } else {
+    return convertSoapResponseToMtomResponse(binaryData);
+  }
 }

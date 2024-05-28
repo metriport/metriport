@@ -64,5 +64,8 @@ export async function createMtomMessageWithoutAttachments(
 ): Promise<IMTOMAttachments> {
   const { payload, contentType } = creatMtomContentTypeAndPayload(xmlString);
   const boundary = getBoundaryFromMtomResponse(contentType);
+  if (!boundary) {
+    throw new Error("No boundary parameter found in content type.");
+  }
   return parseMtomResponse(payload, boundary);
 }

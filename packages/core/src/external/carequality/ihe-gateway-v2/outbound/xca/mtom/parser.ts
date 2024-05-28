@@ -77,14 +77,22 @@ export async function parseMtomResponse(
 }
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function getBoundaryFromMtomResponse(contentType: any): string {
+export function getBoundaryFromMtomResponse(contentType: any): string | undefined {
   const parsedContentType = MIMEType.parse(contentType);
   if (!parsedContentType) {
     throw new Error("Parsing of content type failed");
   }
   const boundary = parsedContentType.parameters.get("boundary");
-  if (!boundary) {
-    throw new Error("No boundary parameter found in content type.");
-  }
   return boundary;
+}
+
+export function convertSoapResponseToMtomResponse(buffer: Buffer): IMTOMAttachments {
+  return {
+    parts: [
+      {
+        body: buffer,
+        headers: {},
+      },
+    ],
+  };
 }
