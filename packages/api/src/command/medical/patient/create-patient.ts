@@ -20,7 +20,7 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export const createPatient = async ({
   patient,
-  rerunPdOnNewDemographics,
+  rerunPdOnNewDemographics = false,
   forceCommonwell,
   forceCarequality,
 }: {

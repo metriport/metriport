@@ -63,6 +63,7 @@ export async function updatePatient({
   return updatedPatient;
 }
 
+// Needs to live somewhere else
 export async function scheduleOrRunPatientDiscovery({
   patient,
   facilityId,
