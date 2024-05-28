@@ -1,6 +1,6 @@
 export { optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
-export { errorToString } from "./common/error";
+export * from "./common/env-var";
 export { emptyFunction } from "./common/general";
 export { metriportOrganization } from "./common/metriport-organization";
 export { normalizeOid } from "./common/normalize-oid";
@@ -12,3 +12,7 @@ export { limitStringLength } from "./common/string";
 export { AtLeastOne, stringToBoolean } from "./common/types";
 export { validateNPI } from "./common/validate-npi";
 export { metriportCompanyDetails } from "./domain/metriport";
+export { BadRequestError } from "./error/bad-request";
+export { MetriportError } from "./error/metriport-error";
+export { NotFoundError } from "./error/not-found";
+export { errorToString } from "./error/shared";
