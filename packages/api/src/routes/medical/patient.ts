@@ -81,6 +81,9 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const cxId = getCxIdOrFail(req);
     const facilityId = getFromQueryOrFail("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientCreateSchema.parse(req.body);
@@ -103,6 +106,7 @@ router.post(
 
     const patient = await createPatient({
       patient: patientCreate,
+      rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
     });
@@ -130,6 +134,12 @@ router.put(
     const cxId = getCxIdOrFail(req);
     const id = getFromParamsOrFail("id", req);
     const facilityIdParam = getFrom("query").optional("facilityId", req);
+    const rerunPdOnNewDemographics = stringToBoolean(
+      getFrom("query").optional("rerunPdOnNewDemographics", req)
+    );
+    const augmentDemographics = stringToBoolean(
+      getFrom("query").optional("augmentDemographics", req)
+    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
@@ -149,6 +159,8 @@ router.put(
 
     const updatedPatient = await updatePatient({
       patientUpdate,
+      rerunPdOnNewDemographics,
+      augmentDemographics,
       forceCommonwell,
       forceCarequality,
     });
