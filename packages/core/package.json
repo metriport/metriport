@@ -93,6 +93,7 @@
     "@faker-js/faker": "^8.0.2",
     "@medplum/fhirtypes": "^2.0.32",
     "@tsconfig/recommended": "^1.0.2",
+    "@types/formidable": "^3.4.5",
     "@types/jest": "29.5.3",
     "@types/json-stringify-safe": "^5.0.0",
     "@types/xml2js": "^0.4.14",

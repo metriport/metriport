@@ -2,6 +2,7 @@ import https from "https";
 import { MultipartParser } from "formidable";
 import { constants } from "crypto";
 import axios from "axios";
+import fs from "fs";
 import * as AWS from "aws-sdk";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
@@ -116,16 +117,25 @@ export async function sendSignedXmlMtom({
       "Cache-Control": "no-cache",
     },
     httpsAgent: agent,
+    responseType: "arraybuffer",
   });
 
   try {
     const mtomContentType = parseMtomContentType(response.headers["content-type"]);
     const binaryData: Buffer = Buffer.isBuffer(response.data)
       ? response.data
-      : Buffer.from(response.data);
+      : Buffer.from(response.data, "binary");
+    fs.writeFileSync("../../scratch/dr/raw", binaryData);
+    console.log("mtomContentType", mtomContentType);
     const mtomParts = await parseMTOMResp(binaryData, mtomContentType.boundary);
     const soapData: Buffer = mtomParts.parts[0]?.body || Buffer.from("");
     const fileData: Buffer = mtomParts.parts[1]?.body || Buffer.from("");
+    fs.writeFileSync("../../scratch/dr/parts", JSON.stringify(mtomParts));
+    fs.writeFile("../../scratch/dr/false", fileData, err => {
+      if (err) {
+        console.error(err);
+      }
+    });
     const fileType = detectFileType(fileData);
     const fileType2 = detectFileType(soapData);
     console.log("File type:", fileType);

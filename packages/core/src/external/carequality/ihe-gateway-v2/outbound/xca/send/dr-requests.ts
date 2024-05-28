@@ -58,7 +58,10 @@ export async function sendSignedDRRequests({
         `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
       );
       if (error?.response?.data) {
-        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+        const errorDetails = Buffer.isBuffer(error?.response?.data)
+          ? error.response.data.toString("utf-8")
+          : JSON.stringify(error?.response?.data);
+        log(`error details: ${errorDetails}`);
       }
 
       const errorString: string = errorToString(error);
