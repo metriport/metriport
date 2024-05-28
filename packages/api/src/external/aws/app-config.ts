@@ -1,23 +1,16 @@
-import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/appConfig";
+import {
+  FeatureFlagDatastore,
+  getFeatureFlags,
+  getFeatureFlagValue,
+} from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { errorToString } from "@metriport/shared/common/error";
+import { errorToString, getEnvVar } from "@metriport/shared";
+import { getCxIdFromApiKey } from "../../routes/middlewares/auth";
 import { Config } from "../../shared/config";
-import { Util } from "../../shared/util";
 
-const log = Util.log(`App Config - FF`);
-
-const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
-  "cxsWithEnhancedCoverageFeatureFlag",
-  "cxsWithCQDirectFeatureFlag",
-  "cxsWithCWFeatureFlag",
-  "cxsWithADHDMRFeatureFlag",
-  "cxsWithIncreasedSandboxLimitFeatureFlag",
-  "cxsWithNoWebhookPongFeatureFlag",
-  "commonwellFeatureFlag",
-  "carequalityFeatureFlag",
-  "oidsWithIHEGatewayV2Enabled",
-];
+const { log } = out(`App Config - FF`);
 
 /**
  * Go through all Feature Flags to make sure they are accessible.
@@ -27,28 +20,17 @@ export async function initFeatureFlags() {
     log(`Skipping initializing Feature Flags - Develop/Local env`);
     return;
   }
-  const res = await Promise.allSettled(
-    listOfFeatureFlags.map(ff =>
-      getFeatureFlagValueLocal(ff).catch(initFeatureFlagsErrorHandling(ff))
-    )
-  );
-  const failed = res.flatMap(r => (r.status === "rejected" ? r.reason : []));
-  if (failed.length > 0) {
-    throw new MetriportError(`Failed to initialize Feature Flags`, undefined, {
-      failed: failed.map(f => f.reason).join("; "),
-    });
+  try {
+    await getFeatureFlags(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType()
+    );
+  } catch (error) {
+    throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
   log(`Feature Flags initialized.`);
-}
-
-function initFeatureFlagsErrorHandling(featureFlagName: keyof FeatureFlagDatastore) {
-  return (error: unknown) => {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-    throw error;
-  };
 }
 
 function getFeatureFlagValueLocal(featureFlagName: keyof FeatureFlagDatastore) {
@@ -124,6 +106,20 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
 
 export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
+}
+
+export async function getE2eCxIds(): Promise<string | undefined> {
+  if (Config.isDev()) {
+    const apiKey = getEnvVar("TEST_API_KEY");
+    return apiKey ? getCxIdFromApiKey(apiKey) : undefined;
+  }
+  const cxIds = await getCxsWithFeatureFlagEnabled("e2eCxIds");
+  if (cxIds.length > 0) {
+    const msg = `FF e2eCxIds should only have 1 cxId`;
+    log(`${msg} but it has ${cxIds.length}, using the first one.`);
+    capture.message(msg, { extra: { cxIds }, level: "warning" });
+  }
+  return cxIds[0];
 }
 
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {

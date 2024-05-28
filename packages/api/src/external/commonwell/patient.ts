@@ -9,9 +9,9 @@ import {
 } from "@metriport/commonwell-sdk";
 import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
-import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
@@ -25,7 +25,7 @@ import {
   isCommonwellEnabled,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
-} from "../aws/appConfig";
+} from "../aws/app-config";
 import { HieInitiator } from "../hie/get-hie-initiator";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
@@ -466,12 +466,12 @@ async function updatePatientAndLinksInCw({
 async function validateCWEnabled({
   patient,
   facilityId,
-  forceCW,
+  forceCW = false,
   debug,
 }: {
   patient: Patient;
   facilityId: string;
-  forceCW: boolean;
+  forceCW?: boolean;
   debug: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;
@@ -483,24 +483,23 @@ async function validateCWEnabled({
   }
 
   try {
-    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
-    const isCWEnabled = await isCommonwellEnabled();
-    const isEnabledForCx = await isCWEnabledForCx(cxId);
-
-    const cwIsDisabled = !isCWEnabled;
-    const cwIsDisabledForCx = !isEnabledForCx;
-
-    if (cwIsDisabledForCx) {
-      debug(`CW disabled for cx ${cxId}, skipping...`);
-      return false;
-    } else if (cwIsDisabled) {
+    const [isCwEnabledGlobally, isCwEnabledForCx] = await Promise.all([
+      isCommonwellEnabled(),
+      isCWEnabledForCx(cxId),
+    ]);
+    if (!isCwEnabledGlobally) {
       debug(`CW not enabled, skipping...`);
       return false;
-    } else if (!isCwQueryEnabled) {
+    }
+    if (!isCwEnabledForCx) {
+      debug(`CW disabled for cx ${cxId}, skipping...`);
+      return false;
+    }
+    const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
+    if (!isCwQueryEnabled) {
       debug(`CW not enabled for query, skipping...`);
       return false;
     }
-
     return true;
   } catch (error) {
     const msg = `Error validating CW create enabled`;
@@ -511,7 +510,6 @@ async function validateCWEnabled({
         error,
       },
     });
-
     return false;
   }
 }
@@ -571,8 +569,9 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   try {
     const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
 
-    if (!(await isCWEnabledForCx(patient.cxId))) {
-      debug(`CW disabled for cx ${patient.cxId}, skipping...`);
+    const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
+    if (!isCwEnabledForCx) {
+      log(`CW disabled for cx ${patient.cxId}, skipping...`);
       return undefined;
     }
 

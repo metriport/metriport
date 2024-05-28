@@ -8,7 +8,7 @@ import cors from "cors";
 import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import { initEvents } from "./event";
-import { initFeatureFlags } from "./external/aws/appConfig";
+import { initFeatureFlags } from "./external/aws/app-config";
 import initDB from "./models/db";
 import { errorHandler } from "./routes/helpers/default-error-handler";
 import mountRoutes from "./routes/index";

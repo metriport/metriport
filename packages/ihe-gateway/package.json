@@ -21,7 +21,6 @@
   "license": "ISC",
   "devDependencies": {
     "@aws-sdk/client-ecs": "^3.529.1",
-    "@metriport/core": "file:packages/core",
     "@metriport/shared": "file:packages/shared",
     "@tsconfig/recommended": "^1.0.1",
     "@types/lodash": "^4.14.192",

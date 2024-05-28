@@ -4,7 +4,7 @@ import { out } from "@metriport/core/util/log";
 import { reset } from ".";
 import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { capture } from "../../../shared/notifications";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { makeCommonWellAPI } from "../api";
 import {
   updateCommonwellIdsAndStatus,

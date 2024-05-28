@@ -6,7 +6,7 @@ import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
-import { isCWEnabledForCx } from "../../aws/appConfig";
+import { isCWEnabledForCx } from "../../aws/app-config";
 import { getCqOrgIdsToDenyOnCw } from "../../hie/cross-hie-ids";
 import { makeCommonWellAPI } from "../api";
 import { getCWData, registerAndLinkPatientInCW } from "../patient";
@@ -66,7 +66,8 @@ export async function recreatePatientAtCW(
 ): Promise<RecreateResultOfPatient | undefined> {
   const { log, debug } = out(`recreatePatientAtCW - ${patient.id}`);
 
-  if (!(await isCWEnabledForCx(patient.cxId))) {
+  const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
+  if (!isCwEnabledForCx) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
     return undefined;
   }

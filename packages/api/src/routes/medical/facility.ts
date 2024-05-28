@@ -1,11 +1,12 @@
+import NotFoundError from "@metriport/core/util/error/not-found";
 import { Request, Response } from "express";
 import Router from "express-promise-router";
 import status from "http-status";
 import { createFacility } from "../../command/medical/facility/create-facility";
+import { deleteFacility } from "../../command/medical/facility/delete-facility";
 import { getFacilities } from "../../command/medical/facility/get-facility";
 import { updateFacility } from "../../command/medical/facility/update-facility";
 import { verifyCxAccess } from "../../command/medical/facility/verify-access";
-import NotFoundError from "../../errors/not-found";
 import { getETag } from "../../shared/http";
 import { requestLogger } from "../helpers/request-logger";
 import { asyncHandler, getCxIdOrFail, getFromParamsOrFail } from "../util";
@@ -113,6 +114,26 @@ router.get(
     if (facilities.length < 1) throw new NotFoundError(`No facility found`);
 
     return res.status(status.OK).json(dtoFromModel(facilities[0]));
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * DELETE /facility/:id
+ *
+ * Removes a facility if there are no patients associated with it.
+ *
+ * @return 204 if successful.
+ */
+router.delete(
+  "/:id",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    await verifyCxAccess(cxId);
+
+    const facilityId = getFromParamsOrFail("id", req);
+    await deleteFacility({ cxId, id: facilityId });
+    return res.sendStatus(status.NO_CONTENT);
   })
 );
 
