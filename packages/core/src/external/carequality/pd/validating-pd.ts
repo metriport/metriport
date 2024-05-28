@@ -4,10 +4,14 @@ import {
   PersonalIdentifier as IheIdentifier,
 } from "@metriport/ihe-gateway-sdk";
 import { InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
-import { getStateEnum, USState } from "../../../domain/geographic-locations";
+import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/patient";
+import {
+  PatientData,
+  PersonalIdentifier,
+  createDriversLicensePersonalIdentifier,
+} from "../../../domain/patient";
 import { isContactType } from "../../fhir/patient/index";
 import {
   XDSRegistryError,
@@ -82,7 +86,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
       if (system && value && STATE_MAPPINGS[system]) {
         const state = STATE_MAPPINGS[system];
         if (state) {
-          return createPersonalIdentifier(value, state);
+          return createDriversLicensePersonalIdentifier(value, state);
         }
       }
       return undefined;
@@ -101,13 +105,4 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     personalIdentifiers: personalIdentifiers,
   };
   return convertedPatient;
-}
-
-function createPersonalIdentifier(value: string, state: USState): PersonalIdentifier {
-  const personalIdentifier: PersonalIdentifier = {
-    type: "driversLicense",
-    value: value,
-    state: state,
-  };
-  return personalIdentifier;
 }

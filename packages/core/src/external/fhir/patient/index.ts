@@ -5,7 +5,6 @@ import {
   Reference,
   DocumentReference,
 } from "@medplum/fhirtypes";
-import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import { driversLicenseURIs, identifierSytemByType } from "../../../domain/oid";
 import { ContactTypes, Contact } from "../../../domain/contact";
 import { Address } from "../../../domain/address";
@@ -23,7 +22,7 @@ export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>[
   return genderMapping[k];
 }
 
-function mapPatientDataToResource(patient: PatientIdAndData) {
+export function mapPatientDataToResource(patient: PatientIdAndData) {
   return {
     resourceType: "Patient" as const,
     id: patient.id,
@@ -69,10 +68,6 @@ function mapPatientDataToResource(patient: PatientIdAndData) {
 }
 
 export function toFHIR(patient: PatientIdAndData): FHIRPatient {
-  return mapPatientDataToResource(patient);
-}
-
-export function toIheGatewayPatientResource(patient: PatientIdAndData): PatientResource {
   return mapPatientDataToResource(patient);
 }
 

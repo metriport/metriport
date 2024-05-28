@@ -42,7 +42,12 @@ type IheIdentifier = {
   _root: string | undefined;
 };
 
-function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): PersonalIdentifier {
+function convertIheIdentifierToPersonalIdentifier(
+  identifier: IheIdentifier
+): PersonalIdentifier | undefined {
+  if (!identifier?._extension && !identifier?._root) {
+    return undefined;
+  }
   return {
     value: identifier?._extension,
     system: identifier?._root,
@@ -52,13 +57,20 @@ function convertIheIdentifierToPersonalIdentifier(identifier: IheIdentifier): Pe
 function iheIdentifiersToPersonalIdentifiers(
   otherIds: IheIdentifier[]
 ): PersonalIdentifier[] | undefined {
-  if (!otherIds || otherIds.every(id => !id._extension && !id._root)) {
+  if (!otherIds) {
     return undefined;
   }
-  return otherIds.map(convertIheIdentifierToPersonalIdentifier);
+  const personalIdentifiers = otherIds
+    .map(convertIheIdentifierToPersonalIdentifier)
+    .filter((id): id is PersonalIdentifier => id !== undefined);
+
+  return personalIdentifiers.length > 0 ? personalIdentifiers : undefined;
 }
 
-function convertIheAddressToAddress(address: IheAddress): Address {
+function convertIheAddressToAddress(address: IheAddress): Address | undefined {
+  if (!address?.city && !address?.state && !address?.postalCode && !address?.country) {
+    return undefined;
+  }
   return {
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
     city: address?.city,
@@ -69,18 +81,19 @@ function convertIheAddressToAddress(address: IheAddress): Address {
 }
 
 function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] | undefined {
-  if (
-    !iheAddresses ||
-    iheAddresses.every(a => !a.city && !a.state && !a.postalCode && !a.country)
-  ) {
+  if (!iheAddresses) {
     return undefined;
   }
-  return iheAddresses.map(convertIheAddressToAddress);
+  const addresses = iheAddresses
+    .map(convertIheAddressToAddress)
+    .filter((address): address is Address => address !== undefined);
+
+  return addresses.length > 0 ? addresses : undefined;
 }
 
 function convertIheNameToCarequalityName(name: IheName): Name {
   return {
-    given: toArray(name?.given).filter((g): g is string => Boolean(g)),
+    given: toArray(name?.given),
     family: name.family,
   };
 }
@@ -89,7 +102,10 @@ function iheNamesToNames(iheNames: IheName[]): Name[] {
   return iheNames.map(convertIheNameToCarequalityName);
 }
 
-function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom {
+function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom | undefined {
+  if (!iheTelecom?._use && !iheTelecom?._value) {
+    return undefined;
+  }
   return {
     system: iheTelecom?._use,
     value: iheTelecom?._value,
@@ -97,10 +113,14 @@ function convertIheTelecomToTelecom(iheTelecom: IheTelecom): Telecom {
 }
 
 function iheTelecomsToTelecoms(iheTelecom: IheTelecom[]): Telecom[] | undefined {
-  if (!iheTelecom || iheTelecom.every(t => !t._use && !t._value)) {
+  if (!iheTelecom) {
     return undefined;
   }
-  return iheTelecom.map(convertIheTelecomToTelecom);
+  const telecoms = iheTelecom
+    .map(convertIheTelecomToTelecom)
+    .filter((telecom): telecom is Telecom => telecom !== undefined);
+
+  return telecoms.length > 0 ? telecoms : undefined;
 }
 
 function handleHTTPErrorResponse({

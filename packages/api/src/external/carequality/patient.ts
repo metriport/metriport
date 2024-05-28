@@ -1,5 +1,5 @@
 import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
-import { toIheGatewayPatientResource } from "@metriport/core/external/fhir/patient/index";
+import { toIheGatewayPatientResource } from "@metriport/core/external/carequality/ihe-gateway-v2/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";

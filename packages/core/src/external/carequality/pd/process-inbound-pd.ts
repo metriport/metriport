@@ -7,7 +7,7 @@ import { Address } from "../../../domain/address";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toIheGatewayPatientResource as convertPatientToFHIR } from "../../fhir/patient";
+import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import {
   IHEGatewayError,
   XDSRegistryError,
@@ -34,7 +34,7 @@ function constructMatchResponse(
       id: patient.id,
       system: METRIPORT_HOME_COMMUNITY_ID.replace("urn:oid:", ""),
     },
-    patientResource: convertPatientToFHIR(patient),
+    patientResource: toIheGatewayPatientResource(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
