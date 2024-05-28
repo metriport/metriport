@@ -1,23 +1,15 @@
-import { FeatureFlagDatastore, getFeatureFlagValue } from "@metriport/core/external/aws/app-config";
+import {
+  FeatureFlagDatastore,
+  getFeatureFlags,
+  getFeatureFlagValue,
+} from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
+import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { errorToString } from "@metriport/shared/common/error";
 import { Config } from "../../shared/config";
-import { Util } from "../../shared/util";
 
-const log = Util.log(`App Config - FF`);
-
-const listOfFeatureFlags: Array<keyof FeatureFlagDatastore> = [
-  "cxsWithEnhancedCoverageFeatureFlag",
-  "cxsWithCQDirectFeatureFlag",
-  "cxsWithCWFeatureFlag",
-  "cxsWithADHDMRFeatureFlag",
-  "cxsWithIncreasedSandboxLimitFeatureFlag",
-  "cxsWithNoWebhookPongFeatureFlag",
-  "commonwellFeatureFlag",
-  "carequalityFeatureFlag",
-  "oidsWithIHEGatewayV2Enabled",
-];
+const { log } = out(`App Config - FF`);
 
 /**
  * Go through all Feature Flags to make sure they are accessible.
@@ -27,28 +19,17 @@ export async function initFeatureFlags() {
     log(`Skipping initializing Feature Flags - Develop/Local env`);
     return;
   }
-  const res = await Promise.allSettled(
-    listOfFeatureFlags.map(ff =>
-      getFeatureFlagValueLocal(ff).catch(initFeatureFlagsErrorHandling(ff))
-    )
-  );
-  const failed = res.flatMap(r => (r.status === "rejected" ? r.reason : []));
-  if (failed.length > 0) {
-    throw new MetriportError(`Failed to initialize Feature Flags`, undefined, {
-      failed: failed.map(f => f.reason).join("; "),
-    });
+  try {
+    await getFeatureFlags(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType()
+    );
+  } catch (error) {
+    throw new MetriportError(`Failed to initialize Feature Flags`, error);
   }
   log(`Feature Flags initialized.`);
-}
-
-function initFeatureFlagsErrorHandling(featureFlagName: keyof FeatureFlagDatastore) {
-  return (error: unknown) => {
-    const msg = `Failed to get Feature Flag Value`;
-    const extra = { featureFlagName };
-    log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
-    capture.error(msg, { extra: { ...extra, error } });
-    throw error;
-  };
 }
 
 function getFeatureFlagValueLocal(featureFlagName: keyof FeatureFlagDatastore) {
