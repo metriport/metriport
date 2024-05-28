@@ -151,10 +151,13 @@ export function createAugmentedPatient(
     });
   });
   const newTelephoneNumbers: Contact[] = linksDempgraphics.flatMap(ld => {
-    return ld.telephoneNumbers.map(tn => {
-      return {
-        phone: tn,
-      };
+    return ld.telephoneNumbers.map(phone => {
+      return { phone };
+    });
+  });
+  const newEmails: Contact[] = linksDempgraphics.flatMap(ld => {
+    return ld.emails.map(email => {
+      return { email };
     });
   });
   const aupmentedPatient = {
@@ -162,8 +165,8 @@ export function createAugmentedPatient(
     data: {
       ...existingPatient.data,
       contact: existingPatient.data.contact
-        ? [...existingPatient.data.contact, ...newTelephoneNumbers]
-        : newTelephoneNumbers,
+        ? [...existingPatient.data.contact, ...newTelephoneNumbers, ...newEmails]
+        : [...newTelephoneNumbers, ...newEmails],
       address: [...existingPatient.data.address, ...newAddresses],
     },
   };

@@ -15,7 +15,7 @@ import { processAsyncError } from "@metriport/core/util/error/shared";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { updatePatient as updatePatientMetriport } from "../../command/medical/patient/update-patient";
+import { scheduleOrRunPatientDiscovery } from "../../command/medical/patient/update-patient";
 import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
 import { capture } from "@metriport/core/util/notifications";
@@ -208,16 +208,13 @@ export async function registerAndLinkPatientInCW({
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (foundNewDemographics && rerunPdOnNewDemographics) {
-      const updatedPatient = await updatePatientMetriport({
-        patientUpdate: {
-          id: patient.id,
-          cxId: patient.cxId,
-          facilityId,
-          ...patient.data,
-        },
+      const updatedPatient = await scheduleOrRunPatientDiscovery({
+        patient,
+        facilityId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
+        overrideSchedule: true,
       });
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
@@ -408,16 +405,13 @@ async function updatePatientAndLinksInCw({
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (foundNewDemographics && rerunPdOnNewDemographics) {
-      const updatedPatient = await updatePatientMetriport({
-        patientUpdate: {
-          id: patient.id,
-          cxId: patient.cxId,
-          facilityId,
-          ...patient.data,
-        },
+      const updatedPatient = await scheduleOrRunPatientDiscovery({
+        patient,
+        facilityId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
+        overrideSchedule: true,
       });
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }

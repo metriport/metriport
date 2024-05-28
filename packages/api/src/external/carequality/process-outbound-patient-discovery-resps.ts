@@ -13,7 +13,7 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { updatePatient } from "../../command/medical/patient/update-patient";
+import { scheduleOrRunPatientDiscovery } from "../../command/medical/patient/update-patient";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
@@ -79,15 +79,13 @@ export async function processOutboundPatientDiscoveryResps({
 
     let scheduledPdRequest = cqData?.scheduledPdRequest;
     if (foundNewDemographics && rerunPdOnNewDemographics && facilityId) {
-      const updatedPatient = await updatePatient({
-        patientUpdate: {
-          ...patientIds,
-          facilityId,
-          ...patient.data,
-        },
+      const updatedPatient = await scheduleOrRunPatientDiscovery({
+        patient,
+        facilityId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
+        overrideSchedule: true,
       });
       scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }

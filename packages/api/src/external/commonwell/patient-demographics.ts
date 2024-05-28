@@ -54,15 +54,15 @@ function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLi
   });
 
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
-    if (!tc.value) return [];
+    if (!tc.value || !tc.system) return [];
+    if (tc.system !== "phone") return [];
     return [tc.value];
   });
-  /* TODO
-  const emails = (patientResource.contact ?? []).flatMap(c => {
-      if (!c.email) return [];
-      return [c.email];
-  })
-  */
+  const emails = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
+    if (!tc.value || !tc.system) return [];
+    if (tc.system !== "email") return [];
+    return [tc.value];
+  });
   const addresses = patientNetworkLink.details.address.map(a => {
     return {
       line: a.line ? a.line.join(" ") : undefined,
@@ -89,7 +89,7 @@ function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLi
     gender,
     names,
     telephoneNumbers,
-    emails: [],
+    emails,
     addresses,
     driversLicenses: [],
     ssns: [],

@@ -27,9 +27,8 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 export async function updatePatient({
   patientUpdate,
   emit = true,
-  rerunPdOnNewDemographics,
-  augmentDemographics,
-  isRerunFromNewDemographics,
+  rerunPdOnNewDemographics = false,
+  augmentDemographics = false,
   forceCommonwell,
   forceCarequality,
 }: {
@@ -37,7 +36,6 @@ export async function updatePatient({
   emit?: boolean;
   rerunPdOnNewDemographics?: boolean;
   augmentDemographics?: boolean;
-  isRerunFromNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -53,34 +51,60 @@ export async function updatePatient({
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  // PD Flow
+  const updatedPatient = await scheduleOrRunPatientDiscovery({
+    patient,
+    facilityId,
+    rerunPdOnNewDemographics,
+    augmentDemographics,
+    forceCommonwell,
+    forceCarequality,
+  });
+
+  return updatedPatient;
+}
+
+export async function scheduleOrRunPatientDiscovery({
+  patient,
+  facilityId,
+  rerunPdOnNewDemographics,
+  augmentDemographics,
+  forceCommonwell,
+  forceCarequality,
+  isRerunFromNewDemographics = false,
+  overrideSchedule = false,
+}: {
+  patient: Patient;
+  facilityId: string;
+  rerunPdOnNewDemographics: boolean;
+  augmentDemographics: boolean;
+  // START TODO #1572 - remove
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
+  // END TODO #1572 - remove
+  overrideSchedule?: boolean;
+  isRerunFromNewDemographics?: boolean;
+}): Promise<Patient> {
+  let updatedPatient = patient;
   const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
 
-  if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
-    if (isRerunFromNewDemographics) {
-      await schedulePatientDiscovery({
-        requestId: uuidv7(),
-        patient,
-        source: MedicalDataSource.CAREQUALITY,
-        facilityId,
-        rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
-        augmentDemographics: augmentDemographics ?? false,
-        isRerunFromNewDemographics,
-      });
-    }
-  } else if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
-    await schedulePatientDiscovery({
+  if (
+    discoveryStatusCq === "processing" &&
+    (!scheduledPdRequestCq || (scheduledPdRequestCq && overrideSchedule))
+  ) {
+    updatedPatient = await schedulePatientDiscovery({
       requestId: uuidv7(),
       patient,
       source: MedicalDataSource.CAREQUALITY,
       facilityId,
-      rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
-      augmentDemographics: augmentDemographics ?? false,
-      isRerunFromNewDemographics: isRerunFromNewDemographics ?? false,
+      rerunPdOnNewDemographics,
+      augmentDemographics,
+      isRerunFromNewDemographics,
     });
+  } else if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
+    // Do nothing
   } else {
     await cqCommands.patient.discover({
       patient,
@@ -96,29 +120,21 @@ export async function updatePatient({
   const statusCw = cwData?.status;
   const scheduledPdRequestCw = cwData?.scheduledPdRequest;
 
-  if (statusCw === "processing" && scheduledPdRequestCw) {
-    if (isRerunFromNewDemographics) {
-      await schedulePatientDiscovery({
-        requestId: uuidv7(),
-        patient,
-        source: MedicalDataSource.COMMONWELL,
-        facilityId,
-        rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
-        augmentDemographics: augmentDemographics ?? false,
-        isRerunFromNewDemographics,
-      });
-    }
-    // do nothing -- this update will be reflected when scheduled PD runs
-  } else if (statusCw === "processing" && !scheduledPdRequestCw) {
-    await schedulePatientDiscovery({
+  if (
+    statusCw === "processing" &&
+    (!scheduledPdRequestCw || (scheduledPdRequestCw && overrideSchedule))
+  ) {
+    updatedPatient = await schedulePatientDiscovery({
       requestId: uuidv7(),
       patient,
       source: MedicalDataSource.COMMONWELL,
       facilityId,
-      rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
-      augmentDemographics: augmentDemographics ?? false,
-      isRerunFromNewDemographics: isRerunFromNewDemographics ?? false,
+      rerunPdOnNewDemographics,
+      augmentDemographics,
+      isRerunFromNewDemographics,
     });
+  } else if (statusCw === "processing" && scheduledPdRequestCw) {
+    // Do nothing
   } else {
     await cwCommands.patient.update({
       patient,
@@ -130,7 +146,7 @@ export async function updatePatient({
     });
   }
 
-  return patient;
+  return updatedPatient;
 }
 
 export async function updatePatientWithoutHIEs(

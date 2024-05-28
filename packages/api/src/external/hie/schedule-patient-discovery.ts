@@ -33,7 +33,7 @@ export async function schedulePatientDiscovery({
   rerunPdOnNewDemographics: boolean;
   augmentDemographics: boolean;
   isRerunFromNewDemographics: boolean;
-}): Promise<void> {
+}): Promise<Patient> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
   log(`Scheduling patient discovery to be executed`);
@@ -43,7 +43,7 @@ export async function schedulePatientDiscovery({
     cxId: patient.cxId,
   };
 
-  await executeOnDBTx(PatientModel.prototype, async transaction => {
+  return await executeOnDBTx(PatientModel.prototype, async transaction => {
     const existingPatient = await getPatientOrFail({
       ...patientFilter,
       lock: true,
@@ -78,5 +78,7 @@ export async function schedulePatientDiscovery({
       where: patientFilter,
       transaction,
     });
+
+    return updatedPatient;
   });
 }
