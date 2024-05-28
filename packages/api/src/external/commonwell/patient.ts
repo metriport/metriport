@@ -12,27 +12,28 @@ import { Patient, PatientExternalData } from "@metriport/core/domain/patient";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
+import { out } from "@metriport/core/util/log";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
+import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { scheduleOrRunPatientDiscovery } from "../../command/medical/patient/update-patient";
 import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
 import { capture } from "@metriport/core/util/notifications";
-import { out } from "@metriport/core/util/log";
-import { errorToString } from "@metriport/shared/common/error";
 import {
   isCommonwellEnabled,
   isCWEnabledForCx,
   isEnhancedCoverageEnabledForCx,
 } from "../aws/app-config";
+import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 import { HieInitiator } from "../hie/get-hie-initiator";
+import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
-import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
 import {
@@ -47,7 +48,6 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
-import { isFacilityEnabledToQueryCW } from "../commonwell/shared";
 import { augmentPatientDemograhpics, checkForNewDemographics } from "./patient-demographics";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
 

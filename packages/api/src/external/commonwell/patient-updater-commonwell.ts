@@ -32,6 +32,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
     const updatePatient = async (patient: Patient) => {
       try {
         const facilityId = getFacilityIdOrFail(patient);
+        // BUG Could interfere with currently running state of another PD
         await cwCommands.patient.update({
           patient,
           facilityId,
