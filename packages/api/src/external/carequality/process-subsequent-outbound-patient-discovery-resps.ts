@@ -32,6 +32,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
+      // BUG This will override any currently running status for PD (the bug carries over into the results endpoint as well)
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({

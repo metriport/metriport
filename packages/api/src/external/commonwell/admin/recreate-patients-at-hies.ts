@@ -104,6 +104,7 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
+    // BUG Could interfere with currently running state of another PD
     const cwIds = await registerAndLinkPatientInCW({
       patient,
       facilityId,

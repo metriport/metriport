@@ -31,7 +31,10 @@ export async function updateCwPatientDataWithinDBTx(
 ): Promise<CwPatientDataModel> {
   const { data: newData } = update;
   const updatedLinks = [...existing.data.links, ...newData.links];
-  const uniqueLinks = uniqBy(updatedLinks, "oid");
+  // TODO What's the best way of determining unique CW links?
+  const uniqueLinks = uniqBy(updatedLinks, function (e) {
+    return e._links?.self;
+  });
   return existing.update(
     {
       data: {
