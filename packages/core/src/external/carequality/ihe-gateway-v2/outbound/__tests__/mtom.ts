@@ -59,7 +59,9 @@ export async function createMtomMessageWithAttachments(
   return parts;
 }
 
-export async function prepateMtomAttachments(xmlString: string): Promise<IMTOMAttachments> {
+export async function createMtomMessageWithoutAttachments(
+  xmlString: string
+): Promise<IMTOMAttachments> {
   const { payload, contentType } = creatMtomContentTypeAndPayload(xmlString);
   const boundary = getBoundaryFromMtomResponse(contentType);
   return parseMtomResponse(payload, boundary);

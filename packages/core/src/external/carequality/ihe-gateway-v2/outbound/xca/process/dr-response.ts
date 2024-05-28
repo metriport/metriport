@@ -79,7 +79,6 @@ function getMtomBytesAndMimeType(
     const cid = getCidReference(documentResponse.Document.Include._href);
     const attachment = getMtomAttachment(cid, mtomResponse);
     const { mimeType, decodedBytes } = parseFileFromBuffer(attachment.body);
-    console.log("mimeType", mimeType);
     return { mimeType, decodedBytes };
   } else if (documentResponseContainsDocument(documentResponse)) {
     const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
@@ -194,7 +193,7 @@ async function handleSuccessResponse({
   }
 }
 
-export async function processDrResponseSoap({
+export async function processDrResponse({
   drResponse: { errorResponse, mtomResponse, gateway, outboundRequest },
 }: {
   drResponse: DrSamlClientResponse;
@@ -253,12 +252,4 @@ export async function processDrResponseSoap({
       gateway,
     });
   }
-}
-
-export async function processDrResponse({
-  drResponse,
-}: {
-  drResponse: DrSamlClientResponse;
-}): Promise<OutboundDocumentRetrievalResp> {
-  return await processDrResponseSoap({ drResponse });
 }
