@@ -1,5 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
+import { QueryProgress, ConsolidatedQuery } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
@@ -8,20 +8,17 @@ export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
   requestId: string;
   progress: QueryProgress;
-  reset?: boolean;
 };
 
 /**
  * Update a patient's consolidated query progress.
- * Keeps existing sibling properties when those are not provided, unless
- * 'reset=true' is provided.
+ * Keeps existing sibling properties when those are not provided
  * @returns the updated Patient
  */
 export async function updateConsolidatedQueryProgress({
   patient,
   requestId,
   progress,
-  reset,
 }: SetDocQueryProgress): Promise<void> {
   const patientFilter = {
     id: patient.id,
@@ -34,25 +31,40 @@ export async function updateConsolidatedQueryProgress({
       transaction,
     });
 
-    const consolidatedQuery = reset
-      ? {
-          [requestId]: progress,
-        }
-      : {
-          ...patient.data.consolidatedQuery,
-          [requestId]: {
-            ...patient.data.consolidatedQuery?.[requestId],
-            ...progress,
-          },
-        };
+    const consolidatedQueries = generateUpdateConsolidatedProgress(
+      patient.data.consolidatedQueries,
+      progress,
+      requestId
+    );
 
     const updatedPatient = {
       ...patient.dataValues,
       data: {
         ...patient.data,
-        consolidatedQuery,
+        consolidatedQueries,
       },
     };
+
     await PatientModel.update(updatedPatient, { where: patientFilter, transaction });
+  });
+}
+
+function generateUpdateConsolidatedProgress(
+  consolidatedQueries: ConsolidatedQuery[] | undefined,
+  updatedProgress: QueryProgress,
+  requestId: string
+): ConsolidatedQuery[] {
+  if (!consolidatedQueries) {
+    return [];
+  }
+
+  return consolidatedQueries.map(query => {
+    if (query.requestId === requestId) {
+      return {
+        ...query,
+        status: updatedProgress.status,
+      };
+    }
+    return query;
   });
 }

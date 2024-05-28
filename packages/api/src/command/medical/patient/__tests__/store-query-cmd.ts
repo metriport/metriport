@@ -1,6 +1,6 @@
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { ConsolidatedQueryByRequestId } from "@metriport/core/domain/query-status";
+import { ConsolidatedQuery } from "@metriport/core/domain/query-status";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { StoreQueryParams } from "../query-init";
 import { makePatientData } from "../../../../domain/medical/__tests__/patient";
@@ -25,12 +25,13 @@ export const cqParams: StoreQueryParams = {
   id: patient.id,
   cxId: patient.cxId,
   cmd: {
-    consolidatedQuery: {
-      requestId: {
+    consolidatedQueries: [
+      {
+        requestId,
         status: "processing",
         startedAt: new Date(),
       },
-    },
+    ],
   },
 };
 
@@ -41,8 +42,9 @@ export const documentQueryProgress: DocumentQueryProgress = {
   convert: makeProgress(),
 };
 
-export const consolidatedQuery: ConsolidatedQueryByRequestId = {
-  [requestId]: {
+export const consolidatedQueries: ConsolidatedQuery[] = [
+  {
+    requestId,
     status: "processing",
     startedAt: new Date(),
     resources: ["Account"],
@@ -50,11 +52,11 @@ export const consolidatedQuery: ConsolidatedQueryByRequestId = {
     dateFrom: new Date().toISOString(),
     dateTo: new Date().toISOString(),
   },
-};
+];
 
 export const mockedPatientAllProgresses = makePatientModel({
   data: makePatientData({
     documentQueryProgress,
-    consolidatedQuery,
+    consolidatedQueries,
   }),
 });

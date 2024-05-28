@@ -279,12 +279,12 @@ router.get(
     const cxId = getCxIdOrFail(req);
     const patientId = getFrom("params").orFail("id", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
-    const consolidatedQuery = patient.data.consolidatedQuery ?? null;
+    const consolidatedQueries = patient.data.consolidatedQueries ?? null;
     const message =
       "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook";
 
     return res.json({
-      statuses: consolidatedQuery,
+      statuses: consolidatedQueries,
       message,
     });
   })

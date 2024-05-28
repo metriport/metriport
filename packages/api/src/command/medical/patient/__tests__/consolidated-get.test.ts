@@ -4,7 +4,7 @@ import { HapiFhirClient } from "@metriport/core/external/fhir/api/api-hapi";
 import { v4 as uuidv4 } from "uuid";
 import { makePatient } from "../../../../domain/medical/__tests__/patient";
 import { getConsolidatedPatientData, getCurrentConsolidatedProgress } from "../consolidated-get";
-import { consolidatedQuery } from "./store-query-cmd";
+import { consolidatedQueries } from "./store-query-cmd";
 import * as getPatient from "../get-patient";
 
 let getPatientOrFailMock: jest.SpyInstance;
@@ -65,15 +65,15 @@ describe("getCurrentConsolidatedProgress", () => {
   });
 
   it("return undefined when consolidated progress is present but params dont match", () => {
-    const resp = getCurrentConsolidatedProgress(consolidatedQuery, {});
+    const resp = getCurrentConsolidatedProgress(consolidatedQueries, {});
 
     expect(resp).toBeUndefined();
   });
 
   it("return consolidated progress when consolidated progress is present and params match", () => {
-    const consolidatedProgress = Object.values(consolidatedQuery)[0];
+    const consolidatedProgress = consolidatedQueries[0];
 
-    const resp = getCurrentConsolidatedProgress(consolidatedQuery, {
+    const resp = getCurrentConsolidatedProgress(consolidatedQueries, {
       resources: consolidatedProgress.resources,
       dateFrom: consolidatedProgress.dateFrom,
       dateTo: consolidatedProgress.dateTo,

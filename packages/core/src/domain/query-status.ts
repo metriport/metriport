@@ -13,8 +13,7 @@ export type PatientDiscovery = {
   requestId: string;
 };
 
-export type ConsolidatedQuery = GetConsolidatedFilters & QueryProgress;
-
-export type ConsolidatedQueryByRequestId = {
-  [requestId: string]: ConsolidatedQuery;
-};
+export type ConsolidatedQuery = GetConsolidatedFilters &
+  QueryProgress & {
+    requestId: string;
+  };
