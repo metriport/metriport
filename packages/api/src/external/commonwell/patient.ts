@@ -96,13 +96,13 @@ export async function create({
   forceCWCreate?: boolean;
   rerunPdOnNewDemographics?: boolean;
 }): Promise<void> {
-  const { debug } = out(`CW create - M patientId ${patient.id}`);
+  const { log, debug } = out(`CW create - M patientId ${patient.id}`);
 
   const cwCreateEnabled = await validateCWEnabled({
     patient,
     facilityId,
     forceCW: forceCWCreate,
-    debug,
+    log,
   });
 
   if (cwCreateEnabled) {
@@ -279,13 +279,13 @@ export async function update({
   rerunPdOnNewDemographics?: boolean;
   augmentDemographics?: boolean;
 }): Promise<void> {
-  const { debug } = out(`CW update - M patientId ${patient.id}`);
+  const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
   const cwUpdateEnabled = await validateCWEnabled({
     patient,
     facilityId,
     forceCW: forceCWUpdate,
-    debug,
+    log,
   });
 
   if (cwUpdateEnabled) {
@@ -459,18 +459,18 @@ async function validateCWEnabled({
   patient,
   facilityId,
   forceCW = false,
-  debug,
+  log,
 }: {
   patient: Patient;
   facilityId: string;
   forceCW?: boolean;
-  debug: typeof console.log;
+  log: typeof console.log;
 }): Promise<boolean> {
   const { cxId } = patient;
   const isSandbox = Config.isSandbox();
 
   if (forceCW || isSandbox) {
-    debug(`CW forced, proceeding...`);
+    log(`CW forced, proceeding...`);
     return true;
   }
 
@@ -480,22 +480,22 @@ async function validateCWEnabled({
       isCWEnabledForCx(cxId),
     ]);
     if (!isCwEnabledGlobally) {
-      debug(`CW not enabled, skipping...`);
+      log(`CW not enabled, skipping...`);
       return false;
     }
     if (!isCwEnabledForCx) {
-      debug(`CW disabled for cx ${cxId}, skipping...`);
+      log(`CW disabled for cx ${cxId}, skipping...`);
       return false;
     }
     const isCwQueryEnabled = await isFacilityEnabledToQueryCW(facilityId, patient);
     if (!isCwQueryEnabled) {
-      debug(`CW not enabled for query, skipping...`);
+      log(`CW not enabled for query, skipping...`);
       return false;
     }
     return true;
   } catch (error) {
     const msg = `Error validating CW create enabled`;
-    debug(`${msg} - ${errorToString(error)}`);
+    log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         cxId,
