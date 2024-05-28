@@ -6,6 +6,7 @@ import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { IHEGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
@@ -131,9 +132,10 @@ async function prepareAndTriggerPD({
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
-    const msg = `Error on Patient Discovery`;
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patient, isFailed: true });
+    const msg = `Error on Patient Discovery`;
+    out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         facilityId,
