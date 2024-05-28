@@ -60,7 +60,17 @@ export async function updatePatient({
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
 
   if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
-    // do nothing -- this update will be reflected when scheduled PD runs
+    if (isRerunFromNewDemographics) {
+      await schedulePatientDiscovery({
+        requestId: uuidv7(),
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+        facilityId,
+        rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
+        augmentDemographics: augmentDemographics ?? false,
+        isRerunFromNewDemographics,
+      });
+    }
   } else if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
     await schedulePatientDiscovery({
       requestId: uuidv7(),
@@ -87,6 +97,17 @@ export async function updatePatient({
   const scheduledPdRequestCw = cwData?.scheduledPdRequest;
 
   if (statusCw === "processing" && scheduledPdRequestCw) {
+    if (isRerunFromNewDemographics) {
+      await schedulePatientDiscovery({
+        requestId: uuidv7(),
+        patient,
+        source: MedicalDataSource.COMMONWELL,
+        facilityId,
+        rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
+        augmentDemographics: augmentDemographics ?? false,
+        isRerunFromNewDemographics,
+      });
+    }
     // do nothing -- this update will be reflected when scheduled PD runs
   } else if (statusCw === "processing" && !scheduledPdRequestCw) {
     await schedulePatientDiscovery({
