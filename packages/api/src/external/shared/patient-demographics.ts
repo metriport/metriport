@@ -1,5 +1,6 @@
 import { Patient, splitName, splitDob } from "@metriport/core/domain/patient";
 import { Address } from "@metriport/core/domain/address";
+import { Contact } from "@metriport/core/domain/contact";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
 type LinkDemoDataAddress = {
@@ -149,10 +150,20 @@ export function createAugmentedPatient(
       };
     });
   });
+  const newTelephoneNumbers: Contact[] = linksDempgraphics.flatMap(ld => {
+    return ld.telephoneNumbers.map(tn => {
+      return {
+        phone: tn,
+      };
+    });
+  });
   const aupmentedPatient = {
     ...existingPatient,
     data: {
       ...existingPatient.data,
+      contact: existingPatient.data.contact
+        ? [...existingPatient.data.contact, ...newTelephoneNumbers]
+        : newTelephoneNumbers,
       address: [...existingPatient.data.address, ...newAddresses],
     },
   };
