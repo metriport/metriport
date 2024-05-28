@@ -55,12 +55,30 @@ export async function processOutboundDocumentQueryResps({
     const docQueryStartedAt = cqData?.documentQueryProgress?.startedAt;
     const duration = elapsedTimeFromNow(docQueryStartedAt);
 
-    const resultsWithMetriportId = await updateResultDocumentReferencesWithMetriportId(
-      results,
-      cxId,
-      patientId,
-      requestId
-    );
+    const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
+    const resultsWithMetriportId: OutboundDocumentQueryResp[] = [];
+
+    const updateResultDocumentReferencesWithMetriportId = async (
+      result: OutboundDocumentQueryResp
+    ): Promise<void> => {
+      const updatedDocumentReferences = result.documentReference
+        ? await Promise.all(
+            result.documentReference.map(async docRef => {
+              return await addDocRefId(docRef);
+            })
+          )
+        : result.documentReference;
+
+      resultsWithMetriportId.push({
+        ...result,
+        documentReference: updatedDocumentReferences,
+      });
+    };
+
+    await executeAsynchronously(results, updateResultDocumentReferencesWithMetriportId, {
+      numberOfParallelExecutions: 20,
+    });
+
     const docRefs = resultsWithMetriportId.flatMap(result => result.documentReference ?? []);
     const contentTypes = docRefs.map(getContentTypeOrUnknown);
     const contentTypeCounts = getDocumentReferenceContentTypeCounts(contentTypes);
@@ -334,29 +352,4 @@ function addMetriportDocRefID({
       metriportId,
     };
   };
-}
-
-export async function updateResultDocumentReferencesWithMetriportId(
-  results: OutboundDocumentQueryResp[],
-  cxId: string,
-  patientId: string,
-  requestId: string
-): Promise<OutboundDocumentQueryResp[]> {
-  const addDocRefId = addMetriportDocRefID({ cxId, patientId, requestId });
-  return await Promise.all(
-    results.map(async result => {
-      const updatedDocumentReferences = result.documentReference
-        ? await Promise.all(
-            result.documentReference.map(async docRef => {
-              return await addDocRefId(docRef);
-            })
-          )
-        : result.documentReference;
-
-      return {
-        ...result,
-        documentReference: updatedDocumentReferences,
-      };
-    })
-  );
 }
