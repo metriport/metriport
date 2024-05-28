@@ -4,6 +4,7 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -22,18 +23,28 @@ import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
+import { augmentPatientDemograhpics } from "./patient-demographics";
 
 dayjs.extend(duration);
 
 const context = "cq.patient.discover";
 const resultPoller = makeOutboundResultPoller();
 
-export async function discover(
-  patient: Patient,
-  facilityId: string,
-  requestId: string,
-  forceEnabled = false
-): Promise<void> {
+export async function discover({
+  patient,
+  facilityId,
+  requestId,
+  forceEnabled = false,
+  rerunPdOnNewDemographics = false,
+  augmentDemographics = false,
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId?: string;
+  forceEnabled?: boolean;
+  rerunPdOnNewDemographics?: boolean;
+  augmentDemographics?: boolean;
+}): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
 
@@ -45,22 +56,55 @@ export async function discover(
   );
 
   if (enabledIHEGW) {
-    await updatePatientDiscoveryStatus({ patient, status: "processing" });
+    const discoveryRequestId = requestId ?? uuidv7();
+    const discoveryStartedAt = new Date();
+    const augmentedPatient = augmentDemographics
+      ? await augmentPatientDemograhpics(patient)
+      : patient;
+    await updatePatientDiscoveryStatus({
+      patient,
+      status: "processing",
+      discoveryRequestId,
+      discoveryFacilityId: facilityId,
+      discoveryStartedAt,
+      rerunPdOnNewDemographics,
+      augmentedDemographics: augmentDemographics
+        ? {
+            dob: augmentedPatient.data.dob,
+            genderAtBirth: augmentedPatient.data.genderAtBirth,
+            firstName: augmentedPatient.data.firstName,
+            lastName: augmentedPatient.data.lastName,
+            contact: augmentedPatient.data.contact,
+            address: augmentedPatient.data.address,
+            personalIdentifiers: augmentedPatient.data.personalIdentifiers,
+          }
+        : undefined,
+    });
 
     // Intentionally asynchronous
-    prepareAndTriggerPD(patient, facilityId, enabledIHEGW, requestId, baseLogMessage).catch(
-      processAsyncError(context)
-    );
+    prepareAndTriggerPD({
+      patient: augmentedPatient,
+      facilityId,
+      enabledIHEGW,
+      requestId: discoveryRequestId,
+      baseLogMessage,
+    }).catch(processAsyncError(context));
   }
 }
 
-async function prepareAndTriggerPD(
-  patient: Patient,
-  facilityId: string,
-  enabledIHEGW: IHEGateway,
-  requestId: string,
-  baseLogMessage: string
-): Promise<void> {
+async function prepareAndTriggerPD({
+  patient,
+  facilityId,
+  enabledIHEGW,
+  requestId,
+  baseLogMessage,
+}: {
+  patient: Patient;
+  facilityId: string;
+  enabledIHEGW: IHEGateway;
+  requestId: string;
+  baseLogMessage: string;
+}): Promise<void> {
   try {
     const { pdRequestGatewayV1, pdRequestGatewayV2 } = await prepareForPatientDiscovery(
       patient,
@@ -146,7 +190,7 @@ async function prepareForPatientDiscovery(
   };
 }
 
-export async function gatherXCPDGateways(patient: Patient): Promise<{
+async function gatherXCPDGateways(patient: Patient): Promise<{
   v1Gateways: XCPDGateway[];
   v2Gateways: XCPDGateway[];
 }> {

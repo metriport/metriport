@@ -13,10 +13,13 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
+import { updatePatient } from "../../command/medical/patient/update-patient";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
+import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request-id";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
-import { getCQData } from "./patient";
+import { getCQData, discover } from "./patient";
+import { checkForNewDemographics } from "./patient-demographics";
 
 dayjs.extend(duration);
 
@@ -50,7 +53,10 @@ export async function processOutboundPatientDiscoveryResps({
     );
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
-    const startedAt = patient.data.patientDiscovery?.startedAt;
+    const cqData = getCQData(patient.data.externalData);
+    const startedAt = cqData?.discoveryStartedAt;
+    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
+    const facilityId = cqData?.discoveryFacilityId;
 
     analytics({
       distinctId: patient.cxId,
@@ -64,8 +70,43 @@ export async function processOutboundPatientDiscoveryResps({
       },
     });
 
-    await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
-    await queryDocsIfScheduled({ patient: patientIds });
+    let foundNewDemographics = false;
+    if (rerunPdOnNewDemographics) {
+      foundNewDemographics = await checkForNewDemographics(patient, cqLinks);
+    }
+
+    let scheduledPdRequest = cqData?.scheduledPdRequest;
+    if (foundNewDemographics && rerunPdOnNewDemographics && facilityId) {
+      const updatedPatient = await updatePatient({
+        patientUpdate: {
+          ...patientIds,
+          facilityId,
+          ...patient.data,
+        },
+        rerunPdOnNewDemographics: false,
+        augmentDemographics: true,
+      });
+      scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
+    }
+
+    if (scheduledPdRequest) {
+      await discover({
+        patient,
+        facilityId: scheduledPdRequest.facilityId,
+        requestId: scheduledPdRequest.requestId,
+        rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+        augmentDemographics: scheduledPdRequest.augmentDemographics,
+      });
+
+      await resetPatientScheduledPatientDiscoveryRequestId({
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+    } else {
+      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
+    }
+
+    if (!rerunPdOnNewDemographics) await queryDocsIfScheduled({ patient: patientIds });
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
@@ -106,6 +147,7 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
       oid: pd.gateway.oid,
       url,
       id: pd.gateway.id,
+      ...(pd.patientMatch ? { patientResource: pd.patientResource } : undefined),
     };
   });
 }

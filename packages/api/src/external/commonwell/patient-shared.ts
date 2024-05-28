@@ -9,13 +9,14 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
+import { PatientExternalDataEntry, PatientDemoData } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
+import { ScheuledPatientDiscovery } from "../hie/schedule-patient-discovery";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -28,6 +29,12 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public patientId: string,
     public personId?: string | undefined,
     public status?: LinkStatus | undefined,
+    public discoveryRequestId?: string,
+    public discoveryFacilityId?: string,
+    public discoveryStartedAt?: Date,
+    public rerunPdOnNewDemographics?: boolean,
+    public augmentedDemographics?: PatientDemoData,
+    public scheduledPdRequest?: ScheuledPatientDiscovery,
     public cqLinkStatus?: CQLinkStatus,
     public scheduledDocQueryRequestId?: string | undefined
   ) {

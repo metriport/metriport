@@ -101,7 +101,11 @@ router.post(
       facilityId,
     };
 
-    const patient = await createPatient(patientCreate, forceCommonwell, forceCarequality);
+    const patient = await createPatient({
+      patient: patientCreate,
+      forceCommonwell,
+      forceCarequality,
+    });
 
     // temp solution until we migrate to FHIR
     const fhirPatient = toFHIR(patient);
@@ -143,12 +147,11 @@ router.put(
       facilityId,
     };
 
-    const updatedPatient = await updatePatient(
+    const updatedPatient = await updatePatient({
       patientUpdate,
-      true,
       forceCommonwell,
-      forceCarequality
-    );
+      forceCarequality,
+    });
 
     return res.status(status.OK).json(dtoFromModel(updatedPatient));
   })

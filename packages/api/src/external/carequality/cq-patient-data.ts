@@ -1,8 +1,10 @@
 import { BaseDomain, BaseDomainCreate } from "@metriport/core/domain/base-domain";
+import { InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 
 export type CQExternalPatient = {
   patientId: string;
   systemId: string;
+  patientResource?: InboundPatientResource;
 };
 
 export type CQLinkedGateway = {

@@ -1,6 +1,7 @@
 import { Patient, PatientData } from "@metriport/core/domain/patient";
 import { toFHIR } from "@metriport/core/external/fhir/patient/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { MedicalDataSource } from "@metriport/core/external/index";
 import { patientEvents } from "../../../event/medical/patient-event";
 import cqCommands from "../../../external/carequality";
 import cwCommands from "../../../external/commonwell";
@@ -14,6 +15,7 @@ import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { schedulePatientDiscovery } from "../../../external/hie/schedule-patient-discovery";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -22,40 +24,86 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 // TODO build unit test to validate the patient is being sent correctly to Sequelize
 // See: document-query.test.ts, "send a modified object to Sequelize"
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
-export async function updatePatient(
-  patientUpdate: PatientUpdateCmd,
+export async function updatePatient({
+  patientUpdate,
   emit = true,
+  rerunPdOnNewDemographics,
+  augmentDemographics,
+  forceCommonwell,
+  forceCarequality,
+}: {
+  patientUpdate: PatientUpdateCmd;
+  emit?: boolean;
+  rerunPdOnNewDemographics?: boolean;
+  augmentDemographics?: boolean;
   // START TODO #1572 - remove
-  forceCommonwell?: boolean,
-  forceCarequality?: boolean
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
   // END TODO #1572 - remove
-): Promise<Patient> {
+}): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
 
   // validate facility exists and cx has access to it
-  const facility = await getFacilityOrFail({ cxId, id: facilityId });
+  await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
-
-  const patientUpdateWithPD: PatientUpdateCmd = {
-    ...patientUpdate,
-    patientDiscovery: { requestId, startedAt: new Date() },
-  };
-
-  const patient = await updatePatientWithoutHIEs(patientUpdateWithPD, emit);
+  const patient = await updatePatientWithoutHIEs(patientUpdate, emit);
 
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await cqCommands.patient.discover(patient, facility.id, requestId, forceCarequality);
+  // PD Flow
+  const cqData = cqCommands.patient.getCQData(patient.data.externalData);
 
-  await cwCommands.patient.update(
-    patient,
-    facilityId,
-    getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCommonwell
-  );
+  const discoveryStatusCq = cqData?.discoveryStatus;
+  const scheduledPdRequestCq = cqData?.scheduledPdRequest;
+
+  if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
+    // do nothing -- this update will be reflected when scheduled PD runs
+  } else if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
+    await schedulePatientDiscovery({
+      requestId: uuidv7(),
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+      facilityId,
+      rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
+      augmentDemographics: augmentDemographics ?? false,
+    });
+  } else {
+    await cqCommands.patient.discover({
+      patient,
+      facilityId,
+      forceEnabled: forceCarequality,
+      rerunPdOnNewDemographics,
+      augmentDemographics,
+    });
+  }
+
+  const cwData = cwCommands.patient.getCWData(patient.data.externalData);
+
+  const statusCw = cwData?.status;
+  const scheduledPdRequestCw = cwData?.scheduledPdRequest;
+
+  if (statusCw === "processing" && scheduledPdRequestCw) {
+    // do nothing -- this update will be reflected when scheduled PD runs
+  } else if (statusCw === "processing" && !scheduledPdRequestCw) {
+    await schedulePatientDiscovery({
+      requestId: uuidv7(),
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+      facilityId,
+      rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
+      augmentDemographics: augmentDemographics ?? false,
+    });
+  } else {
+    await cwCommands.patient.update({
+      patient,
+      facilityId,
+      getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+      forceCWUpdate: forceCommonwell,
+      rerunPdOnNewDemographics,
+      augmentDemographics,
+    });
+  }
 
   return patient;
 }
@@ -97,7 +145,6 @@ export async function updatePatientWithoutHIEs(
           personalIdentifiers: sanitized.personalIdentifiers,
           address: patientUpdate.address,
           contact: sanitized.contact,
-          patientDiscovery: sanitized.patientDiscovery,
         },
         externalId: sanitized.externalId,
       },

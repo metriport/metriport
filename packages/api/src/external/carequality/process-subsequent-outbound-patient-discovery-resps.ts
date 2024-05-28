@@ -33,7 +33,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
+      await updatePatientDiscoveryStatus({ patient: patientIds, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
         requestId: requestId,

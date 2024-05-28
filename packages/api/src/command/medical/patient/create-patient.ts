@@ -18,11 +18,17 @@ type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
-export const createPatient = async (
-  patient: PatientCreateCmd,
-  forceCommonwell?: boolean,
-  forceCarequality?: boolean
-): Promise<Patient> => {
+export const createPatient = async ({
+  patient,
+  rerunPdOnNewDemographics,
+  forceCommonwell,
+  forceCarequality,
+}: {
+  patient: PatientCreateCmd;
+  rerunPdOnNewDemographics?: boolean;
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
+}): Promise<Patient> => {
   const { cxId, facilityId, externalId } = patient;
 
   const sanitized = sanitize(patient);
@@ -45,7 +51,6 @@ export const createPatient = async (
   // validate facility exists and cx has access to it
   await getFacilityOrFail({ cxId, id: facilityId });
 
-  const requestId = uuidv7();
   const patientCreate: PatientCreate = {
     id: uuidv7(),
     cxId,
@@ -59,7 +64,6 @@ export const createPatient = async (
       personalIdentifiers,
       address,
       contact,
-      patientDiscovery: { requestId, startedAt: new Date() },
     },
   };
   const addressWithCoordinates = await addCoordinatesToAddresses({
@@ -71,15 +75,20 @@ export const createPatient = async (
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  await cwCommands.patient.create(
-    newPatient,
+  await cwCommands.patient.create({
+    patient: newPatient,
     facilityId,
-    getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCommonwell
-  );
+    getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    forceCWCreate: forceCommonwell,
+    rerunPdOnNewDemographics,
+  });
 
-  await cqCommands.patient.discover(newPatient, facilityId, requestId, forceCarequality);
+  await cqCommands.patient.discover({
+    patient: newPatient,
+    facilityId,
+    forceEnabled: forceCarequality,
+    rerunPdOnNewDemographics,
+  });
 
   return newPatient;
 };

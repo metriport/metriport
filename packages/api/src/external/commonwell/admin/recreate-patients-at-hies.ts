@@ -3,6 +3,7 @@ import { addOidPrefix } from "@metriport/core/domain/oid";
 import { Patient } from "@metriport/core/domain/patient";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
+import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { groupBy } from "lodash";
 import { PatientModel } from "../../../models/medical/patient";
 import { isCWEnabledForCx } from "../../aws/appConfig";
@@ -63,7 +64,7 @@ export async function recreatePatientAtCW(
   patient: Patient,
   getOrgIdExcludeList: () => Promise<string[]>
 ): Promise<RecreateResultOfPatient | undefined> {
-  const { log } = out(`recreatePatientAtCW - ${patient.id}`);
+  const { log, debug } = out(`recreatePatientAtCW - ${patient.id}`);
 
   if (!(await isCWEnabledForCx(patient.cxId))) {
     log(`CW disabled for cx ${patient.cxId}, skipping...`);
@@ -102,14 +103,16 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    const cwIds = await registerAndLinkPatientInCW(
+    const cwIds = await registerAndLinkPatientInCW({
       patient,
       facilityId,
       getOrgIdExcludeList,
-      log,
-      undefined,
-      initiator
-    );
+      rerunPdOnNewDemographics: false,
+      requestId: uuidv7(),
+      startedAt: new Date(),
+      debug,
+      initiator,
+    });
 
     if (!cwIds) {
       log(`Missing CW IDs while recreating patient at CW`);

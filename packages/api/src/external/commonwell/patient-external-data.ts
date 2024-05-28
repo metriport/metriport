@@ -3,7 +3,7 @@ import { executeWithRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient } from "@metriport/core/domain/patient";
+import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -117,16 +117,31 @@ export const updateCommonwellIdsAndStatus = async ({
 /**
  * Sets the CommonWell (CW) integration status on the patient.
  *
- * @param patient The patient@ Metriport.
+ * @param patient The patient @ Metriport.
  * @param status The status of integrating/synchronizing the patient @ CommonWell.
+ * @param discoveryRequestId The request ID of integrating/synchronizing the patient @ CommonWell.
+ * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
+ * @param discoveryStartedAt The start date of integrating/synchronizing the patient @ CommonWell.
+ * @param rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
+ * @param augmentedDemographics The payload used for demogrpahic augmetnations.
  * @returns
  */
 export const updatePatientDiscoveryStatus = async ({
   patient,
   status,
+  discoveryRequestId,
+  discoveryFacilityId,
+  discoveryStartedAt,
+  rerunPdOnNewDemographics,
+  augmentedDemographics,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
-  status: LinkStatus;
+  status?: LinkStatus;
+  discoveryRequestId?: string;
+  discoveryFacilityId?: string;
+  discoveryStartedAt?: Date;
+  rerunPdOnNewDemographics?: boolean;
+  augmentedDemographics?: PatientDemoData;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -146,7 +161,12 @@ export const updatePatientDiscoveryStatus = async ({
       ...externalData,
       COMMONWELL: {
         ...externalData.COMMONWELL,
-        status,
+        ...(status && { status }),
+        ...(discoveryRequestId && { discoveryRequestId }),
+        ...(discoveryFacilityId && { discoveryFacilityId }),
+        ...(discoveryStartedAt && { discoveryStartedAt }),
+        ...(rerunPdOnNewDemographics && { rerunPdOnNewDemographics }),
+        ...(augmentedDemographics && { augmentedDemographics }),
       },
     };
 

@@ -2,7 +2,7 @@ import { USState } from "./geographic-locations";
 import { BaseDomain, BaseDomainCreate } from "./base-domain";
 import { DocumentQueryProgress } from "./document-query";
 import { BulkGetDocumentsUrlProgress } from "./bulk-get-document-url";
-import { QueryProgress, PatientDiscovery } from "./query-status";
+import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
@@ -59,7 +59,6 @@ export type PatientData = {
   requestId?: string;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
-  patientDiscovery?: PatientDiscovery;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;
   externalData?: PatientExternalData;
   cxDocumentRequestMetadata?: unknown;
@@ -82,6 +81,11 @@ export interface PatientCreate extends BaseDomainCreate {
 export function splitName(name: string): string[] {
   // splits by comma delimiter and filters out empty strings
   return name.split(/[\s,]+/).filter(str => str);
+}
+
+export function splitDob(dob: string): string[] {
+  // splits by dash delimiter and filters out empty strings
+  return dob.split(/[\s-]+/).filter(str => str);
 }
 
 export function joinName(name: string[]): string {
