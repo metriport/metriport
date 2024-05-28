@@ -130,6 +130,34 @@ export async function create({
   }
 }
 
+// TODO Rename this function, and re-write it to remove duplicate code
+export async function get(
+  patient: Patient,
+  facilityId: string
+): Promise<CommonwellPatient | undefined> {
+  const { log } = out(`CW get - M patientId ${patient.id}`);
+
+  const cwEnabled = await validateCWEnabled({
+    patient,
+    facilityId,
+    log,
+  });
+  if (!cwEnabled) return undefined;
+
+  const cwData = getCWData(patient.data.externalData);
+  if (!cwData) return undefined;
+
+  const _initiator = await getCwInitiator(patient, facilityId);
+  const initiatorName = _initiator.name;
+  const initiatorOid = _initiator.oid;
+  const initiatorNpi = _initiator.npi;
+
+  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
+  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
+
+  return await commonWell.getPatient(queryMeta, cwData.patientId);
+}
+
 export async function registerAndLinkPatientInCW({
   patient,
   facilityId,
