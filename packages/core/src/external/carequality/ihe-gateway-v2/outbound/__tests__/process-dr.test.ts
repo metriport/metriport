@@ -6,6 +6,7 @@ import { processDrResponse } from "../xca/process/dr-response";
 import { outboundDrRequest, testFiles, testFilesForUploadVerification } from "./constants";
 import { S3Utils } from "../../../../aws/s3";
 import { Config } from "../../../../../util/config";
+import { prepateMtomAttachments } from "./mtom";
 
 describe("processDRResponse", () => {
   beforeEach(() => {
@@ -25,13 +26,12 @@ describe("processDRResponse", () => {
 
   it("should process multiple DR responses correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_success.xml"), "utf8");
+    const mtomResponse = await prepateMtomAttachments(xmlString);
     const response = await processDrResponse({
       drResponse: {
-        success: true,
-        response: xmlString,
+        mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
       },
     });
     expect(response.documentReference?.length).toBe(2);
@@ -52,13 +52,12 @@ describe("processDRResponse", () => {
 
   it("should process the soap fault DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_soap_error.xml"), "utf8");
+    const mtomResponse = await prepateMtomAttachments(xmlString);
     const response = await processDrResponse({
       drResponse: {
-        success: true,
-        response: xmlString,
+        mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
       },
     });
 
@@ -67,13 +66,12 @@ describe("processDRResponse", () => {
 
   it("should process the registry error DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_registry_error.xml"), "utf8");
+    const mtomResponse = await prepateMtomAttachments(xmlString);
     const response = await processDrResponse({
       drResponse: {
-        success: true,
-        response: xmlString,
+        mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("XDSRegistryError");
@@ -81,27 +79,24 @@ describe("processDRResponse", () => {
 
   it("should process the empty DR response correctly", async () => {
     const xmlString = fs.readFileSync(path.join(__dirname, "xmls/dr_empty.xml"), "utf8");
+    const mtomResponse = await prepateMtomAttachments(xmlString);
     const response = await processDrResponse({
       drResponse: {
-        success: true,
-        response: xmlString,
+        mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
       },
     });
     expect(response.operationOutcome?.issue[0]?.code).toEqual("no-documents-found");
   });
   it("should process response that is not a string correctly", async () => {
     const randomResponse = "This is a bad response and is not xml";
-
+    const mtomResponse = await prepateMtomAttachments(randomResponse);
     const response = await processDrResponse({
       drResponse: {
-        success: true,
-        response: randomResponse,
+        mtomResponse: mtomResponse,
         gateway: outboundDrRequest.gateway,
         outboundRequest: outboundDrRequest,
-        contentType: "application/xml",
       },
     });
     expect(response.operationOutcome?.issue[0]?.severity).toEqual("information");
@@ -139,10 +134,10 @@ describe.skip("processDRResponse for various file types and verify successful up
         }
 
         async processDRResponse() {
+          const mtomResponse = await prepateMtomAttachments(this.modifiedXml);
           this.response = await processDrResponse({
             drResponse: {
-              success: true,
-              response: this.modifiedXml,
+              mtomResponse: mtomResponse,
               gateway: outboundDrRequest.gateway,
               outboundRequest: {
                 ...outboundDrRequest,
@@ -151,7 +146,6 @@ describe.skip("processDRResponse for various file types and verify successful up
                   metriportId: uuidv4(),
                 })),
               },
-              contentType: "application/xml",
             },
           });
 

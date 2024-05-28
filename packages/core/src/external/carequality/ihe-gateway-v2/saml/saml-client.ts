@@ -1,15 +1,17 @@
 import https from "https";
-import { MultipartParser } from "formidable";
 import { constants } from "crypto";
 import axios from "axios";
-import fs from "fs";
 import * as AWS from "aws-sdk";
 import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
 import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
-import { detectFileType } from "../../../../util/file-type";
+import {
+  parseMtomResponse,
+  getBoundaryFromMtomResponse,
+  IMTOMAttachments,
+} from "../outbound/xca/mtom/parser";
 
 const { log } = out("Saml Client");
 const timeout = 120000;
@@ -96,7 +98,7 @@ export async function sendSignedXmlMtom({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<{ response: string; contentType: string }> {
+}): Promise<IMTOMAttachments> {
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -119,136 +121,10 @@ export async function sendSignedXmlMtom({
     httpsAgent: agent,
     responseType: "arraybuffer",
   });
-
-  try {
-    const mtomContentType = parseMtomContentType(response.headers["content-type"]);
-    const binaryData: Buffer = Buffer.isBuffer(response.data)
-      ? response.data
-      : Buffer.from(response.data, "binary");
-    fs.writeFileSync("../../scratch/dr/raw", binaryData);
-    console.log("mtomContentType", mtomContentType);
-    const mtomParts = await parseMTOMResp(binaryData, mtomContentType.boundary);
-    const soapData: Buffer = mtomParts.parts[0]?.body || Buffer.from("");
-    const fileData: Buffer = mtomParts.parts[1]?.body || Buffer.from("");
-    fs.writeFileSync("../../scratch/dr/parts", JSON.stringify(mtomParts));
-    fs.writeFile("../../scratch/dr/false", fileData, err => {
-      if (err) {
-        console.error(err);
-      }
-    });
-    const fileType = detectFileType(fileData);
-    const fileType2 = detectFileType(soapData);
-    console.log("File type:", fileType);
-    console.log("File type:", fileType2);
-  } catch (error) {
-    console.error(error);
-  }
-
-  return { response: response.data, contentType: response.headers["content-type"] };
-}
-
-const quoteRegex = /"/g;
-export type MtomContentType = {
-  boundary: string;
-  start: string;
-  type?: string | undefined;
-  startInfo?: string | undefined;
-};
-
-export interface IMTOMAttachments {
-  parts: Array<{
-    body: Buffer;
-    headers: { [key: string]: string };
-  }>;
-}
-
-export function parseMtomContentType(contentType: string): MtomContentType {
-  const contentTypeParams = contentType.split(";").reduce<Record<string, string>>((acc, param) => {
-    const index = param.indexOf("=");
-    if (index >= 0) {
-      const key = param.substring(0, index).trim().toLowerCase();
-      const value = param
-        .substring(index + 1)
-        .trim()
-        .replace(quoteRegex, "");
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-
-  if (!contentTypeParams.boundary) {
-    throw new Error("No boundary parameter found in content type.");
-  }
-  if (!contentTypeParams.start) {
-    throw new Error("No start parameter found in content type.");
-  }
-  return {
-    boundary: contentTypeParams.boundary,
-    type: contentTypeParams.type,
-    start: contentTypeParams.start,
-    startInfo: contentTypeParams["start-info"],
-  };
-}
-
-export async function parseMTOMResp(payload: Buffer, boundary: string): Promise<IMTOMAttachments> {
-  return new Promise((resolve, reject) => {
-    const resp: IMTOMAttachments = {
-      parts: [],
-    };
-    let headerName = "";
-    let headerValue = "";
-    let data: Buffer;
-    let partIndex = 0;
-    const parser = new MultipartParser();
-
-    parser.initWithBoundary(boundary);
-    parser.on(
-      "data",
-      ({
-        name,
-        buffer,
-        start,
-        end,
-      }: {
-        name: string;
-        buffer: Buffer;
-        start: number;
-        end: number;
-      }) => {
-        switch (name) {
-          case "partBegin":
-            resp.parts[partIndex] = {
-              body: Buffer.from(""),
-              headers: {},
-            };
-            data = Buffer.from("");
-            break;
-          case "headerField":
-            headerName = buffer.slice(start, end).toString();
-            break;
-          case "headerValue":
-            headerValue = buffer.slice(start, end).toString();
-            break;
-          case "headerEnd":
-            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            resp.parts[partIndex]!.headers[headerName.toLowerCase()] = headerValue;
-            break;
-          case "partData":
-            data = Buffer.concat([data, buffer.slice(start, end)]);
-            break;
-          case "partEnd":
-            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            resp.parts[partIndex]!.body = data;
-            partIndex++;
-            break;
-        }
-      }
-    );
-
-    parser.on("end", () => resolve(resp));
-    parser.on("error", reject);
-
-    parser.write(payload);
-    parser.end();
-  });
+  const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
+  const binaryData: Buffer = Buffer.isBuffer(response.data)
+    ? response.data
+    : Buffer.from(response.data, "binary");
+  const mtomParts = await parseMtomResponse(binaryData, boundary);
+  return mtomParts;
 }

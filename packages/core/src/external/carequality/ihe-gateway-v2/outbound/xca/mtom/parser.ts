@@ -1,128 +1,90 @@
-import { XMLParser } from "fast-xml-parser";
-import { DocumentResponse } from "../process/dr-response";
-//import { XML_APP_MIME_TYPE, XML_TXT_MIME_TYPE } from "../../../../../../util/mime";
-import { stripCidPrefix, stripTags } from "./cid";
-import { parseMtomContentType } from "../../../saml/saml-client";
+import MIMEType from "whatwg-mimetype";
+import { MultipartParser } from "formidable";
 
-const carriageReturnLineFeed = "\r\n\r\n";
-
-type MtomHeaders = {
-  ContentID: string;
-  ContentTransferEncoding?: string | undefined;
-  ContentType: string;
-};
-
-export function parseMtomHeaders(headerPart: string): MtomHeaders {
-  const headers = headerPart.split("\n").reduce<Record<string, string>>((acc, headerLine) => {
-    const index = headerLine.indexOf(":");
-    if (index >= 0) {
-      const key = headerLine.substring(0, index).trim().toLowerCase();
-      const value = headerLine.substring(index + 1).trim();
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
-
-  if (!headers["content-id"]) {
-    throw new Error("No Content-ID header found in headers.");
-  }
-  if (!headers["content-type"]) {
-    throw new Error("No Content-Type header found in headers.");
-  }
-  return {
-    ContentID: stripTags(headers["content-id"]),
-    ContentTransferEncoding: headers["content-transfer-encoding"],
-    ContentType: headers["content-type"],
-  };
+export interface IMTOMPart {
+  body: Buffer;
+  headers: Record<string, string>;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function containsMultipartCidReference(documentResponse: any): boolean {
-  return !!documentResponse.Document?.Include?._href;
+export interface IMTOMAttachments {
+  parts: IMTOMPart[];
 }
 
-export function parseMtomResponse(mtomMessage: string, contentType: string): DocumentResponse[] {
-  const contentTypeParams = parseMtomContentType(contentType);
+export async function parseMtomResponse(
+  payload: Buffer,
+  boundary: string
+): Promise<IMTOMAttachments> {
+  return new Promise((resolve, reject) => {
+    const resp: IMTOMAttachments = {
+      parts: [],
+    };
+    let headerName = "";
+    let headerValue = "";
+    let data: Buffer;
+    let partIndex = 0;
+    const parser = new MultipartParser();
 
-  console.log("contentTypeParams", contentTypeParams);
-  const boundary = `--${contentTypeParams.boundary}`;
-  const parts = mtomMessage.split(boundary).slice(1, -1);
-
-  const documentResponsesMultipart: DocumentResponse[] = [];
-  const documentResponsesRegular: DocumentResponse[] = [];
-  const attachments: Record<string, string> = {};
-  //console.log("parts", parts);
-
-  parts.forEach(part => {
-    let splitter = carriageReturnLineFeed;
-    let headersEndIndex = -1;
-    if (contentTypeParams.startInfo) {
-      splitter = contentTypeParams.startInfo + splitter;
-      headersEndIndex = part.indexOf(splitter);
-    }
-    if (headersEndIndex < 0) {
-      splitter = carriageReturnLineFeed;
-      headersEndIndex = part.indexOf(splitter);
-      if (headersEndIndex < 0) {
-        splitter = "\n\n";
-        headersEndIndex = part.indexOf(splitter);
-        if (headersEndIndex < 0) {
-          throw new Error("No headers found in part.");
+    parser.initWithBoundary(boundary);
+    parser.on(
+      "data",
+      ({
+        name,
+        buffer,
+        start,
+        end,
+      }: {
+        name: string;
+        buffer: Buffer;
+        start: number;
+        end: number;
+      }) => {
+        switch (name) {
+          case "partBegin":
+            resp.parts[partIndex] = {
+              body: Buffer.from(""),
+              headers: {},
+            };
+            data = Buffer.from("");
+            break;
+          case "headerField":
+            headerName = buffer.slice(start, end).toString();
+            break;
+          case "headerValue":
+            headerValue = buffer.slice(start, end).toString();
+            break;
+          case "headerEnd":
+            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            resp.parts[partIndex]!.headers[headerName.toLowerCase()] = headerValue;
+            break;
+          case "partData":
+            data = Buffer.concat([data, buffer.slice(start, end)]);
+            break;
+          case "partEnd":
+            //eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            resp.parts[partIndex]!.body = data;
+            partIndex++;
+            break;
         }
       }
-    }
+    );
 
-    const headersPart = part.slice(0, headersEndIndex + splitter.length).trim();
-    const content = part.slice(headersEndIndex + splitter.length).trim();
+    parser.on("end", () => resolve(resp));
+    parser.on("error", reject);
 
-    const headers = parseMtomHeaders(headersPart);
-    console.log("headers", headers);
-
-    if (headers.ContentType.includes("application/xop+xml")) {
-      const parser = new XMLParser({
-        ignoreAttributes: false,
-        attributeNamePrefix: "_",
-        textNodeName: "_text",
-        parseAttributeValue: true,
-        removeNSPrefix: true,
-      });
-      const jsonObj = parser.parse(content);
-      console.log("jsonObj", JSON.stringify(jsonObj, null, 2));
-
-      const docResponses = Array.isArray(
-        jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.DocumentResponse
-      )
-        ? jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse
-        : [jsonObj.Envelope.Body.RetrieveDocumentSetResponse.DocumentResponse];
-      for (const docResponse of docResponses) {
-        if (containsMultipartCidReference(docResponse)) {
-          // temporarily skip non-xml documents for multipart mtoms
-          // if (
-          //   docResponse.mimeType === XML_APP_MIME_TYPE ||
-          //   docResponse.mimeType === XML_TXT_MIME_TYPE
-          // ) {
-          documentResponsesMultipart.push({
-            ...docResponse,
-            Document: decodeURIComponent(stripCidPrefix(docResponse.Document.Include._href)),
-          });
-          // }
-        } else {
-          documentResponsesRegular.push(docResponse);
-        }
-      }
-    } else {
-      attachments[headers.ContentID] = content;
-    }
+    parser.write(payload);
+    parser.end();
   });
+}
 
-  // Replace Document placeholders with actual content from attachments
-  documentResponsesMultipart.forEach(docResponse => {
-    const document = attachments[docResponse.Document];
-    if (!document) {
-      throw new Error(`Attachment for Document ID not found`);
-    }
-    docResponse.Document = document;
-  });
-
-  return [...documentResponsesMultipart, ...documentResponsesRegular];
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getBoundaryFromMtomResponse(contentType: any): string {
+  const parsedContentType = MIMEType.parse(contentType);
+  if (!parsedContentType) {
+    throw new Error("Parsing of content type failed");
+  }
+  const boundary = parsedContentType.parameters.get("boundary");
+  if (!boundary) {
+    throw new Error("No boundary parameter found in content type.");
+  }
+  return boundary;
 }

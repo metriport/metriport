@@ -85,6 +85,7 @@
     "playwright": "^1.39.0",
     "pvutils": "^1.1.3",
     "sequelize": "^6.37.1",
+    "whatwg-mimetype": "^4.0.0",
     "xml-crypto": "^6.0.0",
     "xml2js": "^0.6.2",
     "xmldom": "^0.6.0"
@@ -96,6 +97,7 @@
     "@types/formidable": "^3.4.5",
     "@types/jest": "29.5.3",
     "@types/json-stringify-safe": "^5.0.0",
+    "@types/whatwg-mimetype": "^3.0.2",
     "@types/xml2js": "^0.4.14",
     "@types/xmldom": "^0.1.32",
     "@typescript-eslint/eslint-plugin": "^5.48.2",

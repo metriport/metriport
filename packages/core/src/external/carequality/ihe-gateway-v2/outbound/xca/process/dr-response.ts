@@ -11,18 +11,18 @@ import {
   handleHttpErrorResponse,
   handleEmptyResponse,
   handleSoapFaultResponse,
-  handleErrorMtomResponse,
 } from "./error";
-import { parseFileFromString } from "./parse-file-from-string";
+import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { DrSamlClientResponse } from "../send/dr-requests";
+import { IMTOMAttachments, IMTOMPart } from "../mtom/parser";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
-import { capture } from "../../../../../../util/notifications";
-import { parseMtomResponse } from "../mtom/parser";
+//import { capture } from "../../../../../../util/notifications";
+import { getCidReference } from "../mtom/cid";
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -38,7 +38,7 @@ export type DocumentResponse = {
   RepositoryUniqueId: string;
   NewDocumentUniqueId: string;
   NewRepositoryUniqueId: string;
-  Document: string;
+  Document: string | { Include: { _href: string } };
 };
 
 let s3UtilsInstance = new S3Utils(region);
@@ -49,17 +49,58 @@ export function setS3UtilsInstance(s3Utils: S3Utils): void {
   s3UtilsInstance = s3Utils;
 }
 
+function documentResponseContainsMultipartCidReference(
+  documentResponse: DocumentResponse
+): documentResponse is DocumentResponse & { Document: { Include: { _href: string } } } {
+  return (
+    typeof documentResponse.Document !== "string" && !!documentResponse.Document?.Include?._href
+  );
+}
+
+function documentResponseContainsDocument(
+  documentResponse: DocumentResponse
+): documentResponse is DocumentResponse & { Document: string } {
+  return typeof documentResponse.Document === "string";
+}
+
+function getMtomAttachment(cid: string, mtomResponse: IMTOMAttachments): IMTOMPart {
+  const attachment = mtomResponse.parts.find(part => part.headers["content-id"] === cid);
+  if (!attachment) {
+    throw new Error(`Attachment with CID ${cid} not found`);
+  }
+  return attachment;
+}
+
+function getMtomBytesAndMimeType(
+  documentResponse: DocumentResponse,
+  mtomResponse: IMTOMAttachments
+): { mimeType: string; decodedBytes: Buffer } {
+  if (documentResponseContainsMultipartCidReference(documentResponse)) {
+    const cid = getCidReference(documentResponse.Document.Include._href);
+    const attachment = getMtomAttachment(cid, mtomResponse);
+    const { mimeType, decodedBytes } = parseFileFromBuffer(attachment.body);
+    console.log("mimeType", mimeType);
+    return { mimeType, decodedBytes };
+  } else if (documentResponseContainsDocument(documentResponse)) {
+    const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
+    return { mimeType, decodedBytes };
+  }
+  throw new Error("Invalid document response");
+}
+
 async function parseDocumentReference({
   documentResponse,
   outboundRequest,
   idMapping,
+  mtomResponse,
 }: {
   documentResponse: DocumentResponse;
   outboundRequest: OutboundDocumentRetrievalReq;
   idMapping: Record<string, string>;
+  mtomResponse: IMTOMAttachments;
 }): Promise<DocumentReference> {
   const s3Utils = getS3UtilsInstance();
-  const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
+  const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
   const strippedDocUniqueId = stripUrnPrefix(documentResponse.DocumentUniqueId);
   const metriportId = idMapping[strippedDocUniqueId];
   if (!metriportId) {
@@ -115,17 +156,19 @@ async function handleSuccessResponse({
   documentResponses,
   outboundRequest,
   gateway,
+  mtomResponse,
 }: {
   documentResponses: DocumentResponse[];
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
+  mtomResponse: IMTOMAttachments;
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
     const documentReferences = Array.isArray(documentResponses)
       ? await Promise.all(
           documentResponses.map(async (documentResponse: DocumentResponse) =>
-            parseDocumentReference({ documentResponse, outboundRequest, idMapping })
+            parseDocumentReference({ documentResponse, outboundRequest, idMapping, mtomResponse })
           )
         )
       : [
@@ -133,6 +176,7 @@ async function handleSuccessResponse({
             documentResponse: documentResponses,
             outboundRequest,
             idMapping,
+            mtomResponse,
           }),
         ];
 
@@ -151,18 +195,22 @@ async function handleSuccessResponse({
 }
 
 export async function processDrResponseSoap({
-  drResponse: { response, success, gateway, outboundRequest },
+  drResponse: { errorResponse, mtomResponse, gateway, outboundRequest },
 }: {
   drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
   if (!gateway || !outboundRequest) throw new Error("Missing gateway or outboundRequest");
-  if (success === false) {
+  if (errorResponse) {
     return handleHttpErrorResponse({
-      httpError: response,
+      httpError: errorResponse,
       outboundRequest,
       gateway,
     });
   }
+  if (!mtomResponse) {
+    throw new Error("No mtom response found");
+  }
+  const soapData: Buffer = mtomResponse?.parts[0]?.body || Buffer.from("");
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",
@@ -170,7 +218,7 @@ export async function processDrResponseSoap({
     parseAttributeValue: false,
     removeNSPrefix: true,
   });
-  const jsonObj = parser.parse(response);
+  const jsonObj = parser.parse(soapData.toString());
 
   const status = jsonObj?.Envelope?.Body?.RetrieveDocumentSetResponse?.RegistryResponse?._status
     ?.split(":")
@@ -185,6 +233,7 @@ export async function processDrResponseSoap({
       documentResponses,
       outboundRequest,
       gateway,
+      mtomResponse,
     });
   } else if (registryErrorList) {
     return handleRegistryErrorResponse({
@@ -206,56 +255,10 @@ export async function processDrResponseSoap({
   }
 }
 
-export async function processDrResponseMtom({
-  drResponse: { response, success, gateway, outboundRequest, contentType },
-}: {
-  drResponse: DrSamlClientResponse;
-}): Promise<OutboundDocumentRetrievalResp> {
-  if (!contentType) {
-    throw new Error("No content type found in response");
-  }
-  if (success === false) {
-    return handleHttpErrorResponse({
-      httpError: response,
-      outboundRequest,
-      gateway,
-    });
-  }
-  try {
-    const documentResponses = parseMtomResponse(response, contentType);
-    return await handleSuccessResponse({
-      documentResponses,
-      outboundRequest,
-      gateway,
-    });
-  } catch (error) {
-    capture.error("Error parsing MTOM response", {
-      extra: {
-        error,
-        response,
-        outboundRequest,
-        gateway,
-      },
-    });
-    return handleErrorMtomResponse({
-      outboundRequest,
-      gateway,
-    });
-  }
-}
-
-function isMtomResponse(contentType: string | undefined): boolean {
-  return contentType !== undefined && contentType.includes("multipart/related");
-}
-
 export async function processDrResponse({
   drResponse,
 }: {
   drResponse: DrSamlClientResponse;
 }): Promise<OutboundDocumentRetrievalResp> {
-  if (isMtomResponse(drResponse?.contentType)) {
-    return await processDrResponseMtom({ drResponse });
-  } else {
-    return await processDrResponseSoap({ drResponse });
-  }
+  return await processDrResponseSoap({ drResponse });
 }
