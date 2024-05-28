@@ -21,7 +21,6 @@ import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
-//import { capture } from "../../../../../../util/notifications";
 import { getCidReference } from "../mtom/cid";
 
 const region = Config.getAWSRegion();
