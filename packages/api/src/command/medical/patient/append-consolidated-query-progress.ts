@@ -6,6 +6,7 @@ import { getPatientOrFail } from "./get-patient";
 
 export type SetDocQueryProgress = {
   patient: Pick<Patient, "id" | "cxId">;
+  requestId: string;
   progress: QueryProgress;
   reset?: boolean;
 };
@@ -18,6 +19,7 @@ export type SetDocQueryProgress = {
  */
 export async function updateConsolidatedQueryProgress({
   patient,
+  requestId,
   progress,
   reset,
 }: SetDocQueryProgress): Promise<void> {
@@ -33,10 +35,15 @@ export async function updateConsolidatedQueryProgress({
     });
 
     const consolidatedQuery = reset
-      ? progress
+      ? {
+          [requestId]: progress,
+        }
       : {
           ...patient.data.consolidatedQuery,
-          ...progress,
+          [requestId]: {
+            ...patient.data.consolidatedQuery?.[requestId],
+            ...progress,
+          },
         };
 
     const updatedPatient = {

@@ -1,12 +1,12 @@
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
+import { ConsolidatedQueryByRequestId } from "@metriport/core/domain/query-status";
 import { Patient } from "@metriport/core/domain/patient";
-import { QueryProgress } from "@metriport/core/domain/query-status";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
 import { getPatientOrFail } from "./get-patient";
 
 export type InitConsolidatedQueryCmd = {
-  consolidatedQuery: QueryProgress;
+  consolidatedQuery: ConsolidatedQueryByRequestId;
   cxConsolidatedRequestMetadata?: unknown;
   documentQueryProgress?: never;
   patientDiscovery?: never;
