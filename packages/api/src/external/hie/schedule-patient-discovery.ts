@@ -10,6 +10,7 @@ export type ScheuledPatientDiscovery = {
   facilityId: string;
   rerunPdOnNewDemographics: boolean;
   augmentDemographics: boolean;
+  isRerunFromNewDemographics: boolean;
 };
 
 /**
@@ -23,6 +24,7 @@ export async function schedulePatientDiscovery({
   facilityId,
   rerunPdOnNewDemographics,
   augmentDemographics,
+  isRerunFromNewDemographics,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
@@ -30,6 +32,7 @@ export async function schedulePatientDiscovery({
   facilityId: string;
   rerunPdOnNewDemographics: boolean;
   augmentDemographics: boolean;
+  isRerunFromNewDemographics: boolean;
 }): Promise<void> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
@@ -58,6 +61,7 @@ export async function schedulePatientDiscovery({
           facilityId,
           rerunPdOnNewDemographics,
           augmentDemographics,
+          isRerunFromNewDemographics,
         },
       },
     };

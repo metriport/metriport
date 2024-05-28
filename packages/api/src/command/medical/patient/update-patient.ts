@@ -29,6 +29,7 @@ export async function updatePatient({
   emit = true,
   rerunPdOnNewDemographics,
   augmentDemographics,
+  isRerunFromNewDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
@@ -36,6 +37,7 @@ export async function updatePatient({
   emit?: boolean;
   rerunPdOnNewDemographics?: boolean;
   augmentDemographics?: boolean;
+  isRerunFromNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -67,6 +69,7 @@ export async function updatePatient({
       facilityId,
       rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
       augmentDemographics: augmentDemographics ?? false,
+      isRerunFromNewDemographics: isRerunFromNewDemographics ?? false,
     });
   } else {
     await cqCommands.patient.discover({
@@ -93,6 +96,7 @@ export async function updatePatient({
       facilityId,
       rerunPdOnNewDemographics: rerunPdOnNewDemographics ?? false,
       augmentDemographics: augmentDemographics ?? false,
+      isRerunFromNewDemographics: isRerunFromNewDemographics ?? false,
     });
   } else {
     await cwCommands.patient.update({

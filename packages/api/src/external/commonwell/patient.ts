@@ -217,10 +217,12 @@ export async function registerAndLinkPatientInCW({
         },
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
+        isRerunFromNewDemographics: true,
       });
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 
+    let continueToDocQuery = true;
     if (scheduledPdRequest) {
       await update({
         patient,
@@ -235,11 +237,15 @@ export async function registerAndLinkPatientInCW({
         patient,
         source: MedicalDataSource.COMMONWELL,
       });
+
+      continueToDocQuery = !(
+        rerunPdOnNewDemographics && scheduledPdRequest.isRerunFromNewDemographics
+      );
     } else {
       await updatePatientDiscoveryStatus({ patient, status: "completed" });
     }
 
-    if (!rerunPdOnNewDemographics) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
+    if (continueToDocQuery) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
     return { commonwellPatientId, personId };
   } catch (error) {
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
@@ -411,10 +417,12 @@ async function updatePatientAndLinksInCw({
         },
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
+        isRerunFromNewDemographics: true,
       });
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 
+    let continueToDocQuery = true;
     if (scheduledPdRequest) {
       await update({
         patient,
@@ -429,11 +437,15 @@ async function updatePatientAndLinksInCw({
         patient,
         source: MedicalDataSource.COMMONWELL,
       });
+
+      continueToDocQuery = !(
+        rerunPdOnNewDemographics && scheduledPdRequest.isRerunFromNewDemographics
+      );
     } else {
       await updatePatientDiscoveryStatus({ patient, status: "completed" });
     }
 
-    if (!rerunPdOnNewDemographics) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
+    if (continueToDocQuery) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
   } catch (error) {
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList, isFailed: true });

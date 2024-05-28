@@ -87,10 +87,12 @@ export async function processOutboundPatientDiscoveryResps({
         },
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
+        isRerunFromNewDemographics: true,
       });
       scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 
+    let continueToDocQuery = true;
     if (scheduledPdRequest) {
       await discover({
         patient,
@@ -104,11 +106,15 @@ export async function processOutboundPatientDiscoveryResps({
         patient,
         source: MedicalDataSource.CAREQUALITY,
       });
+
+      continueToDocQuery = !(
+        rerunPdOnNewDemographics && scheduledPdRequest.isRerunFromNewDemographics
+      );
     } else {
       await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
     }
 
-    if (!rerunPdOnNewDemographics) await queryDocsIfScheduled({ patient: patientIds });
+    if (continueToDocQuery) await queryDocsIfScheduled({ patient: patientIds });
   } catch (error) {
     const msg = `Error on Processing Outbound Patient Discovery Responses`;
     outerLog(`${msg} - ${errorToString(error)}`);
