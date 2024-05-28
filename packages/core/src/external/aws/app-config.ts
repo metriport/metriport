@@ -34,6 +34,7 @@ export const ffDatastoreSchema = z.object({
   oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
   commonwellFeatureFlag: ffBooleanSchema,
   carequalityFeatureFlag: ffBooleanSchema,
+  e2eCxIds: ffStringValuesSchema,
 });
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
 

@@ -4,23 +4,18 @@ import { MedicalDataSource } from "@metriport/core/external/index";
 import { processAsyncError } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { IHEGateway, OutboundPatientDiscoveryReq, XCPDGateway } from "@metriport/ihe-gateway-sdk";
+import { IHEGateway, OutboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
+import { errorToString } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
+import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { makeOutboundResultPoller } from "../ihe-gateway/outbound-result-poller-factory";
-import { getOrganizationsForXCPD } from "./command/cq-directory/get-organizations-for-xcpd";
-import {
-  filterCQOrgsToSearch,
-  searchCQDirectoriesAroundPatientAddresses,
-  toBasicOrgAttributes,
-} from "./command/cq-directory/search-cq-directory";
 import { deleteCQPatientData } from "./command/cq-patient-data/delete-cq-data";
 import { createOutboundPatientDiscoveryReq } from "./create-outbound-patient-discovery-req";
-import { cqOrgsToXCPDGateways } from "./organization-conversion";
+import { gatherXCPDGateways } from "./gateway";
 import { PatientDataCarequality } from "./patient-shared";
-import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
-import { makeIHEGatewayV2 } from "../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { processPatientDiscoveryProgress } from "./process-patient-discovery-progress";
+import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 
 dayjs.extend(duration);
 
@@ -93,6 +88,7 @@ async function prepareAndTriggerPD(
     });
   } catch (error) {
     const msg = `Error on Patient Discovery`;
+    out(baseLogMessage).log(`${msg} - ${errorToString(error)}`);
     await processPatientDiscoveryProgress({ patient, status: "failed" });
     capture.error(msg, {
       extra: {
@@ -144,31 +140,6 @@ async function prepareForPatientDiscovery(
   };
 }
 
-export async function gatherXCPDGateways(patient: Patient): Promise<{
-  v1Gateways: XCPDGateway[];
-  v2Gateways: XCPDGateway[];
-}> {
-  const nearbyOrgsWithUrls = await searchCQDirectoriesAroundPatientAddresses({
-    patient,
-    mustHaveXcpdLink: true,
-  });
-  const orgOrderMap = new Map<string, number>();
-
-  nearbyOrgsWithUrls.forEach((org, index) => {
-    orgOrderMap.set(org.id, index);
-  });
-
-  const allOrgs = await getOrganizationsForXCPD(orgOrderMap);
-  const allOrgsWithBasics = allOrgs.map(toBasicOrgAttributes);
-  const orgsToSearch = filterCQOrgsToSearch(allOrgsWithBasics);
-  const { v1Gateways, v2Gateways } = await cqOrgsToXCPDGateways(orgsToSearch);
-
-  return {
-    v1Gateways,
-    v2Gateways,
-  };
-}
-
 export function getCQData(
   data: PatientExternalData | undefined
 ): PatientDataCarequality | undefined {
@@ -177,6 +148,7 @@ export function getCQData(
 }
 
 export async function remove(patient: Patient): Promise<void> {
-  console.log(`Deleting CQ data - M patientId ${patient.id}`);
+  const { log } = out(`cq.patient.remove - M patientId ${patient.id}`);
+  log(`Deleting CQ data`);
   await deleteCQPatientData({ id: patient.id, cxId: patient.cxId });
 }
