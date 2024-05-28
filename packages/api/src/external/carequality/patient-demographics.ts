@@ -51,12 +51,8 @@ function patientResourceToLinkedDemoData(patientResource: InboundPatientResource
   });
   /* TODO
   const telephoneNumbers = (patientResource.contact ?? []).flatMap(c => {
-      if (!c.phone) return [];
-      return [c.phone];
   });
   const emails = (patientResource.contact ?? []).flatMap(c => {
-      if (!c.email) return [];
-      return [c.email];
   })
   */
   const addresses = patientResource.address.map(a => {
@@ -70,12 +66,8 @@ function patientResourceToLinkedDemoData(patientResource: InboundPatientResource
   });
   /* TODO
   const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 
-      if (p.type !== 'driversLicense') return [];
-      return { value: p.value, state: p.state}
   });
   const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
-      if (p.type !== 'ssn') return [];
-      return [p.value]
   });
   */
   return {

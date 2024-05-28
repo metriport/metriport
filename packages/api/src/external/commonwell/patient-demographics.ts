@@ -73,15 +73,9 @@ function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLi
     };
   });
   /* TODO
-  const newDriverUris = new Map({ ...driversLicenseURIs });
-  const driversLicenseURIValues = Object.fromEntries(driversLicenseURIs as const).values();
-  const driversLicenses = (patientNetworkLink.details.identifier ?? []).flatMap(id => { 
-      if (.values.includes(id.system)) return [];
-      return { value: p.value, state: p.state}
+  const driversLicenses = (patientNetworkLink.details.identifiers ?? []).flatMap(p => { 
   });
-  const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
-      if (p.type !== 'ssn') return [];
-      return [p.value]
+  const ssns = (patientNetworkLink.details.identifiers ?? []).flatMap(p => { 
   });
   */
   return {
