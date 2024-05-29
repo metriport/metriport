@@ -37,7 +37,6 @@ var {
   extractEncounterTimePeriod,
   getEncompassingEncounterId,
 } = require("../inputProcessor/dateProcessor");
-var { v4: uuidv4 } = require("uuid");
 
 const { createNamespace } = require("cls-hooked");
 var session = createNamespace(constants.CLS_NAMESPACE);

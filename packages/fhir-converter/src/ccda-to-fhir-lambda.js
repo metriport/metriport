@@ -69,7 +69,9 @@ async function ccdaToFhir(ccda, patientId) {
       let templateName = "ccd.hbs";
       let srcDataType = "cda";
       let encounterTimePeriod = extractEncounterTimePeriod(srcData);
+
       let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
+      console.log("dataTypeHandler", dataTypeHandler);
       let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
       let encompassingEncounterId = getEncompassingEncounterId(srcData);
       session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
@@ -164,6 +166,7 @@ function buildSuccessResponse(payload) {
     },
   };
 }
+
 function buildErrorResponse(status, message) {
   return {
     statusCode: status,

@@ -22,7 +22,6 @@
     "env": {
       "browser": true,
       "node": true,
-      "mocha": true,
       "jquery": true,
       "es6": true
     },
@@ -73,24 +72,12 @@
     ],
     "report-dir": "./.test_output/coverage"
   },
-  "mocha": {
-    "reporter": "mocha-multi-reporters",
-    "spec": "@(src|test)/**/*.spec.js",
-    "slow": 100,
-    "reporterOptions": {
-      "reporterEnabled": "spec, blahblah",
-      "xunitReporterOptions": {
-        "output": ".test_output/xunit.xml"
-      }
-    }
-  },
   "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@types/jest": "29.5.3",
     "assert": "^2.0.0",
     "ember-template-lint": "^5.13.0",
     "eslint": "^6.1.0",
-    "mocha": "^10.1.0",
-    "mocha-junit-reporter": "^1.23.0",
-    "mocha-multi-reporters": "^1.1.7",
     "nyc": "^14.1.1",
     "openapi-types": "^12.1.3",
     "supertest": "^4.0.2",
@@ -117,7 +104,6 @@
     "minimist": ">= 1.2.6",
     "ncp": "^2.0.0",
     "nodemon": "^3.0.3",
-    "npm": "^10.4.0",
     "promise": "^8.0.3",
     "pushover-giting": "0.0.3",
     "swagger-jsdoc": "^6.1.0",
