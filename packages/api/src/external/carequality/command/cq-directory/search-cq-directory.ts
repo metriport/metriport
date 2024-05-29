@@ -134,7 +134,13 @@ export function filterCQOrgsToSearch(orgs: CQOrgBasicDetails[]): CQOrgBasicDetai
 function constructGatewayExcludeList(): string[] {
   let excludeList: string[] = [];
   const urlsToExclude = Config.getCQUrlsToExclude();
-  if (urlsToExclude) excludeList = JSON.parse(urlsToExclude);
+  if (urlsToExclude) {
+    try {
+      excludeList = JSON.parse(urlsToExclude);
+    } catch (error) {
+      excludeList = urlsToExclude.split(",");
+    }
+  }
   return excludeList.map(url => url.toLowerCase());
 }
 
