@@ -316,7 +316,7 @@ export function createAugmentedPatient(
 
 /**
  * Checks to see if the input Link demographics have any new values compared to the Patient demographics.
- * NOTE: Only checks addresses, telephones numbers, and emails.
+ * Currently checks values for addresses, telephones numbers, and emails and considers a value new if it doesn't match exactly.
  *
  * @param patientDemographics The Patient LinkDemoData.
  * @param linkDemographics The Link LinkDemoData.
