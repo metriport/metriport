@@ -44,12 +44,7 @@ module.exports = class dataHandler {
 
   postProcessResult(inResult) {
     var merged = resourceMerger.Process(JSON.parse(jsonProcessor.Process(inResult)));
-    console.log(JSON.stringify(merged));
-    // return merged;
-    // console.log("merged", JSON.stringify(merged));
-    var deduped = resourceDeduplicator.Process(merged);
-    // console.log("deduped", JSON.stringify(deduped));
-    return deduped;
+    return resourceDeduplicator.Process(merged);
   }
 
   getConversionResultMetadata() {

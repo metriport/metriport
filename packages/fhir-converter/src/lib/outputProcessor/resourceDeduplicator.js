@@ -50,18 +50,17 @@ module.exports.Process = function (jsonObj) {
       const enc1 = duplicateEncounters[0];
       const enc2 = duplicateEncounters[1];
       const mergedEncounter = merge(enc1, enc2);
+
       const deduplicatedIdentifiers = deduplicateIdentifiers(mergedEncounter.resource.identifier);
       mergedEncounter.resource.identifier = deduplicatedIdentifiers;
       mergedEncounter.status = selectMostInformativeStatus(enc1.status, enc2.status);
-      // console.log("ENC1", JSON.stringify([enc1, enc2]));
-      // console.log("mergedEncounter", JSON.stringify(mergedEncounter));
-      const dupEncIds = [enc1.resource.id, enc2.resource.id];
-      const noEncs = jsonObj.entry.filter(entry => {
-        const includes = dupEncIds.includes(entry.resource.id);
+
+      const entriesWithoutEncounters = jsonObj.entry.filter(entry => {
+        const includes = [enc1.resource.id, enc2.resource.id].includes(entry.resource.id);
         return !includes;
       });
 
-      jsonObj.entry = [...noEncs, mergedEncounter];
+      jsonObj.entry = [...entriesWithoutEncounters, mergedEncounter];
       jsonObj.entry = JSON.parse(
         JSON.stringify(jsonObj.entry).replaceAll(enc1.resource.id, mergedEncounter.resource.id)
       );
