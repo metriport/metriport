@@ -1,7 +1,7 @@
 const boundary = "MIMEBoundary782a6cafc4cf4aab9dbf291522804454";
 const contentId = "<doc0@metriport.com>";
 const carriageReturn = "\r\n";
-export function creatMtomContentTypeAndPayload(signedXml: string): {
+export function createMtomContentTypeAndPayload(signedXml: string): {
   contentType: string;
   payload: Buffer;
 } {

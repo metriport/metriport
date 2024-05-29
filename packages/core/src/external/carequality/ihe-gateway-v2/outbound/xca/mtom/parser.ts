@@ -1,21 +1,21 @@
 import MIMEType from "whatwg-mimetype";
 import { MultipartParser } from "formidable";
 
-export interface IMTOMPart {
+export interface MtomPart {
   body: Buffer;
   headers: Record<string, string>;
 }
 
-export interface IMTOMAttachments {
-  parts: IMTOMPart[];
+export interface MtomAttachments {
+  parts: MtomPart[];
 }
 
 export async function parseMtomResponse(
   payload: Buffer,
   boundary: string
-): Promise<IMTOMAttachments> {
+): Promise<MtomAttachments> {
   return new Promise((resolve, reject) => {
-    const resp: IMTOMAttachments = {
+    const resp: MtomAttachments = {
       parts: [],
     };
     let headerName = "";
@@ -86,7 +86,7 @@ export function getBoundaryFromMtomResponse(contentType: any): string | undefine
   return boundary;
 }
 
-export function convertSoapResponseToMtomResponse(buffer: Buffer): IMTOMAttachments {
+export function convertSoapResponseToMtomResponse(buffer: Buffer): MtomAttachments {
   return {
     parts: [
       {

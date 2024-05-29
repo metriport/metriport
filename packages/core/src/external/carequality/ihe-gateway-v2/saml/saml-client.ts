@@ -6,11 +6,11 @@ import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
-import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
+import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
 import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
-  IMTOMAttachments,
+  MtomAttachments,
   convertSoapResponseToMtomResponse,
 } from "../outbound/xca/mtom/parser";
 
@@ -99,7 +99,7 @@ export async function sendSignedXmlMtom({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<IMTOMAttachments> {
+}): Promise<MtomAttachments> {
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -111,7 +111,7 @@ export async function sendSignedXmlMtom({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
+  const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
   const response = await axios.post(url, payload, {
     timeout: timeout,
     headers: {
@@ -130,7 +130,6 @@ export async function sendSignedXmlMtom({
   const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
   if (boundary) {
     return await parseMtomResponse(binaryData, boundary);
-  } else {
-    return convertSoapResponseToMtomResponse(binaryData);
   }
+  return convertSoapResponseToMtomResponse(binaryData);
 }

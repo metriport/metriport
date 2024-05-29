@@ -3,7 +3,7 @@ import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
 import { getTrustedKeyStore, sendSignedXmlMtom } from "../../../saml/saml-client";
-import { IMTOMAttachments } from "../mtom/parser";
+import { MtomAttachments } from "../mtom/parser";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
 
@@ -12,7 +12,7 @@ const context = "ihe-gateway-v2-dr-saml-client";
 
 export type DrSamlClientResponse = {
   gateway: XCAGateway;
-  mtomResponse?: IMTOMAttachments;
+  mtomResponse?: MtomAttachments;
   errorResponse?: string;
   outboundRequest: OutboundDocumentRetrievalReq;
 };

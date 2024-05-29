@@ -15,7 +15,7 @@ import {
 import { parseFileFromString, parseFileFromBuffer } from "./parse-file-from-string";
 import { stripUrnPrefix } from "../../../../../../util/urn";
 import { DrSamlClientResponse } from "../send/dr-requests";
-import { IMTOMAttachments, IMTOMPart } from "../mtom/parser";
+import { MtomAttachments, MtomPart } from "../mtom/parser";
 import { successStatus, partialSuccessStatus } from "./constants";
 import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
@@ -62,7 +62,7 @@ function documentResponseContainsDocument(
   return typeof documentResponse.Document === "string";
 }
 
-function getMtomAttachment(cid: string, mtomResponse: IMTOMAttachments): IMTOMPart {
+function getMtomAttachment(cid: string, mtomResponse: MtomAttachments): MtomPart {
   const attachment = mtomResponse.parts.find(part => part.headers["content-id"] === cid);
   if (!attachment) {
     throw new Error(`Attachment with CID ${cid} not found`);
@@ -72,7 +72,7 @@ function getMtomAttachment(cid: string, mtomResponse: IMTOMAttachments): IMTOMPa
 
 function getMtomBytesAndMimeType(
   documentResponse: DocumentResponse,
-  mtomResponse: IMTOMAttachments
+  mtomResponse: MtomAttachments
 ): { mimeType: string; decodedBytes: Buffer } {
   if (documentResponseContainsMultipartCidReference(documentResponse)) {
     const cid = getCidReference(documentResponse.Document.Include._href);
@@ -95,7 +95,7 @@ async function parseDocumentReference({
   documentResponse: DocumentResponse;
   outboundRequest: OutboundDocumentRetrievalReq;
   idMapping: Record<string, string>;
-  mtomResponse: IMTOMAttachments;
+  mtomResponse: MtomAttachments;
 }): Promise<DocumentReference> {
   const s3Utils = getS3UtilsInstance();
   const { mimeType, decodedBytes } = getMtomBytesAndMimeType(documentResponse, mtomResponse);
@@ -159,7 +159,7 @@ async function handleSuccessResponse({
   documentResponses: DocumentResponse[];
   outboundRequest: OutboundDocumentRetrievalReq;
   gateway: XCAGateway;
-  mtomResponse: IMTOMAttachments;
+  mtomResponse: MtomAttachments;
 }): Promise<OutboundDocumentRetrievalResp> {
   try {
     const idMapping = generateIdMapping(outboundRequest.documentReference);
@@ -208,7 +208,7 @@ export async function processDrResponse({
   if (!mtomResponse) {
     throw new Error("No mtom response found");
   }
-  const soapData: Buffer = mtomResponse?.parts[0]?.body || Buffer.from("");
+  const soapData: Buffer = mtomResponse.parts[0]?.body || Buffer.from("");
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "_",

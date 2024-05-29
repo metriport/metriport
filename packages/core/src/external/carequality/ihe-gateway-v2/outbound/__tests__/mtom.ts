@@ -1,9 +1,9 @@
 import {
   parseMtomResponse,
   getBoundaryFromMtomResponse,
-  IMTOMAttachments,
+  MtomAttachments,
 } from "../xca/mtom/parser";
-import { creatMtomContentTypeAndPayload } from "../xca/mtom/builder";
+import { createMtomContentTypeAndPayload } from "../xca/mtom/builder";
 
 const boundary = "a1109b32-0907-4c3c-9d61-8b8d846b9983";
 const contentId0 = "<0.doc@metriport.com>";
@@ -11,7 +11,7 @@ const carriageReturn = "\r\n";
 
 export async function createMtomMessageWithAttachments(
   attachmentsData: { payload: Buffer; mimeType: string }[]
-): Promise<IMTOMAttachments> {
+): Promise<MtomAttachments> {
   const documentResponses = attachmentsData
     .map((attachment, index) => {
       const contentId = `${index + 1}.doc@metriport.com`;
@@ -61,8 +61,8 @@ export async function createMtomMessageWithAttachments(
 
 export async function createMtomMessageWithoutAttachments(
   xmlString: string
-): Promise<IMTOMAttachments> {
-  const { payload, contentType } = creatMtomContentTypeAndPayload(xmlString);
+): Promise<MtomAttachments> {
+  const { payload, contentType } = createMtomContentTypeAndPayload(xmlString);
   const boundary = getBoundaryFromMtomResponse(contentType);
   if (!boundary) {
     throw new Error("No boundary parameter found in content type.");
