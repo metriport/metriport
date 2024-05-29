@@ -48,7 +48,7 @@ export function setS3UtilsInstance(s3Utils: S3Utils): void {
   s3UtilsInstance = s3Utils;
 }
 
-function documentResponseContainsMultipartCidReference(
+function documentResponseContainsMultipartCidReferenceToDocument(
   documentResponse: DocumentResponse
 ): documentResponse is DocumentResponse & { Document: { Include: { _href: string } } } {
   return (
@@ -56,7 +56,7 @@ function documentResponseContainsMultipartCidReference(
   );
 }
 
-function documentResponseContainsDocument(
+function documentResponseContainsDocumentInSoapMessage(
   documentResponse: DocumentResponse
 ): documentResponse is DocumentResponse & { Document: string } {
   return typeof documentResponse.Document === "string";
@@ -74,12 +74,12 @@ function getMtomBytesAndMimeType(
   documentResponse: DocumentResponse,
   mtomResponse: MtomAttachments
 ): { mimeType: string; decodedBytes: Buffer } {
-  if (documentResponseContainsMultipartCidReference(documentResponse)) {
+  if (documentResponseContainsMultipartCidReferenceToDocument(documentResponse)) {
     const cid = getCidReference(documentResponse.Document.Include._href);
     const attachment = getMtomAttachment(cid, mtomResponse);
     const { mimeType, decodedBytes } = parseFileFromBuffer(attachment.body);
     return { mimeType, decodedBytes };
-  } else if (documentResponseContainsDocument(documentResponse)) {
+  } else if (documentResponseContainsDocumentInSoapMessage(documentResponse)) {
     const { mimeType, decodedBytes } = parseFileFromString(documentResponse.Document);
     return { mimeType, decodedBytes };
   }

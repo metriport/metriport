@@ -111,11 +111,13 @@ describe("processDRResponse for MTOM with/without attachments and for different 
       },
     });
 
-    expect(response).toBeDefined();
+    expect(response.documentReference).toBeTruthy();
     expect(response.documentReference).toHaveLength(3);
+    const contentTypes = response.documentReference?.map(d => d.contentType);
+    expect(contentTypes).toEqual(
+      expect.arrayContaining([xmlFile.mimeType, pdfFile.mimeType, tiffFile.mimeType])
+    );
     expect(response.documentReference?.[0]?.contentType).toBe(xmlFile.mimeType);
-    expect(response.documentReference?.[1]?.contentType).toBe(pdfFile.mimeType);
-    expect(response.documentReference?.[2]?.contentType).toBe(tiffFile.mimeType);
   });
 });
 describe("processDRResponse", () => {

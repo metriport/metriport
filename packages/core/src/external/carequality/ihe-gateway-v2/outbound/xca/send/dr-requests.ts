@@ -70,7 +70,7 @@ export async function sendSignedDRRequests({
       capture.error(msg, {
         extra: {
           context,
-          extra,
+          ...extra,
         },
       });
       return {
