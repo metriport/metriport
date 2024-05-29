@@ -30,7 +30,18 @@ export type LinkDemoData = {
   ssns: string[];
 };
 
-export function scoreLink(
+/**
+ * Evaluates whether the input linked demographcis are similar enough to the input patient demographics to be considered a demogrpahic "match".
+ *
+ * This function is modelled off of Epic's matching algorithm, which uses a point system for different matching demographics. Each exact
+ * or partial match awards a certain number of points, which are added to an overall score. This score must be higher than the given threshold
+ * (20 or 21 if SSNs are present) in order for the input linked demograhics to successfully "match".
+ *
+ * @param patientDemographics The patient core demographics @ Metriport.
+ * @param linkDemographics The incoming linked demographics from CQ or CW.
+ * @returns boolean representing whether the linkDemographics "match" the patientDemographics.
+ */
+export function scoreLink_Epic(
   patientDemographics: LinkDemoData,
   linkDemographics: LinkDemoData
 ): boolean {

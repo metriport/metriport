@@ -29,7 +29,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public augmentedDemographics?: PatientDemoData,
     /**
-     * The request ID for the next patient discovery triggered while the patient discovery was processing.
+     * The request payload for the next patient discovery triggered while the patient discovery was processing.
      */
     public scheduledPdRequest?: ScheuledPatientDiscovery,
     /**

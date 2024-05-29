@@ -43,6 +43,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
+    await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
