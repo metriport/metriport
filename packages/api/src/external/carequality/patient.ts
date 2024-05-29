@@ -18,7 +18,7 @@ import { PatientDataCarequality } from "./patient-shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
-import { augmentPatientDemograhpics } from "./patient-demographics";
+import { augmentPatientDemographics } from "./patient-demographics";
 
 dayjs.extend(duration);
 
@@ -54,7 +54,7 @@ export async function discover({
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
     const augmentedPatient = augmentDemographics
-      ? await augmentPatientDemograhpics(patient)
+      ? await augmentPatientDemographics(patient)
       : patient;
     await updatePatientDiscoveryStatus({
       patient,

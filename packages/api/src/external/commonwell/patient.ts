@@ -48,7 +48,7 @@ import {
   PatientDataCommonwell,
 } from "./patient-shared";
 import { getCwInitiator } from "./shared";
-import { augmentPatientDemograhpics, checkForNewDemographics } from "./patient-demographics";
+import { augmentPatientDemographics, checkForNewDemographics } from "./patient-demographics";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
 
 const createContext = "cw.patient.create";
@@ -334,7 +334,7 @@ export async function update({
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
     const augmentedPatient = augmentDemographics
-      ? await augmentPatientDemograhpics(patient)
+      ? await augmentPatientDemographics(patient)
       : patient;
     await updatePatientDiscoveryStatus({
       patient,
