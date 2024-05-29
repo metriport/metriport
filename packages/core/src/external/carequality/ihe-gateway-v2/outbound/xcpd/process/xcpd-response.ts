@@ -173,6 +173,14 @@ function handlePatientErrorResponse({
     id: outboundRequest.id,
     issue: [issue],
   };
+
+  const msg = "Aborted Error In Soap Response";
+  log(
+    `${msg}, jsonObj: ${JSON.stringify(jsonObj)}, outboundRequest: ${JSON.stringify(
+      outboundRequest
+    )}`
+  );
+
   const response: OutboundPatientDiscoveryResp = {
     id: outboundRequest.id,
     timestamp: outboundRequest.timestamp,

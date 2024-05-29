@@ -448,6 +448,7 @@ export class APIStack extends Stack {
         apiURL: apiService.loadBalancer.loadBalancerDnsName,
         envType: props.config.environmentType,
         sentryDsn: props.config.lambdasSentryDSN,
+        alarmSnsAction: slackNotification?.alarmAction,
       });
     }
 
