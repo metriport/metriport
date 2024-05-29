@@ -25,7 +25,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
      */
     public rerunPdOnNewDemographics?: boolean,
     /**
-     * The most recent payload used for patient demographics augmetnation.
+     * The most recent payload used for patient demographic augmentation.
      */
     public augmentedDemographics?: PatientDemoData,
     /**

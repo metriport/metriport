@@ -13,7 +13,7 @@ import { LinkStatus } from "../../patient-link";
  * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient across CareQuality.
  * @param discoveryStartedAt The start date of integrating/synchronizing the patient across CareQuality.
  * @param rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
- * @param augmentedDemographics The payload actually used across CQ after demogrpahic augmentation.
+ * @param augmentedDemographics The payload actually used across CQ after demographic augmentations.
  * @returns
  */
 export async function updatePatientDiscoveryStatus({

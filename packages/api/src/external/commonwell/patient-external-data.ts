@@ -123,7 +123,7 @@ export const updateCommonwellIdsAndStatus = async ({
  * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
  * @param discoveryStartedAt The start date of integrating/synchronizing the patient @ CommonWell.
  * @param rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
- * @param augmentedDemographics The payload actually used @ CommonWell after demogrpahic augmentation.
+ * @param augmentedDemographics The payload actually used across CQ after demographic augmentations.
  * @returns
  */
 export const updatePatientDiscoveryStatus = async ({
