@@ -7,6 +7,7 @@ import {
   scoreLink,
   createAugmentedPatient,
   linkHasNewDemographicData,
+  addressSeparator,
 } from "../shared/patient-demographics";
 import { getCwPatientData } from "./command/cw-patient-data/get-cw-data";
 
@@ -40,12 +41,16 @@ function getPatientNetworkLinks(linkResults: NetworkLink[]): PatientNetworkLink[
 }
 
 function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLink): LinkDemoData {
-  const dob = patientNetworkLink.details.birthDate;
-  const gender = patientNetworkLink.details.gender.code;
+  const dob = patientNetworkLink.details.birthDate.trim();
+  const gender = patientNetworkLink.details.gender.code.trim().toLowerCase();
   const names = (patientNetworkLink.details.name ?? []).flatMap(name => {
     return name.family.flatMap(lastName => {
+      const normalizedLastName = lastName.trim().toLowerCase();
       return (name.given ?? []).map(firstName => {
-        return { firstName, lastName };
+        return {
+          firstName: firstName.trim().toLowerCase(),
+          lastName: normalizedLastName,
+        };
       });
     });
   });
@@ -53,20 +58,20 @@ function patientNetworkLinkToLinkedDemoData(patientNetworkLink: PatientNetworkLi
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "phone") return [];
-    return [tc.value];
+    return [tc.value.trim()];
   });
   const emails = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "email") return [];
-    return [tc.value];
+    return [tc.value.trim().toLowerCase()];
   });
   const addresses = patientNetworkLink.details.address.map(a => {
     return {
-      line: a.line ? a.line.join(" ") : undefined,
-      city: a.city ?? undefined,
-      state: a.state ?? undefined,
-      zip: a.zip,
-      country: a.country ?? undefined,
+      line: a.line ? a.line.map(l => l.trim().toLowerCase()).join(addressSeparator) : undefined,
+      city: a.city?.trim().toLowerCase() ?? undefined,
+      state: a.state?.trim().toLowerCase() ?? undefined,
+      zip: a.zip.trim(),
+      country: a.country?.trim().toLowerCase() ?? undefined,
     };
   });
   /* TODO

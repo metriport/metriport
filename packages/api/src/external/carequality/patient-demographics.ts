@@ -6,6 +6,7 @@ import {
   scoreLink,
   createAugmentedPatient,
   linkHasNewDemographicData,
+  addressSeparator,
 } from "../shared/patient-demographics";
 import { getCQPatientData } from "./command/cq-patient-data/get-cq-data";
 import { CQLink } from "./cq-patient-data";
@@ -40,13 +41,16 @@ function getPatientResources(pdResults: CQLink[]): InboundPatientResource[] {
 }
 
 function patientResourceToLinkedDemoData(patientResource: InboundPatientResource): LinkDemoData {
-  const dob = patientResource.birthDate;
-  const gender = patientResource.gender;
+  const dob = patientResource.birthDate?.trim();
+  const gender = patientResource.gender?.trim().toLowerCase();
   const names = (patientResource.name ?? []).flatMap(name => {
     if (!name.family) return [];
-    const lastName = name.family;
+    const lastName = name.family.trim().toLowerCase();
     return (name.given ?? []).map(firstName => {
-      return { firstName, lastName };
+      return {
+        firstName: firstName.trim().toLowerCase(),
+        lastName,
+      };
     });
   });
   /* TODO
@@ -57,11 +61,11 @@ function patientResourceToLinkedDemoData(patientResource: InboundPatientResource
   */
   const addresses = patientResource.address.map(a => {
     return {
-      line: a.line ? a.line.join(" ") : undefined,
-      city: a.city,
-      state: a.state,
-      zip: a.postalCode,
-      country: a.country,
+      line: a.line ? a.line.map(l => l.trim().toLowerCase()).join(addressSeparator) : undefined,
+      city: a.city?.trim().toLowerCase() ?? undefined,
+      state: a.state?.trim().toLowerCase() ?? undefined,
+      zip: a.postalCode?.trim() ?? undefined,
+      country: a.country?.trim().toLowerCase() ?? undefined,
     };
   });
   /* TODO

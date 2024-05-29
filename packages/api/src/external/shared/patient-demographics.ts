@@ -3,6 +3,8 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact } from "@metriport/core/domain/contact";
 import { USState } from "@metriport/core/domain/geographic-locations";
 
+export const addressSeparator = "||";
+
 type LinkDemoDataAddress = {
   line?: string;
   city?: string;
@@ -93,33 +95,38 @@ export function patientToLinkedDemoData(patient: Patient): LinkDemoData {
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
     return patientFirstNames.map(firstName => {
-      return { firstName, lastName };
+      return {
+        firstName: firstName.trim().toLowerCase(),
+        lastName: lastName.trim().toLowerCase(),
+      };
     });
   });
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
-    return [c.phone];
+    return [c.phone.trim()];
   });
   const emails = (patient.data.contact ?? []).flatMap(c => {
     if (!c.email) return [];
-    return [c.email];
+    return [c.email.trim().toLowerCase()];
   });
   const addresses = patient.data.address.map(a => {
     return {
-      line: `${a.addressLine1} ${a.addressLine2}`,
-      city: a.city,
-      state: a.state as string,
-      zip: a.zip,
-      country: a.country ?? "USA",
+      line: `${a.addressLine1.trim().toLowerCase()}${
+        a.addressLine2 ? addressSeparator + a.addressLine2.trim().toLowerCase() : ""
+      }`,
+      city: a.city.trim().toLowerCase(),
+      state: a.state.trim().toLowerCase() as string,
+      zip: a.zip.trim(),
+      country: a.country?.trim().toLowerCase() ?? undefined,
     };
   });
   const driversLicenses = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "driversLicense") return [];
-    return { value: p.value, state: p.state };
+    return { value: p.value.trim(), state: p.state.trim().toLowerCase() };
   });
   const ssns = (patient.data.personalIdentifiers ?? []).flatMap(p => {
     if (p.type !== "ssn") return [];
-    return [p.value];
+    return [p.value.trim()];
   });
   return {
     dob,
@@ -134,47 +141,56 @@ export function patientToLinkedDemoData(patient: Patient): LinkDemoData {
 }
 
 export function createAugmentedPatient(
-  existingPatient: Patient,
+  patient: Patient,
   linksDempgraphics: LinkDemoData[]
 ): Patient {
+  const patientDemographics = patientToLinkedDemoData(patient);
+  const hashedPatientAddresses = patientDemographics.addresses.map(createAddressString);
+  // TODO Is submitting lower case addresses to CQ / CW okay, or do we have to grab the original version?
   const newAddresses: Address[] = linksDempgraphics.flatMap(ld => {
-    return ld.addresses.map(a => {
-      const lineSplit = (a.line ?? "").split(" ");
-      return {
-        addressLine1: lineSplit[0] ?? "",
-        addressLine2: lineSplit[1] ? lineSplit.slice(1).join(" ") : undefined,
-        city: a.city ?? "",
-        state: (a.state ?? "") as USState,
-        zip: a.zip ?? "",
-        country: a.country,
-      };
-    });
+    return ld.addresses
+      .filter(a => !hashedPatientAddresses.includes(createAddressString(a)))
+      .map(a => {
+        const lineSplit = (a.line ?? "").split(addressSeparator);
+        return {
+          addressLine1: lineSplit[0] ?? "",
+          addressLine2: lineSplit[1] ? lineSplit.slice(1).join(" ") : undefined,
+          city: a.city ?? "",
+          state: (a.state ?? "") as USState,
+          zip: a.zip ?? "",
+          country: a.country,
+        };
+      });
   });
   const newTelephoneNumbers: Contact[] = linksDempgraphics.flatMap(ld => {
-    return ld.telephoneNumbers.map(phone => {
-      return { phone };
-    });
+    return ld.telephoneNumbers
+      .filter(tn => !patientDemographics.telephoneNumbers.includes(tn))
+      .map(phone => {
+        return { phone };
+      });
   });
   const newEmails: Contact[] = linksDempgraphics.flatMap(ld => {
-    return ld.emails.map(email => {
-      return { email };
-    });
+    return ld.emails
+      .filter(e => !patientDemographics.emails.includes(e))
+      .map(email => {
+        return { email };
+      });
   });
   const aupmentedPatient = {
-    ...existingPatient,
+    ...patient,
     data: {
-      ...existingPatient.data,
-      contact: existingPatient.data.contact
-        ? [...existingPatient.data.contact, ...newTelephoneNumbers, ...newEmails]
+      ...patient.data,
+      contact: patient.data.contact
+        ? [...patient.data.contact, ...newTelephoneNumbers, ...newEmails]
         : [...newTelephoneNumbers, ...newEmails],
-      address: [...existingPatient.data.address, ...newAddresses],
+      address: [...patient.data.address, ...newAddresses],
     },
   };
   return aupmentedPatient;
 }
 
 function createAddressString(a: LinkDemoDataAddress) {
-  return `${a.line ?? ""} ${a.city ?? ""} ${a.state ?? ""} ${a.zip ?? ""} ${a.country ?? "USA"}`;
+  return `${a.line ?? ""} ${a.city ?? ""} ${a.state ?? ""} ${a.zip ?? ""} ${a.country ?? ""}`;
 }
 
 export function linkHasNewDemographicData(
@@ -182,6 +198,7 @@ export function linkHasNewDemographicData(
   linkDemographics: LinkDemoData
 ): boolean {
   // Address
+  // TODO Move hashedPatientAddresses to wrapper function to call once.
   const hashedPatientAddresses = patientDemographics.addresses.map(createAddressString);
   const hashedLinkAddresses = linkDemographics.addresses.map(createAddressString);
   const hasNewAddress = hashedLinkAddresses.some(a => !hashedPatientAddresses.includes(a));
