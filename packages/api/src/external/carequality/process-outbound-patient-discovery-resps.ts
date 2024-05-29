@@ -54,7 +54,10 @@ export async function processOutboundPatientDiscoveryResps({
     );
 
     const patient = await getPatientOrFail({ id: patientId, cxId });
+
     const cqData = getCQData(patient.data.externalData);
+    const facilityId = cqData?.discoveryFacilityId;
+    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
     const startedAt = cqData?.discoveryStartedAt;
 
     analytics({
@@ -69,50 +72,13 @@ export async function processOutboundPatientDiscoveryResps({
       },
     });
 
-    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
-    const facilityId = cqData?.discoveryFacilityId;
-
-    let foundNewDemographics = false;
-    if (rerunPdOnNewDemographics) {
-      foundNewDemographics = checkForNewDemographics(patient, cqLinks);
-    }
-
-    let scheduledPdRequest = cqData?.scheduledPdRequest;
-    if (foundNewDemographics && facilityId) {
-      await runOrSchedulePatientDiscoveryAcrossHIEs({
-        patient,
-        facilityId,
-        requestId,
-        rerunPdOnNewDemographics: false,
-        augmentDemographics: true,
-        isRerunFromNewDemographics: true,
-      });
-      const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
-      scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
-    }
-
-    let blockDocumentQuery = false;
-    if (scheduledPdRequest) {
-      await discover({
-        patient,
-        facilityId: scheduledPdRequest.facilityId,
-        requestId: scheduledPdRequest.requestId,
-        rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-        augmentDemographics: scheduledPdRequest.augmentDemographics,
-      });
-
-      await resetPatientScheduledPatientDiscoveryRequestId({
-        patient,
-        source: MedicalDataSource.CAREQUALITY,
-      });
-
-      blockDocumentQuery =
-        rerunPdOnNewDemographics === true && scheduledPdRequest.isRerunFromNewDemographics;
-    } else {
-      await updatePatientDiscoveryStatus({ patient: patientIds, status: "completed" });
-    }
-
-    if (!blockDocumentQuery) await queryDocsIfScheduled({ patient: patientIds });
+    await processScheduledPatientDiscoveryAndDq({
+      patient,
+      facilityId,
+      requestId,
+      rerunPdOnNewDemographics,
+      cqLinks,
+    });
   } catch (error) {
     await resetPatientScheduledPatientDiscoveryRequestId({
       patient: patientIds,
@@ -196,4 +162,60 @@ export async function queryDocsIfScheduled({
       });
     }
   }
+}
+
+async function processScheduledPatientDiscoveryAndDq({
+  patient,
+  facilityId,
+  requestId,
+  rerunPdOnNewDemographics,
+  cqLinks,
+}: {
+  patient: Patient;
+  facilityId?: string;
+  requestId: string;
+  rerunPdOnNewDemographics?: boolean;
+  cqLinks: CQLink[];
+}): Promise<void> {
+  let foundNewDemographics = false;
+  if (rerunPdOnNewDemographics) {
+    foundNewDemographics = checkForNewDemographics(patient, cqLinks);
+  }
+
+  let scheduledPdRequest = getCQData(patient.data.externalData)?.scheduledPdRequest;
+  if (foundNewDemographics && facilityId) {
+    await runOrSchedulePatientDiscoveryAcrossHIEs({
+      patient,
+      facilityId,
+      requestId,
+      rerunPdOnNewDemographics: false,
+      augmentDemographics: true,
+      isRerunFromNewDemographics: true,
+    });
+    const updatedPatient = await getPatientOrFail(patient);
+    scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
+  }
+
+  let blockDocumentQuery = false;
+  if (scheduledPdRequest) {
+    await discover({
+      patient,
+      facilityId: scheduledPdRequest.facilityId,
+      requestId: scheduledPdRequest.requestId,
+      rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+      augmentDemographics: scheduledPdRequest.augmentDemographics,
+    });
+
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+
+    blockDocumentQuery =
+      rerunPdOnNewDemographics === true && scheduledPdRequest.isRerunFromNewDemographics;
+  } else {
+    await updatePatientDiscoveryStatus({ patient, status: "completed" });
+  }
+
+  if (!blockDocumentQuery) await queryDocsIfScheduled({ patient });
 }
