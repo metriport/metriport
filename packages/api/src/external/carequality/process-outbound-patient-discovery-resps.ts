@@ -78,7 +78,7 @@ export async function processOutboundPatientDiscoveryResps({
     }
 
     let scheduledPdRequest = cqData?.scheduledPdRequest;
-    if (foundNewDemographics && rerunPdOnNewDemographics && facilityId) {
+    if (foundNewDemographics && facilityId) {
       const updatedPatient = await scheduleOrRunPatientDiscovery({
         patient,
         facilityId,

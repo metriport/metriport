@@ -245,7 +245,7 @@ async function registerAndLinkPatientInCW({
     }
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
-    if (foundNewDemographics && rerunPdOnNewDemographics) {
+    if (foundNewDemographics) {
       const updatedPatient = await scheduleOrRunPatientDiscovery({
         patient,
         facilityId,
@@ -453,7 +453,7 @@ async function updatePatientAndLinksInCw({
     }
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
-    if (foundNewDemographics && rerunPdOnNewDemographics) {
+    if (foundNewDemographics) {
       const updatedPatient = await scheduleOrRunPatientDiscovery({
         patient,
         facilityId,

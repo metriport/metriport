@@ -8,7 +8,7 @@ export async function resetPatientScheduledPatientDiscoveryRequestId({
   patient,
   source,
 }: {
-  patient: Patient;
+  patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
 }): Promise<Patient> {
   const patientFilter = {
