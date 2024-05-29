@@ -113,10 +113,14 @@ export async function processOutboundPatientDiscoveryResps({
 
     if (!blockDocumentQuery) await queryDocsIfScheduled({ patient: patientIds });
   } catch (error) {
-    const msg = `Error on Processing Outbound Patient Discovery Responses`;
-    outerLog(`${msg} - ${errorToString(error)}`);
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient: patientIds,
+      source: MedicalDataSource.CAREQUALITY,
+    });
     await updatePatientDiscoveryStatus({ patient: patientIds, status: "failed" });
     await queryDocsIfScheduled({ patient: patientIds, isFailed: true });
+    const msg = `Error on Processing Outbound Patient Discovery Responses`;
+    outerLog(`${msg} - ${errorToString(error)}`);
     capture.error(msg, {
       extra: {
         patientId,

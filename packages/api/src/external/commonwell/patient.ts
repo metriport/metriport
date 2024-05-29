@@ -282,6 +282,10 @@ async function registerAndLinkPatientInCW({
     if (!blockDocumentQuery) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
     return { commonwellPatientId, personId };
   } catch (error) {
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList, isFailed: true });
     const msg = `Failure while creating patient @ CW`;
@@ -485,6 +489,10 @@ async function updatePatientAndLinksInCw({
 
     if (!blockDocumentQuery) await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
   } catch (error) {
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList, isFailed: true });
     console.error(`Failed to update patient ${patient.id} @ CW: ${errorToString(error)}`);
