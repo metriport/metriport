@@ -106,6 +106,7 @@ router.post(
 
     const patient = await createPatient({
       patient: patientCreate,
+      requestId: uuidv7(), // TODO Use http request Id
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
@@ -159,6 +160,7 @@ router.put(
 
     const updatedPatient = await updatePatient({
       patientUpdate,
+      requestId: uuidv7(), // TODO Use http request Id
       rerunPdOnNewDemographics,
       augmentDemographics,
       forceCommonwell,

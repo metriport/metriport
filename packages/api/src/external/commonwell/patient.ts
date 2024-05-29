@@ -17,7 +17,7 @@ import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { errorToString } from "@metriport/shared/common/error";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { scheduleOrRunPatientDiscovery } from "../../command/medical/patient/update-patient";
+import { runOrSchedulePatientDiscoveryAcrossHIEs } from "../hie/run-or-schedule-patient-discovery";
 import MetriportError from "../../errors/metriport-error";
 import { Config } from "../../shared/config";
 import { capture } from "@metriport/core/util/notifications";
@@ -246,14 +246,15 @@ async function registerAndLinkPatientInCW({
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (foundNewDemographics) {
-      const updatedPatient = await scheduleOrRunPatientDiscovery({
+      await runOrSchedulePatientDiscoveryAcrossHIEs({
         patient,
         facilityId,
+        requestId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
-        overrideSchedule: true,
       });
+      const updatedPatient = await getPatientOrFail(patient);
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 
@@ -454,14 +455,15 @@ async function updatePatientAndLinksInCw({
 
     let scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (foundNewDemographics) {
-      const updatedPatient = await scheduleOrRunPatientDiscovery({
+      await runOrSchedulePatientDiscoveryAcrossHIEs({
         patient,
         facilityId,
+        requestId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
-        overrideSchedule: true,
       });
+      const updatedPatient = await getPatientOrFail(patient);
       scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 

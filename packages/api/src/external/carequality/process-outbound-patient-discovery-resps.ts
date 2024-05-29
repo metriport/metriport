@@ -13,7 +13,7 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { scheduleOrRunPatientDiscovery } from "../../command/medical/patient/update-patient";
+import { runOrSchedulePatientDiscoveryAcrossHIEs } from "../hie/run-or-schedule-patient-discovery";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
@@ -57,7 +57,6 @@ export async function processOutboundPatientDiscoveryResps({
     const cqData = getCQData(patient.data.externalData);
     const startedAt = cqData?.discoveryStartedAt;
 
-    // BUG There's no gurantee the requestId of the current PD matches this request ID
     analytics({
       distinctId: patient.cxId,
       event: EventTypes.patientDiscovery,
@@ -72,6 +71,7 @@ export async function processOutboundPatientDiscoveryResps({
 
     const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
     const facilityId = cqData?.discoveryFacilityId;
+
     let foundNewDemographics = false;
     if (rerunPdOnNewDemographics) {
       foundNewDemographics = checkForNewDemographics(patient, cqLinks);
@@ -79,14 +79,15 @@ export async function processOutboundPatientDiscoveryResps({
 
     let scheduledPdRequest = cqData?.scheduledPdRequest;
     if (foundNewDemographics && facilityId) {
-      const updatedPatient = await scheduleOrRunPatientDiscovery({
+      await runOrSchedulePatientDiscoveryAcrossHIEs({
         patient,
         facilityId,
+        requestId,
         rerunPdOnNewDemographics: false,
         augmentDemographics: true,
         isRerunFromNewDemographics: true,
-        overrideSchedule: true,
       });
+      const updatedPatient = await getPatientOrFail({ id: patientId, cxId });
       scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
     }
 

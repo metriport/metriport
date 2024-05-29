@@ -20,11 +20,13 @@ export type PatientCreateCmd = PatientNoExternalData & Identifier;
 
 export const createPatient = async ({
   patient,
+  requestId,
   rerunPdOnNewDemographics = false,
   forceCommonwell,
   forceCarequality,
 }: {
   patient: PatientCreateCmd;
+  requestId: string;
   rerunPdOnNewDemographics?: boolean;
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -79,6 +81,7 @@ export const createPatient = async ({
     patient: newPatient,
     facilityId,
     getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
+    requestId,
     forceCWCreate: forceCommonwell,
     rerunPdOnNewDemographics,
   });
@@ -86,6 +89,7 @@ export const createPatient = async ({
   await cqCommands.patient.discover({
     patient: newPatient,
     facilityId,
+    requestId,
     forceEnabled: forceCarequality,
     rerunPdOnNewDemographics,
   });

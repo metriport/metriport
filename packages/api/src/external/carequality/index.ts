@@ -4,7 +4,6 @@ const cqCommands = {
   patient: {
     discover: patient.discover,
     remove: patient.remove,
-    getData: patient.getCQData,
   },
 };
 

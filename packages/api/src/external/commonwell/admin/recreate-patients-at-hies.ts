@@ -103,7 +103,7 @@ export async function recreatePatientAtCW(
 
     // create new patient, including linkint to person and network link to other patients
     log(`Creating new patient at CW...`);
-    // WARNING Could interfere with currently running state of another PD
+    // WARNING This could overwrite the status for any currently running PD
     const cwIds = await create({
       patient,
       facilityId,
