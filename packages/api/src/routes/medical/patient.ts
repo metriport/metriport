@@ -1,4 +1,5 @@
 import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { ConsolidatedQueryProgress } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
   mrFormat,
@@ -280,13 +281,14 @@ router.get(
     const patientId = getFrom("params").orFail("id", req);
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const consolidatedQueries = patient.data.consolidatedQueries ?? null;
-    const message =
-      "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook";
 
-    return res.json({
-      statuses: consolidatedQueries,
-      message,
-    });
+    const respPayload: ConsolidatedQueryProgress = {
+      statuses: consolidatedQueries ?? null,
+      message:
+        "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
+    };
+
+    return res.json(respPayload);
   })
 );
 
@@ -333,7 +335,11 @@ router.post(
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
 
-    return res.json(queryResponse);
+    const respPayload: ConsolidatedQueryProgress = {
+      statuses: queryResponse ?? null,
+    };
+
+    return res.json(respPayload);
   })
 );
 

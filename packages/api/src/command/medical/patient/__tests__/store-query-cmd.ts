@@ -1,6 +1,6 @@
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
 import { DocumentQueryProgress } from "@metriport/core/domain/document-query";
-import { ConsolidatedQuery } from "@metriport/core/domain/query-status";
 import { makeProgress } from "../../../../domain/medical/__tests__/document-query";
 import { StoreQueryParams } from "../query-init";
 import { makePatientData } from "../../../../domain/medical/__tests__/patient";

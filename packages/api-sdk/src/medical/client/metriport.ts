@@ -24,7 +24,7 @@ import {
 import { Facility, FacilityCreate, facilityListSchema, facilitySchema } from "../models/facility";
 import { ConsolidatedCountResponse, ResourceTypeForConsolidation } from "../models/fhir";
 import { Organization, OrganizationCreate, organizationSchema } from "../models/organization";
-import { PatientCreate, PatientUpdate, QueryProgress } from "../models/patient";
+import { PatientCreate, PatientUpdate, ConsolidatedQueryProgress } from "../models/patient";
 import { Demographics } from "../models/demographics";
 import { PatientDTO } from "../models/patientDTO";
 
@@ -310,7 +310,7 @@ export class MetriportMedicalApi {
     dateTo?: string,
     conversionType?: string,
     metadata?: Record<string, string>
-  ): Promise<QueryProgress> {
+  ): Promise<ConsolidatedQueryProgress> {
     const whMetadata = { metadata: metadata };
     const resp = await this.api.post(`${PATIENT_URL}/${patientId}/consolidated/query`, whMetadata, {
       params: { resources: resources && resources.join(","), dateFrom, dateTo, conversionType },
@@ -326,7 +326,7 @@ export class MetriportMedicalApi {
    * @param patientId The ID of the patient whose data is to be returned.
    * @return The consolidated data query status.
    */
-  async getConsolidatedQueryStatus(patientId: string): Promise<QueryProgress> {
+  async getConsolidatedQueryStatus(patientId: string): Promise<ConsolidatedQueryProgress> {
     const resp = await this.api.get(`${PATIENT_URL}/${patientId}/consolidated/query`);
     return resp.data;
   }

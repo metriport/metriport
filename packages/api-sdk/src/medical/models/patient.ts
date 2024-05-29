@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { baseUpdateSchema } from "./common/base-update";
 import { demographicsSchema } from "./demographics";
+import { ConsolidatedQuery } from "./fhir";
 
 export const patientCreateSchema = demographicsSchema.merge(
   z.object({
@@ -24,7 +25,7 @@ export const patientListSchema = z.object({
 export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type QueryStatus = z.infer<typeof queryStatusSchema>;
 
-export type QueryProgress = {
-  status: QueryStatus | null;
+export type ConsolidatedQueryProgress = {
+  statuses: ConsolidatedQuery[] | null;
   message?: string;
 };

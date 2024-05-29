@@ -1,19 +1,5 @@
 import { z } from "zod";
-
-export const consolidatedFilterSchema = z.object({
-  resources: z.string(),
-  dateFrom: z.date().optional(),
-  dateTo: z.date().optional(),
-});
-export type ConsolidatedFilter = z.infer<typeof consolidatedFilterSchema>;
-
-export const consolidatedCountSchema = z.object({
-  total: z.number(),
-  resources: z.record(z.number()),
-  filter: consolidatedFilterSchema,
-});
-
-export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
+import { queryStatusSchema } from "./patient";
 
 export const resourcesSearchableByPatient = [
   "Account",
@@ -94,3 +80,38 @@ export const resourceTypeForConsolidation = [
 ] as const;
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
+
+export const consolidationConversionType = ["html", "pdf", "json"] as const;
+export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
+
+export const consolidatedFilterSchema = z.object({
+  resources: z.string(),
+  dateFrom: z.date().optional(),
+  dateTo: z.date().optional(),
+});
+export type ConsolidatedFilter = z.infer<typeof consolidatedFilterSchema>;
+
+export const consolidatedCountSchema = z.object({
+  total: z.number(),
+  resources: z.record(z.number()),
+  filter: consolidatedFilterSchema,
+});
+
+export type ConsolidatedCountResponse = z.infer<typeof consolidatedCountSchema>;
+
+export const getConsolidatedFiltersSchema = z.object({
+  resources: z.enum(resourceTypeForConsolidation).array().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  conversionType: z.enum(consolidationConversionType).optional(),
+});
+
+export type GetConsolidatedFilters = z.infer<typeof getConsolidatedFiltersSchema>;
+
+export const consolidatedQuerySchema = getConsolidatedFiltersSchema.extend({
+  requestId: z.string(),
+  startedAt: z.date().optional(),
+  status: queryStatusSchema,
+});
+
+export type ConsolidatedQuery = z.infer<typeof consolidatedQuerySchema>;

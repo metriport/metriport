@@ -10,7 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { ConsolidatedQuery } from "@metriport/core/domain/query-status";
+import { ConsolidatedQuery } from "@metriport/api-sdk";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -20,7 +20,7 @@ import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { ResourceTypeForConsolidation } from "@metriport/core/domain/consolidated-query/consolidation-resources";
-import { GetConsolidatedFilters } from "@metriport/core/domain/consolidated-query/index";
+import { GetConsolidatedFilters } from "@metriport/api-sdk";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,
@@ -65,7 +65,7 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-}: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
+}: ConsolidatedQueryParams): Promise<ConsolidatedQuery[]> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(
@@ -80,7 +80,7 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
-    return currentConsolidatedProgress;
+    return patient.data.consolidatedQueries ?? [];
   }
 
   const startedAt = new Date();
@@ -125,7 +125,7 @@ export async function startConsolidatedQuery({
     requestId,
   }).catch(emptyFunction);
 
-  return progress;
+  return updatedPatient.data.consolidatedQueries ?? [progress];
 }
 
 function appendProgressToProcessingQueries(
@@ -220,10 +220,10 @@ export async function getConsolidated({
     });
     const hasResources = bundle.entry && bundle.entry.length > 0;
     const shouldCreateMedicalRecord = conversionType && conversionType != "json" && hasResources;
-    const startedAt = requestId
-      ? // update below
-        patient.data.consolidatedQueries?.find(q => q.requestId === requestId)?.startedAt
-      : undefined;
+    const currentConsolidatedProgress = patient.data.consolidatedQueries?.find(
+      q => q.requestId === requestId
+    );
+    const startedAt = requestId ? currentConsolidatedProgress?.startedAt : undefined;
 
     const defaultAnalyticsProps = {
       distinctId: patient.cxId,
