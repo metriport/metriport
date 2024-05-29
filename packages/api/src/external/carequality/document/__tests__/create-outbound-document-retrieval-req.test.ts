@@ -57,7 +57,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(1);
@@ -83,7 +83,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res).toBeTruthy();
@@ -103,7 +103,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       requestId,
       patient,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(2);
@@ -122,7 +122,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       requestId,
       patient,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
     expect(res).toBeTruthy();
     expect(res.length).toEqual(3);
@@ -148,7 +148,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res[0].samlAttributes.organization).toEqual(facility.data.name);
@@ -175,7 +175,7 @@ describe("outboundDocumentRetrievalRequest", () => {
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res[0].samlAttributes.organization).toEqual(organization.data.name);
@@ -209,7 +209,7 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res).toBeTruthy();
@@ -246,7 +246,7 @@ describe("correct responses with multiple outboundDocumentQueryResps, where the 
       patient,
       requestId,
       initiator,
-      outboundDocumentQueryResps,
+      outboundDocumentQueryResults: outboundDocumentQueryResps,
     });
 
     expect(res).toBeTruthy();
