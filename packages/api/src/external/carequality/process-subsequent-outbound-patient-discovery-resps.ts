@@ -43,7 +43,8 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    // TODO We should move tracking the status of an individual POST resposne out of the overall status of the PD flow
+    // BUG This will override any currently running status for PD
+    // We should not track the status of an individual POST resposne via the overall status of the PD flow
     await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
