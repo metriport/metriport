@@ -32,7 +32,6 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
-      // BUG This will override any currently running status for PD (the bug carries over into the results endpoint as well)
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -43,8 +42,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    // BUG This will override any currently running status for PD
-    // We should not track the status of an individual POST resposne via the overall status of the PD flow
+    // TODO We should not track the status of an individual POST resposne via the overall status of the PD flow
     await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);
