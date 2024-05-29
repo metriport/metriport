@@ -86,7 +86,7 @@ export async function scheduleOrRunPatientDiscovery({
   isRerunFromNewDemographics?: boolean;
 }): Promise<Patient> {
   let updatedPatient = patient;
-  const cqData = cqCommands.patient.getCQData(patient.data.externalData);
+  const cqData = cqCommands.patient.getData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
@@ -116,7 +116,7 @@ export async function scheduleOrRunPatientDiscovery({
     });
   }
 
-  const cwData = cwCommands.patient.getCWData(patient.data.externalData);
+  const cwData = cwCommands.patient.getData(patient.data.externalData);
 
   const statusCw = cwData?.status;
   const scheduledPdRequestCw = cwData?.scheduledPdRequest;
