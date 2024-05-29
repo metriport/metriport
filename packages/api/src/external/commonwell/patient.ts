@@ -40,6 +40,7 @@ import {
   updateCommonwellIdsAndStatus,
   updatePatientDiscoveryStatus,
 } from "./patient-external-data";
+import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
 import {
   CQLinkStatus,
   findOrCreatePerson,
@@ -634,6 +635,8 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
 
     const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
     debug(`resp deletePatient: `, JSON.stringify(resp));
+
+    await deleteCwPatientData({ id: patient.id, cxId: patient.cxId });
   } catch (err) {
     console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
     capture.error(err, {
