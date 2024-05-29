@@ -2,7 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 import {
   LinkDemoData,
-  scoreLink_Epic,
+  scoreLinkEpic,
   createAugmentedPatient,
   linkHasNewDemographicData,
   patientToNormalizedAndStringLinkedDemoData,
@@ -19,7 +19,7 @@ export function checkForNewDemographics(patient: Patient, links: CQLink[]): bool
   const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
   return getPatientResources(links)
     .map(patientResourceToLinkedDemoData)
-    .filter(ld => scoreLink_Epic(patientDemographics, ld))
+    .filter(ld => scoreLinkEpic(patientDemographics, ld))
     .some(ld => linkHasNewDemographicData(patientDemographics, ld));
 }
 
@@ -32,7 +32,7 @@ export async function augmentPatientDemographics(patient: Patient): Promise<Pati
   const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
   const usableLinksDemographics = getPatientResources(links)
     .map(patientResourceToLinkedDemoData)
-    .filter(ld => scoreLink_Epic(patientDemographics, ld));
+    .filter(ld => scoreLinkEpic(patientDemographics, ld));
   return createAugmentedPatient(patient, usableLinksDemographics);
 }
 

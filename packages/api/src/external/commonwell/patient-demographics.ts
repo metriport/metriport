@@ -4,7 +4,7 @@ import { NetworkLink, PatientNetworkLink, GenderCodes } from "@metriport/commonw
 import {
   LinkDemoDataGender,
   LinkDemoData,
-  scoreLink_Epic,
+  scoreLinkEpic,
   createAugmentedPatient,
   linkHasNewDemographicData,
   patientToNormalizedAndStringLinkedDemoData,
@@ -25,7 +25,7 @@ export function checkForNewDemographics(patient: Patient, links: NetworkLink[]):
   const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
   return getPatientNetworkLinks(links)
     .map(patientNetworkLinkToNormalizedAndStringLinkedDemoData)
-    .filter(ld => scoreLink_Epic(patientDemographics, ld))
+    .filter(ld => scoreLinkEpic(patientDemographics, ld))
     .some(ld => linkHasNewDemographicData(patientDemographics, ld));
 }
 
@@ -38,7 +38,7 @@ export async function augmentPatientDemographics(patient: Patient): Promise<Pati
   const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
   const usableLinksDemographics = getPatientNetworkLinks(links)
     .map(patientNetworkLinkToNormalizedAndStringLinkedDemoData)
-    .filter(ld => scoreLink_Epic(patientDemographics, ld));
+    .filter(ld => scoreLinkEpic(patientDemographics, ld));
   return createAugmentedPatient(patient, usableLinksDemographics);
 }
 

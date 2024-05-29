@@ -37,7 +37,7 @@ export type LinkDemoData = {
  * @param linkDemographics The incoming linked demographics from CQ or CW.
  * @returns boolean representing whether the linkDemographics "match" the patientDemographics.
  */
-export function scoreLink_Epic(
+export function scoreLinkEpic(
   patientDemographics: LinkDemoData,
   linkDemographics: LinkDemoData
 ): boolean {
