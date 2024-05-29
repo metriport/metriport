@@ -34,7 +34,7 @@
 
                 {{!-- TODO need to add references, author, etc --}}
                 {{#if @encompassingEncounterId}} 
-                    {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
+                    {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId.id)}}
                 {{/if}}
 
                 {{#if note.act.author.assignedAuthor}}

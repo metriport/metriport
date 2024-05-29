@@ -38,19 +38,19 @@
 
     {{#if document.componentOf.encompassingEncounter}}
         {{!-- do we want to include this? Kinda a duplicate of more rich data later in encounter section --}}
-        {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=@encompassingEncounterId}},
+        {{>Resources/Encounter.hbs encounter=document.componentOf.encompassingEncounter ID=@encompassingEncounterId.id}},
         
         {{#if document.componentOf.encompassingEncounter.responsibleParty.assignedEntity}}
             {{#with (evaluate 'Utils/GeneratePractitionerId.hbs' obj=document.componentOf.encompassingEncounter.responsibleParty.assignedEntity) as |practitionerId|}}
                 {{>Resources/Practitioner.hbs practitioner=document.componentOf.encompassingEncounter.responsibleParty.assignedEntity ID=practitionerId.Id}},
-                {{>References/Encounter/participant.individual.hbs ID=@encompassingEncounterId REF=(concat 'Practitioner/' practitionerId.Id)}},
+                {{>References/Encounter/participant.individual.hbs ID=@encompassingEncounterId.id REF=(concat 'Practitioner/' practitionerId.Id)}},
             {{/with}}
         {{/if}}
 
-        {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' @encompassingEncounterId)}},
+        {{>References/Composition/encounter.hbs ID=(generateUUID (toJsonString document)) REF=(concat 'Encounter/' @encompassingEncounterId.id)}},
         {{#with (evaluate 'Utils/GenerateLocationId.hbs' location=document.componentOf.encompassingEncounter.location.healthCareFacility) as |locationId|}}
             {{>Resources/LocationForHeader.hbs location=document.componentOf.encompassingEncounter.location.healthCareFacility ID=locationId.Id}},
-            {{>References/Encounter/location.location.hbs ID=@encompassingEncounterId REF=(concat 'Location/' locationId.Id)}},
+            {{>References/Encounter/location.location.hbs ID=@encompassingEncounterId.id REF=(concat 'Location/' locationId.Id)}},
         {{/with}}
     {{/if}}
     

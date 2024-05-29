@@ -47,7 +47,8 @@ describe("Handlebars helpers", function () {
 
   opTests.forEach(t => {
     it(
-      t.f + "\n\tWith input:" + JSON.stringify(t.in) + "\n\tMust return:" + JSON.stringify(t.out),
+      t.desc ??
+        t.f + "\n\tWith input:" + JSON.stringify(t.in) + "\n\tMust return:" + JSON.stringify(t.out),
       function (done) {
         var out = getHelper(t.f).func(...t.in);
         if (JSON.stringify(t.out) === JSON.stringify(out)) {
