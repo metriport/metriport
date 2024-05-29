@@ -94,10 +94,11 @@ export function patientToLinkedDemoData(patient: Patient): LinkDemoData {
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
+    const normalizedLastName = lastName.trim().toLowerCase();
     return patientFirstNames.map(firstName => {
       return {
         firstName: firstName.trim().toLowerCase(),
-        lastName: lastName.trim().toLowerCase(),
+        lastName: normalizedLastName,
       };
     });
   });
