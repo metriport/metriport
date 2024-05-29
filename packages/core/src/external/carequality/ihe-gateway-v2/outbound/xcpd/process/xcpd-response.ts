@@ -41,13 +41,13 @@ type CarequalityName = {
   family: string | undefined;
 };
 
-function convertIheAddressToCarequalityAddress(address: IheAddress): CarequalityAddress {
+export function convertIheAddressToCarequalityAddress(address: IheAddress): CarequalityAddress {
   return {
     line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
-    city: address?.city,
-    state: address?.state,
+    city: address?.city ? String(address?.city) : undefined,
+    state: address?.state ? String(address?.state) : undefined,
     postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
-    country: address?.country,
+    country: address?.country ? String(address?.country) : undefined,
   };
 }
 
@@ -58,7 +58,7 @@ function iheAddressesToCarequalityAddresses(iheAddresses: IheAddress[]): Carequa
 function convertIheNameToCarequalityName(name: IheName): CarequalityName {
   return {
     given: toArray(name?.given).filter((g): g is string => Boolean(g)),
-    family: name?.family,
+    family: name?.family ? String(name?.family) : undefined,
   };
 }
 
