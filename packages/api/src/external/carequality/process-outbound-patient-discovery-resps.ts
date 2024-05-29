@@ -173,7 +173,7 @@ export async function queryDocsIfScheduled({
   if (scheduledDocQueryRequestId) {
     const resetPatient = await resetPatientScheduledDocQueryRequestId({
       patient: updatedPatient,
-      source: MedicalDataSource.COMMONWELL,
+      source: MedicalDataSource.CAREQUALITY,
     });
 
     if (isFailed) {
