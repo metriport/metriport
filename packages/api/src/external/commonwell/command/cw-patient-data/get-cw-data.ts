@@ -2,16 +2,18 @@ import NotFoundError from "@metriport/core/util/error/not-found";
 import { Transaction } from "sequelize";
 import { CwPatientDataModel } from "../../models/cw-patient-data";
 
-export type GetCwData = { id: string; cxId: string; transaction?: Transaction };
+export type GetCwData = { id: string; cxId: string; transaction?: Transaction; lock?: boolean };
 
 export async function getCwPatientData({
   id,
   cxId,
   transaction,
+  lock = false,
 }: GetCwData): Promise<CwPatientDataModel | undefined> {
   const cwPatientData = await CwPatientDataModel.findOne({
     where: { cxId, id },
     transaction,
+    lock,
   });
   return cwPatientData ?? undefined;
 }

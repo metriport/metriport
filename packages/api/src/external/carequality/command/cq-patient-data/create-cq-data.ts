@@ -24,6 +24,7 @@ export async function createOrUpdateCQPatientData({
       id,
       cxId,
       transaction,
+      lock: true,
     });
     if (!existingPatient) return undefined;
     return updateCQPatientDataWithinDBTx(cqPatientData, existingPatient, transaction);

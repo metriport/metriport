@@ -25,6 +25,7 @@ export async function createOrUpdateCwPatientData({
       id,
       cxId,
       transaction,
+      lock: true,
     });
     if (!existingPatient) return undefined;
     return updateCwPatientDataWithinDBTx(cwPatientData, existingPatient, transaction);
