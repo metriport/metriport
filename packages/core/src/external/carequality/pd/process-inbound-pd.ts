@@ -2,12 +2,12 @@ import {
   InboundPatientDiscoveryReq,
   InboundPatientDiscoveryResp,
 } from "@metriport/ihe-gateway-sdk";
-import { InboundPatientResource } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient-discovery-responses";
+import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import { Address } from "../../../domain/address";
 import { Patient, PatientData } from "../../../domain/patient";
 import { MPI } from "../../../mpi/mpi";
 import { patientMPIToPartialPatient } from "../../../mpi/shared";
-import { toFHIR as convertPatientToFHIR } from "../../fhir/patient";
+import { toIheGatewayPatientResource } from "../ihe-gateway-v2/patient";
 import {
   IHEGatewayError,
   XDSRegistryError,
@@ -34,7 +34,7 @@ function constructMatchResponse(
       id: patient.id,
       system: METRIPORT_HOME_COMMUNITY_ID.replace("urn:oid:", ""),
     },
-    patientResource: convertPatientToFHIR(patient),
+    patientResource: toIheGatewayPatientResource(patient),
     gatewayHomeCommunityId: METRIPORT_HOME_COMMUNITY_ID,
   };
 }
@@ -63,7 +63,7 @@ export async function processInboundPatientDiscovery(
 }
 
 export function mapPatientResourceToPatientData(
-  patientResource: InboundPatientResource | undefined
+  patientResource: PatientResource | undefined
 ): PatientData | undefined {
   if (!patientResource) return;
   const humanName = patientResource.name;
@@ -85,8 +85,8 @@ export function mapPatientResourceToPatientData(
   });
 }
 
-function getPatientAddresses(patientResource: InboundPatientResource | undefined): Address[] {
-  if (!patientResource) return [];
+function getPatientAddresses(patientResource: PatientResource | undefined): Address[] {
+  if (!patientResource?.address) return [];
   const addresses: Address[] = [];
   for (const address of patientResource.address) {
     const state = address.state ? getStateEnum(address.state) : undefined;
