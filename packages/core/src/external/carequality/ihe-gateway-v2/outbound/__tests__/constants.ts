@@ -50,6 +50,42 @@ export const outboundXcpdRequest: OutboundPatientDiscoveryReq = {
   ],
 };
 
+export const outboundXcpdRequestMissingFields: OutboundPatientDiscoveryReq = {
+  id: uuidv4(),
+  cxId: uuidv4(),
+  patientId: uuidv4(),
+  timestamp: "2024-04-04T19:11:55.879Z",
+  principalCareProviderIds: ["1234567890"],
+  samlAttributes: {
+    subjectId: "America Inc",
+    subjectRole: {
+      code: "106331006",
+      display: "Administrative AND/OR managerial worker",
+    },
+    organization: "White House Medical Inc",
+    organizationId: "2.16.840.1.113883.3.9621.5.213",
+    homeCommunityId: "2.16.840.1.113883.3.9621.5.213",
+    purposeOfUse: "TREATMENT",
+  },
+  patientResource: {
+    name: [
+      {
+        given: ["NWHINONE"],
+        family: "NWHINZZZTESTPATIENT",
+      },
+    ],
+    gender: "male",
+    birthDate: "19810101",
+  },
+  gateways: [
+    {
+      url: "https://mock-metriport/soap/iti55",
+      oid: "2.16.840.1.113883.3.787.0.0",
+      id: "018ea97e-7b1c-78e9-8aa1-47c7caf85afe",
+    },
+  ],
+};
+
 export const expectedXcpdResponse: OutboundPatientDiscoveryRespSuccessfulSchema = {
   id: outboundXcpdRequest.id,
   patientId: outboundXcpdRequest.patientId,
@@ -91,8 +127,9 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
   ...expectedXcpdResponse,
   patientResource: {
     ...expectedXcpdResponse.patientResource,
+    birthDate: expectedXcpdResponse.patientResource.birthDate,
     name: [
-      ...(expectedXcpdResponse.patientResource?.name ?? []),
+      ...expectedXcpdResponse.patientResource.name,
       {
         given: ["nwhinone", "bartholomew"],
         family: "nwhinzzztestpatient",
@@ -106,6 +143,22 @@ export const expectedMultiNameAddressResponse: OutboundPatientDiscoveryRespSucce
         state: "AL",
         postalCode: "35080",
         country: "USA",
+      },
+    ],
+    telecom: [
+      {
+        system: "MC",
+        value: "tel:+1310-000-0000",
+      },
+      {
+        system: "H",
+        value: "mailto:test@test.com",
+      },
+    ],
+    identifier: [
+      {
+        value: "987564321",
+        system: "2.16.840.1.113883.3.9621",
       },
     ],
   },
@@ -317,3 +370,16 @@ export const testFilesForUploadVerification = [
   { name: "test.txt", mimeType: "text/plain", fileExtension: ".txt" },
   { name: "test.jpeg", mimeType: "image/jpeg", fileExtension: ".jpeg" },
 ];
+
+export const TEST_CERT = `-----BEGIN CERTIFICATE-----
+MIIBxDCCAW6gAwIBAgIQxUSXFzWJYYtOZnmmuOMKkjANBgkqhkiG9w0BAQQFADAW
+MRQwEgYDVQQDEwtSb290IEFnZW5jeTAeFw0wMzA3MDgxODQ3NTlaFw0zOTEyMzEy
+MzU5NTlaMB8xHTAbBgNVBAMTFFdTRTJRdWlja1N0YXJ0Q2xpZW50MIGfMA0GCSqG
+SIb3DQEBAQUAA4GNADCBiQKBgQC+L6aB9x928noY4+0QBsXnxkQE4quJl7c3PUPd
+Vu7k9A02hRG481XIfWhrDY5i7OEB7KGW7qFJotLLeMec/UkKUwCgv3VvJrs2nE9x
+O3SSWIdNzADukYh+Cxt+FUU6tUkDeqg7dqwivOXhuOTRyOI3HqbWTbumaLdc8juf
+z2LhaQIDAQABo0swSTBHBgNVHQEEQDA+gBAS5AktBh0dTwCNYSHcFmRjoRgwFjEU
+MBIGA1UEAxMLUm9vdCBBZ2VuY3mCEAY3bACqAGSKEc+41KpcNfQwDQYJKoZIhvcN
+AQEEBQADQQAfIbnMPVYkNNfX1tG1F+qfLhHwJdfDUZuPyRPucWF5qkh6sSdWVBY5
+sT/txBnVJGziyO8DPYdu2fPMER8ajJfl
+-----END CERTIFICATE-----`;
