@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
-import { getFileNameForOrg } from "./shared/folder";
+import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 import { logNotDryRun } from "./shared/log";
 
@@ -47,7 +47,7 @@ const inputFileName = "bulk-insert-patients.csv";
 const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
 
-const getFileName = (orgName: string) => `./runs/bulk-insert/${getFileNameForOrg(orgName, "txt")}`;
+const getFileName = buildGetDirPathInside(`bulk-insert`);
 
 type Params = {
   dryrun?: boolean;
@@ -64,13 +64,14 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 });
 
 async function main() {
+  initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
-  const outputFileName = getFileName(orgName);
+  const outputFileName = getFileName(orgName) + ".txt";
 
   if (!dryRun) initPatientIdRepository(outputFileName);
 

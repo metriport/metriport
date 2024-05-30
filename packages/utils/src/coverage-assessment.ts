@@ -14,7 +14,7 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
 import { getPatientIds } from "./patient/get-ids";
-import { getFileNameForOrg } from "./shared/folder";
+import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
 
 dayjs.extend(duration);
@@ -52,8 +52,7 @@ const confirmationTime = dayjs.duration(10, "seconds");
 const csvHeader =
   "patientId,firstName,lastName,state,downloadStatus,docCount,convertStatus,fhirResourceCount,fhirResourceDetails\n";
 
-const csvName = (cxName: string): string =>
-  `./runs/coverage-assessment/${getFileNameForOrg(cxName, "csv")}`;
+const csvName = buildGetDirPathInside(`coverage-assessment`);
 
 const program = new Command();
 program
@@ -62,6 +61,7 @@ program
   .showHelpAfterError();
 
 async function main() {
+  initRunsFolder();
   program.parse();
   const { log } = out("");
 
@@ -77,7 +77,7 @@ async function main() {
 
   await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, log);
 
-  const fileName = csvName(orgName);
+  const fileName = csvName(orgName) + ".csv";
   initCsv(fileName);
 
   log(`>>> Running it...`);
