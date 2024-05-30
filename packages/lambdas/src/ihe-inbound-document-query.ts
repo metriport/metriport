@@ -19,7 +19,7 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
 
   const result = await processInboundDocumentQuery(baseRequest.data, apiUrl);
 
-  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 0 && postHogSecretName) {
+  if (result.extrinsicObjectXmls && result.extrinsicObjectXmls.length > 1 && postHogSecretName) {
     const postHogApiKey = await getSecretValue(postHogSecretName, region);
 
     if (postHogApiKey && engineeringCxId) {
