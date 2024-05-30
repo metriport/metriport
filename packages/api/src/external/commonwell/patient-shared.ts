@@ -16,7 +16,7 @@ import { intersectionBy, minBy } from "lodash";
 import { filterTruthy } from "../../shared/filter-map-utils";
 import { LinkStatus } from "../patient-link";
 import { makePersonForPatient } from "./patient-conversion";
-import { ScheuledPatientDiscovery } from "../hie/schedule-patient-discovery";
+import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 
 export const cqLinkStatus = ["unlinked", "processing", "linked"] as const;
 /**
@@ -34,7 +34,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public discoveryStartedAt?: Date,
     public rerunPdOnNewDemographics?: boolean,
     public augmentedDemographics?: PatientDemoData,
-    public scheduledPdRequest?: ScheuledPatientDiscovery,
+    public scheduledPdRequest?: ScheduledPatientDiscovery,
     public cqLinkStatus?: CQLinkStatus,
     public scheduledDocQueryRequestId?: string | undefined
   ) {

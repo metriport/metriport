@@ -30,15 +30,15 @@ export async function discover({
   facilityId,
   requestId,
   forceEnabled = false,
-  rerunPdOnNewDemographics = false,
-  augmentDemographics = false,
+  rerunPdOnNewDemographics,
+  augmentDemographics,
 }: {
   patient: Patient;
   facilityId: string;
   requestId?: string;
   forceEnabled?: boolean;
-  rerunPdOnNewDemographics?: boolean;
-  augmentDemographics?: boolean;
+  rerunPdOnNewDemographics: boolean;
+  augmentDemographics: boolean;
 }): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);

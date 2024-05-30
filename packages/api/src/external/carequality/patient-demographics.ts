@@ -11,7 +11,7 @@ import {
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
-} from "../shared/patient-demographics";
+} from "../../domain/medical/patient-demographics";
 import { getCQPatientData } from "./command/cq-patient-data/get-cq-data";
 import { CQLink } from "./cq-patient-data";
 

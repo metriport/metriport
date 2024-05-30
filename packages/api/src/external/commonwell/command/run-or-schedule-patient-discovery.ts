@@ -8,6 +8,7 @@ export async function runOrScheduleCwPatientDiscovery({
   facilityId,
   requestId,
   getOrgIdExcludeList,
+  // Move defaults to update / discover?
   rerunPdOnNewDemographics = false,
   augmentDemographics = false,
   forceCommonwell,

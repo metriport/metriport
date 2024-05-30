@@ -37,6 +37,8 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
           patient,
           facilityId,
           getOrgIdExcludeList: this.orgIdExcludeList,
+          rerunPdOnNewDemographics: false,
+          augmentDemographics: false,
         });
       } catch (error) {
         failedUpdateCount++;

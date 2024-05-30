@@ -1,6 +1,7 @@
 import { Patient } from "@metriport/core/domain/patient";
 //import { driversLicenseURIs, ssnURI } from "@metriport/core/domain/oid";
 import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
+import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
 import {
   LinkDemoDataGender,
   LinkDemoData,
@@ -15,9 +16,8 @@ import {
   stringifyAddress,
   normalizeTelephone,
   normalizeEmail,
-} from "../shared/patient-demographics";
+} from "../../domain/medical/patient-demographics";
 import { getCwPatientData } from "./command/cw-patient-data/get-cw-data";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
 import { CwLink } from "./cw-patient-data";
 
 type CwGenderCode = `${GenderCodes}`;

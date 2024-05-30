@@ -92,6 +92,7 @@ export const createPatient = async ({
     requestId,
     forceEnabled: forceCarequality,
     rerunPdOnNewDemographics,
+    augmentDemographics: false,
   });
 
   return newPatient;

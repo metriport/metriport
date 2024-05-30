@@ -42,7 +42,12 @@ export class PatientUpdaterCarequality extends PatientUpdater {
         const facilityId = getFacilityIdOrFail(patient);
         await getFacilityOrFail({ cxId, id: facilityId });
         // WARNING This could overwrite the status for any currently running PD
-        await discover({ patient, facilityId });
+        await discover({
+          patient,
+          facilityId,
+          rerunPdOnNewDemographics: false,
+          augmentDemographics: false,
+        });
         await this.isPatientDiscoveryComplete(patient);
       } catch (error) {
         failedUpdateCount++;

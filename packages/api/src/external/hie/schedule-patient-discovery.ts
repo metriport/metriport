@@ -5,7 +5,7 @@ import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 
-export type ScheuledPatientDiscovery = {
+export type ScheduledPatientDiscovery = {
   requestId: string;
   facilityId: string;
   rerunPdOnNewDemographics: boolean;

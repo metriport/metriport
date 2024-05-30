@@ -153,12 +153,13 @@ export async function queryAndProcessDocuments({
       });
 
       if (hasNoCWStatus) {
-        // WARNING This could overwrite the status for any currently running PD
         await update({
           patient: patientParam,
           facilityId: initiator.facilityId,
           getOrgIdExcludeList,
           requestId,
+          rerunPdOnNewDemographics: false,
+          augmentDemographics: false,
         });
       }
 

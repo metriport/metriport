@@ -7,6 +7,7 @@ export async function runOrScheduleCqPatientDiscovery({
   patient,
   facilityId,
   requestId,
+  // Move defaults to update / discover?
   rerunPdOnNewDemographics = false,
   augmentDemographics = false,
   forceCarequality,

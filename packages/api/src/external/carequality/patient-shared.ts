@@ -1,6 +1,6 @@
 import { PatientExternalDataEntry, PatientDemoData } from "@metriport/core/domain/patient";
 import { LinkStatus } from "../patient-link";
-import { ScheuledPatientDiscovery } from "../hie/schedule-patient-discovery";
+import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 
 export class PatientDataCarequality extends PatientExternalDataEntry {
   constructor(
@@ -31,7 +31,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
     /**
      * The request payload for the next patient discovery triggered while the patient discovery was processing.
      */
-    public scheduledPdRequest?: ScheuledPatientDiscovery,
+    public scheduledPdRequest?: ScheduledPatientDiscovery,
     /**
      * The request ID for the document query triggered while the patient discovery was processing.
      */

@@ -89,7 +89,7 @@ export async function create({
   getOrgIdExcludeList,
   requestId,
   forceCWCreate = false,
-  rerunPdOnNewDemographics = false,
+  rerunPdOnNewDemographics,
   callSynchronous = false,
   initiator,
 }: {
@@ -98,7 +98,7 @@ export async function create({
   getOrgIdExcludeList: () => Promise<string[]>;
   requestId?: string;
   forceCWCreate?: boolean;
-  rerunPdOnNewDemographics?: boolean;
+  rerunPdOnNewDemographics: boolean;
   callSynchronous?: boolean;
   initiator?: HieInitiator;
 }): Promise<{ commonwellPatientId: string; personId: string } | void> {
@@ -280,16 +280,16 @@ export async function update({
   getOrgIdExcludeList,
   requestId,
   forceCWUpdate = false,
-  rerunPdOnNewDemographics = false,
-  augmentDemographics = false,
+  rerunPdOnNewDemographics,
+  augmentDemographics,
 }: {
   patient: Patient;
   facilityId: string;
   getOrgIdExcludeList: () => Promise<string[]>;
   requestId?: string;
   forceCWUpdate?: boolean;
-  rerunPdOnNewDemographics?: boolean;
-  augmentDemographics?: boolean;
+  rerunPdOnNewDemographics: boolean;
+  augmentDemographics: boolean;
 }): Promise<void> {
   const { log, debug } = out(`CW update - M patientId ${patient.id}`);
 
