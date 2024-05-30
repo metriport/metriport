@@ -18,7 +18,7 @@ import { PatientDataCarequality } from "./patient-shared";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
-import { augmentPatientDemographics } from "./patient-demographics";
+import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
 
 dayjs.extend(duration);
 
@@ -30,15 +30,13 @@ export async function discover({
   facilityId,
   requestId,
   forceEnabled = false,
-  rerunPdOnNewDemographics,
-  augmentDemographics,
+  rerunPdOnNewDemographics = false,
 }: {
   patient: Patient;
   facilityId: string;
   requestId?: string;
   forceEnabled?: boolean;
-  rerunPdOnNewDemographics: boolean;
-  augmentDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean;
 }): Promise<void> {
   const baseLogMessage = `CQ PD - patientId ${patient.id}`;
   const { log: outerLog } = out(baseLogMessage);
@@ -53,32 +51,18 @@ export async function discover({
   if (enabledIHEGW) {
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
-    const augmentedPatient = augmentDemographics
-      ? await augmentPatientDemographics(patient)
-      : patient;
     await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
       discoveryRequestId,
       discoveryFacilityId: facilityId,
       discoveryStartedAt,
-      rerunPdOnNewDemographics,
-      augmentedDemographics: augmentDemographics
-        ? {
-            dob: augmentedPatient.data.dob,
-            genderAtBirth: augmentedPatient.data.genderAtBirth,
-            firstName: augmentedPatient.data.firstName,
-            lastName: augmentedPatient.data.lastName,
-            contact: augmentedPatient.data.contact,
-            address: augmentedPatient.data.address,
-            personalIdentifiers: augmentedPatient.data.personalIdentifiers,
-          }
-        : undefined,
+      discoveryRerunPdOnNewDemographics: rerunPdOnNewDemographics,
     });
 
     // Intentionally asynchronous
     prepareAndTriggerPD({
-      patient: augmentedPatient,
+      patient: createAugmentedPatient(patient),
       facilityId,
       enabledIHEGW,
       requestId: discoveryRequestId,

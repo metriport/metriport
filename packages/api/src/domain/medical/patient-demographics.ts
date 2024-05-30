@@ -1,30 +1,18 @@
-import { Patient, splitName, splitDob } from "@metriport/core/domain/patient";
+import {
+  Patient,
+  splitName,
+  splitDob,
+  ConsolidatedLinkDemographics,
+} from "@metriport/core/domain/patient";
+import {
+  LinkDemographics,
+  LinkGender,
+  LinkGenericAddress,
+} from "@metriport/core/domain/patient-demographics";
 import { Address } from "@metriport/core/domain/address";
 import { Contact, stripNonNumericChars } from "@metriport/core/domain/contact";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
-
-export type LinkDemoDataGender = "male" | "female" | "unknown";
-
-export type GenericAddress = {
-  line: string[];
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-};
-
-export type LinkDemoData = {
-  dob: string;
-  gender: LinkDemoDataGender;
-  names: string[];
-  telephoneNumbers: string[];
-  emails: string[];
-  addressesObj: GenericAddress[];
-  addressesString: string[];
-  driversLicenses: string[];
-  ssns: string[];
-};
 
 /**
  * Evaluates whether the input linked demographcis are similar enough to the input patient demographics to be considered a demogrpahic "match".
@@ -33,13 +21,13 @@ export type LinkDemoData = {
  * or partial match awards a certain number of points, which are added to an overall score. This score must be higher than the given threshold
  * (20 or 21 if SSNs are present) in order for the input linked demograhics to successfully "match".
  *
- * @param patientDemographics The patient LinkDemoData .
+ * @param patientDemographics The patient LinkDemographics .
  * @param linkDemographics The incoming linked demographics from CQ or CW.
  * @returns boolean representing whether the linkDemographics "match" the patientDemographics.
  */
 export function scoreLinkEpic(
-  patientDemographics: LinkDemoData,
-  linkDemographics: LinkDemoData
+  patientDemographics: LinkDemographics,
+  linkDemographics: LinkDemographics
 ): boolean {
   let scoreThreshold = 20;
   let score = 0;
@@ -129,18 +117,20 @@ export function scoreLinkEpic(
 }
 
 /**
- * Converts a Metriport Patient's demographics into a normalized and stringified LinkDemoData payload.
+ * Converts a Metriport Patient's demographics into a normalized and stringified LinkDemographics payload.
  * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
  * Special cases:
  * DOB: first 10 characters.
  * Telephone numbers and ssn: convert to numeric characters.
  * Gender: convert to "male", "female", "unknown".
- * Address: convert to GenericAddress w/ zip to first 5 numeric characters.
+ * Address: convert to LinkGenericAddress w/ zip to first 5 numeric characters.
  *
  * @param patient The Patient @ Metriport.
- * @returns LinkDemoData payload.
+ * @returns LinkDemographics payload.
  */
-export function patientToNormalizedAndStringLinkedDemoData(patient: Patient): LinkDemoData {
+export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(
+  patient: Patient
+): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
   const gender = normalizeGender(mapGenderAtBirthToFhir(patient.data.genderAtBirth));
   const patientFirstNames: string[] = splitName(patient.data.firstName);
@@ -192,7 +182,7 @@ export function normalizeDob(dob?: string): string {
   return dob?.trim().slice(0, 10) ?? "";
 }
 
-export function normalizeGender(gender?: string): LinkDemoDataGender {
+export function normalizeGender(gender?: string): LinkGender {
   const normalizeAndStringifydGender = gender?.trim().toLowerCase() ?? "";
   if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female")
     return "unknown";
@@ -225,7 +215,7 @@ export function normalizeAddress({
   state?: string;
   zip?: string;
   country?: string;
-}): GenericAddress {
+}): LinkGenericAddress {
   return {
     line: line?.map(l => l.trim().toLowerCase()) ?? [],
     city: city?.trim().toLowerCase() ?? "",
@@ -237,7 +227,7 @@ export function normalizeAddress({
   };
 }
 
-export function stringifyAddress(normalizedAddress: GenericAddress): string {
+export function stringifyAddress(normalizedAddress: LinkGenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
 }
 
@@ -268,47 +258,40 @@ export function normalizeSsn(ssn: string): string {
 }
 
 /**
- * Adds new Link demographics to the Patient to create the augmented Patient.
+ * Adds current Link demographics to the Patient to create the augmented Patient.
  *
  * @param patient The Patient @ Metriport.
- * @param linksDempgraphics A list of Link LinkDemoData to augment the Patient with.
  * @returns Patient augmented with the new linked data.
  */
-export function createAugmentedPatient(
-  patient: Patient,
-  linksDempgraphics: LinkDemoData[]
-): Patient {
-  const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
+export function createAugmentedPatient(patient: Patient): Patient {
+  const coreDemographics =
+    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
+  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemograhpics;
+  if (!consolidatedLinkDemographics) return patient;
   // TODO Is submitting lower case addresses to CQ / CW okay, or do we have to grab the original version?
-  const newAddresses: Address[] = linksDempgraphics.flatMap(ld => {
-    return ld.addressesString
-      .filter(address => !patientDemographics.addressesString.includes(address))
-      .map(address => {
-        const addressObj: GenericAddress = JSON.parse(address);
-        return {
-          addressLine1: addressObj.line[0] ?? "",
-          addressLine2: addressObj.line[1] ? addressObj.line.slice(1).join(" ") : undefined,
-          city: addressObj.city,
-          state: addressObj.state as USState,
-          zip: addressObj.zip,
-          country: addressObj.country,
-        };
-      });
-  });
-  const newTelephoneNumbers: Contact[] = linksDempgraphics.flatMap(ld => {
-    return ld.telephoneNumbers
-      .filter(phone => !patientDemographics.telephoneNumbers.includes(phone))
-      .map(phone => {
-        return { phone };
-      });
-  });
-  const newEmails: Contact[] = linksDempgraphics.flatMap(ld => {
-    return ld.emails
-      .filter(email => !patientDemographics.emails.includes(email))
-      .map(email => {
-        return { email };
-      });
-  });
+  const newAddresses: Address[] = consolidatedLinkDemographics.addressesString
+    .filter(address => !coreDemographics.addressesString.includes(address))
+    .map(address => {
+      const addressObj: LinkGenericAddress = JSON.parse(address);
+      return {
+        addressLine1: addressObj.line[0] ?? "",
+        addressLine2: addressObj.line[1] ? addressObj.line.slice(1).join(" ") : undefined,
+        city: addressObj.city,
+        state: addressObj.state as USState,
+        zip: addressObj.zip,
+        country: addressObj.country,
+      };
+    });
+  const newTelephoneNumbers: Contact[] = consolidatedLinkDemographics.telephoneNumbers
+    .filter(phone => !coreDemographics.telephoneNumbers.includes(phone))
+    .map(phone => {
+      return { phone };
+    });
+  const newEmails: Contact[] = consolidatedLinkDemographics.emails
+    .filter(email => !coreDemographics.emails.includes(email))
+    .map(email => {
+      return { email };
+    });
   const aupmentedPatient = {
     ...patient,
     data: {
@@ -323,25 +306,37 @@ export function createAugmentedPatient(
 }
 
 /**
- * Checks to see if the input Link demographics have any new values compared to the Patient demographics.
+ * Checks to see if the input Link demographics have any new values compared to the core Patient demographics and link Patient Demographics
  * Currently checks values for addresses, telephone numbers, and emails and considers a value new if it doesn't match exactly.
  *
- * @param patientDemographics The Patient LinkDemoData.
- * @param linkDemographics The Link LinkDemoData.
+ * @param patientDemographics The Patient LinkDemographics.
+ * @param linkDemographics The Link LinkDemographics.
  * @returns boolean representing whether or not new values were found.
  */
-export function linkHasNewDemographicData(
-  patientDemographics: LinkDemoData,
-  linkDemographics: LinkDemoData
+export function linkHasNewDemographiscData(
+  coreDemographics: LinkDemographics,
+  consolidatedLinkDemographics: ConsolidatedLinkDemographics | undefined,
+  linkDemographics: LinkDemographics
 ): boolean {
-  const hasNewAddress = linkDemographics.addressesString.some(
-    address => !patientDemographics.addressesString.includes(address)
-  );
-  const hasNewTelephoneNumber = linkDemographics.telephoneNumbers.some(
-    phone => !patientDemographics.telephoneNumbers.includes(phone)
-  );
-  const hasNewEmail = linkDemographics.emails.some(
-    email => !patientDemographics.emails.includes(email)
-  );
+  const hasNewAddress =
+    linkDemographics.addressesString.some(
+      address => !coreDemographics.addressesString.includes(address)
+    ) &&
+    linkDemographics.addressesString.some(
+      address => !(consolidatedLinkDemographics?.addressesString ?? []).includes(address)
+    );
+  const hasNewTelephoneNumber =
+    linkDemographics.telephoneNumbers.some(
+      phone => !coreDemographics.telephoneNumbers.includes(phone)
+    ) &&
+    linkDemographics.telephoneNumbers.some(
+      phone => !(consolidatedLinkDemographics?.telephoneNumbers ?? []).includes(phone)
+    );
+  const hasNewEmail =
+    linkDemographics.emails.some(email => !coreDemographics.emails.includes(email)) &&
+    linkDemographics.emails.some(
+      email => !(consolidatedLinkDemographics?.emails ?? []).includes(email)
+    );
+
   return hasNewAddress || hasNewTelephoneNumber || hasNewEmail;
 }

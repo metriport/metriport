@@ -6,6 +6,7 @@ import { QueryProgress } from "./query-status";
 import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
+import { LinkDemographicsHistory, LinkDemographics } from "./patient-demographics";
 
 export const generalPersonalIdentifiers = ["ssn"] as const;
 export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
@@ -44,9 +45,12 @@ export type GenderAtBirth = (typeof genderAtBirthTypes)[number];
 
 export abstract class PatientExternalDataEntry {
   documentQueryProgress?: DocumentQueryProgress;
+  linkDemographics?: LinkDemographicsHistory;
 }
 
 export type PatientExternalData = Partial<Record<MedicalDataSource, PatientExternalDataEntry>>;
+
+export type ConsolidatedLinkDemographics = Omit<LinkDemographics, "dob" | "gender">;
 
 export type PatientData = {
   firstName: string;
@@ -57,6 +61,7 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
+  consolidatedLinkDemograhpics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;

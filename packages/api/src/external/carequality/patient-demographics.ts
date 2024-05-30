@@ -1,42 +1,31 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { InboundPatientResource } from "@metriport/ihe-gateway-sdk";
 import {
-  LinkDemoData,
   scoreLinkEpic,
-  createAugmentedPatient,
-  linkHasNewDemographicData,
-  patientToNormalizedAndStringLinkedDemoData,
+  linkHasNewDemographiscData,
+  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
 } from "../../domain/medical/patient-demographics";
-import { getCQPatientData } from "./command/cq-patient-data/get-cq-data";
 import { CQLink } from "./cq-patient-data";
 
-export function checkForNewDemographics(patient: Patient, links: CQLink[]): boolean {
-  const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
+export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemographics[] {
+  const coreDemographics =
+    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
+  const consolidatedLinkDemograhpics = patient.data.consolidatedLinkDemograhpics;
   return getPatientResources(links)
-    .map(patientResourceToLinkedDemoData)
-    .filter(ld => scoreLinkEpic(patientDemographics, ld))
-    .some(ld => linkHasNewDemographicData(patientDemographics, ld));
+    .map(patientResourceToToNormalizedAndStringifiedLinkDemographics)
+    .filter(ld => scoreLinkEpic(coreDemographics, ld))
+    .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
 }
 
-export async function augmentPatientDemographics(patient: Patient): Promise<Patient> {
-  const cqData = await getCQPatientData({
-    id: patient.id,
-    cxId: patient.cxId,
-  });
-  const links = cqData?.data.links ?? [];
-  const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
-  const usableLinksDemographics = getPatientResources(links)
-    .map(patientResourceToLinkedDemoData)
-    .filter(ld => scoreLinkEpic(patientDemographics, ld));
-  return createAugmentedPatient(patient, usableLinksDemographics);
-}
-
-function patientResourceToLinkedDemoData(patientResource: InboundPatientResource): LinkDemoData {
+function patientResourceToToNormalizedAndStringifiedLinkDemographics(
+  patientResource: InboundPatientResource
+): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate ?? "");
   const gender = normalizeGender(patientResource.gender ?? "");
   const names = (patientResource.name ?? []).flatMap(name => {

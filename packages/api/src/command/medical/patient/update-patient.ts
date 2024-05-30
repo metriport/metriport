@@ -24,7 +24,6 @@ export async function updatePatient({
   emit = true,
   requestId,
   rerunPdOnNewDemographics,
-  augmentDemographics,
   forceCommonwell,
   forceCarequality,
 }: {
@@ -32,7 +31,6 @@ export async function updatePatient({
   emit?: boolean;
   requestId: string;
   rerunPdOnNewDemographics?: boolean;
-  augmentDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
@@ -53,7 +51,6 @@ export async function updatePatient({
     facilityId,
     requestId,
     rerunPdOnNewDemographics,
-    augmentDemographics,
     forceCommonwell,
     forceCarequality,
   });

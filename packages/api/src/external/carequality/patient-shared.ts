@@ -1,4 +1,4 @@
-import { PatientExternalDataEntry, PatientDemoData } from "@metriport/core/domain/patient";
+import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { LinkStatus } from "../patient-link";
 import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 
@@ -23,11 +23,7 @@ export class PatientDataCarequality extends PatientExternalDataEntry {
     /**
      * The flag for determining whether to re-run patient discovery once if new demographic data is found.
      */
-    public rerunPdOnNewDemographics?: boolean,
-    /**
-     * The most recent payload used for patient demographic augmentation.
-     */
-    public augmentedDemographics?: PatientDemoData,
+    public discoveryRerunPdOnNewDemographics?: boolean,
     /**
      * The request payload for the next patient discovery triggered while the patient discovery was processing.
      */

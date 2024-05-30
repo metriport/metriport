@@ -7,48 +7,37 @@ export async function runOrScheduleCqPatientDiscovery({
   patient,
   facilityId,
   requestId,
-  // Move defaults to update / discover?
-  rerunPdOnNewDemographics = false,
-  augmentDemographics = false,
+  rerunPdOnNewDemographics,
   forceCarequality,
-  isRerunFromNewDemographics = false,
 }: {
   patient: Patient;
   facilityId: string;
   requestId: string;
   rerunPdOnNewDemographics?: boolean;
-  augmentDemographics?: boolean;
   // START TODO #1572 - remove
   forceCarequality?: boolean;
   // END TODO #1572 - remove
-  isRerunFromNewDemographics?: boolean;
 }): Promise<void> {
   const cqData = getCQData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
 
-  if (
-    discoveryStatusCq === "processing" &&
-    (!scheduledPdRequestCq || (scheduledPdRequestCq && isRerunFromNewDemographics))
-  ) {
+  if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
     await schedulePatientDiscovery({
       requestId,
       patient,
       source: MedicalDataSource.CAREQUALITY,
       facilityId,
       rerunPdOnNewDemographics,
-      augmentDemographics,
-      isRerunFromNewDemographics,
     });
   } else if (discoveryStatusCq !== "processing") {
     await discover({
       patient,
       facilityId,
       requestId,
-      rerunPdOnNewDemographics,
-      augmentDemographics,
       forceEnabled: forceCarequality,
+      rerunPdOnNewDemographics,
     });
   }
 }

@@ -13,13 +13,14 @@ import { createOrUpdateCQPatientData } from "./command/cq-patient-data/create-cq
 import { CQLink } from "./cq-patient-data";
 import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery-status";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { runOrSchedulePatientDiscoveryAcrossHIEs } from "../hie/run-or-schedule-patient-discovery";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
+import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
+import { checkLinkDemographicsAcrossHIEs } from "../hie/check-patient-link-demographics";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { getCQData, discover } from "./patient";
-import { checkForNewDemographics } from "./patient-demographics";
+import { getNewDemographics } from "./patient-demographics";
 
 dayjs.extend(duration);
 
@@ -57,7 +58,7 @@ export async function processOutboundPatientDiscoveryResps({
 
     const cqData = getCQData(patient.data.externalData);
     const facilityId = cqData?.discoveryFacilityId;
-    const rerunPdOnNewDemographics = cqData?.rerunPdOnNewDemographics;
+    const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
     const startedAt = cqData?.discoveryStartedAt;
 
     analytics({
@@ -72,13 +73,50 @@ export async function processOutboundPatientDiscoveryResps({
       },
     });
 
-    await processScheduledPatientDiscoveryAndDq({
-      patient,
-      facilityId,
-      requestId,
-      rerunPdOnNewDemographics,
-      cqLinks,
-    });
+    if (rerunPdOnNewDemographics && facilityId) {
+      const foundNewDemographicsAcrossHies = checkLinkDemographicsAcrossHIEs({
+        patient,
+        requestId,
+      });
+      const newDemographicsHere = getNewDemographics(patient, cqLinks);
+      const foundNewDemographicsHere = newDemographicsHere.length > 0;
+      if (foundNewDemographicsHere || foundNewDemographicsAcrossHies) {
+        if (foundNewDemographicsHere) {
+          await updatePatientLinkDemographics({
+            requestId,
+            patient,
+            source: MedicalDataSource.COMMONWELL,
+            links: newDemographicsHere,
+          });
+        }
+        await discover({
+          patient,
+          facilityId,
+          requestId,
+          rerunPdOnNewDemographics: false,
+        });
+        return;
+      }
+    }
+
+    const scheduledPdRequest = cqData?.scheduledPdRequest;
+    if (scheduledPdRequest) {
+      await discover({
+        patient,
+        facilityId: scheduledPdRequest.facilityId,
+        requestId: scheduledPdRequest.requestId,
+        rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+      });
+
+      await resetPatientScheduledPatientDiscoveryRequestId({
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+      });
+    } else {
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
+    }
+
+    await queryDocsIfScheduled({ patient });
   } catch (error) {
     await resetPatientScheduledPatientDiscoveryRequestId({
       patient: patientIds,
@@ -162,60 +200,4 @@ export async function queryDocsIfScheduled({
       });
     }
   }
-}
-
-async function processScheduledPatientDiscoveryAndDq({
-  patient,
-  facilityId,
-  requestId,
-  rerunPdOnNewDemographics,
-  cqLinks,
-}: {
-  patient: Patient;
-  facilityId?: string;
-  requestId: string;
-  rerunPdOnNewDemographics?: boolean;
-  cqLinks: CQLink[];
-}): Promise<void> {
-  let foundNewDemographics = false;
-  if (rerunPdOnNewDemographics) {
-    foundNewDemographics = checkForNewDemographics(patient, cqLinks);
-  }
-
-  let scheduledPdRequest = getCQData(patient.data.externalData)?.scheduledPdRequest;
-  if (foundNewDemographics && facilityId) {
-    await runOrSchedulePatientDiscoveryAcrossHIEs({
-      patient,
-      facilityId,
-      requestId,
-      rerunPdOnNewDemographics: false,
-      augmentDemographics: true,
-      isRerunFromNewDemographics: true,
-    });
-    const updatedPatient = await getPatientOrFail(patient);
-    scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
-  }
-
-  let blockDocumentQuery = false;
-  if (scheduledPdRequest) {
-    await discover({
-      patient,
-      facilityId: scheduledPdRequest.facilityId,
-      requestId: scheduledPdRequest.requestId,
-      rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-      augmentDemographics: scheduledPdRequest.augmentDemographics,
-    });
-
-    await resetPatientScheduledPatientDiscoveryRequestId({
-      patient,
-      source: MedicalDataSource.CAREQUALITY,
-    });
-
-    blockDocumentQuery =
-      rerunPdOnNewDemographics === true && scheduledPdRequest.isRerunFromNewDemographics;
-  } else {
-    await updatePatientDiscoveryStatus({ patient, status: "completed" });
-  }
-
-  if (!blockDocumentQuery) await queryDocsIfScheduled({ patient });
 }

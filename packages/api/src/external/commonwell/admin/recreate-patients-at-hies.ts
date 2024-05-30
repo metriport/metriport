@@ -108,7 +108,6 @@ export async function recreatePatientAtCW(
       patient,
       facilityId,
       getOrgIdExcludeList,
-      rerunPdOnNewDemographics: false,
       callSynchronous: true,
       initiator,
     });

@@ -138,9 +138,6 @@ router.put(
     const rerunPdOnNewDemographics = stringToBoolean(
       getFrom("query").optional("rerunPdOnNewDemographics", req)
     );
-    const augmentDemographics = stringToBoolean(
-      getFrom("query").optional("augmentDemographics", req)
-    );
     const forceCommonwell = stringToBoolean(getFrom("query").optional("commonwell", req));
     const forceCarequality = stringToBoolean(getFrom("query").optional("carequality", req));
     const payload = patientUpdateSchema.parse(req.body);
@@ -162,7 +159,6 @@ router.put(
       patientUpdate,
       requestId: uuidv7(), // TODO Use http request Id
       rerunPdOnNewDemographics,
-      augmentDemographics,
       forceCommonwell,
       forceCarequality,
     });

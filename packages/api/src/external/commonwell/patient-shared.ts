@@ -9,7 +9,7 @@ import {
   RequestMetadata,
   StrongId,
 } from "@metriport/commonwell-sdk";
-import { PatientExternalDataEntry, PatientDemoData } from "@metriport/core/domain/patient";
+import { PatientExternalDataEntry } from "@metriport/core/domain/patient";
 import { capture } from "@metriport/core/util/notifications";
 import { out } from "@metriport/core/util/log";
 import { intersectionBy, minBy } from "lodash";
@@ -32,8 +32,7 @@ export class PatientDataCommonwell extends PatientExternalDataEntry {
     public discoveryRequestId?: string,
     public discoveryFacilityId?: string,
     public discoveryStartedAt?: Date,
-    public rerunPdOnNewDemographics?: boolean,
-    public augmentedDemographics?: PatientDemoData,
+    public discoveryRerunPdOnNewDemographics?: boolean,
     public scheduledPdRequest?: ScheduledPatientDiscovery,
     public cqLinkStatus?: CQLinkStatus,
     public scheduledDocQueryRequestId?: string | undefined

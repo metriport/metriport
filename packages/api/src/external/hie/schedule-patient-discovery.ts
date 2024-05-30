@@ -8,14 +8,11 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 export type ScheduledPatientDiscovery = {
   requestId: string;
   facilityId: string;
-  rerunPdOnNewDemographics: boolean;
-  augmentDemographics: boolean;
-  isRerunFromNewDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean;
 };
 
 /**
- * Stores the requestId as the scheduled patient discovery to be executed when the current patient discovery
- * is completed.
+ * Stores the scheduled patient discovery to be executed when the current patient discovery is completed.
  */
 export async function schedulePatientDiscovery({
   requestId,
@@ -23,16 +20,12 @@ export async function schedulePatientDiscovery({
   source,
   facilityId,
   rerunPdOnNewDemographics,
-  augmentDemographics,
-  isRerunFromNewDemographics,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
   facilityId: string;
-  rerunPdOnNewDemographics: boolean;
-  augmentDemographics: boolean;
-  isRerunFromNewDemographics: boolean;
+  rerunPdOnNewDemographics?: boolean;
 }): Promise<Patient> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
@@ -60,8 +53,6 @@ export async function schedulePatientDiscovery({
           requestId,
           facilityId,
           rerunPdOnNewDemographics,
-          augmentDemographics,
-          isRerunFromNewDemographics,
         },
       },
     };

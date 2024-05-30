@@ -158,8 +158,6 @@ export async function queryAndProcessDocuments({
           facilityId: initiator.facilityId,
           getOrgIdExcludeList,
           requestId,
-          rerunPdOnNewDemographics: false,
-          augmentDemographics: false,
         });
       }
 

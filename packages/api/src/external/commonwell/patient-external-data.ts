@@ -3,7 +3,7 @@ import { executeWithRetries } from "@metriport/shared";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
-import { Patient, PatientDemoData } from "@metriport/core/domain/patient";
+import { Patient } from "@metriport/core/domain/patient";
 import { PatientModel } from "../../models/medical/patient";
 import { executeOnDBTx } from "../../models/transaction-wrapper";
 import { LinkStatus } from "../patient-link";
@@ -122,8 +122,7 @@ export const updateCommonwellIdsAndStatus = async ({
  * @param discoveryRequestId The request ID of integrating/synchronizing the patient @ CommonWell.
  * @param discoveryFacilityId The facility ID of integrating/synchronizing the patient @ CommonWell.
  * @param discoveryStartedAt The start date of integrating/synchronizing the patient @ CommonWell.
- * @param rerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
- * @param augmentedDemographics The payload actually used across CQ after demographic augmentations.
+ * @param discoveryRerunPdOnNewDemographics The flag for determining whether to re-run pattient discovery again if new demographic data is found.
  * @returns
  */
 export const updatePatientDiscoveryStatus = async ({
@@ -132,16 +131,14 @@ export const updatePatientDiscoveryStatus = async ({
   discoveryRequestId,
   discoveryFacilityId,
   discoveryStartedAt,
-  rerunPdOnNewDemographics,
-  augmentedDemographics,
+  discoveryRerunPdOnNewDemographics,
 }: {
   patient: Pick<Patient, "id" | "cxId">;
   status?: LinkStatus;
   discoveryRequestId?: string;
   discoveryFacilityId?: string;
   discoveryStartedAt?: Date;
-  rerunPdOnNewDemographics?: boolean;
-  augmentedDemographics?: PatientDemoData;
+  discoveryRerunPdOnNewDemographics?: boolean;
 }): Promise<Patient> => {
   const patientFilter = {
     id: patient.id,
@@ -165,8 +162,7 @@ export const updatePatientDiscoveryStatus = async ({
         ...(discoveryRequestId && { discoveryRequestId }),
         ...(discoveryFacilityId && { discoveryFacilityId }),
         ...(discoveryStartedAt && { discoveryStartedAt }),
-        ...(rerunPdOnNewDemographics && { rerunPdOnNewDemographics }),
-        ...(augmentedDemographics && { augmentedDemographics }),
+        ...(discoveryRerunPdOnNewDemographics && { discoveryRerunPdOnNewDemographics }),
       },
     };
 

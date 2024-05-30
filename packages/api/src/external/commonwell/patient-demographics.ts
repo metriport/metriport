@@ -1,14 +1,11 @@
 import { Patient } from "@metriport/core/domain/patient";
-//import { driversLicenseURIs, ssnURI } from "@metriport/core/domain/oid";
+import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
 import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
 import {
-  LinkDemoDataGender,
-  LinkDemoData,
   scoreLinkEpic,
-  createAugmentedPatient,
-  linkHasNewDemographicData,
-  patientToNormalizedAndStringLinkedDemoData,
+  linkHasNewDemographiscData,
+  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
@@ -17,38 +14,26 @@ import {
   normalizeTelephone,
   normalizeEmail,
 } from "../../domain/medical/patient-demographics";
-import { getCwPatientData } from "./command/cw-patient-data/get-cw-data";
 import { CwLink } from "./cw-patient-data";
 
 type CwGenderCode = `${GenderCodes}`;
 
-export function checkForNewDemographics(patient: Patient, links: CwLink[]): boolean {
-  const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
+export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemographics[] {
+  const coreDemographics =
+    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
+  const consolidatedLinkDemograhpics = patient.data.consolidatedLinkDemograhpics;
   return getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToNormalizedAndStringLinkedDemoData)
-    .filter(ld => scoreLinkEpic(patientDemographics, ld))
-    .some(ld => linkHasNewDemographicData(patientDemographics, ld));
+    .map(patientNetworkLinkToNormalizedAndStringifiedLinkDemographics)
+    .filter(ld => scoreLinkEpic(coreDemographics, ld))
+    .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
 }
 
-export async function augmentPatientDemographics(patient: Patient): Promise<Patient> {
-  const cwData = await getCwPatientData({
-    id: patient.id,
-    cxId: patient.cxId,
-  });
-  const links = cwData?.data.links ?? [];
-  const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
-  const usableLinksDemographics = getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToNormalizedAndStringLinkedDemoData)
-    .filter(ld => scoreLinkEpic(patientDemographics, ld));
-  return createAugmentedPatient(patient, usableLinksDemographics);
-}
-
-function patientNetworkLinkToNormalizedAndStringLinkedDemoData(
+function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
-): LinkDemoData {
+): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
   const cwGender = patientNetworkLink.details.gender.code as CwGenderCode;
-  let gender: LinkDemoDataGender = "unknown";
+  let gender: LinkGender = "unknown";
   if (cwGender === "M" || cwGender === "F") {
     gender = normalizeGender(mapGenderAtBirthToFhir(cwGender));
   }
