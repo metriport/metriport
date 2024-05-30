@@ -33,7 +33,6 @@ var specialCharProcessor = require("../inputProcessor/specialCharProcessor");
 var zlib = require("zlib");
 const he = require("he");
 const convert = require("convert-units");
-const path = require("path");
 
 const PERSONAL_RELATIONSHIP_TYPE_CODE = "2.16.840.1.113883.1.11.19563";
 const decimal_regex = /-?(?:(?:0|[1-9][0-9]*)\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?/;
@@ -246,7 +245,7 @@ const allValuesInObjAreNullFlavor = obj => {
         continue;
       }
       for (let key in current) {
-        if (current.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(current, "key")) {
           if (key === "classCode") {
             continue;
           }
@@ -1205,7 +1204,7 @@ module.exports.external = [
       if (!str) {
         return { isValid: false };
       }
-      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z\/\(\)\[\]]+)$/);
+      const match = str.match(/^(\d+(?:\.\d+)?)(\s*)([a-zA-Z/()[\]]+)$/);
       if (match) {
         return { isValid: true, value: parseFloat(match[1]), unit: match[3] };
       } else {
