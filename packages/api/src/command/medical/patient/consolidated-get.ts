@@ -10,7 +10,7 @@ import {
 } from "@medplum/fhirtypes";
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
-import { ConsolidatedQuery } from "@metriport/api-sdk";
+import { ConsolidatedQuery, resourcesSearchableByPatient } from "@metriport/api-sdk";
 import {
   buildBundle,
   getReferencesFromResources,
@@ -153,7 +153,7 @@ export function getCurrentConsolidatedProgress(
   let currentConsolidatedQuery: ConsolidatedQuery | undefined = undefined;
 
   for (const progress of consolidatedQueriesProgress) {
-    const isSameResources = progress.resources?.toString() === resources?.toString();
+    const isSameResources = getIsSameResources(progress, resources);
     const isSameDateFrom = progress.dateFrom === dateFrom;
     const isSameDateTo = progress.dateTo === dateTo;
     const isSameConversionType = progress.conversionType === conversionType;
@@ -166,6 +166,27 @@ export function getCurrentConsolidatedProgress(
   }
 
   return currentConsolidatedQuery;
+}
+
+function getIsSameResources(
+  progress: ConsolidatedQuery,
+  resources: ResourceTypeForConsolidation[] | undefined
+): boolean {
+  const areResourceMatching = progress.resources?.toString() === resources?.toString();
+
+  const areResourcesSearchableByPatient =
+    resources?.toString() === resourcesSearchableByPatient.toString();
+  const areResourcesEmpty = !resources || resources.length === 0;
+
+  const isProgressSearchableByPatient =
+    progress.resources?.toString() === resourcesSearchableByPatient.toString();
+  const isProgressEmpty = !progress.resources || progress.resources.length === 0;
+
+  return (
+    areResourceMatching ||
+    (isProgressEmpty && areResourcesSearchableByPatient) ||
+    (isProgressSearchableByPatient && areResourcesEmpty)
+  );
 }
 
 async function getConsolidatedAndSendToCx(params: GetConsolidatedSendToCxParams): Promise<void> {

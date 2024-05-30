@@ -42,21 +42,23 @@ export const documentQueryProgress: DocumentQueryProgress = {
   convert: makeProgress(),
 };
 
-export const consolidatedQueries: ConsolidatedQuery[] = [
-  {
-    requestId,
-    status: "processing",
-    startedAt: new Date(),
-    resources: ["Account"],
-    conversionType: "pdf",
-    dateFrom: new Date().toISOString(),
-    dateTo: new Date().toISOString(),
-  },
-];
+export function makeConsolidatedQueryProgress(
+  params?: Partial<ConsolidatedQuery>
+): ConsolidatedQuery {
+  return {
+    requestId: params?.requestId ?? requestId,
+    status: params?.status ?? "processing",
+    startedAt: params?.startedAt ?? new Date(),
+    resources: params?.resources ?? [],
+    conversionType: params?.conversionType ?? "json",
+    dateFrom: params?.dateFrom ?? new Date().toISOString(),
+    dateTo: params?.dateTo ?? new Date().toISOString(),
+  };
+}
 
 export const mockedPatientAllProgresses = makePatientModel({
   data: makePatientData({
     documentQueryProgress,
-    consolidatedQueries,
+    consolidatedQueries: [makeConsolidatedQueryProgress()],
   }),
 });

@@ -271,7 +271,7 @@ router.get(
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient whose data is to be returned.
- * @return status of querying for the Patient's consolidated data.
+ * @return array of statuses for querying the Patient's consolidated data.
  */
 router.get(
   "/:id/consolidated/query",
@@ -310,7 +310,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
- * @return status of querying for the Patient's consolidated data.
+ * @return array of statuses for querying the Patient's consolidated data.
  */
 router.post(
   "/:id/consolidated/query",
