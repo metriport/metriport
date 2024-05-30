@@ -48,7 +48,7 @@ export async function updatePatient({
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  await runOrSchedulePatientDiscoveryAcrossHIEs({
+  runOrSchedulePatientDiscoveryAcrossHIEs({
     patient,
     facilityId,
     requestId,

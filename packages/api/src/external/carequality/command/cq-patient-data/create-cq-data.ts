@@ -30,6 +30,5 @@ export async function createOrUpdateCQPatientData({
   });
   if (updateResult) return updateResult;
 
-  if (!cqLinks.length) return undefined;
   return await CQPatientDataModel.create(cqPatientData);
 }

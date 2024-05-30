@@ -608,7 +608,7 @@ async function processScheduledPatientDiscoveryAndDq({
 export async function remove(patient: Patient, facilityId: string): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
-    const { log, debug } = out(`CW delete - M patientId ${patient.id}`);
+    const { log } = out(`CW delete - M patientId ${patient.id}`);
 
     const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
     if (!isCwEnabledForCx) {
@@ -625,10 +625,10 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
 
-    const resp = await commonWell.deletePatient(queryMeta, commonwellPatientId);
-    debug(`resp deletePatient: `, JSON.stringify(resp));
-
-    await deleteCwPatientData({ id: patient.id, cxId: patient.cxId });
+    await Promise.all([
+      await commonWell.deletePatient(queryMeta, commonwellPatientId),
+      await deleteCwPatientData({ id: patient.id, cxId: patient.cxId }),
+    ]);
   } catch (err) {
     console.error(`Failed to delete patient ${patient.id} @ CW: `, err);
     capture.error(err, {

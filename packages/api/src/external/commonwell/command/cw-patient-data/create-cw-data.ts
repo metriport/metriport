@@ -31,6 +31,5 @@ export async function createOrUpdateCwPatientData({
   });
   if (updateResult) return updateResult;
 
-  if (!cwLinks.length) return undefined;
   return await CwPatientDataModel.create(cwPatientData);
 }
