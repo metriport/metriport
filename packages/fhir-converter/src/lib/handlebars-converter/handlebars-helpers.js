@@ -1318,10 +1318,10 @@ module.exports.external = [
             const high = getRangeLimit(value.high);
             const ret = cleanUpReturn(low, high, "low", "high");
             if (ret) return ret;
-            if (range.text?._) {
-              return buildRange(range.text._);
-            }
           }
+        }
+        if (range.text?._) {
+          return buildRange(range.text._);
         }
       }
 

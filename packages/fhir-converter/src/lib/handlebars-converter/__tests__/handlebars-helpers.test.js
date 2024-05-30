@@ -10,44 +10,64 @@ describe("Handlebars helpers", function () {
   var opTests = [
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ",
       in: [inputs.typeIvlPq],
       out: inputs.typeIvlPqOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with nullFlavor limits",
       in: [inputs.nullFlavorOth],
       out: inputs.nullFlavorOthOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with only the upper limit",
       in: [inputs.lessThan],
       out: inputs.lessThanOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with value inside translation",
       in: [inputs.valueInTranslation],
       out: inputs.valueInTranslationOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type ST with non-numeric value",
       in: [inputs.typeStNonNumeric],
       out: inputs.typeStNonNumericOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_REAL",
       in: [inputs.typeIvlReal],
       out: inputs.typeIvlRealOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type ST with mixed values",
       in: [inputs.typeStMixed],
       out: inputs.typeStMixedOutput,
+    },
+    {
+      f: "extractReferenceRange",
+      desc: "Should process text if value is empty",
+      in: [inputs.missingValue],
+      out: inputs.typeStMixedOutput,
+    },
+    {
+      f: "extractReferenceRange",
+      desc: "Should return undefined when input is empty",
+      in: [{}],
+      out: undefined,
     },
   ];
 
   opTests.forEach(t => {
     it(
-      t.f + "\n\tWith input:" + JSON.stringify(t.in) + "\n\tMust return:" + JSON.stringify(t.out),
+      t.desc ??
+        t.f + "\n\tWith input:" + JSON.stringify(t.in) + "\n\tMust return:" + JSON.stringify(t.out),
       function (done) {
         var out = getHelper(t.f).func(...t.in);
         if (JSON.stringify(t.out) === JSON.stringify(out)) {
