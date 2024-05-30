@@ -105,7 +105,7 @@ export const getConsolidatedFiltersSchema = z.object({
   resources: z.enum(resourceTypeForConsolidation).array().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
-  conversionType: z.enum(consolidationConversionType).optional().default("json"),
+  conversionType: z.enum(consolidationConversionType).default("json").optional(),
 });
 
 export type GetConsolidatedFilters = z.infer<typeof getConsolidatedFiltersSchema>;
