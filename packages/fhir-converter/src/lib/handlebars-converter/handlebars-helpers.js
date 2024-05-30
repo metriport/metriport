@@ -245,7 +245,7 @@ const allValuesInObjAreNullFlavor = obj => {
         continue;
       }
       for (let key in current) {
-        if (Object.prototype.hasOwnProperty.call(current, "key")) {
+        if (current.hasOwnProperty(key)) {
           if (key === "classCode") {
             continue;
           }
