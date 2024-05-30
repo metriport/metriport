@@ -28,6 +28,9 @@ describe("searchCQDirectoriesAroundPatientAddresses", () => {
 
   it("returns empty array if no coordinates", async () => {
     const patient = makePatient();
+    const expectedResult: CQDirectoryEntry[] = [makeCQDirectoryEntry()];
+    searchCQDirectoriesByRadius_mock = jest.fn(() => expectedResult);
+
     const result = await searchCQDirectoriesAroundPatientAddresses({ patient });
     expect(result).toBeTruthy();
     expect(result.length).toEqual(0);
@@ -37,7 +40,7 @@ describe("searchCQDirectoriesAroundPatientAddresses", () => {
   it("returns search result when there are coordinates", async () => {
     const address = makeAddressWithCoordinates();
     const patient = makePatient({ data: { address: [address] } });
-    const expectedResult: CQDirectoryEntry[] = [makeCQDirectoryEntry()];
+    const expectedResult: CQDirectoryEntry[] = [makeCQDirectoryEntry(), makeCQDirectoryEntry()];
     searchCQDirectoriesByRadius_mock = jest.fn(() => expectedResult);
 
     const result = await searchCQDirectoriesAroundPatientAddresses({
