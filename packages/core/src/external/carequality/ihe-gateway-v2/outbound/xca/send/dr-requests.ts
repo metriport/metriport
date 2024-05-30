@@ -2,21 +2,19 @@ import { XCAGateway, OutboundDocumentRetrievalReq } from "@metriport/ihe-gateway
 import { errorToString } from "../../../../../../util/error/shared";
 import { capture } from "../../../../../../util/notifications";
 import { SamlCertsAndKeys } from "../../../saml/security/types";
-import {
-  getTrustedKeyStore,
-  SamlClientResponse,
-  sendSignedXmlMtom,
-} from "../../../saml/saml-client";
+import { getTrustedKeyStore, sendSignedXmlMtom } from "../../../saml/saml-client";
+import { MtomAttachments } from "../mtom/parser";
 import { BulkSignedDR } from "../create/iti39-envelope";
 import { out } from "../../../../../../util/log";
 
 const { log } = out("Sending DR Requests");
 const context = "ihe-gateway-v2-dr-saml-client";
 
-export type DrSamlClientResponse = SamlClientResponse & {
+export type DrSamlClientResponse = {
   gateway: XCAGateway;
+  mtomResponse?: MtomAttachments;
+  errorResponse?: string;
   outboundRequest: OutboundDocumentRetrievalReq;
-  contentType?: string | undefined;
 };
 
 export async function sendSignedDRRequests({
@@ -33,7 +31,7 @@ export async function sendSignedDRRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const { response, contentType } = await sendSignedXmlMtom({
+      const mtomParts = await sendSignedXmlMtom({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -46,10 +44,8 @@ export async function sendSignedDRRequests({
       );
       return {
         gateway: request.gateway,
-        response,
-        success: true,
+        mtomResponse: mtomParts,
         outboundRequest: request.outboundRequest,
-        contentType,
       };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
@@ -58,7 +54,10 @@ export async function sendSignedDRRequests({
         `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
       );
       if (error?.response?.data) {
-        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+        const errorDetails = Buffer.isBuffer(error?.response?.data)
+          ? error.response.data.toString("utf-8")
+          : JSON.stringify(error?.response?.data);
+        log(`error details: ${errorDetails}`);
       }
 
       const errorString: string = errorToString(error);
@@ -71,14 +70,13 @@ export async function sendSignedDRRequests({
       capture.error(msg, {
         extra: {
           context,
-          extra,
+          ...extra,
         },
       });
       return {
         gateway: request.gateway,
         outboundRequest: request.outboundRequest,
-        response: errorString,
-        success: false,
+        errorResponse: errorString,
       };
     }
   });
