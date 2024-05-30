@@ -132,9 +132,10 @@ export function scoreLinkEpic(
  * Converts a Metriport Patient's demographics into a normalized and stringified LinkDemoData payload.
  * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
  * Special cases:
+ * DOB: first 10 characters.
  * Telephone numbers and ssn: convert to numeric characters.
  * Gender: convert to "male", "female", "unknown".
- * Address: convert to GenericAddress.
+ * Address: convert to GenericAddress w/ zip to first 5 numeric characters.
  *
  * @param patient The Patient @ Metriport.
  * @returns LinkDemoData payload.
@@ -187,6 +188,17 @@ export function patientToNormalizedAndStringLinkedDemoData(patient: Patient): Li
   };
 }
 
+export function normalizeDob(dob?: string): string {
+  return dob?.trim().slice(0, 10) ?? "";
+}
+
+export function normalizeGender(gender?: string): LinkDemoDataGender {
+  const normalizeAndStringifydGender = gender?.trim().toLowerCase() ?? "";
+  if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female")
+    return "unknown";
+  return normalizeAndStringifydGender;
+}
+
 export function normalizeAndStringifyNames({
   firstName,
   lastName,
@@ -218,13 +230,23 @@ export function normalizeAddress({
     line: line?.map(l => l.trim().toLowerCase()) ?? [],
     city: city?.trim().toLowerCase() ?? "",
     state: state?.trim().toLowerCase() ?? "",
-    zip: zip?.trim() ?? "",
+    zip: stripNonNumericChars(zip ?? "")
+      .trim()
+      .slice(0, 5),
     country: country?.trim().toLowerCase() ?? "",
   };
 }
 
 export function stringifyAddress(normalizedAddress: GenericAddress): string {
   return JSON.stringify(normalizedAddress, Object.keys(normalizedAddress).sort());
+}
+
+export function normalizeTelephone(telephone: string): string {
+  return stripNonNumericChars(telephone); //prepend 1 as country code?
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 export function normalizeAndStringifyDriversLicense({
@@ -243,25 +265,6 @@ export function normalizeAndStringifyDriversLicense({
 
 export function normalizeSsn(ssn: string): string {
   return stripNonNumericChars(ssn);
-}
-
-export function normalizeTelephone(telephone: string): string {
-  return stripNonNumericChars(telephone);
-}
-
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-export function normalizeDob(dob?: string): string {
-  return dob?.trim() ?? "";
-}
-
-export function normalizeGender(gender?: string): LinkDemoDataGender {
-  const normalizeAndStringifydGender = gender?.trim().toLowerCase() ?? "";
-  if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female")
-    return "unknown";
-  return normalizeAndStringifydGender;
 }
 
 /**
