@@ -5,14 +5,12 @@ import {
   PatientDemoData,
 } from "@metriport/core/domain/patient";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
-import cqCommands from "../../../external/carequality";
-import cwCommands from "../../../external/commonwell";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilityOrFail } from "../facility/get-facility";
-import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
+import { runInitialPatientDiscoveryAcrossHIEs } from "../../../external/hie/run-initial-patient-discovery";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -77,21 +75,13 @@ export const createPatient = async ({
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  await cwCommands.patient.create({
-    patient: newPatient,
-    facilityId,
-    getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
-    requestId,
-    forceCWCreate: forceCommonwell,
-    rerunPdOnNewDemographics,
-  });
-
-  await cqCommands.patient.discover({
+  runInitialPatientDiscoveryAcrossHIEs({
     patient: newPatient,
     facilityId,
     requestId,
-    forceEnabled: forceCarequality,
     rerunPdOnNewDemographics,
+    forceCarequality,
+    forceCommonwell,
   });
 
   return newPatient;
