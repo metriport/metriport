@@ -1,6 +1,6 @@
 import { OperationOutcomeError } from "@medplum/core";
 import { BundleEntry, Resource } from "@medplum/fhirtypes";
-import { ResourceTypeForConsolidation } from "@metriport/core/domain/consolidated-query/consolidation-resources";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { FhirClient } from "@metriport/core/external/fhir/api/api";
 import { logDuration } from "@metriport/shared/common/duration";
 import dayjs from "dayjs";

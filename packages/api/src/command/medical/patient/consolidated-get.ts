@@ -19,8 +19,7 @@ import { isResourceDerivedFromDocRef } from "@metriport/core/external/fhir/share
 import { emptyFunction } from "@metriport/shared";
 import { elapsedTimeFromNow } from "@metriport/shared/common/date";
 import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
-import { ResourceTypeForConsolidation } from "@metriport/core/domain/consolidated-query/consolidation-resources";
-import { GetConsolidatedFilters } from "@metriport/api-sdk";
+import { GetConsolidatedFilters, ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { makeFhirApi } from "../../../external/fhir/api/api-factory";
 import {
   fullDateQueryForResource,

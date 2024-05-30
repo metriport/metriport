@@ -2,7 +2,7 @@ import { ConsolidationConversionType } from "@metriport/core/domain/conversion/f
 import { createMRSummaryFileName } from "@metriport/core/domain/medical-record-summary";
 import { Patient } from "@metriport/core/domain/patient";
 import { S3Utils } from "@metriport/core/external/aws/s3";
-import { ResourceTypeForConsolidation } from "@metriport/core/domain/consolidated-query/consolidation-resources";
+import { ResourceTypeForConsolidation } from "@metriport/api-sdk";
 import { Config } from "../../../shared/config";
 import { getSignedURL } from "../document/document-download";
 import { getPatient } from "./get-patient";
