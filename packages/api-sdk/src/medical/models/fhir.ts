@@ -81,6 +81,8 @@ export const resourceTypeForConsolidation = [
 
 export type ResourceTypeForConsolidation = (typeof resourceTypeForConsolidation)[number];
 
+export const resourceSchema = z.array(z.enum(resourceTypeForConsolidation));
+
 export const consolidationConversionType = ["html", "pdf", "json"] as const;
 export type ConsolidationConversionType = (typeof consolidationConversionType)[number];
 
