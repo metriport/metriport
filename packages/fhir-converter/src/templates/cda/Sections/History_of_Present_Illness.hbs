@@ -33,8 +33,8 @@
                 {{/with}}
 
                 {{!-- TODO need to add references, author, etc --}}
-                {{#if @encompassingEncounterId}} 
-                    {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterId.id)}}
+                {{#if @encompassingEncounterIds}} 
+                    {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString note.act)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
                 {{/if}}
 
                 {{#if note.act.author.assignedAuthor}}

@@ -37,7 +37,7 @@ function getEncompassingEncounterId(srcData) {
       ...(extIdRef.extension && { extension: extIdRef?.extension }),
     };
     return {
-      id: uuidv4(),
+      newId: uuidv4(),
       externalId,
     };
   }

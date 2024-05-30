@@ -70,11 +70,11 @@ function generateResult(
   template,
   patientId,
   encounterTimePeriod,
-  encompassingEncounterId
+  encompassingEncounterIds
 ) {
   var result = dataTypeHandler.postProcessResult(
     template(dataContext, {
-      data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterId },
+      data: { metriportPatientId: patientId, encounterTimePeriod, encompassingEncounterIds },
     })
   );
   return Object.assign(dataTypeHandler.getConversionResultMetadata(dataContext.msg), {
@@ -95,7 +95,7 @@ WorkerUtils.workerTaskProcessor(msg => {
             let encounterTimePeriod = extractEncounterTimePeriod(srcData);
             let dataTypeHandler = dataHandlerFactory.createDataHandler(srcDataType);
             let handlebarInstance = GetHandlebarsInstance(dataTypeHandler);
-            let encompassingEncounterId = getEncompassingEncounterId(srcData);
+            let encompassingEncounterIds = getEncompassingEncounterId(srcData);
             session.set(constants.CLS_KEY_HANDLEBAR_INSTANCE, handlebarInstance);
             session.set(
               constants.CLS_KEY_TEMPLATE_LOCATION,
@@ -164,7 +164,7 @@ WorkerUtils.workerTaskProcessor(msg => {
                           compiledTemplate,
                           patientId,
                           encounterTimePeriod,
-                          encompassingEncounterId
+                          encompassingEncounterIds
                         ),
                       });
                     } catch (convertErr) {

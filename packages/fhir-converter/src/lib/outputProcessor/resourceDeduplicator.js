@@ -32,38 +32,40 @@ module.exports.Process = function (jsonObj) {
     });
 
     const idMap = new Set();
-    let duplicateId;
+    const duplicateIds = [];
     encounters.forEach(enc => {
       enc.resource.identifier.forEach(id => {
         if (idMap.has(id.value)) {
-          duplicateId = id.value;
+          duplicateIds.push(id.value);
         } else {
           idMap.add(id.value);
         }
       });
     });
 
-    if (duplicateId) {
-      const duplicateEncounters = encounters.filter(enc => {
-        return enc.resource.identifier.some(id => id.value === duplicateId);
-      });
-      const enc1 = duplicateEncounters[0];
-      const enc2 = duplicateEncounters[1];
-      const mergedEncounter = merge(enc1, enc2);
+    if (duplicateIds.length) {
+      for (const duplicateId of duplicateIds) {
+        const duplicateEncounters = encounters.filter(enc => {
+          return enc.resource.identifier.some(id => id.value === duplicateId);
+        });
+        const enc1 = duplicateEncounters[0];
+        const enc2 = duplicateEncounters[1];
+        const mergedEncounter = merge(enc1, enc2);
 
-      const deduplicatedIdentifiers = deduplicateIdentifiers(mergedEncounter.resource.identifier);
-      mergedEncounter.resource.identifier = deduplicatedIdentifiers;
-      mergedEncounter.status = selectMostInformativeStatus(enc1.status, enc2.status);
+        const deduplicatedIdentifiers = deduplicateIdentifiers(mergedEncounter.resource.identifier);
+        mergedEncounter.resource.identifier = deduplicatedIdentifiers;
+        mergedEncounter.status = selectMostInformativeStatus(enc1.status, enc2.status);
 
-      const entriesWithoutEncounters = jsonObj.entry.filter(entry => {
-        const includes = [enc1.resource.id, enc2.resource.id].includes(entry.resource.id);
-        return !includes;
-      });
+        const entriesWithoutDuplicateEncounters = jsonObj.entry.filter(entry => {
+          const includes = [enc1.resource.id, enc2.resource.id].includes(entry.resource.id);
+          return !includes;
+        });
 
-      jsonObj.entry = [...entriesWithoutEncounters, mergedEncounter];
-      jsonObj.entry = JSON.parse(
-        JSON.stringify(jsonObj.entry).replaceAll(enc1.resource.id, mergedEncounter.resource.id)
-      );
+        jsonObj.entry = [...entriesWithoutDuplicateEncounters, mergedEncounter];
+        jsonObj.entry = JSON.parse(
+          JSON.stringify(jsonObj.entry).replaceAll(enc1.resource.id, mergedEncounter.resource.id)
+        );
+      }
     }
     return jsonObj;
   } catch (err) {
@@ -96,3 +98,6 @@ function selectMostInformativeStatus(status1, status2) {
   }
   return [status1, status2].filter(status => status !== "unknown")[0] || "unknown";
 }
+
+module.exports.deduplicateIdentifiers = deduplicateIdentifiers;
+module.exports.selectMostInformativeStatus = selectMostInformativeStatus;
