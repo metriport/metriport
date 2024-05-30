@@ -6,9 +6,8 @@
   "private": true,
   "scripts": {
     "test": "jest --runInBand --detectOpenHandles --passWithNoTests",
-    "build": "npm install",
+    "build": "npm run eslint && full-hbs-lint",
     "pretest": "node --experimental-worker src/init-service.js",
-    "posttest": "eslint {src,test}/**/*.js",
     "prestart": "node --experimental-worker src/init-service.js",
     "dev": "PORT=8777 nodemon --experimental-worker src/index.js",
     "start": "node --experimental-worker src/index.js",
