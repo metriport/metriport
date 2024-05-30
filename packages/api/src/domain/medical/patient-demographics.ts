@@ -130,6 +130,11 @@ export function scoreLinkEpic(
 
 /**
  * Converts a Metriport Patient's demographics into a normalized and stringified LinkDemoData payload.
+ * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
+ * Special cases:
+ * Telephone numbers and ssn: convert to numeric characters.
+ * Gender: convert to "male", "female", "unknown".
+ * Address: convert to GenericAddress.
  *
  * @param patient The Patient @ Metriport.
  * @returns LinkDemoData payload.
@@ -316,7 +321,7 @@ export function createAugmentedPatient(
 
 /**
  * Checks to see if the input Link demographics have any new values compared to the Patient demographics.
- * Currently checks values for addresses, telephones numbers, and emails and considers a value new if it doesn't match exactly.
+ * Currently checks values for addresses, telephone numbers, and emails and considers a value new if it doesn't match exactly.
  *
  * @param patientDemographics The Patient LinkDemoData.
  * @param linkDemographics The Link LinkDemoData.
