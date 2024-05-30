@@ -8,7 +8,6 @@ import {
   cqParams,
   mockedPatientAllProgresses,
   documentQueryProgress,
-  consolidatedQueries,
 } from "./store-query-cmd";
 
 let patientModel: PatientModel;
@@ -58,7 +57,7 @@ describe("storeQueryInit", () => {
       patientModel_update = jest.spyOn(mockedPatientAllProgresses, "update");
       await storeQueryInit(dqParams);
       checkPatientUpdateWith(dqParams);
-      checkUnchanged({ consolidatedQueries });
+      checkUnchanged({ consolidatedQueries: mockedPatientAllProgresses.data.consolidatedQueries });
     });
   });
 
