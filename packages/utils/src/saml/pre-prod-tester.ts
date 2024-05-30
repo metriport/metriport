@@ -21,12 +21,15 @@ import {
   setS3UtilsInstance,
 } from "@metriport/core/external/carequality/ihe-gateway-v2/outbound/xca/process/dr-response";
 import { Config } from "@metriport/core/util/config";
+import { setRejectUnauthorized } from "@metriport/core/external/carequality/ihe-gateway-v2/saml/saml-client";
 import { MockS3Utils } from "./mock-s3";
 /** 
 This script is a test script that queries the database for DQs and DRs, sends them to the Carequality gateway, and processes the responses.
 It is being used to test that DQs and DRs do not have runtime errors, and to test that the responses are returning similar responses to those in 
 the db.
 */
+
+setRejectUnauthorized(false);
 
 const samlAttributes = {
   subjectId: "System User",
@@ -52,7 +55,7 @@ async function queryDatabaseForDQs() {
     FROM document_query_result dqr
     WHERE dqr.status = 'success'
     ORDER BY RANDOM()
-    LIMIT 100;
+    LIMIT 5;
   `;
 
   try {

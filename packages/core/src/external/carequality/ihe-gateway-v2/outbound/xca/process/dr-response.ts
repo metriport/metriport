@@ -22,6 +22,9 @@ import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
 import { getCidReference } from "../mtom/cid";
+import { out } from "../../../../../../util/log";
+
+const { log } = out("DR Processing");
 
 const region = Config.getAWSRegion();
 const bucket = Config.getMedicalDocumentsBucketName();
@@ -121,6 +124,11 @@ async function parseDocumentReference({
       contentType: mimeType,
     });
   }
+
+  const msg = "Downloaded a document with mime type";
+  log(
+    `${msg}: ${mimeType} for patient: ${outboundRequest.patientId} andrequest: ${outboundRequest.id}`
+  );
 
   return {
     url: s3Utils.buildFileUrl(bucket, filePath),
