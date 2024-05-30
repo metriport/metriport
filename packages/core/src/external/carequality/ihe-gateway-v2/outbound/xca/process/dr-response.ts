@@ -21,7 +21,6 @@ import { S3Utils } from "../../../../../aws/s3";
 import { Config } from "../../../../../../util/config";
 import { createDocumentFilePath } from "../../../../../../domain/document/filename";
 import { MetriportError } from "../../../../../../util/error/metriport-error";
-import { capture } from "../../../../../../util/notifications";
 import { parseMtomResponse } from "../mtom/parser";
 
 const region = Config.getAWSRegion();
@@ -229,14 +228,6 @@ export async function processDrResponseMtom({
       gateway,
     });
   } catch (error) {
-    capture.error("Error parsing MTOM response", {
-      extra: {
-        error,
-        response,
-        outboundRequest,
-        gateway,
-      },
-    });
     return handleErrorMtomResponse({
       outboundRequest,
       gateway,

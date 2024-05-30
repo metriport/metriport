@@ -9,6 +9,11 @@ import { createLambda } from "./shared/lambda";
 import * as ec2 from "aws-cdk-lib/aws-ec2";
 import { Duration } from "aws-cdk-lib";
 import { NetworkLoadBalancedFargateService } from "aws-cdk-lib/aws-ecs-patterns";
+import { FilterPattern } from "aws-cdk-lib/aws-logs";
+import * as cloudwatch from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
+
+const whitespaceRegex = /\s+/g;
 
 interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   lambdaLayers: LambdaLayers;
@@ -24,6 +29,7 @@ interface IHEGatewayV2LambdasNestedStackProps extends NestedStackProps {
   apiURL: string;
   envType: EnvType;
   sentryDsn: string | undefined;
+  alarmSnsAction?: SnsAction;
 }
 
 export class IHEGatewayV2LambdasNestedStack extends NestedStack {
@@ -38,6 +44,54 @@ export class IHEGatewayV2LambdasNestedStack extends NestedStack {
     patientDiscoveryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
     documentQueryLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
     documentRetrievalLambda.grantInvoke(props.apiService.taskDefinition.taskRole);
+
+    this.addMetricFiltersAndAlarms(patientDiscoveryLambda, "PatientDiscoveryLambda", props, [
+      { filterPattern: "Aborted Error In Soap Response", threshold: 100 },
+      { filterPattern: "Failure Sending SAML Request", threshold: 100 },
+    ]);
+
+    this.addMetricFiltersAndAlarms(documentQueryLambda, "DocumentQueryLambda", props, [
+      { filterPattern: "RegistryErrorList In Soap Response", threshold: 5 },
+      { filterPattern: "Failure Sending SAML Request", threshold: 5 },
+    ]);
+
+    this.addMetricFiltersAndAlarms(documentRetrievalLambda, "DocumentRetrievalLambda", props, [
+      { filterPattern: "RegistryErrorList In Soap Response", threshold: 5 },
+      { filterPattern: "Failure Sending SAML Request", threshold: 5 },
+    ]);
+  }
+
+  private addMetricFiltersAndAlarms(
+    lambdaFunction: Lambda,
+    functionName: string,
+    props: IHEGatewayV2LambdasNestedStackProps,
+    filters: { filterPattern: string; threshold: number }[]
+  ) {
+    const logGroup = lambdaFunction.logGroup;
+
+    filters.forEach(({ filterPattern, threshold }) => {
+      const sanitizedFilterPattern = filterPattern.replace(whitespaceRegex, "");
+      const metricFilter = logGroup.addMetricFilter(
+        `${functionName}-${sanitizedFilterPattern}-MetricFilter`,
+        {
+          metricNamespace: "IHEGatewayV2",
+          metricName: `${functionName}-${sanitizedFilterPattern}`,
+          filterPattern: FilterPattern.anyTerm(filterPattern),
+          metricValue: "1",
+        }
+      );
+
+      const alarm = metricFilter
+        .metric()
+        .createAlarm(this, `${functionName}-${sanitizedFilterPattern}-Alarm`, {
+          threshold,
+          evaluationPeriods: 1,
+          alarmDescription: `Alarm if ${functionName} encounters ${filterPattern}`,
+          treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+        });
+
+      props.alarmSnsAction && alarm.addAlarmAction(props.alarmSnsAction);
+    });
   }
 
   private grantSecretsReadAccess(

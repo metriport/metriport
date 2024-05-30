@@ -45,15 +45,15 @@ export async function sendSignedXCPDRequests({
       };
       //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      const msg = "HTTP/SSL Failure Sending Signed XCPD SAML Request";
-      log(
-        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${error}`
-      );
-      if (error?.response?.data) {
-        log(`error details: ${JSON.stringify(error?.response?.data)}`);
-      }
-
+      const msg = "Failure Sending SAML Request";
       const errorString: string = errorToString(error);
+      const errorDetails = error?.response?.data
+        ? `, error details: ${JSON.stringify(error?.response?.data)}`
+        : "";
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.oid}, error: ${errorString}${errorDetails}`
+      );
+
       return {
         gateway: request.gateway,
         outboundRequest: request.outboundRequest,
