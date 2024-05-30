@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 //import { driversLicenseURIs, ssnURI } from "@metriport/core/domain/oid";
-import { NetworkLink, PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
+import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
 import {
   LinkDemoDataGender,
   LinkDemoData,
@@ -18,10 +18,11 @@ import {
 } from "../shared/patient-demographics";
 import { getCwPatientData } from "./command/cw-patient-data/get-cw-data";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import { CwLink } from "./cw-patient-data";
 
 type CwGenderCode = `${GenderCodes}`;
 
-export function checkForNewDemographics(patient: Patient, links: NetworkLink[]): boolean {
+export function checkForNewDemographics(patient: Patient, links: CwLink[]): boolean {
   const patientDemographics = patientToNormalizedAndStringLinkedDemoData(patient);
   return getPatientNetworkLinks(links)
     .map(patientNetworkLinkToNormalizedAndStringLinkedDemoData)
@@ -99,7 +100,7 @@ function patientNetworkLinkToNormalizedAndStringLinkedDemoData(
   };
 }
 
-function getPatientNetworkLinks(linkResults: NetworkLink[]): PatientNetworkLink[] {
+function getPatientNetworkLinks(linkResults: CwLink[]): PatientNetworkLink[] {
   return linkResults.flatMap(lr => {
     const patientNetworkLink = lr.patient;
     if (!patientNetworkLink) return [];
