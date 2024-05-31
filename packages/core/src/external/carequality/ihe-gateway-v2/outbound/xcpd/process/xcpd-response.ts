@@ -221,7 +221,7 @@ function handlePatientErrorResponse({
     getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {
     severity: "error",
-    code: acknowledgementDetail?.code?._code ?? "OK",
+    code: acknowledgementDetail?.code?._code ?? "UK",
     details: {
       text:
         acknowledgementDetail?.text?._text ??
