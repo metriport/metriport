@@ -1,6 +1,10 @@
 import fs from "fs";
 import path from "path";
-import { processXCPDResponse } from "../xcpd/process/xcpd-response";
+import {
+  processXCPDResponse,
+  convertIheAddressToAddress,
+  isValidAddress,
+} from "../xcpd/process/xcpd-response";
 import {
   outboundXcpdRequest,
   expectedXcpdResponse,
@@ -67,7 +71,6 @@ describe("processXCPDResponse", () => {
       },
     });
 
-    console.log(JSON.stringify(response, null, 2));
     const parsedResponse = outboundPatientDiscoveryRespSchema.safeParse(response);
     expect(parsedResponse.success).toBeTruthy();
   });
@@ -124,5 +127,99 @@ describe("processXCPDResponse", () => {
     });
     expect(response.operationOutcome).toBeTruthy();
     expect(response.patientMatch).toBeNull();
+  });
+});
+
+describe("convertIheAddressToAddress", () => {
+  it("should correct invalid streetAddressLine", () => {
+    const iheAddresses = {
+      streetAddressLine: [2831],
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    };
+    const result = convertIheAddressToAddress(iheAddresses);
+    expect(result).toEqual({
+      line: ["2831"],
+      city: "San Francisco",
+      country: "USA",
+      postalCode: "94101",
+      state: "CA",
+    });
+    if (result) {
+      const isValid = isValidAddress(result);
+      expect(isValid).toBeTruthy();
+    } else {
+      throw new Error("Result is null");
+    }
+  });
+  it("should filter out empty address", () => {
+    const iheAddresses = {
+      streetAddressLine: [],
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    };
+    const result = convertIheAddressToAddress(iheAddresses);
+    expect(result).toEqual({
+      city: "San Francisco",
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    });
+    if (result) {
+      const isValid = isValidAddress(result);
+      expect(isValid).toBeTruthy();
+    } else {
+      throw new Error("Result is null");
+    }
+  });
+  it("should filter out 0 as city value", () => {
+    const iheAddresses = {
+      streetAddressLine: "111 Market St",
+      city: 0,
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    };
+    const result = convertIheAddressToAddress(iheAddresses);
+    expect(result).toEqual({
+      line: ["111 Market St"],
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    });
+
+    if (result) {
+      const isValid = isValidAddress(result);
+      expect(isValid).toBeTruthy();
+    } else {
+      throw new Error("Result is null");
+    }
+  });
+  it("should stringify 1 as city value", () => {
+    const iheAddresses = {
+      streetAddressLine: "111 Market St",
+      city: 1,
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    };
+    const result = convertIheAddressToAddress(iheAddresses);
+    expect(result).toEqual({
+      line: ["111 Market St"],
+      city: "1",
+      state: "CA",
+      postalCode: "94101",
+      country: "USA",
+    });
+    if (result) {
+      const isValid = isValidAddress(result);
+      expect(isValid).toBeTruthy();
+    } else {
+      throw new Error("Result is null");
+    }
   });
 });

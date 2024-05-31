@@ -18,12 +18,12 @@ import { toArray } from "../../../utils";
 const { log } = out("Processing XCPD Requests");
 
 type IheAddress = {
-  streetAddressLine: string | string[] | undefined;
-  city: string | undefined;
-  state: string | undefined;
-  postalCode: string | undefined;
-  country: string | undefined;
-  county: string | undefined;
+  streetAddressLine?: string | string[] | number | number[] | undefined;
+  city?: string | number | undefined;
+  state?: string | number | undefined;
+  postalCode?: string | number | undefined;
+  country?: string | number | undefined;
+  county?: string | number | undefined;
 };
 
 type IheName = {
@@ -67,12 +67,13 @@ function iheIdentifiersToPersonalIdentifiers(
   return personalIdentifiers.length > 0 ? personalIdentifiers : undefined;
 }
 
-function convertIheAddressToAddress(address: IheAddress): Address | undefined {
-  if (!address?.city && !address?.state && !address?.postalCode && !address?.country) {
+export function convertIheAddressToAddress(address: IheAddress): Address | undefined {
+  if (!address?.city && !address?.state && !address?.postalCode) {
     return undefined;
   }
+  const line = toArray(address?.streetAddressLine).map(String);
   return {
-    line: toArray(address?.streetAddressLine).filter((l): l is string => Boolean(l)),
+    ...(line.length > 0 && { line }),
     city: address?.city ? String(address?.city) : undefined,
     state: address?.state ? String(address?.state) : undefined,
     postalCode: address?.postalCode ? String(address?.postalCode) : undefined,
@@ -80,13 +81,27 @@ function convertIheAddressToAddress(address: IheAddress): Address | undefined {
   };
 }
 
-function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] | undefined {
+export function isValidAddress(address: Address): boolean {
+  const isStringOrStringArray = (value: unknown): value is string | string[] =>
+    typeof value === "string" ||
+    (Array.isArray(value) && value.length > 0 && value.every(item => typeof item === "string"));
+
+  return (
+    (isStringOrStringArray(address?.line) || address?.line === undefined) &&
+    (typeof address?.city === "string" || address?.city === undefined) &&
+    (typeof address?.state === "string" || address?.state === undefined) &&
+    (typeof address?.postalCode === "string" || address?.postalCode === undefined) &&
+    (typeof address?.country === "string" || address?.country === undefined)
+  );
+}
+
+export function iheAddressesToAddresses(iheAddresses: IheAddress[]): Address[] | undefined {
   if (!iheAddresses) {
     return undefined;
   }
   const addresses = iheAddresses
     .map(convertIheAddressToAddress)
-    .filter((address): address is Address => address !== undefined);
+    .filter((address): address is Address => address !== undefined && isValidAddress(address));
 
   return addresses.length > 0 ? addresses : undefined;
 }
