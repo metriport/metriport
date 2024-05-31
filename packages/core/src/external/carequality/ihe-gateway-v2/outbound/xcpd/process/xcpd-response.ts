@@ -221,15 +221,14 @@ function handlePatientErrorResponse({
     getPatientRegistryProfile(jsonObj)?.acknowledgement?.acknowledgementDetail;
   const issue = {
     severity: "error",
-    ...(acknowledgementDetail && {
-      code: acknowledgementDetail?.code?._code,
-      details: {
-        text:
-          acknowledgementDetail?.text?._text ??
-          acknowledgementDetail?.text ??
-          acknowledgementDetail?.location,
-      },
-    }),
+    code: acknowledgementDetail?.code?._code ?? "UK",
+    details: {
+      text:
+        acknowledgementDetail?.text?._text ??
+        acknowledgementDetail?.text ??
+        acknowledgementDetail?.location ??
+        "unknown",
+    },
   };
   const operationOutcome: OperationOutcome = {
     resourceType: "OperationOutcome",
