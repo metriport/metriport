@@ -12,8 +12,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
-import { getFileNameForOrg } from "../shared/folder";
 
 dayjs.extend(duration);
 
@@ -38,9 +38,10 @@ const cxId = getEnvVarOrFail("CX_ID");
 const region = getEnvVarOrFail("AWS_REGION");
 const bucketName = getEnvVarOrFail("MEDICAL_DOCUMENTS_BUCKET_NAME");
 
-const getDirName = (orgName: string) => `./runs/documents/${getFileNameForOrg(orgName)}`;
+const getDirName = buildGetDirPathInside(`documents`);
 
 async function main() {
+  initRunsFolder();
   console.log(
     `########################## Running for cx ${cxId}, ${
       patientIds.length
