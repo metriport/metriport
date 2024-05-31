@@ -4,6 +4,7 @@ dotenv.config();
 import { getEnvVarOrFail } from "@metriport/core/util/env-var";
 import { initReadonlyDbPool } from "@metriport/core/util/sequelize";
 import { QueryTypes } from "sequelize";
+import { mean } from "lodash";
 
 const sqlDBCreds = getEnvVarOrFail("DB_CREDS");
 const sqlReadReplicaEndpoint = getEnvVarOrFail("DB_READ_REPLICA_ENDPOINT");
@@ -27,29 +28,36 @@ export type GWWithStats = {
   gwId: string;
 } & GWStats;
 
-export type ImplementerWithGwStats = {
+export type Implementer = {
   implementerId: string;
   implementerName: string;
+};
+
+export type ImplementerWithAvgResp = Implementer & {
+  avgResponseTimeMs: number;
+};
+
+export type ImplementerWithGwStats = Implementer & {
   gwStats: GWWithStats[];
 };
 
-export type ImplementerStats = {
-  implementerId: string;
-  implementerName: string;
-} & GWStats;
+export type ImplementerStats = Implementer & GWStats;
 
 export type ImplementerStatsByDay = {
   [day: string]: ImplementerWithGwStats[];
 };
 
+export type DurationAvgs = {
+  xcpdAvgResponseTimeMs?: number;
+  xcaDQAvgResponseTimeMs?: number;
+  xcaDRAvgResponseTimeMs?: number;
+};
+
 export type MonthlyImplementerStats = {
   year: number;
   month: number;
-} & ImplementerStats & {
-    xcpdAvgResponseTimeMs?: number;
-    xcaDQAvgResponseTimeMs?: number;
-    xcaDRAvgResponseTimeMs?: number;
-  };
+} & ImplementerStats &
+  DurationAvgs;
 
 export type CountPerGW = { [key: string]: [number] };
 
@@ -60,7 +68,7 @@ export async function queryResultsTable<TableResults>(
 ): Promise<TableResults[]> {
   const dayPlusOne = dayIndex + 1;
 
-  console.log(`Querying for day ${dayPlusOne}...`);
+  console.log(`Querying table ${tableName} for day ${dayPlusOne}...`);
 
   const query = `
       SELECT * FROM ${tableName}
@@ -75,7 +83,7 @@ export async function queryResultsTable<TableResults>(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const resultsData = results.map((result: any) => result.data) as TableResults[];
 
-  console.log(`Results for day ${dayPlusOne}:`, results.length);
+  console.log(`Results for table ${tableName} day ${dayPlusOne}:`, results.length);
 
   return resultsData;
 }
@@ -169,51 +177,119 @@ function findGWImplementer(
 }
 
 export function aggregateDurationAvgByMonth(
+  year: number,
+  month: number,
   xcpdStatsByDay: ImplementerStatsByDay,
   xcaDQStatsByDay: ImplementerStatsByDay,
   xcaDRStatsByDay: ImplementerStatsByDay
 ): MonthlyImplementerStats[] {
   const monthlyStats: MonthlyImplementerStats[] = [];
 
-  Object.entries(xcpdStatsByDay).forEach(([day, stats]) => {
+  const xcpdDailyAvgsByImplementer = getMonthlyAvgByImplementer(xcpdStatsByDay);
+  const xcaDQDailyAvgsByImplementer = getMonthlyAvgByImplementer(xcaDQStatsByDay);
+  const xcaDRDailyAvgsByImplementer = getMonthlyAvgByImplementer(xcaDRStatsByDay);
+
+  xcpdDailyAvgsByImplementer.forEach(implementerStat => {
+    const { implementerId, implementerName, avgResponseTimeMs } = implementerStat;
+
+    const existingStat = monthlyStats.find(
+      s => s.year === year && s.month === month && s.implementerId === implementerId
+    );
+
+    if (existingStat) {
+      existingStat.xcpdAvgResponseTimeMs = avgResponseTimeMs;
+    } else {
+      monthlyStats.push({
+        year,
+        month,
+        implementerId,
+        implementerName,
+        xcpdAvgResponseTimeMs: avgResponseTimeMs,
+      });
+    }
+  });
+
+  xcaDQDailyAvgsByImplementer.forEach(implementerStat => {
+    const { implementerId, implementerName, avgResponseTimeMs } = implementerStat;
+
+    const existingStat = monthlyStats.find(
+      s => s.year === year && s.month === month && s.implementerId === implementerId
+    );
+
+    if (existingStat) {
+      existingStat.xcpdAvgResponseTimeMs = avgResponseTimeMs;
+    } else {
+      monthlyStats.push({
+        year,
+        month,
+        implementerId,
+        implementerName,
+        xcpdAvgResponseTimeMs: avgResponseTimeMs,
+      });
+    }
+  });
+
+  xcaDRDailyAvgsByImplementer.forEach(implementerStat => {
+    const { implementerId, implementerName, avgResponseTimeMs } = implementerStat;
+
+    const existingStat = monthlyStats.find(
+      s => s.year === year && s.month === month && s.implementerId === implementerId
+    );
+
+    if (existingStat) {
+      existingStat.xcpdAvgResponseTimeMs = avgResponseTimeMs;
+    } else {
+      monthlyStats.push({
+        year,
+        month,
+        implementerId,
+        implementerName,
+        xcpdAvgResponseTimeMs: avgResponseTimeMs,
+      });
+    }
+  });
+
+  console.log(JSON.stringify(monthlyStats, null, 2));
+
+  return monthlyStats;
+}
+
+function getMonthlyAvgByImplementer(statsByDay: ImplementerStatsByDay): ImplementerWithAvgResp[] {
+  const monthlyAvgsByImplementer: {
+    [key: string]: {
+      implementerId: string;
+      implementerName: string;
+      avgResponseTimeMs: number[];
+    };
+  } = {};
+
+  Object.values(statsByDay).forEach(stats => {
     stats.forEach(stat => {
       const { implementerId, implementerName } = stat;
       const { gwStats } = stat;
 
-      const xcpdAvgResponseTimeMs = aggregateGwAvgResponseTime(gwStats);
-      const xcaDQAvgResponseTimeMs = aggregateGwAvgResponseTime(
-        xcaDQStatsByDay[day].find(s => s.implementerId === implementerId)?.gwStats ?? []
-      );
-      const xcaDRAvgResponseTimeMs = aggregateGwAvgResponseTime(
-        xcaDRStatsByDay[day].find(s => s.implementerId === implementerId)?.gwStats ?? []
-      );
+      const avgResponseTimeMs = aggregateGwAvgResponseTime(gwStats);
 
-      const year = new Date(day).getFullYear();
-      const month = new Date(day).getMonth() + 1;
-
-      const existingStat = monthlyStats.find(
-        s => s.year === year && s.month === month && s.implementerId === implementerId
-      );
-
-      if (existingStat) {
-        existingStat.xcpdAvgResponseTimeMs = xcpdAvgResponseTimeMs;
-        existingStat.xcaDQAvgResponseTimeMs = xcaDQAvgResponseTimeMs;
-        existingStat.xcaDRAvgResponseTimeMs = xcaDRAvgResponseTimeMs;
-      } else {
-        monthlyStats.push({
-          year,
-          month,
-          implementerId,
-          implementerName,
-          xcpdAvgResponseTimeMs,
-          xcaDQAvgResponseTimeMs,
-          xcaDRAvgResponseTimeMs,
-        });
-      }
+      monthlyAvgsByImplementer[implementerId] = {
+        implementerId,
+        implementerName,
+        avgResponseTimeMs: [
+          ...(monthlyAvgsByImplementer[implementerId]
+            ? monthlyAvgsByImplementer[implementerId].avgResponseTimeMs
+            : [avgResponseTimeMs]),
+          avgResponseTimeMs,
+        ],
+      };
     });
   });
 
-  return monthlyStats;
+  return Object.values(monthlyAvgsByImplementer).map(value => {
+    return {
+      implementerId: value.implementerId,
+      implementerName: value.implementerName,
+      avgResponseTimeMs: mean(value.avgResponseTimeMs),
+    };
+  });
 }
 
 export function aggregateGwAvgResponseTime(gwWithStats: GWWithStats[]): number {

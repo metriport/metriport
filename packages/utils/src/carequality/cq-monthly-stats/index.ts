@@ -18,6 +18,8 @@ import {
 
 dayjs.extend(duration);
 
+// USE STORED RESULTS ON SUBSEQUENT RUNS TO AVOID REPEATEDLY RUNNING THE SAME EXPENSIVE QUERIES
+
 async function main() {
   const sqlCQDirectory = `SELECT * FROM cq_directory_entry`;
   const cqDirectory = await readOnlyDBPool.query(sqlCQDirectory, {
@@ -27,6 +29,7 @@ async function main() {
   console.log("cqDirectory:", cqDirectory.length);
 
   const previousMonth = dayjs().subtract(1, "month");
+  const previousMonthYear = previousMonth.year();
   const daysInPreviousMonth = previousMonth.daysInMonth();
   const endOfPreviousMonth = previousMonth.endOf("month").format("YYYY-MM-DD");
 
@@ -35,7 +38,7 @@ async function main() {
   const xcaDRByDate: ImplementerStatsByDay = {};
 
   for (let i = 0; i < daysInPreviousMonth; i++) {
-    const day = dayjs().subtract(i, "day").format("YYYY-MM-DD");
+    const day = previousMonth.subtract(i, "day").format("YYYY-MM-DD");
     const baseDir = `./runs`;
     const baseDirDay = `${baseDir}/${day}`;
     fs.mkdirSync(baseDirDay, { recursive: true });
@@ -52,6 +55,10 @@ async function main() {
     xcaDQByDate[day] = xcaDQ;
     xcaDRByDate[day] = xcaDR;
 
+    fs.writeFileSync(`${baseDirDay}/xcpd.json`, JSON.stringify(xcpd, null, 2));
+    fs.writeFileSync(`${baseDirDay}/xca-dq.json`, JSON.stringify(xcaDQ, null, 2));
+    fs.writeFileSync(`${baseDirDay}/xca-dr.json`, JSON.stringify(xcaDR, null, 2));
+
     await sleep(60000);
   }
 
@@ -61,7 +68,13 @@ async function main() {
   const xcaDRMonthlyStats = aggregateDocRetrievedByMonth(xcaDRByDate);
   createDocRetrievedCsv(xcaDRMonthlyStats);
 
-  const xcpdAvgResponseTime = aggregateDurationAvgByMonth(xcpdByDate, xcaDQByDate, xcaDRByDate);
+  const xcpdAvgResponseTime = aggregateDurationAvgByMonth(
+    previousMonth.month() + 1,
+    previousMonthYear,
+    xcpdByDate,
+    xcaDQByDate,
+    xcaDRByDate
+  );
   createAvgCsv(xcpdAvgResponseTime);
 
   process.exit(0);

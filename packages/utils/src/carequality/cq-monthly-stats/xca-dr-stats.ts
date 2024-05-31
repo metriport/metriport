@@ -84,8 +84,6 @@ export function aggregateDocRetrievedByMonth(
 ): MonthlyImplementerStats[] {
   const monthlyStats: MonthlyImplementerStats[] = [];
 
-  console.log("statsByDay:", JSON.stringify(statsByDay, null, 2));
-
   Object.entries(statsByDay).forEach(([day, stats]) => {
     stats.forEach(stat => {
       const { implementerId, implementerName } = stat;
