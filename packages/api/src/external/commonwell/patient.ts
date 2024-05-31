@@ -327,7 +327,7 @@ async function updatePatientAndLinksInCw({
 }): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
-    const updateData = await setupUpdate({ patient });
+    const updateData = await setupPatient({ patient });
     if (!updateData) {
       capture.message("Could not find external data on Patient, creating it @ CW", {
         extra: { patientId: patient.id, context: updateContext },
@@ -634,10 +634,10 @@ export async function get(
     });
     if (!cwEnabled) return undefined;
 
-    const updateData = await setupUpdate({ patient });
-    if (!updateData) return undefined;
+    const getData = await setupPatient({ patient });
+    if (!getData) return undefined;
 
-    const { commonwellPatientId } = updateData;
+    const { commonwellPatientId } = getData;
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
 
@@ -671,10 +671,10 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
     });
     if (!cwEnabled) return;
 
-    const updateData = await setupUpdate({ patient });
-    if (!updateData) return;
+    const removeData = await setupPatient({ patient });
+    if (!removeData) return;
 
-    const { commonwellPatientId } = updateData;
+    const { commonwellPatientId } = removeData;
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
 
@@ -696,7 +696,7 @@ export async function remove(patient: Patient, facilityId: string): Promise<void
   }
 }
 
-async function setupUpdate({
+async function setupPatient({
   patient,
 }: {
   patient: Patient;

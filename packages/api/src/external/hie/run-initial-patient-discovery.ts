@@ -18,6 +18,7 @@ export async function runInitialPatientDiscoveryAcrossHies({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
 }): Promise<void> {
+  // CAREQUALITY
   await discover({
     patient,
     facilityId,
@@ -25,6 +26,7 @@ export async function runInitialPatientDiscoveryAcrossHies({
     forceEnabled: forceCarequality,
     rerunPdOnNewDemographics,
   });
+  // COMMONWELL
   await create({
     patient,
     facilityId,
