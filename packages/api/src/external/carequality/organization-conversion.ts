@@ -1,6 +1,5 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
-import { Config } from "../../shared/config";
 import { getOidsWithIHEGatewayV2Enabled, isIHEGatewayV2EnabledForCx } from "../aws/app-config";
 import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 
@@ -13,10 +12,7 @@ export async function cqOrgsToXCPDGateways(
 }> {
   const v1Gateways: XCPDGateway[] = [];
   const v2Gateways: XCPDGateway[] = [];
-  const iheGatewayV2OIDs: string[] = Config.isDev()
-    ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-    : await getOidsWithIHEGatewayV2Enabled();
-
+  const iheGatewayV2OIDs: string[] = await getOidsWithIHEGatewayV2Enabled();
   const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
   for (const org of cqOrgs) {

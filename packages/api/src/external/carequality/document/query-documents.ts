@@ -19,7 +19,6 @@ import { createOutboundDocumentQueryRequests } from "./create-outbound-document-
 import { getOidsWithIHEGatewayV2Enabled, isIHEGatewayV2EnabledForCx } from "../../aws/app-config";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
-import { Config } from "../../../shared/config";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
@@ -112,9 +111,7 @@ export async function getDocumentsFromCQ({
 
     const linksWithDqUrlV1Gateway: CQLink[] = [];
     const linksWithDqUrlV2Gateway: CQLink[] = [];
-    const v2GatewayOIDs = (await Config.isDev())
-      ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
-      : await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
     const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
     for (const link of linksWithDqUrl) {

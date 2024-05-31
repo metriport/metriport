@@ -108,7 +108,9 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
 }
 
 export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
+  return Config.isDev()
+    ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
+    : getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
 }
 
 export async function getCxsWithIHEGatewayV2Enabled(): Promise<string[]> {
