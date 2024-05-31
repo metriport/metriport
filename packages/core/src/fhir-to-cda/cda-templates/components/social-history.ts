@@ -1,10 +1,11 @@
 import { Bundle, Observation } from "@medplum/fhirtypes";
 import { isSocialHistoryObservation } from "../../fhir";
-import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
+import { buildCodeCe, buildInstanceIdentifier } from "../commons";
 import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
+import { createTableHeader } from "../table";
 
 const sectionName = "socialhistory";
 const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];

@@ -1,5 +1,5 @@
 import { Condition } from "@medplum/fhirtypes";
-import { makeBaseDomain, makeSubjectReference } from "../shared";
+import { makeBaseDomain, makeSubjectReference } from "./shared";
 
 export function makeCondition(params: Partial<Condition> = {}): Condition {
   return {

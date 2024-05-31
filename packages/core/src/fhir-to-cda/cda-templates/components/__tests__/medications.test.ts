@@ -1,11 +1,11 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Medication, MedicationStatement } from "@medplum/fhirtypes";
 import path from "path";
-import { removeEmptyFields } from "../../../clinical-document/clinical-document";
-import { xmlBuilder } from "../../../clinical-document/shared";
-import { NOT_SPECIFIED } from "../../../constants";
-import { buildMedications } from "../../medications";
-import { createEmptyBundle, getPastDateInDifferentFormats, getXmlContentFromFile } from "../shared";
+import { removeEmptyFields } from "../../clinical-document/clinical-document";
+import { xmlBuilder } from "../../clinical-document/shared";
+import { NOT_SPECIFIED } from "../../constants";
+import { buildMedications } from "../medications";
+import { createEmptyBundle, getPastDateInDifferentFormats, getXmlContentFromFile } from "./shared";
 import { makeMedicationStatementPair, makeMedicationStatementPair2 } from "./medication";
 
 let medStmntId: string;
@@ -55,9 +55,7 @@ describe("buildMedications", () => {
   it("correctly maps a single MedicationStatement with a related Medication", () => {
     bundle.entry?.push({ resource: medStatement });
     bundle.entry?.push({ resource: med });
-    const filePath = path.join(__dirname, "medications-section-single-entry.xml");
-
-    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const filePath = path.join(__dirname, "./xmls/medications-section-single-entry.xml");
     const params = {
       NOT_SPECIFIED,
       medStmntId,
@@ -101,7 +99,7 @@ describe("buildMedications", () => {
 
     bundle.entry?.push({ resource: medicationStatement2 });
     bundle.entry?.push({ resource: medication2 });
-    const filePath = path.join(__dirname, "medications-section-two-entries.xml");
+    const filePath = path.join(__dirname, "./xmls/medications-section-two-entries.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

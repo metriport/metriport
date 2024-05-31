@@ -1,12 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Observation } from "@medplum/fhirtypes";
 import path from "path";
-import { removeEmptyFields } from "../../../../clinical-document/clinical-document";
-import { xmlBuilder } from "../../../../clinical-document/shared";
-import { buildMentalStatus } from "../../../mental-status";
-import { createEmptyBundle, getXmlContentFromFile } from "../../shared";
-import { makeObservation } from "../make-observation";
+import { removeEmptyFields } from "../../clinical-document/clinical-document";
+import { xmlBuilder } from "../../clinical-document/shared";
+import { buildMentalStatus } from "../mental-status";
+import { makeObservation } from "./make-observation";
 import { observationMentalStatus } from "./mental-status-examples";
+import { createEmptyBundle, getXmlContentFromFile } from "./shared";
 
 let observationId: string;
 let bundle: Bundle;
@@ -49,9 +49,7 @@ describe("buildMentalStatus", () => {
 
   it("correctly maps a single mental status survey Observation", () => {
     bundle.entry?.push({ resource: observation });
-    const filePath = path.join(__dirname, "mental-status-section-single-survey.xml");
-
-    /* eslint-disable @typescript-eslint/no-unused-vars */
+    const filePath = path.join(__dirname, "./xmls/mental-status-section-single-survey.xml");
     const params = {
       observationId,
     };

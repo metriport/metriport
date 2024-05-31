@@ -12,7 +12,6 @@ import {
   buildValueCd,
   formatDateToCdaTimestamp,
   getTextFromCode,
-  initiateSectionTable,
   isLoinc,
   mapCodingSystem,
   withoutNullFlavorObject,
@@ -28,6 +27,7 @@ import {
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedCondition } from "./augmented-resources";
+import { initiateSectionTable } from "../table";
 
 const problemsSectionName = "problems";
 const tableHeaders = [

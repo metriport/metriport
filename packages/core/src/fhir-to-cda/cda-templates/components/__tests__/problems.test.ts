@@ -1,12 +1,12 @@
 import { faker } from "@faker-js/faker";
 import { Bundle, Condition } from "@medplum/fhirtypes";
 import path from "path";
-import { removeEmptyFields } from "../../../clinical-document/clinical-document";
-import { xmlBuilder } from "../../../clinical-document/shared";
-import { buildProblems } from "../../problems";
-import { createEmptyBundle, getXmlContentFromFile } from "../shared";
+import { removeEmptyFields } from "../../clinical-document/clinical-document";
+import { xmlBuilder } from "../../clinical-document/shared";
+import { buildProblems } from "../problems";
 import { conditionHyperlipidemia, conditionNicotine } from "./condition-examples";
 import { makeCondition } from "./make-condition";
+import { createEmptyBundle, getXmlContentFromFile } from "./shared";
 
 let conditionId: string;
 let bundle: Bundle;
@@ -36,9 +36,8 @@ describe("buildProblems", () => {
   it("correctly maps a single Condition without a note", () => {
     bundle.entry?.push({ resource: { ...condition, note: [] } });
 
-    const filePath = path.join(__dirname, "problems-section-single-entry.xml");
+    const filePath = path.join(__dirname, "./xmls/problems-section-single-entry.xml");
 
-    /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {
       conditionId,
     };
@@ -64,7 +63,7 @@ describe("buildProblems", () => {
     });
 
     bundle.entry?.push({ resource: condition2 });
-    const filePath = path.join(__dirname, "problems-section-two-entries.xml");
+    const filePath = path.join(__dirname, "./xmls/problems-section-two-entries.xml");
 
     /* eslint-disable @typescript-eslint/no-unused-vars */
     const params = {

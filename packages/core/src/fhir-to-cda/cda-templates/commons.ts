@@ -22,7 +22,6 @@ import {
   CdaValueSt,
   Entry,
   EntryObject,
-  ObservationTableRow,
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
@@ -76,7 +75,10 @@ export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe |
   });
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
+/**
+ * CE stands for CodedWithEquivalents
+ * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for more details
+ */
 export function buildCodeCe({
   code,
   codeSystem,
@@ -106,7 +108,10 @@ export function buildOriginalTextReference(value: string): CDAOriginalText {
   };
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for CV type
+/**
+ * CV stands for CodedValue
+ * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CV.html for more details
+ */
 export function buildCodeCvFromCodeableConcept(
   codeableConcept: CodeableConcept | undefined,
   textReference?: string
@@ -257,11 +262,13 @@ export function formatDateToHumanReadableFormat(
     }
     return date.utc().format("MM/DD/YYYY h:mm A");
   }
-
-  // if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
   return date.utc().format("MM/DD/YYYY");
 }
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
+
+/**
+ * ST stands for SimpleText
+ * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html for more details
+ */
 export function buildValueSt(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
 
@@ -272,7 +279,10 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
   return valueObject;
 }
 
-// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html
+/**
+ * CD stands for ConceptDescriptor
+ * See https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html for more details
+ */
 export function buildValueCd(
   codeableConcept: CodeableConcept | undefined,
   referenceId: string
@@ -291,9 +301,11 @@ export function buildValueCd(
   return valueObject;
 }
 
+/**
+ * Mapping options for the PostalAddressUse from the CDA R2 IG
+ */
 function mapAddressUse(use: string | undefined) {
   if (!use) return undefined;
-  // From PostalAddressUse of the CDA R2 IG
   switch (use.toLowerCase()) {
     case "bad address":
       return "BAD";
@@ -322,9 +334,11 @@ function mapAddressUse(use: string | undefined) {
   return use;
 }
 
+/**
+ * Mapping options from Telecom Use of the CDA R2 IG
+ */
 function mapTelecomUse(use: string | undefined) {
   if (!use) return undefined;
-  // From Telecom Use of the CDA R2 IG
   switch (use.toLowerCase()) {
     case "answering service":
       return "AS";
@@ -396,64 +410,8 @@ export function isLoinc(system: string | undefined): boolean {
   return false;
 }
 
-type TableHeader = {
-  tr: {
-    th: string[];
-  }[];
-};
-
-export function createTableHeader(tableHeaders: string[]): TableHeader {
-  return {
-    tr: [
-      {
-        th: tableHeaders,
-      },
-    ],
-  };
-}
-
 export function getTextFromCode(code: CodeableConcept | undefined): string {
   if (!code) return NOT_SPECIFIED;
   const primaryCoding = code.coding?.[0];
   return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
-}
-
-export type CdaTable = {
-  table: {
-    _ID: string;
-    thead: TableHeader;
-    tbody: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tr: TableRowWithId[];
-    };
-  };
-};
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TableRow = { tr: { [x: string]: any; td: any } };
-export function initiateSectionTable(
-  sectionName: string,
-  tableHeaders: string[],
-  tableRows: ObservationTableRow[]
-): CdaTable {
-  return {
-    table: {
-      _ID: sectionName,
-      thead: createTableHeader(tableHeaders),
-      tbody: {
-        tr: mapTableRows(tableRows),
-      },
-    },
-  };
-}
-
-type TableRowWithId = {
-  _ID: string;
-  td: TableRow;
-};
-
-function mapTableRows(tableRows: ObservationTableRow[]): TableRowWithId[] {
-  return tableRows.map((row: TableRow) => ({
-    _ID: row.tr._ID,
-    td: row.tr.td,
-  }));
 }

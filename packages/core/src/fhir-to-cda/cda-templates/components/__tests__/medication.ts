@@ -1,5 +1,5 @@
 import { Medication, MedicationStatement } from "@medplum/fhirtypes";
-import { uuidv7 } from "../../../../../util/uuid-v7";
+import { uuidv7 } from "../../../../util/uuid-v7";
 
 export function makeMedicationStatementPair(
   medStatementId: string,
