@@ -112,6 +112,10 @@ export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
 }
 
 export async function getCxsWithIHEGatewayV2Enabled(): Promise<string[]> {
+  if (Config.isDev()) {
+    const apiKey = getEnvVar("TEST_API_KEY");
+    return apiKey ? [getCxIdFromApiKey(apiKey)] : [];
+  }
   return getCxsWithFeatureFlagEnabled("cxsWithIHEGatewayV2Enabled");
 }
 

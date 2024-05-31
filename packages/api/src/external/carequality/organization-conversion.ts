@@ -17,7 +17,7 @@ export async function cqOrgsToXCPDGateways(
     ? Config.getOidsWithIHEGatewayV2Enabled().split(",")
     : await getOidsWithIHEGatewayV2Enabled();
 
-  const isV2EnabledForCx = (await Config.isDev()) ? true : isIHEGatewayV2EnabledForCx(cxId);
+  const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
