@@ -24,7 +24,7 @@ export type OutboundDocQueryRespParam = {
   patientId: string;
   cxId: string;
   requestId: string;
-  results: OutboundDocumentQueryResp[];
+  response: OutboundDocumentQueryResp[];
 };
 
 export type OutboundDocRetrievalRespParam = {
@@ -90,7 +90,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
 
   async pollOutboundDocQueryResults(params: PollOutboundResults): Promise<void> {
     if (!this.isDQEnabled()) throw new Error(`DQ polling is not enabled`);
-    const results = await pollOutboundDocQueryResults({
+    const response = await pollOutboundDocQueryResults({
       ...params,
       dbCreds: this.dbCreds,
     });
@@ -100,7 +100,7 @@ export class OutboundResultPollerDirect extends OutboundResultPoller {
       requestId,
       patientId,
       cxId,
-      results,
+      response,
     };
 
     await api.post(this.docQueryResultsUrl, payload);

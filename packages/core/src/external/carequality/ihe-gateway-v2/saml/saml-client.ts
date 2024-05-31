@@ -6,7 +6,13 @@ import { SamlCertsAndKeys } from "./security/types";
 import { Config } from "../../../../util/config";
 import { out } from "../../../../util/log";
 import { MetriportError } from "../../../../util/error/metriport-error";
-import { creatMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
+import { createMtomContentTypeAndPayload } from "../outbound/xca/mtom/builder";
+import {
+  parseMtomResponse,
+  getBoundaryFromMtomResponse,
+  MtomAttachments,
+  convertSoapResponseToMtomResponse,
+} from "../outbound/xca/mtom/parser";
 
 const { log } = out("Saml Client");
 const timeout = 120000;
@@ -93,7 +99,7 @@ export async function sendSignedXmlMtom({
   url: string;
   samlCertsAndKeys: SamlCertsAndKeys;
   trustedKeyStore: string;
-}): Promise<{ response: string; contentType: string }> {
+}): Promise<MtomAttachments> {
   const agent = new https.Agent({
     rejectUnauthorized: getRejectUnauthorized(),
     requestCert: true,
@@ -105,7 +111,7 @@ export async function sendSignedXmlMtom({
     secureOptions: constants.SSL_OP_ALLOW_UNSAFE_LEGACY_RENEGOTIATION,
   });
 
-  const { contentType, payload } = creatMtomContentTypeAndPayload(signedXml);
+  const { contentType, payload } = createMtomContentTypeAndPayload(signedXml);
   const response = await axios.post(url, payload, {
     timeout: timeout,
     headers: {
@@ -114,6 +120,16 @@ export async function sendSignedXmlMtom({
       "Cache-Control": "no-cache",
     },
     httpsAgent: agent,
+    responseType: "arraybuffer",
   });
-  return { response: response.data, contentType: response.headers["content-type"] };
+
+  const binaryData: Buffer = Buffer.isBuffer(response.data)
+    ? response.data
+    : Buffer.from(response.data, "binary");
+
+  const boundary = getBoundaryFromMtomResponse(response.headers["content-type"]);
+  if (boundary) {
+    return await parseMtomResponse(binaryData, boundary);
+  }
+  return convertSoapResponseToMtomResponse(binaryData);
 }

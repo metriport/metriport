@@ -10,8 +10,8 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import https from "https";
+import { buildGetDirPathInside, initRunsFolder } from "../shared/folder";
 import { getCxData } from "../shared/get-cx-data";
-import { getFileNameForOrg } from "../shared/folder";
 
 dayjs.extend(duration);
 
@@ -38,9 +38,10 @@ const cxId = getEnvVarOrFail("CX_ID");
 
 const endpointUrl = `${apiUrl}/internal/patient/consolidated`;
 
-const getDirName = (orgName: string) => `./runs/MR-Summaries/${getFileNameForOrg(orgName)}`;
+const getDirName = buildGetDirPathInside(`MR-Summaries`);
 
 async function main() {
+  initRunsFolder();
   console.log(
     `########################## Running for cx ${cxId}, ${
       patientIds.length

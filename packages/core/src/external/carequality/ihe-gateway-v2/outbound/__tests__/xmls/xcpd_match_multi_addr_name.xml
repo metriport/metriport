@@ -85,6 +85,14 @@
                                     </addr>
                                     <telecom use="MC" value="tel:+1310-000-0000" />
                                     <telecom use="H" value="mailto:test@test.com" />
+                                    <asOtherIDs classCode="PAT">
+                                        <id root="2.16.840.1.113883.3.9621"
+                                            extension="987564321" />
+                                        <scopingOrganization classCode="ORG"
+                                            determinerCode="INSTANCE">
+                                            <id root="2.16.840.1.113883.3.9621" />
+                                        </scopingOrganization>
+                                    </asOtherIDs>
                                 </patientPerson>
                                 <subjectOf1>
                                     <queryMatchObservation classCode="OBS" moodCode="EVN">
