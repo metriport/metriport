@@ -283,7 +283,7 @@ router.get(
     const consolidatedQueries = patient.data.consolidatedQueries ?? null;
 
     const respPayload: ConsolidatedQueryProgress = {
-      statuses: consolidatedQueries ?? null,
+      queries: consolidatedQueries ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
     };
@@ -336,7 +336,8 @@ router.post(
     });
 
     const respPayload: ConsolidatedQueryProgress = {
-      statuses: queryResponse ?? null,
+      queries: queryResponse.consolidatedQueries ?? null,
+      message: queryResponse.message,
     };
 
     return res.json(respPayload);

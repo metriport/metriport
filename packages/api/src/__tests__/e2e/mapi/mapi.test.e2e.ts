@@ -223,15 +223,15 @@ describe("MAPI E2E Tests", () => {
       undefined,
       "html"
     );
-    const initConversionProgress = conversionProgress?.statuses?.[0];
+    const initConversionProgress = conversionProgress?.queries?.[0];
     expect(conversionProgress).toBeTruthy();
-    expect(conversionProgress.statuses?.length).toEqual(1);
+    expect(conversionProgress.queries?.length).toEqual(1);
     expect(initConversionProgress?.status).toEqual("processing");
   });
 
   it("completes conversion successfully", async () => {
     let conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
-    let initConversionProgress = conversionProgresses?.statuses?.[0];
+    let initConversionProgress = conversionProgresses?.queries?.[0];
     let retryLimit = 0;
     while (
       initConversionProgress?.status !== "completed" &&
@@ -242,7 +242,7 @@ describe("MAPI E2E Tests", () => {
       );
       await sleep(conversionCheckStatusWaitTime.asMilliseconds());
       conversionProgresses = await medicalApi.getConsolidatedQueryStatus(patient.id);
-      initConversionProgress = conversionProgresses?.statuses?.[0];
+      initConversionProgress = conversionProgresses?.queries?.[0];
     }
     expect(conversionProgresses).toBeTruthy();
     expect(initConversionProgress?.status).toEqual("completed");

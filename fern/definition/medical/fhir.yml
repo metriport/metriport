@@ -52,8 +52,7 @@ service:
         - path-parameters:
             id: "12345678"
           response:
-            body:
-              status: processing
+            body: $StartConsolidatedQueryResponse.Example0
 
     getConsolidatedQueryStatus:
       display-name: Get Consolidated Data Query status
@@ -149,22 +148,54 @@ service:
 types:
   StartConsolidatedQueryResponse:
     properties:
-      status: PatientConsolidatedDataStatus
-
-  PatientConsolidatedDataStatus:
-    enum:
-      - processing
-      - completed
-      - failed
-
-  GetConsolidatedQueryStatusResponse:
-    properties:
-      status: optional<PatientConsolidatedDataStatus>
+      queries: list<PatientConsolidatedDataStatus>
       message: optional<string>
     examples:
       - name: Example0
         value:
-          status: completed
+          queries:
+            - $PatientConsolidatedDataStatus.Example0
+
+  PatientConsolidatedDataStatus:
+    properties:
+      requestId:
+        type: string
+      startedAt:
+        type: optional<string>
+      dateFrom:
+        type: optional<string>
+      dateTo:
+        type: optional<string>
+      conversionType:
+        enum:
+          - html
+          - pdf
+          - json
+      status:
+        enum:
+          - processing
+          - completed
+          - failed
+    examples:
+      - name: Example0
+        value:
+          requestId: "12345678"
+          startedAt: "2023-07-27T21:29:31.491+00:00"
+          dateFrom: "2023-07-27"
+          dateTo: "2024-07-27"
+          conversionType: "html"
+          status: processing
+
+  GetConsolidatedQueryStatusResponse:
+    properties:
+      queries: list<PatientConsolidatedDataStatus>
+      message: optional<string>
+    examples:
+      - name: Example0
+        value:
+          queries:
+            - $PatientConsolidatedDataStatus.Example0
+            - $PatientConsolidatedDataStatus.Example0
           message: Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook
 
   ConsolidatedCountResponse:

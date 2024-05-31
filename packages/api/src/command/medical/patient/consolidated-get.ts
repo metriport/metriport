@@ -64,7 +64,10 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-}: ConsolidatedQueryParams): Promise<ConsolidatedQuery[]> {
+}: ConsolidatedQueryParams): Promise<{
+  consolidatedQueries: ConsolidatedQuery[];
+  message?: string;
+}> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(
@@ -79,7 +82,10 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
-    return patient.data.consolidatedQueries ?? [];
+    return {
+      consolidatedQueries: patient.data.consolidatedQueries ?? [],
+      message: `Query with the same params is already in progress with requestId ${currentConsolidatedProgress.requestId}`,
+    };
   }
 
   const startedAt = new Date();
@@ -124,7 +130,7 @@ export async function startConsolidatedQuery({
     requestId,
   }).catch(emptyFunction);
 
-  return updatedPatient.data.consolidatedQueries ?? [progress];
+  return { consolidatedQueries: updatedPatient.data.consolidatedQueries ?? [progress] };
 }
 
 function appendProgressToProcessingQueries(
@@ -150,8 +156,6 @@ export function getCurrentConsolidatedProgress(
 
   const { resources, dateFrom, dateTo, conversionType } = queryParams;
 
-  let currentConsolidatedQuery: ConsolidatedQuery | undefined = undefined;
-
   for (const progress of consolidatedQueriesProgress) {
     const isSameResources = getIsSameResources(progress, resources);
     const isSameDateFrom = progress.dateFrom === dateFrom;
@@ -160,12 +164,9 @@ export function getCurrentConsolidatedProgress(
     const isProcessing = progress.status === "processing";
 
     if (isSameResources && isSameDateFrom && isSameDateTo && isSameConversionType && isProcessing) {
-      currentConsolidatedQuery = progress;
-      break;
+      return progress;
     }
   }
-
-  return currentConsolidatedQuery;
 }
 
 function getIsSameResources(
