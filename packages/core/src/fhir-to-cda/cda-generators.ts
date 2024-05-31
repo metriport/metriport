@@ -1,5 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
-import { findOrganizationResource, findPatientResource } from "../external/fhir/shared";
+import {
+  findCompositionResource,
+  findOrganizationResource,
+  findPatientResource,
+} from "../external/fhir/shared";
 import BadRequestError from "../util/error/bad-request";
 import { buildAuthor } from "./cda-templates/clinical-document/author";
 import { buildClinicalDocumentXml } from "./cda-templates/clinical-document/clinical-document";
@@ -26,6 +30,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
   const author = buildAuthor(organizationResources);
   const custodian = buildCustodian();
   const structuredBody = buildStructuredBody(fhirBundle);
+  const composition = findCompositionResource(fhirBundle);
 
   if (!structuredBody) {
     throw new BadRequestError(
@@ -37,18 +42,14 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
     recordTarget,
     author,
     custodian,
-    structuredBody
+    structuredBody,
+    composition
   );
 
-  const postProcessedXml = postProcessXml(clinicalDocument, oid);
-  return postProcessedXml;
+  return postProcessXml(clinicalDocument, oid);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function postProcessXml(xml: any, oid: string): string {
-  return xml
-    .replaceAll("<br>", "")
-    .replaceAll("</br>", "<br />")
-    .replaceAll("&apos;", "'")
-    .replaceAll(placeholderOrgOid, oid);
+  return xml.replaceAll("<br>", "<br/>").replaceAll("</br>", "").replaceAll(placeholderOrgOid, oid);
 }

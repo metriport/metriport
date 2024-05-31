@@ -7,10 +7,10 @@ import { MedicalDataSource } from "../external";
 import { Address, getState } from "./address";
 import { Contact } from "./contact";
 
-export const generalTypes = ["passport", "ssn", "medicare"] as const;
-export const driversLicenseType = ["driversLicense"] as const;
-export type GeneralTypes = (typeof generalTypes)[number];
-export type DriverLicenseType = (typeof driversLicenseType)[number];
+export const generalPersonalIdentifiers = ["ssn"] as const;
+export const driversLicensePersonalIdentifier = ["driversLicense"] as const;
+export type GeneralPersonalIdentifiers = (typeof generalPersonalIdentifiers)[number];
+export type DriversLicensePersonalIdentifier = (typeof driversLicensePersonalIdentifier)[number];
 
 export type Period =
   | {
@@ -23,20 +23,16 @@ export type Period =
     };
 
 export type BaseIdentifier = {
+  value: string;
   period?: Period;
   assigner?: string;
 };
-// TODO #425 reenable this when we manage to work with diff systems @ CW
-// export type PersonalIdentifier = BaseIdentifier &
-//   (
-//     | { type: GeneralTypes; value: string; state?: never }
-//     | { type: DriverLicenseType; value: string; state: USState }
-//   );
-export type PersonalIdentifier = BaseIdentifier & {
-  type: DriverLicenseType;
-  value: string;
-  state: USState;
-};
+
+export type PersonalIdentifier = BaseIdentifier &
+  (
+    | { type: GeneralPersonalIdentifiers }
+    | { type: DriversLicensePersonalIdentifier; state: USState }
+  );
 
 export type DriversLicense = {
   value: string;
@@ -71,6 +67,11 @@ export type PatientData = {
   cxDownloadRequestMetadata?: unknown;
 };
 
+export type PatientDemoData = Pick<
+  PatientData,
+  "firstName" | "lastName" | "dob" | "genderAtBirth" | "personalIdentifiers" | "address" | "contact"
+>;
+
 export interface PatientCreate extends BaseDomainCreate {
   cxId: string;
   facilityIds: string[];
@@ -91,4 +92,16 @@ export interface Patient extends BaseDomain, PatientCreate {}
 
 export function getStatesFromAddresses(patient: Patient): USState[] {
   return patient.data.address.map(getState);
+}
+
+export function createDriversLicensePersonalIdentifier(
+  value: string,
+  state: USState
+): PersonalIdentifier {
+  const personalIdentifier: PersonalIdentifier = {
+    type: "driversLicense",
+    value: value,
+    state: state,
+  };
+  return personalIdentifier;
 }

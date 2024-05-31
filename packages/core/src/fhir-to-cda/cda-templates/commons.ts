@@ -7,6 +7,9 @@ import {
   Organization,
 } from "@medplum/fhirtypes";
 import { normalizeOid } from "@metriport/shared";
+import dayjs from "dayjs";
+import localizedFormat from "dayjs/plugin/localizedFormat";
+import utc from "dayjs/plugin/utc";
 import {
   CDAOriginalText,
   CdaAddress,
@@ -23,27 +26,19 @@ import {
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
-  _assigningAuthorityNameAttribute,
-  _codeAttribute,
-  _codeSystemAttribute,
-  _codeSystemNameAttribute,
-  _displayNameAttribute,
-  _extensionAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _nullFlavorAttribute,
-  _rootAttribute,
-  _useAttribute,
-  _valueAttribute,
   _xmlnsXsiAttribute,
   _xsiTypeAttribute,
   amaAssnSystemCode,
   fdasisSystemCode,
+  icd10SystemCode,
   loincSystemCode,
   nlmNihSystemCode,
   placeholderOrgOid,
   snomedSystemCode,
 } from "./constants";
+
+dayjs.extend(localizedFormat);
+dayjs.extend(utc);
 
 const CODING_MAP = new Map<string, string>();
 CODING_MAP.set("http://loinc.org", loincSystemCode);
@@ -51,6 +46,7 @@ CODING_MAP.set("http://snomed.info/sct", snomedSystemCode);
 CODING_MAP.set("http://www.nlm.nih.gov/research/umls/rxnorm", nlmNihSystemCode);
 CODING_MAP.set("http://www.ama-assn.org/go/cpt", amaAssnSystemCode);
 CODING_MAP.set("http://fdasis.nlm.nih.gov", fdasisSystemCode);
+CODING_MAP.set("icd-10", icd10SystemCode);
 
 export const TIMESTAMP_CLEANUP_REGEX = /-|T|:|\.\d+Z$/g;
 export function withoutNullFlavorObject(value: string | undefined, key: string): EntryObject {
@@ -64,8 +60,20 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { [_nullFlavorAttribute]: "UNK" };
+  if (value == undefined) return { _nullFlavor: "UNK" };
   return { [key]: value };
+}
+
+export function buildCodeCeFromCoding(coding: Coding[] | undefined): CdaCodeCe | undefined {
+  if (!coding) return;
+  const primaryCoding = coding[0];
+  if (!primaryCoding) return;
+  const cleanedUpCoding = cleanUpCoding(primaryCoding);
+  return buildCodeCe({
+    code: cleanedUpCoding?.code,
+    codeSystem: cleanedUpCoding?.system,
+    displayName: cleanedUpCoding?.display,
+  });
 }
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CE.html for CE type
@@ -82,10 +90,10 @@ export function buildCodeCe({
 }): CdaCodeCe {
   const codeObject: CdaCodeCe = {};
   const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
-  if (code) codeObject[_codeAttribute] = code.trim();
-  if (mappedCodeSystem) codeObject[_codeSystemAttribute] = mappedCodeSystem;
-  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName.trim();
-  if (displayName) codeObject[_displayNameAttribute] = displayName.trim();
+  if (code) codeObject._code = code.trim();
+  if (mappedCodeSystem) codeObject._codeSystem = mappedCodeSystem;
+  if (codeSystemName) codeObject._codeSystemName = codeSystemName.trim();
+  if (displayName) codeObject._displayName = displayName.trim();
 
   return codeObject;
 }
@@ -93,7 +101,7 @@ export function buildCodeCe({
 export function buildOriginalTextReference(value: string): CDAOriginalText {
   return {
     reference: {
-      [_valueAttribute]: value,
+      _value: value,
     },
   };
 }
@@ -146,9 +154,9 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CdaInstanceIdentifier {
   const identifier: CdaInstanceIdentifier = {};
-  if (root) identifier[_rootAttribute] = root;
-  if (extension) identifier[_extensionAttribute] = extension;
-  if (assigningAuthorityName) identifier[_assigningAuthorityNameAttribute] = assigningAuthorityName;
+  if (root) identifier._root = root;
+  if (extension) identifier._extension = extension;
+  if (assigningAuthorityName) identifier._assigningAuthorityName = assigningAuthorityName;
 
   return identifier;
 }
@@ -157,7 +165,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
 ): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
-    return withNullFlavor(undefined, _rootAttribute);
+    return withNullFlavor(undefined, "_root");
   }
 
   const identifiersArray = Array.isArray(identifiers)
@@ -181,23 +189,23 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[]
   return telecoms.map(telecom => {
     const telecomUse = mapTelecomUse(telecom.use);
     return {
-      ...withoutNullFlavorObject(telecomUse, _useAttribute),
-      ...withoutNullFlavorObject(telecom.value, _valueAttribute),
+      ...withoutNullFlavorObject(telecomUse, "_use"),
+      ...withoutNullFlavorObject(telecom.value, "_value"),
     };
   });
 }
 
 export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
-    ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), "_use"),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
     state: addr.state,
     postalCode: addr.postalCode,
     country: addr.country,
     useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, _valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, _valueAttribute),
+      low: withoutNullFlavorObject(addr.period?.start, "_value"),
+      high: withoutNullFlavorObject(addr.period?.end, "_value"),
     },
   }));
 }
@@ -213,24 +221,46 @@ export function buildRepresentedOrganization(
   };
 }
 
+const timeOffsetRegex = /([+-](?:2[0-3]|[01][0-9]):[0-5][0-9])$/;
 export function formatDateToCdaTimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }
-  const formatted = dateString.replace(/-/g, "");
-  if (formatted.includes("T")) return formatted.split("T")[0];
-  return formatted;
+
+  const date = dayjs(dateString);
+
+  if (dateString.includes("T")) {
+    const match = dateString.match(timeOffsetRegex);
+    if (match) {
+      return date.utcOffset(match[0]).utc().format("YYYYMMDDHHmmss");
+    } else if (!dateString.endsWith("Z")) {
+      return date.format("YYYYMMDD");
+    }
+    return date.utc().format("YYYYMMDDHHmmss");
+  }
+  return date.utc().format("YYYYMMDD");
 }
 
 export function formatDateToHumanReadableFormat(
   dateString: string | undefined
 ): string | undefined {
-  const date = formatDateToCdaTimestamp(dateString);
-  if (!date) return undefined;
+  if (!dateString) return undefined;
 
-  return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}`;
+  const date = dayjs(dateString);
+
+  if (dateString.includes("T")) {
+    const match = dateString.match(timeOffsetRegex);
+    if (match) {
+      return date.utcOffset(match[0]).utc().format("MM/DD/YYYY h:mm A");
+    } else if (!dateString.endsWith("Z")) {
+      return date.format("MM/DD/YYYY");
+    }
+    return date.utc().format("MM/DD/YYYY h:mm A");
+  }
+
+  // if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
+  return date.utc().format("MM/DD/YYYY");
 }
-
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html
 export function buildValueSt(value: string | undefined): CdaValueSt | undefined {
   if (!value) return undefined;
@@ -238,22 +268,23 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
   const valueObject: CdaValueSt = {};
   valueObject[_xsiTypeAttribute] = "ST";
   valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
-  valueObject[_inlineTextAttribute] = value;
+  valueObject["#text"] = value;
   return valueObject;
 }
 
+// see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-CD.html
 export function buildValueCd(
   codeableConcept: CodeableConcept | undefined,
   referenceId: string
 ): CdaValueCd | undefined {
   const valueObject: CdaValueCd = {
     [_xsiTypeAttribute]: "CD",
-    [_codeAttribute]: codeableConcept?.coding?.[0]?.code,
-    [_codeSystemAttribute]: mapCodingSystem(codeableConcept?.coding?.[0]?.system),
-    [_displayNameAttribute]: codeableConcept?.coding?.[0]?.display,
+    _code: codeableConcept?.coding?.[0]?.code,
+    _codeSystem: mapCodingSystem(codeableConcept?.coding?.[0]?.system),
+    _displayName: codeableConcept?.coding?.[0]?.display,
     originalText: {
       reference: {
-        [_valueAttribute]: referenceId,
+        _value: referenceId,
       },
     },
   };
@@ -316,6 +347,7 @@ function mapTelecomUse(use: string | undefined) {
 function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
   if (!primaryCodingRaw) return undefined;
   const system = primaryCodingRaw.system;
+  const codingSystem = system ? CODING_MAP.get(system) : undefined;
   switch (system) {
     case "http://loinc.org":
       return {
@@ -337,19 +369,20 @@ function cleanUpCoding(primaryCodingRaw: Coding | undefined) {
       };
     default:
       return {
-        system: system ? CODING_MAP.get(system) : primaryCodingRaw.system,
+        system: codingSystem ?? system,
         code: primaryCodingRaw.code,
         display: primaryCodingRaw.display,
       };
   }
 }
 
-function mapCodingSystem(system: string | undefined): string | undefined {
+export function mapCodingSystem(system: string | undefined): string | undefined {
   if (!system) return undefined;
-  const mappedCodingSystem = CODING_MAP.get(system);
+  const systemLowerCase = system.toLowerCase();
+  const mappedCodingSystem = CODING_MAP.get(systemLowerCase);
   if (mappedCodingSystem) return mappedCodingSystem;
-  if (system.includes("urn")) return normalizeOid(system);
-  return system;
+  if (systemLowerCase.includes("urn")) return normalizeOid(systemLowerCase);
+  return systemLowerCase;
 }
 
 export function buildReferenceId(prefix: string, pairNumber: number): string {
@@ -357,13 +390,19 @@ export function buildReferenceId(prefix: string, pairNumber: number): string {
 }
 
 export function isLoinc(system: string | undefined): boolean {
-  if (system?.toLowerCase().includes("loinc")) {
+  if (system?.toLowerCase().trim().includes("loinc")) {
     return true;
   }
   return false;
 }
 
-export function createTableHeader(tableHeaders: string[]) {
+type TableHeader = {
+  tr: {
+    th: string[];
+  }[];
+};
+
+export function createTableHeader(tableHeaders: string[]): TableHeader {
   return {
     tr: [
       {
@@ -379,20 +418,42 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
   return primaryCoding?.display ?? code.text ?? NOT_SPECIFIED;
 }
 
+export type CdaTable = {
+  table: {
+    _ID: string;
+    thead: TableHeader;
+    tbody: {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      tr: TableRowWithId[];
+    };
+  };
+};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type TableRow = { tr: { [x: string]: any; td: any } };
 export function initiateSectionTable(
   sectionName: string,
   tableHeaders: string[],
   tableRows: ObservationTableRow[]
-) {
+): CdaTable {
   return {
-    [_idAttribute]: sectionName,
-    thead: createTableHeader(tableHeaders),
-    tbody: {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      tr: tableRows.map((row: { tr: { [x: string]: any; td: any } }) => ({
-        [_idAttribute]: row.tr[_idAttribute],
-        td: row.tr.td,
-      })),
+    table: {
+      _ID: sectionName,
+      thead: createTableHeader(tableHeaders),
+      tbody: {
+        tr: mapTableRows(tableRows),
+      },
     },
   };
+}
+
+type TableRowWithId = {
+  _ID: string;
+  td: TableRow;
+};
+
+function mapTableRows(tableRows: ObservationTableRow[]): TableRowWithId[] {
+  return tableRows.map((row: TableRow) => ({
+    _ID: row.tr._ID,
+    td: row.tr.td,
+  }));
 }

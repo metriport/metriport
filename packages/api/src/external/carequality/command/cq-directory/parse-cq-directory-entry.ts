@@ -4,12 +4,21 @@ import { Contained } from "@metriport/carequality-sdk/models/contained";
 import { ManagingOrganization, Organization } from "@metriport/carequality-sdk/models/organization";
 import { Coordinates } from "@metriport/core/external/aws/location";
 import { capture } from "@metriport/core/util/notifications";
-import { normalizeOid } from "@metriport/shared";
+import { errorToString, normalizeOid, normalizeZipCode } from "@metriport/shared";
 import { CQDirectoryEntryData } from "../../cq-directory";
 import { CQOrgUrls } from "../../shared";
+import { out } from "@metriport/core/util/log";
+
+const { log } = out(`parseCQDirectoryEntries`);
+
+export type LenientAddress = {
+  addressLine?: string | undefined;
+  city?: string | undefined;
+  state?: string | undefined;
+  zip?: string | undefined;
+};
 
 const EARTH_RADIUS = 6378168;
-
 const XCPD_STRING = "ITI-55";
 const XCA_DQ_STRING = "ITI-38";
 const XCA_DR_STRING = "ITI-39";
@@ -29,7 +38,7 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
     const point = lat && lon ? computeEarthPoint(lat, lon) : undefined;
     const managingOrganization = org.managingOrg ? getManagingOrg(org.managingOrg) : undefined;
     const managingOrganizationId = getManagingOrgId(org);
-    const state = getState(org.address);
+    const { addressLine, city, state, zip } = getAddressFields(org.address);
     const active = org.active?.value ?? false;
 
     const orgData: CQDirectoryEntryData = {
@@ -41,11 +50,13 @@ export function parseCQDirectoryEntries(orgsInput: Organization[]): CQDirectoryE
       lat,
       lon,
       point,
+      addressLine,
+      city,
       state,
+      zip,
       data: org,
       managingOrganization,
       managingOrganizationId,
-      gateway: false,
       active,
       lastUpdatedAtCQ: org.meta.lastUpdated.value,
     };
@@ -127,10 +138,44 @@ function getCoordinates(address: Address[]): Coordinates | undefined {
   return { lat, lon };
 }
 
-function getState(addresses: Address[] | undefined): string | undefined {
-  if (!addresses) return;
-  if (addresses.length > 0 && addresses[0]?.state) return addresses[0].state.value ?? undefined;
-  return;
+export function getAddressFields(addresses: Address[] | undefined): LenientAddress {
+  if (!addresses) return {};
+
+  let bestAddress: LenientAddress = {};
+
+  for (const address of addresses) {
+    const parsedAddress: LenientAddress = {};
+
+    if (address?.line) {
+      const line = Array.isArray(address.line) ? address.line[0]?.value : address.line?.value;
+      if (line) parsedAddress.addressLine = line;
+    }
+    if (address?.city?.value) parsedAddress.city = address?.city?.value;
+    if (address?.state?.value) parsedAddress.state = address?.state?.value;
+    const postalCode = address?.postalCode?.value;
+    if (postalCode && postalCode.length > 0) {
+      try {
+        parsedAddress.zip = normalizeZipCode(postalCode);
+      } catch (err) {
+        log(`normalizeZipCode error for zip ${postalCode} - error: ${errorToString(err)}`);
+      }
+    }
+
+    if (
+      parsedAddress.addressLine &&
+      parsedAddress.city &&
+      parsedAddress.state &&
+      parsedAddress.zip
+    ) {
+      return parsedAddress;
+    }
+
+    if (Object.keys(parsedAddress).length > Object.keys(bestAddress).length) {
+      bestAddress = parsedAddress;
+    }
+  }
+
+  return bestAddress;
 }
 
 function getManagingOrg(managingOrg: ManagingOrganization | undefined): string | undefined {
@@ -166,7 +211,7 @@ function getNormalizedOid(
   try {
     return normalizeOid(oid);
   } catch (err) {
-    console.log(`${entityDescription} has invalid OID: ${oid}`);
+    log(`${entityDescription} has invalid OID: ${oid}`);
   }
 }
 
@@ -178,7 +223,7 @@ function getUrlType(value: string | undefined): ChannelUrl | undefined {
 
   if (value.includes("Direct Messaging")) return;
   const msg = `Unknown CQ Endpoint type`;
-  console.log(msg);
+  log(msg);
   capture.message(msg, {
     extra: { value, context: "parseCQDirectoryEntries" },
     level: "warning",

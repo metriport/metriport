@@ -7,16 +7,16 @@ import {
 import { Patient } from "@metriport/core/domain/patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
+import { analytics, EventTypes } from "@metriport/core/external/analytics/posthog";
 import { emptyFunction } from "@metriport/shared";
 import { calculateConversionProgress } from "../../../domain/medical/conversion-progress";
 import { validateOptionalFacilityId } from "../../../domain/medical/patient-facility";
-import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/appConfig";
+import { isCarequalityEnabled, isCommonwellEnabled } from "../../../external/aws/app-config";
 import { getDocumentsFromCQ } from "../../../external/carequality/document/query-documents";
 import { queryAndProcessDocuments as getDocumentsFromCW } from "../../../external/commonwell/document/document-query";
 import { resetDocQueryProgress } from "../../../external/hie/reset-doc-query-progress";
 import { PatientModel } from "../../../models/medical/patient";
 import { executeOnDBTx } from "../../../models/transaction-wrapper";
-import { analytics, EventTypes } from "../../../shared/analytics";
 import { Config } from "../../../shared/config";
 import { Util } from "../../../shared/util";
 import { getCqOrgIdsToDenyOnCw } from "../../../external/hie/cross-hie-ids";
@@ -115,6 +115,7 @@ export async function queryDocumentsAcrossHIEs({
   if (carequalityEnabled || forceCarequality) {
     getDocumentsFromCQ({
       patient: updatedPatient,
+      facilityId,
       requestId,
     }).catch(emptyFunction);
   }

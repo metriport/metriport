@@ -4,6 +4,7 @@ import * as patient from "./patient";
 
 const cwCommands = {
   organization: {
+    get: organization.get,
     create: organization.create,
     update: organization.update,
     initCQOrgIncludeList: organization.initCQOrgIncludeList,
@@ -11,6 +12,7 @@ const cwCommands = {
   },
   patient: {
     create: patient.create,
+    get: patient.get,
     update: patient.update,
     remove: patient.remove,
     getCWData: patient.getCWData,

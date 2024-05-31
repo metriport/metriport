@@ -1,4 +1,4 @@
-import { patientCreateSchema } from "@metriport/api-sdk";
+import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
@@ -26,7 +26,12 @@ import {
 } from "../../command/medical/patient/create-medical-record";
 import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
-import { getPatientOrFail, getPatients } from "../../command/medical/patient/get-patient";
+import {
+  getPatientOrFail,
+  getPatients,
+  PatientMatchCmd,
+  matchPatient,
+} from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
 import { getFacilityIdOrFail } from "../../domain/medical/patient-facility";
@@ -53,6 +58,7 @@ import {
   patientUpdateSchema,
   schemaCreateToPatient,
   schemaUpdateToPatient,
+  schemaDemographicsToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -297,7 +303,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  * @param req.query.resources Optional comma-separated list of resources to be returned.
  * @param req.query.dateFrom Optional start date that resources will be filtered by (inclusive).
  * @param req.query.dateTo Optional end date that resources will be filtered by (inclusive).
- * @param req.query.docType Optional to indicate the file format you get the document back in.
+ * @param req.query.conversionType Optional to indicate the file format you get the document back in.
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
@@ -495,6 +501,32 @@ router.get(
         dateTo,
       },
     });
+  })
+);
+
+/** ---------------------------------------------------------------------------
+ * POST /patient/match
+ *
+ * Searches for a patient previously created at Metriport, based on a demographic data. Returns the matched patient, if it exists.
+ *
+ * @return The matched patient.
+ * @throws NotFoundError if the patient does not exist.
+ */
+router.post(
+  "/match",
+  requestLogger,
+  asyncHandler(async (req: Request, res: Response) => {
+    const cxId = getCxIdOrFail(req);
+    const payload = demographicsSchema.parse(req.body);
+
+    const patientMatch: PatientMatchCmd = schemaDemographicsToPatient(payload, cxId);
+
+    const patient = await matchPatient(patientMatch);
+
+    if (patient) {
+      return res.status(status.OK).json(dtoFromModel(patient));
+    }
+    throw new NotFoundError("Cannot find patient");
   })
 );
 

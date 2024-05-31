@@ -88,6 +88,20 @@ service:
                 - $Facility.Example1
                 - $Facility.Example1
 
+    delete:
+      display-name: Delete Facility
+      docs: Deletes a Facility. Throws 400 if there are patients associated with the Facility.
+      method: DELETE
+      path: /{id}
+      path-parameters:
+        id:
+          type: string
+          docs: The ID of the Facility.
+      examples:
+        - name: Example1
+          path-parameters:
+            id: "2.16.840.1.113883.3.666.123"
+
 types:
   BaseFacility:
     properties:

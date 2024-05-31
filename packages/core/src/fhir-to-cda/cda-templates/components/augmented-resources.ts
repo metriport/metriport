@@ -6,30 +6,36 @@ import {
   Observation,
   Resource,
 } from "@medplum/fhirtypes";
+import { oids } from "../constants";
 
-export interface AugmentedResource {
-  readonly typeOid: string;
+export interface AugmentedResource<T extends Resource> {
   readonly sectionName: string;
-  resource: Resource;
+  resource: T;
+  readonly typeOid: string;
 }
-export class AugmentedObservation implements AugmentedResource {
-  constructor(public typeOid: string, public sectionName: string, public resource: Observation) {}
-}
-
-export class AugmentedAllergy implements AugmentedResource {
-  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.30";
-  constructor(public resource: AllergyIntolerance, public sectionName: string) {}
-}
-export class AugmentedCondition implements AugmentedResource {
-  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.3";
-  constructor(public resource: Condition, public sectionName: string) {}
-}
-
-export class AugmentedMedicationStatement implements AugmentedResource {
-  public readonly typeOid = "2.16.840.1.113883.10.20.22.4.16";
+export class AugmentedObservation implements AugmentedResource<Observation> {
   constructor(
-    public resource: MedicationStatement,
-    public sectionName: string,
-    public medication?: Medication | undefined
+    public readonly sectionName: string,
+    public readonly resource: Observation,
+    public readonly typeOid: string
   ) {}
+}
+
+export class AugmentedCondition implements AugmentedResource<Condition> {
+  public readonly typeOid = oids.problemConcernAct;
+  constructor(public readonly sectionName: string, public readonly resource: Condition) {}
+}
+
+export class AugmentedMedicationStatement implements AugmentedResource<MedicationStatement> {
+  public readonly typeOid = oids.medicationActivity;
+  constructor(
+    public readonly sectionName: string,
+    public readonly resource: MedicationStatement,
+    public readonly medication: Medication
+  ) {}
+}
+
+export class AugmentedAllergy implements AugmentedResource<AllergyIntolerance> {
+  public readonly typeOid = oids.allergyConcernAct;
+  constructor(public readonly sectionName: string, public readonly resource: AllergyIntolerance) {}
 }

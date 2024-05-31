@@ -1,15 +1,38 @@
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { Organization } from "@metriport/core/domain/organization";
-import { getStatesFromAddresses, Patient, PatientData } from "@metriport/core/domain/patient";
+import { getStatesFromAddresses, Patient, PatientDemoData } from "@metriport/core/domain/patient";
 import { getPatientByDemo as getPatientByDemoMPI } from "@metriport/core/mpi/get-patient-by-demo";
 import { uniq } from "lodash";
 import { Op, Transaction } from "sequelize";
 import { Facility } from "../../../domain/medical/facility";
 import NotFoundError from "../../../errors/not-found";
-import { PatientLoaderLocal } from "../../../external/commonwell/patient-loader-local";
+import { PatientLoaderLocal } from "../../../models/helpers/patient-loader-local";
 import { PatientModel } from "../../../models/medical/patient";
 import { getFacilities } from "../facility/get-facility";
 import { getOrganizationOrFail } from "../organization/get-organization";
+import { sanitize, validate } from "./shared";
+
+export type PatientMatchCmd = PatientDemoData & { cxId: string };
+
+export async function matchPatient(patient: PatientMatchCmd): Promise<Patient | undefined> {
+  const { cxId } = patient;
+
+  const sanitized = sanitize(patient);
+  validate(sanitized);
+  const { firstName, lastName, dob, genderAtBirth, personalIdentifiers, address, contact } =
+    sanitized;
+  const demo: PatientDemoData = {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    personalIdentifiers,
+    address,
+    contact,
+  };
+
+  return await getPatientByDemo({ cxId, demo });
+}
 
 export const getPatients = async ({
   facilityId,
@@ -72,7 +95,7 @@ export const getPatientByDemo = async ({
   demo,
 }: {
   cxId: string;
-  demo: PatientData;
+  demo: PatientDemoData;
 }): Promise<Patient | undefined> => {
   const patientLoader = new PatientLoaderLocal();
   return getPatientByDemoMPI({ cxId, demo, patientLoader });
@@ -87,7 +110,13 @@ export type GetPatient = {
       lock?: never;
     }
   | {
+      /**
+       * @see executeOnDBTx() for details about the 'transaction' parameter.
+       */
       transaction: Transaction;
+      /**
+       * @see executeOnDBTx() for details about the 'lock' parameter.
+       */
       lock?: boolean;
     }
 );

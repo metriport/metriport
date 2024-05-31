@@ -1,30 +1,15 @@
 import {
-  _assigningAuthorityNameAttribute,
-  _classCodeAttribute,
-  _codeAttribute,
-  _codeSystemAttribute,
-  _codeSystemNameAttribute,
-  _displayNameAttribute,
-  _extensionAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _namespaceAttribute,
-  _namespaceSdtcAttribute,
-  _namespaceXsiAttribute,
-  _rootAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
+  _xmlnsSdtcAttribute,
   _xmlnsXsiAttribute,
   _xsiTypeAttribute,
 } from "../cda-templates/constants";
 
 export type ClinicalDocument = {
   ClinicalDocument: {
-    [_namespaceAttribute]: string;
-    [_namespaceSdtcAttribute]: string;
-    [_namespaceXsiAttribute]: string;
-    [_moodCodeAttribute]: string;
+    _xmlns: string;
+    [_xmlnsSdtcAttribute]: string;
+    [_xmlnsXsiAttribute]: string;
+    _moodCode: string;
     realmCode?: CdaCodeCe;
     typeId?: CdaInstanceIdentifier;
     templateId?: CdaInstanceIdentifier[];
@@ -99,31 +84,31 @@ export type CdaName = {
 
 export type CDAOriginalText = {
   reference: {
-    [_valueAttribute]: string;
+    _value: string;
   };
 };
 
 // Ce (CE) stands for Coded with Equivalents
 export type CdaCodeCe = {
-  [_codeAttribute]?: string;
-  [_codeSystemAttribute]?: string;
-  [_codeSystemNameAttribute]?: string;
-  [_displayNameAttribute]?: string;
+  _code?: string;
+  _codeSystem?: string;
+  _codeSystemName?: string;
+  _displayName?: string;
 };
 
 // St (ST) stands for Simple Text
 export type CdaValueSt = {
   [_xsiTypeAttribute]?: "ST";
   [_xmlnsXsiAttribute]?: string;
-  [_inlineTextAttribute]?: string;
+  "#text"?: string;
 };
 
 // Cd (CD) stands for Concept Descriptor
 export type CdaValueCd = {
   [_xsiTypeAttribute]?: "CD";
-  [_codeAttribute]?: string | undefined;
-  [_displayNameAttribute]?: string | undefined;
-  [_codeSystemAttribute]?: string | undefined;
+  _code?: string | undefined;
+  _displayName?: string | undefined;
+  _codeSystem?: string | undefined;
   originalText?: CDAOriginalText;
 };
 
@@ -135,9 +120,9 @@ export interface CdaCodeCv extends CdaCodeCe {
 
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-II.html
 export type CdaInstanceIdentifier = {
-  [_rootAttribute]?: string;
-  [_extensionAttribute]?: string;
-  [_assigningAuthorityNameAttribute]?: string;
+  _root?: string;
+  _extension?: string;
+  _assigningAuthorityName?: string;
 };
 
 // TOP Level CDA Section Types
@@ -164,98 +149,95 @@ export type CdaRecordTarget = {
 export type CreateTableRowsCallback<T> = (
   observation: T,
   sectionPrefix: string
-) => ObservationTableRow[];
+) => ObservationTableRow | ObservationTableRow[];
 
-export type CreateEntriesCallback<T> = (
-  aug: T,
-  sectionPrefix: string
-  // ) => (ObservationEntry | SubstanceAdministationEntry)[];
-) => unknown[];
+export type CreateEntriesCallback<T, R> = (aug: T, sectionPrefix: string) => R;
 
-export type TableRowsAndEntriesResult = {
+export type TableRowsAndEntriesResult<D> = {
   trs: ObservationTableRow[];
-  // entries: (ObservationEntry | SubstanceAdministationEntry)[];
-  entries: unknown[];
+  entries: D[];
 };
 
 export type ObservationTableRow = {
   tr: {
-    [_idAttribute]: string;
+    _ID: string;
     td: {
-      [_idAttribute]?: string;
-      [_inlineTextAttribute]?: string | undefined;
+      _ID?: string;
+      "#text"?: string | undefined;
     }[];
   };
 };
 export type ObservationEntry = {
+  _typeCode?: string;
   observation: {
-    [_classCodeAttribute]: string;
-    [_moodCodeAttribute]: string;
+    _classCode: string;
+    _moodCode: string;
     templateId?: {
-      [_rootAttribute]?: string;
-      [_extensionAttribute]?: string;
+      _root?: string;
+      _extension?: string;
     };
     id?: {
-      [_rootAttribute]?: string;
-      [_extensionAttribute]?: string;
+      _root?: string;
+      _extension?: string;
     };
     code?: {
-      [_codeAttribute]?: string | undefined;
-      [_codeSystemAttribute]?: string | undefined;
-      [_codeSystemNameAttribute]?: string | undefined;
-      [_displayNameAttribute]?: string | undefined;
+      _code?: string | undefined;
+      _codeSystem?: string | undefined;
+      _codeSystemName?: string | undefined;
+      _displayName?: string | undefined;
     };
-    text: {
+    text?: {
       reference: {
-        [_valueAttribute]: string;
+        _value: string;
       };
     };
-    statusCode: {
-      [_codeAttribute]: string;
+    statusCode?: {
+      _code: string;
     };
     effectiveTime?: {
-      [_valueAttribute]?: string | undefined;
+      _value?: string | undefined;
     };
+    value?: CdaValueCd | undefined;
     entryRelationship?: ObservationEntryRelationship[];
     interpretationCode?: CdaCodeCe;
   };
 };
 
 export type ObservationEntryRelationship = ObservationEntry & {
-  [_typeCodeAttribute]: string;
+  _typeCode: string;
 };
 
 export type SubstanceAdministationEntry = {
   substanceAdministration: {
-    [_classCodeAttribute]: string;
-    [_moodCodeAttribute]: string;
+    _classCode: string;
+    _moodCode: string;
     templateId?: {
-      [_rootAttribute]?: string;
-      [_extensionAttribute]?: string;
+      _root?: string;
+      _extension?: string;
     };
     id?: {
-      [_rootAttribute]?: string;
-      [_extensionAttribute]?: string;
+      _root?: string;
+      _extension?: string;
     };
     statusCode: {
-      [_codeAttribute]?: string | undefined;
+      _code?: string | undefined;
     };
     effectiveTime: {
       [_xsiTypeAttribute]: string;
       low: {
-        [_valueAttribute]?: string | undefined;
+        _value?: string | undefined;
       };
       high: {
-        [_valueAttribute]?: string | undefined;
+        _value?: string | undefined;
       };
     };
     consumable: {
-      [_typeCodeAttribute]: string;
+      _typeCode: string;
       manufacturedProduct: {
-        // [_codeAttribute]: string;
+        // _code: string;
         templateId?: {
-          [_rootAttribute]?: string;
-          [_extensionAttribute]?: string;
+          _root?: string;
+          _extension?: string;
         };
         manufacturedMaterial: {
           code: CdaCodeCv | Entry;
@@ -264,9 +246,27 @@ export type SubstanceAdministationEntry = {
     };
     entryRelationship?: {
       supply?: {
-        [_classCodeAttribute]: string;
-        [_moodCodeAttribute]: string;
+        _classCode: string;
+        _moodCode: string;
       };
     };
+  };
+};
+
+export type ProblemsConcernActEntry = {
+  act: {
+    _classCode: string;
+    _moodCode: string;
+    templateId: CdaInstanceIdentifier;
+    id: CdaInstanceIdentifier;
+    code: CdaCodeCe;
+    statusCode: {
+      _code: string;
+    };
+    effectiveTime: {
+      low?: EntryObject;
+      high?: EntryObject;
+    };
+    entryRelationship: ObservationEntry;
   };
 };

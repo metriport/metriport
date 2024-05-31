@@ -22,18 +22,10 @@ import {
   withoutNullFlavorObject,
 } from "../commons";
 import {
-  _classCodeAttribute,
-  _codeAttribute,
-  _extensionAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _rootAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { AugmentedObservation } from "./augmented-resources";
@@ -41,8 +33,8 @@ import { AugmentedObservation } from "./augmented-resources";
 export interface CDAObservation {
   component: {
     observation: {
-      [_classCodeAttribute]: Entry;
-      [_moodCodeAttribute]: Entry;
+      _classCode: Entry;
+      _moodCode: Entry;
       id?: CdaInstanceIdentifier[] | Entry;
       code: CdaCodeCv | Entry;
       text?: Entry;
@@ -58,27 +50,27 @@ export interface CDAObservation {
   };
 }
 
-export function buildObservations(observations: Observation[]): CDAObservation[] {
+export function createObservations(observations: Observation[]): CDAObservation[] {
   return observations.map(observation => {
     const effectiveTime = observation.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, "");
     return {
       component: {
         observation: {
-          [_classCodeAttribute]: "OBS",
-          [_moodCodeAttribute]: "EVN",
+          _classCode: "OBS",
+          _moodCode: "EVN",
           templateId: buildInstanceIdentifier({
-            root: "2.16.840.1.113883.10.20.22.4.2",
+            root: oids.resultObs,
             extension: extensionValue2015,
           }),
           id: {
-            [_rootAttribute]: placeholderOrgOid,
-            [_extensionAttribute]: observation.id ?? observation.identifier?.[0]?.value ?? "",
+            _root: placeholderOrgOid,
+            _extension: observation.id ?? observation.identifier?.[0]?.value ?? "",
           },
           code: buildCodeCvFromCodeableConcept(observation.code),
-          statusCode: withoutNullFlavorObject(observation.status, _codeAttribute),
+          statusCode: withoutNullFlavorObject(observation.status, "_code"),
           effectiveTime: {
-            low: withoutNullFlavorObject(effectiveTime, _valueAttribute),
-            high: withoutNullFlavorObject(effectiveTime, _valueAttribute),
+            low: withoutNullFlavorObject(effectiveTime, "_value"),
+            high: withoutNullFlavorObject(effectiveTime, "_value"),
           },
           value: buildValueSt(observation.valueString),
         },
@@ -131,22 +123,22 @@ export function createTableRowFromObservation(
 
   return {
     tr: {
-      [_idAttribute]: referenceId,
+      _ID: referenceId,
       ["td"]: [
         {
-          [_inlineTextAttribute]: observation.code?.coding?.[0]?.display ?? observation.code?.text,
+          "#text": observation.code?.coding?.[0]?.display ?? observation.code?.text,
         },
         {
-          [_inlineTextAttribute]:
+          "#text":
             observation.valueCodeableConcept?.coding?.[0]?.display ??
             observation.valueCodeableConcept?.text ??
             "Not on file",
         },
         {
-          [_inlineTextAttribute]: scoreValue,
+          "#text": scoreValue,
         },
         {
-          [_inlineTextAttribute]: date ?? "Unknown",
+          "#text": date ?? "Unknown",
         },
       ],
     },
@@ -166,7 +158,7 @@ function hasObservationInCode(observation: Observation): boolean {
 export function createEntriesFromObservation(
   observation: AugmentedObservation,
   socHistNumber: string
-): ObservationEntry[] {
+): ObservationEntry {
   let pairNumber = 0;
   const date = formatDateToCdaTimestamp(observation.resource.effectiveDateTime);
   const observationEntry = createEntryFromObservation(
@@ -192,7 +184,7 @@ export function createEntriesFromObservation(
     });
   }
 
-  return [observationEntry];
+  return observationEntry;
 }
 
 function createEntryFromObservation(
@@ -205,8 +197,8 @@ function createEntryFromObservation(
   const systemIsLoinc = isLoinc(codeSystem);
   const entry = {
     observation: {
-      [_classCodeAttribute]: "OBS",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "OBS",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: augObs.typeOid,
         extension: extensionValue2015,
@@ -223,13 +215,13 @@ function createEntryFromObservation(
       }),
       text: {
         reference: {
-          [_valueAttribute]: referenceId,
+          _value: referenceId,
         },
       },
       statusCode: {
-        [_codeAttribute]: "completed",
+        _code: "completed",
       },
-      effectiveTime: withoutNullFlavorObject(date, _valueAttribute),
+      effectiveTime: withoutNullFlavorObject(date, "_value"),
       interpretationCode: buildCodeCe({
         code: observation.interpretation?.[0]?.coding?.[0]?.code,
         codeSystem: observation.interpretation?.[0]?.coding?.[0]?.system,
@@ -243,7 +235,7 @@ function createEntryFromObservation(
 
 function createEntryRelationship(entry: ObservationEntry): ObservationEntryRelationship {
   return {
-    [_typeCodeAttribute]: "COMP", // TODO: Dynamically assign values based on the spec
+    _typeCode: "COMP", // TODO: Dynamically assign values based on the spec
     observation: {
       ...entry.observation,
     },

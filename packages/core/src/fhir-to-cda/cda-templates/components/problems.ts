@@ -1,6 +1,11 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
-import { ObservationTableRow } from "../../cda-types/shared-types";
-import { isCondition } from "../../fhir";
+import { isCondition } from "../../../external/fhir/shared";
+import { ProblemsSection } from "../../cda-types/sections";
+import {
+  ObservationEntry,
+  ObservationTableRow,
+  ProblemsConcernActEntry,
+} from "../../cda-types/shared-types";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
@@ -9,21 +14,16 @@ import {
   getTextFromCode,
   initiateSectionTable,
   isLoinc,
+  mapCodingSystem,
   withoutNullFlavorObject,
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  _classCodeAttribute,
-  _codeAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
   extensionValue2014,
   extensionValue2015,
   loincCodeSystem,
   loincSystemName,
+  oids,
   placeholderOrgOid,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
@@ -39,7 +39,7 @@ const tableHeaders = [
   "Comments",
 ];
 
-export function buildProblems(fhirBundle: Bundle) {
+export function buildProblems(fhirBundle: Bundle): ProblemsSection {
   const conditions: Condition[] =
     fhirBundle.entry?.flatMap(entry => (isCondition(entry.resource) ? [entry.resource] : [])) || [];
 
@@ -48,7 +48,7 @@ export function buildProblems(fhirBundle: Bundle) {
   }
 
   const augmentedConditions = conditions.map(condition => {
-    return new AugmentedCondition(condition, problemsSectionName);
+    return new AugmentedCondition(problemsSectionName, condition);
   });
 
   const { trs, entries } = createTableRowsAndEntries(
@@ -60,23 +60,19 @@ export function buildProblems(fhirBundle: Bundle) {
   const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
   const problemsSection = {
-    component: {
-      section: {
-        templateId: buildInstanceIdentifier({
-          root: "2.16.840.1.113883.10.20.22.2.5.1",
-          extension: extensionValue2015,
-        }),
-        code: buildCodeCe({
-          code: "11450-4",
-          codeSystem: loincCodeSystem,
-          codeSystemName: loincSystemName,
-          displayName: "Problem list - Reported",
-        }),
-        title: "PROBLEMS",
-        text: { table },
-        entry: entries,
-      },
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.problemsSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "11450-4",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Problem list - Reported",
+    }),
+    title: "PROBLEMS",
+    text: table,
+    entry: entries,
   };
   return problemsSection;
 }
@@ -89,25 +85,25 @@ function createTableRowFromCondition(
   return [
     {
       tr: {
-        [_idAttribute]: referenceId,
+        _ID: referenceId,
         ["td"]: [
           {
-            [_inlineTextAttribute]: getIcdCode(condition.resource.code),
+            "#text": getIcdCode(condition.resource.code),
           },
           {
-            [_inlineTextAttribute]: name,
+            "#text": name,
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Find out what Provider Response stands for and map accordingly
+            "#text": NOT_SPECIFIED, // TODO: Find out what Provider Response stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Find out what Status stands for and map accordingly
+            "#text": NOT_SPECIFIED, // TODO: Find out what Status stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: "", // TODO: Figure out where to put comments in the Condition resource
+            "#text": NOT_SPECIFIED, // TODO: Figure out where to put comments in the Condition resource
           },
         ],
       },
@@ -115,55 +111,64 @@ function createTableRowFromCondition(
   ];
 }
 
-function createEntryFromCondition(condition: AugmentedCondition, referenceId: string) {
-  return [
-    {
-      act: {
-        [_classCodeAttribute]: "ACT",
-        [_moodCodeAttribute]: "EVN",
-        templateId: buildInstanceIdentifier({
-          root: condition.typeOid,
-          extension: extensionValue2014,
-        }),
-        id: buildInstanceIdentifier({
-          root: placeholderOrgOid,
-          extension: condition.resource.id,
-        }),
-        code: buildCodeCe({
-          code: "CONC",
-          codeSystem: "2.16.840.1.113883.5.6",
-          displayName: "Concern",
-        }),
-        statusCode: {
-          [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
-        },
-        effectiveTime: {
-          low: withoutNullFlavorObject(
-            formatDateToCdaTimestamp(condition.resource.recordedDate),
-            _valueAttribute
-          ),
-        },
-        entryRelationship: createEntryRelationship(condition.resource, referenceId),
+function createEntryFromCondition(
+  condition: AugmentedCondition,
+  referenceId: string
+): ProblemsConcernActEntry {
+  return {
+    act: {
+      _classCode: "ACT",
+      _moodCode: "EVN",
+      templateId: buildInstanceIdentifier({
+        root: condition.typeOid,
+        extension: extensionValue2014,
+      }),
+      id: buildInstanceIdentifier({
+        root: placeholderOrgOid,
+        extension: condition.resource.id,
+      }),
+      code: buildCodeCe({
+        code: "CONC",
+        codeSystem: "2.16.840.1.113883.5.6",
+        displayName: "Concern",
+      }),
+      statusCode: {
+        _code: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
       },
+      effectiveTime: {
+        low: withoutNullFlavorObject(
+          formatDateToCdaTimestamp(condition.resource.recordedDate),
+          "_value"
+        ),
+      },
+      entryRelationship: createEntryRelationship(condition.resource, referenceId),
     },
-  ];
+  };
 }
 
-function getIcdCode(code: CodeableConcept | undefined): string | undefined {
-  const icdCoding = code?.coding?.find(coding => coding.system?.includes("icd-10-codes"));
-  return icdCoding?.code;
+function getIcdCode(code: CodeableConcept | undefined): string {
+  const icdCoding = code?.coding?.find(coding => {
+    if (coding.system?.toLowerCase().includes("icd-10")) {
+      return true;
+    }
+    if (mapCodingSystem(coding.system?.toLowerCase())) {
+      return true;
+    }
+    return false;
+  });
+  return icdCoding?.code ?? NOT_SPECIFIED;
 }
 
-function createEntryRelationship(condition: Condition, referenceId: string) {
+function createEntryRelationship(condition: Condition, referenceId: string): ObservationEntry {
   const codeSystem = condition.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {
-    [_typeCodeAttribute]: "SUBJ",
+    _typeCode: "SUBJ",
     observation: {
-      [_classCodeAttribute]: "OBS",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "OBS",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
-        root: "2.16.840.1.113883.10.20.22.4.4",
+        root: oids.problemObs,
         extension: extensionValue2015,
       }),
       id: buildInstanceIdentifier({

@@ -1,10 +1,10 @@
 import { Bundle } from "@medplum/fhirtypes";
 import { buildAllergies } from "../components/allergies";
+import { buildMedications } from "../components/medications";
 import { buildMentalStatus } from "../components/mental-status";
+import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
-import { buildMedications } from "../components/medications";
-import { buildProblems } from "../components/problems";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBodySections = [
@@ -16,12 +16,11 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildAllergies(fhirBundle),
   ];
 
-  const structuredBody = {
+  return {
     structuredBody: {
-      component: structuredBodySections.map(comp => ({
-        section: comp?.component.section,
+      component: structuredBodySections.map(section => ({
+        section: section,
       })),
     },
   };
-  return structuredBody;
 }

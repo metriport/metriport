@@ -8,7 +8,6 @@ import dayjs from "dayjs";
 import { chunk } from "lodash";
 import { HieInitiator } from "../../hie/get-hie-initiator";
 import { createPurposeOfUse, getSystemUserName, isGWValid } from "../shared";
-import { DocumentReferenceWithMetriportId } from "./shared";
 
 const SUBJECT_ROLE_CODE = "106331006";
 const SUBJECT_ROLE_DISPLAY = "Administrative AND/OR managerial worker";
@@ -18,26 +17,21 @@ export function createOutboundDocumentRetrievalReqs({
   requestId,
   patient,
   initiator,
-  documentReferences,
-  outboundDocumentQueryResps,
+  outboundDocumentQueryResults,
 }: {
   requestId: string;
   patient: Patient;
   initiator: HieInitiator;
-  documentReferences: DocumentReferenceWithMetriportId[];
-  outboundDocumentQueryResps: OutboundDocumentQueryResp[];
+  outboundDocumentQueryResults: OutboundDocumentQueryResp[];
 }): OutboundDocumentRetrievalReq[] {
   const now = dayjs().toISOString();
   const user = getSystemUserName(initiator.orgName);
 
-  const getDocRefsOfGateway = (gateway: OutboundDocumentQueryResp["gateway"]) =>
-    documentReferences.filter(docRef => docRef.homeCommunityId === gateway.homeCommunityId);
-
   const patientsWithInvalidGW: string[] = [];
 
-  const requests = outboundDocumentQueryResps.reduce(
-    (acc: OutboundDocumentRetrievalReq[], documentQueryResp) => {
-      const { patientId, gateway } = documentQueryResp;
+  const requests = outboundDocumentQueryResults.reduce(
+    (acc: OutboundDocumentRetrievalReq[], documentQueryResult) => {
+      const { patientId, gateway, documentReference } = documentQueryResult;
 
       if (!isGWValid(gateway)) {
         if (patientId) patientsWithInvalidGW.push(patientId);
@@ -66,8 +60,7 @@ export function createOutboundDocumentRetrievalReqs({
         },
       };
 
-      const docRefsForCurrentGateway = getDocRefsOfGateway(gateway);
-      const docRefChunks = chunk(docRefsForCurrentGateway, maxDocRefsPerDocRetrievalRequest);
+      const docRefChunks = chunk(documentReference, maxDocRefsPerDocRetrievalRequest);
       const request: OutboundDocumentRetrievalReq[] = docRefChunks.map(chunk => {
         return {
           ...baseRequest,

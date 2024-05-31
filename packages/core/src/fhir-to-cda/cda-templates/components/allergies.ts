@@ -1,6 +1,5 @@
 import { AllergyIntolerance, Bundle } from "@medplum/fhirtypes";
 import { ObservationTableRow } from "../../cda-types/shared-types";
-import { isAllergyIntolerance } from "../../fhir";
 import {
   buildCodeCe,
   buildInstanceIdentifier,
@@ -14,14 +13,6 @@ import {
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  _classCodeAttribute,
-  _codeAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _nullFlavorAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
   extensionValue2014,
   extensionValue2015,
   loincCodeSystem,
@@ -30,6 +21,7 @@ import {
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedAllergy } from "./augmented-resources";
+import { isAllergyIntolerance } from "../../../external/fhir/shared";
 
 export const allergiesSectionName = "allergies";
 const tableHeaders = [
@@ -52,7 +44,7 @@ export function buildAllergies(fhirBundle: Bundle) {
   }
 
   const augmentedAllergies = allergies.map(allergy => {
-    return new AugmentedAllergy(allergy, allergiesSectionName);
+    return new AugmentedAllergy(allergiesSectionName, allergy);
   });
 
   const { trs, entries } = createTableRowsAndEntries(
@@ -95,29 +87,29 @@ function createTableRowFromAllergyIntolerance(
   return [
     {
       tr: {
-        [_idAttribute]: referenceId,
+        _ID: referenceId,
         ["td"]: [
           {
-            [_inlineTextAttribute]: allergy.resource.reaction?.[0]?.substance?.text ?? name,
+            "#text": allergy.resource.reaction?.[0]?.substance?.text ?? name,
           },
           {
-            [_inlineTextAttribute]: allergy.resource.category?.[0] ?? NOT_SPECIFIED,
+            "#text": allergy.resource.category?.[0] ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: manifestation,
+            "#text": manifestation,
           },
           {
-            [_idAttribute]: `${referenceId}-reaction`,
-            [_inlineTextAttribute]:
+            _ID: `${referenceId}-reaction`,
+            "#text":
               formatDateToHumanReadableFormat(allergy.resource.reaction?.[0]?.onset) ??
               NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]:
+            "#text":
               formatDateToHumanReadableFormat(allergy.resource.onsetDateTime) ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: allergy.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": allergy.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
         ],
       },
@@ -129,8 +121,8 @@ function createEntryFromAllergy(allergy: AugmentedAllergy, referenceId: string) 
   return [
     {
       act: {
-        [_classCodeAttribute]: "ACT",
-        [_moodCodeAttribute]: "EVN",
+        _classCode: "ACT",
+        _moodCode: "EVN",
         templateId: buildInstanceIdentifier({
           root: allergy.typeOid,
           extension: extensionValue2014,
@@ -145,12 +137,12 @@ function createEntryFromAllergy(allergy: AugmentedAllergy, referenceId: string) 
           displayName: "Concern",
         }),
         statusCode: {
-          [_codeAttribute]: allergy.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
+          _code: allergy.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
         },
         effectiveTime: {
           low: withoutNullFlavorObject(
             formatDateToCdaTimestamp(allergy.resource.recordedDate),
-            _valueAttribute
+            "_value"
           ),
         },
         entryRelationship: createEntryRelationship(allergy.resource, referenceId),
@@ -163,10 +155,10 @@ function createEntryRelationship(allergy: AllergyIntolerance, referenceId: strin
   const codeSystem = allergy.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {
-    [_typeCodeAttribute]: "SUBJ",
+    _typeCode: "SUBJ",
     observation: {
-      [_classCodeAttribute]: "OBS",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "OBS",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: "2.16.840.1.113883.10.20.22.4.7",
         extension: extensionValue2014,
@@ -191,16 +183,16 @@ function createReactionEntryRelationship(allergy: AllergyIntolerance, referenceI
   const codeSystem = allergy.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {
-    [_typeCodeAttribute]: "MFST",
+    _typeCode: "MFST",
     _inversionInd: true,
     observation: {
-      [_classCodeAttribute]: "OBS",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "OBS",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: "2.16.840.1.113883.10.20.22.4.9",
         extension: extensionValue2014,
       }),
-      id: { [_nullFlavorAttribute]: "NI" },
+      id: { _nullFlavor: "NI" },
       code: buildCodeCe({
         code: allergy.code?.coding?.[0]?.code,
         codeSystem: systemIsLoinc ? loincCodeSystem : codeSystem,
@@ -209,7 +201,7 @@ function createReactionEntryRelationship(allergy: AllergyIntolerance, referenceI
       }),
       text: {
         reference: {
-          [_valueAttribute]: `${referenceId}-reaction`,
+          _value: `${referenceId}-reaction`,
         },
       },
       value: buildValueCd(allergy.code, `${referenceId}-reaction`),

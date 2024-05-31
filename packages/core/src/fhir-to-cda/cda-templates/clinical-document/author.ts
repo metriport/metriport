@@ -7,13 +7,12 @@ import {
   formatDateToCdaTimestamp,
   withNullFlavor,
 } from "../commons";
-import { _rootAttribute, _valueAttribute } from "../constants";
 
 export function buildAuthor(organization: Organization): CdaAuthor {
   const author = {
-    time: withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), _valueAttribute),
+    time: withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), "_value"),
     assignedAuthor: {
-      id: withNullFlavor(organization.id, _rootAttribute),
+      id: withNullFlavor(organization.id, "_root"),
       addr: buildAddress(organization.address),
       telecom: buildTelecom(organization.telecom),
       representedOrganization: buildRepresentedOrganization(organization),

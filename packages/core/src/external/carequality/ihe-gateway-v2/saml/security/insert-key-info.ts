@@ -1,4 +1,5 @@
 import { XMLParser, XMLBuilder } from "fast-xml-parser";
+import { v4 as uuidv4 } from "uuid";
 import {
   securityHeaderEnvelopedId,
   stripPemCertificate,
@@ -63,6 +64,7 @@ export function insertKeyInfo({
   if (security && security["ds:Signature"]) {
     const keyInfoStructure = {
       "ds:KeyInfo": {
+        "@_Id": uuidv4(),
         "wsse:SecurityTokenReference": {
           "@_xmlns:wsse11": "http://docs.oasis-open.org/wss/oasis-wss-wssecurity-secext-1.1.xsd",
           "@_wsse11:TokenType":
