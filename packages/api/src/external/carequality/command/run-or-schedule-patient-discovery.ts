@@ -23,7 +23,7 @@ export async function runOrScheduleCqPatientDiscovery({
   const discoveryStatusCq = cqData?.discoveryStatus;
   const scheduledPdRequestCq = cqData?.scheduledPdRequest;
 
-  if (discoveryStatusCq === "processing" && scheduledPdRequestCq) {
+  if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
     await schedulePatientDiscovery({
       requestId,
       patient,
