@@ -35,7 +35,6 @@ import { LinkStatus } from "../patient-link";
 import { makeCommonWellAPI } from "./api";
 import { queryAndProcessDocuments } from "./document/document-query";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
 import { autoUpgradeNetworkLinks } from "./link/shared";
 import { makePersonForPatient, patientToCommonwell } from "./patient-conversion";
@@ -218,7 +217,7 @@ async function registerAndLinkPatientInCW({
     });
 
     if (rerunPdOnNewDemographics) {
-      const startedNewPd = await handleRerunPdOnNewDemographics({
+      const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
         getOrgIdExcludeList,
@@ -228,17 +227,12 @@ async function registerAndLinkPatientInCW({
       if (startedNewPd) return;
     }
 
-    const scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
-    if (scheduledPdRequest) {
-      await handleNextPdIfScheduled({
-        patient,
-        requestId,
-        getOrgIdExcludeList,
-        scheduledPdRequest,
-      });
-    } else {
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    }
+    const startedNewPd = await runNexPdIfScheduled({
+      patient,
+      getOrgIdExcludeList,
+      requestId,
+    });
+    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
     return { commonwellPatientId, personId };
@@ -393,7 +387,7 @@ async function updatePatientAndLinksInCw({
     });
 
     if (rerunPdOnNewDemographics) {
-      const startedNewPd = await handleRerunPdOnNewDemographics({
+      const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
         getOrgIdExcludeList,
@@ -403,17 +397,12 @@ async function updatePatientAndLinksInCw({
       if (startedNewPd) return;
     }
 
-    const scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
-    if (scheduledPdRequest) {
-      await handleNextPdIfScheduled({
-        patient,
-        requestId,
-        getOrgIdExcludeList,
-        scheduledPdRequest,
-      });
-    } else {
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    }
+    const startedNewPd = await runNexPdIfScheduled({
+      patient,
+      getOrgIdExcludeList,
+      requestId,
+    });
+    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
   } catch (error) {
@@ -499,7 +488,7 @@ async function createCwLinks(
   return pdResults;
 }
 
-async function handleRerunPdOnNewDemographics({
+async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -512,76 +501,84 @@ async function handleRerunPdOnNewDemographics({
   requestId: string;
   cwLinks: CwLink[];
 }): Promise<boolean> {
-  const foundNewDemographicsAcrossHies = checkLinkDemographicsAcrossHies({
-    patient,
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const newDemographicsHere = getNewDemographics(updatedPatient, cwLinks);
+  const foundNewDemographicsHere = newDemographicsHere.length > 0;
+  const foundNewDemographicsAcrossHies = await checkLinkDemographicsAcrossHies({
+    patient: updatedPatient,
     requestId,
   });
-  const newDemographicsHere = getNewDemographics(patient, cwLinks);
-  const foundNewDemographicsHere = newDemographicsHere.length > 0;
-  const rerunPd = foundNewDemographicsHere || foundNewDemographicsAcrossHies;
-  if (rerunPd) {
+  if (foundNewDemographicsHere || foundNewDemographicsAcrossHies) {
     if (foundNewDemographicsHere) {
       await updatePatientLinkDemographics({
         requestId,
-        patient,
+        patient: updatedPatient,
         source: MedicalDataSource.COMMONWELL,
         links: newDemographicsHere,
       });
     }
     await update({
-      patient,
+      patient: updatedPatient,
       facilityId,
       getOrgIdExcludeList,
       requestId,
       rerunPdOnNewDemographics: false,
     });
     analytics({
-      distinctId: patient.cxId,
+      distinctId: updatedPatient.cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         hie: MedicalDataSource.COMMONWELL,
-        patientId: patient.id,
+        patientId: updatedPatient.id,
         requestId,
         foundNewDemographicsHere,
         foundNewDemographicsAcrossHies,
       },
     });
+    return true;
   }
-  return rerunPd;
+  return false;
 }
 
-async function handleNextPdIfScheduled({
+async function runNexPdIfScheduled({
   patient,
   getOrgIdExcludeList,
   requestId,
-  scheduledPdRequest,
 }: {
   patient: Patient;
   getOrgIdExcludeList: () => Promise<string[]>;
   requestId: string;
-  scheduledPdRequest: ScheduledPatientDiscovery;
-}): Promise<void> {
-  await update({
-    patient,
-    facilityId: scheduledPdRequest.facilityId,
-    getOrgIdExcludeList,
-    requestId: scheduledPdRequest.requestId,
-    rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-  });
-  await resetPatientScheduledPatientDiscoveryRequestId({
-    patient,
-    source: MedicalDataSource.COMMONWELL,
-  });
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.runScheduledPatientDiscovery,
-    properties: {
-      hie: MedicalDataSource.COMMONWELL,
-      patientId: patient.id,
-      requestId,
-      scheduledPdRequestId: scheduledPdRequest.requestId,
-    },
-  });
+}): Promise<boolean> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledPdRequest = getCWData(updatedPatient.data.externalData)?.scheduledPdRequest;
+
+  if (scheduledPdRequest) {
+    await update({
+      patient: updatedPatient,
+      facilityId: scheduledPdRequest.facilityId,
+      getOrgIdExcludeList,
+      requestId: scheduledPdRequest.requestId,
+      rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+    });
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.COMMONWELL,
+    });
+    analytics({
+      distinctId: updatedPatient.cxId,
+      event: EventTypes.runScheduledPatientDiscovery,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: updatedPatient.id,
+        requestId,
+        scheduledPdRequestId: scheduledPdRequest.requestId,
+      },
+    });
+    return true;
+  }
+  return false;
 }
 
 async function queryDocsIfScheduled({
@@ -600,14 +597,9 @@ async function queryDocsIfScheduled({
   )?.scheduledDocQueryRequestId;
 
   if (scheduledDocQueryRequestId) {
-    const resetPatient = await resetPatientScheduledDocQueryRequestId({
-      patient: updatedPatient,
-      source: MedicalDataSource.COMMONWELL,
-    });
-
     if (isFailed) {
       await setDocQueryProgress({
-        patient: resetPatient,
+        patient: updatedPatient,
         requestId: scheduledDocQueryRequestId,
         source: MedicalDataSource.COMMONWELL,
         downloadProgress: { status: "failed", total: 0 },
@@ -615,11 +607,15 @@ async function queryDocsIfScheduled({
       });
     } else {
       await queryAndProcessDocuments({
-        patient: resetPatient,
+        patient: updatedPatient,
         requestId: scheduledDocQueryRequestId,
         getOrgIdExcludeList,
       });
     }
+    await resetPatientScheduledDocQueryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.COMMONWELL,
+    });
   }
 }
 

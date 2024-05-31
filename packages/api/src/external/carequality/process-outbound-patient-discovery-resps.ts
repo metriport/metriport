@@ -15,7 +15,6 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
-import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
 import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
@@ -76,7 +75,7 @@ export async function processOutboundPatientDiscoveryResps({
     const facilityId = cqData?.discoveryFacilityId;
     const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
     if (rerunPdOnNewDemographics && facilityId) {
-      const startedNewPd = await handleRerunPdOnNewDemographics({
+      const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
         requestId,
@@ -85,16 +84,11 @@ export async function processOutboundPatientDiscoveryResps({
       if (startedNewPd) return;
     }
 
-    const scheduledPdRequest = cqData?.scheduledPdRequest;
-    if (scheduledPdRequest) {
-      await handleNextPdIfScheduled({
-        patient,
-        requestId,
-        scheduledPdRequest,
-      });
-    } else {
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
-    }
+    const startedNewPd = await runNexPdIfScheduled({
+      patient,
+      requestId,
+    });
+    if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient });
   } catch (error) {
@@ -146,7 +140,7 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
   });
 }
 
-async function handleRerunPdOnNewDemographics({
+async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   requestId,
@@ -157,72 +151,80 @@ async function handleRerunPdOnNewDemographics({
   requestId: string;
   cqLinks: CQLink[];
 }): Promise<boolean> {
-  const foundNewDemographicsAcrossHies = checkLinkDemographicsAcrossHies({
-    patient,
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const newDemographicsHere = getNewDemographics(updatedPatient, cqLinks);
+  const foundNewDemographicsHere = newDemographicsHere.length > 0;
+  const foundNewDemographicsAcrossHies = await checkLinkDemographicsAcrossHies({
+    patient: updatedPatient,
     requestId,
   });
-  const newDemographicsHere = getNewDemographics(patient, cqLinks);
-  const foundNewDemographicsHere = newDemographicsHere.length > 0;
-  const rerunPd = foundNewDemographicsHere || foundNewDemographicsAcrossHies;
-  if (rerunPd) {
+  if (foundNewDemographicsHere || foundNewDemographicsAcrossHies) {
     if (foundNewDemographicsHere) {
       await updatePatientLinkDemographics({
         requestId,
-        patient,
+        patient: updatedPatient,
         source: MedicalDataSource.CAREQUALITY,
         links: newDemographicsHere,
       });
     }
     await discover({
-      patient,
+      patient: updatedPatient,
       facilityId,
       requestId,
       rerunPdOnNewDemographics: false,
     });
     analytics({
-      distinctId: patient.cxId,
+      distinctId: updatedPatient.cxId,
       event: EventTypes.patientDiscovery,
       properties: {
         hie: MedicalDataSource.CAREQUALITY,
-        patientId: patient.id,
+        patientId: updatedPatient.id,
         requestId,
         foundNewDemographicsHere,
         foundNewDemographicsAcrossHies,
       },
     });
+    return true;
   }
-  return rerunPd;
+  return false;
 }
 
-async function handleNextPdIfScheduled({
+async function runNexPdIfScheduled({
   patient,
   requestId,
-  scheduledPdRequest,
 }: {
   patient: Patient;
   requestId: string;
-  scheduledPdRequest: ScheduledPatientDiscovery;
-}): Promise<void> {
-  await discover({
-    patient,
-    facilityId: scheduledPdRequest.facilityId,
-    requestId: scheduledPdRequest.requestId,
-    rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-  });
-  await resetPatientScheduledPatientDiscoveryRequestId({
-    patient,
-    source: MedicalDataSource.CAREQUALITY,
-  });
-  analytics({
-    distinctId: patient.cxId,
-    event: EventTypes.runScheduledPatientDiscovery,
-    properties: {
-      hie: MedicalDataSource.CAREQUALITY,
-      patientId: patient.id,
-      requestId,
-      scheduledPdRequestId: scheduledPdRequest.requestId,
-    },
-  });
+}): Promise<boolean> {
+  const updatedPatient = await getPatientOrFail(patient);
+
+  const scheduledPdRequest = getCQData(updatedPatient.data.externalData)?.scheduledPdRequest;
+
+  if (scheduledPdRequest) {
+    await discover({
+      patient: updatedPatient,
+      facilityId: scheduledPdRequest.facilityId,
+      requestId: scheduledPdRequest.requestId,
+      rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+    });
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
+    analytics({
+      distinctId: updatedPatient.cxId,
+      event: EventTypes.runScheduledPatientDiscovery,
+      properties: {
+        hie: MedicalDataSource.CAREQUALITY,
+        patientId: updatedPatient.id,
+        requestId,
+        scheduledPdRequestId: scheduledPdRequest.requestId,
+      },
+    });
+    return true;
+  }
+  return false;
 }
 
 export async function queryDocsIfScheduled({
@@ -239,14 +241,9 @@ export async function queryDocsIfScheduled({
   )?.scheduledDocQueryRequestId;
 
   if (scheduledDocQueryRequestId) {
-    const resetPatient = await resetPatientScheduledDocQueryRequestId({
-      patient: updatedPatient,
-      source: MedicalDataSource.CAREQUALITY,
-    });
-
     if (isFailed) {
       await setDocQueryProgress({
-        patient: resetPatient,
+        patient: updatedPatient,
         requestId: scheduledDocQueryRequestId,
         source: MedicalDataSource.CAREQUALITY,
         downloadProgress: { status: "failed", total: 0 },
@@ -254,9 +251,13 @@ export async function queryDocsIfScheduled({
       });
     } else {
       await getDocumentsFromCQ({
-        patient: resetPatient,
+        patient: updatedPatient,
         requestId: scheduledDocQueryRequestId,
       });
     }
+    await resetPatientScheduledDocQueryRequestId({
+      patient: updatedPatient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
   }
 }
