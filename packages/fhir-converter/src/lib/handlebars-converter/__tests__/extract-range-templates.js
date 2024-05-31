@@ -171,6 +171,11 @@ const typeStMixed = {
 
 const typeStMixedOutput = { low: { value: "None" }, high: { value: "9" } };
 
+const missingValue = {
+  text: { _: "None - 9" },
+  interpretationCode: { code: "N", codeSystem: "2.16.840.1.113883.5.83" },
+};
+
 module.exports = {
   typeIvlPq,
   typeIvlPqOutput,
@@ -186,4 +191,5 @@ module.exports = {
   typeIvlRealOutput,
   typeStMixed,
   typeStMixedOutput,
+  missingValue,
 };

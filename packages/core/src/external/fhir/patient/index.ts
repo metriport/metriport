@@ -22,9 +22,9 @@ export function mapGenderAtBirthToFhir(k: GenderAtBirth): Required<FHIRPatient>[
   return genderMapping[k];
 }
 
-export function toFHIR(patient: PatientIdAndData): FHIRPatient {
+export function mapPatientDataToResource(patient: PatientIdAndData) {
   return {
-    resourceType: "Patient",
+    resourceType: "Patient" as const,
     id: patient.id,
     identifier: getFhirIdentifersFromPatient(patient),
     name: [
@@ -49,7 +49,7 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
               }
             }
           }
-          return telecoms; // Moved return statement outside of the for loop
+          return telecoms;
         })
         .reduce((prev, curr) => prev.concat(curr), []) || [],
     gender: mapGenderAtBirthToFhir(patient.data.genderAtBirth),
@@ -65,6 +65,10 @@ export function toFHIR(patient: PatientIdAndData): FHIRPatient {
         };
       }) || [],
   };
+}
+
+export function toFHIR(patient: PatientIdAndData): FHIRPatient {
+  return mapPatientDataToResource(patient);
 }
 
 export function getFhirIdentifersFromPatient(patient: PatientIdAndData): Identifier[] {
