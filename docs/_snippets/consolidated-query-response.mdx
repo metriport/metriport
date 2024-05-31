@@ -1,0 +1,32 @@
+<ResponseField name="queries" type="ConsolidatedQuery[]" required>
+  The filters used to perform this operation.
+  <Expandable title="ConsolidatedQuery properties">
+    <ResponseField name="requestId" type="string" required>
+      The ID of the request.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      The status of the request. Can be one of `processing`, `completed`, or `failed`.
+    </ResponseField>
+    <ResponseField name="startedAt" type="string" optional>
+      The date and time the request was started - formatted `YYYY-MM-DDTHH:MM:SSZ` as per ISO 8601.
+    </ResponseField>
+    <ResponseField name="resources" type="string[]" optional>
+      Comma-separated list of resource types.
+    </ResponseField>
+    <ResponseField name="dateFrom" type="string" optional>
+      The start date (inclusive) for which to filter resources to count - formatted `YYYY-MM-DD` as
+      per ISO 8601.
+    </ResponseField>
+    <ResponseField name="dateFrom" type="string" optional>
+      The end date (inclusive) for which to filter resources to count - formatted `YYYY-MM-DD` as
+      per ISO 8601.
+    </ResponseField>
+    <ResponseField name="conversionType" type="string" optional>
+      The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  An optional message for the request.
+</ResponseField>

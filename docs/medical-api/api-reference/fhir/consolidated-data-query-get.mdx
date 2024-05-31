@@ -32,9 +32,30 @@ const status = await metriport.getConsolidatedQueryStatus(patientId);
 
 </ResponseExample>
 
+<Snippet file="consolidated-query-response.mdx" />
+
 ```json
 {
-    "status": "completed",
-    "message": "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook"
+  "queries": [
+    {
+      "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+      "status": "processing",
+      "startedAt": "2021-01-01T00:00:00Z",
+      "dateFrom": "2021-01-01",
+      "dateTo": "2021-01-31",
+      "resources": ["Observation", "MedicationRequest"],
+      "conversionType": "pdf"
+    },
+    {
+      "requestId": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "status": "processing",
+      "startedAt": "2021-01-01T00:00:00Z",
+      "dateFrom": "2023-01-01",
+      "dateTo": "2023-01-31",
+      "resources": ["MedicationRequest"],
+      "conversionType": "html"
+    }
+  ],
+  "message": "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook"
 }
 ```
