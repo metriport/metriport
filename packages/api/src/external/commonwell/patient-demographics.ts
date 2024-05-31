@@ -1,7 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { LinkDemographics, LinkGender } from "@metriport/core/domain/patient-demographics";
+import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
-import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
 import {
   scoreLinkEpic,
   linkHasNewDemographiscData,
@@ -25,7 +24,9 @@ export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemog
   return getPatientNetworkLinks(links)
     .map(patientNetworkLinkToNormalizedAndStringifiedLinkDemographics)
     .filter(ld => scoreLinkEpic(coreDemographics, ld))
-    .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
+    .filter(
+      ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld)[0]
+    );
 }
 
 function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
@@ -33,10 +34,7 @@ function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
 ): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
   const cwGender = patientNetworkLink.details.gender.code as CwGenderCode;
-  let gender: LinkGender = "unknown";
-  if (cwGender === "M" || cwGender === "F") {
-    gender = normalizeGender(mapGenderAtBirthToFhir(cwGender));
-  }
+  const gender = normalizeGender(cwGender);
   const names = (patientNetworkLink.details.name ?? []).flatMap(name => {
     return name.family.flatMap(lastName => {
       return (name.given ?? []).map(firstName => {

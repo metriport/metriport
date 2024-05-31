@@ -6,6 +6,7 @@ import {
 } from "@metriport/core/domain/patient";
 import {
   LinkDemographics,
+  LinkDemographicsDiff,
   LinkGender,
   LinkGenericAddress,
 } from "@metriport/core/domain/patient-demographics";
@@ -13,6 +14,9 @@ import { Address } from "@metriport/core/domain/address";
 import { Contact, stripNonNumericChars } from "@metriport/core/domain/contact";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/index";
+import dayjs from "dayjs";
+
+const ISO_DATE = "YYYY-MM-DD";
 
 /**
  * Evaluates whether the input linked demographcis are similar enough to the input patient demographics to be considered a demogrpahic "match".
@@ -134,7 +138,7 @@ export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographic
   patient: Patient
 ): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
-  const gender = normalizeGender(mapGenderAtBirthToFhir(patient.data.genderAtBirth));
+  const gender = normalizeGender(patient.data.genderAtBirth);
   const patientFirstNames: string[] = splitName(patient.data.firstName);
   const patientLastNames: string[] = splitName(patient.data.lastName);
   const names = patientLastNames.flatMap(lastName => {
@@ -179,13 +183,19 @@ export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographic
 }
 
 export function normalizeDob(dob?: string): string {
-  return dob?.trim().slice(0, 10) ?? "";
+  const parsedDate = dayjs(dob?.trim() ?? "", ISO_DATE, true);
+  if (!parsedDate.isValid()) return "";
+  return parsedDate.format(ISO_DATE);
 }
 
 export function normalizeGender(gender?: string): LinkGender {
+  if (gender === "M" || gender === "F") {
+    return mapGenderAtBirthToFhir(gender) as LinkGender;
+  }
   const normalizeAndStringifydGender = gender?.trim().toLowerCase() ?? "";
-  if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female")
+  if (normalizeAndStringifydGender !== "male" && normalizeAndStringifydGender !== "female") {
     return "unknown";
+  }
   return normalizeAndStringifydGender;
 }
 
@@ -217,13 +227,35 @@ export function normalizeAddress({
   country?: string;
 }): LinkGenericAddress {
   return {
-    line: line?.map(l => l.trim().toLowerCase()) ?? [],
+    line:
+      line?.map(l => {
+        return l
+          .trim()
+          .toLowerCase()
+          .replaceAll("street", "st")
+          .replaceAll("drive", "dr")
+          .replaceAll("road", "rd")
+          .replaceAll("court", "ct")
+          .replaceAll("avenue", "ave")
+          .replaceAll("lane", "ln")
+          .replaceAll("highway", "hwy")
+          .replaceAll("east", "e")
+          .replaceAll("west", "w")
+          .replaceAll("north", "n")
+          .replaceAll("south", "s");
+      }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
     state: state?.trim().toLowerCase() ?? "",
     zip: stripNonNumericChars(zip ?? "")
       .trim()
       .slice(0, 5),
-    country: country?.trim().toLowerCase() ?? "",
+    country:
+      country
+        ?.trim()
+        .toLowerCase()
+        .replaceAll("us", "usa")
+        .replaceAll("united states", "usa")
+        .slice(0, 3) ?? "usa",
   };
 }
 
@@ -232,7 +264,11 @@ export function stringifyAddress(normalizedAddress: LinkGenericAddress): string 
 }
 
 export function normalizeTelephone(telephone: string): string {
-  return stripNonNumericChars(telephone); //prepend 1 as country code?
+  const numbersPhone = stripNonNumericChars(telephone);
+  if (numbersPhone.length === 11 && numbersPhone[0] === "1") {
+    return numbersPhone.slice(-10);
+  }
+  return numbersPhone;
 }
 
 export function normalizeEmail(email: string): string {
@@ -311,56 +347,68 @@ export function createAugmentedPatient(patient: Patient): Patient {
  *
  * @param patientDemographics The Patient LinkDemographics.
  * @param linkDemographics The Link LinkDemographics.
- * @returns boolean representing whether or not new values were found.
+ * @returns boolean representing whether or not new values were found, and the diff if yes
  */
 export function linkHasNewDemographiscData(
   coreDemographics: LinkDemographics,
   consolidatedLinkDemographics: ConsolidatedLinkDemographics | undefined,
   linkDemographics: LinkDemographics
-): boolean {
+): [boolean, LinkDemographicsDiff | undefined] {
   const hasNewDob = linkDemographics.dob !== coreDemographics.dob;
   const hasNewGender = linkDemographics.gender !== coreDemographics.gender;
-  const hasNewName =
-    linkDemographics.names.some(name => !coreDemographics.names.includes(name)) &&
-    linkDemographics.names.some(
-      name => !(consolidatedLinkDemographics?.names ?? []).includes(name)
-    );
-  const hasNewAddress =
-    linkDemographics.addressesString.some(
-      address => !coreDemographics.addressesString.includes(address)
-    ) &&
-    linkDemographics.addressesString.some(
-      address => !(consolidatedLinkDemographics?.addressesString ?? []).includes(address)
-    );
-  const hasNewTelephoneNumber =
-    linkDemographics.telephoneNumbers.some(
-      phone => !coreDemographics.telephoneNumbers.includes(phone)
-    ) &&
-    linkDemographics.telephoneNumbers.some(
-      phone => !(consolidatedLinkDemographics?.telephoneNumbers ?? []).includes(phone)
-    );
-  const hasNewEmail =
-    linkDemographics.emails.some(email => !coreDemographics.emails.includes(email)) &&
-    linkDemographics.emails.some(
-      email => !(consolidatedLinkDemographics?.emails ?? []).includes(email)
-    );
-  const hasNewDriversLicense =
-    linkDemographics.driversLicenses.some(dl => !coreDemographics.driversLicenses.includes(dl)) &&
-    linkDemographics.driversLicenses.some(
-      dl => !(consolidatedLinkDemographics?.driversLicenses ?? []).includes(dl)
-    );
-  const hasNewSsn =
-    linkDemographics.ssns.some(ssn => !coreDemographics.ssns.includes(ssn)) &&
-    linkDemographics.ssns.some(ssn => !(consolidatedLinkDemographics?.ssns ?? []).includes(ssn));
-
-  return (
+  const newNames = linkDemographics.names.filter(
+    name =>
+      !coreDemographics.names.includes(name) &&
+      !(consolidatedLinkDemographics?.names ?? []).includes(name)
+  );
+  const newAddresses = linkDemographics.addressesString.filter(
+    address =>
+      !coreDemographics.addressesString.includes(address) &&
+      !(consolidatedLinkDemographics?.addressesString ?? []).includes(address)
+  );
+  const newTelephoneNumbers = linkDemographics.telephoneNumbers.filter(
+    phone =>
+      !coreDemographics.telephoneNumbers.includes(phone) &&
+      !(consolidatedLinkDemographics?.telephoneNumbers ?? []).includes(phone)
+  );
+  const newEmails = linkDemographics.emails.filter(
+    email =>
+      !coreDemographics.emails.includes(email) &&
+      !(consolidatedLinkDemographics?.emails ?? []).includes(email)
+  );
+  const newDriversLicenses = linkDemographics.driversLicenses.filter(
+    dl =>
+      !coreDemographics.driversLicenses.includes(dl) &&
+      !(consolidatedLinkDemographics?.driversLicenses ?? []).includes(dl)
+  );
+  const newSsn = linkDemographics.ssns.filter(
+    ssn =>
+      !coreDemographics.ssns.includes(ssn) &&
+      !(consolidatedLinkDemographics?.ssns ?? []).includes(ssn)
+  );
+  const hasNewDemographics =
     hasNewDob ||
     hasNewGender ||
-    hasNewName ||
-    hasNewAddress ||
-    hasNewTelephoneNumber ||
-    hasNewEmail ||
-    hasNewDriversLicense ||
-    hasNewSsn
-  );
+    newNames.length > 0 ||
+    newAddresses.length > 0 ||
+    newTelephoneNumbers.length > 0 ||
+    newEmails.length > 0 ||
+    newDriversLicenses.length > 0 ||
+    newSsn.length > 0;
+  if (hasNewDemographics) {
+    return [
+      hasNewDemographics,
+      {
+        ...(hasNewDob ? { dob: linkDemographics.dob } : undefined),
+        ...(hasNewGender ? { gender: linkDemographics.gender } : undefined),
+        ...(newNames.length > 0 ? { names: newNames } : undefined),
+        ...(newAddresses.length > 0 ? { addressesString: newAddresses } : undefined),
+        ...(newTelephoneNumbers.length > 0 ? { telephoneNumbers: newTelephoneNumbers } : undefined),
+        ...(newEmails.length > 0 ? { emails: newEmails } : undefined),
+        ...(newDriversLicenses.length > 0 ? { driversLicenses: newDriversLicenses } : undefined),
+        ...(newSsn.length > 0 ? { ssns: newSsn } : undefined),
+      },
+    ];
+  }
+  return [false, undefined];
 }

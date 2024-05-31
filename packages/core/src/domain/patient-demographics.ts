@@ -20,6 +20,18 @@ export type LinkDemographics = {
   ssns: string[];
 };
 
+export type LinkDemographicsDiff = {
+  dob?: string;
+  gender?: LinkGender;
+  names?: string[];
+  addressesObj?: LinkGenericAddress[];
+  addressesString?: string[];
+  telephoneNumbers?: string[];
+  emails?: string[];
+  driversLicenses?: string[];
+  ssns?: string[];
+};
+
 export type LinkDemographicsHistory = {
   [key: string]: LinkDemographics[];
 };

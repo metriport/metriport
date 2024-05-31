@@ -22,7 +22,9 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
   return getPatientResources(links)
     .map(patientResourceToNormalizedAndStringifiedLinkDemographics)
     .filter(ld => scoreLinkEpic(coreDemographics, ld))
-    .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
+    .filter(
+      ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld)[0]
+    );
 }
 
 export function patientResourceToNormalizedAndStringifiedLinkDemographics(

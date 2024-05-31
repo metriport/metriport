@@ -57,7 +57,7 @@ describe("CQ demographics", () => {
         city: "san francisco",
         state: "ca",
         zip: "99999",
-        country: "",
+        country: "usa",
       },
       {
         line: ["401 awesome rd.", "apt 1b"],

@@ -28,8 +28,6 @@ describe("normalization", () => {
     expect(dobValid).toBe(dobValidValue);
     const dobTrim = normalizeDob(" 2023-08-01 ");
     expect(dobTrim).toBe(dobValidValue);
-    const dobTrimSlice = normalizeDob(" 2023-08-0100 ");
-    expect(dobTrimSlice).toBe(dobValidValue);
     const dobUndefined = normalizeDob();
     expect(dobUndefined).toBe("");
   });
@@ -41,8 +39,8 @@ describe("normalization", () => {
     expect(genderTrim).toBe(genderValidValue);
     const genderTrimLowercase = normalizeGender(" Male ");
     expect(genderTrimLowercase).toBe(genderValidValue);
-    const genderInValidType = normalizeGender("M");
-    expect(genderInValidType).toBe("unknown");
+    const genderFhirType = normalizeGender("M");
+    expect(genderFhirType).toBe(genderValidValue);
     const genderMaleMisspelled = normalizeGender("malee");
     expect(genderMaleMisspelled).toBe("unknown");
     const genderFemaleMisspelled = normalizeGender("femalee");
@@ -121,19 +119,23 @@ describe("normalization", () => {
       city: "",
       state: "",
       zip: "",
-      country: "",
+      country: "usa",
     });
     const addressString = stringifyAddress(addressValidValue);
     expect(addressString).toBe(addressValidValueString);
   });
   it("check telephone normalization", async () => {
-    const phoneValidValue = "14150000000";
+    const phoneValidValue = "4150000000";
     const phoneValid = normalizeTelephone(phoneValidValue);
     expect(phoneValid).toBe(phoneValidValue);
-    const phoneTrim = normalizeTelephone(" 14150000000 ");
+    const phoneTrim = normalizeTelephone(" 4150000000 ");
     expect(phoneTrim).toBe(phoneValidValue);
-    const phoneTrimNumeric = normalizeTelephone(" +1(415)-000-0000 ");
+    const phoneTrimNumeric = normalizeTelephone(" (415)-000-0000 ");
     expect(phoneTrimNumeric).toBe(phoneValidValue);
+    const phoneTrimNumericLeading1 = normalizeTelephone(" +1(415)-000-0000 ");
+    expect(phoneTrimNumericLeading1).toBe(phoneValidValue);
+    const phoneTrimLeading1 = normalizeTelephone(" 14150000000 ");
+    expect(phoneTrimLeading1).toBe(phoneValidValue);
   });
   it("check email normalization", async () => {
     const emailValidValue = "john.smith@gmail.com";
@@ -238,11 +240,11 @@ describe("total patient normalization", () => {
         country: "usa",
       },
       {
-        line: ["777 elm avenue"],
+        line: ["777 elm ave"],
         city: "los angeles",
         state: "ca",
         zip: "12345",
-        country: "",
+        country: "usa",
       },
     ];
     const patientCoreDemographicsNormalized: LinkDemographics = {
@@ -258,7 +260,7 @@ describe("total patient normalization", () => {
       addressesString: addressesObj.map(address =>
         JSON.stringify(address, Object.keys(address).sort())
       ),
-      telephoneNumbers: ["14150000000", "4157770000"],
+      telephoneNumbers: ["4150000000", "4157770000"],
       emails: ["john.smith@gmail.com", "john.douglas@yahoo.com"],
       driversLicenses: [{ value: "i1234568", state: "ca" }].map(dl =>
         JSON.stringify(dl, Object.keys(dl).sort())
@@ -525,7 +527,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
   });
   it("link has new gender demographics", async () => {
     const newGender = "female";
@@ -539,7 +541,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
   });
   it("link has new name demographics", async () => {
     const newNames = [
@@ -558,7 +560,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateName = [
       ...patientConsolidatedLinkDemogrpahics.names,
       ...patientConsolidatedLinkDemogrpahics.names,
@@ -573,7 +575,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has new address demographics", async () => {
     const newAddressObj = [
@@ -599,7 +601,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateAddressObj = [
       ...patientConsolidatedLinkDemogrpahics.addressesObj,
       ...patientConsolidatedLinkDemogrpahics.addressesObj,
@@ -617,7 +619,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has new telephone demographics", async () => {
     const newTelephone = [...patientConsolidatedLinkDemogrpahics.telephoneNumbers, "00000000"];
@@ -631,7 +633,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateNameTelephone = [
       ...patientConsolidatedLinkDemogrpahics.telephoneNumbers,
       ...patientConsolidatedLinkDemogrpahics.telephoneNumbers,
@@ -646,7 +648,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has new email demographics", async () => {
     const newEmail = [...patientConsolidatedLinkDemogrpahics.emails, "test@gmail.com"];
@@ -660,7 +662,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateEmail = [
       ...patientConsolidatedLinkDemogrpahics.emails,
       ...patientConsolidatedLinkDemogrpahics.emails,
@@ -675,7 +677,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has new dl demographics", async () => {
     const newDl = [
@@ -692,7 +694,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateDl = [
       ...patientConsolidatedLinkDemogrpahics.driversLicenses,
       ...patientConsolidatedLinkDemogrpahics.driversLicenses,
@@ -707,7 +709,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has new ssn demographics", async () => {
     const newSsn = [...patientConsolidatedLinkDemogrpahics.ssns, "999999999"];
@@ -721,7 +723,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       newLinkDemographics
     );
-    expect(hasNewData).toBe(true);
+    expect(hasNewData[0]).toBe(true);
     const duplicateSsn = [
       ...patientConsolidatedLinkDemogrpahics.ssns,
       ...patientConsolidatedLinkDemogrpahics.ssns,
@@ -736,7 +738,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       duplicateLinkDemographics
     );
-    expect(hasNewDataDuplicate).toBe(false);
+    expect(hasNewDataDuplicate[0]).toBe(false);
   });
   it("link has no new demographics", async () => {
     const noNewPatient = linkHasNewDemographiscData(
@@ -744,7 +746,7 @@ describe("link has new demographics", () => {
       patientConsolidatedLinkDemogrpahics,
       normalizedPatient
     );
-    expect(noNewPatient).toBe(false);
+    expect(noNewPatient[0]).toBe(false);
     const noNewConsolidated = linkHasNewDemographiscData(
       normalizedPatient,
       patientConsolidatedLinkDemogrpahics,
@@ -753,6 +755,6 @@ describe("link has new demographics", () => {
         ...normalizedPatientDobAndGender,
       }
     );
-    expect(noNewConsolidated).toBe(false);
+    expect(noNewConsolidated[0]).toBe(false);
   });
 });
