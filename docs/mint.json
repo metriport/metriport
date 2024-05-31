@@ -38,6 +38,11 @@
       "url": "medical-api"
     },
     {
+      "name": "Converter API",
+      "icon": "arrow-right-arrow-left",
+      "url": "converter-api"
+    },
+    {
       "name": "Website",
       "icon": "globe",
       "url": "https://metriport.com"
@@ -60,6 +65,19 @@
     {
       "group": "Getting Started",
       "pages": ["medical-api/getting-started/quickstart"]
+    },
+    {
+      "group": "Getting Started",
+      "pages": ["converter-api/getting-started/quickstart"]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        {
+          "group": "C-CDA",
+          "pages": ["converter-api/api-reference/ccda/ccda-to-fhir"]
+        }
+      ]
     },
     {
       "group": "API Reference",
@@ -97,7 +115,8 @@
             "medical-api/api-reference/facility/create-facility",
             "medical-api/api-reference/facility/get-facility",
             "medical-api/api-reference/facility/update-facility",
-            "medical-api/api-reference/facility/list-facilities"
+            "medical-api/api-reference/facility/list-facilities",
+            "medical-api/api-reference/facility/delete-facility"
           ]
         },
         {

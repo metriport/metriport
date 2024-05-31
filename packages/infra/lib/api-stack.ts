@@ -44,7 +44,7 @@ import { createFHIRConverterService } from "./api-stack/fhir-converter-service";
 import * as fhirServerConnector from "./api-stack/fhir-server-connector";
 import { createAppConfigStack } from "./app-config-stack";
 import { EnvType } from "./env-type";
-import { IHEGatewayV2LambdasNestedStack } from "./iheGatewayV2-stack";
+import { IHEGatewayV2LambdasNestedStack } from "./ihe-gateway-v2-stack";
 import { CDA_TO_VIS_TIMEOUT, LambdasNestedStack } from "./lambdas-nested-stack";
 import { DailyBackup } from "./shared/backup";
 import { addErrorAlarmToLambdaFunc, createLambda, MAXIMUM_LAMBDA_TIMEOUT } from "./shared/lambda";
@@ -665,6 +665,25 @@ export class APIStack extends Stack {
       oauthScopes: oauthScopes,
       envType: props.config.environmentType,
       bucket: medicalDocumentsBucket,
+    });
+
+    // CONVERT API
+    const convertResource = api.root.addResource("convert");
+    const convertBaseResource = convertResource.addResource("v1");
+    const ccdaConvertResource = convertBaseResource.addResource("ccda");
+    const ccdaConvertBaseResource = ccdaConvertResource.addResource("to");
+    const ccdaToFhirConvertResource = ccdaConvertBaseResource.addResource("fhir");
+    const ccdaToFhirLambda = new lambda.DockerImageFunction(this, "convertApiCcdaToFhir", {
+      functionName: "convertApiCcdaToFhir",
+      vpc: this.vpc,
+      code: lambda.DockerImageCode.fromImageAsset("../fhir-converter", {
+        file: "Dockerfile.lambda",
+      }),
+      timeout: Duration.minutes(1),
+      memorySize: 1024,
+    });
+    ccdaToFhirConvertResource.addMethod("POST", new apig.LambdaIntegration(ccdaToFhirLambda), {
+      apiKeyRequired: true,
     });
 
     // WEBHOOKS

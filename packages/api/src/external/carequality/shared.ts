@@ -1,12 +1,13 @@
 import { Patient } from "@metriport/core/domain/patient";
-import { MedicalDataSource } from "@metriport/core/external/index";
 import { capture } from "@metriport/core/util/notifications";
 import { IHEGateway } from "@metriport/ihe-gateway-sdk";
 import { PurposeOfUse } from "@metriport/shared";
+import { MedicalDataSource } from "@metriport/core/external/index";
+import { OrganizationBizType } from "@metriport/core/domain/organization";
 import { errorToString } from "@metriport/shared/common/error";
 import z from "zod";
-import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/appConfig";
-import { getHieInitiator, HieInitiator } from "../hie/get-hie-initiator";
+import { isCarequalityEnabled, isCQDirectEnabledForCx } from "../aws/app-config";
+import { getHieInitiator, HieInitiator, isHieEnabledToQuery } from "../hie/get-hie-initiator";
 import { makeIheGatewayAPIForPatientDiscovery } from "../ihe-gateway/api";
 
 // TODO: adjust when we support multiple POUs
@@ -19,14 +20,18 @@ export function isGWValid(gateway: { homeCommunityId: string; url: string }): bo
 }
 
 export async function validateCQEnabledAndInitGW(
-  cxId: string,
+  patient: Pick<Patient, "id" | "cxId">,
+  facilityId: string,
   forceEnabled: boolean,
   outerLog: typeof console.log
 ): Promise<IHEGateway | undefined> {
+  const { cxId } = patient;
+
   try {
     const iheGateway = makeIheGatewayAPIForPatientDiscovery();
     const isCQEnabled = await isCarequalityEnabled();
     const isCQDirectEnabled = await isCQDirectEnabledForCx(cxId);
+    const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, patient);
 
     const iheGWNotPresent = !iheGateway;
     const cqIsDisabled = !isCQEnabled && !forceEnabled;
@@ -40,6 +45,9 @@ export async function validateCQEnabledAndInitGW(
       return undefined;
     } else if (cqDirectIsDisabledForCx) {
       outerLog(`CQ disabled for cx ${cxId}, skipping PD`);
+      return undefined;
+    } else if (!isCqQueryEnabled) {
+      outerLog(`CQ querying not enabled for facility, skipping PD`);
       return undefined;
     }
 
@@ -78,7 +86,12 @@ export const cqOrgDetailsSchema = z.object({
   phone: z.string(),
   email: z.string(),
   role: z.enum(["Implementer", "Connection"]),
+  organizationBizType: z.nativeEnum(OrganizationBizType).optional(),
   parentOrgOid: z.string().optional(),
+});
+
+export const cqOrgDetailsOrgBizRequiredSchema = cqOrgDetailsSchema.required({
+  organizationBizType: true,
 });
 
 export type CQOrgDetails = z.infer<typeof cqOrgDetailsSchema>;
@@ -107,9 +120,34 @@ export async function getCqInitiator(
   patient: Pick<Patient, "id" | "cxId">,
   facilityId?: string
 ): Promise<HieInitiator> {
-  return getHieInitiator(patient, facilityId, MedicalDataSource.CAREQUALITY);
+  return getHieInitiator(patient, facilityId);
+}
+
+export async function isFacilityEnabledToQueryCQ(
+  facilityId: string | undefined,
+  patient: Pick<Patient, "id" | "cxId">
+): Promise<boolean> {
+  return await isHieEnabledToQuery(facilityId, patient, MedicalDataSource.CAREQUALITY);
 }
 
 export function getSystemUserName(orgName: string): string {
   return `${orgName} System User`;
+}
+
+export function buildCqOrgName({
+  vendorName,
+  orgName,
+  isProvider,
+  oboOid,
+}: {
+  vendorName: string;
+  orgName: string;
+  isProvider: boolean;
+  oboOid?: string;
+}): string {
+  if (oboOid && !isProvider) {
+    return `${vendorName} - ${orgName} #OBO# ${oboOid}`;
+  }
+
+  return `${vendorName} - ${orgName}`;
 }

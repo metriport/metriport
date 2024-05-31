@@ -20,6 +20,6 @@ export function getTestConfig() {
   return {
     apiUrl: envVarForTest("API_URL"),
     widgetUrl: envVarForTest("WIDGET_URL"),
-    testApiKey: envVarForTest("TEST_API_KEY"),
+    testApiKey: envVarForTest("WIDGET_TEST_API_KEY"),
   };
 }

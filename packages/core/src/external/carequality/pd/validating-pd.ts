@@ -1,9 +1,17 @@
-import { Address as FHIRAddress, ContactPoint, Identifier } from "@medplum/fhirtypes";
+import {
+  Telecom as IheTelecom,
+  Address as IheAddress,
+  PersonalIdentifier as IheIdentifier,
+} from "@metriport/ihe-gateway-sdk";
 import { InboundPatientDiscoveryReq } from "@metriport/ihe-gateway-sdk";
 import { getStateEnum } from "../../../domain/geographic-locations";
 import { Address } from "../../../domain/address";
 import { Contact } from "../../../domain/contact";
-import { PatientData, PersonalIdentifier } from "../../../domain/patient";
+import {
+  PatientData,
+  PersonalIdentifier,
+  createDriversLicensePersonalIdentifier,
+} from "../../../domain/patient";
 import { isContactType } from "../../fhir/patient/index";
 import {
   XDSRegistryError,
@@ -33,7 +41,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     throw new LivingSubjectAdministrativeGenderRequestedError("Gender at Birth is not defined");
   }
 
-  const addresses = (patient.address ?? []).map((addr: FHIRAddress) => {
+  const addresses = (patient.address ?? []).map((addr: IheAddress) => {
     const addressLine1 = addr.line ? addr.line.join(" ") : "";
     const city = addr.city || "";
     const state = addr.state ? getStateEnum(addr.state) : undefined;
@@ -63,7 +71,7 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
     return newAddress;
   });
 
-  const contacts = (patient.telecom ?? []).map((tel: ContactPoint) => {
+  const contacts = (patient.telecom ?? []).map((tel: IheTelecom) => {
     const contact: Contact = {};
     if (tel.system && isContactType(tel.system)) {
       contact[tel.system] = tel.value;
@@ -72,24 +80,19 @@ export function validateFHIRAndExtractPatient(payload: InboundPatientDiscoveryRe
   });
 
   const personalIdentifiers = (patient.identifier ?? [])
-    .map((identifier: Identifier) => {
+    .map((identifier: IheIdentifier) => {
       const system = identifier.system;
       const value = identifier.value;
       if (system && value && STATE_MAPPINGS[system]) {
         const state = STATE_MAPPINGS[system];
         if (state) {
-          const personalIdentifier: PersonalIdentifier = {
-            type: "driversLicense",
-            value: value,
-            state: state,
-          };
-          return personalIdentifier;
+          return createDriversLicensePersonalIdentifier(value, state);
         }
       }
       return undefined;
     })
     .filter(
-      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item !== undefined
+      (item: PersonalIdentifier | undefined): item is PersonalIdentifier => item != undefined
     );
 
   const convertedPatient: PatientData = {

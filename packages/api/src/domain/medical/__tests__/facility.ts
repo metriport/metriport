@@ -1,6 +1,7 @@
 import { faker } from "@faker-js/faker";
+import { FacilityModel } from "../../../models/medical/facility";
 import { makeBaseDomain } from "../../__tests__/base-domain";
-import { Facility, FacilityData, FacilityType, makeFacilityOid } from "../facility";
+import { Facility, FacilityData, FacilityType, isOboFacility, makeFacilityOid } from "../facility";
 import { makeAddressStrict } from "./location-address";
 import { makeOrgNumber } from "./organization";
 
@@ -26,21 +27,43 @@ export function makeFacility(params: Partial<Facility> = {}): Facility {
   const facilityNumber =
     params.facilityNumber ?? getNumberFromOid(params.oid) ?? makeFacilityNumber();
   const oid = params.oid ?? makeFacilityOid(makeOrgNumber(), facilityNumber);
-  const cqOboActive = params.cqOboActive ?? faker.datatype.boolean();
-  const cwOboActive = params.cwOboActive ?? faker.datatype.boolean();
+  const cqType = params.cqType ?? FacilityType.initiatorAndResponder;
+  const cwType = params.cwType ?? FacilityType.initiatorAndResponder;
+  const cqActive =
+    params.cqActive !== undefined
+      ? params.cqActive
+      : isOboFacility(cqType)
+      ? faker.datatype.boolean()
+      : false;
+  const cwActive =
+    params.cwActive !== undefined
+      ? params.cwActive
+      : isOboFacility(cwType)
+      ? faker.datatype.boolean()
+      : false;
   return {
     ...makeBaseDomain(),
     ...(params.id ? { id: params.id } : {}),
     cxId: params.cxId ?? faker.string.uuid(),
     oid,
     facilityNumber,
-    cqOboActive,
-    cwOboActive,
+    cqActive,
+    cwActive,
     cqOboOid:
-      params.cqOboOid !== undefined ? params.cqOboOid : cqOboActive ? faker.string.uuid() : null,
+      params.cqOboOid !== undefined ? params.cqOboOid : cqActive ? faker.string.uuid() : null,
     cwOboOid:
-      params.cwOboOid !== undefined ? params.cwOboOid : cwOboActive ? faker.string.uuid() : null,
-    type: params.type ?? faker.helpers.arrayElement(Object.values(FacilityType)),
+      params.cwOboOid !== undefined ? params.cwOboOid : cwActive ? faker.string.uuid() : null,
+    cqType,
+    cwType,
     data: makeFacilityData(params.data),
   };
+}
+
+export function makeFacilityModel(params?: Partial<FacilityModel>): FacilityModel {
+  const facility = makeFacility(params);
+  const model = new FacilityModel(facility);
+  model.cqType = facility.cqType;
+  model.cwType = facility.cwType;
+  model.data = facility.data;
+  return model;
 }

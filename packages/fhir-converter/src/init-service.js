@@ -1,11 +1,30 @@
 // -------------------------------------------------------------------------------------------------
-// Copyright (c) Microsoft Corporation. All rights reserved.
-// Licensed under the MIT License (MIT). See LICENSE in the repo root for license information.
+// Copyright (c) 2022-present Metriport Inc.
+//
+// Licensed under AGPLv3. See LICENSE in the repo root for license information.
+//
+// This file incorporates work covered by the following copyright and
+// permission notice:
+//
+//     Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//     Permission to use, copy, modify, and/or distribute this software
+//     for any purpose with or without fee is hereby granted, provided
+//     that the above copyright notice and this permission notice appear
+//     in all copies.
+//
+//     THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+//     WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+//     WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+//     AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR
+//     CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
+//     OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
+//     NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+//     CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 // -------------------------------------------------------------------------------------------------
 
 var constants = require("./lib/constants/constants");
 var fse = require("fs-extra");
-// var gfs = require("./lib/git-filesystem/git-filesystem")(constants.TEMPLATE_FILES_LOCATION);
 var path = require("path");
 
 fse.ensureDir(constants.TEMPLATE_FILES_LOCATION).then(function () {
@@ -14,37 +33,8 @@ fse.ensureDir(constants.TEMPLATE_FILES_LOCATION).then(function () {
       if (files.length == 0) {
         fse
           .copy(constants.BASE_TEMPLATE_FILES_LOCATION, constants.TEMPLATE_FILES_LOCATION)
-          .then(function () {
-            // Make sure we can get a status
-            // gfs
-            //   .getStatus()
-            //   .then(function (status) {
-            //     // If we have something in status and we have no branches, it means new repo and we should make an initial commit
-            //     if (status.length > 0) {
-            //       gfs.getBranches().then(function (branches) {
-            //         if (branches.length == 0) {
-            //           gfs
-            //             .commitAllChanges("Initial commit")
-            //             .then(function () {
-            //               console.log("Committed initial commit");
-            //             })
-            //             .catch(function (errReasonCommit) {
-            //               throw new Error("Do initial commits: " + errReasonCommit);
-            //             });
-            //         }
-            //       });
-            //     }
-            //   })
-            //   .catch(function (errReason) {
-            //     throw new Error("Unable to initialize repo: " + errReason);
-            //   });
-          });
+          .then(function () {});
       } else {
-        // The folder is not empty, but we should be able to open or make it a git repo
-        // gfs.getStatus().catch(function (err) {
-        //   throw new Error("Unable to initialize repo: " + err);
-        // });
-
         // delete any temp folders (ceeated by UpdateBaseTemplates)
         var existingFiles = fse.readdirSync(constants.TEMPLATE_FILES_LOCATION);
         existingFiles.forEach(function (fl) {

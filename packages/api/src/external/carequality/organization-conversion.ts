@@ -1,8 +1,8 @@
 import { uuidv7 } from "@metriport/core/util/uuid-v7";
 import { XCPDGateway } from "@metriport/ihe-gateway-sdk";
-import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
-import { getOidsWithIHEGatewayV2Enabled } from "../aws/appConfig";
 import { Config } from "../../shared/config";
+import { getOidsWithIHEGatewayV2Enabled } from "../aws/app-config";
+import { CQOrgBasicDetails } from "./command/cq-directory/search-cq-directory";
 
 export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise<{
   v1Gateways: XCPDGateway[];
@@ -16,12 +16,10 @@ export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise
 
   for (const org of cqOrgs) {
     if (org.urlXCPD) {
-      const gateway = {
-        url: org.urlXCPD,
-        oid: org.id,
-        id: uuidv7(),
-      };
-
+      const gateway = buildXcpdGateway({
+        urlXCPD: org.urlXCPD,
+        id: org.id,
+      });
       if (iheGatewayV2OIDs.includes(org.id)) {
         v2Gateways.push(gateway);
       } else {
@@ -33,5 +31,13 @@ export async function cqOrgsToXCPDGateways(cqOrgs: CQOrgBasicDetails[]): Promise
   return {
     v1Gateways,
     v2Gateways,
+  };
+}
+
+export function buildXcpdGateway(org: { id: string; urlXCPD: string }): XCPDGateway {
+  return {
+    url: org.urlXCPD,
+    oid: org.id,
+    id: uuidv7(),
   };
 }

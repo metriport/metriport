@@ -19,9 +19,9 @@ Array of all of the Facilities created under your Organization.
 ```javascript Metriport SDK
 import { MetriportMedicalApi } from "@metriport/api-sdk";
 
-const metriportClient = new MetriportMedicalApi("YOUR_API_KEY");
+const metriport = new MetriportMedicalApi("YOUR_API_KEY");
 
-const facilities = await metriportClient.listFacilities();
+const facilities = await metriport.listFacilities();
 ```
 
 </ResponseExample>

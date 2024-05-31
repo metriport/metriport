@@ -11,8 +11,9 @@ import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import path from "path";
-import { getFileNameForOrg } from "./shared/folder";
+import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
 import { getCxData } from "./shared/get-cx-data";
+import { logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
 
@@ -46,7 +47,7 @@ const inputFileName = "bulk-insert-patients.csv";
 const ISO_DATE = "YYYY-MM-DD";
 const confirmationTime = dayjs.duration(10, "seconds");
 
-const getFileName = (orgName: string) => `./runs/bulk-insert/${getFileNameForOrg(orgName, "txt")}`;
+const getFileName = buildGetDirPathInside(`bulk-insert`);
 
 type Params = {
   dryrun?: boolean;
@@ -63,13 +64,14 @@ const metriportAPI = new MetriportMedicalApi(apiKey, {
 });
 
 async function main() {
+  initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
 
   const { orgName, facilityId: localFacilityId } = await getCxData(cxId, facilityId.trim());
   if (!localFacilityId) throw new Error("No facility found");
-  const outputFileName = getFileName(orgName);
+  const outputFileName = getFileName(orgName) + ".txt";
 
   if (!dryRun) initPatientIdRepository(outputFileName);
 
@@ -126,9 +128,7 @@ async function loadData(
 }
 
 async function displayWarningAndConfirmation(results: unknown[], orgName: string, dryRun: boolean) {
-  if (!dryRun) {
-    console.log("\n\x1b[31m%s\x1b[0m\n", "---- ATTENTION - THIS IS NOT A SIMULATED RUN ----"); // https://stackoverflow.com/a/41407246/2099911
-  }
+  if (!dryRun) logNotDryRun();
   console.log(`Inserting ${results.length} patients at org/cx ${orgName}`);
   await sleep(confirmationTime.asMilliseconds());
 }
@@ -289,8 +289,6 @@ const mapCSVPatientToMetriportPatient = (csvPatient: {
   };
 };
 
-main();
-
 const states: { [k in string]: USState } = {
   Arizona: USState.AZ,
   Alabama: USState.AL,
@@ -343,3 +341,5 @@ const states: { [k in string]: USState } = {
   Wisconsin: USState.WI,
   Wyoming: USState.WY,
 };
+
+main();

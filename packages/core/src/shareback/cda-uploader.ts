@@ -28,7 +28,6 @@ export async function cdaDocumentUploaderHandler({
   const { log } = out(`CDA Upload - cxId: ${cxId} - patientId: ${patientId}`);
   const fileSize = sizeInBytes(cdaBundle);
   const s3Utils = new S3Utils(region);
-  const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
   const destinationKey = createUploadFilePath(cxId, patientId, `${docId}.xml`);
 
   try {
@@ -36,6 +35,7 @@ export async function cdaDocumentUploaderHandler({
       bucket: medicalDocumentsBucket,
       key: destinationKey,
       file: Buffer.from(cdaBundle),
+      contentType: XML_APP_MIME_TYPE,
     });
     log(`Successfully uploaded the file to ${medicalDocumentsBucket} with key ${destinationKey}`);
   } catch (error) {
@@ -47,6 +47,7 @@ export async function cdaDocumentUploaderHandler({
     });
   }
 
+  const metadataFileName = createUploadMetadataFilePath(cxId, patientId, docId);
   try {
     await createAndUploadDocumentMetadataFile({
       s3Utils,

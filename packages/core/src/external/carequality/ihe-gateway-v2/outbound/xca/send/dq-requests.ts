@@ -28,7 +28,7 @@ export async function sendSignedDQRequests({
   const trustedKeyStore = await getTrustedKeyStore();
   const requestPromises = signedRequests.map(async (request, index) => {
     try {
-      const response = await sendSignedXml({
+      const { response } = await sendSignedXml({
         signedXml: request.signedRequest,
         url: request.gateway.url,
         samlCertsAndKeys,
@@ -45,10 +45,15 @@ export async function sendSignedDQRequests({
         success: true,
         outboundRequest: request.outboundRequest,
       };
-    } catch (error) {
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
       const msg = "HTTP/SSL Failure Sending Signed DQ SAML Request";
-      log(`${msg}, error: ${error}`);
-
+      log(
+        `${msg}, cxId: ${cxId}, patientId: ${patientId}, gateway: ${request.gateway.homeCommunityId}, error: ${error}`
+      );
+      if (error?.response?.data) {
+        log(`error details: ${JSON.stringify(error?.response?.data)}`);
+      }
       const errorString: string = errorToString(error);
       const extra = {
         errorString,

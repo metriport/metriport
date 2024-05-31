@@ -4,7 +4,7 @@ import { executeAsynchronously } from "@metriport/core/util/concurrency";
 import { errorToString } from "@metriport/core/util/error/shared";
 import { out } from "@metriport/core/util/log";
 import { capture } from "@metriport/core/util/notifications";
-import { isCQDirectEnabledForCx } from "../../aws/appConfig";
+import { isCQDirectEnabledForCx } from "../../aws/app-config";
 import { buildInterrupt } from "../../hie/reset-doc-query-progress";
 import { scheduleDocQuery } from "../../hie/schedule-document-query";
 import { setDocQueryProgress } from "../../hie/set-doc-query-progress";
@@ -16,19 +16,22 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { getOidsWithIHEGatewayV2Enabled } from "../../aws/appConfig";
+import { getOidsWithIHEGatewayV2Enabled } from "../../aws/app-config";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { Config } from "../../../shared/config";
+import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
 
 const iheGateway = makeIheGatewayAPIForDocQuery();
 const resultPoller = makeOutboundResultPoller();
 
 export async function getDocumentsFromCQ({
   requestId,
+  facilityId,
   patient,
 }: {
   requestId: string;
+  facilityId?: string;
   patient: Patient;
 }) {
   const { log } = out(`CQ DQ - requestId ${requestId}, patient ${patient.id}`);
@@ -41,9 +44,13 @@ export async function getDocumentsFromCQ({
     source: MedicalDataSource.CAREQUALITY,
     log,
   });
+
+  const isCqQueryEnabled = await isFacilityEnabledToQueryCQ(facilityId, { id: patientId, cxId });
+
   if (!iheGateway) return interrupt(`IHE GW not available`);
   if (!resultPoller.isDQEnabled()) return interrupt(`IHE DQ result poller not available`);
   if (!(await isCQDirectEnabledForCx(cxId))) return interrupt(`CQ disabled for cx ${cxId}`);
+  if (!isCqQueryEnabled) return interrupt(`CQ disabled for facility ${facilityId}`);
 
   try {
     const [cqPatientData] = await Promise.all([

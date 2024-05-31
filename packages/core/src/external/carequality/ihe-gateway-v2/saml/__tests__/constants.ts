@@ -1,4 +1,5 @@
 import * as uuid from "uuid";
+import { Gender } from "@metriport/ihe-gateway-sdk";
 
 export const iti55BodyData = {
   id: uuid.v4(),
@@ -29,11 +30,11 @@ export const iti55BodyData = {
     id: uuid.v4(),
     name: [
       {
-        family: "Obama",
-        given: ["Barack"],
+        family: "John",
+        given: ["Doe"],
       },
     ],
-    gender: "male",
+    gender: "male" as Gender,
     birthDate: "1981-01-01",
     address: [
       {

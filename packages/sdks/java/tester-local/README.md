@@ -13,7 +13,6 @@ You will be prompted to sign in. Do this.
 
 To run the tests, run the following commands
 ```bash
-# Run cd packages/sdks/java 
 ./gradlew test
 ```
 

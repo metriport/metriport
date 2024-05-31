@@ -4,6 +4,7 @@ import { createExtrinsicObjectXml } from "../external/carequality/dq/create-meta
 import { createPatientUniqueId } from "../external/carequality/shared";
 import { isOrganization } from "../external/fhir/shared";
 import { out } from "../util/log";
+import { XML_APP_MIME_TYPE } from "../util/mime";
 
 const { log } = out("Core Create and Upload Extrinsic Object");
 
@@ -56,5 +57,6 @@ export async function createAndUploadDocumentMetadataFile({
     bucket: destinationBucket,
     key: metadataFileName,
     file: Buffer.from(extrinsicObjectXml),
+    contentType: XML_APP_MIME_TYPE,
   });
 }
