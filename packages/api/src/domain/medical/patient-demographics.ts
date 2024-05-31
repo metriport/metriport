@@ -316,6 +316,13 @@ export function linkHasNewDemographiscData(
   consolidatedLinkDemographics: ConsolidatedLinkDemographics | undefined,
   linkDemographics: LinkDemographics
 ): boolean {
+  const hasNewDob = linkDemographics.dob !== coreDemographics.dob;
+  const hasNewGender = linkDemographics.gender !== coreDemographics.gender;
+  const hasNewName =
+    linkDemographics.names.some(name => !coreDemographics.names.includes(name)) &&
+    linkDemographics.names.some(
+      name => !(consolidatedLinkDemographics?.names ?? []).includes(name)
+    );
   const hasNewAddress =
     linkDemographics.addressesString.some(
       address => !coreDemographics.addressesString.includes(address)
@@ -335,6 +342,23 @@ export function linkHasNewDemographiscData(
     linkDemographics.emails.some(
       email => !(consolidatedLinkDemographics?.emails ?? []).includes(email)
     );
+  const hasNewDriversLicense =
+    linkDemographics.driversLicenses.some(dl => !coreDemographics.driversLicenses.includes(dl)) &&
+    linkDemographics.driversLicenses.some(
+      dl => !(consolidatedLinkDemographics?.driversLicenses ?? []).includes(dl)
+    );
+  const hasNewSsn =
+    linkDemographics.ssns.some(ssn => !coreDemographics.ssns.includes(ssn)) &&
+    linkDemographics.ssns.some(ssn => !(consolidatedLinkDemographics?.ssns ?? []).includes(ssn));
 
-  return hasNewAddress || hasNewTelephoneNumber || hasNewEmail;
+  return (
+    hasNewDob ||
+    hasNewGender ||
+    hasNewName ||
+    hasNewAddress ||
+    hasNewTelephoneNumber ||
+    hasNewEmail ||
+    hasNewDriversLicense ||
+    hasNewSsn
+  );
 }
