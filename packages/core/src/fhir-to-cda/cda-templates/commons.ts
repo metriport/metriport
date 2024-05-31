@@ -247,7 +247,18 @@ export function formatDateToHumanReadableFormat(
   if (!dateString) return undefined;
 
   const date = dayjs(dateString);
-  if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
+
+  if (dateString.includes("T")) {
+    const match = dateString.match(timeOffsetRegex);
+    if (match) {
+      return date.utcOffset(match[0]).utc().format("MM/DD/YYYY h:mm A");
+    } else if (!dateString.endsWith("Z")) {
+      return date.format("MM/DD/YYYY");
+    }
+    return date.utc().format("MM/DD/YYYY h:mm A");
+  }
+
+  // if (dateString.includes("T")) return date.utc().format("MM/DD/YYYY h:mm A");
   return date.utc().format("MM/DD/YYYY");
 }
 // see https://build.fhir.org/ig/HL7/CDA-core-sd/StructureDefinition-ST.html

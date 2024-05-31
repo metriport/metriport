@@ -27,13 +27,19 @@ describe("formatDateToHumanReadableFormat", () => {
   it('should format date-time string without "Z" correctly', () => {
     const dateTime = "2024-05-22T02:00:00.000";
     const formattedDateTime = formatDateToHumanReadableFormat(dateTime);
-    expect(formattedDateTime).toBe("05/22/2024 9:00 AM");
+    expect(formattedDateTime).toBe("05/22/2024");
   });
 
   it("should format date-time string with timezone offset correctly", () => {
     const dateTime = "2024-05-22T02:25:16.443+02:00";
     const formattedDateTime = formatDateToHumanReadableFormat(dateTime);
     expect(formattedDateTime).toBe("05/22/2024 12:25 AM");
+  });
+
+  it("should format date-time string with timezone offset correctly", () => {
+    const dateTime = "2024-05-22T02:25:16.443-07:00";
+    const formattedDateTime = formatDateToHumanReadableFormat(dateTime);
+    expect(formattedDateTime).toBe("05/22/2024 9:25 AM");
   });
 
   it("should format invalid date string correctly", () => {

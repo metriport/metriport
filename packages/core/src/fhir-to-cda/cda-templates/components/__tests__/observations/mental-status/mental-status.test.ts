@@ -63,6 +63,7 @@ describe("buildMentalStatus", () => {
     const res = buildMentalStatus(bundle);
     const cleanedJsonObj = removeEmptyFields(res);
     const xmlRes = xmlBuilder.build(cleanedJsonObj);
+    console.log(xmlContent);
     expect(xmlRes).toEqual(xmlContent);
   });
 });
