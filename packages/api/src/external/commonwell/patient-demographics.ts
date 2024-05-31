@@ -53,9 +53,7 @@ function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
       country: address.country ?? undefined,
     });
   });
-  const addressesString = addressesObj.map(addressObj => {
-    return stringifyAddress(addressObj);
-  });
+  const addressesString = addressesObj.map(stringifyAddress);
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "phone") return [];

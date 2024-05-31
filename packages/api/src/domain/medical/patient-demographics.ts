@@ -146,9 +146,7 @@ export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographic
       ...address,
     });
   });
-  const addressesString = addressesObj.map(addressObj => {
-    return stringifyAddress(addressObj);
-  });
+  const addressesString = addressesObj.map(stringifyAddress);
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
     return [normalizeTelephone(c.phone)];

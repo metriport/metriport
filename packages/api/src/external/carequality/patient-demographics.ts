@@ -30,7 +30,7 @@ function patientResourceToNormalizedAndStringifiedLinkDemographics(
   const gender = normalizeGender(patientResource.gender ?? "");
   const names = (patientResource.name ?? []).flatMap(name => {
     if (!name.family) return [];
-    const lastName = name.family.trim().toLowerCase();
+    const lastName = name.family;
     return (name.given ?? []).map(firstName => {
       return normalizeAndStringifyNames({ firstName, lastName });
     });
@@ -44,9 +44,7 @@ function patientResourceToNormalizedAndStringifiedLinkDemographics(
       country: a.country,
     });
   });
-  const addressesString = addressesObj.map(addressObj => {
-    return stringifyAddress(addressObj);
-  });
+  const addressesString = addressesObj.map(stringifyAddress);
   /* TODO
   const telephoneNumbers = (patientResource.contact ?? []).flatMap(c => {
   });
