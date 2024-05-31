@@ -87,8 +87,9 @@ function getKey(res) {
     if (Object.prototype.hasOwnProperty.call(res.resource, "id")) {
       key = key.concat("_", res.resource.id);
     }
-    //console.log(`getkey: ${key}`);
     return key;
   }
   return JSON.stringify(res);
 }
+
+module.exports.merge = merge;

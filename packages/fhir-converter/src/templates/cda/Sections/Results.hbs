@@ -32,8 +32,8 @@
                     {{>Resources/DiagnosticReport.hbs diagReport=drEntry.organizer categoryCode=categoryCode ID=(generateUUID (toJsonString drEntry.organizer))}},
                     {{#with (evaluate 'Utils/GeneratePatientId.hbs' obj=@metriportPatientId) as |patientId|}}
                         {{>References/DiagnosticReport/subject.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Patient/' patientId.Id)}},
-                        {{#if @encompassingEncounterId}} 
-                            {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Encounter/' @encompassingEncounterId)}}
+                        {{#if @encompassingEncounterIds}} 
+                            {{>References/DiagnosticReport/encounter.hbs ID=(generateUUID (toJsonString drEntry.organizer)) REF=(concat 'Encounter/' @encompassingEncounterIds.newId)}}
                         {{/if}}
                     {{/with}}
                 {{/if}}
