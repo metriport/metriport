@@ -38,7 +38,7 @@ export function scoreLinkEpic(
     // DOB approximate match
     const patientDobSplit = splitDob(patientDemographics.dob);
     const linkedDobSplit = splitDob(linkDemographics.dob);
-    const overlappingDateParts = linkedDobSplit.filter(patientDobSplit.includes);
+    const overlappingDateParts = linkedDobSplit.filter(dp => patientDobSplit.includes(dp));
     if (overlappingDateParts.length >= 2) {
       score += 2;
     }
@@ -55,14 +55,14 @@ export function scoreLinkEpic(
     // TODO
   }
   // Names exact match
-  if (linkDemographics.names.some(patientDemographics.names.includes)) {
+  if (linkDemographics.names.some(name => patientDemographics.names.includes(name))) {
     score += 10;
   } else {
     // Names approximate match
     // TODO
   }
   // Address exact match
-  if (linkDemographics.addressesString.some(patientDemographics.addressesString.includes)) {
+  if (linkDemographics.addressesString.some(a => patientDemographics.addressesString.includes(a))) {
     score += 2;
     // Address approximate match
     // TODO
@@ -92,14 +92,16 @@ export function scoreLinkEpic(
     }
   }
   // Telephone exact match
-  if (linkDemographics.telephoneNumbers.some(patientDemographics.telephoneNumbers.includes)) {
+  if (
+    linkDemographics.telephoneNumbers.some(tn => patientDemographics.telephoneNumbers.includes(tn))
+  ) {
     score += 2;
   } else {
     // Telephone approximate match
     // TODO
   }
   // Email exact match
-  if (linkDemographics.emails.some(patientDemographics.emails.includes)) {
+  if (linkDemographics.emails.some(e => patientDemographics.emails.includes(e))) {
     score += 2;
   } else {
     // Email approximate match
@@ -107,7 +109,7 @@ export function scoreLinkEpic(
   }
   if (linkDemographics.ssns.length > 0) scoreThreshold = 21;
   // SSN exact match
-  if (linkDemographics.ssns.some(patientDemographics.ssns.includes)) {
+  if (linkDemographics.ssns.some(ssn => patientDemographics.ssns.includes(ssn))) {
     score += 5;
   } else {
     // SSN approximate match

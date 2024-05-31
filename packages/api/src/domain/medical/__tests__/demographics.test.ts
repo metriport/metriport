@@ -1,4 +1,4 @@
-import { Patient, PatientDemoData, GenderAtBirth } from "@metriport/core/domain/patient";
+import { Patient, PatientDemoData, GenderAtBirth, splitDob } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import {
@@ -17,6 +17,11 @@ import {
 } from "../patient-demographics";
 
 describe("normalization", () => {
+  it("check dob split", async () => {
+    const dobValidValue = "2023-08-01";
+    const dobSplit = splitDob(dobValidValue);
+    expect(dobSplit).toMatchObject(["2023", "08", "01"]);
+  });
   it("check dob normalization", async () => {
     const dobValidValue = "2023-08-01";
     const dobValid = normalizeDob(dobValidValue);
@@ -60,7 +65,7 @@ describe("normalization", () => {
   });
   it("check address normalization", async () => {
     const addressValidValue = {
-      line: ["1 mordhaus st", "apt 1a"],
+      line: ["1 mordhaus st", "apt 1a", "2"],
       city: "mordhaus",
       state: "ny",
       zip: "66666",
@@ -73,7 +78,7 @@ describe("normalization", () => {
     const addressValid = normalizeAddress(addressValidValue);
     expect(addressValid).toMatchObject(addressValidValue);
     const addressTrim = normalizeAddress({
-      line: [" 1 mordhaus st ", " apt 1a "],
+      line: [" 1 mordhaus st ", " apt 1a ", " 2 "],
       city: " mordhaus ",
       state: " ny ",
       zip: " 66666 ",
@@ -81,7 +86,7 @@ describe("normalization", () => {
     });
     expect(addressTrim).toMatchObject(addressValidValue);
     const addressTrimLowercase = normalizeAddress({
-      line: [" 1 Mordhaus St ", " Apt 1A "],
+      line: [" 1 Mordhaus St ", " Apt 1A ", " 2 "],
       city: " Mordhaus ",
       state: " NY ",
       zip: " 66666 ",
@@ -89,7 +94,7 @@ describe("normalization", () => {
     });
     expect(addressTrimLowercase).toMatchObject(addressValidValue);
     const addressTrimLowercaseZipAlphanumeric = normalizeAddress({
-      line: [" 1 Mordhaus St ", " Apt 1A "],
+      line: [" 1 Mordhaus St ", " Apt 1A ", " 2 "],
       city: " Mordhaus ",
       state: " NY ",
       zip: " 66666abc ",
@@ -97,7 +102,7 @@ describe("normalization", () => {
     });
     expect(addressTrimLowercaseZipAlphanumeric).toMatchObject(addressValidValue);
     const addressTrimLowercaseZipNumericSlice = normalizeAddress({
-      line: [" 1 Mordhaus St ", " Apt 1A "],
+      line: [" 1 Mordhaus St ", " Apt 1A ", " 2 "],
       city: " Mordhaus ",
       state: " NY ",
       zip: " 66666-1234abc ",
@@ -268,7 +273,7 @@ describe("create augmented patient", () => {
   it("check augmented patient", async () => {
     const addressesObj = [
       {
-        line: ["88 75th st.", "apt 8"],
+        line: ["88 75th st.", "apt 8", "1b"],
         city: "ny",
         state: "ny",
         zip: "66622",
@@ -376,7 +381,7 @@ describe("create augmented patient", () => {
           state: "ny" as USState,
           country: "usa",
           addressLine1: "88 75th st.",
-          addressLine2: "apt 8",
+          addressLine2: "apt 8 1b",
         },
       ],
       personalIdentifiers: [

@@ -25,7 +25,7 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
     .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
 }
 
-function patientResourceToNormalizedAndStringifiedLinkDemographics(
+export function patientResourceToNormalizedAndStringifiedLinkDemographics(
   patientResource: PatientResource
 ): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate);
