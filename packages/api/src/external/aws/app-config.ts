@@ -1,7 +1,9 @@
 import {
-  FeatureFlagDatastore,
+  BooleanFeatureFlags,
   getFeatureFlags,
-  getFeatureFlagValue,
+  getFeatureFlagValueBoolean,
+  getFeatureFlagValueStringArray,
+  StringValueFeatureFlags,
 } from "@metriport/core/external/aws/app-config";
 import { MetriportError } from "@metriport/core/util/error/metriport-error";
 import { out } from "@metriport/core/util/log";
@@ -33,27 +35,23 @@ export async function initFeatureFlags() {
   log(`Feature Flags initialized.`);
 }
 
-function getFeatureFlagValueLocal(featureFlagName: keyof FeatureFlagDatastore) {
-  return getFeatureFlagValue(
-    Config.getAWSRegion(),
-    Config.getAppConfigAppId(),
-    Config.getAppConfigConfigId(),
-    Config.getEnvType(),
-    featureFlagName
-  );
-}
-
 /**
  * Returns the list of customers that are enabled for the given feature flag.
  *
  * @returns Array of string values
  */
 async function getCxsWithFeatureFlagEnabled(
-  featureFlagName: keyof FeatureFlagDatastore
+  featureFlagName: keyof StringValueFeatureFlags
 ): Promise<string[]> {
   try {
-    const featureFlag = await getFeatureFlagValueLocal(featureFlagName);
-    if (featureFlag.enabled && featureFlag.values) {
+    const featureFlag = await getFeatureFlagValueStringArray(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    if (featureFlag && featureFlag.enabled && featureFlag.values) {
       return featureFlag.values;
     }
   } catch (error) {
@@ -70,18 +68,23 @@ async function getCxsWithFeatureFlagEnabled(
  *
  * @returns true if enabled; false otherwise
  */
-async function isFeatureFlagEnabled(featureFlagName: keyof FeatureFlagDatastore): Promise<boolean> {
-  let isEnabled = false;
+async function isFeatureFlagEnabled(featureFlagName: keyof BooleanFeatureFlags): Promise<boolean> {
   try {
-    const featureFlag = await getFeatureFlagValueLocal(featureFlagName);
-    isEnabled = featureFlag.enabled;
+    const featureFlag = await getFeatureFlagValueBoolean(
+      Config.getAWSRegion(),
+      Config.getAppConfigAppId(),
+      Config.getAppConfigConfigId(),
+      Config.getEnvType(),
+      featureFlagName
+    );
+    return featureFlag.enabled;
   } catch (error) {
     const msg = `Failed to get Feature Flag Value`;
     const extra = { featureFlagName };
     log(`${msg} - ${JSON.stringify(extra)} - ${errorToString(error)}`);
     capture.error(msg, { extra: { ...extra, error } });
   }
-  return isEnabled;
+  return false;
 }
 
 export async function getCxsWithEnhancedCoverageFeatureFlagValue(): Promise<string[]> {

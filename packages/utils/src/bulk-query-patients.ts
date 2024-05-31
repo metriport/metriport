@@ -14,9 +14,9 @@ import duration from "dayjs/plugin/duration";
 import fs from "fs";
 import { chunk } from "lodash";
 import path from "path";
-import { getFileNameForOrg } from "./shared/folder";
-import { getCxData } from "./shared/get-cx-data";
 import { getPatientIds } from "./patient/get-ids";
+import { buildGetDirPathInside, initRunsFolder } from "./shared/folder";
+import { getCxData } from "./shared/get-cx-data";
 import { logNotDryRun } from "./shared/log";
 
 dayjs.extend(duration);
@@ -65,7 +65,7 @@ const confirmationTime = dayjs.duration(10, "seconds");
 const csvHeader =
   "patientId,firstName,lastName,state,queryAttemptCount,docCount,fhirResourceCount,fhirResourceDetails,status\n";
 
-const csvName = (cxName: string): string => `./runs/bulk-query/${getFileNameForOrg(cxName, "csv")}`;
+const csvName = buildGetDirPathInside(`bulk-query`);
 
 const triggerAndQueryDocRefs = new TriggerAndQueryDocRefsRemote(apiUrl);
 
@@ -169,6 +169,7 @@ program
   .showHelpAfterError();
 
 async function main() {
+  initRunsFolder();
   program.parse();
   const { dryrun: dryRunParam } = program.opts<Params>();
   const dryRun = dryRunParam ?? false;
@@ -186,7 +187,7 @@ async function main() {
 
   await displayWarningAndConfirmation(patientIdsToQuery.length, isAllPatients, dryRun, log);
 
-  const fileName = csvName(orgName);
+  const fileName = csvName(orgName) + ".csv";
   if (!dryRun) initCsv(fileName);
 
   log(`>>> Running it...`);

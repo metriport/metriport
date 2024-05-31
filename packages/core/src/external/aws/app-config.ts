@@ -20,11 +20,16 @@ export type StringValuesFF = z.infer<typeof ffStringValuesSchema>;
 
 export const ffBooleanSchema = z.object({
   enabled: z.boolean(),
-  values: z.never().or(z.literal(undefined)),
 });
 export type BooleanFF = z.infer<typeof ffBooleanSchema>;
 
-export const ffDatastoreSchema = z.object({
+export const booleanFFsSchema = z.object({
+  commonwellFeatureFlag: ffBooleanSchema,
+  carequalityFeatureFlag: ffBooleanSchema,
+});
+export type BooleanFeatureFlags = z.infer<typeof booleanFFsSchema>;
+
+export const stringValueFFsSchema = z.object({
   cxsWithEnhancedCoverageFeatureFlag: ffStringValuesSchema,
   cxsWithCQDirectFeatureFlag: ffStringValuesSchema,
   cxsWithCWFeatureFlag: ffStringValuesSchema,
@@ -32,10 +37,11 @@ export const ffDatastoreSchema = z.object({
   cxsWithNoWebhookPongFeatureFlag: ffStringValuesSchema,
   cxsWithIncreasedSandboxLimitFeatureFlag: ffStringValuesSchema,
   oidsWithIHEGatewayV2Enabled: ffStringValuesSchema,
-  commonwellFeatureFlag: ffBooleanSchema,
-  carequalityFeatureFlag: ffBooleanSchema,
-  e2eCxIds: ffStringValuesSchema,
+  e2eCxIds: ffStringValuesSchema.nullish(),
 });
+export type StringValueFeatureFlags = z.infer<typeof stringValueFFsSchema>;
+
+export const ffDatastoreSchema = stringValueFFsSchema.merge(booleanFFsSchema);
 export type FeatureFlagDatastore = z.infer<typeof ffDatastoreSchema>;
 
 export async function getFeatureFlags(
@@ -66,17 +72,24 @@ export async function getFeatureFlags(
   throw new MetriportError(`Failed to get Feature Flags`);
 }
 
-export async function getFeatureFlagValue<T extends keyof FeatureFlagDatastore>(
+export async function getFeatureFlagValueStringArray<T extends keyof StringValueFeatureFlags>(
   region: string,
   appId: string,
   configId: string,
   envName: string,
   featureFlagName: T
-): Promise<FeatureFlagDatastore[T]> {
+): Promise<StringValueFeatureFlags[T]> {
   const configContentValue = await getFeatureFlags(region, appId, configId, envName);
-  if (configContentValue && configContentValue[featureFlagName]) {
-    return configContentValue[featureFlagName];
-  } else {
-    throw new MetriportError(`Feature Flag not found in config`, undefined, { featureFlagName });
-  }
+  return configContentValue[featureFlagName];
+}
+
+export async function getFeatureFlagValueBoolean<T extends keyof BooleanFeatureFlags>(
+  region: string,
+  appId: string,
+  configId: string,
+  envName: string,
+  featureFlagName: T
+): Promise<BooleanFeatureFlags[T]> {
+  const configContentValue = await getFeatureFlags(region, appId, configId, envName);
+  return configContentValue[featureFlagName];
 }
