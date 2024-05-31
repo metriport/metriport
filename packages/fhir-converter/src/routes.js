@@ -24,7 +24,6 @@
 // -------------------------------------------------------------------------------------------------
 
 var constants = require("./lib/constants/constants");
-var express = require("express");
 var cookieParser = require("cookie-parser");
 var errorCodes = require("./lib/error/error").errorCodes;
 var errorMessage = require("./lib/error/error").errorMessage;

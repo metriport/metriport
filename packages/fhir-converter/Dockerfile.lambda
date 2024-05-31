@@ -1,7 +1,7 @@
 FROM amazon/aws-lambda-nodejs:18
 
 # Copy the Lambda functions
-COPY src/lambdas/ccda-to-fhir.js package.json package-lock.json ${LAMBDA_TASK_ROOT}/
+COPY src/ccda-to-fhir-lambda.js package.json package-lock.json ${LAMBDA_TASK_ROOT}/
 # Copy the rest of the files
 COPY src/lib/ ${LAMBDA_TASK_ROOT}/lib/
 COPY src/templates/ ${LAMBDA_TASK_ROOT}/templates/
