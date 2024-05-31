@@ -1,6 +1,6 @@
 import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
-import { InboundPatientResource } from "@metriport/ihe-gateway-sdk";
+import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
   scoreLinkEpic,
   linkHasNewDemographiscData,
@@ -10,6 +10,8 @@ import {
   normalizeAndStringifyNames,
   normalizeAddress,
   stringifyAddress,
+  normalizeTelephone,
+  normalizeEmail,
 } from "../../domain/medical/patient-demographics";
 import { CQLink } from "./cq-patient-data";
 
@@ -24,18 +26,16 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
 }
 
 function patientResourceToNormalizedAndStringifiedLinkDemographics(
-  patientResource: InboundPatientResource
+  patientResource: PatientResource
 ): LinkDemographics {
-  const dob = normalizeDob(patientResource.birthDate ?? "");
-  const gender = normalizeGender(patientResource.gender ?? "");
+  const dob = normalizeDob(patientResource.birthDate);
+  const gender = normalizeGender(patientResource.gender);
   const names = (patientResource.name ?? []).flatMap(name => {
-    if (!name.family) return [];
-    const lastName = name.family;
     return (name.given ?? []).map(firstName => {
-      return normalizeAndStringifyNames({ firstName, lastName });
+      return normalizeAndStringifyNames({ firstName, lastName: name.family });
     });
   });
-  const addressesObj = patientResource.address.map(a => {
+  const addressesObj = (patientResource.address ?? []).map(a => {
     return normalizeAddress({
       line: a.line,
       city: a.city,
@@ -45,11 +45,17 @@ function patientResourceToNormalizedAndStringifiedLinkDemographics(
     });
   });
   const addressesString = addressesObj.map(stringifyAddress);
-  /* TODO
-  const telephoneNumbers = (patientResource.contact ?? []).flatMap(c => {
+  const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
+    if (!tc.value || !tc.system) return [];
+    if (tc.system !== "phone") return [];
+    return [normalizeTelephone(tc.value)];
   });
-  const emails = (patientResource.contact ?? []).flatMap(c => {
-  })
+  const emails = (patientResource.telecom ?? []).flatMap(tc => {
+    if (!tc.value || !tc.system) return [];
+    if (tc.system !== "email") return [];
+    return [normalizeEmail(tc.value)];
+  });
+  /* TODO
   const driversLicenses = (patientResource.personalIdentifiers ?? []).flatMap(p => { 
   });
   const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
@@ -59,8 +65,8 @@ function patientResourceToNormalizedAndStringifiedLinkDemographics(
     dob,
     gender,
     names,
-    telephoneNumbers: [],
-    emails: [],
+    telephoneNumbers,
+    emails,
     addressesObj,
     addressesString,
     driversLicenses: [],
@@ -68,7 +74,7 @@ function patientResourceToNormalizedAndStringifiedLinkDemographics(
   };
 }
 
-function getPatientResources(linkResults: CQLink[]): InboundPatientResource[] {
+function getPatientResources(linkResults: CQLink[]): PatientResource[] {
   return linkResults.flatMap(lr => {
     const patientResource = lr.patientResource;
     if (!patientResource) return [];

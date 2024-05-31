@@ -19,6 +19,7 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getCqInitiator, validateCQEnabledAndInitGW } from "./shared";
 import { queryDocsIfScheduled } from "./process-outbound-patient-discovery-resps";
 import { createAugmentedPatient } from "../../domain/medical/patient-demographics";
+import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
 
 dayjs.extend(duration);
 
@@ -116,6 +117,10 @@ async function prepareAndTriggerPD({
       numOfGateways: numGatewaysV1 + numGatewaysV2,
     });
   } catch (error) {
+    await resetPatientScheduledPatientDiscoveryRequestId({
+      patient,
+      source: MedicalDataSource.CAREQUALITY,
+    });
     await updatePatientDiscoveryStatus({ patient, status: "failed" });
     await queryDocsIfScheduled({ patient, isFailed: true });
     const msg = `Error on Patient Discovery`;

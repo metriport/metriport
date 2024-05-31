@@ -58,6 +58,7 @@ import { CwLink } from "./cw-patient-data";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
+const getContext = "cw.patient.get";
 const deleteContext = "cw.patient.delete";
 
 export function getCWData(
@@ -145,34 +146,6 @@ export async function create({
   }
 }
 
-// TODO Rename this function, and re-write it to remove duplicate code
-export async function get(
-  patient: Patient,
-  facilityId: string
-): Promise<CommonwellPatient | undefined> {
-  const { log } = out(`CW get - M patientId ${patient.id}`);
-
-  const cwEnabled = await validateCWEnabled({
-    patient,
-    facilityId,
-    log,
-  });
-  if (!cwEnabled) return undefined;
-
-  const cwData = getCWData(patient.data.externalData);
-  if (!cwData) return undefined;
-
-  const _initiator = await getCwInitiator(patient, facilityId);
-  const initiatorName = _initiator.name;
-  const initiatorOid = _initiator.oid;
-  const initiatorNpi = _initiator.npi;
-
-  const commonWell = makeCommonWellAPI(initiatorName, addOidPrefix(initiatorOid));
-  const queryMeta = organizationQueryMeta(initiatorName, { npi: initiatorNpi });
-
-  return await commonWell.getPatient(queryMeta, cwData.patientId);
-}
-
 async function registerAndLinkPatientInCW({
   patient,
   facilityId,
@@ -191,7 +164,7 @@ async function registerAndLinkPatientInCW({
   startedAt: Date;
   debug: typeof console.log;
   initiator?: HieInitiator;
-}): Promise<{ commonwellPatientId: string; personId: string } | undefined> {
+}): Promise<{ commonwellPatientId: string; personId: string } | void> {
   let commonWell: CommonWellAPI | undefined;
 
   try {
@@ -257,13 +230,14 @@ async function registerAndLinkPatientInCW({
 
     const scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (scheduledPdRequest) {
-      handleNextPdIfScheduled({
+      await handleNextPdIfScheduled({
         patient,
+        requestId,
         getOrgIdExcludeList,
         scheduledPdRequest,
       });
     } else {
-      updatePatientDiscoveryStatus({ patient, status: "completed" });
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
     }
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
@@ -431,13 +405,14 @@ async function updatePatientAndLinksInCw({
 
     const scheduledPdRequest = getCWData(patient.data.externalData)?.scheduledPdRequest;
     if (scheduledPdRequest) {
-      handleNextPdIfScheduled({
+      await handleNextPdIfScheduled({
         patient,
+        requestId,
         getOrgIdExcludeList,
         scheduledPdRequest,
       });
     } else {
-      updatePatientDiscoveryStatus({ patient, status: "completed" });
+      await updatePatientDiscoveryStatus({ patient, status: "completed" });
     }
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
@@ -560,6 +535,17 @@ async function handleRerunPdOnNewDemographics({
       requestId,
       rerunPdOnNewDemographics: false,
     });
+    analytics({
+      distinctId: patient.cxId,
+      event: EventTypes.patientDiscovery,
+      properties: {
+        hie: MedicalDataSource.COMMONWELL,
+        patientId: patient.id,
+        requestId,
+        foundNewDemographicsHere,
+        foundNewDemographicsAcrossHies,
+      },
+    });
   }
   return rerunPd;
 }
@@ -567,10 +553,12 @@ async function handleRerunPdOnNewDemographics({
 async function handleNextPdIfScheduled({
   patient,
   getOrgIdExcludeList,
+  requestId,
   scheduledPdRequest,
 }: {
   patient: Patient;
   getOrgIdExcludeList: () => Promise<string[]>;
+  requestId: string;
   scheduledPdRequest: ScheduledPatientDiscovery;
 }): Promise<void> {
   await update({
@@ -580,10 +568,19 @@ async function handleNextPdIfScheduled({
     requestId: scheduledPdRequest.requestId,
     rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
   });
-
   await resetPatientScheduledPatientDiscoveryRequestId({
     patient,
     source: MedicalDataSource.COMMONWELL,
+  });
+  analytics({
+    distinctId: patient.cxId,
+    event: EventTypes.runScheduledPatientDiscovery,
+    properties: {
+      hie: MedicalDataSource.COMMONWELL,
+      patientId: patient.id,
+      requestId,
+      scheduledPdRequestId: scheduledPdRequest.requestId,
+    },
   });
 }
 
@@ -626,22 +623,61 @@ async function queryDocsIfScheduled({
   }
 }
 
+export async function get(
+  patient: Patient,
+  facilityId: string
+): Promise<CommonwellPatient | undefined> {
+  let commonWell: CommonWellAPI | undefined;
+  try {
+    const { log, debug } = out(`CW get - M patientId ${patient.id}`);
+
+    const cwEnabled = await validateCWEnabled({
+      patient,
+      facilityId,
+      log,
+    });
+    if (!cwEnabled) return undefined;
+
+    const updateData = await setupUpdate({ patient });
+    if (!updateData) return undefined;
+
+    const { commonwellPatientId } = updateData;
+    const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
+    commonWell = commonWellAPI;
+
+    const respPatient = await commonWell.getPatient(queryMeta, commonwellPatientId);
+    debug(`resp getPatient: `, JSON.stringify(respPatient));
+
+    return respPatient;
+  } catch (err) {
+    console.error(`Failed to get patient ${patient.id} @ CW: `, err);
+    capture.error(err, {
+      extra: {
+        facilityId,
+        patientId: patient.id,
+        cwReference: commonWell?.lastReferenceHeader,
+        context: getContext,
+      },
+    });
+    throw err;
+  }
+}
+
 export async function remove(patient: Patient, facilityId: string): Promise<void> {
   let commonWell: CommonWellAPI | undefined;
   try {
     const { log } = out(`CW delete - M patientId ${patient.id}`);
 
-    const isCwEnabledForCx = await isCWEnabledForCx(patient.cxId);
-    if (!isCwEnabledForCx) {
-      log(`CW disabled for cx ${patient.cxId}, skipping...`);
-      return undefined;
-    }
+    const cwEnabled = await validateCWEnabled({
+      patient,
+      facilityId,
+      log,
+    });
+    if (!cwEnabled) return;
 
     const updateData = await setupUpdate({ patient });
-    if (!updateData) {
-      log("Could not find external data on Patient while deleting it @ CW, continuing...");
-      return;
-    }
+    if (!updateData) return;
+
     const { commonwellPatientId } = updateData;
     const { commonWellAPI, queryMeta } = await setupApiAndCwPatient({ patient, facilityId });
     commonWell = commonWellAPI;
