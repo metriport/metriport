@@ -3,8 +3,6 @@ var fs = require("fs");
 var Promise = require("promise");
 var compileCache = require("memory-cache");
 var constants = require("./lib/constants/constants");
-var errorCodes = require("./lib/error/error").errorCodes;
-var errorMessage = require("./lib/error/error").errorMessage;
 var HandlebarsConverter = require("./lib/handlebars-converter/handlebars-converter");
 var dataHandlerFactory = require("./lib/dataHandler/dataHandlerFactory");
 var {
@@ -164,6 +162,7 @@ function buildSuccessResponse(payload) {
     },
   };
 }
+
 function buildErrorResponse(status, message) {
   return {
     statusCode: status,

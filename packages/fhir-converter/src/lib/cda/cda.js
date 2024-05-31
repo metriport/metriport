@@ -26,9 +26,7 @@
 let parseString = require("xml2js").parseString;
 let Builder = require("xml2js").Builder;
 let dataHandler = require("../dataHandler/dataHandler");
-const fs = require("fs");
 let minifyXML = require("minify-xml");
-// const { XMLParser, XMLBuilder, XMLValidator } = require("fast-xml-parser");
 
 const elementTime00010101Regex = new RegExp('<time value="00010101000000+0000"s*/>', "g");
 const elementTime00010101Replacement = "";
@@ -36,10 +34,10 @@ const valueTime00010101Regex = new RegExp('value="00010101000000*"s*/>', "g");
 const valueTime00010101Replacement = 'nullFlavor="NI" />';
 
 module.exports = class cda extends dataHandler {
-  idToValueMap = {};
-  idToB64ValueMap = {};
   constructor() {
     super("cda");
+    this.idToValueMap = {};
+    this.idToB64ValueMap = {};
   }
 
   populateIDValueMap(obj) {
