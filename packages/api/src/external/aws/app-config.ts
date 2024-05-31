@@ -111,6 +111,10 @@ export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
   return getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
 }
 
+export async function getCxsWithIHEGatewayV2Enabled(): Promise<string[]> {
+  return getCxsWithFeatureFlagEnabled("cxsWithIHEGatewayV2Enabled");
+}
+
 export async function getE2eCxIds(): Promise<string | undefined> {
   if (Config.isDev()) {
     const apiKey = getEnvVar("TEST_API_KEY");
@@ -143,6 +147,11 @@ export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
 export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
+}
+
+export async function isIHEGatewayV2EnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithIHEGatewayV2Enabled = await getCxsWithIHEGatewayV2Enabled();
+  return cxIdsWithIHEGatewayV2Enabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {
