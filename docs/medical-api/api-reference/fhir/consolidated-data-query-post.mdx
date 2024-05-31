@@ -85,21 +85,27 @@ Returns an array of `queries` with the following fields: `requestId`, `status`, 
 
 </ResponseExample>
 
-<Snippet file="consolidated-query-response.mdx" />
+<ResponseField name="query" type="ConsolidatedQuery" required>
+  <Expandable title="ConsolidatedQuery properties">
+    <Snippet file="consolidated-query.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  An optional message for the request.
+</ResponseField>
 
 ```json
 {
-  "queries": [
-    {
-      "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
-      "status": "processing",
-      "startedAt": "2021-01-01T00:00:00Z",
-      "dateFrom": "2021-01-01",
-      "dateTo": "2021-01-31",
-      "resources": ["Observation", "MedicationRequest"],
-      "conversionType": "pdf"
-    }
-  ]
+  "query": {
+    "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+    "status": "processing",
+    "startedAt": "2021-01-01T00:00:00Z",
+    "dateFrom": "2021-01-01",
+    "dateTo": "2021-01-31",
+    "resources": ["Observation", "MedicationRequest"],
+    "conversionType": "pdf"
+  }
 }
 ```
 

@@ -25,7 +25,12 @@ export const patientListSchema = z.object({
 export const queryStatusSchema = z.enum(["processing", "completed", "failed"]);
 export type QueryStatus = z.infer<typeof queryStatusSchema>;
 
-export type ConsolidatedQueryProgress = {
+export type GetConsolidatedQueryProgressResponse = {
   queries: ConsolidatedQuery[] | null;
+  message?: string;
+};
+
+export type StartConsolidatedQueryProgressResponse = {
+  query: ConsolidatedQuery;
   message?: string;
 };

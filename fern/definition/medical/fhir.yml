@@ -20,18 +20,18 @@ service:
         query-parameters:
           resources:
             docs: |
-              A comma separated, case sensitive list of resources to be returned. 
+              A comma separated, case sensitive list of resources to be returned.
               If none are provided all resources will be included.
             type: optional<string>
           dateFrom:
             docs: |
-              The start date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+              The start date (inclusive) for which to filter returned resources -
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
               no start date filter will be applied.
             type: optional<string>
           dateTo:
             docs: |
-              The end date (inclusive) for which to filter returned resources - 
+              The end date (inclusive) for which to filter returned resources -
               formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
                no end date filter will be applied.
             type: optional<string>
@@ -41,7 +41,7 @@ service:
             type: optional<string>
         body:
           docs: |
-            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long. 
+            Metadata holds a record of up to 50 custom string key-value pairs. Key names can be up to 40 characters long and values up to 500 characters long.
             This metadata will be returned in the webhook response.
           type: optional<map<string, string>>
 
@@ -91,28 +91,28 @@ service:
             id: "12345678"
           request: $ConsolidatedBundleUpload.Example1
           response:
-             body:
-                resourceType: "Bundle"
-                id: "12345"
-                type: "transaction-response"
-                entry:
-                  - resource: ""
-                    response:
-                      status: 201 Created
-                      location: Observation/3/_history/1
-                      etag: '1'
-                      lastModified: '2023-07-27T21:29:31.491+00:00'
-                      outcome:
-                        resourceType: OperationOutcome
-                        issue:
-                          - severity: information
-                            code: informational
-                            details:
-                              coding:
-                                - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
-                                  code: SUCCESSFUL_CREATE
-                                  display: Create succeeded.
-                            diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
+            body:
+              resourceType: "Bundle"
+              id: "12345"
+              type: "transaction-response"
+              entry:
+                - resource: ""
+                  response:
+                    status: 201 Created
+                    location: Observation/3/_history/1
+                    etag: "1"
+                    lastModified: "2023-07-27T21:29:31.491+00:00"
+                    outcome:
+                      resourceType: OperationOutcome
+                      issue:
+                        - severity: information
+                          code: informational
+                          details:
+                            coding:
+                              - system: https://public.metriport.com/fhir/StructureDefinition/operation-outcome
+                                code: SUCCESSFUL_CREATE
+                                display: Create succeeded.
+                          diagnostics: Successfully created resource "Observation/3/_history/1". Took 7ms.
 
     countPatientData:
       display-name: Count Patient Data
@@ -128,18 +128,18 @@ service:
         query-parameters:
           resources:
             docs: |
-              A comma separated, case sensitive list of resources to be returned. 
+              A comma separated, case sensitive list of resources to be returned.
               If none are provided all resources will be included.
             type: optional<string>
           dateFrom:
             docs: |
-              The start date (inclusive) for which to filter returned resources - 
-              formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+              The start date (inclusive) for which to filter returned resources -
+              formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
               no start date filter will be applied.
             type: optional<string>
           dateTo:
             docs: |
-              The end date (inclusive) for which to filter returned resources - 
+              The end date (inclusive) for which to filter returned resources -
               formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
                no end date filter will be applied.
             type: optional<string>
@@ -148,13 +148,12 @@ service:
 types:
   StartConsolidatedQueryResponse:
     properties:
-      queries: list<PatientConsolidatedDataStatus>
+      query: PatientConsolidatedDataStatus
       message: optional<string>
     examples:
       - name: Example0
         value:
-          queries:
-            - $PatientConsolidatedDataStatus.Example0
+          query: $PatientConsolidatedDataStatus.Example0
 
   PatientConsolidatedDataStatus:
     properties:
@@ -206,7 +205,7 @@ types:
       resources:
         docs: |
           Object containing resource types as properties and the amount of entries for
-          the resource as the value (integer). Only resource types with amount 
+          the resource as the value (integer). Only resource types with amount
           of entries higher than one are included.
         type: map<string, integer>
       filter:
@@ -217,18 +216,18 @@ types:
     properties:
       resources:
         docs: |
-          Comma-separated list of resource types. If not specified on the 
+          Comma-separated list of resource types. If not specified on the
           request, this will be `all`.
         type: string
       dateFrom:
         docs: |
-          The start date (inclusive) for which to filter returned resources - 
-          formatted `YYYY-MM-DD` as per ISO 8601. If not provided, 
+          The start date (inclusive) for which to filter returned resources -
+          formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
           no start date filter will be applied.
         type: optional<string>
       dateTo:
         docs: |
-          The end date (inclusive) for which to filter returned resources - 
+          The end date (inclusive) for which to filter returned resources -
           formatted `YYYY-MM-DD` as per ISO 8601. If not provided,
             no end date filter will be applied.
         type: optional<string>
@@ -249,4 +248,27 @@ types:
         value:
           resourceType: "Bundle"
           type: "collection"
-          entry: [{"resource": {"resourceType": "Observation", "code": {"text": "Cancer"}, "valueCodeableConcept": {"text": "NEGATIVE"}, "status": "final", "category": [{"coding": [{"system": "http://terminology.hl7.org/CodeSystem/observation-category", "code": "laboratory"}]}]}}]
+          entry:
+            [
+              {
+                "resource":
+                  {
+                    "resourceType": "Observation",
+                    "code": { "text": "Cancer" },
+                    "valueCodeableConcept": { "text": "NEGATIVE" },
+                    "status": "final",
+                    "category":
+                      [
+                        {
+                          "coding":
+                            [
+                              {
+                                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                                "code": "laboratory",
+                              },
+                            ],
+                        },
+                      ],
+                  },
+              },
+            ]

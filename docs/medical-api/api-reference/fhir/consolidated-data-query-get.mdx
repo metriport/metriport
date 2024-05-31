@@ -32,7 +32,15 @@ const status = await metriport.getConsolidatedQueryStatus(patientId);
 
 </ResponseExample>
 
-<Snippet file="consolidated-query-response.mdx" />
+<ResponseField name="queries" type="ConsolidatedQuery[]" required>
+  <Expandable title="ConsolidatedQuery properties">
+    <Snippet file="consolidated-query.mdx" />
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  An optional message for the request.
+</ResponseField>
 
 ```json
 {

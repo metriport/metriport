@@ -1,5 +1,8 @@
 import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
-import { ConsolidatedQueryProgress } from "@metriport/api-sdk/medical/models/patient";
+import {
+  GetConsolidatedQueryProgressResponse,
+  StartConsolidatedQueryProgressResponse,
+} from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
   mrFormat,
@@ -282,7 +285,7 @@ router.get(
     const patient = await getPatientOrFail({ cxId, id: patientId });
     const consolidatedQueries = patient.data.consolidatedQueries ?? null;
 
-    const respPayload: ConsolidatedQueryProgress = {
+    const respPayload: GetConsolidatedQueryProgressResponse = {
       queries: consolidatedQueries ?? null,
       message:
         "Trigger a new query by POST /patient/:id/consolidated/query; data will be sent through Webhook",
@@ -310,7 +313,7 @@ const medicalRecordFormatSchema = z.enum(mrFormat);
  *        Accepts "pdf", "html", and "json". If provided, the Webhook payload will contain a signed URL to download
  *        the file, which is active for 3 minutes. If not provided, will send json payload in the webhook.
  * @param req.body Optional metadata to be sent through Webhook.
- * @return array of statuses for querying the Patient's consolidated data.
+ * @return status for querying the Patient's consolidated data.
  */
 router.post(
   "/:id/consolidated/query",
@@ -335,9 +338,8 @@ router.post(
       cxConsolidatedRequestMetadata: cxConsolidatedRequestMetadata?.metadata,
     });
 
-    const respPayload: ConsolidatedQueryProgress = {
-      queries: queryResponse.consolidatedQueries ?? null,
-      message: queryResponse.message,
+    const respPayload: StartConsolidatedQueryProgressResponse = {
+      query: queryResponse,
     };
 
     return res.json(respPayload);

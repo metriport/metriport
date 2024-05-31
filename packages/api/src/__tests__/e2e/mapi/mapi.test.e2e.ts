@@ -223,10 +223,8 @@ describe("MAPI E2E Tests", () => {
       undefined,
       "html"
     );
-    const initConversionProgress = conversionProgress?.queries?.[0];
     expect(conversionProgress).toBeTruthy();
-    expect(conversionProgress.queries?.length).toEqual(1);
-    expect(initConversionProgress?.status).toEqual("processing");
+    expect(conversionProgress.query.status).toEqual("processing");
   });
 
   it("completes conversion successfully", async () => {

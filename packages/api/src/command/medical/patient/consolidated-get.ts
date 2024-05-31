@@ -64,10 +64,7 @@ export async function startConsolidatedQuery({
   dateTo,
   conversionType,
   cxConsolidatedRequestMetadata,
-}: ConsolidatedQueryParams): Promise<{
-  consolidatedQueries: ConsolidatedQuery[];
-  message?: string;
-}> {
+}: ConsolidatedQueryParams): Promise<ConsolidatedQuery> {
   const { log } = Util.out(`startConsolidatedQuery - M patient ${patientId}`);
   const patient = await getPatientOrFail({ id: patientId, cxId });
   const currentConsolidatedProgress = getCurrentConsolidatedProgress(
@@ -82,10 +79,7 @@ export async function startConsolidatedQuery({
 
   if (currentConsolidatedProgress) {
     log(`Patient ${patientId} consolidatedQuery is already 'processing', skipping...`);
-    return {
-      consolidatedQueries: patient.data.consolidatedQueries ?? [],
-      message: `Query with the same params is already in progress with requestId ${currentConsolidatedProgress.requestId}`,
-    };
+    return currentConsolidatedProgress;
   }
 
   const startedAt = new Date();
@@ -130,7 +124,7 @@ export async function startConsolidatedQuery({
     requestId,
   }).catch(emptyFunction);
 
-  return { consolidatedQueries: updatedPatient.data.consolidatedQueries ?? [progress] };
+  return progress;
 }
 
 function appendProgressToProcessingQueries(
