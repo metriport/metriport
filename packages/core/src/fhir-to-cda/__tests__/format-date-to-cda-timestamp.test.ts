@@ -27,13 +27,19 @@ describe("formatDateToCdaTimestamp", () => {
   it('should format date-time string without "Z" correctly', () => {
     const dateTime = "2024-05-22T02:00:00.000";
     const formattedDateTime = formatDateToCdaTimestamp(dateTime);
-    expect(formattedDateTime).toBe("20240522090000");
+    expect(formattedDateTime).toBe("20240522");
   });
 
-  it("should format date-time string with timezone offset correctly", () => {
+  it("should format date-time string with positive timezone offset correctly", () => {
     const dateTime = "2024-05-22T02:25:16.443+02:00";
     const formattedDateTime = formatDateToCdaTimestamp(dateTime);
     expect(formattedDateTime).toBe("20240522002516");
+  });
+
+  it("should format date-time string with negative timezone offset correctly", () => {
+    const dateTime = "2024-05-22T02:25:16.443-07:00";
+    const formattedDateTime = formatDateToCdaTimestamp(dateTime);
+    expect(formattedDateTime).toBe("20240522092516");
   });
 
   it("should format invalid date string correctly", () => {

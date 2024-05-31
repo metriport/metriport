@@ -221,13 +221,23 @@ export function buildRepresentedOrganization(
   };
 }
 
+const timeOffsetRegex = /([+-](?:2[0-3]|[01][0-9]):[0-5][0-9])$/;
 export function formatDateToCdaTimestamp(dateString: string | undefined): string | undefined {
   if (!dateString) {
     return undefined;
   }
 
   const date = dayjs(dateString);
-  if (dateString.includes("T")) return date.utc().format("YYYYMMDDHHmmss");
+
+  if (dateString.includes("T")) {
+    const match = dateString.match(timeOffsetRegex);
+    if (match) {
+      return date.utcOffset(match[0]).utc().format("YYYYMMDDHHmmss");
+    } else if (!dateString.endsWith("Z")) {
+      return date.format("YYYYMMDD");
+    }
+    return date.utc().format("YYYYMMDDHHmmss");
+  }
   return date.utc().format("YYYYMMDD");
 }
 
