@@ -10,7 +10,7 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientByDemo } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { runInitialPatientDiscoveryAcrossHIEs } from "../../../external/hie/run-initial-patient-discovery";
+import { runInitialPatientDiscoveryAcrossHies } from "../../../external/hie/run-initial-patient-discovery";
 
 type Identifier = Pick<Patient, "cxId" | "externalId"> & { facilityId: string };
 type PatientNoExternalData = Omit<PatientData, "externalData">;
@@ -75,7 +75,7 @@ export const createPatient = async ({
 
   const newPatient = await PatientModel.create(patientCreate);
 
-  runInitialPatientDiscoveryAcrossHIEs({
+  runInitialPatientDiscoveryAcrossHies({
     patient: newPatient,
     facilityId,
     requestId,

@@ -3,7 +3,7 @@ import { getCqOrgIdsToDenyOnCw } from "./cross-hie-ids";
 import { runOrScheduleCqPatientDiscovery } from "../carequality/command/run-or-schedule-patient-discovery";
 import { runOrScheduleCwPatientDiscovery } from "../commonwell/command/run-or-schedule-patient-discovery";
 
-export async function runOrSchedulePatientDiscoveryAcrossHIEs({
+export async function runOrSchedulePatientDiscoveryAcrossHies({
   patient,
   facilityId,
   requestId,

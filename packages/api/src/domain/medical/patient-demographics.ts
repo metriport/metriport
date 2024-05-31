@@ -128,7 +128,7 @@ export function scoreLinkEpic(
  * @param patient The Patient @ Metriport.
  * @returns LinkDemographics payload.
  */
-export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(
+export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics( // Too descriptive :)?
   patient: Patient
 ): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);

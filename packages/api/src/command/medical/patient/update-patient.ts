@@ -10,7 +10,7 @@ import { getFacilityOrFail } from "../facility/get-facility";
 import { addCoordinatesToAddresses } from "./add-coordinates";
 import { getPatientOrFail } from "./get-patient";
 import { sanitize, validate } from "./shared";
-import { runOrSchedulePatientDiscoveryAcrossHIEs } from "../../../external/hie/run-or-schedule-patient-discovery";
+import { runOrSchedulePatientDiscoveryAcrossHies } from "../../../external/hie/run-or-schedule-patient-discovery";
 
 type PatientNoExternalData = Omit<PatientData, "externalData">;
 export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
@@ -46,7 +46,7 @@ export async function updatePatient({
   const fhirPatient = toFHIR(patient);
   await upsertPatientToFHIRServer(patientUpdate.cxId, fhirPatient);
 
-  runOrSchedulePatientDiscoveryAcrossHIEs({
+  runOrSchedulePatientDiscoveryAcrossHies({
     patient,
     facilityId,
     requestId,

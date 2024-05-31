@@ -2,7 +2,7 @@ import { Patient } from "@metriport/core/domain/patient";
 import { getCQData } from "../carequality/patient";
 import { getCWData } from "../commonwell/patient";
 
-export function checkLinkDemographicsAcrossHIEs({
+export function checkLinkDemographicsAcrossHies({
   patient,
   requestId,
 }: {

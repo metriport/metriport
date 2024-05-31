@@ -18,12 +18,12 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
     patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
   const consolidatedLinkDemograhpics = patient.data.consolidatedLinkDemograhpics;
   return getPatientResources(links)
-    .map(patientResourceToToNormalizedAndStringifiedLinkDemographics)
+    .map(patientResourceToNormalizedAndStringifiedLinkDemographics)
     .filter(ld => scoreLinkEpic(coreDemographics, ld))
     .filter(ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld));
 }
 
-function patientResourceToToNormalizedAndStringifiedLinkDemographics(
+function patientResourceToNormalizedAndStringifiedLinkDemographics(
   patientResource: InboundPatientResource
 ): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate ?? "");

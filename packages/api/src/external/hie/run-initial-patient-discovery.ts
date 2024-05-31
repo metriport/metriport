@@ -3,7 +3,7 @@ import { getCqOrgIdsToDenyOnCw } from "./cross-hie-ids";
 import { discover } from "../carequality/patient";
 import { create } from "../commonwell/patient";
 
-export async function runInitialPatientDiscoveryAcrossHIEs({
+export async function runInitialPatientDiscoveryAcrossHies({
   patient,
   facilityId,
   requestId,
@@ -15,10 +15,8 @@ export async function runInitialPatientDiscoveryAcrossHIEs({
   facilityId: string;
   requestId: string;
   rerunPdOnNewDemographics?: boolean;
-  // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
-  // END TODO #1572 - remove
 }): Promise<void> {
   await discover({
     patient,

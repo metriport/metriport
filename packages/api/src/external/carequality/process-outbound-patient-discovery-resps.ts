@@ -15,9 +15,10 @@ import { updatePatientDiscoveryStatus } from "./command/update-patient-discovery
 import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getDocumentsFromCQ } from "./document/query-documents";
 import { setDocQueryProgress } from "../hie/set-doc-query-progress";
+import { ScheduledPatientDiscovery } from "../hie/schedule-patient-discovery";
 import { resetPatientScheduledPatientDiscoveryRequestId } from "../hie/reset-scheduled-patient-discovery-request";
 import { updatePatientLinkDemographics } from "../hie/update-patient-link-demographics";
-import { checkLinkDemographicsAcrossHIEs } from "../hie/check-patient-link-demographics";
+import { checkLinkDemographicsAcrossHies } from "../hie/check-patient-link-demographics";
 import { resetPatientScheduledDocQueryRequestId } from "../hie/reset-scheduled-doc-query-request-id";
 import { getCQData, discover } from "./patient";
 import { getNewDemographics } from "./patient-demographics";
@@ -74,46 +75,23 @@ export async function processOutboundPatientDiscoveryResps({
     });
 
     if (rerunPdOnNewDemographics && facilityId) {
-      const foundNewDemographicsAcrossHies = checkLinkDemographicsAcrossHIEs({
+      const startedNewPd = await handleRerunPdOnNewDemographics({
         patient,
+        facilityId,
         requestId,
+        cqLinks,
       });
-      const newDemographicsHere = getNewDemographics(patient, cqLinks);
-      const foundNewDemographicsHere = newDemographicsHere.length > 0;
-      if (foundNewDemographicsHere || foundNewDemographicsAcrossHies) {
-        if (foundNewDemographicsHere) {
-          await updatePatientLinkDemographics({
-            requestId,
-            patient,
-            source: MedicalDataSource.COMMONWELL,
-            links: newDemographicsHere,
-          });
-        }
-        await discover({
-          patient,
-          facilityId,
-          requestId,
-          rerunPdOnNewDemographics: false,
-        });
-        return;
-      }
+      if (startedNewPd) return;
     }
 
-    const scheduledPdRequest = cqData?.scheduledPdRequest;
+    const scheduledPdRequest = getCQData(patient.data.externalData)?.scheduledPdRequest;
     if (scheduledPdRequest) {
-      await discover({
+      handleNextPdIfScheduled({
         patient,
-        facilityId: scheduledPdRequest.facilityId,
-        requestId: scheduledPdRequest.requestId,
-        rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
-      });
-
-      await resetPatientScheduledPatientDiscoveryRequestId({
-        patient,
-        source: MedicalDataSource.CAREQUALITY,
+        scheduledPdRequest,
       });
     } else {
-      await updatePatientDiscoveryStatus({ patient, status: "completed" });
+      updatePatientDiscoveryStatus({ patient, status: "completed" });
     }
 
     await queryDocsIfScheduled({ patient });
@@ -163,6 +141,63 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
       id: pd.gateway.id,
       ...(pd.patientMatch ? { patientResource: pd.patientResource } : undefined),
     };
+  });
+}
+
+async function handleRerunPdOnNewDemographics({
+  patient,
+  facilityId,
+  requestId,
+  cqLinks,
+}: {
+  patient: Patient;
+  facilityId: string;
+  requestId: string;
+  cqLinks: CQLink[];
+}): Promise<boolean> {
+  const foundNewDemographicsAcrossHies = checkLinkDemographicsAcrossHies({
+    patient,
+    requestId,
+  });
+  const newDemographicsHere = getNewDemographics(patient, cqLinks);
+  const foundNewDemographicsHere = newDemographicsHere.length > 0;
+  const rerunPd = foundNewDemographicsHere || foundNewDemographicsAcrossHies;
+  if (rerunPd) {
+    if (foundNewDemographicsHere) {
+      await updatePatientLinkDemographics({
+        requestId,
+        patient,
+        source: MedicalDataSource.CAREQUALITY,
+        links: newDemographicsHere,
+      });
+    }
+    await discover({
+      patient,
+      facilityId,
+      requestId,
+      rerunPdOnNewDemographics: false,
+    });
+  }
+  return rerunPd;
+}
+
+async function handleNextPdIfScheduled({
+  patient,
+  scheduledPdRequest,
+}: {
+  patient: Patient;
+  scheduledPdRequest: ScheduledPatientDiscovery;
+}): Promise<void> {
+  await discover({
+    patient,
+    facilityId: scheduledPdRequest.facilityId,
+    requestId: scheduledPdRequest.requestId,
+    rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
+  });
+
+  await resetPatientScheduledPatientDiscoveryRequestId({
+    patient,
+    source: MedicalDataSource.CAREQUALITY,
   });
 }
 
