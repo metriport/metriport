@@ -33,20 +33,18 @@ export function buildMentalStatus(fhirBundle: Bundle): MentalStatusSection {
   const table = initiateSectionTable(mentalStatusSectionName, tableHeaders, trs);
 
   const mentalStatusSection = {
-    section: {
-      templateId: buildInstanceIdentifier({
-        root: oids.mentalStatusSection,
-      }),
-      code: buildCodeCe({
-        code: "10190-7",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "Mental status Narrative",
-      }),
-      title: "MENTAL STATUS",
-      text: table,
-      entry: entries,
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.mentalStatusSection,
+    }),
+    code: buildCodeCe({
+      code: "10190-7",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Mental status Narrative",
+    }),
+    title: "MENTAL STATUS",
+    text: table,
+    entry: entries,
   };
   return mentalStatusSection;
 }

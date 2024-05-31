@@ -40,20 +40,18 @@ export function buildSocialHistory(fhirBundle: Bundle) {
   };
 
   const socialHistorySection = {
-    section: {
-      templateId: buildInstanceIdentifier({
-        root: oids.socialHistorySection,
-      }),
-      code: buildCodeCe({
-        code: "29762-2",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "Social history Narrative",
-      }),
-      title: "SOCIAL HISTORY",
-      text: { table },
-      entry: entries,
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.socialHistorySection,
+    }),
+    code: buildCodeCe({
+      code: "29762-2",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Social history Narrative",
+    }),
+    title: "SOCIAL HISTORY",
+    text: { table },
+    entry: entries,
   };
   return socialHistorySection;
 }

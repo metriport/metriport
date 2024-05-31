@@ -14,12 +14,11 @@ export function buildStructuredBody(fhirBundle: Bundle): unknown {
     buildProblems(fhirBundle),
   ];
 
-  const structuredBody = {
+  return {
     structuredBody: {
-      section: structuredBodySections.map(section => ({
+      component: structuredBodySections.map(section => ({
         section: section,
       })),
     },
   };
-  return structuredBody;
 }

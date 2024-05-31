@@ -67,21 +67,19 @@ export function buildProblems(fhirBundle: Bundle): ProblemsSection {
   const table = initiateSectionTable(problemsSectionName, tableHeaders, trs);
 
   const problemsSection = {
-    section: {
-      templateId: buildInstanceIdentifier({
-        root: oids.problemsSection,
-        extension: extensionValue2015,
-      }),
-      code: buildCodeCe({
-        code: "11450-4",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "Problem list - Reported",
-      }),
-      title: "PROBLEMS",
-      text: table,
-      entry: entries,
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.problemsSection,
+      extension: extensionValue2015,
+    }),
+    code: buildCodeCe({
+      code: "11450-4",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "Problem list - Reported",
+    }),
+    title: "PROBLEMS",
+    text: table,
+    entry: entries,
   };
   return problemsSection;
 }

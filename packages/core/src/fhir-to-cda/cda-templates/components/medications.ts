@@ -81,20 +81,18 @@ export function buildMedications(fhirBundle: Bundle): MedicationSection {
   const table = initiateSectionTable(medicationsSectionName, tableHeaders, trs);
 
   const medicationsSection = {
-    section: {
-      templateId: buildInstanceIdentifier({
-        root: oids.medicationsSection,
-      }),
-      code: buildCodeCe({
-        code: "10160-0",
-        codeSystem: loincCodeSystem,
-        codeSystemName: loincSystemName,
-        displayName: "History of Medication use Narrative",
-      }),
-      title: "MEDICATIONS",
-      text: table,
-      entry: entries,
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.medicationsSection,
+    }),
+    code: buildCodeCe({
+      code: "10160-0",
+      codeSystem: loincCodeSystem,
+      codeSystemName: loincSystemName,
+      displayName: "History of Medication use Narrative",
+    }),
+    title: "MEDICATIONS",
+    text: table,
+    entry: entries,
   };
   return medicationsSection;
 }

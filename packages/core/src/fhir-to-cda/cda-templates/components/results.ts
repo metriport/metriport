@@ -83,20 +83,18 @@ export function buildResult(fhirBundle: Bundle) {
   const text = getTextItemsFromDiagnosticReports(diagnosticReports);
 
   const resultsSection = {
-    section: {
-      templateId: buildInstanceIdentifier({
-        root: oids.resultsSection,
-      }),
-      code: buildCodeCe({
-        code: "30954-2",
-        codeSystem: "2.16.840.1.113883.6.1",
-        codeSystemName: "LOINC",
-        displayName: "Diagnostic Results",
-      }),
-      title: "Diagnostic Results",
-      text: text.map(t => t && t.item),
-      entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
-    },
+    templateId: buildInstanceIdentifier({
+      root: oids.resultsSection,
+    }),
+    code: buildCodeCe({
+      code: "30954-2",
+      codeSystem: "2.16.840.1.113883.6.1",
+      codeSystemName: "LOINC",
+      displayName: "Diagnostic Results",
+    }),
+    title: "Diagnostic Results",
+    text: text.map(t => t && t.item),
+    entry: buildEntriesFromDiagnosticReports(diagnosticReports, fhirBundle).map(e => e.entry),
   };
   return resultsSection;
 }

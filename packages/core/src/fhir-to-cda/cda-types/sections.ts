@@ -9,13 +9,11 @@ import {
 
 type CdaSection<T> =
   | {
-      section: {
-        templateId: CdaInstanceIdentifier;
-        code: CdaCodeCe;
-        title: string;
-        text: CdaTable;
-        entry: T[];
-      };
+      templateId: CdaInstanceIdentifier;
+      code: CdaCodeCe;
+      title: string;
+      text: CdaTable;
+      entry: T[];
     }
   | undefined;
 
