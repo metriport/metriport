@@ -46,8 +46,7 @@ export function generateCdaFromFhirBundle(fhirBundle: Bundle, oid: string): stri
     composition
   );
 
-  const postProcessedXml = postProcessXml(clinicalDocument, oid);
-  return postProcessedXml;
+  return postProcessXml(clinicalDocument, oid);
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -12,16 +12,7 @@ import {
   buildInstanceIdentifier,
   withoutNullFlavorObject,
 } from "../commons";
-import {
-  _classCodeAttribute,
-  _idAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
-  extensionValue2015,
-  oids,
-  placeholderOrgOid,
-} from "../constants";
+import { extensionValue2015, oids, placeholderOrgOid } from "../constants";
 import { createObservations } from "./observations";
 
 function buildEntriesFromDiagnosticReports(
@@ -42,8 +33,8 @@ function buildEntriesFromDiagnosticReports(
     });
 
     const organizer = {
-      [_classCodeAttribute]: "BATTERY",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "BATTERY",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: oids.resultOrganizer,
         extension: extensionValue2015,
@@ -58,14 +49,14 @@ function buildEntriesFromDiagnosticReports(
       }),
       effectiveTime: withoutNullFlavorObject(
         report.effectiveDateTime?.replace(TIMESTAMP_CLEANUP_REGEX, ""),
-        _valueAttribute
+        "_value"
       ),
       component: createObservations(observations).map(o => o.component),
     };
 
     return {
       entry: {
-        [_typeCodeAttribute]: "DRIV",
+        _typeCode: "DRIV",
         organizer,
       },
     };
@@ -112,7 +103,7 @@ function getTextItemsFromDiagnosticReports(diagnosticReports: DiagnosticReport[]
         return {
           item: {
             content: {
-              [_idAttribute]: `_${report.id}`,
+              _ID: `_${report.id}`,
               br: contentObjects.map(o => o.br),
             },
           },

@@ -26,18 +26,6 @@ import {
 } from "../cda-types/shared-types";
 import {
   NOT_SPECIFIED,
-  _assigningAuthorityNameAttribute,
-  _codeAttribute,
-  _codeSystemAttribute,
-  _codeSystemNameAttribute,
-  _displayNameAttribute,
-  _extensionAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _nullFlavorAttribute,
-  _rootAttribute,
-  _useAttribute,
-  _valueAttribute,
   _xmlnsXsiAttribute,
   _xsiTypeAttribute,
   amaAssnSystemCode,
@@ -72,7 +60,7 @@ export function withoutNullFlavorString(value: string | undefined): Entry {
 }
 
 export function withNullFlavor(value: string | undefined, key: string): Entry {
-  if (value == undefined) return { [_nullFlavorAttribute]: "UNK" };
+  if (value == undefined) return { _nullFlavor: "UNK" };
   return { [key]: value };
 }
 
@@ -102,10 +90,10 @@ export function buildCodeCe({
 }): CdaCodeCe {
   const codeObject: CdaCodeCe = {};
   const mappedCodeSystem = mapCodingSystem(codeSystem?.trim());
-  if (code) codeObject[_codeAttribute] = code.trim();
-  if (mappedCodeSystem) codeObject[_codeSystemAttribute] = mappedCodeSystem;
-  if (codeSystemName) codeObject[_codeSystemNameAttribute] = codeSystemName.trim();
-  if (displayName) codeObject[_displayNameAttribute] = displayName.trim();
+  if (code) codeObject._code = code.trim();
+  if (mappedCodeSystem) codeObject._codeSystem = mappedCodeSystem;
+  if (codeSystemName) codeObject._codeSystemName = codeSystemName.trim();
+  if (displayName) codeObject._displayName = displayName.trim();
 
   return codeObject;
 }
@@ -113,7 +101,7 @@ export function buildCodeCe({
 export function buildOriginalTextReference(value: string): CDAOriginalText {
   return {
     reference: {
-      [_valueAttribute]: value,
+      _value: value,
     },
   };
 }
@@ -166,9 +154,9 @@ export function buildInstanceIdentifier({
   assigningAuthorityName?: string | undefined;
 }): CdaInstanceIdentifier {
   const identifier: CdaInstanceIdentifier = {};
-  if (root) identifier[_rootAttribute] = root;
-  if (extension) identifier[_extensionAttribute] = extension;
-  if (assigningAuthorityName) identifier[_assigningAuthorityNameAttribute] = assigningAuthorityName;
+  if (root) identifier._root = root;
+  if (extension) identifier._extension = extension;
+  if (assigningAuthorityName) identifier._assigningAuthorityName = assigningAuthorityName;
 
   return identifier;
 }
@@ -177,7 +165,7 @@ export function buildInstanceIdentifiersFromIdentifier(
   identifiers?: Identifier | Identifier[] | undefined
 ): CdaInstanceIdentifier[] | Entry {
   if (!identifiers) {
-    return withNullFlavor(undefined, _rootAttribute);
+    return withNullFlavor(undefined, "_root");
   }
 
   const identifiersArray = Array.isArray(identifiers)
@@ -201,23 +189,23 @@ export function buildTelecom(telecoms: ContactPoint[] | undefined): CdaTelecom[]
   return telecoms.map(telecom => {
     const telecomUse = mapTelecomUse(telecom.use);
     return {
-      ...withoutNullFlavorObject(telecomUse, _useAttribute),
-      ...withoutNullFlavorObject(telecom.value, _valueAttribute),
+      ...withoutNullFlavorObject(telecomUse, "_use"),
+      ...withoutNullFlavorObject(telecom.value, "_value"),
     };
   });
 }
 
 export function buildAddress(address?: Address[]): CdaAddress[] | undefined {
   return address?.map(addr => ({
-    ...withoutNullFlavorObject(mapAddressUse(addr.use), _useAttribute),
+    ...withoutNullFlavorObject(mapAddressUse(addr.use), "_use"),
     streetAddressLine: addr.line?.join(", "),
     city: addr.city,
     state: addr.state,
     postalCode: addr.postalCode,
     country: addr.country,
     useablePeriod: {
-      low: withoutNullFlavorObject(addr.period?.start, _valueAttribute),
-      high: withoutNullFlavorObject(addr.period?.end, _valueAttribute),
+      low: withoutNullFlavorObject(addr.period?.start, "_value"),
+      high: withoutNullFlavorObject(addr.period?.end, "_value"),
     },
   }));
 }
@@ -259,7 +247,7 @@ export function buildValueSt(value: string | undefined): CdaValueSt | undefined 
   const valueObject: CdaValueSt = {};
   valueObject[_xsiTypeAttribute] = "ST";
   valueObject[_xmlnsXsiAttribute] = "http://www.w3.org/2001/XMLSchema-instance";
-  valueObject[_inlineTextAttribute] = value;
+  valueObject["#text"] = value;
   return valueObject;
 }
 
@@ -270,12 +258,12 @@ export function buildValueCd(
 ): CdaValueCd | undefined {
   const valueObject: CdaValueCd = {
     [_xsiTypeAttribute]: "CD",
-    [_codeAttribute]: codeableConcept?.coding?.[0]?.code,
-    [_codeSystemAttribute]: mapCodingSystem(codeableConcept?.coding?.[0]?.system),
-    [_displayNameAttribute]: codeableConcept?.coding?.[0]?.display,
+    _code: codeableConcept?.coding?.[0]?.code,
+    _codeSystem: mapCodingSystem(codeableConcept?.coding?.[0]?.system),
+    _displayName: codeableConcept?.coding?.[0]?.display,
     originalText: {
       reference: {
-        [_valueAttribute]: referenceId,
+        _value: referenceId,
       },
     },
   };
@@ -411,7 +399,7 @@ export function getTextFromCode(code: CodeableConcept | undefined): string {
 
 export type CdaTable = {
   table: {
-    [_idAttribute]: string;
+    _ID: string;
     thead: TableHeader;
     tbody: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -428,7 +416,7 @@ export function initiateSectionTable(
 ): CdaTable {
   return {
     table: {
-      [_idAttribute]: sectionName,
+      _ID: sectionName,
       thead: createTableHeader(tableHeaders),
       tbody: {
         tr: mapTableRows(tableRows),
@@ -438,13 +426,13 @@ export function initiateSectionTable(
 }
 
 type TableRowWithId = {
-  [_idAttribute]: string;
+  _ID: string;
   td: TableRow;
 };
 
 function mapTableRows(tableRows: ObservationTableRow[]): TableRowWithId[] {
   return tableRows.map((row: TableRow) => ({
-    [_idAttribute]: row.tr[_idAttribute],
+    _ID: row.tr._ID,
     td: row.tr.td,
   }));
 }

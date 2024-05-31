@@ -29,13 +29,6 @@ import {
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  _classCodeAttribute,
-  _codeAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
   _xsiTypeAttribute,
   extensionValue2014,
   loincCodeSystem,
@@ -111,28 +104,28 @@ function createTableRowsFromMedicationStatement(
   return [
     {
       tr: {
-        [_idAttribute]: referenceId,
+        _ID: referenceId,
         ["td"]: [
           {
-            [_inlineTextAttribute]: medicationName,
+            "#text": medicationName,
           },
           {
-            [_inlineTextAttribute]: medicationCode, // TODO: Improve this to show the human readable system name alongside the system
+            "#text": medicationCode, // TODO: Improve this to show the human readable system name alongside the system
           },
           {
-            [_inlineTextAttribute]: getDosageFromMedicationStatement(statement.resource),
+            "#text": getDosageFromMedicationStatement(statement.resource),
           },
           {
-            [_inlineTextAttribute]: getFrequencyFromMedicationStatement(statement.resource),
+            "#text": getFrequencyFromMedicationStatement(statement.resource),
           },
           {
-            [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.start) ?? NOT_SPECIFIED,
+            "#text": formatDateToHumanReadableFormat(period.start) ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
+            "#text": formatDateToHumanReadableFormat(period.end) ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: getPrescriptionReasons(statement.resource.reasonCode),
+            "#text": getPrescriptionReasons(statement.resource.reasonCode),
           },
         ],
       },
@@ -198,8 +191,8 @@ function createEntryFromStatement(
   );
   return {
     substanceAdministration: {
-      [_classCodeAttribute]: "SBADM",
-      [_moodCodeAttribute]: "INT",
+      _classCode: "SBADM",
+      _moodCode: "INT",
       templateId: buildInstanceIdentifier({
         root: statement.typeOid,
         extension: extensionValue2014,
@@ -209,21 +202,21 @@ function createEntryFromStatement(
         extension: statement.resource.id,
       }),
       statusCode: {
-        [_codeAttribute]: statement.resource.status,
+        _code: statement.resource.status,
       },
       effectiveTime: {
         [_xsiTypeAttribute]: "IVL_TS",
         low: withoutNullFlavorObject(
           formatDateToCdaTimestamp(statement.resource.effectivePeriod?.start),
-          _valueAttribute
+          "_value"
         ),
         high: withoutNullFlavorObject(
           formatDateToCdaTimestamp(statement.resource.effectivePeriod?.end),
-          _valueAttribute
+          "_value"
         ),
       },
       consumable: {
-        [_typeCodeAttribute]: "CSM",
+        _typeCode: "CSM",
         manufacturedProduct: {
           templateId: buildInstanceIdentifier({
             root: oids.medicationInformation,

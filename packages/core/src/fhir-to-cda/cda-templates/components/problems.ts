@@ -1,4 +1,6 @@
 import { Bundle, CodeableConcept, Condition } from "@medplum/fhirtypes";
+import { isCondition } from "../../../external/fhir/shared";
+import { ProblemsSection } from "../../cda-types/sections";
 import {
   ObservationEntry,
   ObservationTableRow,
@@ -17,13 +19,6 @@ import {
 } from "../commons";
 import {
   NOT_SPECIFIED,
-  _classCodeAttribute,
-  _codeAttribute,
-  _idAttribute,
-  _inlineTextAttribute,
-  _moodCodeAttribute,
-  _typeCodeAttribute,
-  _valueAttribute,
   extensionValue2014,
   extensionValue2015,
   loincCodeSystem,
@@ -33,8 +28,6 @@ import {
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedCondition } from "./augmented-resources";
-import { ProblemsSection } from "../../cda-types/sections";
-import { isCondition } from "../../../external/fhir/shared";
 
 const problemsSectionName = "problems";
 const tableHeaders = [
@@ -92,25 +85,25 @@ function createTableRowFromCondition(
   return [
     {
       tr: {
-        [_idAttribute]: referenceId,
+        _ID: referenceId,
         ["td"]: [
           {
-            [_inlineTextAttribute]: getIcdCode(condition.resource.code),
+            "#text": getIcdCode(condition.resource.code),
           },
           {
-            [_inlineTextAttribute]: name,
+            "#text": name,
           },
           {
-            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Find out what Provider Response stands for and map accordingly
+            "#text": NOT_SPECIFIED, // TODO: Find out what Provider Response stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Find out what Status stands for and map accordingly
+            "#text": NOT_SPECIFIED, // TODO: Find out what Status stands for and map accordingly
           },
           {
-            [_inlineTextAttribute]: condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
+            "#text": condition.resource.note?.[0]?.text ?? NOT_SPECIFIED,
           },
           {
-            [_inlineTextAttribute]: NOT_SPECIFIED, // TODO: Figure out where to put comments in the Condition resource
+            "#text": NOT_SPECIFIED, // TODO: Figure out where to put comments in the Condition resource
           },
         ],
       },
@@ -124,8 +117,8 @@ function createEntryFromCondition(
 ): ProblemsConcernActEntry {
   return {
     act: {
-      [_classCodeAttribute]: "ACT",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "ACT",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: condition.typeOid,
         extension: extensionValue2014,
@@ -140,12 +133,12 @@ function createEntryFromCondition(
         displayName: "Concern",
       }),
       statusCode: {
-        [_codeAttribute]: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
+        _code: condition.resource.clinicalStatus?.coding?.[0]?.code ?? "active", // TODO: Check if this is the correct approach
       },
       effectiveTime: {
         low: withoutNullFlavorObject(
           formatDateToCdaTimestamp(condition.resource.recordedDate),
-          _valueAttribute
+          "_value"
         ),
       },
       entryRelationship: createEntryRelationship(condition.resource, referenceId),
@@ -170,10 +163,10 @@ function createEntryRelationship(condition: Condition, referenceId: string): Obs
   const codeSystem = condition.code?.coding?.[0]?.system;
   const systemIsLoinc = isLoinc(codeSystem);
   return {
-    [_typeCodeAttribute]: "SUBJ",
+    _typeCode: "SUBJ",
     observation: {
-      [_classCodeAttribute]: "OBS",
-      [_moodCodeAttribute]: "EVN",
+      _classCode: "OBS",
+      _moodCode: "EVN",
       templateId: buildInstanceIdentifier({
         root: oids.problemObs,
         extension: extensionValue2015,

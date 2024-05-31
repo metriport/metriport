@@ -1,9 +1,9 @@
 import { Bundle } from "@medplum/fhirtypes";
+import { buildMedications } from "../components/medications";
 import { buildMentalStatus } from "../components/mental-status";
+import { buildProblems } from "../components/problems";
 import { buildResult } from "../components/results";
 import { buildSocialHistory } from "../components/social-history";
-import { buildMedications } from "../components/medications";
-import { buildProblems } from "../components/problems";
 
 export function buildStructuredBody(fhirBundle: Bundle): unknown {
   const structuredBodySections = [

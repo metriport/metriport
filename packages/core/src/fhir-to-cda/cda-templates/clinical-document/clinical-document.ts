@@ -14,14 +14,7 @@ import {
   withNullFlavor,
   withoutNullFlavorObject,
 } from "../commons";
-import {
-  _moodCodeAttribute,
-  _namespaceAttribute,
-  _namespaceSdtcAttribute,
-  _namespaceXsiAttribute,
-  _valueAttribute,
-  clinicalDocumentConstants,
-} from "../constants";
+import { _xmlnsSdtcAttribute, _xmlnsXsiAttribute, clinicalDocumentConstants } from "../constants";
 
 //eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function removeEmptyFields(obj: any): unknown {
@@ -52,10 +45,10 @@ export function buildClinicalDocumentXml(
 ): string {
   const jsonObj: ClinicalDocument = {
     ClinicalDocument: {
-      [_namespaceAttribute]: "urn:hl7-org:v3",
-      [_namespaceSdtcAttribute]: "urn:hl7-org:sdtc",
-      [_namespaceXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
-      [_moodCodeAttribute]: "EVN",
+      _xmlns: "urn:hl7-org:v3",
+      [_xmlnsSdtcAttribute]: "urn:hl7-org:sdtc",
+      [_xmlnsXsiAttribute]: "http://www.w3.org/2001/XMLSchema-instance",
+      _moodCode: "EVN",
       realmCode: buildCodeCe({ code: clinicalDocumentConstants.realmCode }),
       typeId: buildInstanceIdentifier({
         extension: clinicalDocumentConstants.typeIdExtension,
@@ -73,10 +66,7 @@ export function buildClinicalDocumentXml(
       }),
       code: getDocumentTypeCode(composition),
       title: getDocumentTitle(composition),
-      effectiveTime: withNullFlavor(
-        formatDateToCdaTimestamp(new Date().toISOString()),
-        _valueAttribute
-      ),
+      effectiveTime: withNullFlavor(formatDateToCdaTimestamp(new Date().toISOString()), "_value"),
       confidentialityCode: buildCodeCe({
         code: clinicalDocumentConstants.confidentialityCode.code,
         codeSystem: clinicalDocumentConstants.confidentialityCode.codeSystem,
@@ -89,10 +79,7 @@ export function buildClinicalDocumentXml(
         assigningAuthorityName: clinicalDocumentConstants.assigningAuthorityName,
         root: clinicalDocumentConstants.rootOid,
       }),
-      versionNumber: withoutNullFlavorObject(
-        clinicalDocumentConstants.versionNumber,
-        _valueAttribute
-      ),
+      versionNumber: withoutNullFlavorObject(clinicalDocumentConstants.versionNumber, "_value"),
       recordTarget,
       author,
       custodian,

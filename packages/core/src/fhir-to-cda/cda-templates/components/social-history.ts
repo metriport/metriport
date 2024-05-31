@@ -1,7 +1,7 @@
 import { Bundle, Observation } from "@medplum/fhirtypes";
 import { isSocialHistoryObservation } from "../../fhir";
 import { buildCodeCe, buildInstanceIdentifier, createTableHeader } from "../commons";
-import { _idAttribute, loincCodeSystem, loincSystemName, oids } from "../constants";
+import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
@@ -29,11 +29,11 @@ export function buildSocialHistory(fhirBundle: Bundle) {
     createEntriesFromObservation
   );
   const table = {
-    [_idAttribute]: sectionName + "1", // TODO: Potentially need to create separate text tables for different questionnaires
+    _ID: sectionName + "1", // TODO: Potentially need to create separate text tables for different questionnaires
     thead: createTableHeader(tableHeaders),
     tbody: {
       tr: trs.map(row => ({
-        [_idAttribute]: row.tr[_idAttribute],
+        _ID: row.tr._ID,
         td: row.tr.td,
       })),
     },

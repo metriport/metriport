@@ -1,11 +1,11 @@
 import { Bundle, Observation } from "@medplum/fhirtypes";
+import { MentalStatusSection } from "../../cda-types/sections";
 import { isMentalSurveyObservation } from "../../fhir";
 import { buildCodeCe, buildInstanceIdentifier, initiateSectionTable } from "../commons";
 import { loincCodeSystem, loincSystemName, oids } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
 import { AugmentedObservation } from "./augmented-resources";
 import { createEntriesFromObservation, createTableRowsFromObservation } from "./observations";
-import { MentalStatusSection } from "../../cda-types/sections";
 
 const mentalStatusSectionName = "mentalstatus";
 const tableHeaders = ["Question / Observation", "Answer / Status", "Score", "Date Recorded"];
