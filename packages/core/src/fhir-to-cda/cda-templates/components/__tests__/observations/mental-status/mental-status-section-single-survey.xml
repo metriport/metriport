@@ -97,7 +97,7 @@
 		</text>
 		<statusCode code="completed">
 		</statusCode>
-		<effectiveTime value="20120723171600">
+		<effectiveTime value="20120724001600">
 		</effectiveTime>
 		<entryRelationship typeCode="COMP">
 			<observation classCode="OBS" moodCode="EVN">
@@ -113,7 +113,7 @@
 				</text>
 				<statusCode code="completed">
 				</statusCode>
-				<effectiveTime value="20120723171600">
+				<effectiveTime value="20120724001600">
 				</effectiveTime>
 				<interpretationCode code="score" codeSystemName="0" displayName="0">
 				</interpretationCode>
@@ -133,7 +133,7 @@
 				</text>
 				<statusCode code="completed">
 				</statusCode>
-				<effectiveTime value="20120723171600">
+				<effectiveTime value="20120724001600">
 				</effectiveTime>
 				<interpretationCode code="score" codeSystemName="0" displayName="0">
 				</interpretationCode>
@@ -153,7 +153,7 @@
 				</text>
 				<statusCode code="completed">
 				</statusCode>
-				<effectiveTime value="20120723171600">
+				<effectiveTime value="20120724001600">
 				</effectiveTime>
 				<interpretationCode code="score" codeSystemName="0" displayName="0">
 				</interpretationCode>
