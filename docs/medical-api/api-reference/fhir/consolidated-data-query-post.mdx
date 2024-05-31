@@ -56,9 +56,9 @@ that will contain a URL to retrieve the data from.
 <ParamField query="conversionType" type="string" optional>
   The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
 
-  If provided, the Webhook will contain a URL to the file of chosen type. The URL is active for 3 minutes.
-  
-  Otherwise, the data will be returned in JSON format in the Webhook payload (default).
+If provided, the Webhook will contain a URL to the file of chosen type. The URL is active for 3 minutes.
+
+Otherwise, the data will be returned in JSON format in the Webhook payload (default).
 
   <Info>Providing `pdf` or `html` results in a
   [Medical Record Summary](/medical-api/more-info/webhooks#medical-record) being sent.</Info>
@@ -77,8 +77,7 @@ that will contain a URL to retrieve the data from.
 
 ## Response
 
-Returns a JSON containing a `status` property indicating the query status. Possible values for consolidated
-data query status are `processing`, `completed`, or `failed`.
+Returns an array of `queries` with the following fields: `requestId`, `status`, `startedAt`, `dateFrom`, `dateTo`, `resources`, and `conversionType`.
 
 <ResponseExample>
 
@@ -86,9 +85,52 @@ data query status are `processing`, `completed`, or `failed`.
 
 </ResponseExample>
 
+<ResponseField name="queries" type="ConsolidatedQuery[]" required>
+  The filters used to perform this operation.
+  <Expandable title="ConsolidatedQuery properties">
+    <ResponseField name="requestId" type="string" required>
+      The ID of the request.
+    </ResponseField>
+    <ResponseField name="status" type="string" required>
+      The status of the request. Can be one of `processing`, `completed`, or `failed`.
+    </ResponseField>
+    <ResponseField name="startedAt" type="string" optional>
+      The date and time the request was started - formatted `YYYY-MM-DDTHH:MM:SSZ` as per ISO 8601.
+    </ResponseField>
+    <ResponseField name="resources" type="string[]" optional>
+      Comma-separated list of resource types.
+    </ResponseField>
+    <ResponseField name="dateFrom" type="string" optional>
+      The start date (inclusive) for which to filter resources to count - formatted `YYYY-MM-DD` as
+      per ISO 8601.
+    </ResponseField>
+    <ResponseField name="dateFrom" type="string" optional>
+      The end date (inclusive) for which to filter resources to count - formatted `YYYY-MM-DD` as
+      per ISO 8601.
+    </ResponseField>
+    <ResponseField name="conversionType" type="string" optional>
+      The format of the resulting data. Can be one of `pdf`, `html`, or `json`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  An optional message for the request.
+</ResponseField>
+
 ```json
 {
-  "status": "processing"
+  "queries": [
+    {
+      "requestId": "5f4b3b4b-4b3b-4b3b-4b3b-4b3b4b3b4b3b",
+      "status": "processing",
+      "startedAt": "2021-01-01T00:00:00Z",
+      "dateFrom": "2021-01-01",
+      "dateTo": "2021-01-31",
+      "resources": ["Observation", "MedicationRequest"],
+      "conversionType": "pdf"
+    }
+  ]
 }
 ```
 
