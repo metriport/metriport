@@ -22,7 +22,7 @@ export async function updatePatientLinkDemographics({
 }): Promise<Patient> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
-  log(`Scheduling patient discovery to be executed`);
+  log(`Updating patient link demographics`);
 
   const patientFilter = {
     id: patient.id,

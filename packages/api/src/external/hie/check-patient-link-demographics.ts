@@ -11,11 +11,11 @@ export function checkLinkDemographicsAcrossHies({
 }): boolean {
   // CAREQUALITY
   const cqLinkDemographics = getCQData(patient.data.externalData)?.linkDemographics;
-  const cqLinkFound = requestId in (cqLinkDemographics ?? {});
+  const cqNewDemographicsFound = requestId in (cqLinkDemographics ?? {});
 
   // COMMONWELL
   const cwLinkDemographics = getCWData(patient.data.externalData)?.linkDemographics;
-  const cwLinkFound = requestId in (cwLinkDemographics ?? {});
+  const cwNewDemographicFound = requestId in (cwLinkDemographics ?? {});
 
-  return cqLinkFound || cwLinkFound;
+  return cqNewDemographicsFound || cwNewDemographicFound;
 }

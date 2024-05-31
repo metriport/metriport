@@ -106,7 +106,7 @@ router.post(
 
     const patient = await createPatient({
       patient: patientCreate,
-      requestId: uuidv7(), // TODO Use http request Id
+      requestId: uuidv7(), // TODO Interanl 1829 (switch to http)
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,
@@ -157,7 +157,7 @@ router.put(
 
     const updatedPatient = await updatePatient({
       patientUpdate,
-      requestId: uuidv7(), // TODO Use http request Id
+      requestId: uuidv7(), // TODO Interanl 1829 (switch to http)
       rerunPdOnNewDemographics,
       forceCommonwell,
       forceCarequality,

@@ -32,6 +32,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
 
     if (discoveryStatus !== "processing") {
       log(`Kicking off post resp patient discovery`);
+      // TODO Internal #1832 (rework)
       await updatePatientDiscoveryStatus({ patient, status: "processing" });
 
       await resultPoller.pollOutboundPatientDiscoveryResults({
@@ -42,7 +43,7 @@ export async function processPostRespOutboundPatientDiscoveryResps({
       });
     }
   } catch (error) {
-    // TODO We should not track the status of an individual POST resposne via the overall status of the PD flow
+    // TODO Internal #1832 (rework)
     await updatePatientDiscoveryStatus({ patient: { id: patientId, cxId }, status: "failed" });
     const msg = `Error on Post Resp Outbound PD Responses`;
     log(`${msg} - ${errorToString(error)}`);

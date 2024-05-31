@@ -33,6 +33,7 @@ export class PatientUpdaterCommonWell extends PatientUpdater {
       try {
         const facilityId = getFacilityIdOrFail(patient);
         // WARNING This could overwrite the status for any currently running PD
+        // TODO Internal #1832 (rework)
         await update({
           patient,
           facilityId,
