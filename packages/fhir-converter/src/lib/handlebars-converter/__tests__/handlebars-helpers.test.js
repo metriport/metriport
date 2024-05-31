@@ -10,38 +10,57 @@ describe("Handlebars helpers", function () {
   var opTests = [
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ",
       in: [inputs.typeIvlPq],
       out: inputs.typeIvlPqOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with nullFlavor limits",
       in: [inputs.nullFlavorOth],
       out: inputs.nullFlavorOthOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with only the upper limit",
       in: [inputs.lessThan],
       out: inputs.lessThanOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_PQ with value inside translation",
       in: [inputs.valueInTranslation],
       out: inputs.valueInTranslationOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type ST with non-numeric value",
       in: [inputs.typeStNonNumeric],
       out: inputs.typeStNonNumericOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type IVL_REAL",
       in: [inputs.typeIvlReal],
       out: inputs.typeIvlRealOutput,
     },
     {
       f: "extractReferenceRange",
+      desc: "Should process x:type ST with mixed values",
       in: [inputs.typeStMixed],
       out: inputs.typeStMixedOutput,
+    },
+    {
+      f: "extractReferenceRange",
+      desc: "Should process text if value is empty",
+      in: [inputs.missingValue],
+      out: inputs.typeStMixedOutput,
+    },
+    {
+      f: "extractReferenceRange",
+      desc: "Should return undefined when input is empty",
+      in: [{}],
+      out: undefined,
     },
   ];
 
