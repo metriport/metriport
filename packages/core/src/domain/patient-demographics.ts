@@ -1,4 +1,5 @@
-export type LinkGender = "male" | "female" | "unknown";
+export type LinkDateOfBirth = string | undefined;
+export type LinkGender = "male" | "female" | undefined;
 
 export type LinkGenericName = {
   firstName: string;
@@ -19,7 +20,7 @@ export type LinkGenericDriversLicense = {
 };
 
 export type LinkDemographics = {
-  dob: string;
+  dob: LinkDateOfBirth;
   gender: LinkGender;
   names: string[];
   addresses: string[];

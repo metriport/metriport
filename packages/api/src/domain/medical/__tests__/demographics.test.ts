@@ -29,7 +29,7 @@ describe("normalization", () => {
     const dobTrim = normalizeDob(" 2023-08-01 ");
     expect(dobTrim).toBe(dobValidValue);
     const dobUndefined = normalizeDob();
-    expect(dobUndefined).toBe("");
+    expect(dobUndefined).toBe(undefined);
   });
   it("check gender normalization", async () => {
     const genderValidValue = "male";
@@ -42,11 +42,11 @@ describe("normalization", () => {
     const genderFhirType = normalizeGender("M");
     expect(genderFhirType).toBe(genderValidValue);
     const genderMaleMisspelled = normalizeGender("malee");
-    expect(genderMaleMisspelled).toBe("unknown");
+    expect(genderMaleMisspelled).toBe(undefined);
     const genderFemaleMisspelled = normalizeGender("femalee");
-    expect(genderFemaleMisspelled).toBe("unknown");
+    expect(genderFemaleMisspelled).toBe(undefined);
     const genderUndefined = normalizeGender();
-    expect(genderUndefined).toBe("unknown");
+    expect(genderUndefined).toBe(undefined);
   });
   it("check names normalization", async () => {
     const nameValidValue = { firstName: "john", lastName: "smith" };
@@ -98,9 +98,9 @@ describe("normalization", () => {
     const addressTrimLowercaseZipNumericSlice = normalizeAddress({
       line: [" 1 Mordhaus St ", " Apt 1A ", " 2 "],
       city: " Mordhaus ",
-      state: " NY ",
+      state: " NYac ",
       zip: " 66666-1234abc ",
-      country: " USA ",
+      country: " USAa ",
     });
     expect(addressTrimLowercaseZipNumericSlice).toMatchObject(addressValidValue);
     const addressUndefined = normalizeAddress({
@@ -132,10 +132,8 @@ describe("normalization", () => {
     expect(phoneTrim).toBe(phoneValidValue);
     const phoneTrimNumeric = normalizeTelephone(" (415)-000-0000 ");
     expect(phoneTrimNumeric).toBe(phoneValidValue);
-    const phoneTrimNumericLeading1 = normalizeTelephone(" +1(415)-000-0000 ");
-    expect(phoneTrimNumericLeading1).toBe(phoneValidValue);
-    const phoneTrimLeading1 = normalizeTelephone(" 14150000000 ");
-    expect(phoneTrimLeading1).toBe(phoneValidValue);
+    const phoneTrimNumericSlice = normalizeTelephone(" +1(415)-000-0000 ");
+    expect(phoneTrimNumericSlice).toBe(phoneValidValue);
   });
   it("check email normalization", async () => {
     const emailValidValue = "john.smith@gmail.com";
@@ -153,6 +151,11 @@ describe("normalization", () => {
     expect(dlValid).toBe(dlValidValueString);
     const dlTrim = normalizeAndStringifyDriversLicense({ value: " i1234568 ", state: " ca " });
     expect(dlTrim).toBe(dlValidValueString);
+    const dlTrimSlice = normalizeAndStringifyDriversLicense({
+      value: " i1234568 ",
+      state: " caa ",
+    });
+    expect(dlTrimSlice).toBe(dlValidValueString);
     const dlTrimLowercase = normalizeAndStringifyDriversLicense({
       value: " I1234568 ",
       state: " CA ",
@@ -167,6 +170,8 @@ describe("normalization", () => {
     expect(ssnTrim).toBe(ssnValidValue);
     const ssnTrimNumeric = normalizeSsn(" 000-00-0000 ");
     expect(ssnTrimNumeric).toBe(ssnValidValue);
+    const ssnTrimNumericSlice = normalizeSsn(" 123000-00-0000 ");
+    expect(ssnTrimNumericSlice).toBe(ssnValidValue);
   });
 });
 
@@ -640,8 +645,8 @@ describe("link has new demographics", () => {
       coreDemographics,
       consolidatedLinkDemographics,
       linkDemographics: {
-        dob: "",
-        gender: "unknown",
+        dob: undefined,
+        gender: undefined,
         names: [],
         addresses: [],
         telephoneNumbers: [],
