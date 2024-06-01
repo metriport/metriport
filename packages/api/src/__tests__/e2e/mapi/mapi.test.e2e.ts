@@ -4,7 +4,7 @@ import { Bundle, Resource } from "@medplum/fhirtypes";
 import { Facility, Organization, PatientDTO } from "@metriport/api-sdk";
 import { isDocumentReference } from "@metriport/core/external/fhir/document/document-reference";
 import { PatientWithId } from "@metriport/core/external/fhir/__tests__/patient";
-import { sleep } from "@metriport/shared";
+import { isValidUrl, sleep } from "@metriport/shared";
 import assert from "assert";
 import dayjs from "dayjs";
 import duration from "dayjs/plugin/duration";
@@ -20,7 +20,8 @@ import {
   validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
-import { getWebhookServerUrl } from "./webhook-server";
+import { getConsolidatedData } from "./webhook/consolidated";
+import whServer from "./webhook/webhook-server";
 
 dayjs.extend(duration);
 
@@ -50,20 +51,7 @@ describe("MAPI E2E Tests", () => {
   let patient: PatientDTO;
   let patientFhir: PatientWithId;
   let consolidatedPayload: Bundle<Resource>;
-
-  // TODO 1634 To be used when we're ready to add additional tests checking updates on HIEs...
-  // ...this will need customization on external endpoints to return additional patient IDs.
-  // let isCwEnabled = false;
-  // let isCqEnabled = false;
-
-  // beforeAll(async () => {
-  //   const [_isCwEnabled, _isCqEnabled] = await Promise.all([
-  //     isCWEnabledForCx(testCxId),
-  //     isCQDirectEnabledForCx(testCxId),
-  //   ]);
-  //   isCwEnabled = _isCwEnabled;
-  //   isCqEnabled = _isCqEnabled;
-  // });
+  let url: string | undefined;
 
   const getOrg = async () => {
     return await medicalApi.getOrganization();
@@ -83,29 +71,22 @@ describe("MAPI E2E Tests", () => {
     return await fhirApi.readResource("Patient", patientId, fhirHeaders);
   };
 
-  // const getCwOrg = async (org: { oid: string }) => {
-  //   if (!isCwEnabled) return undefined;
-  //   return await cwCommands.organization.get(org.oid);
-  // };
-
-  // const getCqOrg = async (org: { oid: string }) => {
-  //   if (!isCqEnabled) return undefined;
-  //   return await getCqOrganization(org.oid);
-  // };
-
   it("gets settings", async () => {
     const settings = await medicalApi.getSettings();
     expect(settings).toBeTruthy();
   });
 
   it("updates settings", async () => {
-    const whUrl = getWebhookServerUrl();
+    const whUrl = whServer.getWebhookServerUrl();
     const updateResp = await medicalApi.updateSettings(whUrl);
     expect(updateResp).toBeTruthy();
+    expect(updateResp.webhookUrl).toEqual(whUrl);
+    expect(updateResp.webhookKey).toBeTruthy();
     const settings = await medicalApi.getSettings();
     expect(settings).toBeTruthy();
     expect(settings.webhookUrl).toBeTruthy();
     expect(settings.webhookUrl).toEqual(whUrl);
+    whServer.storeWebhookKey(updateResp.webhookKey);
   });
 
   it("gets an organization", async () => {
@@ -113,18 +94,8 @@ describe("MAPI E2E Tests", () => {
     expect(org).toBeTruthy();
     if (!org) throw new Error("Organization not found");
     validateLocalOrg(org);
-
-    // const [fhirOrg, cwOrg, cqOrg] = await Promise.all([
-    const [fhirOrg] = await Promise.all([
-      getFhirOrg(org),
-      // getCwOrg(org),
-      // getCqOrg(org),
-    ]);
-
+    const fhirOrg = await getFhirOrg(org);
     validateFhirOrg(fhirOrg, org);
-    // isCwEnabled && validateCwOrg(cwOrg, org);
-    // // TODO 1634 Consider whether we can have our test org on the CQ directory, then we can re-enable this after we publish our test org there
-    // false && isCqEnabled && validateCqOrg(cqOrg, org);
   });
 
   it("updates an organization", async () => {
@@ -142,21 +113,12 @@ describe("MAPI E2E Tests", () => {
 
     await sleep(100);
 
-    // const [updatedOrg, fhirOrg, cwOrg, cqOrg] = await Promise.all([
-    const [updatedOrg, fhirOrg] = await Promise.all([
-      getOrg(),
-      getFhirOrg(org),
-      // getCwOrg(org),
-      // getCqOrg(org),
-    ]);
+    const [updatedOrg, fhirOrg] = await Promise.all([getOrg(), getFhirOrg(org)]);
 
     expect(updatedOrg).toBeTruthy();
     if (!updatedOrg) throw new Error("Updated organization not found");
     expect(updatedOrg.name).toEqual(newName);
     expect(fhirOrg.name).toEqual(newName);
-    // isCwEnabled && expect(cwOrg?.name).toEqual(newName);
-    // // TODO 1634 Consider whether we can have our test org on the CQ directory, then we can re-enable this after we publish our test org there
-    // false && isCqEnabled && expect(cqOrg?.name).toEqual(newName);
   });
 
   it("creates a facility", async () => {
@@ -256,7 +218,7 @@ describe("MAPI E2E Tests", () => {
       retryLimit++ < conversionCheckStatusMaxRetries
     ) {
       console.log(
-        `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds} seconds...`
+        `Conversion still processing, retrying in ${conversionCheckStatusWaitTime.asSeconds()} seconds...`
       );
       await sleep(conversionCheckStatusWaitTime.asMilliseconds());
       conversionProgress = await medicalApi.getConsolidatedQueryStatus(patient.id);
@@ -265,14 +227,79 @@ describe("MAPI E2E Tests", () => {
     expect(conversionProgress.status).toEqual("completed");
   });
 
-  it.skip("gets MR in HTML format", async () => {
-    // TODO 1634 implement this
-    // needs WH server
+  it("gets MR in HTML format", async () => {
+    const consolidatedData = getConsolidatedData();
+    if (consolidatedData) {
+      console.log(`Webhook was called, data`);
+    } else {
+      console.log("Webhook was NOT called");
+    }
+    expect(consolidatedData).toBeTruthy();
+    if (!consolidatedData) throw new Error("Missing consolidated data");
+    expect(consolidatedData.length).toEqual(1);
+    expect(consolidatedData[0].status).toEqual("completed");
+    const bundle = consolidatedData[0].bundle;
+    expect(bundle).toBeTruthy();
+    if (!bundle) throw new Error("Missing Bundle");
+    expect(bundle.type).toEqual("collection");
+    expect(bundle.resourceType).toEqual("Bundle");
+    expect(bundle.total).toEqual(1);
+    expect(bundle.entry).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          resource: expect.objectContaining({
+            resourceType: "DocumentReference",
+            content: expect.arrayContaining([
+              expect.objectContaining({
+                attachment: expect.objectContaining({
+                  contentType: "application/html",
+                }),
+              }),
+            ]),
+          }),
+        }),
+      ])
+    );
+    const resource = bundle.entry?.[0]?.resource;
+    if (!resource || resource.resourceType !== "DocumentReference") {
+      throw new Error("Missing DocumentReference");
+    }
+    const patientRef = resource.subject?.reference;
+    expect(patientRef).toBeTruthy();
+    expect(patientRef).toEqual(`Patient/${patient.id}`);
+    url = resource.content?.[0].attachment?.url;
+    expect(url).toBeTruthy();
+    expect(isValidUrl(url)).toEqual(true);
+  });
+
+  test("MR in HTML format has expected contents", async () => {
+    // TODO Download the file and check its contents
+    // TODO Download the file and check its contents
+    // TODO Download the file and check its contents
+    // TODO Download the file and check its contents
   });
 
   it.skip("gets MR in PDF format", async () => {
     // TODO 1634 implement this
     // needs WH server
+    // const startResp = await medicalApi.startConsolidatedQuery(
+    //   patient.id,
+    //   undefined,
+    //   undefined,
+    //   undefined,
+    //   "html"
+    // );
+    // expect(startResp).toBeTruthy();
+    // expect(startResp.status).toEqual("processing");
+    // const startTime = Date.now();
+    // while (Date.now() - startTime < 10_000) {
+    //   if (wasItCalled()) {
+    //     console.log("Webhook was called");
+    //   } else {
+    //     console.log("Webhook was NOT called, sleeping...");
+    //   }
+    //   await sleep(500);
+    // }
   });
 
   it("triggers a document query", async () => {
@@ -339,7 +366,6 @@ describe("MAPI E2E Tests", () => {
       assert.fail("It should have failed to get the facility after deletion");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      // console.log("Error:", error);
       expect(error).toBeTruthy();
       expect(error.response?.status).toEqual(404);
     }

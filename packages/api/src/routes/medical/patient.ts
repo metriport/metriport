@@ -1,4 +1,4 @@
-import { patientCreateSchema, demographicsSchema } from "@metriport/api-sdk";
+import { demographicsSchema, patientCreateSchema } from "@metriport/api-sdk";
 import { QueryProgress as QueryProgressFromSDK } from "@metriport/api-sdk/medical/models/patient";
 import {
   consolidationConversionType,
@@ -24,13 +24,13 @@ import {
   getMedicalRecordSummary,
   getMedicalRecordSummaryStatus,
 } from "../../command/medical/patient/create-medical-record";
-import { PatientCreateCmd, createPatient } from "../../command/medical/patient/create-patient";
+import { createPatient, PatientCreateCmd } from "../../command/medical/patient/create-patient";
 import { deletePatient } from "../../command/medical/patient/delete-patient";
 import {
   getPatientOrFail,
   getPatients,
-  PatientMatchCmd,
   matchPatient,
+  PatientMatchCmd,
 } from "../../command/medical/patient/get-patient";
 import { PatientUpdateCmd, updatePatient } from "../../command/medical/patient/update-patient";
 import { getSandboxPatientLimitForCx } from "../../domain/medical/get-patient-limit";
@@ -50,6 +50,7 @@ import {
   getCxIdOrFail,
   getFrom,
   getFromParamsOrFail,
+  getFromQueryAsBoolean,
   getFromQueryOrFail,
 } from "../util";
 import { dtoFromModel } from "./dtos/patientDTO";
@@ -57,8 +58,8 @@ import { Bundle as ValidBundle, bundleSchema, getResourcesQueryParam } from "./s
 import {
   patientUpdateSchema,
   schemaCreateToPatient,
-  schemaUpdateToPatient,
   schemaDemographicsToPatient,
+  schemaUpdateToPatient,
 } from "./schemas/patient";
 import { cxRequestMetadataSchema } from "./schemas/request-metadata";
 
@@ -396,6 +397,7 @@ router.post("/:id/consolidated", requestLogger, asyncHandler(putConsolidated));
  *
  * @param req.cxId The customer ID.
  * @param req.param.id The ID of the patient to associate resources to.
+ * @param req.param.dryRun Validate the request and account resources without storing them.
  * @param req.body The FHIR Bundle to create or update resources.
  * @return FHIR Bundle with operation outcome.
  * TODO: 1603 - Simplify the logic and move the bulk of it into the `command` directory.
@@ -413,11 +415,14 @@ async function putConsolidated(req: Request, res: Response) {
   const cxId = getCxIdOrFail(req);
   const patientId = getFrom("params").orFail("id", req);
   const patient = await getPatientOrFail({ id: patientId, cxId });
+  const dryRun = getFromQueryAsBoolean("dryRun", req);
   const fhirBundle = bundleSchema.parse(req.body);
   const validatedBundle = validateFhirEntries(fhirBundle);
   const incomingAmount = validatedBundle.entry.length;
 
   await checkResourceLimit(incomingAmount, patient);
+
+  if (dryRun) return res.sendStatus(status.OK);
 
   const docId = uuidv7();
   await uploadFhirBundleToS3({ cxId, patientId, fhirBundle: validatedBundle, docId });
@@ -436,7 +441,7 @@ async function putConsolidated(req: Request, res: Response) {
   };
 
   await Promise.all([patientDataPromise(), convertAndUploadCdaPromise()]);
-  return res.sendStatus(status.OK);
+  return res.sendStatus(status.CREATED);
 }
 
 async function checkResourceLimit(incomingAmount: number, patient: Patient) {

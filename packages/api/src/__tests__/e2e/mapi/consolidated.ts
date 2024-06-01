@@ -52,6 +52,25 @@ export function makeAllergyIntollerance({
     type: "allergy",
     category: ["environment"],
     criticality: "low",
+    reaction: [
+      {
+        manifestation: [
+          {
+            coding: [
+              {
+                system: "http://snomed.info/sct",
+                code: "271807003",
+                display: "Eruption of skin (disorder)",
+              },
+            ],
+            text: "Eruption of skin (disorder)",
+          },
+        ],
+        substance: {
+          text: "Pollen",
+        },
+      },
+    ],
     code: {
       coding: [
         {
