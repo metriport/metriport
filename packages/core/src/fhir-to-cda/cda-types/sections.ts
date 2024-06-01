@@ -1,4 +1,4 @@
-import { CdaTable } from "../cda-templates/commons";
+import { CdaTable } from "../cda-templates/table";
 import {
   CdaCodeCe,
   CdaInstanceIdentifier,
@@ -20,4 +20,3 @@ type CdaSection<T> =
 export type MedicationSection = CdaSection<SubstanceAdministationEntry>;
 export type MentalStatusSection = CdaSection<ObservationEntry>;
 export type ProblemsSection = CdaSection<ProblemsConcernActEntry>;
-// export type DiagnosticResultsSection = CdaSection<any>;

@@ -24,7 +24,6 @@ import {
   buildInstanceIdentifier,
   formatDateToCdaTimestamp,
   formatDateToHumanReadableFormat,
-  initiateSectionTable,
   withoutNullFlavorObject,
 } from "../commons";
 import {
@@ -37,6 +36,7 @@ import {
   placeholderOrgOid,
 } from "../constants";
 import { createTableRowsAndEntries } from "../create-table-rows-and-entries";
+import { initiateSectionTable } from "../table";
 import { AugmentedMedicationStatement } from "./augmented-resources";
 
 const medicationsSectionName = "medications";
