@@ -151,16 +151,16 @@ describe("normalization", () => {
     expect(dlValid).toBe(dlValidValueString);
     const dlTrim = normalizeAndStringifyDriversLicense({ value: " i1234568 ", state: " ca " });
     expect(dlTrim).toBe(dlValidValueString);
-    const dlTrimSlice = normalizeAndStringifyDriversLicense({
-      value: " i1234568 ",
-      state: " caa ",
-    });
-    expect(dlTrimSlice).toBe(dlValidValueString);
     const dlTrimLowercase = normalizeAndStringifyDriversLicense({
       value: " I1234568 ",
       state: " CA ",
     });
     expect(dlTrimLowercase).toBe(dlValidValueString);
+    const dlTrimLowercaseSlice = normalizeAndStringifyDriversLicense({
+      value: " I1234568 ",
+      state: " CAa ",
+    });
+    expect(dlTrimLowercaseSlice).toBe(dlValidValueString);
   });
   it("check ssn normalization", async () => {
     const ssnValidValue = "000000000";
