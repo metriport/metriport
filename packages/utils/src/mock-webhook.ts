@@ -11,24 +11,18 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: false, limit: "2mb" }));
 
 const whKey = getEnvVarOrFail("WH_KEY");
-const apiKey = getEnvVarOrFail("API_KEY");
-const apiUrl = getEnvVarOrFail("API_URL");
 
 function mockDownload(name: string) {
   // Here you can simulate a download by making a GET request to the URL
   console.log(`Downloaded file: ${name}`);
 }
 
-const metriportApi = new MetriportMedicalApi(apiKey, {
-  baseAddress: apiUrl,
-});
-
 app.post("/", async (req: Request, res: Response) => {
   console.log(`BODY: ${JSON.stringify(req.body, undefined, 2)}`);
 
   const signature = req.headers["x-metriport-signature"];
 
-  if (metriportApi.verifyWebhookSignature(whKey, req.body, String(signature))) {
+  if (MetriportMedicalApi.verifyWebhookSignature(whKey, req.body, String(signature))) {
     console.log(`Signature verified`);
   } else {
     console.log(`Signature verification failed`);

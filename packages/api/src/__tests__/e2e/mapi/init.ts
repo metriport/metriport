@@ -1,4 +1,4 @@
-import { initWebhookServer, tearDownWebhookServer } from "./webhook-server";
+import { initWebhookServer, tearDownWebhookServer } from "./webhook/webhook-server";
 
 export async function initMapiE2e() {
   await initWebhookServer();

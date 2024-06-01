@@ -1,10 +1,11 @@
 export { toArray } from "./common/array";
 export { isTrue } from "./common/boolean";
-export { optionalDateSchema } from "./common/date";
+export { dateSchema, optionalDateSchema } from "./common/date";
 export { getDomainFromEmailWithoutTld } from "./common/email";
 export * from "./common/env-var";
 export { emptyFunction } from "./common/general";
 export { metriportOrganization } from "./common/metriport-organization";
+export { isValidUrl } from "./common/net";
 export { normalizeOid } from "./common/normalize-oid";
 export { normalizeZipCode } from "./common/normalize-zip";
 export { PurposeOfUse } from "./common/purpose-of-use";

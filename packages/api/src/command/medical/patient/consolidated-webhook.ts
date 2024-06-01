@@ -15,7 +15,8 @@ const consolidatedWebhookStatus = ["completed", "failed"] as const;
 export type ConsolidatedWebhookStatus = (typeof consolidatedWebhookStatus)[number];
 
 type Filters = Record<string, string | undefined>;
-type PayloadPatient = {
+
+export type PayloadPatient = {
   patientId: string;
   externalId?: string;
   status: ConsolidatedWebhookStatus;
