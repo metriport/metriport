@@ -17,10 +17,9 @@ import {
   createPatient,
   patientDtoToFhir,
   validateFhirPatient,
-  validateLocalPatient
+  validateLocalPatient,
 } from "./patient";
 import { fhirApi, fhirHeaders, medicalApi } from "./shared";
-import { getWebhookServerUrl } from "./webhook-server";
 import { getConsolidatedData } from "./webhook/consolidated";
 import whServer from "./webhook/webhook-server";
 
@@ -88,21 +87,6 @@ describe("MAPI E2E Tests", () => {
     expect(settings.webhookUrl).toBeTruthy();
     expect(settings.webhookUrl).toEqual(whUrl);
     whServer.storeWebhookKey(updateResp.webhookKey);
-  });
-
-  it("gets settings", async () => {
-    const settings = await medicalApi.getSettings();
-    expect(settings).toBeTruthy();
-  });
-
-  it("updates settings", async () => {
-    const whUrl = getWebhookServerUrl();
-    const updateResp = await medicalApi.updateSettings(whUrl);
-    expect(updateResp).toBeTruthy();
-    const settings = await medicalApi.getSettings();
-    expect(settings).toBeTruthy();
-    expect(settings.webhookUrl).toBeTruthy();
-    expect(settings.webhookUrl).toEqual(whUrl);
   });
 
   it("gets an organization", async () => {

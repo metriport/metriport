@@ -65,12 +65,6 @@ export type Options = {
 export class MetriportMedicalApi {
   // TODO this should be private
   readonly api: AxiosInstance;
-  /**
-   * Options for the settings endpoint.
-   */
-  private optionsForSettings = {
-    baseURL: "/",
-  };
 
   private optionsForSettingsEndpoints = {
     baseURL: "/",
