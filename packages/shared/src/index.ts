@@ -5,6 +5,7 @@ export { getDomainFromEmailWithoutTld } from "./common/email";
 export * from "./common/env-var";
 export { emptyFunction } from "./common/general";
 export { metriportOrganization } from "./common/metriport-organization";
+export { isValidUrl } from "./common/net";
 export { normalizeOid } from "./common/normalize-oid";
 export { normalizeZipCode } from "./common/normalize-zip";
 export { PurposeOfUse } from "./common/purpose-of-use";
