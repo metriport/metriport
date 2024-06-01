@@ -12,20 +12,18 @@ export type LinkDemographics = {
   dob: string;
   gender: LinkGender;
   names: string[];
-  addressesObj: LinkGenericAddress[];
-  addressesString: string[];
+  addresses: string[];
   telephoneNumbers: string[];
   emails: string[];
   driversLicenses: string[];
   ssns: string[];
 };
 
-export type LinkDemographicsDiff = {
+export type LinkDemographicsComparison = {
   dob?: string;
   gender?: LinkGender;
   names?: string[];
-  addressesObj?: LinkGenericAddress[];
-  addressesString?: string[];
+  addresses?: string[];
   telephoneNumbers?: string[];
   emails?: string[];
   driversLicenses?: string[];

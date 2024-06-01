@@ -6,7 +6,7 @@ import {
 } from "@metriport/core/domain/patient";
 import {
   LinkDemographics,
-  LinkDemographicsDiff,
+  LinkDemographicsComparison,
   LinkGender,
   LinkGenericAddress,
 } from "@metriport/core/domain/patient-demographics";
@@ -19,124 +19,144 @@ import dayjs from "dayjs";
 const ISO_DATE = "YYYY-MM-DD";
 
 /**
- * Evaluates whether the input linked demographcis are similar enough to the input patient demographics to be considered a demogrpahic "match".
+ * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a "match".
  *
  * This function is modelled off of Epic's matching algorithm, which uses a point system for different matching demographics. Each exact
  * or partial match awards a certain number of points, which are added to an overall score. This score must be higher than the given threshold
  * (20 or 21 if SSNs are present) in order for the input linked demograhics to successfully "match".
  *
- * @param patientDemographics The patient LinkDemographics .
- * @param linkDemographics The incoming linked demographics from CQ or CW.
- * @returns boolean representing whether the linkDemographics "match" the patientDemographics.
+ * @param coreDemographics The patient core demographics.
+ * @param linkDemographics The incoming link demographics from CQ or CW.
+ * @returns boolean representing whether or not the link demographics match the patient, and the LinkDemographicsComparison if yes.
  */
-export function scoreLinkEpic(
-  patientDemographics: LinkDemographics,
-  linkDemographics: LinkDemographics
-): boolean {
+export function scoreLink({
+  coreDemographics,
+  linkDemographics,
+}: {
+  coreDemographics: LinkDemographics;
+  linkDemographics: LinkDemographics;
+}): [boolean, LinkDemographicsComparison | undefined] {
+  const matchedFields: LinkDemographicsComparison = {};
   let scoreThreshold = 20;
   let score = 0;
   // DOB exact match
-  if (patientDemographics.dob === linkDemographics.dob) {
+  if (coreDemographics.dob === linkDemographics.dob) {
     score += 8;
+    matchedFields.dob = linkDemographics.dob;
   } else {
     // DOB approximate match
-    const patientDobSplit = splitDob(patientDemographics.dob);
+    const patientDobSplit = splitDob(coreDemographics.dob);
     const linkedDobSplit = splitDob(linkDemographics.dob);
     const overlappingDateParts = linkedDobSplit.filter(dp => patientDobSplit.includes(dp));
     if (overlappingDateParts.length >= 2) {
       score += 2;
+      matchedFields.dob = linkDemographics.dob;
     }
   }
   // Gender exact match
   if (
-    patientDemographics.gender !== "unknown" &&
+    coreDemographics.gender !== "unknown" &&
     linkDemographics.gender !== "unknown" &&
-    patientDemographics.gender === linkDemographics.gender
+    coreDemographics.gender === linkDemographics.gender
   ) {
     score += 1;
+    matchedFields.gender = linkDemographics.gender;
   } else {
     // Gender approximate match
     // TODO
   }
   // Names exact match
-  if (linkDemographics.names.some(name => patientDemographics.names.includes(name))) {
+  const overLapNames = linkDemographics.names.filter(name => coreDemographics.names.includes(name));
+  if (overLapNames.length > 0) {
     score += 10;
+    matchedFields.names = overLapNames;
   } else {
     // Names approximate match
     // TODO
   }
   // Address exact match
-  if (linkDemographics.addressesString.some(a => patientDemographics.addressesString.includes(a))) {
+  const overLapAddress = linkDemographics.addresses.filter(a =>
+    coreDemographics.addresses.includes(a)
+  );
+  if (overLapAddress.length > 0) {
     score += 2;
+    matchedFields.addresses = overLapAddress;
     // Address approximate match
     // TODO
   } else {
     // Address current address zip / city match
     // TODO Mark the first address as current in Dash
-    const currentPatientAddress = patientDemographics.addressesObj[0];
+    const currentPatientAddress = JSON.parse(coreDemographics.addresses[0]) as LinkGenericAddress;
+    const linkDemograhpicsAddesses = linkDemographics.addresses.map(
+      address => JSON.parse(address) as LinkGenericAddress
+    );
     if (
       currentPatientAddress &&
       currentPatientAddress.city &&
-      linkDemographics.addressesObj
+      currentPatientAddress.city !== "" &&
+      linkDemograhpicsAddesses
         .map(address => address.city)
         .filter(city => city !== "")
         .includes(currentPatientAddress.city)
     ) {
       score += 0.5;
+      matchedFields.addresses = overLapAddress;
     }
     if (
       currentPatientAddress &&
       currentPatientAddress.zip &&
-      linkDemographics.addressesObj
+      linkDemograhpicsAddesses
         .map(address => address.zip)
         .filter(zip => zip !== "")
         .includes(currentPatientAddress.zip)
     ) {
       score += 0.5;
+      matchedFields.addresses = overLapAddress;
     }
   }
   // Telephone exact match
-  if (
-    linkDemographics.telephoneNumbers.some(tn => patientDemographics.telephoneNumbers.includes(tn))
-  ) {
+  const overLapTelephone = linkDemographics.telephoneNumbers.filter(tn =>
+    coreDemographics.telephoneNumbers.includes(tn)
+  );
+  if (overLapTelephone.length > 0) {
     score += 2;
+    matchedFields.telephoneNumbers = overLapTelephone;
   } else {
     // Telephone approximate match
     // TODO
   }
   // Email exact match
-  if (linkDemographics.emails.some(e => patientDemographics.emails.includes(e))) {
+  const overLapEmail = linkDemographics.emails.filter(e => coreDemographics.emails.includes(e));
+  if (overLapEmail.length > 0) {
     score += 2;
+    matchedFields.emails = overLapEmail;
   } else {
     // Email approximate match
     // TODO
   }
   if (linkDemographics.ssns.length > 0) scoreThreshold = 21;
+  const overLapSsn = linkDemographics.ssns.filter(ssn => coreDemographics.ssns.includes(ssn));
   // SSN exact match
-  if (linkDemographics.ssns.some(ssn => patientDemographics.ssns.includes(ssn))) {
+  if (overLapSsn.length > 0) {
     score += 5;
+    matchedFields.ssns = overLapSsn;
   } else {
     // SSN approximate match
     // TODO
   }
-  return score >= scoreThreshold;
+  const pass = score >= scoreThreshold;
+  return pass ? [pass, matchedFields] : [pass, undefined];
 }
 
 /**
- * Converts a Metriport Patient's demographics into a normalized and stringified LinkDemographics payload.
+ * Converts a Patient demographics into a normalized and stringified core demographics payload.
  * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
- * Special cases:
- * DOB: first 10 characters.
- * Telephone numbers and ssn: convert to numeric characters.
- * Gender: convert to "male", "female", "unknown".
- * Address: convert to LinkGenericAddress w/ zip to first 5 numeric characters.
+ * Special cases: WIP.
  *
  * @param patient The Patient @ Metriport.
- * @returns LinkDemographics payload.
+ * @returns core demographics representing the Patient demographics.
  */
-export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics( // Too descriptive :)?
-  patient: Patient
-): LinkDemographics {
+export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
   const gender = normalizeGender(patient.data.genderAtBirth);
   const patientFirstNames: string[] = splitName(patient.data.firstName);
@@ -146,13 +166,14 @@ export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographic
       return normalizeAndStringifyNames({ firstName, lastName });
     });
   });
-  const addressesObj = patient.data.address.map(address => {
-    return normalizeAddress({
-      line: [address.addressLine1, ...(address.addressLine2 ? [address.addressLine2] : [])],
-      ...address,
-    });
+  const addresses = patient.data.address.map(address => {
+    return stringifyAddress(
+      normalizeAddress({
+        line: [address.addressLine1, ...(address.addressLine2 ? [address.addressLine2] : [])],
+        ...address,
+      })
+    );
   });
-  const addressesString = addressesObj.map(stringifyAddress);
   const telephoneNumbers = (patient.data.contact ?? []).flatMap(c => {
     if (!c.phone) return [];
     return [normalizeTelephone(c.phone)];
@@ -173,10 +194,9 @@ export function patientCoreDemographicsToNormalizedAndStringifiedLinkDemographic
     dob,
     gender,
     names,
+    addresses,
     telephoneNumbers,
     emails,
-    addressesObj,
-    addressesString,
     driversLicenses,
     ssns,
   };
@@ -294,19 +314,18 @@ export function normalizeSsn(ssn: string): string {
 }
 
 /**
- * Adds current Link demographics to the Patient to create the augmented Patient.
+ * Adds current patient consolidated link demographics to the Patient demographics to create the augmented Patient.
  *
  * @param patient The Patient @ Metriport.
- * @returns Patient augmented with the new linked data.
+ * @returns Patient augmented with the consolidated link demographics.
  */
 export function createAugmentedPatient(patient: Patient): Patient {
-  const coreDemographics =
-    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemograhpics;
+  const coreDemographics = patientToNormalizedCoreDemographics(patient);
+  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   if (!consolidatedLinkDemographics) return patient;
   // TODO Is submitting lower case addresses to CQ / CW okay, or do we have to grab the original version?
-  const newAddresses: Address[] = consolidatedLinkDemographics.addressesString
-    .filter(address => !coreDemographics.addressesString.includes(address))
+  const newAddresses: Address[] = consolidatedLinkDemographics.addresses
+    .filter(address => !coreDemographics.addresses.includes(address))
     .map(address => {
       const addressObj: LinkGenericAddress = JSON.parse(address);
       return {
@@ -342,73 +361,85 @@ export function createAugmentedPatient(patient: Patient): Patient {
 }
 
 /**
- * Checks to see if the input Link demographics have any new values compared to the core Patient demographics and link Patient Demographics
- * Currently checks values for addresses, telephone numbers, and emails and considers a value new if it doesn't match exactly.
+ * Checks to see if the input link demographics has any new values compared to the patient core demographics and consolidated link demographics.
+ * Currently checks values exactly.
  *
- * @param patientDemographics The Patient LinkDemographics.
- * @param linkDemographics The Link LinkDemographics.
- * @returns boolean representing whether or not new values were found, and the diff if yes
+ * @param coreDemographics The patient core demographics.
+ * @param consolidatedLinkDemographics The patient consolidated link demographics.
+ * @param linkDemographics The incoming link demographics from CQ or CW.
+ * @returns boolean representing whether or not the link demographics has new values, and the LinkDemographicsComparison if yes.
  */
-export function linkHasNewDemographiscData(
-  coreDemographics: LinkDemographics,
-  consolidatedLinkDemographics: ConsolidatedLinkDemographics | undefined,
-  linkDemographics: LinkDemographics
-): [boolean, LinkDemographicsDiff | undefined] {
-  const hasNewDob = linkDemographics.dob !== coreDemographics.dob;
-  const hasNewGender = linkDemographics.gender !== coreDemographics.gender;
+export function linkHasNewDemographics({
+  coreDemographics,
+  consolidatedLinkDemographics,
+  linkDemographics,
+}: {
+  coreDemographics: LinkDemographics;
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
+  linkDemographics: LinkDemographics;
+}): [boolean, LinkDemographicsComparison | undefined] {
+  const hasNewDob = linkDemographics.dob !== "" && linkDemographics.dob !== coreDemographics.dob;
+  const hasNewGender =
+    linkDemographics.gender !== "unknown" && linkDemographics.gender !== coreDemographics.gender;
   const newNames = linkDemographics.names.filter(
     name =>
       !coreDemographics.names.includes(name) &&
       !(consolidatedLinkDemographics?.names ?? []).includes(name)
   );
-  const newAddresses = linkDemographics.addressesString.filter(
+  const hasNewNames = newNames.length > 0;
+  const newAddresses = linkDemographics.addresses.filter(
     address =>
-      !coreDemographics.addressesString.includes(address) &&
-      !(consolidatedLinkDemographics?.addressesString ?? []).includes(address)
+      !coreDemographics.addresses.includes(address) &&
+      !(consolidatedLinkDemographics?.addresses ?? []).includes(address)
   );
+  const hasNewAddresses = newAddresses.length > 0;
   const newTelephoneNumbers = linkDemographics.telephoneNumbers.filter(
     phone =>
       !coreDemographics.telephoneNumbers.includes(phone) &&
       !(consolidatedLinkDemographics?.telephoneNumbers ?? []).includes(phone)
   );
+  const hasNewTelephoneNumbers = newTelephoneNumbers.length > 0;
   const newEmails = linkDemographics.emails.filter(
     email =>
       !coreDemographics.emails.includes(email) &&
       !(consolidatedLinkDemographics?.emails ?? []).includes(email)
   );
+  const hasNewEmails = newEmails.length > 0;
   const newDriversLicenses = linkDemographics.driversLicenses.filter(
     dl =>
       !coreDemographics.driversLicenses.includes(dl) &&
       !(consolidatedLinkDemographics?.driversLicenses ?? []).includes(dl)
   );
+  const hasNewDriversLicenses = newDriversLicenses.length > 0;
   const newSsn = linkDemographics.ssns.filter(
     ssn =>
       !coreDemographics.ssns.includes(ssn) &&
       !(consolidatedLinkDemographics?.ssns ?? []).includes(ssn)
   );
+  const hasNewSsn = newSsn.length > 0;
   const hasNewDemographics =
     hasNewDob ||
     hasNewGender ||
-    newNames.length > 0 ||
-    newAddresses.length > 0 ||
-    newTelephoneNumbers.length > 0 ||
-    newEmails.length > 0 ||
-    newDriversLicenses.length > 0 ||
-    newSsn.length > 0;
+    hasNewNames ||
+    hasNewAddresses ||
+    hasNewTelephoneNumbers ||
+    hasNewEmails ||
+    hasNewDriversLicenses ||
+    hasNewSsn;
   if (hasNewDemographics) {
     return [
       hasNewDemographics,
       {
         ...(hasNewDob ? { dob: linkDemographics.dob } : undefined),
         ...(hasNewGender ? { gender: linkDemographics.gender } : undefined),
-        ...(newNames.length > 0 ? { names: newNames } : undefined),
-        ...(newAddresses.length > 0 ? { addressesString: newAddresses } : undefined),
-        ...(newTelephoneNumbers.length > 0 ? { telephoneNumbers: newTelephoneNumbers } : undefined),
-        ...(newEmails.length > 0 ? { emails: newEmails } : undefined),
-        ...(newDriversLicenses.length > 0 ? { driversLicenses: newDriversLicenses } : undefined),
-        ...(newSsn.length > 0 ? { ssns: newSsn } : undefined),
+        ...(hasNewNames ? { names: newNames } : undefined),
+        ...(hasNewAddresses ? { addresses: newAddresses } : undefined),
+        ...(hasNewTelephoneNumbers ? { telephoneNumbers: newTelephoneNumbers } : undefined),
+        ...(hasNewEmails ? { emails: newEmails } : undefined),
+        ...(hasNewDriversLicenses ? { driversLicenses: newDriversLicenses } : undefined),
+        ...(hasNewSsn ? { ssns: newSsn } : undefined),
       },
     ];
   }
-  return [false, undefined];
+  return [hasNewDemographics, undefined];
 }

@@ -2,9 +2,9 @@ import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientNetworkLink, GenderCodes } from "@metriport/commonwell-sdk";
 import {
-  scoreLinkEpic,
-  linkHasNewDemographiscData,
-  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
+  scoreLink,
+  linkHasNewDemographics,
+  patientToNormalizedCoreDemographics,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
@@ -18,18 +18,21 @@ import { CwLink } from "./cw-patient-data";
 type CwGenderCode = `${GenderCodes}`;
 
 export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemographics[] {
-  const coreDemographics =
-    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-  const consolidatedLinkDemograhpics = patient.data.consolidatedLinkDemograhpics;
+  const coreDemographics = patientToNormalizedCoreDemographics(patient);
+  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   return getPatientNetworkLinks(links)
-    .map(patientNetworkLinkToNormalizedAndStringifiedLinkDemographics)
-    .filter(ld => scoreLinkEpic(coreDemographics, ld))
-    .filter(
-      ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld)[0]
+    .map(patientNetworkLinkToNormalizedLinkDemographics)
+    .filter(linkDemographics => scoreLink({ coreDemographics, linkDemographics })[0])
+    .filter(linkDemographics =>
+      linkHasNewDemographics({
+        coreDemographics,
+        consolidatedLinkDemographics,
+        linkDemographics,
+      })
     );
 }
 
-function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
+function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
 ): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
@@ -42,16 +45,17 @@ function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
       });
     });
   });
-  const addressesObj = patientNetworkLink.details.address.map(address => {
-    return normalizeAddress({
-      line: address.line ?? undefined,
-      city: address.city ?? undefined,
-      state: address.state ?? undefined,
-      zip: address.zip ?? undefined,
-      country: address.country ?? undefined,
-    });
+  const addresses = patientNetworkLink.details.address.map(address => {
+    return stringifyAddress(
+      normalizeAddress({
+        line: address.line ?? undefined,
+        city: address.city ?? undefined,
+        state: address.state ?? undefined,
+        zip: address.zip ?? undefined,
+        country: address.country ?? undefined,
+      })
+    );
   });
-  const addressesString = addressesObj.map(stringifyAddress);
   const telephoneNumbers = (patientNetworkLink.details.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "phone") return [];
@@ -74,8 +78,7 @@ function patientNetworkLinkToNormalizedAndStringifiedLinkDemographics(
     names,
     telephoneNumbers,
     emails,
-    addressesObj,
-    addressesString,
+    addresses,
     driversLicenses: [],
     ssns: [],
   };

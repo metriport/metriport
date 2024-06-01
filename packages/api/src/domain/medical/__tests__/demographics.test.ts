@@ -11,9 +11,9 @@ import {
   normalizeSsn,
   normalizeEmail,
   normalizeAndStringifyDriversLicense,
-  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
+  patientToNormalizedCoreDemographics,
   createAugmentedPatient,
-  linkHasNewDemographiscData,
+  linkHasNewDemographics,
 } from "../patient-demographics";
 
 describe("normalization", () => {
@@ -69,10 +69,6 @@ describe("normalization", () => {
       zip: "66666",
       country: "usa",
     };
-    const addressValidValueString = JSON.stringify(
-      addressValidValue,
-      Object.keys(addressValidValue).sort()
-    );
     const addressValid = normalizeAddress(addressValidValue);
     expect(addressValid).toMatchObject(addressValidValue);
     const addressTrim = normalizeAddress({
@@ -121,6 +117,10 @@ describe("normalization", () => {
       zip: "",
       country: "usa",
     });
+    const addressValidValueString = JSON.stringify(
+      addressValidValue,
+      Object.keys(addressValidValue).sort()
+    );
     const addressString = stringifyAddress(addressValidValue);
     expect(addressString).toBe(addressValidValueString);
   });
@@ -229,25 +229,8 @@ describe("total patient normalization", () => {
       facilityIds: [""],
       eTag: "",
     };
-    const normalizedPatient =
-      patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-    const addressesObj = [
-      {
-        line: ["1 mordhaus st", "apt 1a"],
-        city: "mordhaus",
-        state: "ny",
-        zip: "66666",
-        country: "usa",
-      },
-      {
-        line: ["777 elm ave"],
-        city: "los angeles",
-        state: "ca",
-        zip: "12345",
-        country: "usa",
-      },
-    ];
-    const patientCoreDemographicsNormalized: LinkDemographics = {
+    const coreDemographics = patientToNormalizedCoreDemographics(patient);
+    const patientDemographicsNormalized: LinkDemographics = {
       dob: "1900-02-28",
       gender: "male",
       names: [
@@ -256,10 +239,22 @@ describe("total patient normalization", () => {
         { firstName: "john", lastName: "douglas" },
         { firstName: "johnathan", lastName: "douglas" },
       ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-      addressesObj,
-      addressesString: addressesObj.map(address =>
-        JSON.stringify(address, Object.keys(address).sort())
-      ),
+      addresses: [
+        {
+          line: ["1 mordhaus st", "apt 1a"],
+          city: "mordhaus",
+          state: "ny",
+          zip: "66666",
+          country: "usa",
+        },
+        {
+          line: ["777 elm ave"],
+          city: "los angeles",
+          state: "ca",
+          zip: "12345",
+          country: "usa",
+        },
+      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
       telephoneNumbers: ["4150000000", "4157770000"],
       emails: ["john.smith@gmail.com", "john.douglas@yahoo.com"],
       driversLicenses: [{ value: "i1234568", state: "ca" }].map(dl =>
@@ -267,30 +262,26 @@ describe("total patient normalization", () => {
       ),
       ssns: ["123014442"],
     };
-    expect(normalizedPatient).toMatchObject(patientCoreDemographicsNormalized);
+    expect(coreDemographics).toMatchObject(patientDemographicsNormalized);
   });
 });
 
 describe("create augmented patient", () => {
   it("check augmented patient", async () => {
-    const addressesObj = [
-      {
-        line: ["88 75th st.", "apt 8", "1b"],
-        city: "ny",
-        state: "ny",
-        zip: "66622",
-        country: "usa",
-      },
-    ];
-    const patientConsolidatedLinkDemogrpahics = {
+    const consolidatedLinkDemographics = {
       names: [
         { firstName: "John", lastName: "George" },
         { firstName: "Johnathan", lastName: "George" },
       ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-      addressesObj,
-      addressesString: addressesObj.map(address =>
-        JSON.stringify(address, Object.keys(address).sort())
-      ),
+      addresses: [
+        {
+          line: ["88 75th st.", "apt 8", "1b"],
+          city: "ny",
+          state: "ny",
+          zip: "66622",
+          country: "usa",
+        },
+      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
       telephoneNumbers: ["6194009999"],
       emails: [],
       driversLicenses: [{ value: "NY1234", state: "NY" }].map(dl =>
@@ -349,7 +340,7 @@ describe("create augmented patient", () => {
       cxId: "",
       data: {
         ...patientDemo,
-        consolidatedLinkDemograhpics: patientConsolidatedLinkDemogrpahics,
+        consolidatedLinkDemographics,
       },
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -357,7 +348,7 @@ describe("create augmented patient", () => {
       eTag: "",
     };
     const augmentedPatient = createAugmentedPatient(patient);
-    const patientCoreDemographicsAugmented: PatientDemoData = {
+    const patientDemographicsAugmented: PatientDemoData = {
       dob: "1900-02-28",
       genderAtBirth: "M" as GenderAtBirth,
       lastName: " Smith, Douglas",
@@ -417,8 +408,8 @@ describe("create augmented patient", () => {
     const patientTotalAugmented: Patient = {
       ...patient,
       data: {
-        ...patientCoreDemographicsAugmented,
-        consolidatedLinkDemograhpics: patientConsolidatedLinkDemogrpahics,
+        ...patientDemographicsAugmented,
+        consolidatedLinkDemographics,
       },
     };
     expect(augmentedPatient).toMatchObject(patientTotalAugmented);
@@ -426,24 +417,20 @@ describe("create augmented patient", () => {
 });
 
 describe("link has new demographics", () => {
-  const addressesObj = [
-    {
-      line: ["88 75th st.", "apt 8"],
-      city: "ny",
-      state: "ny",
-      zip: "66622",
-      country: "usa",
-    },
-  ];
-  const patientConsolidatedLinkDemogrpahics = {
+  const consolidatedLinkDemographics = {
     names: [
       { firstName: "John", lastName: "George" },
       { firstName: "Johnathan", lastName: "George" },
     ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-    addressesObj,
-    addressesString: addressesObj.map(address =>
-      JSON.stringify(address, Object.keys(address).sort())
-    ),
+    addresses: [
+      {
+        line: ["88 75th st.", "apt 8"],
+        city: "ny",
+        state: "ny",
+        zip: "66622",
+        country: "usa",
+      },
+    ].map(address => JSON.stringify(address, Object.keys(address).sort())),
     telephoneNumbers: ["6194009999"],
     emails: [],
     driversLicenses: [{ value: "NY1234", state: "NY" }].map(dl =>
@@ -502,259 +489,167 @@ describe("link has new demographics", () => {
     cxId: "",
     data: {
       ...patientDemo,
-      consolidatedLinkDemograhpics: patientConsolidatedLinkDemogrpahics,
+      consolidatedLinkDemographics,
     },
     createdAt: new Date(),
     updatedAt: new Date(),
     facilityIds: [""],
     eTag: "",
   };
-  const normalizedPatient =
-    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-  const normalizedPatientDobAndGender = {
-    dob: normalizedPatient.dob,
-    gender: normalizedPatient.gender,
-  };
+  const coreDemographics = patientToNormalizedCoreDemographics(patient);
   it("link has new dob demographics", async () => {
     const newDob = "1901-04-28";
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
+      ...coreDemographics,
       dob: newDob,
-      gender: normalizedPatientDobAndGender.gender,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new gender demographics", async () => {
     const newGender = "female";
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      dob: normalizedPatientDobAndGender.dob,
+      ...coreDemographics,
       gender: newGender,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new name demographics", async () => {
     const newNames = [
-      ...patientConsolidatedLinkDemogrpahics.names,
+      ...coreDemographics.names,
       ...[{ fistName: "jon", lastName: "smith" }].map(name =>
         JSON.stringify(name, Object.keys(name).sort())
       ),
     ];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
+      ...coreDemographics,
       names: newNames,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateName = [
-      ...patientConsolidatedLinkDemogrpahics.names,
-      ...patientConsolidatedLinkDemogrpahics.names,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      names: duplicateName,
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new address demographics", async () => {
-    const newAddressObj = [
-      ...patientConsolidatedLinkDemogrpahics.addressesObj,
-      {
-        line: ["44 hello blvd"],
-        city: "los angeles",
-        state: "ca",
-        zip: "98765",
-        country: "usa",
-      },
+    const newAddresses = [
+      ...consolidatedLinkDemographics.addresses,
+      ...[
+        {
+          line: ["44 hello blvd"],
+          city: "los angeles",
+          state: "ca",
+          zip: "98765",
+          country: "usa",
+        },
+      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
     ];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      addressesObj: newAddressObj,
-      addressesString: newAddressObj.map(address =>
-        JSON.stringify(address, Object.keys(address).sort())
-      ),
+      ...coreDemographics,
+      addresses: newAddresses,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateAddressObj = [
-      ...patientConsolidatedLinkDemogrpahics.addressesObj,
-      ...patientConsolidatedLinkDemogrpahics.addressesObj,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      addressesObj: duplicateAddressObj,
-      addressesString: duplicateAddressObj.map(address =>
-        JSON.stringify(address, Object.keys(address).sort())
-      ),
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new telephone demographics", async () => {
-    const newTelephone = [...patientConsolidatedLinkDemogrpahics.telephoneNumbers, "00000000"];
+    const newTelephone = [...consolidatedLinkDemographics.telephoneNumbers, "00000000"];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
+      ...coreDemographics,
       telephoneNumbers: newTelephone,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateNameTelephone = [
-      ...patientConsolidatedLinkDemogrpahics.telephoneNumbers,
-      ...patientConsolidatedLinkDemogrpahics.telephoneNumbers,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      telephoneNumbers: duplicateNameTelephone,
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new email demographics", async () => {
-    const newEmail = [...patientConsolidatedLinkDemogrpahics.emails, "test@gmail.com"];
+    const newEmail = [...consolidatedLinkDemographics.emails, "test@gmail.com"];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
+      ...coreDemographics,
       emails: newEmail,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateEmail = [
-      ...patientConsolidatedLinkDemogrpahics.emails,
-      ...patientConsolidatedLinkDemogrpahics.emails,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      emails: duplicateEmail,
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new dl demographics", async () => {
     const newDl = [
-      ...patientConsolidatedLinkDemogrpahics.driversLicenses,
+      ...consolidatedLinkDemographics.driversLicenses,
       ...[{ value: "p234212", state: "ri" }].map(dl => JSON.stringify(dl, Object.keys(dl).sort())),
     ];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
+      ...coreDemographics,
       driversLicenses: newDl,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateDl = [
-      ...patientConsolidatedLinkDemogrpahics.driversLicenses,
-      ...patientConsolidatedLinkDemogrpahics.driversLicenses,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      driversLicenses: duplicateDl,
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has new ssn demographics", async () => {
-    const newSsn = [...patientConsolidatedLinkDemogrpahics.ssns, "999999999"];
+    const newSsn = [...consolidatedLinkDemographics.ssns, "999999999"];
     const newLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
+      ...coreDemographics,
       ssns: newSsn,
     };
-    const hasNewData = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      newLinkDemographics
-    );
-    expect(hasNewData[0]).toBe(true);
-    const duplicateSsn = [
-      ...patientConsolidatedLinkDemogrpahics.ssns,
-      ...patientConsolidatedLinkDemogrpahics.ssns,
-    ];
-    const duplicateLinkDemographics: LinkDemographics = {
-      ...patientConsolidatedLinkDemogrpahics,
-      ...normalizedPatientDobAndGender,
-      ssns: duplicateSsn,
-    };
-    const hasNewDataDuplicate = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      duplicateLinkDemographics
-    );
-    expect(hasNewDataDuplicate[0]).toBe(false);
+    const newData = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: newLinkDemographics,
+    });
+    expect(newData[0]).toBe(true);
   });
   it("link has no new demographics", async () => {
-    const noNewPatient = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      normalizedPatient
-    );
+    const noNewPatient = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: coreDemographics,
+    });
     expect(noNewPatient[0]).toBe(false);
-    const noNewConsolidated = linkHasNewDemographiscData(
-      normalizedPatient,
-      patientConsolidatedLinkDemogrpahics,
-      {
-        ...patientConsolidatedLinkDemogrpahics,
-        ...normalizedPatientDobAndGender,
-      }
-    );
+    const noNewConsolidated = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: {
+        ...coreDemographics,
+        ...consolidatedLinkDemographics,
+      },
+    });
     expect(noNewConsolidated[0]).toBe(false);
+    const noNewEmpty = linkHasNewDemographics({
+      coreDemographics,
+      consolidatedLinkDemographics,
+      linkDemographics: {
+        dob: "",
+        gender: "unknown",
+        names: [],
+        addresses: [],
+        telephoneNumbers: [],
+        emails: [],
+        driversLicenses: [],
+        ssns: [],
+      },
+    });
+    expect(noNewEmpty[0]).toBe(false);
   });
 });

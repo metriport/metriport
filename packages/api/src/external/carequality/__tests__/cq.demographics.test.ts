@@ -2,10 +2,10 @@ import { Patient, PatientDemoData, GenderAtBirth } from "@metriport/core/domain/
 import { USState } from "@metriport/core/domain/geographic-locations";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
-  scoreLinkEpic,
-  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
+  scoreLink,
+  patientToNormalizedCoreDemographics,
 } from "../../../domain/medical/patient-demographics";
-import { patientResourceToNormalizedAndStringifiedLinkDemographics } from "../patient-demographics";
+import { patientResourceToNormalizedLinkDemographics } from "../patient-demographics";
 
 describe("CQ demographics", () => {
   it("normalization", async () => {
@@ -49,35 +49,30 @@ describe("CQ demographics", () => {
       ],
       identifier: [],
     };
-    const normalizedPatientResource =
-      patientResourceToNormalizedAndStringifiedLinkDemographics(patientResource);
-    const addressesObj = [
-      {
-        line: ["400 awesome rd."],
-        city: "san francisco",
-        state: "ca",
-        zip: "99999",
-        country: "usa",
-      },
-      {
-        line: ["401 awesome rd.", "apt 1b"],
-        city: "san francisco",
-        state: "ca",
-        zip: "99999",
-        country: "usa",
-      },
-    ];
-    expect(normalizedPatientResource).toMatchObject({
+    const linkDemos = patientResourceToNormalizedLinkDemographics(patientResource);
+    expect(linkDemos).toMatchObject({
       dob: "1900-01-01",
       gender: "female",
       names: [
         { firstName: "katherine", lastName: "smith" },
         { firstName: "katy", lastName: "smith" },
       ].map(name => JSON.stringify(name, Object.keys(name).sort())),
-      addressesObj,
-      addressesString: addressesObj.map(address =>
-        JSON.stringify(address, Object.keys(address).sort())
-      ),
+      addresses: [
+        {
+          line: ["400 awesome rd."],
+          city: "san francisco",
+          state: "ca",
+          zip: "99999",
+          country: "usa",
+        },
+        {
+          line: ["401 awesome rd.", "apt 1b"],
+          city: "san francisco",
+          state: "ca",
+          zip: "99999",
+          country: "usa",
+        },
+      ].map(address => JSON.stringify(address, Object.keys(address).sort())),
       telephoneNumbers: ["8888887777"],
       emails: ["katy2020@gmail.com"],
       driversLicenses: [],
@@ -142,8 +137,7 @@ describe("CQ demographics", () => {
       facilityIds: [""],
       eTag: "",
     };
-    const normalizedPatient =
-      patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
+    const coreDemographics = patientToNormalizedCoreDemographics(patient);
     const patientResource: PatientResource = {
       birthDate: " 1900-01-01 ",
       gender: "female",
@@ -184,10 +178,9 @@ describe("CQ demographics", () => {
       ],
       identifier: [],
     };
-    const normalizedPatientResource =
-      patientResourceToNormalizedAndStringifiedLinkDemographics(patientResource);
-    const pass = scoreLinkEpic(normalizedPatient, normalizedPatientResource);
-    expect(pass).toBe(false);
+    const linkDemographics = patientResourceToNormalizedLinkDemographics(patientResource);
+    const pass = scoreLink({ coreDemographics, linkDemographics });
+    expect(pass[0]).toBe(false);
   });
   it("check pass scoreLink", async () => {
     const patientDemo: PatientDemoData = {
@@ -247,8 +240,7 @@ describe("CQ demographics", () => {
       facilityIds: [""],
       eTag: "",
     };
-    const normalizedPatient =
-      patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
+    const coreDemographics = patientToNormalizedCoreDemographics(patient);
     const patientResource: PatientResource = {
       birthDate: " 1900-02-28 ",
       gender: "male",
@@ -289,9 +281,8 @@ describe("CQ demographics", () => {
       ],
       identifier: [],
     };
-    const normalizedPatientResource =
-      patientResourceToNormalizedAndStringifiedLinkDemographics(patientResource);
-    const pass = scoreLinkEpic(normalizedPatient, normalizedPatientResource);
-    expect(pass).toBe(true);
+    const linkDemographics = patientResourceToNormalizedLinkDemographics(patientResource);
+    const pass = scoreLink({ coreDemographics, linkDemographics });
+    expect(pass[0]).toBe(true);
   });
 });

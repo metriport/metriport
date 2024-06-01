@@ -61,7 +61,7 @@ export type PatientData = {
   address: Address[];
   contact?: Contact[];
   requestId?: string;
-  consolidatedLinkDemograhpics?: ConsolidatedLinkDemographics;
+  consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   documentQueryProgress?: DocumentQueryProgress;
   consolidatedQuery?: QueryProgress;
   bulkGetDocumentsUrlProgress?: BulkGetDocumentsUrlProgress;

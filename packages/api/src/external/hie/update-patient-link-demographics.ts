@@ -37,7 +37,7 @@ export async function updatePatientLinkDemographics({
     });
 
     const externalData = existingPatient.data.externalData ?? {};
-    const consolidatedLinkDemograhpics = existingPatient.data.consolidatedLinkDemograhpics;
+    const consolidatedLinkDemographics = existingPatient.data.consolidatedLinkDemographics;
 
     const updatedExternalData = {
       ...externalData,
@@ -54,46 +54,40 @@ export async function updatePatientLinkDemographics({
       ...existingPatient.dataValues,
       data: {
         ...existingPatient.data,
-        consolidatedLinkDemograhpics: {
+        consolidatedLinkDemographics: {
           names: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.names ?? []),
+              ...(consolidatedLinkDemographics?.names ?? []),
               ...links.flatMap(ld => ld.names),
             ]),
           ],
-          addressesObj: [
+          addresses: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.addressesObj ?? []),
-              ...links.flatMap(ld => ld.addressesObj),
-            ]),
-          ],
-          addressesString: [
-            ...new Set([
-              ...(consolidatedLinkDemograhpics?.addressesString ?? []),
-              ...links.flatMap(ld => ld.addressesString),
+              ...(consolidatedLinkDemographics?.addresses ?? []),
+              ...links.flatMap(ld => ld.addresses),
             ]),
           ],
           telephoneNumbers: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.telephoneNumbers ?? []),
+              ...(consolidatedLinkDemographics?.telephoneNumbers ?? []),
               ...links.flatMap(ld => ld.telephoneNumbers),
             ]),
           ],
           emails: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.emails ?? []),
+              ...(consolidatedLinkDemographics?.emails ?? []),
               ...links.flatMap(ld => ld.emails),
             ]),
           ],
           driversLicenses: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.driversLicenses ?? []),
+              ...(consolidatedLinkDemographics?.driversLicenses ?? []),
               ...links.flatMap(ld => ld.driversLicenses),
             ]),
           ],
           ssns: [
             ...new Set([
-              ...(consolidatedLinkDemograhpics?.ssns ?? []),
+              ...(consolidatedLinkDemographics?.ssns ?? []),
               ...links.flatMap(ld => ld.ssns),
             ]),
           ],

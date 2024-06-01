@@ -2,9 +2,9 @@ import { Patient } from "@metriport/core/domain/patient";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk";
 import {
-  scoreLinkEpic,
-  linkHasNewDemographiscData,
-  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
+  scoreLink,
+  linkHasNewDemographics,
+  patientToNormalizedCoreDemographics,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
@@ -16,18 +16,21 @@ import {
 import { CQLink } from "./cq-patient-data";
 
 export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemographics[] {
-  const coreDemographics =
-    patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-  const consolidatedLinkDemograhpics = patient.data.consolidatedLinkDemograhpics;
+  const coreDemographics = patientToNormalizedCoreDemographics(patient);
+  const consolidatedLinkDemographics = patient.data.consolidatedLinkDemographics;
   return getPatientResources(links)
-    .map(patientResourceToNormalizedAndStringifiedLinkDemographics)
-    .filter(ld => scoreLinkEpic(coreDemographics, ld))
-    .filter(
-      ld => linkHasNewDemographiscData(coreDemographics, consolidatedLinkDemograhpics, ld)[0]
+    .map(patientResourceToNormalizedLinkDemographics)
+    .filter(linkDemographics => scoreLink({ coreDemographics, linkDemographics })[0])
+    .filter(linkDemographics =>
+      linkHasNewDemographics({
+        coreDemographics,
+        consolidatedLinkDemographics,
+        linkDemographics,
+      })
     );
 }
 
-export function patientResourceToNormalizedAndStringifiedLinkDemographics(
+export function patientResourceToNormalizedLinkDemographics(
   patientResource: PatientResource
 ): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate);
@@ -37,16 +40,17 @@ export function patientResourceToNormalizedAndStringifiedLinkDemographics(
       return normalizeAndStringifyNames({ firstName, lastName: name.family });
     });
   });
-  const addressesObj = (patientResource.address ?? []).map(a => {
-    return normalizeAddress({
-      line: a.line,
-      city: a.city,
-      state: a.state,
-      zip: a.postalCode,
-      country: a.country,
-    });
+  const addresses = (patientResource.address ?? []).map(a => {
+    return stringifyAddress(
+      normalizeAddress({
+        line: a.line,
+        city: a.city,
+        state: a.state,
+        zip: a.postalCode,
+        country: a.country,
+      })
+    );
   });
-  const addressesString = addressesObj.map(stringifyAddress);
   const telephoneNumbers = (patientResource.telecom ?? []).flatMap(tc => {
     if (!tc.value || !tc.system) return [];
     if (tc.system !== "phone") return [];
@@ -69,8 +73,7 @@ export function patientResourceToNormalizedAndStringifiedLinkDemographics(
     names,
     telephoneNumbers,
     emails,
-    addressesObj,
-    addressesString,
+    addresses,
     driversLicenses: [],
     ssns: [],
   };
