@@ -2,14 +2,18 @@ import * as dotenv from "dotenv";
 dotenv.config();
 // keep that ^ on top
 import { Patient, PatientData } from "@metriport/core/src/domain/patient";
-import { LinkDemographics } from "@metriport/core/src/domain/patient-demographics";
+import { out } from "@metriport/core/util/log";
+import {
+  LinkDemographics,
+  LinkDemographicsComparison,
+} from "@metriport/core/src/domain/patient-demographics";
 import { PatientResource } from "@metriport/ihe-gateway-sdk/src/models/patient-discovery/patient";
 import {
-  patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics,
-  scoreLinkEpic,
-  linkHasNewDemographiscData,
+  patientToNormalizedCoreDemographics,
+  scoreLink,
+  linkHasNewDemographics,
 } from "../../api/src/domain/medical/patient-demographics";
-import { patientResourceToNormalizedAndStringifiedLinkDemographics } from "../../api/src/external/carequality/patient-demographics";
+import { patientResourceToNormalizedLinkDemographics } from "../../api/src/external/carequality/patient-demographics";
 import { Command } from "commander";
 import csv from "csv-parser";
 import dayjs from "dayjs";
@@ -35,10 +39,13 @@ where
 limit 1000;
 */
 
-const scoringFuncs: ((
-  patientDemographics: LinkDemographics,
-  linkDemographics: LinkDemographics
-) => boolean)[] = [scoreLinkEpic];
+const scoringFuncs: (({
+  coreDemographics,
+  linkDemographics,
+}: {
+  coreDemographics: LinkDemographics;
+  linkDemographics: LinkDemographics;
+}) => [true, LinkDemographicsComparison] | [false, undefined])[] = [scoreLink];
 
 // csv stuff -- absolute path
 const inputFileName = "/absolute/path/to/csv";
@@ -46,9 +53,6 @@ const inputFileName = "/absolute/path/to/csv";
 // flags
 const detailedNewDemo = false;
 const detailedPass = false;
-const detailedFailure = false;
-
-// TODO Prettier diff
 
 type Row = {
   patientId: string;
@@ -79,6 +83,7 @@ async function main() {
 }
 
 async function loadData(rows: Row[]) {
+  const { log: totalLog } = out("Total");
   console.log(`Loaded ${rows.length} patients from the CSV file to be scored`);
 
   const basePatient = {
@@ -93,9 +98,10 @@ async function loadData(rows: Row[]) {
   const totalLinks = rows.length;
   const totalPatients = [...new Set(rows.map(r => r.patientId))].length;
 
-  console.log(`Total Links processed ${totalLinks}`);
-  console.log(`Total Patients processed ${totalPatients}`);
+  totalLog(`links processed ${totalLinks}`);
+  totalLog(`patients processed ${totalPatients}`);
   for (const scoreFunc of scoringFuncs) {
+    const { log: outerLog } = out(`scoreFunc ${scoreFunc.name}`);
     const linkNewDemo: Row[] = [];
     const linkPassed: Row[] = [];
     const patientPassed: { [key: string]: boolean } = {};
@@ -103,30 +109,34 @@ async function loadData(rows: Row[]) {
 
     for (const row of rows) {
       const patientId = row.patientId;
+      const { log: innerLog } = out(`Patient ${patientId}`);
       const patientData = row.patientData;
+      const consolidatedLinkDemographics = undefined;
       const patient: Patient = {
         ...basePatient,
         data: {
           ...patientData,
           // Assume patient has been augmented yet
-          consolidatedLinkDemograhpics: undefined,
+          consolidatedLinkDemographics,
         },
       };
-      const normalizedPatient =
-        patientCoreDemographicsToNormalizedAndStringifiedLinkDemographics(patient);
-      const normalizedPatientResource = patientResourceToNormalizedAndStringifiedLinkDemographics(
-        row.patientResource
-      );
-      const [hasNewDemographics, newDemographicsDiff] = linkHasNewDemographiscData(
-        normalizedPatient,
-        patient.data.consolidatedLinkDemograhpics,
-        normalizedPatientResource
-      );
+      const coreDemographics = patientToNormalizedCoreDemographics(patient);
+      const linkDemographics = patientResourceToNormalizedLinkDemographics(row.patientResource);
+      const [hasNewDemographics, newDemographicsDiff] = linkHasNewDemographics({
+        coreDemographics,
+        consolidatedLinkDemographics,
+        linkDemographics,
+      });
       if (hasNewDemographics) {
         if (detailedNewDemo) {
-          console.log(`Start detailedNewDemo Patient ${patientId}`);
-          console.log(normalizedPatient);
-          console.log(newDemographicsDiff);
+          innerLog(
+            createComparison({
+              coreDemographics,
+              linkDemographics,
+              comparison: newDemographicsDiff,
+              keyword: "Diff",
+            })
+          );
         }
         linkNewDemo.push(row);
         patientNewDemo[patientId] = true;
@@ -137,21 +147,24 @@ async function loadData(rows: Row[]) {
           patientNewDemo[patientId] = false;
         }
       }
-      const pass = scoreFunc(normalizedPatient, normalizedPatientResource);
-      if (pass) {
+      const [passedScoreFunc, passedDemgraphicsOverlap] = scoreFunc({
+        coreDemographics,
+        linkDemographics,
+      });
+      if (passedScoreFunc) {
         if (detailedPass) {
-          console.log(`Start detailedPass Patient ${patientId}`);
-          console.log(normalizedPatient);
-          console.log(normalizedPatientResource);
+          innerLog(
+            createComparison({
+              coreDemographics,
+              linkDemographics,
+              comparison: passedDemgraphicsOverlap,
+              keyword: "Overlap",
+            })
+          );
         }
         linkPassed.push(row);
         patientPassed[patientId] = true;
       } else {
-        if (detailedFailure) {
-          console.log(`Start detailedFailure Patient ${patientId}`);
-          console.log(normalizedPatient);
-          console.log(normalizedPatientResource);
-        }
         if (patientId in patientPassed) {
           patientPassed[patientId] = patientPassed[patientId] || false;
         } else {
@@ -168,34 +181,44 @@ async function loadData(rows: Row[]) {
       .filter(entry => entry[0] in patientNewDemo)
       .filter(entry => Boolean(entry[1])).length;
 
-    console.log(
-      `${scoreFunc.name} Link pass rate: ${(100 * ((1.0 * linksPassed) / totalLinks)).toFixed(0)}%`
-    );
-    console.log(
-      `${scoreFunc.name} Link w/ new demographics rate: ${(
-        100 *
-        ((1.0 * linksNewDemo) / totalLinks)
-      ).toFixed(0)}%`
-    );
-    console.log(
-      `${scoreFunc.name} Patient pass rate: ${(
-        100 *
-        ((1.0 * patientsPassed) / totalPatients)
-      ).toFixed(0)}%`
-    );
-    console.log(
-      `${scoreFunc.name} Patient w/ new demographics rate: ${(
-        100 *
-        ((1.0 * patientsNewDemo) / totalPatients)
-      ).toFixed(0)}%`
-    );
-    console.log(
-      `${scoreFunc.name} Patient pass w/ new demographics rate: ${(
-        100 *
-        ((1.0 * patientsPassedAndNewDemo) / totalPatients)
-      ).toFixed(0)}%`
+    outerLog(`link pass rate: ${createPercent(linksPassed, totalLinks)}`);
+    outerLog(`link w/ new demographics rate: ${createPercent(linksNewDemo, totalLinks)}`);
+    outerLog(`patient pass rate: ${createPercent(patientsPassed, totalPatients)}`);
+    outerLog(`patient w/ new demographics rate: ${createPercent(patientsNewDemo, totalPatients)}`);
+    outerLog(
+      `patient pass w/ new demographics rate: ${createPercent(
+        patientsPassedAndNewDemo,
+        totalPatients
+      )}`
     );
   }
+}
+
+function createPercent(a: number, b: number) {
+  return `${(100 * ((1.0 * a) / b)).toFixed(0)}%`;
+}
+
+function createComparison({
+  coreDemographics,
+  linkDemographics,
+  comparison,
+  keyword,
+}: {
+  coreDemographics: LinkDemographics;
+  linkDemographics: LinkDemographics;
+  comparison: LinkDemographicsComparison;
+  keyword: string;
+}): string {
+  const fields = [];
+  for (const diff of Object.entries(comparison)) {
+    fields.push(`
+      Field: ${diff[0]}
+      ${keyword}: ${diff[1]}
+      Core: ${coreDemographics[diff[0] as keyof LinkDemographics]}
+      Link: ${linkDemographics[diff[0] as keyof LinkDemographics]}
+    `);
+  }
+  return fields.join("\n");
 }
 
 main();

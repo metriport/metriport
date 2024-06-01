@@ -35,7 +35,7 @@ export function scoreLink({
 }: {
   coreDemographics: LinkDemographics;
   linkDemographics: LinkDemographics;
-}): [boolean, LinkDemographicsComparison | undefined] {
+}): [true, LinkDemographicsComparison] | [false, undefined] {
   const matchedFields: LinkDemographicsComparison = {};
   let scoreThreshold = 20;
   let score = 0;
@@ -377,7 +377,7 @@ export function linkHasNewDemographics({
   coreDemographics: LinkDemographics;
   consolidatedLinkDemographics?: ConsolidatedLinkDemographics;
   linkDemographics: LinkDemographics;
-}): [boolean, LinkDemographicsComparison | undefined] {
+}): [true, LinkDemographicsComparison] | [false, undefined] {
   const hasNewDob = linkDemographics.dob !== "" && linkDemographics.dob !== coreDemographics.dob;
   const hasNewGender =
     linkDemographics.gender !== "unknown" && linkDemographics.gender !== coreDemographics.gender;
