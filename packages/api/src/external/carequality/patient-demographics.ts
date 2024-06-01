@@ -5,6 +5,7 @@ import {
   scoreLink,
   linkHasNewDemographics,
   patientToNormalizedCoreDemographics,
+  removeInvalidArrayValues,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
@@ -67,7 +68,7 @@ export function patientResourceToNormalizedLinkDemographics(
   const ssns = (ppatientResource.personalIdentifiers ?? []).flatMap(p => { 
   });
   */
-  return {
+  return removeInvalidArrayValues({
     dob,
     gender,
     names,
@@ -76,7 +77,7 @@ export function patientResourceToNormalizedLinkDemographics(
     addresses,
     driversLicenses: [],
     ssns: [],
-  };
+  });
 }
 
 function getPatientResources(linkResults: CQLink[]): PatientResource[] {

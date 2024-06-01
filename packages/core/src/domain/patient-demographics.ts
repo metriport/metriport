@@ -1,11 +1,21 @@
 export type LinkGender = "male" | "female" | "unknown";
 
+export type LinkGenericName = {
+  firstName: string;
+  lastName: string;
+};
+
 export type LinkGenericAddress = {
   line: string[];
   city: string;
   state: string;
   zip: string;
   country: string;
+};
+
+export type LinkGenericDriversLicense = {
+  state: string;
+  value: string;
 };
 
 export type LinkDemographics = {

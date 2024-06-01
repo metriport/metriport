@@ -9,6 +9,8 @@ import {
   LinkDemographicsComparison,
   LinkGender,
   LinkGenericAddress,
+  LinkGenericName,
+  LinkGenericDriversLicense,
 } from "@metriport/core/domain/patient-demographics";
 import { Address } from "@metriport/core/domain/address";
 import { Contact, stripNonNumericChars } from "@metriport/core/domain/contact";
@@ -40,7 +42,11 @@ export function scoreLink({
   let scoreThreshold = 20;
   let score = 0;
   // DOB exact match
-  if (coreDemographics.dob === linkDemographics.dob) {
+  if (
+    coreDemographics.dob !== "" &&
+    coreDemographics.dob !== "" &&
+    coreDemographics.dob === linkDemographics.dob
+  ) {
     score += 8;
     matchedFields.dob = linkDemographics.dob;
   } else {
@@ -190,7 +196,7 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
     if (p.type !== "ssn") return [];
     return [normalizeSsn(p.value)];
   });
-  return {
+  return removeInvalidArrayValues({
     dob,
     gender,
     names,
@@ -199,6 +205,28 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
     emails,
     driversLicenses,
     ssns,
+  });
+}
+
+export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDemographics {
+  return {
+    dob: demographics.dob,
+    gender: demographics.gender,
+    names: demographics.names.filter(name => {
+      const nameObj: LinkGenericName = JSON.parse(name);
+      return nameObj.firstName !== "" && nameObj.lastName !== "";
+    }),
+    addresses: demographics.addresses.filter(address => {
+      const addressObj: LinkGenericAddress = JSON.parse(address);
+      return addressObj.line.length > 0 && addressObj.city !== "" && addressObj.zip !== "";
+    }),
+    telephoneNumbers: demographics.telephoneNumbers.filter(tn => tn !== ""),
+    emails: demographics.emails.filter(email => email !== ""),
+    driversLicenses: demographics.driversLicenses.filter(dl => {
+      const dlObj: LinkGenericDriversLicense = JSON.parse(dl);
+      return dlObj.value !== "" && dlObj.state !== "";
+    }),
+    ssns: demographics.ssns.filter(ssn => ssn !== ""),
   };
 }
 
@@ -248,24 +276,26 @@ export function normalizeAddress({
 }): LinkGenericAddress {
   return {
     line:
-      line?.map(l => {
-        return l
-          .trim()
-          .toLowerCase()
-          .replaceAll("street", "st")
-          .replaceAll("drive", "dr")
-          .replaceAll("road", "rd")
-          .replaceAll("court", "ct")
-          .replaceAll("avenue", "ave")
-          .replaceAll("lane", "ln")
-          .replaceAll("highway", "hwy")
-          .replaceAll("east", "e")
-          .replaceAll("west", "w")
-          .replaceAll("north", "n")
-          .replaceAll("south", "s");
-      }) ?? [],
+      line
+        ?.filter(l => l !== "")
+        .map(l => {
+          return l
+            .trim()
+            .toLowerCase()
+            .replaceAll("street", "st")
+            .replaceAll("drive", "dr")
+            .replaceAll("road", "rd")
+            .replaceAll("court", "ct")
+            .replaceAll("avenue", "ave")
+            .replaceAll("lane", "ln")
+            .replaceAll("highway", "hwy")
+            .replaceAll("east", "e")
+            .replaceAll("west", "w")
+            .replaceAll("north", "n")
+            .replaceAll("south", "s");
+        }) ?? [],
     city: city?.trim().toLowerCase() ?? "",
-    state: state?.trim().toLowerCase() ?? "",
+    state: state?.trim().toLowerCase().slice(0, 2) ?? "",
     zip: stripNonNumericChars(zip ?? "")
       .trim()
       .slice(0, 5),
@@ -286,9 +316,9 @@ export function stringifyAddress(normalizedAddress: LinkGenericAddress): string 
 export function normalizeTelephone(telephone: string): string {
   const numbersPhone = stripNonNumericChars(telephone);
   if (numbersPhone.length === 11 && numbersPhone[0] === "1") {
-    return numbersPhone.slice(-10);
+    return numbersPhone.slice(1, 11);
   }
-  return numbersPhone;
+  return numbersPhone.slice(0, 10);
 }
 
 export function normalizeEmail(email: string): string {
@@ -304,13 +334,13 @@ export function normalizeAndStringifyDriversLicense({
 }): string {
   const normalizedDl = {
     value: value.trim().toLowerCase(),
-    state: state.trim().toLowerCase(),
+    state: state.trim().toLowerCase().slice(0, 2),
   };
   return JSON.stringify(normalizedDl, Object.keys(normalizedDl).sort());
 }
 
 export function normalizeSsn(ssn: string): string {
-  return stripNonNumericChars(ssn);
+  return stripNonNumericChars(ssn).slice(0, 9);
 }
 
 /**

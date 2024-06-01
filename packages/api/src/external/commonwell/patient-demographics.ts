@@ -5,6 +5,7 @@ import {
   scoreLink,
   linkHasNewDemographics,
   patientToNormalizedCoreDemographics,
+  removeInvalidArrayValues,
   normalizeDob,
   normalizeGender,
   normalizeAndStringifyNames,
@@ -72,7 +73,7 @@ function patientNetworkLinkToNormalizedLinkDemographics(
   const ssns = (patientNetworkLink.details.identifiers ?? []).flatMap(p => { 
   });
   */
-  return {
+  return removeInvalidArrayValues({
     dob,
     gender,
     names,
@@ -81,7 +82,7 @@ function patientNetworkLinkToNormalizedLinkDemographics(
     addresses,
     driversLicenses: [],
     ssns: [],
-  };
+  });
 }
 
 function getPatientNetworkLinks(linkResults: CwLink[]): PatientNetworkLink[] {
