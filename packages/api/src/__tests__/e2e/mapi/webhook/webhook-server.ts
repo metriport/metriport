@@ -1,13 +1,19 @@
+import * as dotenv from "dotenv";
+dotenv.config();
+// Keep dotenv import and config before everything else.
+import { getEnvVar, getEnvVarOrFail, sleep } from "@metriport/shared";
 import ngrok, { Session } from "@ngrok/ngrok";
 import express, { Request, Response } from "express";
 import { Server } from "http";
-import { handleRequest } from "./webhook-handler";
+import whHandler from "./webhook-handler";
 
 const port = 8478;
-const app = express();
 
-app.get("/", async (req: Request, res: Response) => {
-  await handleRequest(req, res);
+const app = express();
+app.use(express.json({ limit: "20mb" }));
+
+app.post("/", async (req: Request, res: Response) => {
+  await whHandler.handleRequest(req, res);
 });
 
 let server: Server;
@@ -22,13 +28,18 @@ export function getWebhookServerUrl() {
 }
 
 export async function initWebhookServer() {
+  const ngrokAuthToken = getEnvVarOrFail("NGROK_AUTHTOKEN");
+  const customDomain = getEnvVar("NGROK_CUSTOM_DOMAIN");
+  // Allows to run this as a standalone script with ts-node-dev for hot reloading (otherwise Ngrok
+  // complains about multiple connections)
+  await sleep(1_000);
   server = app.listen(port, () => {
     console.log(`Webhook server listening at port ${port}`);
   });
-  const ngrokAuthToken = process.env.NGROK_AUTHTOKEN;
-  if (!ngrokAuthToken) throw new Error("NGROK_AUTHTOKEN env var not found");
   session = await new ngrok.SessionBuilder().authtoken(ngrokAuthToken).connect();
-  const listener = await session.httpEndpoint().listen();
+  let listenerBuilder = session.httpEndpoint();
+  if (customDomain) listenerBuilder = listenerBuilder.domain(customDomain);
+  const listener = await listenerBuilder.listen();
   listener.forward(`localhost:${port}`);
   webhookServerUrl = listener.url() ?? undefined;
   console.log(`Webhook server external address: ${webhookServerUrl}`);
@@ -53,6 +64,20 @@ export async function tearDownWebhookServer() {
   return promise;
 }
 
+export function storeWebhookKey(key: string | undefined | null): void {
+  whHandler.storeWebhookKey(key);
+}
+
+// If this file is run directly, start the webhook server. Useful for testing.
 if (require.main === module) {
   initWebhookServer();
+  const whKey = getEnvVarOrFail("WH_KEY");
+  storeWebhookKey(whKey);
 }
+
+export default {
+  initWebhookServer,
+  tearDownWebhookServer,
+  getWebhookServerUrl,
+  storeWebhookKey,
+};

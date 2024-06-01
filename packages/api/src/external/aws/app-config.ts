@@ -140,6 +140,11 @@ export async function getE2eCxIds(): Promise<string | undefined> {
   return cxIds[0];
 }
 
+export async function isE2eCx(cxId: string): Promise<boolean> {
+  const e2eCxId = await getE2eCxIds();
+  return e2eCxId === cxId;
+}
+
 export async function isEnhancedCoverageEnabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithEnhancedCoverageFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);

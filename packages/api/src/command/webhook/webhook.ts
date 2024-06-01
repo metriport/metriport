@@ -12,7 +12,7 @@ import { z, ZodError } from "zod";
 import { Product } from "../../domain/product";
 import { WebhookRequestStatus } from "../../domain/webhook";
 import WebhookError from "../../errors/webhook";
-import { isWebhookPongDisabledForCx } from "../../external/aws/app-config";
+import { isE2eCx, isWebhookPongDisabledForCx } from "../../external/aws/app-config";
 import { Settings, WEBHOOK_STATUS_OK } from "../../models/settings";
 import { WebhookRequest } from "../../models/webhook-request";
 import { getHttpStatusFromAxiosError } from "../../shared/http";
@@ -152,10 +152,12 @@ export async function processRequest(
     if (productType === Product.medical) {
       log(`Failed to process WH request: ${errorToString(error)}`);
       const status = "failure";
-      await Promise.all([
+      const [, , isE2e] = await Promise.all([
         updateWhRequestWithError(error, webhookRequest.id, webhookUrl, status),
         updateWhStatusWithError(error, webhookRequest.id, webhookUrl, settings.id),
+        isE2eCx(webhookRequest.cxId),
       ]);
+      if (isE2e) log(`[E2E] WH Payload: ${JSON.stringify(payload)}`);
       sendAnalytics(status);
     }
   }

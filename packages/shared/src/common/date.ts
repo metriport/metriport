@@ -1,5 +1,5 @@
-import { z } from "zod";
 import dayjs from "dayjs";
+import { CustomErrorParams, z } from "zod";
 
 export const ISO_DATE = "YYYY-MM-DD";
 
@@ -10,11 +10,15 @@ export function isValidISODate(date: string): boolean {
 const isValidISODateOptional = (date: string | undefined | null): boolean =>
   date ? isValidISODate(date) : true;
 
+const invalidIsoMsg: CustomErrorParams = { message: "Invalid ISO date" };
+
 export const optionalDateSchema = z
   .string()
   .trim()
   .nullish()
-  .refine(isValidISODateOptional, { message: "Invalid ISO date" });
+  .refine(isValidISODateOptional, invalidIsoMsg);
+
+export const dateSchema = z.string().trim().refine(isValidISODate, invalidIsoMsg);
 
 export const elapsedTimeFromNow = (
   date?: Date,

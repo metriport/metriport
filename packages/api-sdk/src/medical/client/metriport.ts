@@ -1,4 +1,10 @@
 import { Bundle, DocumentReference as FHIRDocumentReference, Resource } from "@medplum/fhirtypes";
+import {
+  WebhookRequest,
+  WebhookRequestParsingError,
+  webhookRequestSchema,
+  WebhookStatusResponse,
+} from "@metriport/shared/medical";
 import axios, { AxiosInstance, AxiosStatic, CreateAxiosDefaults } from "axios";
 import crypto from "crypto";
 import status from "http-status";
@@ -33,7 +39,6 @@ import {
 } from "../models/patient";
 import { PatientDTO } from "../models/patientDTO";
 import { SettingsResponse } from "../models/settings-response";
-import { WebhookStatusResponse } from "../models/webhook-status-response";
 
 const NO_DATA_MESSAGE = "No data returned from API";
 const BASE_PATH = "/medical/v1";
@@ -60,10 +65,8 @@ export type Options = {
 export class MetriportMedicalApi {
   // TODO this should be private
   readonly api: AxiosInstance;
-  /**
-   * Options for the settings endpoint.
-   */
-  private optionsForSettings = {
+
+  private optionsForSettingsEndpoints = {
     baseURL: "/",
   };
 
@@ -94,7 +97,7 @@ export class MetriportMedicalApi {
       baseURL,
       headers,
     };
-    this.optionsForSettings.baseURL = baseHostAndProtocol;
+    this.optionsForSettingsEndpoints.baseURL = baseHostAndProtocol;
 
     if (axios) {
       this.api = axios.create(axiosConfig);
@@ -112,7 +115,7 @@ export class MetriportMedicalApi {
    */
   async getSettings(): Promise<SettingsResponse> {
     const resp = await this.api.get<SettingsResponse>("/settings", {
-      ...this.optionsForSettings,
+      ...this.optionsForSettingsEndpoints,
     });
     return resp.data;
   }
@@ -126,7 +129,7 @@ export class MetriportMedicalApi {
     const resp = await this.api.post<SettingsResponse>(
       "/settings",
       { webhookUrl },
-      { ...this.optionsForSettings }
+      { ...this.optionsForSettingsEndpoints }
     );
     return resp.data;
   }
@@ -138,7 +141,7 @@ export class MetriportMedicalApi {
    */
   async getWebhookStatus(): Promise<WebhookStatusResponse> {
     const resp = await this.api.get<WebhookStatusResponse>("/settings/webhook", {
-      ...this.optionsForSettings,
+      ...this.optionsForSettingsEndpoints,
     });
     return resp.data;
   }
@@ -150,7 +153,7 @@ export class MetriportMedicalApi {
    */
   async retryWebhookRequests(): Promise<void> {
     await this.api.post("/settings/webhook/retry", {
-      ...this.optionsForSettings,
+      ...this.optionsForSettingsEndpoints,
     });
   }
 
@@ -665,12 +668,63 @@ export class MetriportMedicalApi {
    *
    * @returns True if the signature is verified, false otherwise.
    */
-  verifyWebhookSignature = (wh_key: string, reqBody: string, signature: string): boolean => {
+  verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
+    return MetriportMedicalApi.verifyWebhookSignature(wh_key, reqBody, signature);
+  }
+
+  /**
+   * Verifies the signature of a webhook request.
+   * Refer to Metriport's documentation for more details: https://docs.metriport.com/medical-api/more-info/webhooks.
+   *
+   * @param wh_key - your webhook key.
+   * @param req.body - the body of the webhook request.
+   * @param signature - the signature obtained from the webhook request header.
+   *
+   * @returns True if the signature is verified, false otherwise.
+   */
+  static verifyWebhookSignature(wh_key: string, reqBody: string, signature: string): boolean {
     const signatureAsString = String(signature);
     const receivedHash = crypto
       .createHmac("sha256", wh_key)
       .update(JSON.stringify(reqBody))
       .digest("hex");
     return receivedHash === signatureAsString;
-  };
+  }
+
+  /**
+   * Parses a webhook request received from the Metriport API and return an object of type
+   * 'WebhookRequest'.
+   * Note: currently, the type of the 'bundle' property is 'any', but it can be safely casted to
+   * FHIR's 'Bundle<Resource> | undefined'.
+   *
+   * @param requestBody The request body received from the Metriport API.
+   * @param throwOnError Whether to throw an Error if the request body is not a valid webhook request.
+   *        Optional, defaults to true.
+   * @returns The webhook request - instance of WebhookRequest, or an instance of
+   *          WebhookRequestParsingError if the payload is invalid and throwOnError is 'true'.
+   * @throws Error if the request body is not a valid webhook request and throwOnError is 'true'.
+   *         Details can be obtained from the error object under the 'cause' property (instance
+   *         of ZodError).
+   */
+  static parseWebhookResponse(
+    requestBody: unknown,
+    throwOnError: false
+  ): WebhookRequest | WebhookRequestParsingError;
+  static parseWebhookResponse(reqBody: unknown, throwOnError: true): WebhookRequest;
+  static parseWebhookResponse(reqBody: unknown): WebhookRequest;
+  static parseWebhookResponse(
+    reqBody: unknown,
+    throwOnError = true
+  ): WebhookRequest | WebhookRequestParsingError {
+    if (throwOnError) {
+      try {
+        return webhookRequestSchema.parse(reqBody);
+      } catch (error) {
+        throw new Error(`Failed to parse webhook request`, { cause: error });
+      }
+    }
+    const parse = webhookRequestSchema.safeParse(reqBody);
+    if (parse.success) return parse.data;
+    return new WebhookRequestParsingError(parse.error, parse.error.format());
+  }
 }
