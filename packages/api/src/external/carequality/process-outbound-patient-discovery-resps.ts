@@ -206,6 +206,7 @@ async function runNexPdIfScheduled({
       patient: updatedPatient,
       facilityId: scheduledPdRequest.facilityId,
       requestId: scheduledPdRequest.requestId,
+      forceEnabled: scheduledPdRequest.forceCarequality,
       rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
     });
     await resetPatientScheduledPatientDiscoveryRequestId({

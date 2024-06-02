@@ -8,7 +8,12 @@ import { executeOnDBTx } from "../../models/transaction-wrapper";
 export type ScheduledPatientDiscovery = {
   requestId: string;
   facilityId: string;
+  getOrgIdExcludeList?: () => Promise<string[]>;
   rerunPdOnNewDemographics?: boolean;
+  // START TODO #1572 - remove
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
+  // END TODO #1572 - remove
 };
 
 /**
@@ -19,14 +24,22 @@ export async function schedulePatientDiscovery({
   patient,
   source,
   facilityId,
+  getOrgIdExcludeList,
   rerunPdOnNewDemographics,
+  forceCarequality,
+  forceCommonwell,
 }: {
   requestId: string;
   patient: Pick<Patient, "id" | "cxId">;
   source: MedicalDataSource;
   facilityId: string;
+  getOrgIdExcludeList?: () => Promise<string[]>;
   rerunPdOnNewDemographics?: boolean;
-}): Promise<Patient> {
+  // START TODO #1572 - remove
+  forceCommonwell?: boolean;
+  forceCarequality?: boolean;
+  // END TODO #1572 - remove
+}): Promise<void> {
   const { log } = out(`${source} PD - requestId ${requestId}, patient ${patient.id}`);
 
   log(`Scheduling patient discovery to be executed`);
@@ -52,7 +65,10 @@ export async function schedulePatientDiscovery({
         scheduledPdRequest: {
           requestId,
           facilityId,
+          getOrgIdExcludeList,
           rerunPdOnNewDemographics,
+          forceCommonwell,
+          forceCarequality,
         },
       },
     };
@@ -69,7 +85,5 @@ export async function schedulePatientDiscovery({
       where: patientFilter,
       transaction,
     });
-
-    return updatedPatient;
   });
 }

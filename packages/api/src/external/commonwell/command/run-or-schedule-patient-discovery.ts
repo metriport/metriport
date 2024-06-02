@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { getCWData, update } from "../patient";
@@ -20,6 +21,10 @@ export async function runOrScheduleCwPatientDiscovery({
   forceCommonwell?: boolean;
   // END TODO #1572 - remove
 }): Promise<void> {
+  const existingPatient = await getPatientOrFail({
+    id: patient.id,
+    cxId: patient.cxId,
+  });
   const cwData = getCWData(patient.data.externalData);
 
   const statusCw = cwData?.status;
@@ -28,14 +33,16 @@ export async function runOrScheduleCwPatientDiscovery({
   if (statusCw === "processing" && !scheduledPdRequestCw) {
     await schedulePatientDiscovery({
       requestId,
-      patient,
+      patient: existingPatient,
       source: MedicalDataSource.COMMONWELL,
       facilityId,
+      getOrgIdExcludeList,
       rerunPdOnNewDemographics,
+      forceCommonwell,
     });
   } else if (statusCw !== "processing") {
     await update({
-      patient,
+      patient: existingPatient,
       facilityId,
       requestId,
       getOrgIdExcludeList,

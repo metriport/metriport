@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { getPatientOrFail } from "../../../command/medical/patient/get-patient";
 import { MedicalDataSource } from "@metriport/core/external/index";
 import { schedulePatientDiscovery } from "../../hie/schedule-patient-discovery";
 import { getCQData, discover } from "../patient";
@@ -18,6 +19,10 @@ export async function runOrScheduleCqPatientDiscovery({
   forceCarequality?: boolean;
   // END TODO #1572 - remove
 }): Promise<void> {
+  const existingPatient = await getPatientOrFail({
+    id: patient.id,
+    cxId: patient.cxId,
+  });
   const cqData = getCQData(patient.data.externalData);
 
   const discoveryStatusCq = cqData?.discoveryStatus;
@@ -26,14 +31,15 @@ export async function runOrScheduleCqPatientDiscovery({
   if (discoveryStatusCq === "processing" && !scheduledPdRequestCq) {
     await schedulePatientDiscovery({
       requestId,
-      patient,
+      patient: existingPatient,
       source: MedicalDataSource.CAREQUALITY,
       facilityId,
       rerunPdOnNewDemographics,
+      forceCarequality,
     });
   } else if (discoveryStatusCq !== "processing") {
     await discover({
-      patient,
+      patient: existingPatient,
       facilityId,
       requestId,
       forceEnabled: forceCarequality,

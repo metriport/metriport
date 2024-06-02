@@ -54,6 +54,7 @@ import { getNewDemographics } from "./patient-demographics";
 import { createOrUpdateCwPatientData } from "./command/cw-patient-data/create-cw-data";
 import { deleteCwPatientData } from "./command/cw-patient-data/delete-cw-data";
 import { CwLink } from "./cw-patient-data";
+import { getCqOrgIdsToDenyOnCw } from "../hie/cross-hie-ids";
 
 const createContext = "cw.patient.create";
 const updateContext = "cw.patient.update";
@@ -229,7 +230,6 @@ async function registerAndLinkPatientInCW({
 
     const startedNewPd = await runNexPdIfScheduled({
       patient,
-      getOrgIdExcludeList,
       requestId,
     });
     if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
@@ -399,7 +399,6 @@ async function updatePatientAndLinksInCw({
 
     const startedNewPd = await runNexPdIfScheduled({
       patient,
-      getOrgIdExcludeList,
       requestId,
     });
     if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
@@ -543,11 +542,9 @@ async function runNextPdOnNewDemographics({
 
 async function runNexPdIfScheduled({
   patient,
-  getOrgIdExcludeList,
   requestId,
 }: {
   patient: Patient;
-  getOrgIdExcludeList: () => Promise<string[]>;
   requestId: string;
 }): Promise<boolean> {
   const updatedPatient = await getPatientOrFail(patient);
@@ -558,8 +555,9 @@ async function runNexPdIfScheduled({
     await update({
       patient: updatedPatient,
       facilityId: scheduledPdRequest.facilityId,
-      getOrgIdExcludeList,
+      getOrgIdExcludeList: scheduledPdRequest.getOrgIdExcludeList ?? getCqOrgIdsToDenyOnCw,
       requestId: scheduledPdRequest.requestId,
+      forceCWUpdate: scheduledPdRequest.forceCommonwell,
       rerunPdOnNewDemographics: scheduledPdRequest.rerunPdOnNewDemographics,
     });
     await resetPatientScheduledPatientDiscoveryRequestId({

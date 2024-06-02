@@ -23,6 +23,7 @@ export function makePatientData(data: Partial<PatientData> = {}): PatientData {
     genderAtBirth: data.genderAtBirth ?? faker.helpers.arrayElement(["F", "M"]),
     personalIdentifiers: data.personalIdentifiers ?? [makePersonalIdentifier()],
     address: data.address ?? [makeAddressStrict()],
+    consolidatedLinkDemographics: data.consolidatedLinkDemographics,
     documentQueryProgress: data.documentQueryProgress,
     consolidatedQuery: data.consolidatedQuery,
     cxDocumentRequestMetadata: data.cxDocumentRequestMetadata,
