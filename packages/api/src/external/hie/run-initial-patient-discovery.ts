@@ -1,4 +1,5 @@
 import { Patient } from "@metriport/core/domain/patient";
+import { getPatientOrFail } from "../../command/medical/patient/get-patient";
 import { getCqOrgIdsToDenyOnCw } from "./cross-hie-ids";
 import { discover } from "../carequality/patient";
 import { create } from "../commonwell/patient";
@@ -18,9 +19,13 @@ export async function runInitialPatientDiscoveryAcrossHies({
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
 }): Promise<void> {
+  const existingPatient = await getPatientOrFail({
+    id: patient.id,
+    cxId: patient.cxId,
+  });
   // CAREQUALITY
   await discover({
-    patient,
+    patient: existingPatient,
     facilityId,
     requestId,
     forceEnabled: forceCarequality,
@@ -28,7 +33,7 @@ export async function runInitialPatientDiscoveryAcrossHies({
   });
   // COMMONWELL
   await create({
-    patient,
+    patient: existingPatient,
     facilityId,
     requestId,
     getOrgIdExcludeList: getCqOrgIdsToDenyOnCw,
