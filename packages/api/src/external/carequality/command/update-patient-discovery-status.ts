@@ -52,7 +52,9 @@ export async function updatePatientDiscoveryStatus({
         ...(discoveryRequestId && { discoveryRequestId }),
         ...(discoveryFacilityId && { discoveryFacilityId }),
         ...(discoveryStartedAt && { discoveryStartedAt }),
-        ...(discoveryRerunPdOnNewDemographics && { discoveryRerunPdOnNewDemographics }),
+        ...(discoveryRerunPdOnNewDemographics !== undefined
+          ? { discoveryRerunPdOnNewDemographics }
+          : undefined),
       },
     };
 

@@ -162,7 +162,9 @@ export const updatePatientDiscoveryStatus = async ({
         ...(discoveryRequestId && { discoveryRequestId }),
         ...(discoveryFacilityId && { discoveryFacilityId }),
         ...(discoveryStartedAt && { discoveryStartedAt }),
-        ...(discoveryRerunPdOnNewDemographics && { discoveryRerunPdOnNewDemographics }),
+        ...(discoveryRerunPdOnNewDemographics !== undefined
+          ? { discoveryRerunPdOnNewDemographics }
+          : undefined),
       },
     };
 
