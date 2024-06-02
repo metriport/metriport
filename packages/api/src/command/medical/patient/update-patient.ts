@@ -21,20 +21,20 @@ export type PatientUpdateCmd = BaseUpdateCmdWithCustomer &
 // See: https://metriport.slack.com/archives/C04DMKE9DME/p1686779391180389
 export async function updatePatient({
   patientUpdate,
-  emit = true,
   requestId,
   rerunPdOnNewDemographics,
   forceCommonwell,
   forceCarequality,
+  emit = true,
 }: {
   patientUpdate: PatientUpdateCmd;
-  emit?: boolean;
   requestId: string;
   rerunPdOnNewDemographics?: boolean;
   // START TODO #1572 - remove
   forceCommonwell?: boolean;
   forceCarequality?: boolean;
   // END TODO #1572 - remove
+  emit?: boolean;
 }): Promise<Patient> {
   const { cxId, facilityId } = patientUpdate;
 
