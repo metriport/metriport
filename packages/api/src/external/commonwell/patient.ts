@@ -118,7 +118,7 @@ export async function create({
   if (cwCreateEnabled) {
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
-    await updatePatientDiscoveryStatus({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
       discoveryRequestId,
@@ -128,7 +128,7 @@ export async function create({
     });
 
     const registerParams = {
-      patient: createAugmentedPatient(patient),
+      patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
       rerunPdOnNewDemographics,
@@ -235,6 +235,7 @@ async function registerAndLinkPatientInCW({
     if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
+    debug("Completed.");
     return { commonwellPatientId, personId };
   } catch (error) {
     await resetPatientScheduledPatientDiscoveryRequestId({
@@ -286,7 +287,7 @@ export async function update({
   if (cwUpdateEnabled) {
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
-    await updatePatientDiscoveryStatus({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
       discoveryRequestId,
@@ -297,7 +298,7 @@ export async function update({
 
     // intentionally async
     updatePatientAndLinksInCw({
-      patient: createAugmentedPatient(patient),
+      patient: createAugmentedPatient(updatedPatient),
       facilityId,
       getOrgIdExcludeList,
       rerunPdOnNewDemographics,
@@ -404,6 +405,7 @@ async function updatePatientAndLinksInCw({
     if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient, getOrgIdExcludeList });
+    debug("Completed.");
   } catch (error) {
     await resetPatientScheduledPatientDiscoveryRequestId({
       patient,
@@ -487,7 +489,7 @@ async function createCwLinks(
   return pdResults;
 }
 
-async function runNextPdOnNewDemographics({
+export async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   getOrgIdExcludeList,
@@ -521,7 +523,6 @@ async function runNextPdOnNewDemographics({
       patient: updatedPatient,
       facilityId,
       getOrgIdExcludeList,
-      requestId,
       rerunPdOnNewDemographics: false,
     });
     analytics({
@@ -540,7 +541,7 @@ async function runNextPdOnNewDemographics({
   return false;
 }
 
-async function runNexPdIfScheduled({
+export async function runNexPdIfScheduled({
   patient,
   requestId,
 }: {
@@ -579,7 +580,7 @@ async function runNexPdIfScheduled({
   return false;
 }
 
-async function queryDocsIfScheduled({
+export async function queryDocsIfScheduled({
   patient,
   getOrgIdExcludeList,
   isFailed = false,

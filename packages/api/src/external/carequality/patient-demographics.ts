@@ -22,12 +22,13 @@ export function getNewDemographics(patient: Patient, links: CQLink[]): LinkDemog
   return getPatientResources(links)
     .map(patientResourceToNormalizedLinkDemographics)
     .filter(linkDemographics => scoreLink({ coreDemographics, linkDemographics })[0])
-    .filter(linkDemographics =>
-      linkHasNewDemographics({
-        coreDemographics,
-        consolidatedLinkDemographics,
-        linkDemographics,
-      })
+    .filter(
+      linkDemographics =>
+        linkHasNewDemographics({
+          coreDemographics,
+          consolidatedLinkDemographics,
+          linkDemographics,
+        })[0]
     );
 }
 
@@ -72,9 +73,9 @@ export function patientResourceToNormalizedLinkDemographics(
     dob,
     gender,
     names,
+    addresses,
     telephoneNumbers,
     emails,
-    addresses,
     driversLicenses: [],
     ssns: [],
   });

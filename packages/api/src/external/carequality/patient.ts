@@ -52,7 +52,7 @@ export async function discover({
   if (enabledIHEGW) {
     const discoveryRequestId = requestId ?? uuidv7();
     const discoveryStartedAt = new Date();
-    await updatePatientDiscoveryStatus({
+    const updatedPatient = await updatePatientDiscoveryStatus({
       patient,
       status: "processing",
       discoveryRequestId,
@@ -63,7 +63,7 @@ export async function discover({
 
     // Intentionally asynchronous
     prepareAndTriggerPD({
-      patient: createAugmentedPatient(patient),
+      patient: createAugmentedPatient(updatedPatient),
       facilityId,
       enabledIHEGW,
       requestId: discoveryRequestId,

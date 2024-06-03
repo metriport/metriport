@@ -74,7 +74,7 @@ export async function processOutboundPatientDiscoveryResps({
     // TODO Pass explicitly
     const facilityId = cqData?.discoveryFacilityId;
     const rerunPdOnNewDemographics = cqData?.discoveryRerunPdOnNewDemographics;
-    if (rerunPdOnNewDemographics && facilityId) {
+    if (facilityId && rerunPdOnNewDemographics) {
       const startedNewPd = await runNextPdOnNewDemographics({
         patient,
         facilityId,
@@ -91,6 +91,7 @@ export async function processOutboundPatientDiscoveryResps({
     if (!startedNewPd) await updatePatientDiscoveryStatus({ patient, status: "completed" });
 
     await queryDocsIfScheduled({ patient });
+    log("Completed.");
   } catch (error) {
     await resetPatientScheduledPatientDiscoveryRequestId({
       patient: patientIds,
@@ -140,7 +141,7 @@ function buildCQLinks(pdResults: OutboundPatientDiscoveryResp[]): CQLink[] {
   });
 }
 
-async function runNextPdOnNewDemographics({
+export async function runNextPdOnNewDemographics({
   patient,
   facilityId,
   requestId,
@@ -171,7 +172,6 @@ async function runNextPdOnNewDemographics({
     await discover({
       patient: updatedPatient,
       facilityId,
-      requestId,
       rerunPdOnNewDemographics: false,
     });
     analytics({
@@ -190,7 +190,7 @@ async function runNextPdOnNewDemographics({
   return false;
 }
 
-async function runNexPdIfScheduled({
+export async function runNexPdIfScheduled({
   patient,
   requestId,
 }: {
