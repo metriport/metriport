@@ -22,15 +22,15 @@ import dayjs from "dayjs";
 const ISO_DATE = "YYYY-MM-DD";
 
 /**
- * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a "match".
+ * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
  *
- * This function is modelled off of Epic's matching algorithm, which uses a point system for different matching demographics. Each exact
- * or partial match awards a certain number of points, which are added to an overall score. This score must be higher than the given threshold
- * (20 or 21 if SSNs are present) in order for the input linked demograhics to successfully "match".
+ * This function uses a point system for different matching demographics. Each exact or partial match awards a
+ * certain number of points, which are added to an overall score. This score must be higher than the given threshold
+ * (20 or 21 if SSNs are present) in order for the input linked demograhics to be considered a usable "match".
  *
  * @param coreDemographics The patient core demographics.
  * @param linkDemographics The incoming link demographics from CQ or CW.
- * @returns boolean representing whether or not the link demographics match the patient, and the LinkDemographicsComparison if yes.
+ * @returns boolean representing whether or not the link demographics match the patient, and the comparison object if yes.
  */
 export function scoreLink({
   coreDemographics,
@@ -142,12 +142,12 @@ export function scoreLink({
 }
 
 /**
- * Converts a Patient demographics into a normalized and stringified core demographics payload.
+ * Converts a Patient's demographics into a normalized and stringified core demographics payload.
  * Currently general normalization: trim(), toLowerCase() for all strings, JSON.stringify for objects (sorted along keys) to convert to strings.
  * Special cases: WIP.
  *
  * @param patient The Patient @ Metriport.
- * @returns core demographics representing the Patient demographics.
+ * @returns core demographics representing the Patient's demographics.
  */
 export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemographics {
   const dob = normalizeDob(patient.data.dob);
@@ -195,6 +195,12 @@ export function patientToNormalizedCoreDemographics(patient: Patient): LinkDemog
   });
 }
 
+/**
+ * Removes values from core or link demographics that are incomplete.
+ *
+ * @param demographics The incoming core or link demographics.
+ * @returns the input demographics with incomplete values removed.
+ */
 export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDemographics {
   return {
     dob: demographics.dob,
@@ -327,7 +333,7 @@ export function normalizeSsn(ssn: string): string {
 }
 
 /**
- * Adds current patient consolidated link demographics to the Patient demographics to create the augmented Patient.
+ * Adds current patient consolidated link demographics to the Patient's demographics to create the augmented Patient.
  *
  * @param patient The Patient @ Metriport.
  * @returns Patient augmented with the consolidated link demographics.
@@ -380,7 +386,7 @@ export function createAugmentedPatient(patient: Patient): Patient {
  * @param coreDemographics The patient core demographics.
  * @param consolidatedLinkDemographics The patient consolidated link demographics.
  * @param linkDemographics The incoming link demographics from CQ or CW.
- * @returns boolean representing whether or not the link demographics has new values, and the LinkDemographicsComparison if yes.
+ * @returns boolean representing whether or not the link demographics has new values, and the comparison if yes.
  */
 export function linkHasNewDemographics({
   coreDemographics,

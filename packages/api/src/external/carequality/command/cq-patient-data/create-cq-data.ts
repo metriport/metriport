@@ -12,7 +12,7 @@ export async function createOrUpdateCQPatientData({
   id: string;
   cxId: string;
   cqLinks: CQLink[];
-}): Promise<CQPatientData | undefined> {
+}): Promise<CQPatientData> {
   const cqPatientData: CQPatientDataCreate = {
     id,
     cxId,

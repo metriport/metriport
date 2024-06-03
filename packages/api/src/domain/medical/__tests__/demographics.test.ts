@@ -1,4 +1,5 @@
 import { Patient, PatientDemoData, GenderAtBirth, splitDob } from "@metriport/core/domain/patient";
+//import { stripNonNumericChars } from "@metriport/core/domain/contact";
 import { LinkDemographics } from "@metriport/core/domain/patient-demographics";
 import { USState } from "@metriport/core/domain/geographic-locations";
 import {
@@ -22,6 +23,13 @@ describe("normalization", () => {
     const dobSplit = splitDob(dobValidValue);
     expect(dobSplit).toMatchObject(["2023", "08", "01"]);
   });
+  /* TODO
+  it("check strip non numeric chars", async () => {
+    const dobValidValue = "2023-08-01";
+    const dobSplit = splitDob(dobValidValue);
+    expect(dobSplit).toMatchObject(["2023", "08", "01"]);
+  });
+  */
   it("check dob normalization", async () => {
     const dobValidValue = "2023-08-01";
     const dobValid = normalizeDob(dobValidValue);

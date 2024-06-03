@@ -36,8 +36,8 @@ export function patientResourceToNormalizedLinkDemographics(
 ): LinkDemographics {
   const dob = normalizeDob(patientResource.birthDate);
   const gender = normalizeGender(patientResource.gender);
-  const names = (patientResource.name ?? []).flatMap(name => {
-    return (name.given ?? []).map(firstName => {
+  const names = patientResource.name.flatMap(name => {
+    return name.given.map(firstName => {
       return normalizeAndStringifyNames({ firstName, lastName: name.family });
     });
   });

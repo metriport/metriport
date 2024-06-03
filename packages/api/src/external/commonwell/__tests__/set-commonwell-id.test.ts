@@ -51,9 +51,12 @@ describe("setCommonwellIdsAndStatus", () => {
       cqLinkStatus: "processing",
     };
 
-    const resultIds = await updateCommonwellIdsAndStatus({ patient, ...newValues });
-    expect(resultIds).toBeTruthy();
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
+      ...newValues,
+    });
 
+    expect(result).toBeTruthy();
     checkPatientUpdateWith(newValues);
   });
 
@@ -74,7 +77,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
 
     const newValues: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -82,8 +85,13 @@ describe("setCommonwellIdsAndStatus", () => {
       cqLinkStatus: "linked",
     };
 
-    const resultIds = await updateCommonwellIdsAndStatus({ patient, ...newValues });
-    expect(resultIds).toBeTruthy();
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
+      ...newValues,
+    });
+
+    expect(result).toBeTruthy();
+    checkPatientUpdateWith(newValues);
   });
 
   it("has CW externalData set to newStatus + oldValues when CW externalData has oldValues and we set newStatus", async () => {
@@ -103,7 +111,7 @@ describe("setCommonwellIdsAndStatus", () => {
       }),
     });
 
-    patientModel_findOne.mockResolvedValue(patient);
+    patientModel_findOne.mockResolvedValueOnce(patient);
 
     const newStatus: CWParams = {
       commonwellPatientId: "newCommonwellPatientId",
@@ -111,9 +119,12 @@ describe("setCommonwellIdsAndStatus", () => {
       cqLinkStatus: undefined,
     };
 
-    const result = await updateCommonwellIdsAndStatus({ patient, ...newStatus });
-    expect(result).toBeTruthy();
+    const result = await updateCommonwellIdsAndStatus({
+      patient,
+      ...newStatus,
+    });
 
+    expect(result).toBeTruthy();
     checkPatientUpdateWith({
       commonwellPatientId: newStatus.commonwellPatientId,
       commonwellPersonId: oldValues.personId,
@@ -133,8 +144,8 @@ describe("setCommonwellIdsAndStatus", () => {
     };
 
     const result = await updateCommonwellIdsAndStatus({ patient, ...onlyPatientId });
-    expect(result).toBeTruthy();
 
+    expect(result).toBeTruthy();
     checkPatientUpdateWith({
       commonwellPatientId: onlyPatientId.commonwellPatientId,
       cqLinkStatus: "unlinked",

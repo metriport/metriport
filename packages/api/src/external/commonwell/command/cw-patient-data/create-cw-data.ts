@@ -13,7 +13,7 @@ export async function createOrUpdateCwPatientData({
   id: string;
   cxId: string;
   cwLinks: NetworkLink[];
-}): Promise<CwPatientData | undefined> {
+}): Promise<CwPatientData> {
   const cwPatientData: CwPatientDataCreate = {
     id,
     cxId,

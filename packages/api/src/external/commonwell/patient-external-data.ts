@@ -58,7 +58,7 @@ export type SetCommonwellIdParams = CWParams & {
 /**
  * Sets the CommonWell (CW) IDs and integration status on the patient.
  *
- * @param patient The patient@ Metriport.
+ * @param patient The patient @ Metriport.
  * @param commonwellPatientId The patient ID @ CommonWell.
  * @param commonwellPersonId The person ID @ CommonWell.
  * @param cqLinkStatus The status of linking the patient with CareQuality orgs using CW's
