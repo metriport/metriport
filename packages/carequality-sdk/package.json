@@ -1,6 +1,6 @@
 {
   "name": "@metriport/carequality-sdk",
-  "version": "0.9.7",
+  "version": "0.9.8-alpha.0",
   "description": "SDK to interact with the Carequality directory - by Metriport Inc.",
   "author": "Metriport Inc. <contact@metriport.com>",
   "homepage": "https://metriport.com/",
