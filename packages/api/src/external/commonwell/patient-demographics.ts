@@ -33,13 +33,13 @@ export function getNewDemographics(patient: Patient, links: CwLink[]): LinkDemog
     );
 }
 
-function patientNetworkLinkToNormalizedLinkDemographics(
+export function patientNetworkLinkToNormalizedLinkDemographics(
   patientNetworkLink: PatientNetworkLink
 ): LinkDemographics {
   const dob = normalizeDob(patientNetworkLink.details.birthDate);
   const cwGender = patientNetworkLink.details.gender.code as CwGenderCode;
   const gender = normalizeGender(cwGender);
-  const names = (patientNetworkLink.details.name ?? []).flatMap(name => {
+  const names = patientNetworkLink.details.name.flatMap(name => {
     return name.family.flatMap(lastName => {
       return (name.given ?? []).map(firstName => {
         return normalizeAndStringifyNames({ firstName, lastName });
