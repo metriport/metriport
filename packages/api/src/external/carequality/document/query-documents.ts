@@ -16,7 +16,10 @@ import { getCQPatientData } from "../command/cq-patient-data/get-cq-data";
 import { CQLink } from "../cq-patient-data";
 import { getCQData } from "../patient";
 import { createOutboundDocumentQueryRequests } from "./create-outbound-document-query-req";
-import { getOidsWithIHEGatewayV2Enabled, isIHEGatewayV2EnabledForCx } from "../../aws/app-config";
+import {
+  getOrgOidsWithIHEGatewayV2Enabled,
+  isIHEGatewayV2EnabledForCx,
+} from "../../aws/app-config";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
 import { getCqInitiator } from "../shared";
 import { isFacilityEnabledToQueryCQ } from "../../carequality/shared";
@@ -111,7 +114,7 @@ export async function getDocumentsFromCQ({
 
     const linksWithDqUrlV1Gateway: CQLink[] = [];
     const linksWithDqUrlV2Gateway: CQLink[] = [];
-    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
     const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
     for (const link of linksWithDqUrl) {

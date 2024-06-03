@@ -29,7 +29,10 @@ import {
 } from "./shared";
 import { getDocumentReferenceContentTypeCounts } from "../../hie/get-docr-content-type-counts";
 import { makeIHEGatewayV2 } from "../../ihe-gateway-v2/ihe-gateway-v2-factory";
-import { getOidsWithIHEGatewayV2Enabled, isIHEGatewayV2EnabledForCx } from "../../aws/app-config";
+import {
+  getOrgOidsWithIHEGatewayV2Enabled,
+  isIHEGatewayV2EnabledForCx,
+} from "../../aws/app-config";
 
 const parallelUpsertsToFhir = 10;
 const iheGateway = makeIheGatewayAPIForDocRetrieval();
@@ -187,7 +190,7 @@ export async function processOutboundDocumentQueryResps({
     const outboundDocumentQueryResultsV1: OutboundDocumentQueryResp[] = [];
     const outboundDocumentQueryResultsV2: OutboundDocumentQueryResp[] = [];
 
-    const v2GatewayOIDs = await getOidsWithIHEGatewayV2Enabled();
+    const v2GatewayOIDs = await getOrgOidsWithIHEGatewayV2Enabled();
     const isV2EnabledForCx = await isIHEGatewayV2EnabledForCx(cxId);
 
     for (const result of resultsWithMetriportIdAndDrUrl) {
