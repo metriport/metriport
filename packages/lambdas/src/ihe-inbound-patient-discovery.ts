@@ -37,6 +37,10 @@ export const handler = Sentry.AWSLambda.wrapHandler(async (event: string) => {
             homeCommunityId: baseRequest.data.samlAttributes.homeCommunityId,
           },
         },
+        {
+          flushAt: 1,
+          flushInterval: 0,
+        },
         postHogApiKey
       );
     }

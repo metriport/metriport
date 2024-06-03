@@ -1,4 +1,4 @@
-import { PostHog } from "posthog-node";
+import { PostHog, PostHogOptions } from "posthog-node";
 import { Config } from "../../util/config";
 
 // TEMPORARY FIX - CANT EXPORT THE TYPE FROM MODULE
@@ -18,11 +18,15 @@ export interface EventMessageV1 extends IdentifyMessageV1 {
 
 const defaultPostHogApiKey = Config.getPostHogApiKey();
 
-export const analytics = (params: EventMessageV1, postApiKey?: string) => {
+export const analytics = (
+  params: EventMessageV1,
+  posthogOptions?: PostHogOptions,
+  postApiKey?: string
+) => {
   const apiKey = postApiKey ?? defaultPostHogApiKey;
   if (!apiKey) return;
 
-  const posthog = new PostHog(apiKey);
+  const posthog = new PostHog(apiKey, posthogOptions);
 
   params.properties = {
     ...(params.properties ? { ...params.properties } : undefined),
