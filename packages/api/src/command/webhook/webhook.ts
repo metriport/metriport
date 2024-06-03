@@ -182,14 +182,14 @@ async function updateWhRequestWithError(
       requestUrl: webhookUrl,
       httpStatus,
     });
-  } catch (err2) {
-    log(`Failed to store failure state on WH log: ${errorToString(err2)}`);
-    capture.error(err2, {
+  } catch (error) {
+    log(`Failed to store failure state on WH log: ${errorToString(error)}`);
+    capture.error(error, {
       extra: {
         webhookRequestId: webhookRequestId,
         webhookUrl,
         context: `webhook.processRequest.updateStatus.failed`,
-        error: err2,
+        error,
       },
     });
   }
@@ -218,14 +218,14 @@ async function updateWhStatusWithError(
       webhookEnabled: false,
       webhookStatusDetail,
     });
-  } catch (err2) {
-    log(`Failed to store failure state on WH settings: ${errorToString(err2)}`);
-    capture.error(err2, {
+  } catch (error) {
+    log(`Failed to store failure state on WH settings: ${errorToString(error)}`);
+    capture.error(error, {
       extra: {
         webhookRequestId: webhookRequestId,
         webhookUrl,
         context: `webhook.processRequest.updateStatus.details`,
-        error: err2,
+        error,
       },
     });
   }
