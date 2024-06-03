@@ -20,6 +20,7 @@ import { mapGenderAtBirthToFhir } from "@metriport/core/external/fhir/patient/in
 import dayjs from "dayjs";
 
 const ISO_DATE = "YYYY-MM-DD";
+const FLAT_DATE = "YYYYMMDD";
 
 /**
  * Evaluates whether the input linked demographics are similar enough to the Patient to be considered a usable "match".
@@ -224,9 +225,12 @@ export function removeInvalidArrayValues(demographics: LinkDemographics): LinkDe
 }
 
 export function normalizeDob(dob?: string): LinkDateOfBirth {
-  const parsedDate = dayjs(dob?.trim() ?? "", ISO_DATE, true);
-  if (!parsedDate.isValid()) return undefined;
-  return parsedDate.format(ISO_DATE);
+  const normalDob = dob?.trim() ?? "";
+  const parsedFlatDate = dayjs(normalDob, FLAT_DATE, true);
+  if (parsedFlatDate.isValid()) return parsedFlatDate.format(ISO_DATE);
+  const parsedIsoDate = dayjs(normalDob, ISO_DATE, true);
+  if (parsedIsoDate.isValid()) parsedIsoDate.format(ISO_DATE);
+  return undefined;
 }
 
 export function normalizeGender(gender?: string): LinkGender {

@@ -36,6 +36,8 @@ describe("normalization", () => {
     expect(dobValid).toBe(dobValidValue);
     const dobTrim = normalizeDob(" 2023-08-01 ");
     expect(dobTrim).toBe(dobValidValue);
+    const dobTrimDiffFormatn = normalizeDob(" 20230801 ");
+    expect(dobTrimDiffFormatn).toBe(dobValidValue);
     const dobUndefined = normalizeDob();
     expect(dobUndefined).toBe(undefined);
   });
