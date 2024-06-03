@@ -78,9 +78,9 @@ export function patientNetworkLinkToNormalizedLinkDemographics(
     dob,
     gender,
     names,
+    addresses,
     telephoneNumbers,
     emails,
-    addresses,
     driversLicenses: [],
     ssns: [],
   });
