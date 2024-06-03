@@ -43,7 +43,7 @@ export async function updatePatientLinkDemographics({
       ...externalData,
       [source]: {
         ...externalData[source],
-        linkDemograhpics: {
+        linkDemographics: {
           ...(externalData[source]?.linkDemographics ?? {}),
           [requestId]: links,
         },
@@ -60,37 +60,37 @@ export async function updatePatientLinkDemographics({
               ...(consolidatedLinkDemographics?.names ?? []),
               ...links.flatMap(ld => ld.names),
             ]),
-          ],
+          ].sort(),
           addresses: [
             ...new Set([
               ...(consolidatedLinkDemographics?.addresses ?? []),
               ...links.flatMap(ld => ld.addresses),
             ]),
-          ],
+          ].sort(),
           telephoneNumbers: [
             ...new Set([
               ...(consolidatedLinkDemographics?.telephoneNumbers ?? []),
               ...links.flatMap(ld => ld.telephoneNumbers),
             ]),
-          ],
+          ].sort(),
           emails: [
             ...new Set([
               ...(consolidatedLinkDemographics?.emails ?? []),
               ...links.flatMap(ld => ld.emails),
             ]),
-          ],
+          ].sort(),
           driversLicenses: [
             ...new Set([
               ...(consolidatedLinkDemographics?.driversLicenses ?? []),
               ...links.flatMap(ld => ld.driversLicenses),
             ]),
-          ],
+          ].sort(),
           ssns: [
             ...new Set([
               ...(consolidatedLinkDemographics?.ssns ?? []),
               ...links.flatMap(ld => ld.ssns),
             ]),
-          ],
+          ].sort(),
         },
         externalData: updatedExternalData,
       },
