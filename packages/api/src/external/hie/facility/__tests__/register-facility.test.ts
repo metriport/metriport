@@ -1,22 +1,22 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import { faker } from "@faker-js/faker";
 import * as uuidv7_file from "@metriport/core/util/uuid-v7";
-import { Facility, FacilityRegister, FacilityType } from "../../../domain/medical/facility";
-import { makeFacility } from "../../../domain/medical/__tests__/facility";
-import * as getAddress from "../../../domain/medical/address";
-import * as getOrg from "../../../command/medical/organization/get-organization";
-import * as getCqOboData from "../../../external/carequality/get-obo-data";
-import * as createOrUpdateFacility from "../../../command/medical/facility/create-or-update-facility";
-import { registerFacilityWithinHIEs, createFacilityDetails } from "../register-facility.ts";
-import * as shared from "../shared";
+import { Facility, FacilityRegister, FacilityType } from "../../../../domain/medical/facility";
+import { makeFacility } from "../../../../domain/medical/__tests__/facility";
+import * as getAddress from "../../../../domain/medical/address";
+import * as getOrg from "../../../../command/medical/organization/get-organization";
+import * as getCqOboData from "../../../carequality/get-obo-data";
+import * as createOrUpdateFacility from "../../../../command/medical/facility/create-or-update-facility";
+import { registerFacilityWithinHIEs, createFacilityDetails } from "../register-facility";
+import * as shared from "../../shared";
 import {
   getCxOrganizationNameAndOidResult,
   addressWithCoordinates,
   coordinates,
 } from "./register-facility";
-import * as createOrUpdateCqOrg from "../../../external/carequality/command/cq-directory/create-or-update-cq-organization";
-import * as createOrUpdateCwOrg from "../../../external/commonwell/create-or-update-cw-organization";
-import { CqOboDetails } from "../../../external/carequality/get-obo-data";
+import * as createOrUpdateCqOrg from "../../../carequality/command/cq-directory/create-or-update-cq-organization";
+import * as createOrUpdateCwOrg from "../../../commonwell/create-or-update-cw-organization";
+import { CqOboDetails } from "../../../carequality/get-obo-data";
 
 let mockedFacility: Facility;
 let mockedRegisterFacility: FacilityRegister;
@@ -65,7 +65,7 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe("registerFacility", () => {
+describe("registerFacilityWithinHIEs", () => {
   it("calls hie creates with expected params when registerFacilityWithinHIEs is called", async () => {
     const cxId = uuidv7_file.uuidv4();
 
