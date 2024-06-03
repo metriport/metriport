@@ -107,8 +107,23 @@ export async function getCxsWithNoWebhookPongFeatureFlagValue(): Promise<string[
   return getCxsWithFeatureFlagEnabled("cxsWithNoWebhookPongFeatureFlag");
 }
 
-export async function getOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
-  return getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
+export async function getOrgOidsWithIHEGatewayV2Enabled(): Promise<string[]> {
+  return Config.isDev()
+    ? Config.getOrgOidsWithIHEGatewayV2Enabled().split(",")
+    : getCxsWithFeatureFlagEnabled("oidsWithIHEGatewayV2Enabled");
+}
+
+/**
+ * getCxsWithIHEGatewayV2Enabled is used by isIHEGatewayV2EnabledForCx to check if a cx is enabled for IHE Gateway V2.
+ * If it is, then in practice, isIHEGatewayV2EnabledForCx overrides getOrgOidsWithIHEGatewayV2Enabled because we will
+ * enable all gateways. See @organization-conversion.ts for an example.
+ */
+export async function getCxsWithIHEGatewayV2Enabled(): Promise<string[]> {
+  if (Config.isDev()) {
+    const apiKey = getEnvVar("TEST_API_KEY");
+    return apiKey ? [getCxIdFromApiKey(apiKey)] : [];
+  }
+  return getCxsWithFeatureFlagEnabled("cxsWithIHEGatewayV2Enabled");
 }
 
 export async function getE2eCxIds(): Promise<string | undefined> {
@@ -143,6 +158,11 @@ export async function isCWEnabledForCx(cxId: string): Promise<boolean> {
 export async function isWebhookPongDisabledForCx(cxId: string): Promise<boolean> {
   const cxIdsWithECEnabled = await getCxsWithNoWebhookPongFeatureFlagValue();
   return cxIdsWithECEnabled.some(i => i === cxId);
+}
+
+export async function isIHEGatewayV2EnabledForCx(cxId: string): Promise<boolean> {
+  const cxIdsWithIHEGatewayV2Enabled = await getCxsWithIHEGatewayV2Enabled();
+  return cxIdsWithIHEGatewayV2Enabled.some(i => i === cxId);
 }
 
 export async function isCommonwellEnabled(): Promise<boolean> {

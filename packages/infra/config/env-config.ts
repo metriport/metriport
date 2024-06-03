@@ -180,12 +180,14 @@ export type EnvConfigNonSandbox = EnvConfigBase & {
     nodeRuntimeArn: string;
   };
   connectWidget: ConnectWidgetConfig;
+  engineeringCxId: string;
 };
 
 export type EnvConfigSandbox = EnvConfigBase & {
   environmentType: EnvType.sandbox;
   connectWidgetUrl: string;
   sandboxSeedDataBucketName: string;
+  engineeringCxId?: never;
 };
 
 export type EnvConfig = EnvConfigSandbox | EnvConfigNonSandbox;
